@@ -1,0 +1,32 @@
+name: compile
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache toolchain
+        uses: actions/cache@v4
+        with:
+          path: toolchain
+          key: toolchain-${{ hashFiles('tools/fetch_toolchain.py', 'tools/fetch_libs.py') }}
+
+      - name: Fetch VC6 RTM and SP4
+        run: python -I tools/fetch_toolchain.py 6.0 6.4
+
+      - name: Fetch DirectX 7.0a SDK headers
+        run: python -I tools/fetch_libs.py
+
+      - name: Compile every unit
+        run: python -I build.py --compile-only -j 4

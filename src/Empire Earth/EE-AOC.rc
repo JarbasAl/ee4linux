@@ -1,0 +1,13 @@
+// EE-AOC.exe resources: the retail .rsrc (the installed exe's is community-edited), as resource script source.
+// tools/exe_fulllink.py compiles it with tools/rsrc_rebuild.py compile_rc (RC 5.2, toolchain/msvc7.0) and links the
+// .res; the linked .rsrc is byte-identical to the retail one. RC numbers the icon images 1-6 and the cursor image 7 in
+// statement order, as the retail table has them. The files under res/ are the retail leaves with their file headers
+// (.ico/.cur directory, BITMAPFILEHEADER) put back; the names are ours.
+
+LANGUAGE 0x9, 0x1
+
+102 ICON "res/icon102.ico"
+
+112 BITMAP "res/bitmap112.bmp"
+
+104 CURSOR "res/cursor104.cur"

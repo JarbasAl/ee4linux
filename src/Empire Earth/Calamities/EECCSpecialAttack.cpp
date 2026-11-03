@@ -1,0 +1,110 @@
+// C:\EEX\Empire Earth\Calamities\EECCSpecialAttack.cpp (file name inferred: no __FILE__). The special-attack calamity
+// class: 0xb3217..0xb338d. Unit flags: the exe's module set. Stop/Reset (0x157269) and Initialize (0xafea3) are
+// ICF-folded.
+#include <windows.h>
+
+#include "lle/LowLevelEngine.h"
+#include "lle/GE3DPoint.h"
+#include "lle/GEVector.h"
+#include "lle/FSRestorable.h"
+
+#include "ee/EEEffectManager.h"
+#include "ee/EECalamity.h"
+#include "ee/EECalamityClass.h"
+#include "ee/EEUnitCalamityClass.h"
+#include "ee/EECCSpecialAttack.h"
+#include "ee/EEAreaEffect.h"
+#include "ee/EEPlayer.h"
+#include "ee/EEUnit.h"
+#include "ee/EEUnitGoal.h"
+#include "ee/EEUGAttackUnit.h"
+#include "ee/EEUnitSetManager.h"
+#include "ee/RTSWorld.h"
+#include "ee/EEWorld.h"
+
+// FUNCTION: EXE 0x4b3217
+// Creates the special-attack calamity class (class flags 4)
+EECCSpecialAttack::EECCSpecialAttack()
+{
+    this->mClassFlags = 4;
+}
+
+// SYNTHETIC: EXE 0x4b3230
+// (the scalar deleting destructor, emitted with the vtable)
+
+// FUNCTION: EXE 0x4b324c
+// Destroys the calamity class
+EECCSpecialAttack::~EECCSpecialAttack()
+{
+}
+
+// FUNCTION: EXE 0x4b3257
+// Always starts (returns true; also the special-location Start, by ICF)
+bool EECCSpecialAttack::Start(EECalamity* inCalamity)
+{
+    return true;
+}
+
+// ICF-FOLDED: EXE 0x557269
+// (empty: folded into a shared empty function)
+void EECCSpecialAttack::Stop(EECalamity* inCalamity)
+{
+}
+
+// ICF-FOLDED: EXE 0x4afea3
+// (identical to EECCConscription::Initialize)
+void EECCSpecialAttack::Initialize(EECalamityData* inData)
+{
+    EECalamityClass::Initialize(inData);
+}
+
+// ICF-FOLDED: EXE 0x557269
+// (empty: folded into a shared empty function)
+void EECCSpecialAttack::Reset(EECalamity* inCalamity)
+{
+}
+
+// FUNCTION: EXE 0x4b325c
+// Orders the caster to make a special attack on the live target unit; always returns 7 (done)
+long EECCSpecialAttack::Update(EECalamity* inCalamity, float inElapsedTime)
+{
+    EEUnit* theTargetUnit = NULL;
+    EEComplexUnit* theUnit = inCalamity->mCasterUnit->mComplexUnit;
+    if (!inCalamity->GetTargetUnit(theTargetUnit) || !(theTargetUnit->mHitPoints > 0))
+        return 7;
+    theUnit->ClearGoals(0);
+    theUnit->SetGoal(new EEUGAttackUnit(theUnit, theTargetUnit, 1, 0), 0, 0);
+    theUnit->mIsSpecialAttack = true;
+    theUnit->StartAction(kActionAttackEnemyUnit);
+    theUnit->mUnitClass->ActionChanged(theUnit);
+    return 7;
+}
+
+// FUNCTION: EXE 0x4b32da
+// Checks the base cast rules (status 2 counts as allowed), then returns 1 unless the target unit is a valid target
+long EECCSpecialAttack::CanCastAt(EEComplexUnit* inUnit, GE3DPoint& inLocation, unsigned long inX, unsigned long inY,
+                                  bool inCheck, EEUnit* inTargetUnit)
+{
+    unsigned long theTargetID = -1;
+    long theResult = EECalamityClass::CanCastAt(inUnit, inLocation, inX, inY, inCheck, inTargetUnit);
+    if (theResult == 2)
+        theResult = 0;
+    if (theResult == 0) {
+        if (inTargetUnit != NULL)
+            theTargetID = inTargetUnit->mUnitID;
+        theResult = 1;
+        EEUnit* theTarget = ::gWorld.GetUnit(theTargetID);
+        if (theTarget != NULL && this->IsValidTarget(inUnit, theTarget))
+            theResult = 0;
+    }
+    return theResult;
+}
+
+// FUNCTION: EXE 0x4b333f
+// Accepts an enemy unit in the class's unit set
+bool EECCSpecialAttack::IsValidTarget(EEComplexUnit* inUnit, EEUnit* inTargetUnit)
+{
+    return gUnitSetManager.Contains(inTargetUnit->mUnitClass->GetUnitType(), this->GetUnitSet())
+        && inTargetUnit->mPlayer != inUnit->mPlayer
+        && inUnit->mPlayer->mEnemies[inTargetUnit->mPlayer->mPlayerID] != 0;
+}

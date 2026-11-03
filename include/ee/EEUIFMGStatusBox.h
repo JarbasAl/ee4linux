@@ -1,0 +1,64 @@
+// C:\EEX\Empire Earth\User Interface Thread\EEUIFMGStatusBox.h (RECONSTRUCTION; file name inferred).
+// The main group's status box (sizeof 0xb0 from the `new` in EEUIFMGMainGroup's ctor 0x267ec8; ctor 0x26ada8; the dtor
+// is ICF-folded into the empty 0xe123d; no vtable seen). Only what EEUIFMGMainGroup.cpp uses; (provisional names)
+#ifndef EE_EEUIFMGSTATUSBOX_H
+#define EE_EEUIFMGSTATUSBOX_H
+#include "ee/EEImprovementIDs.h"
+
+class EEComplexUnit;
+class EEUIFMainGame;
+class EEUnit;
+class UIControl;
+class UIForm;
+class UWideString;
+
+// 0x26ddb7 / 0x26de3b (EEUIFMGStatusBox.cpp's range, before its last unit's __FILE__): the exchange buttons
+// 0x5dc..0x5e3: the resource (2, 3, 4, 6) and buy or sell; whether the current player can do it (provisional names)
+bool EEDecodeTradeButton(unsigned long inButton, long& outResource, bool& outSell);
+bool EECanAffordTrade(unsigned long inButton);
+
+struct EEUIFMGIconBitmap;   // EEUIFMGStatusBox.cpp (one loaded icon, 0x14 bytes)
+
+class EEUIFMGStatusBox {
+public:
+    EEUIFMGStatusBox(UIForm* inForm);    // 0x26ada8
+    ~EEUIFMGStatusBox();                    // (ICF-folded into the empty 0xe123d)
+    void FillArmorAttributes(EEUnit* inUnit); // original attribute display, ret4
+    void Fill(EEUnit* inUnit);              // 0x26b593 (the main group's new selection)
+    void HideBackgrounds();                 // 0x26c470 (before the main group fills the controls in)
+    void Refresh(EEUnit* inUnit);           // 0x26cbe1 (each update of the same selection)
+    void UpdateQueuedCounts(EEComplexUnit* inUnit, long inImprovement);  // 0x26dae7
+    // the rest of EEUIFMGStatusBox.cpp (provisional names)
+    void UpdateArmorTexts(EEUnit* inUnit);  // 0x26c91d (the six attribute labels' base+bonus text)
+    void GetAttributeText(float inBase, float inBonus, UWideString& outText);  // 0x26cb84 (does not read `this`)
+    static void LoadIcons();                // 0x26c4fe (the 50 icon bitmaps of the three unit improvement textures)
+    static void UnloadIcons();              // 0x26c8f4
+    static long ReloadIcons();              // 0x26dcd9 (ReloadTexture of the three textures)
+    // 0x564ed8: the 50 loaded icons, a class static (its atexit dtor is guarded: bit of 0x564ed0)
+    // (provisional name)
+    static EEUIFMGIconBitmap sIconBitmaps[50];
+    // inline (EEUIFMGMainGroup::Open loads the label first: the arguments are evaluated right to left)
+    void SetControls(long inIndex, UIControl* inIcon, UIControl* inLabel)
+    {
+        this->mIcons[inIndex] = inIcon;
+        this->mLabels[inIndex] = inLabel;
+    }
+
+    long mAttributes[14];                   // +0x00 (= -1) the icon index of each attribute shown
+    UIControl* mIcons[9];                   // +0x38 the main game form's controls 0x45..0x4d
+    UIControl* mLabels[9];                  // +0x5c controls 0x20..0x28
+    UIForm* mForm;                   // +0x80 (the ctor argument)
+    UIControl* mC84;                        // +0x84 control 0x1e
+    UIControl* mC88;                        // +0x88 control 0x1f
+    UIControl* mC8C;                        // +0x8c control 0x2a
+    UIControl* mC90;                        // +0x90 control 0x2b
+    UIControl* mC94;                        // +0x94 control 0x64
+    UIControl* mC98;                        // +0x98 control 0x29
+    long mAttributeCount;                   // +0x9c
+    long mArmorAttributeCount;              // +0xa0 the next free icon
+    bool mIsResourceShown;                  // +0xa4
+    UIControl* mCA8;                        // +0xa8 control 0x33
+    UIControl* mCAC;                        // +0xac control 0x32
+};
+
+#endif

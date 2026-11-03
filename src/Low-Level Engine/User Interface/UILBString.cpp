@@ -1,0 +1,114 @@
+// C:\EEX\Low-Level Engine\User Interface\UILBString.cpp
+// Unit flags (calibrated, docs/CALIBRATION.md "lle"): -O1 -G6 -MD -GR -DLOWLEVELENGINE_EXPORTS
+//
+// 0x10078251..0x100785cd: the U2D key init chains, then DrawTextA and UpdateTranslatedKey. The class's inline members
+// and every UIListBox<UWideString> member are emitted first by UIComboBox.cpp. UILineGraph.cpp's key chains start at
+// 0x100785cd.
+#include <windows.h>
+#include <mbstring.h>
+
+#include "lle/LowLevelEngine.h"
+#include "lle/GEColor.h"
+#include "lle/GESurface.h"
+#include "lle/GETextureCoordinate.h"
+#include "lle/GETextureManager.h"
+#include "lle/GETexture.h"
+#include "GEWindow.h"
+#include "lle/GEScreen.h"
+#include "lle/GEViewport.h"
+#include "lle/GEVertexArray.h"
+#include "lle/U2DRectangle.h"
+#include "lle/GERasterizer.h"
+#include "lle/GEBitmap.h"
+#include "lle/GERhombus.h"
+#include "lle/GELine.h"
+#include "lle/GEFont.h"
+#include "lle/GEText.h"
+#include "lle/TMPoll.h"
+#include "lle/UIControl.h"
+#include "lle/UIForm.h"
+#include "lle/UISlider.h"
+#include "lle/UIScrollBar.h"
+#include "lle/UIListBox.h"
+#include "lle/UILBString.h"
+
+// FUNCTION: LLE 0x10078371
+// Draws the scroll bar text and each visible line of the string list box, clipped by the form
+long UILBString::DrawTextA()
+{
+    GERectangle theRectangle;
+    long theResult = kErrorOK;
+    unsigned long theLineHeight = this->mLineHeight;
+    unsigned long i = 0;
+    this->DrawScrollBarText();
+    this->mDrawCount--;
+    theRectangle = this->mCopyTextRectangle;
+    theRectangle.mRight += 1.0f;
+    for (; i < this->mDrawLineCount; i++) {
+        theRectangle.mTop = (float)(i * theLineHeight) + this->mCopyTextRectangle.GetTop();
+        theRectangle.mBottom = theLineHeight + theRectangle.mTop;
+        this->mCopiedText->SetLocation(GE2DPoint(theRectangle.mLeft, theRectangle.mTop));
+        this->mCopiedText->SetText(this->mCopyLineArray[i]);
+        theResult = this->mForm->DrawClippedText(theRectangle, this->mCopiedText, this);
+    }
+    return theResult;
+}
+
+// FUNCTION: LLE 0x10078470
+// Selects the next line starting with the typed letter (any case), wrapping to the top; kErrorNotFound when none does
+long UILBString::UpdateTranslatedKey(const char* inKey, short inRepeat)
+{
+    UWideString theLower(inKey);
+    UWideString theUpper(inKey);
+    UWideString theLine;
+    long i;
+    long theResult = kErrorNotFound;
+    long theStart = this->mCurrentSelection + 1;
+    if (theStart >= (long)this->GetNumLines())
+        theStart = 0;
+    theLower.ToLower();
+    theUpper.ToUpper();
+    for (i = theStart; (unsigned long)i < this->GetNumLines(); i++) {
+        theLine = this->mData[i];
+        if (theLine.GetLength() > 0 && (theLine[0] == theLower[0] || theLine[0] == theUpper[0]))
+            break;
+        if (theStart > 0 && i == this->GetNumLines() - 1) {
+            theStart = 0;
+            i = -1;
+        }
+    }
+    if ((unsigned long)i < this->GetNumLines()) {
+        if (this->mScrollBar)
+            this->mScrollBar->SetCurrentRangeValue(i);
+        this->ChangeSelectionIndex(i, true, true);
+        this->SetDirty(true);
+        theResult = kErrorOK;
+    }
+    return theResult;
+}
+
+// Compiler-generated: the U2D key init chains (names in analysis/lle/names.txt)
+// SYNTHETIC: LLE 0x10078251
+// SYNTHETIC: LLE 0x1007825b
+// SYNTHETIC: LLE 0x1007826b
+// SYNTHETIC: LLE 0x10078277
+// SYNTHETIC: LLE 0x10078281
+// SYNTHETIC: LLE 0x1007828b
+// SYNTHETIC: LLE 0x1007829b
+// SYNTHETIC: LLE 0x100782a7
+// SYNTHETIC: LLE 0x100782b1
+// SYNTHETIC: LLE 0x100782bb
+// SYNTHETIC: LLE 0x100782cb
+// SYNTHETIC: LLE 0x100782d7
+// SYNTHETIC: LLE 0x100782e1
+// SYNTHETIC: LLE 0x100782eb
+// SYNTHETIC: LLE 0x100782fb
+// SYNTHETIC: LLE 0x10078307
+// SYNTHETIC: LLE 0x10078311
+// SYNTHETIC: LLE 0x1007831b
+// SYNTHETIC: LLE 0x1007832b
+// SYNTHETIC: LLE 0x10078337
+// SYNTHETIC: LLE 0x10078341
+// SYNTHETIC: LLE 0x1007834b
+// SYNTHETIC: LLE 0x1007835b
+// SYNTHETIC: LLE 0x10078367

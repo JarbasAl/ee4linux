@@ -1,0 +1,5008 @@
+// decompiled by tools/rsrc_rebuild.py from Language.dll
+
+LANGUAGE 0x9, 0x1
+
+IDD_AUTHENTICATE DIALOG 0, 0, 209, 175
+STYLE 0x80c800c0
+CAPTION L"SSSI Authentification Verification"
+FONT 8, L"MS Sans Serif"
+BEGIN
+    CONTROL L"OK", 1, "Button", 0x50010001, 43, 139, 50, 14
+    CONTROL L"Cancel", 2, "Button", 0x50010000, 95, 139, 50, 14
+    CONTROL L"Serial Number", -1, "Static", 0x50020000, 31, 58, 74, 8
+    CONTROL L"", 1001, "Edit", 0x50810880, 31, 71, 146, 13
+    CONTROL L"Enter Authentification Code", -1, "Static", 0x50020000, 31, 96, 87, 8
+    CONTROL L"", 1002, "Edit", 0x50810080, 31, 112, 146, 13
+    CONTROL L"Please email your Stainless Steel Studios representative for your authentication code.  You will need to provide the following serial number", -1, "Static", 0x50020000, 32, 12, 145, 35
+END
+
+107 DIALOG 0, 0, 607, 157
+STYLE 0x80c800c0
+CAPTION L"Dialog"
+FONT 8, L"MS Sans Serif"
+BEGIN
+END
+
+STRINGTABLE
+BEGIN
+    20000, L" "
+    20001, L"Map Height"
+    20002, L"Map Type"
+    20003, L"Inland"
+    20004, L"Coastal"
+    20005, L"Blank"
+    20006, L"Random"
+    20007, L"Seed"
+    20008, L"Default Terrain"
+    20009, L"<NONE>"
+    20012, L"Create Map"
+    20013, L"Map Width"
+END
+
+STRINGTABLE
+BEGIN
+    30000, L"Attack"
+    30001, L"Range"
+    30002, L"Hit Points"
+    30003, L"Transport"
+    30005, L"Speed"
+    30006, L"Flight Time"
+    30007, L"Area Effect"
+    30008, L"Shock "
+    30009, L"Pierce "
+    30010, L"Arrow"
+    30011, L"Gun "
+    30012, L"Missile "
+    30013, L"Laser "
+    30014, L"Repair"
+    30015, L"Leadership"
+END
+
+STRINGTABLE
+BEGIN
+    30016, L"Charisma"
+    30017, L"Faith"
+    30018, L"Intellect"
+    30019, L"Diplomacy"
+    30020, L"At Maximum"
+    30021, L"Flight Time"
+    30022, L"Unit Improvements Not Allowed"
+    30023, L"Garrison"
+    30024, L"Power"
+END
+
+STRINGTABLE
+BEGIN
+    20500, L"Brush Size"
+    20501, L"Tiny"
+    20502, L"Small"
+    20503, L"Medium"
+    20504, L"Large"
+    20505, L"Huge"
+    20506, L"UNDO"
+    20507, L"REDO"
+    20508, L"Terrain"
+    20509, L"Colors"
+    20510, L"Bulldozer"
+    20511, L"Terrain Type"
+END
+
+STRINGTABLE
+BEGIN
+    30198, L"EE Editor"
+    30200, L"Single Player"
+    30201, L"Multiplayer"
+    30202, L"Scenario Editor"
+    30203, L"Exit Game"
+    30204, L"Sierra.com User ID:"
+    30205, L"Password:"
+    30206, L"Retype Password:"
+    30207, L"Login"
+END
+
+STRINGTABLE
+BEGIN
+    30208, L"Create New Account"
+    30209, L"Your version of Empire Earth: Art of Conquest is not up to date.  It is higly recommended that you update  before playing on Sierra.com.  If you do not update Empire Earth: Art of Conquest, you will not be able to join games on Sierra.com.  Would you like to run the update utility now?"
+    30210, L"There is an optional update available for Empire Earth: Art of Conquest.  Would you like to run the update utility now?"
+    30211, L"Your version of Empire Earth: Art of Conquest is up to date."
+    30212, L"Unable to determine your current version of Empire Earth: Art of Conquest.  It is recommended that you reinstall from the CD."
+    30213, L"Checking for an updated version of Empire Earth: Art of Conquest, please wait..."
+    30216, L"Player Name"
+    30217, L"Host Game Name"
+    30218, L"Join Network Game"
+    30219, L"Host Network Game"
+    30220, L"Join By IP Address"
+    30221, L"Play on Sierra.com"
+    30222, L"Enter IP Address"
+    30223, L"Available Games"
+END
+
+STRINGTABLE
+BEGIN
+    30224, L"Start"
+    30225, L"Cancel"
+    30226, L"Host"
+    30227, L"Join"
+    30228, L"OK"
+    30229, L"PLAYER"
+    30230, L"CIVILIZATION"
+    30231, L"CIV"
+    30232, L"POINTS"
+    30233, L"COLOR"
+    30234, L"TEAM"
+    30235, L"CONNECTION"
+    30236, L"VERSION"
+    30237, L"Game Options"
+    30238, L"Start Game"
+    30239, L"Game Setup"
+END
+
+STRINGTABLE
+BEGIN
+    30240, L"Open"
+    30241, L"Computer"
+    30242, L"Closed"
+    30243, L"Game Settings"
+    30244, L"Scenario"
+    30245, L"Random Map"
+    30246, L"Map Size"
+    30247, L"SPEED"
+    30248, L"Medium"
+    30249, L"Map Height"
+    30250, L"OBSERVE"
+    30251, L"Map Type"
+    30252, L"Resources"
+    30253, L"High"
+    30254, L"Low"
+    30255, L"Starting Epoch"
+END
+
+STRINGTABLE
+BEGIN
+    10000, L" "
+    10001, L"Player name already exist in game.  \nPlease choose a unique name."
+    10002, L"No open slots left in game!  \nPlease choose another game."
+    10003, L"Player color already selected. \nPlease choose a different color."
+    10004, L"Player Name is Invalid"
+    10005, L"Game Name is Invalid"
+    10006, L"Boot this Player"
+    10007, L"The server has removed you from the game."
+    10008, L"To join this game you need version %s.\nYou are running version %s.\n\nTo upgrade to the latest version of Empire Earth: Art of Conquest, run ""Update Empire Earth: Art of Conquest"" from the Start menu."
+    10009, L"You can't play a game with only one player.  Please add another player or put at least one player in non-observer mode."
+    10010, L"Game name already exists on subnet.  \nPlease choose a unique name."
+    10011, L"The host of this game has gone away!"
+    10012, L"Could not connect to the selected game.  Please check your network settings and try again.  If using a modem, ensure the modem is connected and functioning properly.  If behind a firewall, the firewall may need to reconfigured to allow network play.  Consult your network administrator for further assistance."
+    10013, L"Delete selected file?"
+    10014, L"Save scenario before exiting?"
+    10015, L"You must enter a file name before saving."
+END
+
+STRINGTABLE
+BEGIN
+    30115, L" "
+    30116, L"Food"
+    30117, L"Wood"
+    30118, L"Stone"
+    30119, L"Gold"
+    30120, L"Iron"
+    30121, L"Carbon"
+END
+
+STRINGTABLE
+BEGIN
+    30256, L"Ending Epoch"
+    30257, L"Game Options (F10)"
+    30258, L"Advanced Game Options"
+    30259, L"Night & Day Cycle"
+    30260, L"Defensive Morale Adjustment"
+    30261, L"Diplomacy"
+    30262, L"Seasons"
+    30263, L"Calamities"
+    30264, L"Approval Ratings"
+    30265, L"Customizable Civilizations"
+    30266, L"Secret Civilizations"
+    30267, L"Heroes"
+    30268, L"Reset Defaults"
+    30269, L"Easy"
+    30270, L"Hard"
+    30271, L"Zeus"
+END
+
+STRINGTABLE
+BEGIN
+    30272, L"Day"
+    30273, L"Night"
+    30274, L"Fast Cycle"
+    30275, L"Medium Cycle"
+    30276, L"Slow Cycle"
+    30277, L"Game Unit Limit"
+    30278, L"# of Wonders for Victory"
+    30279, L"Difficulty Level"
+    30280, L"Off"
+    30281, L"Victory Allowed"
+    30282, L"Lock Teams"
+    30283, L"Reveal Map"
+    30284, L"Cheat Codes"
+    30285, L"Fixed Positions"
+    30286, L"Death Match"
+    30287, L"Axis & Allies"
+END
+
+STRINGTABLE
+BEGIN
+    30288, L"Yes"
+    30289, L"No"
+    30290, L"Unlimited Resources"
+    30291, L"Loading Global Media..."
+    30292, L"Loading Game..."
+    30293, L"Creating World..."
+    30294, L"Populating World..."
+    30295, L"Loading World..."
+    30296, L"Loading Complete."
+    30297, L"Loading %s Epoch , for Player (%d)"
+    30298, L"Loading (%s), for Player (%d)"
+    30299, L"Trigger"
+    30300, L"Condition"
+    30301, L"Effect"
+    30302, L"Object"
+    30303, L"Area"
+END
+
+STRINGTABLE
+BEGIN
+    29999, L" "
+END
+
+STRINGTABLE
+BEGIN
+    20512, L"Max Players"
+    20513, L"Color"
+    20514, L"Team"
+    20515, L"Start Epoch"
+    20516, L"Build List"
+    20517, L"All Players"
+    20518, L"Players"
+    20519, L"Player Page 1"
+    20520, L"Player Page 2"
+    20521, L"Tech Tree"
+    20522, L"Set All Players"
+    20523, L"Player"
+    20524, L"Civilization"
+    20525, L"Prestige"
+    20526, L"Life Exp"
+    20527, L"Slaves"
+END
+
+STRINGTABLE
+BEGIN
+    20528, L"Enable Technologies"
+    20529, L"Disable Technologies"
+    20530, L"Unit Types"
+    20531, L"Units"
+    20532, L"Buildings"
+    20533, L"Heroes"
+    20534, L"Technologies"
+    20535, L"World"
+    20536, L"Alpha"
+    20537, L"Epoch"
+    20538, L"Family"
+    20539, L"Remove"
+    20540, L"Cargo"
+    20541, L"Sort"
+    20542, L"Terrain Color"
+    20543, L"Scen Inst. Map"
+END
+
+STRINGTABLE
+BEGIN
+    1000, L" "
+    1001, L"Pegasus Transport"
+    1002, L"TransportAirNano"
+    1003, L"B-17 Bomber"
+    1004, L"B-29 Bomber"
+    1005, L"B-52 Bomber"
+    1006, L"B-2 Bomber"
+    1007, L"B-122 Wyvern Bomber"
+END
+
+STRINGTABLE
+BEGIN
+    1008, L"Albatros D.V. Fighter"
+    1009, L"Corsair Fighter/Bomber"
+    1010, L"saving"
+    1011, L"Fokker Fighter/Bomber"
+    1012, L"FW190 Fighter"
+    1013, L"ME109  Fighter/Bomber"
+    1014, L"ME110 Bomber"
+    1015, L"ME262 Fighter/Bomber"
+    1016, L"P-38 Lightning"
+    1017, L"P-47 Thunderbolt"
+    1018, L"P-51 Fighter"
+    1019, L"Sopwith Fighter"
+    1020, L"Spitfire Fighter"
+    1021, L"Typhoon Anti-Tank"
+    1022, L"Avenger Fighter/Bomber"
+    1023, L"Corsair 2"
+END
+
+STRINGTABLE
+BEGIN
+    1024, L"Phoenix Fighter/Bomber"
+    1025, L"Helicopter Anti-Tank"
+    1026, L"Spectre AT Helicopter"
+    1027, L"Reaper Gunship"
+    1028, L"Missile1"
+    1029, L"Missile2"
+    1030, L"Missile3"
+    1031, L"Missile4"
+    1032, L"57mm AT Gun"
+    1033, L"120mm AT Gun"
+    1034, L"Helicopter Gunship"
+    1035, L"Civilization Name"
+    1036, L"Zeppelin"
+    1037, L"Pilum"
+    1038, L"Barracks"
+    1039, L"Hearth"
+END
+
+STRINGTABLE
+BEGIN
+    1040, L"House"
+    1041, L"Town Center"
+    1042, L"Dock"
+    1043, L"Government Center"
+    1044, L"Temple"
+    1045, L"Archery Range"
+    1046, L"Farm"
+    1047, L"Granary"
+    1048, L"Market"
+    1049, L"Stable"
+    1050, L"Tower - Prehistoric"
+    1051, L"Hospital"
+    1052, L"Siege Factory"
+    1053, L"University"
+    1054, L"Airport"
+    1055, L"Runway"
+END
+
+STRINGTABLE
+BEGIN
+    1056, L"Missile Base"
+    1057, L"Naval Yard"
+    1058, L"Tank Factory"
+    1059, L"Cyber Factory"
+    1060, L"Gate"
+    1061, L"Tower - Copper"
+    1062, L"Wall - Copper"
+    1063, L"Tower - Bronze"
+    1064, L"Wall - Bronze"
+    1065, L"Tower - Medieval"
+    1066, L"Wall - Medieval"
+    1067, L"Tower - Imperial"
+    1068, L"Wall - Imperial"
+    1069, L"Barbed Wire"
+    1070, L"Tower - Concrete"
+    1071, L"Tower - Primitive"
+END
+
+STRINGTABLE
+BEGIN
+    1072, L"Wall - Concrete"
+    1073, L"Tower - Laser"
+    1074, L"Wall - Laser"
+    1075, L"Ark of the Covenant"
+    1076, L"Assyrian Winged Lion"
+    1077, L"Ishtar Gates"
+    1078, L"Thor AT Gun"
+    1079, L"Tower of Babylon"
+    1080, L"Trojan Horse"
+    1081, L"Behemoth"
+    1082, L"Library of Alexandria"
+    1083, L"Pharos Lighthouse"
+    1084, L"Temple of Zeus"
+    1085, L"Coliseum"
+    1086, L"Lighthouse"
+    1087, L"Stadium"
+END
+
+STRINGTABLE
+BEGIN
+    1088, L"Granary - Improved"
+    1089, L"St. Basil's Cathedral"
+    1090, L"Time Machine"
+    1091, L"C-47 Cargo Plane"
+    1092, L"88mm AA Gun"
+    1093, L"Anti-Aircraft Missile"
+    1094, L"Skywatcher AA"
+    1095, L"Bazooka"
+    1096, L"AT Infantry 11"
+    1098, L"Simple Bowman"
+    1099, L"Cavalry Archer"
+    1100, L"Chariot Archer"
+    1101, L"Elephant Archer"
+    1102, L"Composite Bow"
+    1103, L"Crossbow"
+END
+
+STRINGTABLE
+BEGIN
+    1104, L"Long Bow"
+    1105, L"Horseman"
+    1106, L"Bronze Cavalry"
+    1107, L"War Elephant"
+    1108, L"Cataphract"
+    1109, L"Knight"
+    1110, L"Cuirassier"
+    1112, L"Stone Thrower"
+    1113, L"Serpentine"
+    1114, L"Bronze Cannon"
+    1115, L"Ballista"
+    1116, L"Arquebus"
+    1117, L"Musketeer"
+    1118, L"Grenadier"
+    1119, L"Engineer"
+END
+
+STRINGTABLE
+BEGIN
+    1120, L"Flame Thrower"
+    1121, L"Machine Gun"
+    1122, L"Marine"
+    1123, L"Trench Mortar"
+    1124, L"Imperial Cuirassier"
+    1125, L"Sentinel"
+    1126, L"Guardian"
+    1127, L"Minotaur"
+    1128, L"Mors"
+    1129, L"Furies"
+    1130, L"Apollo"
+    1131, L"Zeus"
+    1132, L"Pandora"
+    1133, L"Priest"
+    1134, L"Ram"
+    1135, L"Siege Tower"
+END
+
+STRINGTABLE
+BEGIN
+    1136, L"Catapult"
+    1137, L"Trebuchet"
+    1138, L"Culverin"
+    1139, L"Basilisk"
+    1140, L"Artillery"
+    1141, L"Colossus Artillery"
+    1142, L"Spearman"
+    1143, L"Phalanx"
+    1144, L"Pikeman"
+    1145, L"Clubman"
+    1146, L"Maceman"
+    1147, L"Short Sword"
+    1148, L"Long Sword"
+    1149, L"Citizen"
+    1150, L"War Raft"
+    1151, L"DeVerran"
+END
+
+STRINGTABLE
+BEGIN
+    1152, L"Battleship - Copper"
+    1153, L"Battleship - Bronze"
+    1154, L"Battleship - Byzantine"
+    1155, L"Catapult Ship - Bronze"
+    1156, L"Frigate - Bronze"
+    1157, L"Frigate - Trireme"
+    1158, L"Battleship - Middle Ages"
+    1159, L"Catapult Ship"
+    1160, L"Frigate - Middle Ages"
+    1161, L"Frigate - Renaissance"
+    1162, L"Battleship - Renaissance"
+    1163, L"Marshal Foch"
+    1164, L"Battleship - Imperial"
+    1165, L"Battleship - Agincourt"
+    1166, L"Frigate - Imperial"
+    1167, L"Battleship - Royal"
+END
+
+STRINGTABLE
+BEGIN
+    1168, L"Frigate - Royal"
+    1169, L"Battleship - Bismarck"
+    1170, L"Frigate - Warrington"
+    1171, L"Carrier - Enterprise"
+    1172, L"Carrier - Nexus"
+    1173, L"Fishing Raft"
+    1174, L"Transport - Copper"
+    1175, L"Fishing Boat - Bronze"
+    1176, L"Transport Raft"
+    1177, L"Transport - Imperial"
+    1178, L"Transport - Atomic"
+    1179, L"Hovercraft"
+    1180, L"Transport - Gargantua"
+    1181, L"Hovercraft 2"
+    1182, L"Sub - U-Boat"
+    1183, L"Sub - Trident"
+END
+
+STRINGTABLE
+BEGIN
+    1184, L"Sub - Nautilus"
+    1185, L"Sub - Hammerhead"
+    1186, L"Sub - Triton"
+    1187, L"Flak Halftrack"
+    1188, L"AA Tank 2"
+    1189, L"M1 Tank (HE)"
+    1190, L"Panzer Tank (AP)"
+    1191, L"MkV Tank (HE)"
+    1192, L"Gladiator Tank"
+    1193, L"Centurion Tank"
+    1194, L"Carabineer"
+    1195, L"Advanced Ballista"
+    1196, L"Elephant"
+    1197, L"Heavy Mortar"
+    1198, L"Heavy Ram"
+    1199, L"Bridge"
+END
+
+STRINGTABLE
+BEGIN
+    1200, L"Forage Patch"
+    1201, L"Gold Mine"
+    1202, L"Priest 4"
+    1203, L"Prophet"
+    1204, L"Placeholder"
+    1205, L"Iron Ore"
+    1206, L"Stone Mine"
+    1207, L"Battleship - Leviathan"
+    1208, L"Hippopotamus"
+    1209, L"Giraffe"
+    1210, L"Tiger"
+    1211, L"Shark"
+    1212, L"TBD"
+    1213, L"Cruiser - Gunboat"
+    1214, L"Heavy Siege Tower"
+    1215, L"Building Foundation"
+END
+
+STRINGTABLE
+BEGIN
+    1216, L"F-14 Fighter/Bomber"
+    1217, L"A-10 Anti-Tank"
+    1218, L"Ares"
+    1219, L"Poseidon"
+    1220, L"Torpedo"
+    1221, L"Bomb"
+    1222, L"Javelin"
+    1223, L"Hydra"
+    1224, L"Achilles"
+    1225, L"Shock Trooper"
+    1226, L"Cyber Frogger"
+    1227, L"Cyber Heavy"
+    1228, L"Hyperion"
+    1229, L"B-2 Bomber"
+    1230, L"Transport - Bronze"
+    1231, L"Dragoon"
+END
+
+STRINGTABLE
+BEGIN
+    1232, L"Royal Cuirassier"
+    1233, L"Guyot2"
+    1234, L"Guyot1"
+    1235, L"Guyot3"
+    1236, L"Iceberg1"
+    1237, L"Iceberg2"
+    1238, L"Iceberg3"
+    1239, L"Iceberg4"
+    1240, L"Goliath"
+    1241, L"AA Missile Tower"
+    1242, L"Walrus"
+    1247, L"Sea King"
+END
+
+STRINGTABLE
+BEGIN
+    1248, L"Fish"
+    1249, L"Ostrich"
+    1250, L"Goat"
+    1253, L"Cattails 1"
+    1254, L"Pentakonter Boarding vessel"
+    1255, L"Goat"
+    1256, L"Eagle"
+    1257, L"Tank Barrier"
+    1261, L"Wall - Stone"
+    1262, L"Tempest"
+    1263, L"Test Swordsman for Epoch 5"
+END
+
+STRINGTABLE
+BEGIN
+    1264, L"Crusader"
+    1265, L"Nuclear Missile"
+    1266, L"Missile Trooper"
+    1267, L"F-117 Fighter/Bomber"
+    1268, L"Nebula Fighter"
+    1269, L"Marine 12"
+    1270, L"Helicopter Transport"
+    1271, L"Halberdier"
+    1272, L"Settlement"
+    1273, L"Capitol"
+    1274, L"Stinger Soldier"
+    1275, L"Rock Thrower"
+    1276, L"Slinger"
+    1277, L"Gotha Bomber"
+    1278, L"Heinkel Bomber"
+    1279, L"Hand Cannoneer"
+END
+
+STRINGTABLE
+BEGIN
+    4000, L"Conqueror 1"
+    4001, L"Conqueror 1b"
+    4002, L"Diplomat 1"
+    4003, L"Emperor 1"
+    4006, L"Seagrass 3"
+    4007, L"Cattails 2"
+    4012, L"Sargon of Akkad"
+    4013, L"Gilgamesh"
+    4015, L"Cheops"
+END
+
+STRINGTABLE
+BEGIN
+    4018, L"Hannibal"
+    4019, L"Alexander the Great"
+    4021, L"Hammurabi"
+    4024, L"Julius Caesar"
+    4025, L"Charlemagne"
+    4027, L"Augustus Caesar"
+    4030, L"William the Conqueror"
+    4031, L"Richard the Lionheart"
+END
+
+STRINGTABLE
+BEGIN
+    4033, L"King Arthur"
+    4036, L"Henry V"
+    4037, L"Conqueror 7b"
+    4039, L"Isabella of Castile"
+    4042, L"Gustavus Adolphus"
+    4043, L"Oliver Cromwell"
+    4045, L"Elizabeth I"
+END
+
+STRINGTABLE
+BEGIN
+    4048, L"Napoleon"
+    4050, L"Otto von Bismarck"
+    4054, L"Travis Shackelford"
+    4055, L"Erwin Rommel"
+    4056, L"Dennis St. Albans"
+    4059, L"Impersonator"
+    4060, L"Molly Ryan"
+    4061, L"Sergei Molotov"
+    4063, L"Emperor 11"
+END
+
+STRINGTABLE
+BEGIN
+    4066, L"Alexi Septimus"
+    4067, L"Cyborg Molotov"
+    4069, L"Dennis St. Albans"
+    4070, L"RW Bresden"
+    4071, L"Hammurabi"
+    4072, L"Icarus"
+    4073, L"Justinian"
+    4074, L"George Washington"
+    4075, L"Diplomat 6"
+    4076, L"Machiavelli"
+    4077, L"Nebuchadrezzar"
+    4078, L"Shakespeare"
+    4079, L"Diplomat 11"
+END
+
+STRINGTABLE
+BEGIN
+    5000, L"Tree"
+    5001, L"Patrol Point"
+    5002, L"Waypoint"
+    5003, L"Palm Tree"
+    5004, L"Tree"
+    5005, L"Cactus"
+    5006, L"Tree"
+    5007, L"Tree"
+END
+
+STRINGTABLE
+BEGIN
+    9000, L"Rough Flaked Tools: +15% Hunting & Foraging Gather Rate"
+    9001, L"Hafted Tools: +15% Stone Gathering"
+    9002, L"Fine-Edged Tools: +15% Hunting & Foraging Gather Rate"
+    9003, L"Metal Casting: +15% Gold Gathering"
+    9004, L"Domestication of the Dog: +1 Range Citizen Hunters"
+    9005, L"Pulley: Increase Building HP"
+    9006, L"Forestry: +15% Wood Gathering"
+    9007, L"Windlass: +15% Stone Gathering"
+END
+
+STRINGTABLE
+BEGIN
+    9008, L"Shaft Mining: +15% Iron Gathering"
+    9009, L"Mechanized Logging: +15% Wood Gathering"
+    9010, L"Cofferdam: +100% Ship Repair Rate at Dock"
+    9011, L"Hydraulic Mining: +15% Gold Gathering"
+    9012, L"Dry Dock: +150% Ship Repair Rate at Dock"
+    9013, L"Trigonometry: Cannon Ballistics"
+    9014, L"Hammer Drilling Rigs: +15% Stone Gathering"
+    9015, L"Scuba Repairs: +80% Ship Repair Rate at Dock/Naval Yard "
+    9016, L"Building Codes: Increase Building HP"
+    9017, L"Atom Manipulation: +15% Gold Gathering"
+    9018, L"Shamanism: +1 Prophet Range"
+    9019, L"Sandals: +1 Prophet Speed"
+    9020, L"Strengthened Concrete: Increase Building HP"
+    9021, L"Ceremonial Burial: Increase Priest HP"
+    9022, L"Mythology: +1 Priest Speed"
+    9023, L"Oil Lamp: +1 Building LOS"
+END
+
+STRINGTABLE
+BEGIN
+    9024, L"Sainthood: +1 Prophet Range"
+    9025, L"Prophecy: Increase Prophet HP"
+    9026, L"Astrology: +1 Prophet Range"
+    9027, L"Gas Lamps: +1 Building LOS"
+    9028, L"Reformation: +1 Priest Range"
+    9029, L"Law Schools: +1 University Range"
+    9030, L"Occultism: Increase Prophet HP"
+    9031, L"Mysticism: Increase Prophet HP"
+    9032, L"Radio Services: +1 Priest Speed"
+    9033, L"Animal Sacrifice: +25% Priest Healing Speed"
+    9034, L"Televangelism: +1 Priest Range"
+    9035, L"Religious Resurgence: Increase Priest HP"
+    9036, L"Polytheism: +1 Priest Range"
+    9037, L"Monotheism: +1 Temple Range"
+    9038, L"Excommunication: +1 Priest Range"
+    9039, L"Indulgences: +1 Priest Speed"
+END
+
+STRINGTABLE
+BEGIN
+    9040, L"Printing Press: Priests can convert Enemy Priests "
+    9041, L"Missionaries: Priests can convert Enemy Buildings"
+    9042, L"Virtual Services: +1 Priest Speed"
+    9043, L"Mind Control: +20% Priest Recharge Rate"
+    9044, L"Philosophy: +1 University Range"
+    9045, L"Civil Liberties: +1 University Range"
+    9046, L"Digital Library: +1 University Range"
+    9047, L"Sanitation: +5 Pop Cap"
+    9048, L"Pharmacy: +1 Citizen Speed"
+    9049, L"Scientific Method: +1 University Range"
+    9050, L"Human Anatomy: +2 Citizen Attack & Increase Citizen/Canine HP"
+    9051, L"Quarantine: + Hospital Healing Rate & Range"
+    9052, L"Orthopedics: +1 Citizen Speed"
+    9053, L"Vitamins: +1 Citizen Speed "
+    9054, L"Tarot: +1 Prophet Speed"
+    9055, L"DNA Research: +3 Citizen Attack & Increase Citizen/Canine HP"
+END
+
+STRINGTABLE
+BEGIN
+    9056, L"Magnetic Resonance Imaging: + Hospital Healing Rate & Range"
+    9057, L"Genetic Engineering: +2 Hospital Range"
+    9058, L"Cybernetics: +1 Citizen Speed"
+    9059, L"Anti-Aging Pill: +5 Pop Cap"
+    9060, L"Commercial Law: -50% Tribute Cost"
+    9061, L"Comparative Anatomy: +2 Citizen Attack & Increase Citizen/Canine HP"
+    9062, L"Copper Sheathing"
+    9063, L"Genetic Engineering:+3 Citizen Attack & Increase Citizen/Canine HP"
+    9065, L"Epoch Prehistoric"
+    9066, L"Press Gangs (+Crew)"
+    9067, L"Hides"
+    9068, L"Emancipation: Immunity to Slavery"
+    9069, L"Stone Masons 03 (+1 stone)"
+    9070, L"Woodworking (+1 Wood)"
+    9071, L"Herbal Medicines: +3 Citizen Attack & Increase Citizen/Canine HP"
+END
+
+STRINGTABLE
+BEGIN
+    9072, L"Judiciary"
+    9074, L"Morale11"
+    9075, L"Skeleton First Hull Construction"
+    9076, L"Ochre Painting"
+    9077, L"Ancestor Worship: +1 Temple Range"
+    9078, L"Oracle: +1 Prophet Speed"
+    9079, L"Temple Range5"
+    9080, L"Inquisition: Increase Priest HP"
+    9081, L"Water Well"
+    9082, L"Statue"
+    9083, L"Market"
+    9084, L"Hearth"
+    9085, L"Sunday School: +1 Temple Range"
+    9086, L"Temple Range11"
+    9087, L"Atomic Theory"
+END
+
+STRINGTABLE
+BEGIN
+    9088, L"University Prestige12"
+    9089, L"Women Suffrage"
+    9090, L"Animal Husbandry"
+    9091, L"Rocket Propulsion"
+    9092, L"Treadmill: +15% Stone Gathering "
+    9093, L"Master Craftsmen04 (+1 stone)"
+    9094, L"Quarrying"
+    9095, L"Basket Weaving"
+    9096, L"Wood02"
+    9097, L"Wedge"
+    9098, L"Iron Saw: +15% Wood Gathering"
+    9099, L"Adornment (+1 gold)"
+    9100, L"Bronze (+1 ore)"
+    9101, L"Adze (+1 wood)"
+    9102, L"Irrigation"
+    9103, L"Letter of Marque (+Crew)"
+END
+
+STRINGTABLE
+BEGIN
+    9104, L"Ox Drawn Plough"
+    9105, L"Cuneiform Writing: "
+    9106, L"Enclosure: +15% Farm Gather Rate"
+    9107, L"Cotton Gin"
+    9108, L"Pesticides: +15% Farm Gather Rate"
+    9109, L"Swimming & Diving"
+    9110, L"Paddle (+ Fishing)"
+    9111, L"Oar (+ speed)"
+    9112, L"Fish Hook"
+    9113, L"Ram (+Hull)"
+    9114, L"Bulwarks (+Range)"
+    9115, L"Lateen Sail"
+    9116, L"Piracy (+Crew)"
+    9117, L"Fish Net"
+    9118, L"Compass"
+    9119, L"Crop Rotation"
+END
+
+STRINGTABLE
+BEGIN
+    9120, L"Urbanization (+Range)"
+    9121, L"Militia"
+    9122, L"Paved Streets"
+    9123, L"Storm Sewers"
+    9124, L"Police Force"
+    9125, L"Smoke Signals (+LOS Towers)"
+    9126, L"Tithe (+1 Gold)"
+    9127, L"Spyglass (+LOS Towers)"
+    9128, L"Peace Pipe"
+    9129, L"Breech Loading(+LOS Towers)"
+    9130, L"Civil Infrastructure (+Morale)"
+    9131, L"Life Expectancy12"
+    9132, L"Mortared Wall2 & Tower2"
+    9133, L"Postal Service"
+    9134, L"Sloping Wall4 & Tower4"
+    9135, L"Rangers (+LOS Towers)"
+END
+
+STRINGTABLE
+BEGIN
+    9136, L"Mining Explosives: +15% Iron Gathering"
+    9137, L"Bulls-Eye Lantern: +1 Building LOS"
+    9138, L"Treasure (+1 Gold )"
+    9139, L"Match"
+    9140, L"Coke: +15% Iron Gathering"
+    9141, L"Electricity"
+    9142, L"Steam Engine: +15% Gold Gathering"
+    9143, L"Border Patrols"
+    9144, L"Internal Combustion - Advanced"
+    9145, L"Drum Signaling"
+    9146, L"Coinage (+1 gold)"
+    9147, L"Weapon Range 06 (nav)"
+    9148, L"Semaphore code (+LOS)"
+    9149, L"Fire Hardened Spears: +1 Range for Citizen Hunters"
+    9150, L"Night Watch"
+    9151, L"Highway System"
+END
+
+STRINGTABLE
+BEGIN
+    9152, L"Automobile"
+    9153, L"Epoch Imperial"
+    9154, L"Reinforced Concrete Wall5 & Tower5"
+    9155, L"Poison Grain"
+    9156, L"Nuclear Meltdown"
+    9157, L"Firestorm"
+    9158, L"Malaria"
+    9159, L"Ice Age"
+    9160, L"Crusades: +1 Temple Range"
+    9161, L"Epoch Industrial"
+    9162, L"Flood"
+    9163, L"Epoch Renaissance"
+    9164, L"Epoch Middle"
+    9165, L"Epoch Dark"
+    9166, L"Epoch Bronze"
+    9167, L"Epoch Copper"
+END
+
+STRINGTABLE
+BEGIN
+    9168, L"Epoch Stone"
+    9169, L"Global Warming"
+    9170, L"Nano TC Tech Y"
+    9171, L"Democracy (+Range)"
+    9172, L"Epoch Digital"
+    9173, L"Hand Axe: +15% Wood Gathering"
+    9174, L"Epoch Atomic - Modern"
+    9175, L"Info  TC Tech X"
+    9176, L"Info TC tech Y"
+    9177, L"Slave Revolt"
+    9178, L"Nano TC Tech X"
+    9179, L"Movies (+Morale)"
+    9180, L"Nano TC Tech Z"
+    9181, L"Plague"
+    9182, L"Asteroid"
+    9183, L"Volcano"
+END
+
+STRINGTABLE
+BEGIN
+    9184, L"Hurricane"
+    9185, L"Earthquake"
+    9186, L"Info TC TechZ"
+    9187, L"Surgery"
+    9188, L"Monarchy"
+    9189, L"Double Entry Accounting"
+    9190, L"Engineering - Advanced"
+    9191, L"Free Enterprise"
+    9192, L"Crucifixion"
+    9193, L"Engineering"
+    9194, L"Banking"
+    9195, L"Commerce"
+    9196, L"Hydroponics: +15% Farm Gather Rate"
+    9197, L"Citizen (high poly)"
+    9198, L"Epoch Nano"
+    9199, L"Capitol Building"
+END
+
+STRINGTABLE
+BEGIN
+    9200, L"Paper Money: -50% Tribute Cost"
+    9201, L"Chemical Drugs: +5 Pop Cap"
+    9202, L"Microbiology"
+    9203, L"Human Dissection"
+    9204, L"Vaccinations: +5 Pop Cap"
+    9205, L"Antibiotics: +2 Hospital Range"
+    9206, L"Quinine"
+    9207, L"Microscope"
+    9208, L"Syringe"
+    9209, L"Core Mining: +15% Iron Gathering"
+    9210, L"Physician Training"
+    9211, L"Anesthesia: + Hospital Healing Rate & Range"
+    9212, L"Pasteurization: +3 Citizen Attack & Increase Citizen/Canine HP"
+    9213, L"Penicillin"
+    9214, L"Insulin"
+    9215, L"Environmental Law: +15% Hunting & Foraging Gather Rate"
+END
+
+STRINGTABLE
+BEGIN
+    9216, L"Hippocratic Oath: + Hospital Healing Rate & Range"
+    9217, L"Land Conservation: +15% Hunting & Foraging Gather Rate"
+    9218, L"Religious Tolerance: Increase Priest HP"
+    9219, L"Basic Oxygen Furnace: +15% Iron Gathering"
+    9220, L"Self Sufficiency: +15% Hunting & Foraging Gather Rate"
+    9221, L"Hardened Chisel: +15% Iron Gathering"
+    9222, L"Wheeled Plow: +15% Farm Gather Rate"
+    9223, L"Dog"
+    9224, L"Falconry: +15% Hunting & Foraging Gather Rate"
+    9225, L"Internet"
+    9226, L"Free Trade"
+    9227, L"Amalgamation: +15% Gold Gathering"
+    9228, L"Irrigation: +15% Farm Gather Rate"
+    9229, L"Copper Mining"
+    9230, L"Raised Decking"
+    9231, L"Epoch Atomic - WW1"
+END
+
+STRINGTABLE
+BEGIN
+    16959, L"*Missing Name*"
+END
+
+STRINGTABLE
+BEGIN
+    20016, L"Paint Cliff"
+    20017, L"Raise/Lower"
+    20018, L"Terrain"
+    20019, L"Elevation"
+    20020, L"Sea"
+    20021, L"Level"
+END
+
+STRINGTABLE
+BEGIN
+    20999, L" "
+    21000, L"Ambients - Marsh"
+    21001, L"Snow - Tufts"
+    21002, L"Grass - Tufts"
+    21003, L"Rock"
+    21004, L"Desert"
+    21005, L"Ice"
+    21006, L"Grass - Overgrown"
+    21007, L"Cracked Earth - Dark"
+END
+
+STRINGTABLE
+BEGIN
+    21008, L"Marsh"
+    21009, L"Blackness"
+    21010, L"Dry Leaves"
+    21011, L"Grass - Patches"
+    21012, L"Grass"
+    21013, L"Forest - Spruce"
+    21014, L"Infantry"
+    21015, L"Smooth Stone"
+    21016, L"Beach"
+    21017, L"Stonework - Brick"
+    21018, L"Pavement"
+    21019, L"Asphalt"
+    21020, L"Weeds"
+    21021, L"White"
+    21022, L"Flowers"
+    21023, L"Stonework - Marble Tiles2"
+END
+
+STRINGTABLE
+BEGIN
+    21024, L"Sand - Medium"
+    21025, L"Forest - Palm"
+    21026, L"26"
+    21027, L"27"
+    21028, L"Forest - Maple"
+    21029, L"Forest - Dead"
+    21030, L"30"
+    21031, L"Ambients - Aquatic"
+    21032, L"Ambients - Beach"
+    21033, L"Ambients - Desert"
+    21034, L"Ambients - Forest"
+    21035, L"Cliff Texture 1"
+    21036, L"Cliff Texture 2"
+    21037, L"Sand - Cracked"
+    21038, L"Stonework - Flagstone"
+    21039, L"Stonework - Smooth Stones"
+END
+
+STRINGTABLE
+BEGIN
+    21040, L"Grass - Sparse"
+    21041, L"Sand Fine"
+    21042, L"Pebbles"
+    21043, L"Space"
+    21044, L"44"
+    21045, L"45"
+    21046, L"46"
+    21047, L"Grass - Tall"
+    21048, L"Sand - Coarse"
+    21049, L"Snow - Grass Patches"
+    21050, L" "
+    21051, L"Color - Grass - Dirt Patches"
+    21052, L"Color - Sand - Medium"
+    21053, L"Color - Grass - Overgrown"
+    21054, L"Color - Olive"
+    21055, L"Color - Evergreen"
+END
+
+STRINGTABLE
+BEGIN
+    21056, L"Color - Pale Blue"
+    21057, L"Color - Orange/Yellow"
+    21058, L"Color - Slate Blue"
+    21059, L"Color - Pale Blue - Slate Blue"
+    21060, L"Color - Light Brown - Dark Brown"
+    21061, L"Color - White - Orange/Yellow"
+    21062, L"Color - Light Brown"
+    21063, L"Color - Dark Brown"
+    21064, L"Color - Light Maroon"
+    21065, L"Color - Pink"
+    21066, L"Color - Red"
+    21067, L"Color - Blue"
+    21068, L"Color - Light Maroon - Dark Maroon"
+    21069, L"Color - Violet - Purple"
+    21070, L"Color - Rose - Red/Orange"
+    21071, L"Color - Cyan"
+END
+
+STRINGTABLE
+BEGIN
+    21072, L"Color - Green"
+    21073, L"Color - Yellow"
+    21074, L"Color - Olive - Evergreen"
+    21075, L"Color - Violet"
+    21076, L"Color - Orange"
+    21077, L"Color - Marsh"
+    21078, L"Color - Pale Green - Mint"
+    21079, L"Color - Purple"
+    21080, L"Color - White - Black"
+    21081, L"Color - Grass - Sparse"
+    21082, L"Color - Grass - Tall"
+    21083, L"Color - White"
+    21084, L"Color - Water"
+    21085, L"Color - Snow"
+    21086, L"Color - Black"
+END
+
+STRINGTABLE
+BEGIN
+    22000, L"Grass"
+    22001, L"Desert"
+    22002, L"Rock"
+    22003, L"Color - Sand - Coarse"
+    22004, L"Ice"
+    22005, L"Color - Grass Patches"
+    22006, L"Grass 3"
+    22007, L"Cracked Mud"
+    22008, L"Color - Grey"
+    22009, L"Autumn Leaves"
+    22010, L"Color - Sand - Cracked"
+    22011, L"Color - Sand - Fine"
+    22012, L"Smooth Stone"
+    22013, L"Beach"
+    22014, L"Brick"
+    22015, L"Pavement"
+END
+
+STRINGTABLE
+BEGIN
+    22016, L"16"
+    22017, L"Color - Snow - Tufts"
+    22018, L"Cliff Winter Texture 1"
+    22019, L"Cliff Winter Texture 2"
+    22020, L"Snow - Dirt Patches"
+    22021, L"Stonework - Marble Tiles 1"
+    22022, L"Stonework - Mossy Stones"
+    22023, L"Stonework - Cobblestones"
+    22024, L"Stonework - Tech Plating"
+END
+
+STRINGTABLE
+BEGIN
+    27000, L"Continental"
+    27001, L"Plains"
+    27002, L"Highlands"
+    27003, L"Large Islands"
+    27004, L"Small Islands"
+    27005, L"Tournament Islands"
+    27006, L"Mediterranean"
+    27007, L"Planets Small"
+END
+
+STRINGTABLE
+BEGIN
+    27008, L"Planets Large"
+    27009, L"Planets Earth"
+    27010, L"Planets Mars"
+    27011, L"Planets Satellite"
+END
+
+STRINGTABLE
+BEGIN
+    20544, L"Movie"
+    20545, L"Inst. Sound Over"
+    20546, L"Options"
+    20547, L"Display Epochs"
+    20548, L"End Epoch"
+    20549, L"Scenario Instructions"
+    20550, L"Aftermath"
+    20551, L"Hints"
+    20552, L"Human"
+    20553, L"World Player"
+    20554, L"Capture Units"
+    20555, L"History"
+    20556, L"Active"
+    20557, L"Cheat"
+    20558, L"Attack"
+    20559, L"Defend"
+END
+
+STRINGTABLE
+BEGIN
+    0, L"FONTS"
+    1, L"Arial"
+    2, L"Times New Roman"
+    3, L"Courier New"
+    4, L"Tahoma"
+    5, L" "
+    6, L"English"
+END
+
+STRINGTABLE
+BEGIN
+    30304, L"New"
+    30305, L"Duplicate"
+    30306, L"Delete"
+    30307, L"Name"
+    30308, L"Select On Map"
+    30309, L"Object Specification"
+    30310, L"Owner"
+    30311, L"Class"
+    30312, L"Number Of Units"
+    30313, L"Min"
+    30314, L"Max"
+    30315, L"Dynamic"
+    30316, L"In Area"
+    30317, L"Visible By"
+    30318, L"Has State"
+    30319, L"Selected By"
+END
+
+STRINGTABLE
+BEGIN
+    30320, L"Has Attribute"
+    30321, L"Object Details"
+    30322, L"Unit Selected List"
+    30323, L"Select Area Type"
+    30324, L"FPS"
+    30325, L"Center Camera On Area"
+    30326, L"No Area Selected"
+    30327, L"Trigger Condition Attributes"
+    30328, L"The Trigger"
+    30329, L"Is On"
+    30330, L"Has Fired"
+    30331, L"Player Attribute Condition Details"
+    30332, L"Attribute"
+    30333, L"Compare"
+    30334, L"'s"
+    30335, L"Amount"
+END
+
+STRINGTABLE
+BEGIN
+    29000, L"TRIGGER LISTS"
+    29001, L"LOS"
+    29002, L"Range"
+    29003, L"Near"
+END
+
+STRINGTABLE
+BEGIN
+    29050, L"World"
+    29051, L"Any Human"
+    29052, L"Any Computer"
+    29053, L"All Human"
+    29054, L"All Computer"
+    29055, L"Any Player"
+END
+
+STRINGTABLE
+BEGIN
+    29056, L"Any Exclude World"
+    29057, L"Player %d"
+END
+
+STRINGTABLE
+BEGIN
+    30336, L"Use Player Attribute"
+    30337, L"Use Amount"
+    30338, L"Type Of Condition"
+    30339, L"Player Condition Details"
+    30340, L"Has Researched"
+    30341, L"Technology"
+    30342, L"Diplomacy Condition Details"
+    30343, L"Diplomacy Towards"
+    30344, L"is"
+    30345, L"Game Condition Details"
+    30346, L"Difficulty Level at"
+    30347, L"Elapsed Time is"
+    30348, L"Min Units"
+    30349, L"Max Units"
+    30350, L"Object Condition Details"
+    30351, L"Choose Object"
+END
+
+STRINGTABLE
+BEGIN
+    29296, L"RPS PlaceHolder6"
+    29297, L"RPS PlaceHolder7"
+    29300, L"Player-Attribute"
+    29301, L"Player-Technology"
+    29302, L"Trigger- Attribute"
+    29303, L"Player-Diplomacy"
+    29304, L"Game-Attribute"
+    29305, L"Chat Message Contains"
+    29310, L"<"
+    29311, L"<="
+END
+
+STRINGTABLE
+BEGIN
+    29312, L"="
+    29313, L">="
+    29314, L">"
+    29321, L"Object"
+    29322, L"Player"
+    29323, L"Trigger"
+    29324, L"Media"
+    29325, L"Game"
+    29326, L"AI"
+END
+
+STRINGTABLE
+BEGIN
+    30352, L"Type Of Effect"
+    30353, L"Object Effect"
+    30354, L"Action"
+    30355, L"To"
+    30356, L"Stance"
+    30357, L"Attribute"
+    30358, L"Value"
+    30359, L"%"
+    30360, L"Use Value"
+    30361, L"Use Percent"
+    30362, L"Player Effect"
+    30363, L"around"
+    30364, L"at"
+    30365, L"Diplomacy"
+    30366, L"Add"
+    30367, L"Media Effect"
+END
+
+STRINGTABLE
+BEGIN
+    29350, L"Create"
+    29351, L"Freeze"
+    29352, L"Unfreeze"
+    29353, L"Kill"
+    29354, L"Remove"
+    29355, L"Task-Object"
+    29356, L"Task-Area"
+    29357, L"Stance"
+    29358, L"Unit-Attribute"
+    29359, L"Owner"
+END
+
+STRINGTABLE
+BEGIN
+    29360, L"Class-Name"
+    29361, L"Face Object"
+    29362, L"Class-Attribute"
+    29375, L"Normal"
+END
+
+STRINGTABLE
+BEGIN
+    29376, L"Patrol"
+    29377, L"Attack-Move"
+    29378, L"Load"
+    29379, L"Unload"
+    29380, L"Garrison"
+END
+
+STRINGTABLE
+BEGIN
+    29452, L"Victory"
+    29453, L"Script-Camera"
+    29454, L"Defeat"
+    29455, L"Diplomacy"
+END
+
+STRINGTABLE
+BEGIN
+    29456, L"Set-Attribute Level"
+    29457, L"Modify-Tech-Tree"
+    29458, L"Award-Civ-Points"
+    29459, L"Fade-In"
+    29460, L"Fade-Out"
+    29461, L"Visibility-On"
+    29462, L"Visibility-Off"
+    29463, L"MiniMap-Flare"
+END
+
+STRINGTABLE
+BEGIN
+    29475, L"Explore"
+    29476, L"Idle"
+    29477, L"Locked"
+    29478, L"Unlocked"
+    29479, L"Town Patrol"
+    29480, L"Scout"
+    29481, L"Stand Ground"
+    29482, L"Guard"
+    29483, L"Harass"
+    29484, L"Cautious"
+    29485, L"Aggressive"
+END
+
+STRINGTABLE
+BEGIN
+    29500, L"To Exactly"
+    29501, L"To Increase By"
+    29502, L"To Decrease By"
+END
+
+STRINGTABLE
+BEGIN
+    29510, L"Allied"
+    29511, L"Enemy"
+    29513, L"Friendly"
+    29514, L"Hostile"
+END
+
+STRINGTABLE
+BEGIN
+    29525, L"Play Sound"
+    29526, L"Change Text"
+    29527, L"Send Dialogue"
+    29528, L"Send Chat Message"
+END
+
+STRINGTABLE
+BEGIN
+    30368, L"Message"
+    30369, L"Duration In Seconds"
+    30370, L"Text Object"
+    30371, L"Clear"
+    30372, L"Add Line"
+    30373, L"File Name"
+    30374, L"(include "".mp3"" or "".wav"" extension)"
+    30375, L"Use Object"
+    30376, L"Description"
+    30377, L"24 Hour Time"
+    30378, L"Day Night Cycle Time"
+    30379, L"seconds"
+    30380, L"Game Effect"
+    30381, L"Calamity"
+    30382, L"Use Area"
+    30383, L"Use Object"
+END
+
+STRINGTABLE
+BEGIN
+    29550, L"Hints"
+    29551, L"Instructions"
+END
+
+STRINGTABLE
+BEGIN
+    29552, L"History"
+END
+
+STRINGTABLE
+BEGIN
+    29575, L"Daylight Hour"
+    29576, L"Day/Night Cycle Time"
+    29577, L"Calamity"
+    29578, L"Graphic Effect"
+    29579, L"Start-Cinematic Mode"
+    29580, L"End-Cinematic Mode"
+    29581, L"Ambient-Weather"
+END
+
+STRINGTABLE
+BEGIN
+    29590, L"Increase"
+    29591, L"Decrease"
+    29592, L"Exactly"
+END
+
+STRINGTABLE
+BEGIN
+    29600, L"Any Calamity"
+    29601, L"Global Warming"
+    29602, L"Ice Age"
+    29603, L"Earthquake"
+    29604, L"Hurricane"
+    29605, L"Slave Revolt"
+    29606, L"Rebellion"
+    29607, L"Plague"
+    29608, L"Malaria"
+    29609, L"Volcano"
+    29610, L"Fire"
+    29611, L"Asteroid"
+    29612, L"Flood"
+END
+
+STRINGTABLE
+BEGIN
+    30384, L"State"
+    30385, L"Trigger Effect"
+    30386, L"If"
+    30387, L"Then"
+    30388, L"not"
+    30389, L"Delay"
+    30390, L"And"
+    30391, L"Or"
+    30392, L"Trigger Statement"
+    30393, L"Trigger Is On"
+    30394, L"Conditions True For"
+    30395, L"Looping"
+    30396, L"Cond"
+    30397, L"End"
+    30398, L"Del"
+    30399, L"Hour is at least"
+END
+
+STRINGTABLE
+BEGIN
+    29650, L"On"
+    29651, L"Off"
+    29652, L"Fired"
+    29653, L"Not Fired"
+END
+
+STRINGTABLE
+BEGIN
+    29665, L"Easy"
+    29666, L"Medium"
+    29667, L"Hard"
+    29670, L"Any Resource"
+    29671, L"All Resources"
+    29672, L"Stone"
+    29673, L"Gold"
+    29674, L"Wood"
+    29675, L"Food"
+    29676, L"Iron"
+    29677, L"Current Pop"
+    29678, L"Pop Cap"
+    29679, L"Unit Count"
+END
+
+STRINGTABLE
+BEGIN
+    30400, L"Day/Night"
+    30401, L"You are Victorious!"
+    30402, L"You have been Defeated!"
+    30403, L"Sierra.com User ID:"
+    30404, L"Available Games"
+    30405, L"Host Game Name"
+    30406, L"Chat"
+    30407, L"Players In Room"
+    30408, L"Wonders Available In"
+    30409, L"Wonders To Win"
+    30410, L"Conversions"
+    30411, L"All players can't be on the same team!"
+    30412, L"That User ID could not be found on Sierra.com."
+    30413, L"The password is incorrect."
+    30414, L"A copy of your Empire Earth: Art of Conquest CD is already being used on Sierra.com."
+    30415, L"You are running an invalid version of Empire Earth: Art of Conquest.  Please upgrade to the latest version."
+END
+
+STRINGTABLE
+BEGIN
+    5009, L"Church"
+    5010, L"Tree - Silver Maple"
+    5011, L"Tree - Green Ash"
+    5012, L"Tree - Red Maple"
+    5013, L"Tree - Hedge Maple"
+    5014, L"Tree - Blue Ash"
+    5015, L"Tree - Oak"
+    5016, L"Tree - Fir"
+    5017, L"Tree - Cypress"
+    5018, L"Tree - Cedar"
+    5019, L"Tree - Pine"
+    5020, L"Tree - Evergreen"
+    5021, L"Tree - Dead Spruce"
+    5022, L"Tree - Dead Fir"
+    5023, L"Tree - Dead Pine"
+END
+
+STRINGTABLE
+BEGIN
+    5024, L"Tree - Cactus"
+    5025, L"Tree - Cactus 2"
+    5026, L"Tree - Crab Apple"
+    5027, L"Tree - Apple"
+    5028, L"Tree - Acacia"
+    5029, L"Tree - Large Acacia"
+    5030, L"Tree - Coconut Palm"
+    5031, L"Tree - Windmill Palm"
+    5032, L"Tree - Bismarck Palm"
+    5033, L"Tree - Cottonwood"
+    5034, L"Tree - Cottonwood"
+    5035, L"Tree - Palms"
+    5036, L"Tree - Spruce"
+    5037, L"Tree - Phoenix Palm"
+    5038, L"Tree - Paperbark Maple"
+    5039, L"Tree - King Palm"
+END
+
+STRINGTABLE
+BEGIN
+    29680, L"Difficulty Level"
+    29681, L"Mining Limit"
+    29682, L"Placeholder1"
+    29683, L"Placeholder2"
+    29684, L"Placeholder3"
+    29685, L"Placholder4"
+    29686, L"Placeholder5"
+    29690, L"Modify AI Military Target"
+    29691, L"Create AI Military Group"
+    29692, L"Build Object"
+    29693, L"Maintain Object"
+    29694, L"Set AI Toggle"
+    29695, L"Set AI Variable"
+END
+
+STRINGTABLE
+BEGIN
+    4500, L"Shipwreck 1"
+    4501, L"Shipwreck 2"
+    4502, L"Shipwreck 3"
+    4503, L"Shipwreck 4"
+    4504, L"Ambient Placeholder"
+    4505, L"Bones"
+    4506, L"Greek Ruins"
+    4507, L"Scaffolding"
+    4508, L"Vermin"
+    4509, L"Flies"
+    4510, L"Hot Springs"
+    4511, L"Statue - Nike"
+END
+
+STRINGTABLE
+BEGIN
+    4512, L"Statue - Mounted"
+    4513, L"Statue - Olmec"
+    4514, L"Statue - Moai"
+    4515, L"Flag 1"
+    4516, L"Flag 2"
+    4517, L"Ambient"
+    4518, L"Algae"
+    4519, L"Algae 2"
+    4520, L"Seaweed 1"
+    4521, L"Seaweed 2"
+    4522, L"Seaweed 3"
+    4523, L"Seagrass 1"
+    4524, L"Seagrass 2"
+    4525, L"Seastalks 1"
+    4526, L"Seastalks 2"
+    4527, L"Seastalks 3"
+END
+
+STRINGTABLE
+BEGIN
+    3000, L"Cruiser - Dardo"
+    3001, L"Naval Placeholder"
+    3002, L"Fishing Boat - Trawler"
+    3003, L"Cruiser - Sagittarian"
+END
+
+STRINGTABLE
+BEGIN
+    3025, L"Frigate - Juggernaut"
+    3026, L"Trireme Frigate"
+    3027, L"Galley Boarding Vessel"
+    3028, L"Pentakonter Boarding Vessel"
+    3029, L"Frigate - Copper"
+    3030, L"Galley - Bronze"
+    3031, L"Frigate - Byzantine"
+    3032, L"Galley - Middle Ages"
+    3033, L"Super Decereme Frigate"
+    3034, L"Galleon - Imperial"
+    3035, L"Galley - Copper"
+    3036, L"Galley - Byzantine"
+    3037, L"Galleon - Renaissance"
+    3038, L"Galleon - Royal"
+END
+
+STRINGTABLE
+BEGIN
+    5100, L"Flowers - Roses"
+    5101, L"Flowers - Daisies"
+    5102, L"Flowers - Daffodils"
+    5103, L"Flowers - Thistles"
+END
+
+STRINGTABLE
+BEGIN
+    29100, L"HitPoints"
+    29101, L"Any Resource"
+    29102, L"Stone"
+    29103, L"Gold"
+END
+
+STRINGTABLE
+BEGIN
+    29104, L"Wood"
+    29105, L"Food"
+    29106, L"Iron"
+    29107, L"Flight Time"
+    29108, L"Cargo Count"
+    29109, L"Garrison Level"
+    29110, L"Ammunition"
+    29111, L"Animation Is Paused"
+    29112, L"Reload Time"
+    29113, L"Graphic Scale"
+    29114, L"Power"
+    29115, L"Rotting Time"
+    29116, L"Construction Complete"
+    29117, L"Unit Variable1"
+    29118, L"Unit Variable2"
+    29119, L"Unit Variable3"
+END
+
+STRINGTABLE
+BEGIN
+    29120, L"ShockArmor+"
+    29121, L"ArrowArmor+"
+    29122, L"PierceArmor+"
+    29123, L"GunArmor+"
+    29124, L"LaserArmor+"
+    29125, L"MissileArmor+"
+    29126, L"ReloadTime+"
+    29127, L"Attack+"
+    29128, L"WorkRate+"
+    29129, L"FlightTime+"
+    29130, L"Leadership+"
+    29131, L"MaxObjectsCarried+"
+    29132, L"Repair+"
+    29133, L"HitPoints+"
+    29134, L"CarryAmount+"
+    29135, L"ContainerHealingHP/Sec+"
+END
+
+STRINGTABLE
+BEGIN
+    29136, L"Range+"
+    29137, L"LineOfSight+"
+    29138, L"MaxVelocity+"
+    29139, L"Power+"
+    29140, L"Animal AI Active+"
+    29141, L"CameraFocus+"
+    29142, L"Total ShockArmor"
+    29143, L"Total ArrowArmor"
+    29144, L"Total PierceArmor"
+    29145, L"Total GunArmor"
+    29146, L"Total LaserArmor"
+    29147, L"Total MissileArmor"
+    29148, L"Total ReloadTime"
+    29149, L"Total Attack"
+    29150, L"Total WorkRate"
+    29151, L"Total FlightTime"
+END
+
+STRINGTABLE
+BEGIN
+    29152, L"Total Leadership"
+    29153, L"Total MaxObjectsCarried"
+    29154, L"Total Repair"
+    29155, L"Total HitPoints"
+    29156, L"Total CarryAmount"
+    29157, L"Total HealingHP/Sec"
+    29158, L"Total Range"
+    29159, L"Total LineOfSight"
+    29160, L"Total MaxVelocity"
+    29161, L"Total Power"
+    29162, L"Total PlaceHolder2"
+    29163, L"Total PlaceHolder3"
+    29164, L"Total TransportWeight"
+    29165, L"Total Weight"
+    29166, L"Total Tile Size"
+    29167, L"Total Cruise Altitude"
+END
+
+STRINGTABLE
+BEGIN
+    29168, L"Total Minimum Range"
+    29169, L"Total Can Enter Air Transports"
+    29170, L"Total Can Enter Land Transports"
+    29171, L"Total Can Enter Sea Transports"
+    29172, L"Total Place Holder1"
+    29173, L"Total Place Holder2"
+    29174, L"Total Place Holder3"
+END
+
+STRINGTABLE
+BEGIN
+    30416, L"Login to Sierra.com failed!  Please try again."
+    30417, L"Available Rooms"
+    30418, L"SaveGame.001"
+    30419, L"LoadGame.001"
+    30420, L"Your two passwords don't match"
+    30421, L"Account creation failed!  Please try again."
+    30422, L"User already exists!  Please choose another user ID."
+    30423, L"Armor"
+    30424, L"No rooms exist!"
+    30425, L"Unable to access a server at this time."
+    30426, L"Room list request failed!"
+    30427, L"This chat room is full.  Please try another one."
+    30428, L"Failed to login the chat room"
+    30429, L"Failed to retrieve client list"
+    30430, L"A game with that name already exists!"
+    30431, L"Too much game data!"
+END
+
+STRINGTABLE
+BEGIN
+    30600, L"Scroll"
+    30601, L"Easiest"
+    30602, L"Hardest"
+    30603, L"CPU Only"
+    30604, L"Options"
+    30605, L"Show my IP address..."
+    30606, L"Waiting for players..."
+    30607, L"Number of Players"
+END
+
+STRINGTABLE
+BEGIN
+    4080, L"Diplomat 12"
+    4081, L"Lincoln"
+    4082, L"Inventor 6"
+    4083, L"Archimedes"
+    4084, L"Einstein"
+    4085, L"Isaac Newton"
+    4086, L"Leonardo da Vinci"
+    4087, L"Lucy"
+    4088, L"Ptolemy"
+    4089, L"Inventor 11"
+    4090, L"Prophet 2"
+    4091, L"Gandhi"
+    4092, L"Joan of Arc"
+    4093, L"Martin Luther"
+    4094, L"St. Paul the Apostle"
+    4095, L"Prophet 11"
+END
+
+STRINGTABLE
+BEGIN
+    9900, L"Projectile"
+END
+
+STRINGTABLE
+BEGIN
+    4096, L"Otto von Metternich"
+    4097, L"Emperor 2"
+    4100, L"Palisades"
+    4101, L"Scorpion"
+    4102, L"Space Carrier"
+    4103, L"LST"
+    4104, L"Celtic Warrior"
+    4105, L"Egyptian Warrior"
+    4106, L"Cyber Ninja"
+    4107, L"Carbon Deposit 1"
+    4108, L"Gallic Warrior"
+    4109, L"Carbon Deposit 2"
+    4110, L"Carbon Deposit 3"
+    4111, L"Sherman - Flamethrower"
+END
+
+STRINGTABLE
+BEGIN
+    6000, L"Action Button Help Strings"
+    6001, L"Go to Second Page"
+    6002, L"Go To First Page"
+    6003, L"Unload"
+    6004, L"Stop"
+    6005, L"Repair"
+    6006, L"Timed Atomic Bomber Rally Point"
+    6007, L"Attack Ground"
+    6008, L"Place Rally Point"
+    6009, L"Erect Wonder"
+    6010, L"Place Fighter Rally Point"
+    6011, L"Place Bomber/Helicopter Rally Point"
+    6012, L"Whoops"
+    6013, L"Place Atomic Bomber Rally Point"
+    6014, L"Timed Global Rally Point"
+    6015, L"Timed Fighter Rally Point"
+END
+
+STRINGTABLE
+BEGIN
+    6016, L"Timed Bomber Rally Point"
+    6017, L"Sentry"
+    6018, L"Build"
+    6019, L"Patrol"
+    6020, L"Replant Farms"
+    6021, L"Convert"
+    6022, L"Transport Rally Point"
+    6023, L"Cancel"
+    6024, L"Explore"
+    6025, L"Populate"
+    6026, L"Lock"
+    6027, L"Unlock"
+    6028, L"Repair"
+    6029, L"Self Destruct"
+    6030, L"Set Unit Behavior"
+    6031, L"Set Formation"
+END
+
+STRINGTABLE
+BEGIN
+    2000, L"Persian Immortal"
+    2001, L"RADAR Center"
+    2002, L"Moorish Infantry"
+    2003, L"Artifact"
+    2004, L"Spanish Infantry"
+    2005, L"British Infantry"
+    2006, L"German Infantry"
+    2007, L"German Machine Gun"
+    2008, L"Battleship - Dreadnought"
+    2009, L"Frigate - Good Hope"
+    2010, L"Staff Car"
+    2011, L"Moorish Cavalry"
+    2012, L"Red Baron"
+    2013, L"Homer"
+    2014, L"Tent"
+    2015, L"Manfred von Richthofen"
+END
+
+STRINGTABLE
+BEGIN
+    1280, L"Sherman Tank (HE)"
+    1281, L"Land Mine"
+    1282, L"Naval Mine"
+    1283, L"A7V Tank (AP)"
+    1284, L"Bombard"
+    1285, L"Leopard Tank (AP)"
+    1286, L"Colossal Bombard"
+    1287, L"Furies II"
+    1288, L"Test Medic"
+    1289, L"Jackal Fighter"
+    1290, L"Titan Bomber"
+    1291, L"Elite Guard"
+    1292, L"Mineshaft"
+    1293, L"Gate - Copper"
+    1294, L"Gate - Bronze"
+    1295, L"Gate - Medieval"
+END
+
+STRINGTABLE
+BEGIN
+    30432, L"Failed to create game"
+    30433, L"You are not in a room!"
+    30434, L"You are already in a game!"
+    30435, L"You are not logged in!"
+    30436, L"No factory servers available!"
+    30437, L"Login parameters are invalid"
+    30438, L"Could not create room!"
+    30439, L"Successfully created new account!"
+    30440, L"Specified game not found!"
+    30441, L"A Sierra.com user is already logged in with that User ID."
+    30442, L"Specified room not found!"
+    30443, L"Failed to retrieve game list"
+    30444, L"Protect this game with a password"
+    30445, L"One or more of your files are not the correct version or corrupt."
+    30446, L"That game is already in progress."
+    30447, L"Number of Start Positions"
+END
+
+STRINGTABLE
+BEGIN
+    7000, L"Load"
+    7001, L"Save"
+    7002, L"Save As"
+    7003, L"Delete"
+    7004, L"Cancel"
+    7005, L"Saved Games"
+    7006, L"Video"
+    7007, L"Audio"
+END
+
+STRINGTABLE
+BEGIN
+    7008, L"Interface"
+    7009, L"Players"
+    7010, L"Video Settings"
+    7011, L"Video Card"
+    7012, L"Screen Resolution"
+    7013, L"3D Acceleration"
+    7014, L"Graphics Options"
+    7015, L"Graphics Quality"
+    7016, L"Best"
+    7017, L"Performance"
+    7018, L"Graphics"
+    7019, L"Allow Zoom"
+    7020, L"Show Blood"
+    7021, L"OK"
+    7022, L"Music Settings"
+    7023, L"Music Quality"
+END
+
+STRINGTABLE
+BEGIN
+    9232, L"Epoch Atomic - WW2"
+    9233, L"Single Player Barracks"
+    9234, L"Enable Single Player Barracks"
+    9235, L"Replace Phalanx with Persian Infantry"
+    9236, L"Replace Grenadier with British Infantry"
+    9237, L"Allow Settlement Upgrade"
+    9238, L"Allow Town Center Upgrade"
+END
+
+STRINGTABLE
+BEGIN
+    7024, L"High"
+    7025, L"Low"
+    7026, L"Off"
+    7027, L"Music Volume"
+    7028, L"Min"
+    7029, L"Max"
+    7030, L"Sound Effects Settings"
+    7031, L"Sound Volume"
+    7032, L"Max Number of Sounds"
+    7033, L"New"
+    7034, L"Cost"
+    7035, L"Add"
+    7036, L"Remove"
+    7037, L"Sound Effects"
+    7038, L"Civilization Bonuses"
+    7039, L"Available Bonuses"
+END
+
+STRINGTABLE
+BEGIN
+    30144, L"EPOCHS"
+    30145, L"Prehistoric Age"
+    30146, L"Stone Age"
+    30147, L"Copper Age"
+    30148, L"Bronze Age"
+    30149, L"Dark Age"
+    30150, L"Middle Ages"
+    30151, L"Renaissance"
+    30152, L"Imperial Age"
+    30153, L"Industrial Age"
+    30154, L"Atomic Age - WW1"
+    30155, L"Atomic Age - WW2"
+    30156, L"Atomic Age - Modern"
+    30157, L"Digital Age"
+    30158, L"Nano Age"
+    30159, L"Space Age"
+END
+
+STRINGTABLE
+BEGIN
+    7040, L"Total Points Spent"
+    7041, L"Points Left"
+    7042, L"Campaigns"
+    7043, L"Choose Campaign"
+    7044, L"Begin Campaign"
+    7045, L"Campaign Builder"
+    7046, L"Campaign Editor"
+    7047, L"Interface Settings"
+    7048, L"Mouse Orientation"
+    7049, L"Right-Handed Mouse"
+    7050, L"Left-Handed Mouse"
+    7051, L"Side Scroll Speed"
+    7052, L"Slow"
+    7053, L"Fast"
+    7054, L"Mouse Sensitivity"
+    7055, L"Single Player Options"
+END
+
+STRINGTABLE
+BEGIN
+    8000, L"Upgrade to Grenadier"
+    8001, L"Upgrade to Musketeer"
+    8002, L"Upgrade to Long Bow"
+    8003, L"Upgrade to Pikeman"
+    8004, L"Upgrade to Long Sword"
+    8005, L"Upgrade to Battleship - Leviathan"
+    8006, L"Upgrade to Short Sword"
+    8007, L"Upgrade to Frigate - Renaissance"
+    8008, L"Upgrade to Tank - Panzer"
+    8009, L"Upgrade to Tank - Leopard"
+    8010, L"Upgrade to Halberdier"
+    8011, L"Upgrade to Battleship - Middle Ages"
+    8012, L"Upgrade to Maceman"
+    8013, L"Upgrade to Battleship - Royal"
+    8014, L"Upgrade to Battleship - Imperial"
+    8015, L"Upgrade to Battleship - Bismarck"
+END
+
+STRINGTABLE
+BEGIN
+    8016, L"Upgrade to Battleship - Renaissance"
+    8017, L"Upgrade to Battleship - Byzantine"
+    8018, L"Upgrade to Battleship - Bronze"
+    8019, L"Upgrade to Bomber -  Wyvern"
+    8020, L"Upgrade to Transport - Gargantua"
+    8021, L"Upgrade to Transport - Copper"
+    8022, L"Upgrade to Transport - Atomic"
+    8023, L"Upgrade to Cavalry Archer"
+    8024, L"Upgrade to Fishing Boat - Bronze"
+    8025, L"Upgrade to Fishing Boat - Trawler"
+    8026, L"Upgrade to Pilum"
+    8027, L"Upgrade to Transport - Bronze"
+    8028, L"Upgrade to Transport - Imperial"
+    8029, L"Upgrade to Fighter - Talon"
+    8030, L"Upgrade to Transport - Pegasus"
+    8031, L"Upgrade to Helicopter - Reaper"
+END
+
+STRINGTABLE
+BEGIN
+    8032, L"Upgrade to Helicopter - Spectre"
+    8033, L"Upgrade to Nuclear Bomber - B-52"
+    8034, L"Upgrade to Bomber - B-2"
+    8035, L"Upgrade to Bomber - Heinkel"
+    8036, L"Upgrade to Fighter - ME109"
+    8037, L"Upgrade to Fighter - Phoenix"
+    8038, L"Upgrade to Fighter - F-15"
+    8039, L"Upgrade to Siege Gun - Serpentine"
+    8040, L"Upgrade to Fighter - Spitfire"
+    8041, L"Upgrade to Nuclear Bomber - Titan"
+    8042, L"Upgrade to Tank - Centurion"
+    8043, L"Upgrade to Tank - Gladiator"
+    8044, L"Upgrade to Frigate - Bronze"
+    8045, L"Upgrade to Tank - Sherman"
+    8046, L"Upgrade to Fighter - Nebula"
+    8047, L"Upgrade to Artillery - Colossus "
+END
+
+STRINGTABLE
+BEGIN
+    8048, L"Upgrade to Artillery"
+    8049, L"Upgrade to Trench Mortar"
+    8050, L"Upgrade to Bronze Cannon"
+    8051, L"Upgrade to Fighter - F-117"
+    8052, L"Upgrade to Phalanx"
+    8053, L"Upgrade to Composite Bow"
+    8054, L"Upgrade to Heavy Mortar"
+    8055, L"Upgrade to Guardian"
+    8056, L"Upgrade to Sentinel"
+    8057, L"Upgrade to Marine"
+    8058, L"Upgrade to Anti-Air - Skywatcher"
+    8059, L"Upgrade to Heavy Ram"
+    8060, L"Upgrade to Trebuchet"
+    8061, L"Upgrade to Royal Cuirassier"
+    8062, L"Upgrade to AT Gun - Thor"
+    8063, L"Upgrade to Frigate - Warrington"
+END
+
+STRINGTABLE
+BEGIN
+    8064, L"Upgrade to Ballista"
+    8065, L"Upgrade to Imperial Cuirassier"
+    8066, L"Upgrade to Knight"
+    8067, L"Upgrade to Dragoon"
+    8068, L"Upgrade to Cataphract"
+    8069, L"Upgrade to Nuclear Submarine - Triton"
+    8070, L"Upgrade to Aircraft Carrier - Nexus"
+    8071, L"Upgrade to Submarine - Hammerhead"
+    8072, L"Upgrade to Submarine - Nautilus"
+    8073, L"Upgrade to Cruiser - Dardo"
+    8074, L"Upgrade to Catapult Ship - Decereme"
+    8075, L"Upgrade to Frigate - Middle Ages"
+    8076, L"Upgrade to Heavy Siege Tower"
+    8077, L"Upgrade to Frigate - Juggernaut"
+    8078, L"Upgrade to Tank - M1"
+    8079, L"Upgrade to Frigate - Royal"
+END
+
+STRINGTABLE
+BEGIN
+    8080, L"Upgrade to Frigate - Imperial"
+    8081, L"Upgrade to Frigate - Byzantine"
+    8082, L"Upgrade to Bazooka"
+    8083, L"Upgrade to Fighter - P-51"
+    8084, L"Upgrade to Fighter - F-14"
+    8085, L"Upgrade to Fishing Boat - Digital"
+    8086, L"Upgrade to Fighter - P-38"
+    8087, L"Upgrade to Tower - Copper"
+    8088, L"Upgrade to Wall & Tower - Bronze"
+    8089, L"Upgrade to Wall & Tower - Medieval"
+    8090, L"Upgrade to Wall & Tower - Imperial"
+    8091, L"Upgrade to Wall & Tower - Concrete"
+    8092, L"Upgrade to Wall & Tower - Laser"
+    8093, L"Upgrade to Frigate - Copper"
+    8094, L"Upgrade to Frigate - Good Hope"
+    8095, L"Upgrade to Fishing Boat - Imperial"
+END
+
+STRINGTABLE
+BEGIN
+    8500, L"Resources"
+    8501, L"Land Units"
+    8502, L"Naval Units"
+    8503, L"Heroes"
+    8504, L"Structures"
+    8505, L"Air Units"
+    8506, L"Map"
+    8507, L"Elevation"
+    8508, L"Terrain"
+    8509, L"Units"
+    8510, L"Triggers"
+    8511, L"Exit"
+END
+
+STRINGTABLE
+BEGIN
+    8512, L"Quick Load"
+    8513, L"Quick Save"
+    8514, L"Test"
+    8515, L"Story/Instructions"
+    8516, L"Rotate"
+    8517, L"Go to the Video Settings screen."
+    8518, L"Go to the Audio Settings screen."
+    8519, L"Go to the Interface Settings screen."
+    8520, L"This video card has been selected as your default.  Be sure you have the most current drivers installed for this card."
+    8521, L"Select the rendering system you want to use.  Only systems supported by your video card appear in this list."
+    8522, L"Set the balance between performance and graphics.  Slower computers should set this to Best Performance, which turns off some of the graphics effects and allows the game to run more smoothly."
+    8523, L"Select the screen resolution.  Slower computers should select lower resolutions to increase performance.  Only resolutions supported by the selected video card and rendering system appear in this list."
+    8524, L"Turn the zoom feature on or off.  Turning off the zoom feature will improve performance on slower computers."
+    8525, L"Turn on or off the blood effects in the game."
+    8526, L"Set the volume of the music in the game."
+    8527, L"Set the volume of the sound effects in the game."
+END
+
+STRINGTABLE
+BEGIN
+    2016, L"Court Jester"
+    2017, L"Talon Fighter/Bomber"
+    2018, L"Diplomat"
+    2019, L"Persian Cavalry"
+    2020, L"The Pope"
+    2021, L"Observation Balloon"
+    2022, L"Child"
+    2023, L"Girl"
+    2024, L"Cargo Truck"
+    2025, L"Castle Keep"
+    2026, L"Castle Tower"
+    2027, L"Castle Wall - Left"
+    2028, L"Castle Wall - Right"
+    2029, L"Fireboat"
+    2030, L"Royal Guard"
+    2031, L"Mosque"
+END
+
+STRINGTABLE
+BEGIN
+    30448, L"Game Unit Limit"
+    30449, L"Per Player"
+    30450, L"Wonders For Victory"
+    30451, L"Victory Allowed"
+    30452, L"Teams Locked"
+    30453, L"Cheat Codes"
+    30454, L"Unit Improvements"
+    30455, L"CPU"
+    30456, L"Only"
+    30457, L"Shared"
+    30458, L"LOS"
+    30459, L"AI Effect"
+    30460, L"AI Toggle"
+    30461, L"On"
+    30462, L"Off"
+    30463, L"No Civilization"
+END
+
+STRINGTABLE
+BEGIN
+    8528, L"Set the sound quality of the music or turn the music off.  Slower computers should set this to Low or Off.  Turning music off saves 5Mb of RAM."
+    8529, L"Set the maximum number of sound effects that can play at once.  Slower computers should set this to Best Performance."
+    8530, L"Set how fast you want the game screen to scroll when the mouse cursor is at the edge of the screen."
+    8531, L"Set how sensitive you want your mouse to be.  This essentially controls how fast the mouse cursor moves on the screen."
+    8532, L"Set whether you want your mouse to be right-handed or left-handed.  This swaps the assignments of the left and right mouse buttons."
+    8533, L"Set how fast you want the game screen to scroll when dragging while holding down the middle mouse button."
+    8534, L"Are you sure you want to restore all game settings to their default values?"
+    8535, L"Click this button to hear a sample sound."
+    8536, L"Ambient Weather On"
+    8537, L"Civilization Builder Tool"
+    8538, L"Hide UI"
+    8539, L"Continue playing the current game"
+    8540, L"Resign the current game and become an observer"
+    8541, L"Pause/Unpause the game"
+    8542, L"Restart the current game"
+    8543, L"Display the previously sent messages"
+END
+
+STRINGTABLE
+BEGIN
+    29696, L"Set Favorite Units"
+    29700, L"Tiny"
+    29701, L"Small"
+    29702, L"Medium"
+    29703, L"Large"
+    29704, L"Huge"
+    29705, L"Gigantic"
+END
+
+STRINGTABLE
+BEGIN
+    2032, L"Doughboy"
+    2033, L"Huskarl"
+    2034, L"Grigor Stoyanovich"
+    2035, L"House - Prehistoric"
+    2036, L"House - Stone"
+    2037, L"House - Copper"
+    2038, L"House - Bronze"
+    2039, L"House - Dark"
+    2040, L"House - Middle Ages"
+    2041, L"House - Renaissance"
+    2042, L"House - Imperial"
+    2043, L"House - Industrial"
+    2044, L"House - Atomic"
+    2045, L"House - Digital"
+    2046, L"House - Nano"
+    2047, L"Black Robe"
+END
+
+STRINGTABLE
+BEGIN
+    7056, L"Play Campaign"
+    7057, L"Unassigned"
+    7058, L"Play Random Map"
+    7059, L"Play Saved Game"
+    7060, L"Game Settings"
+    7061, L"Main Menu"
+    7062, L"Learning Scenarios"
+    7063, L"Back"
+    7064, L"Civilization Name"
+    7065, L"Name"
+    7066, L"Chat"
+    7067, L"Allies"
+    7068, L"All"
+    7069, L"Enemies"
+    7070, L"Custom"
+    7071, L"Custom Campaign"
+END
+
+STRINGTABLE
+BEGIN
+    8096, L"Upgrade to Galley - Bronze"
+    8097, L"Upgrade to Galley - Byzantine"
+    8098, L"Upgrade to Galley - Middle Ages"
+    8099, L"Upgrade to Galleon - Renaissance"
+    8100, L"Upgrade to Galleon - Imperial"
+    8101, L"Upgrade to Galleon - Royal"
+    8102, L"Upgrade to Battleship - Dreadnought"
+    8103, L"Upgrade to Fighter - Jackal"
+    8104, L"Upgrade to Machine Gun"
+    8105, L"Upgrade to Wall & Tower - Renaissance"
+    8106, L"Upgrade to Siege Gun - Howitzer"
+    8107, L"Upgrade to Siege Gun - Paladin"
+    8108, L"Upgrade to Hyperion II"
+    8109, L"Upgrade to Ares II"
+    8110, L"Upgrade to Pandora II"
+    8111, L"Upgrade to Minotaur II"
+END
+
+STRINGTABLE
+BEGIN
+    30608, L"The host '%s' is gone!"
+    30609, L"Quitting - please wait..."
+    30610, L"You are being promoted to host.  Waiting for connections..."
+    30611, L"Attempting to connect to the new host '%s'..."
+    30612, L"Player '%s' has dropped out of the game!"
+    30613, L"Map Size"
+    30614, L"GAME PAUSED"
+    30615, L"Briefing"
+    30616, L"Chat (Enter key)"
+    30617, L"Civilization Builder"
+    30618, L"Save Game"
+    30619, L"Load Game"
+    30620, L"Statistics"
+    30621, L"The host is not responding - please wait..."
+    30622, L"headshot"
+    30623, L"somebody set up us the bomb"
+END
+
+STRINGTABLE
+BEGIN
+    4528, L"Lillypads 1"
+    4529, L"Lillypads 2"
+    4530, L"Lillypads 3"
+    4531, L"Lillypads 4"
+    4532, L"Aloe"
+    4533, L"Cactus 1"
+    4534, L"Cactus 2"
+    4535, L"Cactus 3"
+    4536, L"Cactus 4"
+    4537, L"Cactus 5"
+    4538, L"Desert Clump"
+    4539, L"Desert Clump 2"
+    4540, L"Skeleton"
+    4541, L"Seashell 1"
+    4542, L"Clam 1"
+    4543, L"Clam 2"
+END
+
+STRINGTABLE
+BEGIN
+    7072, L"Grab Scroll Speed"
+    7073, L"Test Sound Volume"
+    7074, L"Map"
+    7075, L"Briefing"
+    7076, L"History"
+    7077, L"Hints"
+    7078, L"Media"
+    7079, L"Start"
+    7080, L"Load Scenario"
+    7081, L"Saved Scenarios"
+    7082, L"Play Scenario"
+    7083, L"Ambient Sounds"
+    7084, L"Campaign Name"
+    7085, L"Unknown"
+    7086, L"Author's Name"
+    7087, L"Author's E-mail"
+END
+
+STRINGTABLE
+BEGIN
+    4544, L"Star Fish 1"
+    4545, L"Star Fish 2"
+    4546, L"Star Fish 3"
+    4547, L"Flare 1"
+    4548, L"Flare 2"
+    4549, L"Flowers - Violets"
+    4550, L"Flowers - Violets 2"
+    4551, L"Fern Patch 2"
+    4552, L"Fern Patch 3"
+    4553, L"Tall Grass"
+    4554, L"Bamboo"
+    4555, L"Log"
+    4556, L"Bush"
+    4557, L"Rock 1"
+    4558, L"Rock 2"
+    4559, L"Rock 3"
+END
+
+STRINGTABLE
+BEGIN
+    2048, L"Hauptmann Durer"
+    2049, L"Prophet Durer"
+    2050, L"Achilles"
+    2051, L"Pericles"
+    2052, L"Buckingham Palace"
+    2053, L"Black Prince"
+    2054, L"Female Citizen"
+    2055, L"Hierakles"
+    2056, L"Spanish Cavalry"
+    2057, L"Pillbox"
+    2058, L"Minaret"
+    2059, L"Wolf"
+    2060, L"Duke of Wellington"
+    2061, L"Chicken"
+    2062, L"Horse"
+    2063, L"Deer"
+END
+
+STRINGTABLE
+BEGIN
+    29717, L"Attack"
+    29718, L"Hit Points"
+    29719, L"Rate of Fire"
+    29720, L"Armor"
+    29721, L"Range"
+    29722, L"Speed"
+    29723, L"Flight Time"
+    29724, L"Area Damage"
+    29725, L"Hunting and Foraging"
+    29726, L"Wood Cutting"
+    29727, L"Gold Mining"
+END
+
+STRINGTABLE
+BEGIN
+    29728, L"Farming"
+    29729, L"Stone Mining"
+    29730, L"Iron Mining"
+    29731, L"Build Time Decrease"
+    29732, L"Conversion Resistance"
+    29733, L"Fishing"
+    29734, L"Repair"
+    29735, L"Area Effect Range"
+    29736, L"Mountain Combat Bonus"
+    29737, L"Pop Cap"
+    29738, L"Area Effect Conversion"
+    29739, L"Cost Reduction"
+    29740, L"Night-time LOS"
+    29741, L"Slavery"
+    29742, L"Capitol upgrade"
+    29743, L"Heroes"
+END
+
+STRINGTABLE
+BEGIN
+    29744, L"Placeholder1"
+    29745, L"Placeholder2"
+    29746, L"Placeholder3"
+    29747, L"Placeholder4"
+    29748, L"Placeholder5"
+    29749, L"Placeholder6"
+    29750, L"Placeholder7"
+    29751, L"Placeholder8"
+    29752, L"Placeholder9"
+    29753, L"Placeholder10"
+END
+
+STRINGTABLE
+BEGIN
+    4560, L"Tree Stump 1"
+    4561, L"Tree Stump 2"
+    4562, L"Tree Stump 3"
+    4563, L"Tree Stump 4"
+    4564, L"Ferns"
+    4565, L"Statue - Buddha"
+    4566, L"Road - Modern"
+    4567, L"Rock 4"
+    4568, L"Rock 5"
+    4569, L"Rock 6"
+    4570, L"Rock 7"
+    4571, L"Rock 8"
+    4572, L"Rock 9"
+    4573, L"Rock 10"
+    4574, L"Coral 1"
+    4575, L"Lillypads 5"
+END
+
+STRINGTABLE
+BEGIN
+    29776, L"Siege Weapons"
+    29777, L"Subs & Carriers"
+    29778, L"Tanks"
+    29780, L"Default Civilization"
+    29781, L"A civilization with that name exists, overwrite?"
+    29782, L"Are you sure you want to delete this civilization?"
+    29783, L"Civilizations"
+    29784, L"You can't load a civilization after purchasing bonuses."
+    29785, L"Rename"
+    29786, L"Bonuses you have purchased for your civilization"
+    29787, L"Available bonuses to purchase for your civilization"
+    29788, L"Save this civilization for use in the game"
+    29789, L"Load a saved civilization"
+    29790, L"Confirm purchases and exit"
+    29791, L"Exit Civ Builder"
+END
+
+STRINGTABLE
+BEGIN
+    9500, L"Prophet Durer's Earthquake"
+    9501, L"Prophet Durer's Volcano"
+    9502, L"Prophet Durer's Plague"
+    9503, L"Prophet Durer's Malaria"
+END
+
+STRINGTABLE
+BEGIN
+    9504, L"Prophet Durer's Firestorm"
+    9505, L"Prophet Durer's Hurricane"
+    9506, L"Prophet Durer's Rebellion"
+    9507, L"Pope's Earthquake"
+    9508, L"Pope's Volcano"
+    9509, L"Pope's Plague"
+    9510, L"Pope's Malaria"
+    9511, L"Pope's Firestorm"
+    9512, L"Pope's Hurricane"
+    9513, L"Pope's Rebellion"
+    9514, L"Homer's Earthquake"
+    9515, L"Homer's Volcano"
+    9516, L"Homer's Plague"
+    9517, L"Homer's Malaria"
+    9518, L"Homer's Firestorm"
+    9519, L"Homer's Hurricane"
+END
+
+STRINGTABLE
+BEGIN
+    9520, L"Homer's Rebellion"
+    9521, L"Statue's Earthquake"
+    9522, L"Statue's Firestorm"
+    9523, L"Statue's Volcano"
+    9524, L"Statue's Malaria"
+    9525, L"Statue's Plague"
+    9526, L"Statue's Hurricane"
+    9527, L"Statue's Rebellion"
+    9528, L"Diffraction Shield"
+    9529, L"Ion Pulse"
+    9530, L"Time Warp"
+    9531, L"Teleport"
+    9532, L"Resonator"
+    9533, L"Anti-Matter Storm"
+    9534, L"Nano Virus"
+    9535, L"Repair"
+END
+
+STRINGTABLE
+BEGIN
+    29792, L"The name of your mighty civilization"
+    29793, L"The total points spent on your civilization"
+    29794, L"The number of available points left"
+    29795, L"You have not spent all your civilization points, are you sure you wish to save and exit?"
+    29800, L"Command 1"
+    29801, L"Command 2"
+    29802, L"Created"
+    29803, L"Dying"
+    29804, L"Selected 1"
+    29805, L"Selected 2"
+    29806, L"Attack 1"
+    29807, L"Attack 2"
+END
+
+STRINGTABLE
+BEGIN
+    29808, L"Walk 1"
+    29809, L"Walk 2"
+END
+
+STRINGTABLE
+BEGIN
+    2064, L"B. Palace Left Wing"
+    2065, L"B. Palace Right Wing"
+    2066, L"Samurai"
+    2067, L"Gaslight"
+    2068, L"Streetlamp"
+    2069, L"Golden Hind"
+    2070, L"Crater"
+    2071, L"El Cid"
+    2072, L"Tariq"
+    2073, L"Incan Warrior"
+    2074, L"Pagoda"
+    2075, L"House - Asian"
+    2076, L"Ashikagu Arquebus"
+    2077, L"Command Unit"
+    2078, L"Tower of London"
+    2079, L"Eiffel Tower"
+END
+
+STRINGTABLE
+BEGIN
+    20560, L"Build/Repair"
+    20561, L"Explore"
+    20562, L"Ignore"
+    20563, L"Gather"
+    20564, L"Citizen Percentage"
+    20565, L"AI Settings"
+    20566, L"Favorites"
+    20567, L"Objects To Add"
+    20568, L"ObjectsAdded"
+    20569, L"Set Int Value 1"
+    20570, L"Set Int Value 2"
+    20571, L"Set Float Value"
+    20572, L"Camera Scroll Speed"
+    20573, L"Snap"
+END
+
+STRINGTABLE
+BEGIN
+    29625, L"Active"
+    29626, L"Cheat"
+    29627, L"Attack"
+    29628, L"Defend"
+    29629, L"Build/Repair"
+    29630, L"Explore"
+    29631, L"Ignore"
+END
+
+STRINGTABLE
+BEGIN
+    29632, L"Gather"
+END
+
+STRINGTABLE
+BEGIN
+    28000, L"None"
+    28001, L"Initial Attack Delay"
+    28002, L"Attack Delay Modifier"
+    28003, L"Citizen Percentage"
+    28004, L"Troops to Assist Allies"
+    28005, L"Ships to Maintain"
+    28006, L"Attack Frequency"
+    28007, L"Attack Frequency Modifier"
+    28008, L"Number of Land Explorers"
+    28009, L"Number of Sea Explorers"
+    28010, L"Number of Air Explorers"
+    28011, L"Attack Group Modifier"
+    28014, L"Resource Drop-off Distance"
+    28015, L"Research Frequency"
+END
+
+STRINGTABLE
+BEGIN
+    28500, L"None Help"
+    28501, L"The minimum and maximum amount of game minutes the computer player will wait before launching its first attack."
+    28502, L"The percentage modifiers to apply to the Initial Attack Delay based on the difficulty level. The first value is the percent modifier for Easy difficulty, the second is for Hard difficulty."
+    28503, L"The percentage of the computer player's total Population that should be taken up by Citizens."
+    28504, L"The number of troops to send to assist allies.  The values are Easy, Medium, and Hard Difficulty, respectively."
+    28505, L"The minimum number of ships to maintain.  The values are East, Medium, and Hard Difficulty, respectively."
+    28506, L"The minimum and maximum number of game minutes, beginning at the time the trigger fires, that the computer player will wait between attacks."
+    28507, L"The percentage modifiers to apply to the Attack Frequency based on the difficulty level. The first value is the percent modifier for Easy difficulty and the second is for Hard."
+    28508, L"When exploring, the number of land units that should be assigned to land exploration."
+    28509, L"When exploring, the number of naval units that should be assigned to sea exploration."
+    28510, L"When exploring, the number of air units that should be assigned to map exploration."
+    28511, L"The percentage modifiers to apply to the computer player's Attack Group size based on difficulty level. The first value is the percent modifier for Easy difficulty, the second is for Hard difficulty."
+END
+
+STRINGTABLE
+BEGIN
+    30624, L"columbus"
+    30625, L"asus drivers"
+    30626, L"atm"
+    30627, L"you said wood"
+    30628, L"rock&roll"
+    30629, L"creatine"
+    30630, L"Loading Initial Media"
+    30631, L"all your base are belong to us"
+    30632, L"bam"
+    30633, L"Brainstorm"
+    30634, L"New host established.  Continuing the game in progress..."
+    30635, L"boston food sucks"
+    30636, L"boston rent"
+    30637, L"uh, smoke?"
+    30638, L"slimfast"
+    30639, L"mine your own business"
+END
+
+STRINGTABLE
+BEGIN
+    30464, L"Unknown Civilization"
+    30465, L"Paint Hills"
+    30466, L"Paint Cliffs"
+    30467, L"Paint Cliff Paths"
+    30468, L"Player Name"
+    30469, L"Pop Cost"
+    30470, L"Graphic Effect"
+    30471, L"Import"
+    30472, L"Export"
+    30473, L"Localization Text File Name"
+    30474, L"Sierra.com is unable to verify your ability to host a game.  You may be behind a firewall or your Internet (IP) address may be obscured.  You may have to configure your firewall or your computer to remedy this condition.  Please see the readme file (in the folder where Empire Earth: Art of Conquest is installed) for more information."
+    30475, L" (whispered): "
+    30476, L" is now ignoring: "
+    30477, L" is no longer ignoring: "
+    30478, L"%s has started constructing the %s wonder."
+    30479, L"%s has finished constructing the %s wonder."
+END
+
+STRINGTABLE
+BEGIN
+    2080, L"UFO"
+    2081, L"Orthodox Church"
+    2082, L"Strategic Bomber"
+    2083, L"Arc Lamp"
+    2084, L"Chinese Infantry"
+    2085, L"Canine Scout"
+    2086, L"F-86 Fighter"
+    2087, L"MiG-15 Fighter"
+    2088, L"F-80 Fighter/Bomber"
+    2089, L"Fishing Boat - Imperial"
+    2090, L"Fishing Boat - Digital"
+    2091, L"Wyvern"
+    2092, L"Dragon"
+    2093, L"Orc"
+    2094, L"Ogre"
+    2095, L"Dwarven Warrior"
+END
+
+STRINGTABLE
+BEGIN
+    30640, L"girlyman"
+    30642, L"the big dig"
+    30643, L"my name is methos"
+    30644, L"the quotable patella"
+    30645, L"display cheats"
+    30646, L"Move Camera"
+    30647, L"Idle Citizen (Tab)"
+    30648, L"Idle Military Unit"
+    30649, L"Increase Fighter Rally Time"
+    30650, L"Increase Bomber Rally Time"
+    30651, L"Increase Atomic Bomber Rally Time"
+    30652, L"Face Camera"
+    30653, L"Follow"
+    30654, L"Track"
+    30655, L"Scroll Speed"
+END
+
+STRINGTABLE
+BEGIN
+    1296, L"Gate - Renaissance"
+    1297, L"Gate - Imperial"
+    1298, L"Gate - Concrete"
+    1299, L"Gate - Laser"
+    1300, L"Wall - Renaissance"
+    1301, L"Tower - Renaissance"
+    1302, L"Hercules AT Gun"
+    1303, L"Hot Air Balloon"
+    1304, L"B1b"
+    1305, L"Sandbag"
+    1306, L"Sea King II"
+    1307, L"Zeus II"
+    1308, L"Minotaur II"
+    1309, L"Pandora II"
+    1310, L"Hyperion II"
+    1311, L"Ares II"
+END
+
+STRINGTABLE
+BEGIN
+    5104, L"Tree - Big Palm"
+    5105, L"Tree - Maple"
+    5106, L"Tar Pit"
+    5107, L"Impassable Tile"
+    5108, L"Capitol Preventor (invisible)"
+END
+
+STRINGTABLE
+BEGIN
+    1312, L"Howitzer Cannon"
+    1313, L"Paladin Cannon"
+    1314, L"Espionage Headquarters"
+    1315, L"Sopwith Triplane"
+    1316, L"Dolphin"
+    1317, L"Sharpshooter"
+    1318, L"Sniper"
+    1319, L"Drummer Boy"
+    1320, L"Fortress"
+    1321, L"Cruiser - Dardo"
+    1322, L"Coral 2"
+    1323, L"Hades"
+    1324, L"Medic - Imperial"
+    1325, L"Medic - Atomic"
+    1326, L"Medic - Digital"
+    1327, L"Fortress - Copper"
+END
+
+STRINGTABLE
+BEGIN
+    8112, L"Upgrade to Zeus II"
+    8113, L"Upgrade to AT Gun - 57mm"
+    8114, L"Upgrade to AT Gun - Hercules"
+    8115, L"Upgrade to Nuclear Bomber - B-52"
+    8116, L"Upgrade to Bomber - Info"
+    8117, L"Upgrade to Fortress - Bronze"
+    8118, L"Upgrade to Fortress - Middle Ages"
+    8119, L"Upgrade to Fortress - Imperial"
+    8120, L"Upgrade to Fortress - Atomic"
+    8121, L"Upgrade to Fortress - Nano"
+    8122, L"Upgrade to Javelin"
+    8123, L"Upgrade to AT Gun - 120mm"
+    8124, L"Upgrade to Doughboy"
+    8125, L"Upgrade to Fighter - Nebula"
+    8126, L"Upgrade to Simple Bowman"
+    8127, L"Upgrade to Sniper"
+END
+
+STRINGTABLE
+BEGIN
+    7088, L"Campaign Description"
+    7089, L"Available Scenarios"
+    7090, L"Scenarios in Campaign"
+    7091, L"Up"
+    7092, L"Down"
+    7093, L"Single Player Setup"
+    7094, L"Ready"
+    7095, L"Bonus"
+    7096, L"PING"
+    7097, L"Game Type"
+    7098, L"Campaign Information"
+    7099, L"Game Variant"
+    7100, L"Game Speed"
+    7101, L"Record Game"
+    7102, L"Team Islands"
+    7103, L"Lock Speed"
+END
+
+STRINGTABLE
+BEGIN
+    10016, L"One or more players have the same color!"
+    10017, L"No File Name Specified"
+    10018, L"Replace File On Disk"
+    10019, L"File Name Not Found"
+    10020, L"Text File Verification Failed - Proceed anyways?"
+    10021, L"Replace All Scenario Text"
+    10022, L"(%s) does not exist in Scenario and Text file."
+    10023, L"(%s) is not in the Text File."
+    10024, L"File Error"
+    10025, L"File Exported Successfully"
+    10026, L"Exported File Name Has Changed\nThe Scenario will need to be resaved."
+    10027, L"{%s} is an invalid token"
+    10028, L"(%d) is an invalid effect id for token {%s}"
+    10029, L"{%s} is an invalid effect type to be a token."
+    10030, L"The text file effect name (%s) does not match the scenario's effect name of (%s)."
+    10031, L"File Imported Successfully"
+END
+
+STRINGTABLE
+BEGIN
+    31000, L"Formation"
+    31001, L"Fast"
+    31002, L"Smart"
+    31005, L"Short Line"
+    31006, L"Long Line"
+    31007, L"Loose Line"
+END
+
+STRINGTABLE
+BEGIN
+    31008, L"Staggered Line"
+    31009, L"Deep Wedge"
+    31010, L"Shallow Wedge"
+    31011, L"Circle Formation - Facing Forwards"
+    31012, L"Circle Formation - Facing Out"
+END
+
+STRINGTABLE
+BEGIN
+    31200, L"Variable"
+    31201, L"Buildings Lost"
+    31202, L"Buildings Razed"
+    31203, L"Units Killed"
+    31204, L"Units Lost"
+    31205, L"Conversions"
+    31206, L"Calamities"
+    31207, L"Food"
+    31208, L"Wood"
+    31209, L"Gold"
+    31210, L"Stone"
+    31211, L"Iron"
+    31212, L"Epoch Reached"
+    31213, L"Army Size"
+    31214, L"Citizen Count"
+    31215, L"Hero Count"
+END
+
+STRINGTABLE
+BEGIN
+    31216, L"Wonder Count"
+    31217, L"Tribute Sent"
+    31218, L"Tribute Received"
+    31219, L"Research Count"
+    31220, L"Hot Keys Pressed"
+    31221, L"Mouse Clicks"
+    31222, L"Research Available"
+    31223, L"Total Population"
+    31224, L"Tiles Explored"
+    31225, L"Stat - for future use1"
+    31226, L"Stat - for future use2"
+    31227, L"Stat - for future use3"
+    31228, L"Stat - for future use4"
+    31229, L"Stat - for future use5"
+    31230, L"Stat - for future use6"
+    31231, L"Active Ambient Weather"
+END
+
+STRINGTABLE
+BEGIN
+    30656, L"Slow"
+    30657, L"Fast"
+    30658, L"Very"
+    30659, L"Zoom Level"
+    30660, L"Flare (Alt-F)"
+    30661, L"Saving game as '%s' ..."
+    30662, L"Player(s) booted, saving locally as '%s' ..."
+    30663, L"Loading '%s' ..."
+    30664, L"Quick load is for single player games only."
+    30665, L"Quick save and load are only available on the host."
+    30666, L"Unpause Game"
+    30667, L"i have the power"
+    30668, L"coffee train"
+    30669, L"ahhhcool"
+    30670, L"friendly skies"
+    30671, L"Cheat: "
+END
+
+STRINGTABLE
+BEGIN
+    31232, L"Post Game Statistics"
+    31233, L"Over Time"
+    31234, L"Game Time (minutes:seconds)"
+    31235, L"Population"
+    31236, L"Exit Game Summary"
+    31237, L"Summary"
+    31238, L"Timeline"
+    31239, L"Military"
+    31240, L"Economy"
+    31241, L"Epoch"
+    31242, L"Society"
+    31243, L"Misc"
+    31244, L"Miscellaneous"
+    31245, L"Statistics"
+    31246, L"Check this box to display this player's statistic.  Uncheck the box to hide this player's statistic."
+    31247, L"Go to the statistics summary page."
+END
+
+STRINGTABLE
+BEGIN
+    31248, L"Go to the timeline page."
+    31249, L"Go to the military statistics page."
+    31250, L"Go to the economy statistics page."
+    31251, L"Go to the Epoch times page."
+    31252, L"Go to the society statistics page."
+    31253, L"Go to the miscellaneous statistics page."
+    31254, L"Standard"
+    31255, L"Tournament"
+    31256, L"Epic"
+    31257, L"Return to Editor"
+    31258, L"Random Map"
+    31259, L"Scenario"
+    31260, L"Saved Game"
+    31261, L"I"
+    31262, L"II"
+    31263, L"III"
+END
+
+STRINGTABLE
+BEGIN
+    11000, L" "
+    11001, L"Import a Localized Text File into Scenario"
+    11002, L"Export the Scenario to a Text File to be Localized"
+    11003, L"Alliances & Tributes"
+    11004, L"Left/Right Click to cancel %s improvement"
+    11005, L"Left/Right Click to cancel %s research"
+    11006, L"Elevation File to use with Blank Map"
+    11007, L"This is the depth, in meters, that is set to be equal to the Water Depth value.  Any depths greater that this in the data will be cut off at the maximum water depth."
+END
+
+STRINGTABLE
+BEGIN
+    10032, L"Importing the file replaces all text in the Scenario. Continue?"
+    10033, L"The following errors occurred while importing the file.\n Proceed with replacement of text?"
+    10034, L"There are too many players in the lobby to play this saved game."
+    10035, L"The Saved Game Version (major: %d, minor: %d) can't be loaded as a multiplayer saved game."
+    10036, L"There was an error reading the file."
+    10037, L"The Player (%s) does not exist in the saved game."
+    10038, L"This saved game requires %d players, the lobby contains only %d"
+    10039, L"There are too many players to play the multiplayer scenario only %d human players are allowed."
+    10040, L"This is not a valid multiplayer scenario file."
+    10041, L"Can't start a game until all players are ready."
+    10042, L"Not Enough Resources for Construction"
+    10043, L"Do you wish to quit this game and view the game statistics?"
+    10044, L"Do you wish to resign this game and become an observer?"
+    10045, L"Do you wish to restart this game?"
+    10046, L"Exit Test Mode and return to Editor?"
+    10047, L"There was an error trying to load an old Scenario file."
+END
+
+STRINGTABLE
+BEGIN
+    8700, L"Fire #1 (Unit)"
+    8701, L"Water Splash"
+    8702, L"Water Ripple, Naval"
+    8703, L"Muzzle Flash (Unit)"
+END
+
+STRINGTABLE
+BEGIN
+    8704, L"Fire #2 (Unit)"
+    8705, L"Fire #3 (Unit)"
+    8706, L"Explosion #1 (Unit)"
+    8707, L"Explosion #2 (Unit)"
+    8708, L"Explosion #3 (Unit)"
+    8709, L"Water Ripple, Land"
+    8710, L"Impact Sparks (Unit)"
+    8711, L"Impact Blood (Unit)"
+    8712, L"Tracers (Units)"
+    8713, L"Plasma Pulse (Unit)"
+    8714, L"Lightning (Unit)"
+    8715, L"Muzzle Smoke (Unit)"
+    8716, L"Shockwave, Big (Unit)"
+    8717, L"Muzzle Flash, Future (Unit)"
+    8718, L"Laser - Blue, Small (Units)"
+    8719, L"Earthquake Vortex"
+END
+
+STRINGTABLE
+BEGIN
+    8720, L"Laser - Red, Large (Units)"
+    8721, L"Laser - Green, Small (Units)"
+    8722, L"Pulse Ball (Unit)"
+    8723, L"Laser - Blue, Large (Units)"
+    8724, L"Laser - Green, Large (Units)"
+    8725, L"Laser - Red, Small (Units)"
+    8726, L"Smoke Plume"
+    8727, L"Plague - Small (Unit)"
+    8728, L"Malaria- Small (Unit)"
+    8729, L"Hurricane"
+    8730, L"Attacking Flies"
+    8731, L"Plague - Medium (Unit)"
+    8732, L"Plague - Large (Unit)"
+    8733, L"Malaria - Medium (Unit)"
+    8734, L"Malaria - Large (Unit)"
+    8735, L"Lightning, Hurricane (Unit)"
+END
+
+STRINGTABLE
+BEGIN
+    8736, L"Tank Shells (Units)"
+    8737, L"Firetrail (Unit)"
+    8738, L"Fireball (Unit)"
+    8739, L"Smoke - Vehicle Damage"
+    8740, L"Smoke - Volcano"
+    8741, L"Smoke - Destruction, Small"
+    8742, L"Smoke - Destruction, Particle"
+    8743, L"Smoke - Destruction"
+    8744, L"Smoke - Aircraft Damage"
+    8745, L"Smoke - Black"
+    8746, L"Nuclear Explosion (Unit)"
+    8747, L"Shockwave (Unit)"
+    8748, L"Conversion Glow"
+    8749, L"Rain"
+    8750, L"Rain Splash"
+    8751, L"Snow"
+END
+
+STRINGTABLE
+BEGIN
+    7104, L"Citizen Bonus"
+    7105, L"Disposition"
+    7106, L"Ally"
+    7107, L"Clear Tributes"
+    7108, L"Game Tools"
+    7109, L"Password"
+    7110, L"A campaign of that name exists already, please delete it first."
+    7111, L"The campaign name contains invalid characters; please try again."
+    7112, L"The e-mail address must contain an '@' sign to be valid."
+    7113, L"The author info is incomplete, do you want to continue without giving your name and contact info?"
+    7114, L"A campaign must have at least one scenario, please add one using the Add button."
+    7115, L"There was an error writing the campaign to disk.  Please make sure you have enough disk space."
+    7116, L"There was an error reading the campaign.  Verify it is a valid campaign and try again."
+    7117, L"This campaign has been locked by the author.  The password must be entered before it can be viewed or edited."
+    7118, L"The password you entered is invalid, please try again."
+    7119, L"@"
+END
+
+STRINGTABLE
+BEGIN
+    7120, L"You must enter a name for your campaign."
+    7121, L"EECampaign"
+    7122, L"None provided"
+    7123, L"None provided"
+    7124, L"No description provided."
+    7125, L"Couldn't open campaign for writing."
+    7126, L"The files below are used in the scenario %s, but do not exist.  Please fix this error in the scenario editor and try again."
+    7127, L"The campaign couldn't be deleted.  Is it open in another program?"
+    7128, L"Custom Assets"
+    7129, L"Return to Game"
+    7130, L"Resign"
+    7131, L"Pause Game"
+    7132, L"Restart Game"
+    7133, L"Previous Messages"
+    7134, L"Quit this Game"
+    7135, L"Store (temp)"
+END
+
+STRINGTABLE
+BEGIN
+    29761, L"Archers"
+    29762, L"Aircraft - Fighters & Fighter-Bombers"
+    29763, L"Buildings, Walls,  & Towers"
+    29764, L"Citizens"
+    29765, L"Cavalry"
+    29766, L"Heroes"
+    29767, L"Aircraft - Bombers"
+    29768, L"Helicopters"
+    29769, L"Infantry - Post-Gunpowder"
+    29770, L"Infantry - Pre-Gunpowder"
+    29771, L"Cybers - Normal"
+    29772, L"Missiles"
+    29773, L"Priests"
+    29774, L"Prophets"
+    29775, L"Ships"
+END
+
+STRINGTABLE
+BEGIN
+    31500, L"Civ - General"
+    31501, L"Archers - Foot"
+    31502, L"Aircraft - Fighters"
+    31503, L"Civ - Bldgs, Walls, & Towers"
+END
+
+STRINGTABLE
+BEGIN
+    31550, L"End"
+END
+
+STRINGTABLE
+BEGIN
+    31504, L"Citizens & Fishing Boats"
+    31505, L"Cavalry - Sword"
+    31506, L"Heroes"
+    31507, L"Aircraft - Bombers"
+    31508, L"Aircraft - Helicopters"
+    31509, L"Infantry - Ranged"
+    31510, L"Infantry - Sword"
+    31511, L"Cybers - Combat"
+    31512, L"Cavalry - Ranged"
+    31513, L"Religion - Priests"
+    31514, L"Religion - Prophets"
+    31515, L"Ships - Battleships & Carriers"
+    31516, L"Siege Weapons & Mobile AA"
+    31517, L"Ships - Frigates & Cruisers"
+    31518, L"Tanks"
+    31519, L"Cybers - Ultra"
+END
+
+STRINGTABLE
+BEGIN
+    31520, L"Ships - Galleys, Transports & Subs"
+    31521, L"Infantry - Spear (Melee)"
+    31522, L"Cavalry - Spear (Melee)"
+    31523, L"Field Cannon & Anti-Tank Guns"
+    31524, L"Civ - Economy"
+    31525, L"Enemy"
+    31526, L"Ally"
+    31527, L"Loading Terrain %s"
+END
+
+STRINGTABLE
+BEGIN
+    31552, L"Toggles Display of Hidden Units (F5)"
+END
+
+STRINGTABLE
+BEGIN
+    31264, L"IV"
+    31265, L"V"
+    31266, L"VI"
+    31267, L"VII"
+    31268, L"VIII"
+    31269, L"IX"
+    31270, L"X"
+    31271, L"XI"
+    31272, L"XII"
+    31273, L"XIII"
+    31274, L"XIV"
+    31275, L"XV"
+    31276, L"Next Graph"
+    31277, L"Total Gathered"
+    31278, L"Total Spent"
+    31279, L"Map Explored"
+END
+
+STRINGTABLE
+BEGIN
+    31280, L"Player Speed"
+    31281, L"N/A"
+    31282, L" - "
+    31283, L"Time left until %s wins a Wonder victory: %d "
+    31284, L"Hyper-Fighting"
+END
+
+STRINGTABLE
+BEGIN
+    31600, L"tributes you"
+    31601, L"changes diplomatic stance to"
+    31602, L"You tribute "
+END
+
+STRINGTABLE
+BEGIN
+    30700, L"Select Rectangular Area"
+    30701, L"Select Continent Tile"
+    30702, L"Select Town Tile"
+END
+
+STRINGTABLE
+BEGIN
+    1328, L"Fortress - Bronze"
+    1329, L"Fortress - Middle Ages"
+    1330, L"Fortress - Imperial"
+    1331, L"Fortress - Atomic"
+    1332, L"Fortress - Nano"
+    1333, L"Cyber Laboratory"
+    1334, L"F-15 Fighter"
+    1335, L"Grenade Launcher"
+    1336, L"Male Citizen"
+    1337, L"Hover Tank"
+    1338, L"Single Player Settlement"
+    1339, L"Space Dock"
+END
+
+STRINGTABLE
+BEGIN
+    31700, L"Game Speed"
+    31701, L"Include In Cinematic"
+    31702, L"Sent"
+    31703, L"You do not have enough resources for this improvement."
+    31704, L"Received"
+    31705, L"Chat Log"
+    31706, L"Close"
+    31707, L"[No chat messages]"
+    31708, L"Player '%s' is out-of-synch and has been removed from the game.  Game will continue."
+    31709, L"Host '%s' is out-of-synch and has been removed from the game.  Game will continue after host migration."
+    31710, L"You are out-of-synch with the game and have been dropped.  Game will exit when you click OK."
+    31711, L"You have been booted due to internet lag.  Game will exit after you click OK."
+END
+
+STRINGTABLE
+BEGIN
+    19000, L"Unit behaviors"
+    19001, L"Assigns scout behavior to selected units"
+    19002, L"Assigns stand ground behavior to selected units"
+    19003, L"Assigns guard behavior to selected units"
+    19004, L"Assigns harass behavior to selected units"
+    19005, L"Assigns cautious behavior to selected units"
+    19006, L"Assigns aggressive behavior to selected units"
+END
+
+STRINGTABLE
+BEGIN
+    19500, L"Formations"
+    19501, L"Assigns short line formation to selected units"
+    19502, L"Assigns long line formation to selected units"
+    19503, L"Assigns loose line formation to selected units"
+END
+
+STRINGTABLE
+BEGIN
+    8128, L"Upgrade to Sea King II"
+    8129, L"Upgrade to Fighter - Avenger"
+    8130, L"Upgrade to Hero - Hannibal"
+    8131, L"Upgrade to Hero - Elizabeth I"
+    8132, L"Upgrade to Hero - Cromwell"
+    8133, L"Upgrade to Hero - Molly Ryan"
+    8134, L"Upgrade to Hero - Bismarck"
+    8135, L"Upgrade to Hero - Napoleon"
+    8136, L"Upgrade to Hero - Septimus"
+    8137, L"Upgrade to Hero - Cyborg Molotov"
+    8138, L"Upgrade to Hero - Shackelford"
+    8139, L"Upgrade to Hero - Molotov"
+    8140, L"Upgrade to Hero - Alexander the Great"
+    8141, L"Upgrade to Hero - Charlemange"
+    8142, L"Upgrade to Hero - Caesar"
+    8143, L"Upgrade to Hero - William the Conqueror"
+END
+
+STRINGTABLE
+BEGIN
+    9536, L"Town Center Upgrade Ability"
+    9537, L"Capitol Upgrade Ability"
+    9538, L"Battle Cry - DeVerran"
+    9539, L"Battle Cry - Rommel"
+    9540, L"Battle Cry - Bresden"
+    9541, L"Battle Cry - Molly Ryan"
+    9542, L"Battle Cry - Septimus"
+    9543, L"Battle Cry - Sargon"
+    9544, L"Battle Cry - Alexander"
+    9545, L"Battle Cry - Charlemagne"
+    9546, L"Battle Cry - William"
+    9547, L"Battle Cry - Isabella"
+    9548, L"Battle Cry - Elizabeth"
+    9549, L"Battle Cry - Bismarck"
+    9550, L"Battle Cry - Officer"
+    9551, L"Battle Cry - Hierakles"
+END
+
+STRINGTABLE
+BEGIN
+    7136, L"Model Detail"
+    7137, L"Effect Detail"
+    7138, L"Medium"
+    7139, L"Hi-Res Filter"
+    7140, L"Hi-Res Lighting"
+    7141, L"Hi-Res Textures"
+    7142, L"Smoother Animations"
+    7143, L"Shadows"
+    7144, L"Clouds"
+    7145, L"Weather Effects"
+    7146, L"Game Briefing"
+    7147, L"Tournament - Low"
+    7148, L"Standard - High"
+    7149, L"Standard - Low"
+    7150, L"Deathmatch"
+    7151, L"Tournament - Defensive"
+END
+
+STRINGTABLE
+BEGIN
+    8544, L"Load a previously saved game"
+    8545, L"Load a scenario"
+    8546, L"Save the current game (play continues)"
+    8547, L"Display the objectives for the current game"
+    8548, L"Change the Game Settings"
+    8549, L"Quit the current game and view the Statistics screen"
+    8550, L"Go to the Single Player Menu"
+    8551, L"Go to the Multiplayer Menu"
+    8552, L"Change Empire Earth: Art of Conquest game settings and preferences"
+    8553, L"Go to the Civilization Builder, Campaign Editor, or Scenario Editor"
+    8554, L"Set how often (in game minutes) the game is automatically saved.  You can also turn Autosave off."
+    8555, L"Set the maximum number of autosaved games to keep on your hard drive.  The oldest file is deleted first."
+    8556, L"The player\x2019s current game status"
+    8557, L"Set Custom Chat for this player"
+    8558, L"The player\x2019s name"
+    8559, L"The player\x2019s chosen civilization"
+END
+
+STRINGTABLE
+BEGIN
+    7152, L"The file couldn't be opened."
+    7153, L"The save game isn't valid."
+    7154, L"Save game incompatible with this version of Empire Earth: Art of Conquest. Please update and try again."
+    7155, L"Save Current Campaign Before Creating A New Campaign?"
+    7156, L"Save game contains invalid data and cannot be loaded."
+    7157, L"Save game is missing data and cannot be loaded."
+    7158, L"Save Options"
+    7159, L"Autosave Frequency"
+    7160, L"Autosaves to Keep"
+    7161, L"Save Current Campaign Before Loading The New Campaign"
+    7162, L"Save Current Campaign Before Exiting?"
+    7163, L"Scenario %s didn't exist on the disk.  You must have all the scenarios to modify a campaign file."
+    7164, L"There was an error reading a tag for the campaign file."
+    7165, L"Game"
+    7166, L"Room Name"
+    7167, L"Play on Internet"
+END
+
+STRINGTABLE
+BEGIN
+    10048, L"Error Deleting File"
+    10049, L"Error Creating File"
+    10050, L"Error Saving File"
+    10051, L"File already exists. Overwrite?"
+    10052, L"You can't start the game until all save files have been transferred."
+    10053, L"{%s} is an invalid condition type to be a token."
+    10054, L"(%d) is an invalid condition ID for token {%s}"
+    10055, L"The text file effect name (%s) does not match the scenario's condition name of (%s)."
+    10056, L"Invalid Player Number(%d) for this Scenario."
+    10057, L"The .lcl file has an invalid version number assigned or the version number is not on the first line of the text file."
+    10058, L"You need at least 1 Human Player to play a game"
+    10059, L"Unit Exceeds Pop Limit "
+    10060, L"Maximum Number of Improvements have been Reached"
+    10061, L"Not Enough Resources to Research this Technology"
+    10062, L"Insufficient Power"
+    10063, L"You can't play a game with only one player.  Please add a computer player."
+END
+
+STRINGTABLE
+BEGIN
+    10064, L"File transfer failed.  Please restart game and try again."
+    10065, L"The Game Is In Progress"
+    10066, L"Couldn't Find The Game Requested"
+    10067, L"You may not unpack all units at this time"
+    10068, L"Invalid file name"
+END
+
+STRINGTABLE
+BEGIN
+    6032, L"Disband"
+    6033, L"Populate"
+    6035, L"Heal"
+    6036, L"Assimilate"
+    6037, L"Pack"
+    6038, L"Unpack"
+    6039, L"Place Paratrooper Rally Point"
+    6040, L"Set Paratrooper Drop Zone"
+    6041, L"Fanaticism"
+    6042, L"Disable Just In Time"
+    6043, L"Enable Just In Time"
+END
+
+STRINGTABLE
+BEGIN
+    8560, L"This civilization\x2019s attitude towards you"
+    8561, L"Your attitude towards this civilization"
+    8562, L"Set an amount to tribute"
+    8563, L"Confirm changes and send tributes"
+    8564, L"Cancel changes and exit Alliances screen"
+    8565, L"Reset all tributes to zero"
+    8566, L"Create a New Campaign"
+    8567, L"Save this Campaign"
+    8568, L"Delete the selected Campaign"
+    8569, L"Add the selected Scenario to this Campaign"
+    8570, L"Remove the selected Scenario from this Campaign"
+    8571, L"Move Up the selected Scenario in the Campaign"
+    8572, L"Move Down the selected Scenario in the Campaign"
+    8573, L"Start the Scenario Editor"
+    8574, L"Go to the Campaign Editor"
+    8575, L"Create your own Civilization"
+END
+
+STRINGTABLE
+BEGIN
+    31800, L"This transport may not completely unload here."
+    31801, L"You cannot unload.  You are either at your pop cap or there is no place for units to exit."
+    31802, L"You cannot garrison/populate this building at this time."
+    31803, L"This transport may not unload here."
+    31804, L"%6.2g%%"
+    31805, L"(Campaign in progress; %d of %d completed.)"
+    31806, L"(Campaign completed.)"
+    31807, L"(Scenario Completed)"
+END
+
+STRINGTABLE
+BEGIN
+    31712, L"The game is out-of-synch.  Log has been written.  Your checksum is %u."
+    31713, L"Very Fast"
+END
+
+STRINGTABLE
+BEGIN
+    2096, L"Elven Bowman"
+    2097, L"Elven Noble"
+    2098, L"Elvish Ram"
+    2099, L"Orcish Catapult"
+    2100, L"Orcish Fortress"
+    2101, L"Wight"
+    2102, L"Viking"
+    2103, L"Barbarian"
+    2104, L"Partisan"
+    2105, L"Camera Marker"
+    2106, L"F-66"
+    2107, L"Spy"
+    2108, L"Companion Cavalry"
+    2109, L"Black Robe Officer"
+    2110, L"Test Unit"
+    2111, L"Sampson"
+END
+
+STRINGTABLE
+BEGIN
+    7168, L"Sierra.com User ID"
+    7169, L"Background Image"
+    7170, L"Use Custom Civs"
+    7171, L"(Allies)"
+    7172, L"(Enemies)"
+    7173, L"(Custom)"
+    7174, L"(All)"
+    7175, L"No custom campaigns could be found.  To create a custom campaign, please use the Campaign Editor.  To access the Campaign Editor, click on Game Tools from the Main Menu."
+    7176, L"Tournament"
+    7177, L"Roman Campaign"
+    7178, L"Pacific Campaign"
+    7179, L"Asian Campaign"
+    7180, L"Uh Oh Campaign"
+    7181, L"Enter your User Name"
+    7182, L"Enter a Password"
+    7183, L"Confirm Password"
+END
+
+STRINGTABLE
+BEGIN
+    8144, L"Upgrade to Hero - Richard the Lionheart"
+    8145, L"Upgrade to Hero - Isabella"
+    8146, L"Upgrade to Hero - Henry V"
+    8147, L"Upgrade to Hero - Romell"
+    8148, L"Upgrade to Balloon - Observation"
+    8149, L"Upgrade to Cruiser - Sagittarian"
+    8150, L"Upgrade to Hero - DeVerran"
+    8151, L"Upgrade to Hero - Richthofen"
+    8152, L"Upgrade to Hero - RW Bresden"
+    8153, L"Upgrade to Hero - St. Albans"
+    8154, L"Upgrade to A-10"
+    8155, L"Upgrade to Fighter - ME262"
+    8156, L"Upgrade to Bomber - B-17"
+    8157, L"Upgrade to Medic - Atomic"
+    8158, L"Upgrade to Medic - Digital"
+END
+
+STRINGTABLE
+BEGIN
+    19504, L"Assigns staggered line formation to selected units"
+    19505, L"Assigns deep wedge formation to selected units"
+    19506, L"Assigns shallow wedge formation to selected units"
+    19507, L"Assigns inward circle formation to selected units"
+    19508, L"Assigns outward circle formation to selected units"
+    19509, L"Cancel Action"
+END
+
+STRINGTABLE
+BEGIN
+    8576, L"Return to the Main Menu"
+    8577, L"Choose a background image for the Campaign (optional)"
+    8578, L"Enter Password and click OK to protect this Campaign (optional), or to unlock the selected Campaign"
+    8579, L"Join a game over a Local Area Network"
+    8580, L"Play by entering the Host's IP Address"
+    8581, L"Host a game over a LAN or by providing your IP address"
+    8582, L"Play via Sierra's matchmaking service"
+    8583, L"Play against the computer"
+    8584, L"Play a Campaign"
+    8585, L"Play a previously saved game or scenario"
+    8586, L"Play a stand-alone Scenario"
+    8587, L"Play the Learning Scenarios"
+    8588, L"Play a Custom Campaign"
+    8589, L"Set the detail level of the 3D models. Choose ""Low"" for best performance."
+    8590, L"Set the detail level of the graphic effects. Choose ""Low"" for best performance."
+    8591, L"Filter the textures to make them ""smoother"". Turn off for better performance."
+END
+
+STRINGTABLE
+BEGIN
+    8592, L"Use high-resolution textures. Turn off for better performance. (Note: changes to this option take effect only if you exit and restart Empire Earth: Art of Conquest.)"
+    8593, L"Use 3D lighting effects. Turn off for better performance."
+    8594, L"Controls how the screen is redrawn. Turn off for best performance (minor screen artifacts may result)."
+    8595, L"Show shadows. Turn off for better performance."
+    8596, L"Show clouds. Turn off for better performance."
+    8597, L"Show ambient weather effects. Turn off for better performance."
+    8598, L"Turn ambient sounds on or off."
+    8599, L"Exit Empire Earth: Art of Conquest"
+    8600, L"Players currently Allies.  Click to make them Enemies."
+    8601, L"Players currently Enemies.  Click to make them Allies."
+    8602, L"Enables fullscreen antialiasing for improved graphics on video cards that support it."
+    8603, L"[Illuminates Water]"
+    8604, L"[Multiple Conversions]"
+    8605, L"[Stronger Walls]"
+    8606, L"[Self Healing]"
+    8607, L"[Reveal Buildings]"
+END
+
+STRINGTABLE
+BEGIN
+    31808, L"Player %s has resigned from the game"
+    31809, L"You cannot garrison/populate here."
+    31810, L"You do not have enough resources to repair."
+    31811, L"Warning:  You are running out of time to choose a Civilization."
+    31812, L"Civilization selection time has expired."
+    31813, L"--GAME--"
+    31814, L"Player '%s' has been defeated!"
+    31815, L"Player '%s' is victorious!"
+    31816, L"Prehistoric to Dark Ages"
+    31817, L"Middle Ages to Industrial Age"
+    31818, L"Atomic Age to Nano Age"
+    31819, L"Digital Age to Space Age"
+    31820, L"Babylon"
+    31821, L"Assyrian Empire"
+    31822, L"Austria"
+    31823, L"Byzantine Rome"
+END
+
+STRINGTABLE
+BEGIN
+    31824, L"Carthage"
+    31825, L"China"
+    31826, L"Ancient Greece"
+    31827, L"England"
+    31828, L"France"
+    31829, L"Franks"
+    31830, L"Germany"
+    31831, L"Great Britain"
+    31832, L"Italy"
+    31833, L"Kingdom of Israel"
+    31834, L"Kingdom of Italy"
+    31835, L"Novaya Russia"
+    31836, L"Ottoman Empire"
+    31837, L"Rebel Forces"
+    31838, L"Russia"
+    31839, L"Spain"
+END
+
+STRINGTABLE
+BEGIN
+    31840, L"United States"
+    31841, L"Choose Civilization"
+    31842, L"Please wait..."
+    31843, L"Player '%s' has a civilization named '%s' which is not compatible with the server's ('%s')."
+    31844, L"You do not have enough resources to build."
+    31845, L"The file name you specified ('%s') is reserved for predefined civilizations."
+    31846, L"Please select a civilization from the list on the left before pressing 'Ok'."
+    31847, L"The campaign %s has a scenario %s which differs from the version in your Scenario folder.  You should remove the scenario from the campaign and add it again to make sure the campaign is updated properly."
+    31848, L"Connecting to server..."
+    31849, L"Your password should arrive via e-mail shortly."
+    31850, L"An error occurred. That User ID is either invalid or non-existent, or that password has already been requested today."
+    31851, L"You have entered an invalid birth date.  Remember that a valid birth date is in mm/dd/yyyy format."
+    31852, L"I'm sorry, you have to be 13 years of age or older to play on Sierra.com.  However, all other aspects of Empire Earth: Art of Conquest are still available for you to play."
+    31853, L"Couldn't join game."
+    31854, L"Couldn't join room."
+    31855, L"Logging into Sierra.com..."
+END
+
+STRINGTABLE
+BEGIN
+    28514, L"The amount of tiles (squared) computer player Citizens are willing to travel between resources and drop-off sites, before they decide to build one that is closer."
+    28515, L"How often in game seconds the computer should research a new Technology."
+    28519, L"The computer player's Attack Delay value will be capped by these values.  The first is the minimum allowed value, the second is the maximum allowed value."
+    28520, L"The maximum percentage of the computer player's population that will be devoted to defensive military units."
+    28521, L"How frequently, in game minutes, the computer player sends units to attack.  This is set as a minimum and a maximum value, and the actual frequency is chosen from between these two values."
+    28523, L"The amount of game time (in seconds) the computer player will wait before choosing a new Technology to research."
+    28524, L"The percentage chance the computer player will launch an immediate attack, if another player builds a Wonder, instead of waiting for the normal attack interval to elapse."
+    28525, L"The percentage chance the computer player will launch an immediate attack, if an enemy player is encountered, instead of waiting for the normal attack interval to elapse."
+    28526, L"The percentage chance the computer player will launch an immediate attack, if another player has needed resources, instead of waiting for the normal attack interval to elapse."
+    28527, L"The percentage chance the computer player will launch an immediate attack, if attacked by another player, instead of waiting for the normal attack interval to elapse."
+END
+
+STRINGTABLE
+BEGIN
+    28019, L"Attack Frequency Boundaries"
+    28020, L"Defensive Unit Cap"
+    28021, L"Attack Frequency Boundary"
+    28024, L"Attack Wonder"
+    28025, L"Attack Enemy"
+    28026, L"Attack to Claim Resource"
+    28027, L"Attack for Revenge"
+    28028, L"Epoch Frequency"
+    28029, L"Epoch Frequency Modifier"
+    28030, L"Desired Number of Barracks"
+    28031, L"Desired Number of Archery Ranges"
+END
+
+STRINGTABLE
+BEGIN
+    28528, L"The minimum and maximum amount of game time (in minutes) the computer player will wait before choosing to advance an Epoch."
+    28529, L"The percentage modifiers to apply to the Epoch Frequency based on the difficulty level. The first value is the percent modifier for Easy difficulty, the second is for Hard difficulty."
+    28530, L"Guidelines on the production of Barracks. The first value indicates how many Barracks-produced units the computer player will have for each Barracks before deciding to produce a new one. The second indicates the maximum amount of Barracks to be built."
+    28531, L"Guidelines on the production of Archery Ranges. The first value indicates how many Archery Range-produced units the computer player will have for each Archery Range before deciding to produce a new one. The second indicates the maximum amount of Archery Ranges to be built."
+    28532, L"Guidelines on the production of Stables. The first value indicates how many Stable-produced units the computer player will have for each Stable before deciding to produce a new one. The second indicates the maximum amount of Stables to be built."
+    28533, L"Guidelines on the production of Docks. The first value indicates how many Dock-produced units the computer player will have for each Dock before deciding to produce a new one. The second indicates the maximum amount of Docks to be built."
+    28534, L"Guidelines on the production of Siege Factories. The first value indicates how many Siege Factory-produced units the computer player will have for each Siege Factory before deciding to produce a new one. The second indicates the maximum amount of Siege Factories to be built."
+    28535, L"Guidelines on the production of Naval Yards. The first value indicates how many Naval Yard-produced units the computer player will have for each Naval Yard before deciding to produce a new one. The second indicates the maximum amount of Naval Yards to be built."
+    28536, L"Guidelines on the production of Airports. The first value indicates how many Airport-produced units the computer player will have for each Airport before deciding to produce a new one. The second indicates the maximum amount of Airports to be built."
+    28537, L"Guidelines on the production of Cyber Factories. The first value indicates how many Cyber Factory-produced units the computer player will have for each Cyber Factory before deciding to produce a new one. The second indicates the maximum amount of Cyber Factories to be built."
+    28538, L"Guidelines on the production of Universities. The first value indicates how many total units (civilian and military) the computer player will have for each University before deciding to produce a new one. The second indicates the maximum amount of Universities to be built."
+    28539, L"Guidelines on the production of Temples. The first value indicates how many total units (civilian and military) the computer player will have for each Temple before deciding to produce a new one. The second indicates the maximum amount of Temples to be built."
+    28540, L"Guidelines on the production of Hospitals. The first value indicates how many total units (civilian and military) the computer player will have for each Hospital before deciding to produce a new one. The second indicates the maximum amount of Hospitals to be built."
+    28541, L"Guidelines on the production of Granaries. The first value indicates how many total units (civilian and military) the computer player will have for each Granary before deciding to produce a new one. The second indicates the maximum amount of Granaries to be built."
+    28542, L"Guidelines on the production of Cyber Laboratories. The first value indicates how many Cyber Lab-produced units the computer player will have for each Cyber Lab before deciding to produce a new one. The second indicates the maximum amount of Cyber  Labs to be built."
+    28543, L"The percentage of the computer player's Pop Cap that should be devoted to military units."
+END
+
+STRINGTABLE
+BEGIN
+    28032, L"Desired Number of Stables"
+    28033, L"Desired Number of Docks"
+    28034, L"Desired Number of Siege Factories"
+    28035, L"Desired Number of Naval Yards"
+    28036, L"Desired Number of Airports"
+    28037, L"Desired Number of Cyber Factories"
+    28038, L"Desired Number of Universities"
+    28039, L"Desired Number of Temples"
+    28040, L"Desired Number of Hospitals"
+    28041, L"Desired Number of Granaries"
+    28042, L"Desired Number of Cyber Laboratories"
+    28043, L"Number of Military Units to Train"
+    28044, L"Ships to Maintain (Deathmatch)"
+    28045, L"Specialized Unit Percentage"
+    28046, L"Unit Selected for Improvements"
+    28047, L"Unit Attributes Selected for Improvements"
+END
+
+STRINGTABLE
+BEGIN
+    28544, L"Number of game minutes the computer player will wait between processing requests for military units."
+    28545, L"The percentage of the computer player's Pop Cap that should be devoted to specialized units, such as Medics or Prophets."
+    28546, L"Prior to launching an attack, the number of different unit types that should be selected to have their attributes Improved."
+    28547, L"Prior to launching an attack, the number of attributes that should be selected for improvement on each unit type chosen for improvement."
+    28548, L"The maximum amount of tiles an attacker can be away from its victim in order to evoke a response from the victim."
+    28549, L"Guidelines on the usage of Priests.  The first value is the maximum amount of Priests to include in each military attack or defense group. The second value is the percentage chance a Priest will be selected to be placed in such a group.  The last value is the maximum amount of the computer player's Pop Cap that should be devoted to producing Priests."
+    28550, L"Guidelines on the usage of Prophets.  The first value is the maximum amount of Prophets to include in each military attack or defense group. The second value is the percentage chance a Prophet will be selected to be placed in such a group.  The last value is the maximum amount of the computer player's Pop Cap that should be devoted to producing Prophets."
+    28551, L"Guidelines on the usage of Heroes.  The first value is the maximum amount of Heroes to include in each military attack or defense group. The second value is the percentage chance a Hero will be selected to be placed in such a group.  The last value is the maximum amount of the computer player's Pop Cap that should be devoted to producing Heroes."
+    28552, L"Guidelines on the usage of Aircraft Carriers.  The first value is the maximum amount of Aircraft Carriers to include in each military attack or defense group. The second value is the percentage chance an Aircraft Carrier will be selected to be placed in such a group.  The last value is the maximum amount of the computer player's Pop Cap that should be devoted to producing Aircraft Carriers."
+    28553, L"On maps which are not Random-Map Islands, the percentage of the computer player's attack group that will be perfect counter units to ones built by the enemy."
+    28554, L"Percentage chance that a specialized unit such as a Priest or Prophet will be selected to fill an attack or defense group instead of an RPS unit."
+END
+
+STRINGTABLE
+BEGIN
+    28048, L"Maximum Attack Response Range"
+    28049, L"Priest Usage"
+    28050, L"Prophet Usage"
+    28051, L"Hero Usage"
+    28052, L"Carrier Usage"
+    28053, L"RPS Selection Non-Islands"
+    28054, L"Specialized Unit Selection Chance"
+END
+
+STRINGTABLE
+BEGIN
+    28067, L"Unit Cost Reduction - Medium"
+    28070, L"Guard Chokepoint Percentage"
+    28071, L"Guard Continent Percentage"
+    28072, L"Guard High Ground Percentage"
+    28077, L"Guard Chokepoint-Air Percentage"
+    28078, L"Guard Town Percentage"
+END
+
+STRINGTABLE
+BEGIN
+    28567, L"The percentage of a unit's cost that the computer player pays when buying its own units. Only applies on Medium difficulty."
+    28570, L"When choosing between different areas to guard, the percentage chance that a chokepoint will be selected."
+    28571, L"When choosing between different areas to guard, the percentage chance that a different continent will be selected first."
+    28572, L"When choosing between different areas to guard, the percentage chance that a hill or clifftop will be selected."
+END
+
+STRINGTABLE
+BEGIN
+    28577, L"When an Air unit is produced, the percentage chance it will be assigned to guard a choke point over land."
+    28578, L"When choosing between different areas to guard, the percentage chance that one of the computer player's towns will be selected."
+    28582, L"When choosing between different areas to guard, the percentage chance that a chokepoint in a waterway will be selected."
+    28587, L"The Percentage modifier that affects the size of the computer player's defensive military group, from a lower limit to an upper limit."
+    28588, L"The time, in minutes, the computer player should wait between checking to replace lost defensive units. The three values represent Easy, Medium, and Hard difficulty levels, respectively."
+    28589, L"The delay in game minutes before a defensive group is replenished.  The numbers are for Easy, Medium, and Hard difficulty levels, respectively."
+    28590, L"The percentage chance that a military unit will be assigned to guard a computer player town, when the unit is created."
+    28591, L"The percentage chance that a computer player will choose to attack another computer player instead of one of the human players."
+END
+
+STRINGTABLE
+BEGIN
+    28082, L"Guard Waterway Percentage"
+    28087, L"Defense Group Size Modifier Percentage"
+    28088, L"Defensive Unit Update"
+    28089, L"Initial Delay in Replenishment (Defense Units)"
+    28090, L"Town Guard Percentage"
+    28091, L"Computer vs Computer Aggression"
+    28095, L"Desired Number of Towers"
+END
+
+STRINGTABLE
+BEGIN
+    28096, L"Unit Cost Reduction - Easy & Hard"
+    28097, L"Expansion Timer"
+    28098, L"Population Limit Adjustment"
+    28099, L"Town Center Upgrade Timer"
+    28100, L"Capitol Upgrade Timer"
+    28101, L"Computer Player Extra Resources"
+    28103, L"(Easy) Min Number Military Buildings"
+    28104, L"(Hard) Min Number Military Buildings"
+    28106, L"(Med.) Min Number Military Buildings"
+    28108, L"Desired Number of Tank Factories"
+    28109, L"Desired Number of Anti-Air Buildings"
+    28110, L"RPS Selection Islands"
+    28111, L"Naval Unit Weight"
+END
+
+STRINGTABLE
+BEGIN
+    28595, L"Guidelines on the production of Towers. The first value is how many non-Wall & Tower Buildings the computer player should have for each Tower built. The second value determines how close together Towers should be spaced. The second value is the percentage of the Tower's range that should be used to act as a minimum spacing between Towers."
+    28596, L"The percentage of a unit's cost that the computer player pays when buying its own units. The first value applies on Easy, the second Hard difficulty."
+    28597, L"The time in seconds the computer player will wait before sending Citizens to build and gather from an undeveloped resource site."
+    28598, L"Percentages the computer player should adjust its Pop Cap to based on the difficulty level.  The first value is the percentage modifier for Easy difficulty, the second is for Hard difficulty."
+    28599, L"The time in minutes the computer player will wait before deciding to upgrade a Settlement into a Town Center."
+    28600, L"The time in minutes the computer player will wait before deciding to upgrade a Town Center into a Capitol."
+    28601, L"Add this amount to the computer player's starting inventories of gold and iron."
+    28603, L"This is the minimum number of military buildings of each type that the computer player should construct on Easy Difficulty.  The second value refers to Easy Deathmatch games."
+    28604, L"This is the minimum number of military buildings of each type that the computer player should construct on Hard Difficulty.  The second value refers to Hard Deathmatch games."
+    28606, L"This is the minimum number of military buildings of each type that the computer player should construct on Medium Difficulty.  The second value refers to Medium Deathmatch games."
+END
+
+STRINGTABLE
+BEGIN
+    28608, L"Guidelines on the production of Tank Factories. The first value indicates how many Tank Factory-produced units the computer player will have for each Tank Factory before deciding to produce a new one. The second indicates the maximum amount of Tank Factories to be built."
+    28609, L"Guidelines on the production of Anti-Air Buildings. The first value is the number of non-Wall & Tower Buildings the computer player should have for each Anti-Air Building built. The second value is the maximum amount of Anti-Air Buildings the computer player is allowed to produce."
+    28610, L"On maps which are Random-Map Islands, the percentage of the computer player's attack group that will be perfect counter units to ones built by the enemy."
+    28611, L"If the computer player decides to produce less ships than the human players, this percentage will be applied to the difference between the number of human and computer player ships, and added to the amount of ships the computer player will decide to produce."
+    28612, L"If the computer player decides to produce less air units than the human players, this percentage will be applied to the difference between the number of human and computer player air units, and added to the amount of air units the computer player will decide to produce."
+    28613, L"Maximum amount of Flame Throwers allowed per computer player."
+    28614, L"The time, in minutes, the computer player should wait between checking to replace lost town guards. The three values represent Easy, Medium, and Hard difficulty levels, respectively."
+    28615, L"The time, in minutes, the computer player should wait between checking to replace lost town guards in a Deathmatch game. The three values represent Easy, Medium, and Hard difficulty levels, respectively."
+    28616, L"The time, in minutes, the computer player should wait between checking to replace lost defensive units in a Deathmatch game. The three values represent Easy, Medium, and Hard difficulty levels, respectively."
+    28618, L"The minimum time, in minutes, the computer player waits before replenishing its navy."
+    28619, L"The maximum percentage of the computer player's attack force that should be siege weapons."
+    28620, L"The number of buildings the computer player must have left before launching a last-ditch, all-out attack."
+    28621, L"The time in seconds the computer player will wait before sending Citizens to build and gather from an undeveloped island."
+    28622, L"The percentage modifiers to apply to the Attack Frequency based on the difficulty level for Deathmatch. The value is the percent modifier for the currently selected Difficulty level."
+    28623, L"The percentage modifiers to apply to the Initial Attack Delay based on the difficulty level for Deathmatch. The value is the percent modifier for the currently selected Difficulty level."
+END
+
+STRINGTABLE
+BEGIN
+    28112, L"Air Unit Weight"
+    28113, L"Desired Number of Flame Throwers"
+    28114, L"Town Guard Update"
+    28115, L"Town Guard Update - Deathmatch"
+    28116, L"Defensive Unit Update - Deathmatch"
+    28118, L"Minimum Ship Maintenance Timer"
+    28119, L"Siege Weapon Percentage"
+    28120, L"Bonzai Attack Level"
+    28121, L"Island Expansion Timer"
+    28122, L"DM Attack Frequency Modifier"
+    28123, L"DM Initial Attack Modifier"
+END
+
+STRINGTABLE
+BEGIN
+    8752, L"Time Warp (out)"
+    8753, L"Time Warp (in)"
+    8754, L"Healing Beam"
+    8755, L"Anti-Matter Storm (unit)"
+    8756, L"Nano Virus (attack effect)"
+    8757, L"Furies Cyber Explosion"
+    8758, L"Fire - Emitter (volcano projectiles)"
+    8759, L"Shockwave - Emitter"
+    8760, L"Morale Emitter"
+    8761, L"Temple Immunity"
+    8762, L"Medic Healing Effect"
+    8763, L"Economy Bonus"
+    8764, L"Hospital Healing Effect"
+    8765, L"Explosion 3D Combo Effect"
+    8766, L"Death Debris"
+    8767, L"Fire Trail (burning debris)"
+END
+
+STRINGTABLE
+BEGIN
+    8768, L"Smoke Emitter (burning debris)"
+    8769, L"Smoke Emitter (hot springs)"
+    8770, L"Smoke Emitter (volcano projectiles)"
+    8771, L"Light Glow 0.2"
+    8773, L"Velocity Smoke"
+    8774, L"Waypoint Indicator"
+    8775, L"Rally Flag - Atomic Bomber"
+    8776, L"Smoke Generator (unit)"
+    8777, L"Horse Breath (units)"
+    8778, L"Muzzle Smoke (small) (units)"
+    8779, L"Naval Muzzle Smoke (units)"
+    8780, L"Muzzle Smoke (units)"
+    8781, L"Plasma Pulse - quick"
+    8782, L"Fire Trail (volcano projectiles)"
+    8783, L"Battle Cry Spell (unit)"
+END
+
+STRINGTABLE
+BEGIN
+    8784, L"Diffraction Shield (shot)"
+    8785, L"Light Glow 0.05"
+    8786, L"Nano Virus (unit)"
+    8787, L"Resonator (beam)"
+    8788, L"Disband Unit"
+    8789, L"Teleportation (out)"
+    8790, L"Smoke Emitter (damage smoke)"
+    8791, L"Anti-Matter Storm (attack)"
+    8792, L"Fire Damage"
+    8793, L"Kicking up dust"
+    8794, L"Building rubble and smoke 4m"
+    8795, L"Building rubble and smoke 2m"
+    8796, L"Building rubble and smoke 1m"
+    8797, L"Building rubble and smoke 3m"
+    8798, L"Pulse Cannon (unit)"
+    8799, L"Pulse Cannon (shot)"
+END
+
+STRINGTABLE
+BEGIN
+    8800, L"Diffraction Shield (unit)"
+    8801, L"Aircraft Explosion"
+    8802, L"Teleportation (in)"
+    8803, L"Rally Flag - Bomber"
+    8804, L"Rally Flag - Building"
+    8805, L"Rally Flag - Fighter"
+    8806, L"Battle Cry Graphic Emitter"
+    8807, L"Healing Effect Emitter"
+    8808, L"Explosion (small - intermediate)"
+    8809, L"Explosion  (Small)"
+    8810, L"Explosion (area effect)"
+    8811, L"Explosion (area effect - intermediate)"
+    8812, L"Disintegration (area effect - intermediate)"
+    8813, L"Disintegration (area effect)"
+    8814, L"Death Debris (multi)"
+    8815, L"Disintegration"
+END
+
+STRINGTABLE
+BEGIN
+    7184, L"Enter your Birth Date (mm/dd/yyyy)"
+    7185, L"Enter your Email Address"
+    7186, L"Create Account"
+    7187, L"Update an Existing Account"
+    7188, L"Email me my Password"
+    7189, L"New Password"
+    7190, L"Send me email about Sierra products"
+    7191, L"Yes, I am at least 13 years old"
+    7192, L"Day/Night Cycle"
+    7193, L"Update Account"
+    7194, L"Don't Update"
+    7195, L"Vertical Sync"
+    7196, L"Civilization Selections"
+    7197, L"Select a Sierra.com Server"
+    7198, L"Fullscreen Antialiasing"
+    7199, L"List Available Games"
+END
+
+STRINGTABLE
+BEGIN
+    30480, L"Mutual Diplomacy Settings"
+    30481, L"Set: %s"
+    30482, L"Elevation File"
+    30483, L"Water Cutoff"
+    30484, L"Water Depth"
+    30485, L"Land Height"
+    30486, L"Land Cutoff"
+    30487, L"Your Empire Earth: Art of Conquest CD key is invalid."
+    30488, L"Your Empire Earth: Art of Conquest CD key has been banned by Sierra.com."
+    30489, L"Please enter your Empire Earth: Art of Conquest CD key that is printed on your CD case."
+    30490, L"Default"
+    30491, L"Unknown"
+    30492, L"Custom Civilization"
+    30493, L"Use Carbon Resource"
+END
+
+STRINGTABLE
+BEGIN
+    5040, L"Tree - Red Cedar"
+    5041, L"Tree - Fir (Winter)"
+    5042, L"Tree - Cypress (Winter)"
+    5043, L"Tree - Cedar (Winter)"
+    5044, L"Tree - Pine (Winter)"
+    5045, L"Tree - Evergreen (Winter)"
+    5046, L"Tree - Spruce (Winter)"
+    5047, L"Forest - Winter"
+END
+
+STRINGTABLE
+BEGIN
+    2112, L"German Officer"
+    2113, L"William on Foot"
+    2114, L"Castle Wall - Connector"
+    2115, L"Computer Panel"
+    2116, L"Portable Computer"
+    2117, L"House - Space"
+END
+
+STRINGTABLE
+BEGIN
+    9552, L"Battle Cry - Black Prince"
+    9553, L"Battle Cry - Pericles"
+    9554, L"Battle Cry - 7 tile range"
+    9555, L"Battle Cry - 8 tile range"
+    9556, L"Battle Cry - 9 tile range"
+END
+
+STRINGTABLE
+BEGIN
+    12000, L"This is your last act of defiance! Your Wonder will fall!"
+    12001, L"You call THAT a Wonder?  HA!"
+    12002, L"I might just knock your 'wondrous' monument down."
+    12003, L"That's it, you're toast!"
+    12004, L"What goes up... WILL COME DOWN!"
+    12005, L"Wow... I'm sooo impressed..."
+    12006, L"I tried being reasonable.  You just didn't listen... did you? DID YOU?!?"
+    12007, L"Now I must destroy you.  Remember, this was your choice."
+    12008, L"Say goodbye to that Wonder."
+    12009, L"A Wonder, eh? Wonders burn reeeal good."
+END
+
+STRINGTABLE
+BEGIN
+    12100, L"We will help you protect this marvelous creation."
+    12101, L"Such a Wonder will surely draw attention.  Help is on the way."
+    12102, L"Your creation marks the dawning of a new era.  We shall defend it to the last."
+    12103, L"We shall flock to your city to see your great achievement!"
+    12104, L"Such a monument will need protection.  Troops are on the way."
+    12105, L"You'll need some help defending that."
+    12106, L"That is truly a Wonder of the world. "
+    12107, L"I 'wonder' how long that will last?  You may need my help."
+    12108, L"Very nice... we'll be right over."
+    12109, L"Most impressive.  But you'll need more troops than that!  I'm coming."
+END
+
+STRINGTABLE
+BEGIN
+    12200, L"I have nothing to offer for your defense, but we're still friends, right?"
+    12201, L"Our reserves have run dry. We have nothing to give."
+    12202, L"Love to help, but we've recently been decimated. "
+    12203, L"We can't offer you anything more than we already have."
+    12204, L"You want me to send dead guys?  I got plenty of those."
+    12205, L"We're short on troops.  Your Wonder will have to stand without our help."
+    12206, L"Holy smokes... that's a wonder alright.  But we haven't enough troops to help."
+    12207, L"I hope you have the troops to support that, because we don't."
+END
+
+STRINGTABLE
+BEGIN
+    12208, L"Marvelous! Incredible! But I'm afraid you're on your own."
+    12209, L"Phew... That must have cost some bucks.  We're short on both cash and troops at the moment."
+END
+
+STRINGTABLE
+BEGIN
+    12300, L"Perhaps I could spare some troops... "
+    12301, L"Very well. I shall send troops to your aid."
+    12302, L"Perfect! Now I can show you how a REAL general fights a battle."
+    12303, L"BAM!  Army on its way!"
+END
+
+STRINGTABLE
+BEGIN
+    12304, L"I see it.  I'm already on the way."
+    12305, L"Who are they kidding?  When I get there, they won't stand a chance!"
+    12306, L"Can't handle it by yourself, huh?  Don't worry, I'm here to help you out!"
+    12307, L"Oooh, this is going to be fun! "
+    12308, L"My army will soon surround them."
+    12309, L"My troops are ready - we'll do our best."
+END
+
+STRINGTABLE
+BEGIN
+    12330, L"Fire will rain from the skies on our enemies!"
+    12331, L"Our Air force is coming in!  Keep your helmets on!"
+    12332, L"Air force en route.  It's gonna rain lead!"
+    12333, L"Winging in! My Air Force is in action!"
+    12334, L"Our planes are coming in now."
+    12335, L"Roger.  Squadron on the way."
+END
+
+STRINGTABLE
+BEGIN
+    12336, L"We'll do a fly by!"
+    12337, L"10-4! We're on our way!"
+    12338, L"I'll send my Air Force.  The pilots are ready to go."
+    12339, L"I see... it's up to me now.  Thanks."
+END
+
+STRINGTABLE
+BEGIN
+    12360, L"My warships are en route."
+    12361, L"I've gotta fleet with your name on it!"
+    12362, L"Shipping out!"
+    12363, L"Avast ye lan' lubbers! Help's comin'!"
+    12364, L"Aye Aye, Captain! Ships are coming!"
+    12365, L"Just rounding up the last sailors on shore leave and we'll raise anchor."
+    12366, L"We'll sink the sea dogs!"
+    12367, L"All our ships are on the way."
+END
+
+STRINGTABLE
+BEGIN
+    12368, L"Sounds good, I like to sink things."
+    12369, L"Their ships will soon be on the bottom!"
+END
+
+STRINGTABLE
+BEGIN
+    12400, L"I can spare no more troops."
+    12401, L"I hope you're not talking to me - I've got nothing to send."
+    12402, L"You want me to attack them? With what!?"
+    12403, L"I'm all flared out right now."
+    12404, L"I'm sorry, all lines are currently busy, but if you'd like to leave a message..."
+    12405, L"I can't send any troops, but I'm thinking really positive thoughts for you."
+    12406, L"Thanks for holding, your flare is important to us!"
+    12407, L"Sorry, I've got nothing over here.  Can't we all just get along?"
+    12408, L"I can't help and I'm fresh out of excuses."
+    12409, L"I'm afraid you're on your own.  "
+END
+
+STRINGTABLE
+BEGIN
+    31856, L"Locating Sierra.com servers..."
+    31857, L"Successfully modified your account"
+    31858, L"Could not modify your account"
+    31859, L"Getting current User Info..."
+    31860, L"There was an error getting current User Info..."
+    31861, L"Favorite Land"
+    31862, L"Favorite Air"
+    31863, L"Favorite Sea"
+    31864, L"Joining room..."
+    31865, L"Enter your Sierra.com User ID..."
+    31866, L"Couldn't find any Sierra.com servers.  Perhaps a firewall is blocking your access to these servers?"
+    31867, L"This feature is not available in the Beta version.  The Beta version of Empire Earth: Art of Conquest only supports network play on the Internet, via Sierra.com's match making service."
+    31868, L"(Locked)"
+    31869, L"(Unlocked)"
+    31870, L"This feature is not available in the Empire Earth: Art of Conquest Demo."
+    31871, L"Thank you for playing the Empire Earth: Art of Conquest Demo!"
+END
+
+STRINGTABLE
+BEGIN
+    4576, L"Coral Fan"
+    4577, L"Seaweed 4"
+    4578, L"Seaweed 5"
+    4579, L"Tumbleweed"
+    4580, L"Cow Skull"
+    4581, L"Icefloat 1"
+    4582, L"Icefloat 2"
+    4583, L"Icefloat 3"
+    4584, L"Icefloat 4"
+    4585, L"Rock 11"
+    4586, L"Rock 12"
+    4587, L"Rock 13"
+    4588, L"Underwater Terrain"
+    4589, L"Crab Grass"
+END
+
+STRINGTABLE
+BEGIN
+    11008, L"This is the maximum height that the land will reach in elevation."
+    11009, L"This is the height, in meters, that is set to be equal to the Land Height value.  Any heights greater than this value will be cut off at the maximum land height."
+    11010, L"This is the maximum depth that the water will reach in elevation."
+END
+
+STRINGTABLE
+BEGIN
+    13000, L"Any Class"
+    13001, L"<NONE>"
+    13002, L"Copy"
+    13003, L"Exists"
+    13004, L"Always True"
+    13005, L"Do Nothing"
+    13006, L"Off Map"
+    13007, L"Previous Location"
+END
+
+STRINGTABLE
+BEGIN
+    13008, L"Degrees"
+END
+
+STRINGTABLE
+BEGIN
+    12500, L"Face me, coward! Are you a man or a mouse!? SQUEAK UP!!"
+    12501, L"OK.  It's your funeral."
+    12502, L"Your going to wish this was all just a bad dream."
+    12503, L"I'm going to enjoy this!"
+    12504, L"So you want to play rough, eh?"
+    12505, L"If that's how you want it to end, it's fine with me."
+    12506, L"You got it. I was holding back anyway."
+    12507, L"You want a problem? You GOT a problem!"
+    12508, L"I'm going to knock you into next week!"
+    12509, L"When will you ever learn? You can't beat me!"
+END
+
+STRINGTABLE
+BEGIN
+    7200, L"Host a New Game"
+    7201, L"It is highly recommended that you close all other applications before playing a multiplayer game of Empire Earth: Art of Conquest."
+    7202, L"(Observers)"
+    7203, L"Open Games"
+    7204, L"Available Players"
+    7205, L"Games in Progress:"
+    7206, L"players"
+    7207, L"Server:"
+    7208, L"You must first select a campaign."
+    7209, L"\x00a9 2002 Sierra Entertainment, Inc.  All rights reserved. Sierra, Empire Earth, and Empire Earth: The Art of Conquest are trademarks of Sierra Entertainment, Inc.  Mad Doc (tm) is a trademark of Mad Doc Software, LLC."
+END
+
+STRINGTABLE
+BEGIN
+    8608, L"[Redistribute Population]"
+    8609, L"Campaign I: Ancient Rome\n"
+    8610, L"Campaign II: WWII Pacific\n"
+    8611, L"Campaign III: Future Asian\n"
+    8612, L"Campaign IV: Russia\nFollowing the collapse of the Soviet Union in the early 1990s, the proud state of Russia struggled to find its place in the new world order.  But after 25 years little forward progress was made.  Now, a street-wise young man named Grigor Illyanich Stoyanovich is promising to return Russia to its rightful place as a powerful and respected nation.  In his heart burns the ambition to build the greatest empire ever seen on Earth."
+    8613, L"- Warrior "
+    8614, L"- Strategist "
+    8615, L"Normal Zoom Mode"
+    8616, L"Epic Zoom Mode"
+    8617, L"""Isometric"" Zoom Mode"
+    8618, L"Normal Hidden Units Mode"
+    8619, L"Buildings Always Transparent"
+    8620, L"Buildings Always Opaque"
+    8621, L"Previous Messages (PageUp)"
+    8622, L"Pack"
+    8623, L"Unpack"
+END
+
+STRINGTABLE
+BEGIN
+    8816, L"Debris Fire Trail (burning debris)"
+    8817, L"Rally Flag - Paratrooper"
+END
+
+STRINGTABLE
+BEGIN
+    31872, L"Buy the full version of the game and enjoy many more exciting features:"
+    31873, L"* Experience 14 unique Epochs covering 500,000 years of Human History, from the discovery of fire to the far future."
+    31874, L"* Battle on land, air, and sea with over 200 kinds of units, including massive warships, diverse aircraft, and futuristic ""Cybers."""
+    31875, L"* Explore breathtakingly gorgeous random maps.  A wide variety of map types, sizes, and terrains provide the ultimate replayability."
+    31876, L"* Expand your empire with special buildings, numerous technologies, and 6 different Wonders of the World, each with a beneficial power."
+    31877, L"* Engage in intense multiplayer warfare online or take on the most intelligent computer AI even seen in an RTS game."
+    31878, L"* Play in 'Standard' mode for a more-strategic empire building game or 'Tournament' mode for faster-paced RTS action."
+    31879, L"* Preorder Empire Earth: Art of Conquest and get a pre-release Beta version of the game, which features Multiplayer play!  Preorder at a Best Buy, CompUSA, Electronics Boutique, Fry's, GameStop, Software Etc. or Babbage's retail store near you."
+    31880, L"* Play the four full campaigns that each follows a different civilization's incredible rise to power."
+    31881, L"* Choose from 21 mighty civilizations, including Ancient Greece, England, Russia, Germany, and the United States."
+    31882, L"* Create your own custom civilizations by choosing from dozens of economic and military bonuses."
+    31883, L"* Recreate historic battles, craft fictional campaigns, and direct your own movies with the most extraordinary Scenario Editor ever created."
+    31884, L"Find out more! Visit www.empireearth.com"
+    31885, L"The Napoleonic Wars continue in the full version of Empire Earth."
+    31886, L"Command armored divisions in World War II."
+    31887, L"Recreate vast battles in the Middle Ages."
+END
+
+STRINGTABLE
+BEGIN
+    26000, L"To run Empire Earth: Art of Conquest, your windows desktop must be in 16-bit color mode or higher. Please change your color mode and try again."
+END
+
+STRINGTABLE
+BEGIN
+    100, L"Escape"
+    101, L"1"
+    102, L"2"
+    103, L"3"
+    104, L"4"
+    105, L"5"
+    106, L"6"
+    107, L"7"
+    108, L"8"
+    109, L"9"
+    110, L"0"
+    111, L"MINUS"
+END
+
+STRINGTABLE
+BEGIN
+    112, L"EQUALS"
+    113, L"BACK"
+    114, L"TAB"
+    115, L"Q"
+    116, L"W"
+    117, L"E"
+    118, L"R"
+    119, L"T"
+    120, L"Y"
+    121, L"U"
+    122, L"I"
+    123, L"O"
+    124, L"P"
+    125, L"LBRACKET"
+    126, L"RBRACKET"
+    127, L"RETURN"
+END
+
+STRINGTABLE
+BEGIN
+    128, L"CONTROL (left)"
+    129, L"A"
+    130, L"S"
+    131, L"D"
+    132, L"F"
+    133, L"G"
+    134, L"H"
+    135, L"J"
+    136, L"K"
+    137, L"L"
+    138, L"SEMICOLON"
+    139, L"APOSTROPHE"
+    140, L"GRAVE"
+    141, L"SHIFT (left)"
+    142, L"BACKSLASH"
+    143, L"Z"
+END
+
+STRINGTABLE
+BEGIN
+    144, L"X"
+    145, L"C"
+    146, L"V"
+    147, L"B"
+    148, L"N"
+    149, L"M"
+    150, L"COMMA"
+    151, L"PERIOD"
+    152, L"SLASH"
+    153, L"SHIFT (right)"
+    154, L"MULTIPLY"
+    155, L"ALT (left)"
+    156, L"SPACE"
+    157, L"CAPITAL"
+    158, L"F1"
+    159, L"F2"
+END
+
+STRINGTABLE
+BEGIN
+    160, L"F3"
+    161, L"F4"
+    162, L"F5"
+    163, L"F6"
+    164, L"F7"
+    165, L"F8"
+    166, L"F9"
+    167, L"F10"
+    168, L"NUMLOCK"
+    169, L"SCROLL"
+    170, L"NUMPAD7"
+    171, L"NUMPAD8"
+    172, L"NUMPAD9"
+    173, L"SUBTRACT"
+    174, L"NUMPAD4"
+    175, L"NUMPAD5"
+END
+
+STRINGTABLE
+BEGIN
+    176, L"NUMPAD6"
+    177, L"ADD"
+    178, L"NUMPAD1"
+    179, L"NUMPAD2"
+    180, L"NUMPAD3"
+    181, L"NUMPAD0"
+    182, L"DECIMAL"
+    183, L"F11"
+    184, L"F12"
+    185, L"F13"
+    186, L"F14"
+    187, L"F15"
+    188, L"KANA"
+    189, L"CONVERT"
+    190, L"NOCONVERT"
+    191, L"YEN"
+END
+
+STRINGTABLE
+BEGIN
+    192, L"NUMPADEQUALS"
+    193, L"CIRCUMFLEX"
+    194, L"AT"
+    195, L"COLON"
+    196, L"UNDERLINE"
+    197, L"KANJI"
+    198, L"STOP"
+    199, L"AX"
+    200, L"UNLABELED"
+    201, L"NUMPADENTER"
+    202, L"CONTROL (right)"
+    203, L"NUMPADCOMMA"
+    204, L"DIVIDE"
+    205, L"SYSRQ"
+    206, L"ALT (right)"
+    207, L"PAUSE"
+END
+
+STRINGTABLE
+BEGIN
+    208, L"HOME"
+    209, L"UP"
+    210, L"PRIOR"
+    211, L"LEFT"
+    212, L"RIGHT"
+    213, L"END"
+    214, L"DOWN"
+    215, L"NEXT"
+    216, L"INSERT"
+    217, L"DELETE"
+    218, L"LWIN"
+    219, L"RWIN"
+    220, L"APPS"
+END
+
+STRINGTABLE
+BEGIN
+    32800, L"PASSWORD"
+    32801, L"PRIVATE"
+    32802, L"IN PROGRESS"
+    32803, L"You can't join that game because it has already started.  Choose a game that is not already in progress."
+    32804, L"Games In Progress"
+    32805, L"Password Protected"
+    32806, L"Private Games"
+    32807, L"You cannot exit the game while the server is migrating."
+    32808, L"You have lost your connection to Sierra.com!"
+    32809, L"To change the screen resolution, 3D acceleration, or video card, please exit to the Main Menu and choose ""Game Settings""."
+    32810, L"Remember Password"
+    32811, L"Network Adapter Options"
+    32812, L"Adapter Selection"
+    32813, L"<default>"
+    32814, L"Adapter 1"
+    32815, L"Adapter 2"
+END
+
+STRINGTABLE
+BEGIN
+    23000, L"You have reached your Pop Limit for Heroes."
+    23001, L"You have already built the maximum number of Teleporters."
+END
+
+STRINGTABLE
+BEGIN
+    31888, L"Fight futuristic conflicts with energy weapons."
+    31889, L"Play Empire Earth: Art of Conquest multiplayer today!"
+    31890, L"Preorder Empire Earth: Art of Conquest, right now, and take home a pre-release Beta CD, featuring multiplayer play.  Preorder in the USA at a Best Buy, CompUSA, Electronics Boutique, Fry's, Gamestop, Software Etc. or Babbage's retail store near you.  But you'd better hurry, because each participating store carries only a few copies. "
+    31891, L"Just-In-Time manufanufacturing is now available."
+    31892, L"Just-In-Time manufacturing is not available until timer expires."
+END
+
+STRINGTABLE
+BEGIN
+    32816, L"This is an advanced option that most users can leave alone.  It sets the particular Network Adapter or Modem you want to use for Empire Earth: Art of Conquest on a computer that has more than one selection.  See the readme file for more information."
+    32817, L"Unable to launch the update utility.  Please exit Empire Earth and run ""Update Empire Earth: Art of Conquest"" from the Start menu."
+    32818, L"Flaming Arrows (Epochs: 3-7)"
+    32819, L"Slavery (Epochs: all)"
+    32820, L"Priest Tower (Epochs: all)"
+    32821, L"Crusaders (Epochs: 4-7)"
+    32822, L"Fanaticism (Epochs: all)"
+    32823, L"Emissaries (Epochs: all)"
+    32824, L"Exploration (Epochs: all)"
+    32825, L"Insurance (Epochs: all)"
+    32826, L"Metallurgy (Epochs: all)"
+    32827, L"Advanced Mining (Epochs: all)"
+    32828, L"Pathfinding (Epochs: all)"
+    32829, L"Camouflage (Epochs: all)"
+    32830, L"Bundeswehr (Epochs: 9-12)"
+    32831, L"S.A.S. Commando (Epochs: 10-15)"
+END
+
+STRINGTABLE
+BEGIN
+    50, L"3681773574"
+    51, L"2426336588"
+    52, L"3616364484"
+    53, L"9999999999"
+    54, L"4065261160"
+    55, L"3229516276"
+END
+
+STRINGTABLE
+BEGIN
+    32832, L"Paratroopers (Epochs: 11-15)"
+    32833, L"Market (Epochs: 10-15)"
+    32834, L"Cyber Ninja (Epoch 15 only)"
+    32835, L"Missile Base (Epochs: 13-15)"
+    32836, L"Cloaking (Epochs: all)"
+    32837, L"Adaptation (Epochs: 3-15)"
+    32838, L"Expansionism (Epochs: all)"
+    32839, L"Conquistadors (Epochs: 7-9)"
+    32840, L"Just In Time Manufacturing (Epochs: all)"
+END
+
+STRINGTABLE
+BEGIN
+    32850, L"Special Powers"
+END
+
+STRINGTABLE
+BEGIN
+    3500, L"Egyptian Chariot"
+    3501, L"Japanese Infantry"
+    3502, L"Type 89 (HE)"
+    3503, L"Battleship - Yamato"
+END
+
+STRINGTABLE
+BEGIN
+    3504, L"Carrier - Akagi"
+    3505, L"A6M Fighter/Bomber"
+    3506, L"Obelisk"
+    3507, L"Jaguar Warrior"
+    3508, L"Pyramid - Egyptian"
+    3509, L"Pyramid - Aztec"
+    3510, L"Anti Missile Battery"
+    3511, L"Missile Base"
+    3512, L"Paratrooper Plane"
+    3513, L"Paratrooper"
+    3514, L"Unpacked Archery Range"
+    3515, L"Packed Archery Range"
+    3516, L"Unpacked Stable"
+    3517, L"Packed Stable"
+    3518, L"Emissary"
+    3519, L"Booby Trap"
+END
+
+STRINGTABLE
+BEGIN
+    9300, L"Epoch -Space"
+END
+
+STRINGTABLE
+BEGIN
+    30160, L"Random Epoch"
+END
+
+STRINGTABLE
+BEGIN
+    31950, L"HeroMilitary"
+    31951, L"Any Family"
+END
+
+STRINGTABLE
+BEGIN
+    31952, L"Epoch 1"
+    31953, L"Epoch 2"
+    31954, L"Epoch 3"
+    31955, L"Epoch 4"
+    31956, L"Epoch 5"
+    31957, L"Epoch 6"
+    31958, L"Epoch 7"
+    31959, L"Epoch 8"
+    31960, L"Epoch 9"
+    31961, L"Epoch 10"
+    31962, L"Epoch 11"
+    31963, L"Epoch 12"
+    31964, L"Epoch 13"
+    31965, L"Epoch 14"
+    31966, L"Epoch 15"
+    31967, L"NoFamily"
+END
+
+STRINGTABLE
+BEGIN
+    31968, L"Resource"
+    31969, L"Tank"
+    31970, L"Building"
+    31971, L"AntiTank"
+    31972, L"Aircraft"
+    31973, L"Priest"
+    31974, L"Submarine"
+    31975, L"Hero"
+    31976, L"Ship"
+    31977, L"SpearThrower"
+    31978, L"Machines"
+    31979, L"HumanMusket"
+    31980, L"HumanSword"
+    31981, L"MountedArcher"
+    31982, L"Lancer"
+    31983, L"Helicopter"
+END
+
+STRINGTABLE
+BEGIN
+    31984, L"Animal"
+    31985, L"Fish"
+    31986, L"Curiassier"
+    31987, L"Bomber"
+    31988, L"Battleship"
+    31989, L"Mines"
+    31990, L"Human"
+    31991, L"AircraftCarrierFighter"
+    31992, L"CyberMinotaur"
+    31993, L"CyberMedium"
+    31994, L"CyberZeus"
+    31995, L"CyberCyclops"
+    31996, L"HumanArcher"
+    31997, L"Ram"
+    31998, L"Siege"
+    31999, L"LandAA"
+END
+
+STRINGTABLE
+BEGIN
+    32000, L"CyberApollo"
+    32001, L"TankStrong"
+    32002, L"Ambient"
+    32003, L"Citizen"
+    32004, L"Towers"
+    32005, L"HumanMachineGun"
+    32006, L"MedievalFieldWeapon"
+    32007, L"HumanSpear"
+    32008, L"MountedSpear"
+    32009, L"AtomicBomber"
+    32010, L"CyberUnderwater"
+    32011, L"Walls"
+    32012, L"Viking"
+    32013, L"AABuilding"
+    32014, L"ShipGalley"
+    32015, L"WarElephant"
+END
+
+STRINGTABLE
+BEGIN
+    32016, L"ElephantArcher"
+    32017, L"AircraftCarrier"
+    32018, L"PlaceHolder0"
+    32019, L"EliteGuard"
+    32020, L"Artillery"
+    32021, L"CavalryArcher"
+    32022, L"ICBM"
+    32023, L"Spaceship"
+    32024, L"Space Fighter"
+    32025, L"Space Corvette"
+    32026, L"Space Turret"
+    32027, L"RPS AT"
+    32028, L"RPS Battleship"
+    32029, L"RPS Special"
+    32030, L"RPS Sword"
+    32031, L"RPS Tank"
+END
+
+STRINGTABLE
+BEGIN
+    32032, L"RPS Spear"
+    32033, L"RPS Infantry"
+    32034, L"RPS FireShip"
+    32035, L"RPS Cavalry"
+    32036, L"RPS FieldCannon"
+    32037, L"RPS Frigate"
+    32038, L"RPS Fighter"
+    32039, L"RPS AA"
+    32040, L"RPS Bomber"
+    32041, L"RPS AircraftCarrier"
+    32042, L"RPS Artillery"
+    32043, L"RPS Boat"
+    32044, L"RPS Partisan"
+    32045, L"RPS Hovercraft"
+    32046, L"RPS CyberNormal"
+    32047, L"RPS SiegeWeapon"
+END
+
+STRINGTABLE
+BEGIN
+    32048, L"RPS Sub"
+    32049, L"RPS Helicopter"
+    32050, L"RPS Aircraft"
+    32051, L"RPS Archer"
+    32052, L"RPS Wall"
+    32053, L"RPS Building"
+    32054, L"RPS Military Hero"
+    32055, L"RPS SeaKing"
+    32056, L"RPS Cruiser"
+    32057, L"RPS CyberCyberKiller"
+    32058, L"RPS CyberInfantryKiller"
+    32059, L"RPS CyberTankKiller"
+    32060, L"RPS BomberAtomic"
+    32061, L"RPS Mech - Spell Caster"
+    32062, L"RPS Spaceship"
+    32063, L"RPS Space Capital"
+END
+
+STRINGTABLE
+BEGIN
+    32064, L"RPS Space Corvette"
+    32065, L"RPS Space Fighter"
+    32066, L"RPS Space Carrier"
+    32067, L"RPS Anti-Space Weapon"
+END
+
+STRINGTABLE
+BEGIN
+    5500, L"Space Capital Ship"
+    5501, L"Mining Unit"
+    5502, L"Spy Satellite"
+    5503, L"Catalina"
+END
+
+STRINGTABLE
+BEGIN
+    5504, L"Roman Legionnaire"
+    5505, L"Pilum Attack"
+    5506, L"Paratrooper Plane"
+    5507, L"Mind Control"
+    5508, L"Riot Police"
+    5509, L"ESS Mind Control Technology"
+    5510, L"Conscription"
+    5511, L"Senator"
+    5512, L"Gaius Marius"
+    5513, L"Tower - Space"
+    5514, L"Upgrade to Wall & Tower - Space"
+    5515, L"Wall - Space"
+    5516, L"Gate - Space"
+    5517, L"Logic Bomb"
+    5518, L"Devasting Beam of Death"
+    5519, L"Short Sword (Crusader)"
+END
+
+STRINGTABLE
+BEGIN
+    5200, L"Radio Man"
+    5201, L"Set Drop Zone"
+    5202, L"Space Carrier"
+    5203, L"Space Corvette"
+    5204, L"Space Transport"
+    5205, L"Space Turret"
+    5206, L"Space Fighter"
+    5207, L"Zero-G Engineer: Increase Space Dock Heal Rate."
+    5208, L"Plant Explosives"
+    5209, L"[Spaceship Morale]"
+END
+
+STRINGTABLE
+BEGIN
+    5800, L"Priest Tower"
+    5801, L"Mars - Ice Cliff"
+    5802, L"Mars - Polar Cap"
+    5803, L"Mars - Red Craters"
+    5804, L"Mars - Sand Dunes"
+    5805, L"Mars - Brown Craters"
+    5806, L"Mars - Glacier"
+    5807, L"Mars - Lava Flow"
+END
+
+STRINGTABLE
+BEGIN
+    5808, L"Mars - Orange Rocky"
+    5809, L"Mars - Red Rocky"
+    5810, L"Mars - Red Volcanic"
+    5811, L"Mars - Snow Glacier"
+    5812, L"Mars - Striations"
+    5813, L"Mars - Water"
+END
+
+STRINGTABLE
+BEGIN
+    12390, L"Up, Up and Away!"
+    12391, L"They'll feel the sting of our lasers soon enough!"
+    12392, L"Bring targeting lasers online . . . go ahead and call for the salvage crews!"
+    12393, L"Launch fighters! Destroy the enemy!"
+    12394, L"Affirmative. Task force Delta on its way."
+    12395, L"Excellent! I look forward to reducing our enemies to sub-atomic particles with you!"
+    12396, L"Perhaps today is a good day to die."
+    12397, L"They don't stand a chance."
+    12398, L"Excellent! I look forward to reducing our enemies to sub-atomic particles with you!"
+    12399, L"Affirmative. Task force Delta on its way."
+END
+
+STRINGTABLE
+BEGIN
+    32900, L"%s acquired through Adaptation."
+END
+
+STRINGTABLE
+BEGIN
+    5850, L"Spaceships"
+    5851, L"Space Fighters"
+    5852, L"Battlefield ambients"
+    5853, L"Show shell holes and blood stains. Turn off for better performance."
+END
+
+STRINGTABLE
+BEGIN
+    31100, L"Airplanes can not fly over there."
+END
+
+STRINGTABLE
+BEGIN
+    31750, L"Japan"
+    31751, L"Korea"
+END
+
+STRINGTABLE
+BEGIN
+    4112, L"Zero"
+    4113, L"Dauntless"
+    4114, L"Zero (Carrier Based)"
+    4115, L"Standard Bearer"
+    4116, L"Centurion"
+    4117, L"Envoy"
+    4118, L"Dune Patrol"
+    4119, L"Yamato Capital Ship"
+    4120, L"Orbital Space Station"
+    4121, L"Nano Citizen"
+    4122, L"Robotic Farm"
+    4123, L"Watchman"
+    4124, L"Damage Control: Space Units Self Heal"
+    4125, L"Transporters"
+    4126, L"Faith Healing: Increase Priest HP"
+    4127, L"Quantum Theology: Increase Prophet Recharge Rate"
+END
+
+STRINGTABLE
+BEGIN
+    4128, L"Meteor Storm"
+    4129, L"SAS Commando"
+    4130, L"Sulla"
+    4131, L"Titus Labienus"
+    4132, L"Lt. Gen. Krueger"
+    4133, L"Hu Kwan Do"
+    4134, L"Khan Sun Do"
+    4135, L"Yamato"
+    4136, L"Tree - Banyan"
+    4137, L"Tree - Mangrove"
+    4138, L"Tree - Bamboo"
+    4139, L"Japanese Carrier"
+    4140, L"D.B.D. Weapon"
+    4141, L"Large Planets"
+    4142, L"Small Planets"
+    4143, L"Upgrade to Watchman"
+END
+
+STRINGTABLE
+BEGIN
+    5520, L"Long Sword (Crusader)"
+    5521, L"Bronze Cavalry (Crusader)"
+    5522, L"Knight (Crusader)"
+    5523, L"Simple Bowman (Fire)"
+    5524, L"Composite Bow (Fire)"
+    5525, L"Long Bow (Fire)"
+    5526, L"Upgrade to Simple Bowman (Fire)"
+    5527, L"Upgrade to Composite Bow (Fire)"
+    5528, L"Upgrade to Long Bow (Fire)"
+    5529, L"Upgrade to Short Sword (Crusader)"
+    5530, L"Upgrade to Long Sword (Crusader)"
+    5531, L"Upgrade to Knight (Crusader)"
+    5532, L"Teleporter"
+    5533, L"Swamp Bush"
+    5534, L"Tall Grass 2"
+    5535, L"Swamp Scum"
+END
+
+STRINGTABLE
+BEGIN
+    32950, L"Archers can fire burning arrows which set buildings on fire."
+    32951, L"Enemy citizens killed generate citizens at your capitol."
+    32952, L"Citizens can build a tower which converts enemy units."
+    32953, L"Cavalry and swordsmen can convert enemy units."
+    32954, L"Footsoldiers can become fanatics, which do extra damage."
+    32955, L"Civilization's priests are cloaked."
+    32956, L"Civilization gets extra line of sight around capitols and town centers."
+    32957, L"Civilization gets some resources back when units are killed."
+    32958, L"Civilization can use Iron and Gold interchangably."
+    32959, L"Civilization can place extra citizens on resources."
+END
+
+STRINGTABLE
+BEGIN
+    32960, L"Barracks units and citizens can path through trees and over cliffs."
+    32961, L"Civilization's units cloak after a short period of inactivity."
+    32962, L"Citizens can be converted to military units for a price."
+    32963, L"Barracks can build SAS Commando which can plant bombs."
+    32964, L"Airport can build Paratrooper Plane, which can drop troops anywhere."
+    32965, L"Citizens can build Market, which allows Civilization to exchange resources."
+    32966, L"Barracks can build Cyber Ninja, which can attack buildings and disable them."
+    32967, L"Citizens can build Missile Base, which can launch Nuclear Missile to attack anywhere on map."
+    32968, L"Capitol can cloak nearby buildings for a short time."
+    32969, L"Priests can convert enemy town centers and settlements, stealing powers and upgrades."
+    32970, L"Citizens can build Town Centers immediately."
+    32971, L"Mounted Units have increased line of sight."
+    32972, L"Units can be created instantly at extra cost."
+END
+
+STRINGTABLE
+BEGIN
+    33000, L"You have recovered %i "
+    33001, L"wood "
+    33002, L"iron "
+    33003, L"gold "
+    33004, L"food "
+    33005, L"using insurance."
+END
+
+STRINGTABLE
+BEGIN
+    5536, L"Lt. Stock"
+    5537, L"Greek Captain"
+    5538, L"Buy"
+    5539, L"Sell"
+    5540, L"for"
+    5541, L"Carabineer (Conquistador)"
+    5542, L"Royal Cuirassier (Conquistador)"
+    5543, L"Imperial Cuirassier (Conquistador)"
+    5544, L"Dragoon (Conquistador)"
+    5545, L"Reveal"
+END
+
+STRINGTABLE
+BEGIN
+    4144, L"Carbon Deposit"
+    4145, L"Tower - Bamboo"
+    4146, L"Wall - Bamboo"
+    4147, L"Gate - Bamboo"
+    4148, L"Gate - Palisade"
+    4149, L"Crate"
+    4150, L"Obelisk"
+    4151, L"Pyramid"
+    4152, L"Sandbags"
+    4153, L"Ruined Temple"
+    4154, L"Ruined Mech Factory"
+    4155, L"Ruined Tank Factory"
+    4156, L"House - Ruined"
+    4157, L"Planetary Fighter"
+    4158, L"Upgrade to Planetary Fighter"
+    4159, L"Upgrade to Hu Kwan Do"
+END
+
+STRINGTABLE
+BEGIN
+    5860, L"You have received "
+    5861, L" in insurance"
+    5862, L"Scrolling speeds up smoothly to maximum speed."
+    5863, L"Empire Earth: Art of Conquest requires the original Empire Earth game in order to run.\nEmpire Earth cannot be found.  Please install or reinstall Empire Earth."
+    5864, L"ERROR - CAN'T RUN!"
+    5865, L"Empire Earth: Art of Conquest requires a sound card and driver in order to run.  No sound card has been detected."
+    5866, L"ERROR - CAN'T RUN!"
+END
+
+STRINGTABLE
+BEGIN
+    4160, L"Upgrade to Khan Sun Do"
+    4161, L"Tower - Palisades"
+    4162, L"Iwo Jima Hilltop"
+    4163, L"Increase Priest Hit Points"
+    4164, L"Increase Prophet Recharge Rate"
+    4165, L"Increase Space Dock Repair Rate"
+    4166, L"Space Units Self-Heal"
+    4167, L"Requires no citizens to farm"
+    4168, L"Bundeswehr"
+    4169, L"Cloak Area"
+    4170, L"Roman Senator"
+    4171, L"Medic - WWII"
+    4172, L"Advanced Mining Unit"
+    4173, L"Scientific University"
+    4174, L"Large Crate"
+    4175, L"Sandbag Revetment"
+END
+
+STRINGTABLE
+BEGIN
+    4176, L"Crashed Plane 1"
+    4177, L"Ruined Mech 1"
+    4178, L"Crashed Plane 2"
+    4179, L"Ruined Mech 2"
+    4180, L"'Bulldog' Ramsey"
+    4181, L"Statue - Iwo Jima"
+    4182, L"FTL Research Center"
+    4183, L"Colony Ship"
+    4184, L"Upgrade to Cyber Citizen"
+    4185, L"Battlecry - Titus"
+    4186, L"Battlecry - Centurion"
+    4187, L"Battlecry - Gaius Marius"
+    4188, L"Battlecry - Quintus"
+    4189, L"Oil Drum 1"
+    4190, L"Oil Drum 2"
+    4191, L"Crashed Plane 3"
+END
+
+STRINGTABLE
+BEGIN
+    12430, L"Can't do that without a space dock, sir!"
+    12431, L"Are you kidding?  I don't even own a space dock yet."
+END
+
+STRINGTABLE
+BEGIN
+    12432, L"Houston, we have a problem.  There's no way over there without a Space Transport!"
+    12433, L"Are you mad?  I don't even have a space dock yet."
+    12434, L"Please.. give me a few minutes... I'm only human!"
+    12435, L"In space, no one can hear you scream 'I CAN'T HELP YOU'"
+    12436, L"Can't do that without a space dock, sir!"
+    12437, L"Are you kidding? I don't even own a space dock yet."
+    12438, L"I'm sorry, you must have confused me with someone who has a SPACE FLEET!"
+    12439, L"My pathetic race has not yet achieved space travel."
+END
+
+STRINGTABLE
+BEGIN
+    4192, L"General Bhuta Kwai"
+    4193, L"Hydroponics Lab"
+END
+

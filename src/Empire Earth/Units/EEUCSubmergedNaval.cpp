@@ -1,0 +1,216 @@
+// C:\EEX\Empire Earth\Units\EEUCSubmergedNaval.cpp (file name inferred: no __FILE__; the class name). The submarine's
+// unit class (EEUCSeaAnimal shares most slots by ICF): 0x21ab66..0x21b163 (after EEUCSpaceTransport.cpp;
+// EEUCTorpedo.cpp follows). Unit flags: the exe's module set. Its ctor is inline (EEUnitClass.cpp's factory); slots
+// +0x04, +0x08, +0x34, +0x30, +0x74, +0x84, +0x88, +0xa0, +0xb8 in address order.
+#include <windows.h>
+#include <stdio.h>
+
+#include "lle/LowLevelEngine.h"
+#include "lle/GE2DPoint.h"
+#include "lle/GE3DPoint.h"
+#include "lle/GEVector.h"
+#include "lle/GEColor.h"
+#include "lle/GETextureCoordinate.h"
+#include "lle/GE3DPlane.h"
+#include "lle/GE3DLine.h"
+#include "lle/GETerrainMesh.h"
+#include "lle/SESoundManager.h"
+
+#include "ee/EEPlayer.h"
+#include "ee/EEUnit.h"
+#include "ee/EEUnitGoal.h"
+#include "ee/EEMap.h"
+#include "ee/RTSWorld.h"
+#include "ee/EEWorld.h"
+#include "ee/EEPhysics.h"
+#include "ee/EEPhysicsModel.h"
+#include "ee/EEMedia.h"
+#include "ee/EESoundObject.h"
+#include "ee/EEGameSound.h"
+#include "ee/EEEffectManager.h"
+#include "ee/EEUCSubmergedNaval.h"
+
+// 0x23f27e (cdecl): moves a location to the depth a submerged unit may take at its tile (provisional name)
+void EEGetSeabedDepth(EEComplexUnit* inUnit, GE3DPoint& ioLocation);
+
+// FUNCTION: EXE 0x61ab66
+// Lifts a location that lies below the terrain mesh (the sea floor) up onto it
+void EEUCSubmergedNaval::GroundLocation(GE3DPoint& ioLocation)
+{
+    GETerrainMesh& theMesh = ::gWorld.GetMap()->mTerrainMesh;
+    float theGround = theMesh.GetMeshZ(ioLocation.GetX(), ioLocation.GetY());
+    if (theGround >= ioLocation.GetZ())
+        ioLocation.SetZ(theGround);
+}
+
+// FUNCTION: EXE 0x61aba6
+// Returns the tile where the view line through a point meets the submarine's cruise depth (or the sea
+// floor where that is higher)
+void EEUCSubmergedNaval::LocationToTile(const GE3DPoint& inLocation, long& outX, long& outY)
+{
+    GE3DPoint thePoint;
+    GE3DPoint theGround;
+    GE3DLine theLine(::gWorld.mLine);
+    float theT;
+    float theZ = -this->GetCruiseAltitude();
+    theLine.SetStart(inLocation);
+    EEMap* theMap = ::gWorld.mMap;
+    theLine.SolveForZ(theZ, theT, thePoint);
+    theMap->GetGroundPoint(thePoint, theGround);
+    if (theGround.GetZ() > theZ)
+        theLine.SolveForZ(theGround.GetZ(), theT, thePoint);
+    outX = UMFloor(thePoint.GetX());
+    outY = UMFloor(thePoint.GetY());
+}
+
+// FUNCTION: EXE 0x61aca0
+// Creates a submarine at a placement kept above the sea floor, then moves it to the depth it may take there
+EEUnit* EEUCSubmergedNaval::CreateUnitAt(GETransformation& inTransformation, long inPlayer, bool inIsFoundation,
+                                         EEUnit* inCreator)
+{
+    GE3DPoint thePosition(0.0f, 0.0f, 0.0f);
+    GETransformation theTransformation(inTransformation);
+    thePosition.SetX(theTransformation.GetX());
+    thePosition.SetY(theTransformation.GetY());
+    thePosition.SetZ(theTransformation.GetZ());
+    this->GroundLocation(thePosition);
+    theTransformation.SetX(thePosition.GetX());
+    theTransformation.SetY(thePosition.GetY());
+    theTransformation.SetZ(thePosition.GetZ());
+    EEUnit* theUnit = EEUnitClass::CreateUnitAt(theTransformation, inPlayer, inIsFoundation, inCreator);
+    EEGetSeabedDepth(theUnit->mComplexUnit, thePosition);
+    theUnit->mComplexUnit->SetLocation(thePosition, true);
+    return theUnit;
+}
+
+// FUNCTION: EXE 0x61ad2c
+// Creates a submarine on a tile (yaw pi) kept above the sea floor, then moves it to the depth it may take there
+EEUnit* EEUCSubmergedNaval::CreateUnit(long inX, long inY, long inPlayer, bool inIsFoundation, EEUnit* inCreator)
+{
+    GE3DPoint thePosition(0.0f, 0.0f, 0.0f);
+    GETransformation theTransformation(false);
+    float theZ = ::gWorld.mMap->mTerrainMesh.GetZ(inX, inY);
+    thePosition.SetX((float)inX);
+    thePosition.SetY((float)inY);
+    thePosition.SetZ(theZ);
+    this->GroundLocation(thePosition);
+    theTransformation.SetX(thePosition.GetX());
+    theTransformation.SetY(thePosition.GetY());
+    theTransformation.SetZ(thePosition.GetZ());
+    theTransformation.SetOrientationYPR(2.0f * 1.5707964f, 0.0f, 0.0f);
+    theTransformation.SetElement(3, 0, 0.0f);
+    theTransformation.SetElement(3, 1, 0.0f);
+    theTransformation.SetElement(3, 2, 0.0f);
+    theTransformation.SetElement(3, 3, 1.0f);
+    EEUnit* theUnit = EEUnitClass::CreateUnitAt(theTransformation, inPlayer, inIsFoundation, inCreator);
+    EEGetSeabedDepth(theUnit->mComplexUnit, thePosition);
+    theUnit->mComplexUnit->SetLocation(thePosition, true);
+    return theUnit;
+}
+
+// FUNCTION: EXE 0x61adff
+// On dying, plays the death effect and sound and stops the submarine (physics action 2, death animation,
+// path dropped); other actions use the common handling
+void EEUCSubmergedNaval::ActionChanged(EEComplexUnit* inUnit)
+{
+    std::vector<EETileCoordinate> theTiles;
+    float theVolume;
+    float thePan;
+    float thePitch;
+    if ((inUnit->mCommand ? inUnit->mCommand->mType : 0) != kActionDying) {
+        this->HandleActionChanged(inUnit);
+    } else {
+        if (this->mDeathEffect != NULL)
+            gEffectManager->CreateUnitEffect(inUnit, this->mDeathEffect, NULL, 0, 0, 0);
+        EESoundObject* theSound = inUnit->mStats->mDeathSound;
+        if (theSound != NULL) {
+            this->GetSoundParameters(inUnit, theSound, &theVolume, &thePan, &thePitch);
+            gSoundManager->Play(theSound->mSampleID, theVolume, thePan, thePitch, theSound->mLooping, NULL);
+        }
+        inUnit->SetCurrentPhysicsAction(2);
+        inUnit->mAngularVelocity = GEOrientation(0.0f, 0.0f, 0.0f);
+        inUnit->SetVelocity(0.0f);
+        inUnit->SetAnimation(4, -1, 0);
+        inUnit->DropPath();
+    }
+}
+
+// FUNCTION: EXE 0x61aef9
+// Adds the submarine to its tile's unit list
+void EEUCSubmergedNaval::AddToTile(EEUnit* inUnit)
+{
+    EEUnit* theUnit = inUnit->mComplexUnit;
+    EEMapTile* theTile = ::gWorld.mMap->GetTile(inUnit->mTileX, inUnit->mTileY);
+    if (theTile != NULL)
+        theTile->mUnits = theTile->AddUnit(theUnit, theTile->mUnits);
+}
+
+// FUNCTION: EXE 0x61af45
+// Returns whether the submarine reached its waypoint: on the waypoint's tile with more to go, when its collision
+// radius covers the distance left; otherwise when that distance is at most 0.05 (always in collision state 8)
+bool EEUCSubmergedNaval::HasArrived(EEComplexUnit* inUnit, float inValue)
+{
+    GE3DPoint thePosition(0.0f, 0.0f, 0.0f);
+    if (inUnit->mCollisionState == 8)
+        return true;
+    unsigned long theCount = inUnit->mWaypoints.size();
+    inUnit->GetNextWaypointPoint(thePosition);
+    if (inUnit->GetTileX() == UMFloor(thePosition.GetX()) && inUnit->GetTileY() == UMFloor(thePosition.GetY())) {
+        if (theCount > 1
+            || (inUnit->GetQueueGoals(0).size() > 1 && inUnit->mGoalState != NULL && inUnit->mGoalState->mKind == kGoalLocation)) {
+            return !(inUnit->mCollisionRadius < inValue);
+        }
+    }
+    return inValue <= 0.05f;
+}
+
+// FUNCTION: EXE 0x61b010
+// Answers dying-animation-finished once the submarine has sunk below the sea floor; other triggers go to the
+// common unit class
+long EEUCSubmergedNaval::EvaluateCondition(EEComplexUnit* inUnit, unsigned long inEvent)
+{
+    long theResult = 0;
+    GE3DPoint thePosition(0.0f, 0.0f, 0.0f);
+    GE3DPoint theGround(0.0f, 0.0f, 0.0f);
+    if (inEvent != kTriggerDyingAnimationFinished) {
+        theResult = EEUnitClass::EvaluateCondition(inUnit, inEvent);
+    } else {
+        inUnit->GetPosition(thePosition);
+        ::gWorld.mMap->GetGroundPoint(thePosition, theGround);
+        if (thePosition.GetZ() < theGround.GetZ())
+            theResult = 1;
+    }
+    return theResult;
+}
+
+// FUNCTION: EXE 0x61b085
+// Runs the submarine's tick (physics, effects, timers, camouflage, animation, sound), fires on its attack frame
+// and counts down its rotting time
+void EEUCSubmergedNaval::Update(EEComplexUnit* inUnit)
+{
+    long theFrame = inUnit->mPhysicalModel.GetFrame();
+    inUnit->SetLastHitPoints(inUnit->mHitPoints);
+    if (this->mPhysicsModel != NULL && inUnit->mTileX != -10000)
+        this->mPhysicsModel->Step(inUnit);
+    this->UpdateEffects(inUnit);
+    inUnit->UpdateReloadTimer();
+    inUnit->UpdateTargetSearchTimer();
+    this->UpdateCamouflageTimer(inUnit);
+    long theAttack = this->Animate(inUnit);
+    this->RefreshSound(inUnit);
+    switch (inUnit->mCommand ? inUnit->mCommand->mType : 0) {
+    case kActionAttackEnemyUnit:
+    case kActionAttackLocation:
+    case kActionWaitForReload:
+        this->FireOnAttackFrame(inUnit, theAttack, theFrame);
+        break;
+    case kActionUnitRotting: {
+        long theTime = inUnit->mRottingAwayTime - gPhysics->mTickTimeMs;
+        if (theTime < 0)
+            theTime = 0;
+        inUnit->SetRottingAwayTime(theTime);
+        break;
+    }
+    }
+    this->Fn157269(inUnit);
+}
