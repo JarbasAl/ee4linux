@@ -385,7 +385,7 @@ void EEE3DEnergyWall::FindSegments()
 // Marks each segment whose tile holds a living wall piece or gate side part of the owner, raising its end to it
 void EEE3DEnergyWall::FindSegments(long inX, long inY, long inFrom, long inTo)
 {
-    // LOST-DEBUG: none independent (round-13 policy): the original calls vector::begin() out of line in theUnits[j]
+    // LOST-DEBUG: none independent: the original calls vector::begin() out of line in theUnits[j]
     EE_LOST_DEBUG(6);
     unsigned long theOwner = this->mUnit->mComplexUnit->mPlayer->mPlayerID;
     for (long i = inFrom; i < inTo; i++) {

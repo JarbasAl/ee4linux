@@ -199,7 +199,7 @@ long EEE3DTimeWarp::DrawPass4()
     gRasterizer->SetFog(theFog, theScreen);
     gRasterizer->SetAlphaTesting(1, theScreen);
     return theResult;
-    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x4fc297

@@ -407,7 +407,7 @@ long EEUIELEStart::ProcessEvent(UIForm* inForm, UIEntity* inEntity)
     }
     gGameOptions.mLock->ReadUnlock();
     return kErrorOK;
-    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x5da876
@@ -707,7 +707,7 @@ void LobbyOnPlayerTypeYes(UIForm* inForm)
         gWonNet->SetGameInfo(theInfo);
     gGameOptions.mPlayers[thePlayer.mSlot] = thePlayer;
     gGameOptions.mLock->WriteUnlock();
-    EE_LOST_DEBUG(4);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(4);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x5db2fc
@@ -2147,7 +2147,7 @@ void LobbyOpen(UIForm* inForm)
     }
     for (i = 0; i < 16; i++)
         sPlayerTypeMenus[i] = 0;
-    EE_LOST_DEBUG(4);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(4);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x5df874

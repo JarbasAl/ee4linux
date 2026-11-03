@@ -834,7 +834,7 @@ void EEUnitClass::LevelGround(GETerrainMesh* inMesh, unsigned long inX, unsigned
 // inTarget's unit is counted first, so it is not hit twice. Each unit takes the to-hit factor times inDamage less its
 // armour, scaled by the height factor (at least one point more or less) and, for the own player's units, by the
 // class's friendly damage factor at
-// +0x198; the 0x16f class only plays its effect on them (r23-units-gfx)
+// +0x198; the 0x16f class only plays its effect on them
 void EEUnitClass::ApplyAreaDamage(EEComplexUnit* inUnit, float inRadius, float inDamage, long inKind, long inColumn,
                            EEUnit* inTarget)
 {

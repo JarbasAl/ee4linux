@@ -146,7 +146,7 @@ long EEE3DLinearProjectile::SetUp()
 // draw result
 long EEE3DLinearProjectile::DrawPass5()
 {
-    // LOST-DEBUG: none independent (R12 policy): 13 units make mAngles[i]/mOrbitals[i] call operator+ out of line
+    // LOST-DEBUG: none independent: 13 units make mAngles[i]/mOrbitals[i] call operator+ out of line
     EE_LOST_DEBUG(13);
     GETransformation theOrientation;
     GETransformation theTransformation;

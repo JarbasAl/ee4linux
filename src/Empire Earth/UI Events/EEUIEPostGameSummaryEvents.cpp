@@ -1061,7 +1061,7 @@ static void ShowMisc(UIForm* inForm, const GEColor& inColor, unsigned long inPla
         }
         AddStatusBar(inForm, theControl, theGraph, inColor, inPlayer, 7, theText);
     }
-    EE_LOST_DEBUG(6);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(6);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x5e55af

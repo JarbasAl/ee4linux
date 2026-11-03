@@ -417,7 +417,7 @@ void EESETSETMediaSendDialog::Store(EESMEffect* inEffect, EESETSEffectControls* 
     theText = inControls->mTextEditBox->GetText(0);
     inEffect->mFileName = theText;
     inEffect->mIntValue1 = inControls->mSliders[0]->GetCurrentRangeValue() - 1;
-    EE_LOST_DEBUG(2);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(2);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x586c7e

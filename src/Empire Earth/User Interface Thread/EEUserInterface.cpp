@@ -646,7 +646,7 @@ void EEUserInterface::StartLoadingFromEditor()
 // Opens the WON server selection, remembering the password when asked
 void EEUserInterface::OpenSelectServer()
 {
-    EE_LOST_DEBUG(5);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (start of body)
+    EE_LOST_DEBUG(5);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (start of body)
     gUIManager->LockUIForCopyData();
     UIForm* theForm = gUIManager->GetFormByID(kFormMultiplayer);
     if (gUIManager->IsFormVisible(theForm)) {

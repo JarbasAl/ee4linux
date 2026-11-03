@@ -139,7 +139,7 @@ long EEE3DDisease::Queue(EEEffectQueue* inQueues)
 // mFrame is assigned before mTime (the original stores mTime after the mStartFrames[13] load)
 long EEE3DDisease::SetUp()
 {
-    // LOST-DEBUG: none independent (R13 policy): the stand-in at the end makes begin()/operator+ of the orbital copy out of line
+    // LOST-DEBUG: none independent: the stand-in at the end makes begin()/operator+ of the orbital copy out of line
 
     this->mGraphicObject = this->GetGraphicObject();
     long theResult = this->mGraphicObject->LoadMedia();
@@ -154,7 +154,7 @@ long EEE3DDisease::SetUp()
     this->mBoundingRadius = this->mGraphicEffect->GetSize();
     this->mSound = NULL;
     return theResult;
-    EE_LOST_DEBUG(6);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(6);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x4ec19d
@@ -162,7 +162,7 @@ long EEE3DDisease::SetUp()
 // of its life; returns the draw result
 long EEE3DDisease::DrawPass5()
 {
-    // LOST-DEBUG: none independent (R12 policy): 14 units make mAngles[i]/mOrbitals[i] call operator+ out of line
+    // LOST-DEBUG: none independent: 14 units make mAngles[i]/mOrbitals[i] call operator+ out of line
     EE_LOST_DEBUG(14);
     GETransformation theTransformation;
     GETransformation theOrientation;

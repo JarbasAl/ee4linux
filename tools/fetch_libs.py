@@ -48,6 +48,8 @@ LIBS = {
     "vc98lib/rtm/WINMM.LIB": "bb098679a802afdbc6fdaac03dfe1ea81453a36f6d4768b1c1cd092b1dbe9342",
     "vc98lib/rtm/IMM32.LIB": "eb5e8621914af650a8717b2d1789084cdc8d795b8c9a1a811969476c5436f161",
     "vc98lib/rtm/WS2_32.LIB": "dbe9de991aea6662d8857da13e572729b5379377be8e13bdd86e57a51354988e",
+    "vc98lib/rtm/SHELL32.LIB": "53150052405bbce4f264226a7bd86d3496bafe8c4bc2252835415826d996bd53",
+    "vc98lib/rtm/WSOCK32.LIB": "3ac0ae32d0c9ea77813db7f4d2ea8eba23ae420b40a24845cbe36f6702fca4ba",
     "dx81sdk/lib/ddraw.lib": "6e9e94271645a16f5dee111cf380eaea1dd03bafcfab676d4198cfd7900de036",
     "dx81sdk/lib/dinput.lib": "6cefbeaf8688ea42259a055f84feec0410a666be6ddfdcc745c2661edeb123da",
     "dx81sdk/lib/dxguid.lib": "73a147b9ff6e4527e543e9a436cb244adcdae4ad89b89df51a0634f9a8c13682",

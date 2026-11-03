@@ -8892,8 +8892,8 @@ bool EEMSetUnitBehavior::IsResponse(NEMessage* inMessage)
 // TEMPLATE: EXE 0x4ca051
 // TEMPLATE: EXE 0x4ca1ad
 // TEMPLATE: EXE 0x4ca1fc
-// TEMPLATE: EXE 0x4c7486   EEComplexUnit::CanAttackClass (r24-core-world)
-// TEMPLATE: EXE 0x4c995c   EETileDistanceLess::operator()(EEComplexUnit*, EEComplexUnit*) (r24-core-world)
+// TEMPLATE: EXE 0x4c7486   EEComplexUnit::CanAttackClass
+// TEMPLATE: EXE 0x4c995c   EETileDistanceLess::operator()(EEComplexUnit*, EEComplexUnit*)
 // TEMPLATE: EXE 0x4c9046   vector<EEUnitGoal*>::push_back (EEMSetRallyGoal)
 // TEMPLATE: EXE 0x4c94b0   std::sort<EEComplexUnit*, EEFarmDistanceGreater> (EEMSmartFarmers) and its helpers
 // TEMPLATE: EXE 0x4c972e

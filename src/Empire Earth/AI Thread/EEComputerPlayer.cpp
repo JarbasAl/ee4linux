@@ -1338,8 +1338,8 @@ void EEComputerPlayer::Init()
 // civilization and exploration managers, the resource centers and the tuning values; returns the first read error
 // Built without /Og while the rest of the unit is -O1 (CLAUDE.md rule 4 evidence: 4,968 [ebp-N] references, every
 // local memory-resident, args re-pushed from [ebp+N] per call, `leave`); the pragma takes the row from 1.29 to 50.66
-// with no other row moving, and with it the function is exact (round 37). One version block per save format (the
-// last one current). The local names are chosen for the no-/Og frame hash (LEARNINGS round 14): the original names
+// with no other row moving, and with it the function is exact. One version block per save format (the
+// last one current). The local names are chosen for the no-/Og frame hash (docs/LEARNINGS.md): the original names
 // are unknown. make_pair(0L, 0L) is the original's: two literal temporaries and the out-of-line make_pair<long, long>
 // (0x440046), converted to pair<unsigned long, long> inline until the inline budget runs out (the last 3 blocks).
 #pragma optimize("g", off)

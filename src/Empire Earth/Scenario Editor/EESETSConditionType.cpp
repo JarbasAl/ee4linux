@@ -266,7 +266,7 @@ void EESETSCTGame::Store(EESMCondition* outCondition, EESETSConditionControls* i
         outCondition->mMinTime = outCondition->mMaxTime;
     outCondition->mUsesHour = inControls->mCheckBoxes[2]->GetIsChecked();
     outCondition->mHour = inControls->mSlider->GetCurrentRangeValue();
-    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x57f5d8
@@ -637,7 +637,7 @@ void EESETSCTPlayerResource::Store(EESMCondition* outCondition, EESETSConditionC
     outCondition->mOtherPlayer = inControls->mPlayers[1]->GetSelectedPlayer();
     inControls->mComboBoxes[2]->GetCurrentSelection(outCondition->mOtherAttribute);
     outCondition->mUsesPlayerAttribute = inControls->mRadioButtons[1]->GetIsChecked();
-    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x580d16

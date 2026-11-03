@@ -423,7 +423,7 @@ void EEServer::BootPlayer(unsigned char inSlot, bool inWasBooted, bool inGameIsE
         }
         this->mAttemptToRemovePlayerLock->Leave();
     }
-    EE_LOST_DEBUG(8);   // LOST-DEBUG: none: exact only (r27-core lostdebug_search, end, smallest n)
+    EE_LOST_DEBUG(8);   // LOST-DEBUG: none: exact only (end of body, smallest n)
 }
 
 // SYNTHETIC: EXE 0x4cb815

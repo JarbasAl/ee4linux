@@ -1,4 +1,4 @@
-// src/Low-Level Engine/Network Engine/TCP Protocol/TCPPacketType.h (RECONSTRUCTION, round 40). Named integer constants; names PROVISIONAL unless the comment says T1.
+// src/Low-Level Engine/Network Engine/TCP Protocol/TCPPacketType.h (RECONSTRUCTION). Named integer constants; names PROVISIONAL unless the comment says T1.
 #ifndef EE_TCPPACKETTYPE_H
 #define EE_TCPPACKETTYPE_H
 

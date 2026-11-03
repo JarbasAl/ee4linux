@@ -2601,7 +2601,7 @@ void EEDeleteDatabase(bool inShutdown)
 // instantiation) are compiled without /Og, while every user function is -O1: the file ends with an unmatched
 // `#pragma optimize("g", off)` (VC6 compiles deferred inline/template bodies at the end of the TU with the pragma
 // state in force there; probe build/scratch_exe-core/probes/p2.cpp). Evidence: with it vector<EEUnitSet*>::_Buy
-// 0x54541f goes 17.65 -> exact and nothing else changes (exe-core round 9).
+// 0x54541f goes 17.65 -> exact and nothing else changes.
 #pragma optimize("g", off)
 
 // TEMPLATE: EXE 0x54630b

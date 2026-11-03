@@ -735,7 +735,7 @@ struct EESMUnitPriorityLess {
 };
 
 // Original no-/Og: frame0x38 and memory-resident inline getter temporaries. The pragma alone
-// makes this natural comparator exact200/200B; normal-Og version is73B (round16 retained A/B proof).
+// makes this natural comparator exact200/200B; normal-Og version is73B (A/B proof).
 #pragma optimize("g", off)
 // FUNCTION: EXE 0x5bce99
 // Orders units for SetUnitsOwner: non-farms before farms, otherwise the higher unit id first

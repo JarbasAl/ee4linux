@@ -142,7 +142,7 @@ void EESELoadThread::Handle406(unsigned long inPlayer, unsigned long inCount)
 // unit classes for player 0
 void EESELoadThread::Handle408(unsigned long inTerrain, bool inUnload)
 {
-    EE_LOST_DEBUG(11);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (start of body)
+    EE_LOST_DEBUG(11);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (start of body)
     UWideString theFormat;
     UWideString theText;
     UWideString theName;

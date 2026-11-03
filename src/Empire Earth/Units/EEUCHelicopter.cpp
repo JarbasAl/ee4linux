@@ -2,7 +2,7 @@
 // The helicopter's unit
 // class: 0x212a6f..0x212edf (after EEUCGate.cpp; EEUCHelicopterPriest.cpp follows). One unit per EEUC* class in
 // alphabetical order. Unit flags: the exe's module set. Its ctor is inline (EEUnitClass.cpp's factory); slots +0x24,
-// +0x74, +0xb8 in source order (the others are ICF-folded into twins). r13-breadth-core-h2 (round 13, first pass).
+// +0x74, +0xb8 in source order (the others are ICF-folded into twins).
 #include <windows.h>
 #include <stdio.h>
 

@@ -250,7 +250,7 @@ EEUIManager::EEUIManager(GERasterizer* inRasterizer, unsigned long inNumberOfSur
     EEUIESLEActivateForm* theEvent = new EEUIESLEActivateForm;
     this->GetFormByID(kFormSaveGame)->SetFormActivateEvent(theEvent);
     theEvent->Dereference();
-    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // SYNTHETIC: EXE 0x671527

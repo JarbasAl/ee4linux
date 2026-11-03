@@ -1,8 +1,8 @@
-// \eex\Empire Earth\AI Thread\EEAIFunctionObjects.h (RECONSTRUCTION, PARTIAL; r12-ai-1-h5, round 12). The AI's
+// \eex\Empire Earth\AI Thread\EEAIFunctionObjects.h (RECONSTRUCTION, PARTIAL). The AI's
 // small function objects whose members live in EEAIFunctionObjects.cpp (0x29fcc..0x2bb72) and that no other header
 // declares yet (the original header records __FILE__ for an assert first emitted at 0x2ddfb: found through the
 // \eex\Empire Earth\AI Thread\ include path: lives in src/Empire Earth/AI Thread/, included as
-// <EEAIFunctionObjects.h> so __FILE__ is the drive-less /I form; round 25). Class names from RTTI; slot and
+// <EEAIFunctionObjects.h> so __FILE__ is the drive-less /I form). Class names from RTTI; slot and
 // member names PROVISIONAL.
 // Requires ee/EEAIFOUnitsToKillScoringBase.h, ee/EECPUMGatherUnitsScreenBase.h.
 #ifndef EE_EEAIFUNCTIONOBJECTS_H
@@ -13,7 +13,7 @@ class EEComputerPlayer;
 class EEUnitClass;
 
 // RTTI EEAIFOContinentScreenBase (vtable 0x43bce0: ??_G 0x58608, +0x04 0x58554, +0x08 0x58584): the continent filter base;
-// its inline slots are COMDATs after their first user EECPAttackGroup::FindLandTransport (r22-ai-planner) PROVISIONAL names
+// its inline slots are COMDATs after their first user EECPAttackGroup::FindLandTransport. Provisional names
 class EEAIFOContinentScreenBase {
 public:
     virtual ~EEAIFOContinentScreenBase() {}   // +0x00 (??_G 0x58608: the derived screens' dtors fold into it)
@@ -36,7 +36,7 @@ public:
 };
 
 // RTTI EEAIFOContinentScreenContinentsShareAdjacentOceanContinentID > ...ShareAdjacentID (vtable 0x43bcc0: ??_G
-// 0x58608, +0x04 0x58554, +0x08 0x58591): the same over continents of kind 4 (mOcean) or 2 (r22-ai-planner)
+// 0x58608, +0x04 0x58554, +0x08 0x58591): the same over continents of kind 4 (mOcean) or 2
 class EEAIFOContinentScreenContinentsShareAdjacentOceanContinentID : public EEAIFOContinentScreenContinentsShareAdjacentID {
 public:
     EEAIFOContinentScreenContinentsShareAdjacentOceanContinentID(unsigned short inContinent1, unsigned short inContinent2,
@@ -76,7 +76,7 @@ public:
 
 // RTTI EECPUGatheAircraftCarriersCount (sic) > EECPUMGatherUnitsScreenBase (vtable 0x43a4c8: ??_G 0x7895f, 0x29f57,
 // 0x29f7e, 0x29fa1): the aircraft carriers (category 0x15 with +0x28 set) and their requests; a local of
-// EEAIFOCurrentlyBuildableUnitScreener::Screen 0x2ae09 (members before the vptr: the base's init list) r22-ai-planner
+// EEAIFOCurrentlyBuildableUnitScreener::Screen 0x2ae09 (members before the vptr: the base's init list)
 class EECPUGatheAircraftCarriersCount : public EECPUMGatherUnitsScreenBase {
 public:
     EECPUGatheAircraftCarriersCount(EEComputerPlayer* inPlayer) : EECPUMGatherUnitsScreenBase(true, true, false)
@@ -120,8 +120,8 @@ public:
 // 0x2b549): the heroes (EEUnitClass +0x1d0 == 0x1b). Its ctor is not in this unit.
 class EECPUGatherHeroesCount : public EECPUMGatherUnitsScreenBase {
 public:
-    // inline (EEComputerPlayer::GetHeroCount 0x2e248 builds it in its frame: the base's stores, the vptr, then mPlayer;
-    // r12-ai-1-h8)
+    // inline (EEComputerPlayer::GetHeroCount 0x2e248 builds it in its frame: the base's stores, the vptr, then
+    // mPlayer)
     EECPUGatherHeroesCount(EEComputerPlayer* inPlayer, bool inByClass, bool inRequests)
         : EECPUMGatherUnitsScreenBase(inByClass, inRequests, false)
     {
@@ -131,11 +131,11 @@ public:
     virtual bool CountUnit(EEComplexUnit* inUnit);   // +0x08 0x2b528
     virtual bool CountUnits(EEUnitClass* inClass, std::deque<EEComplexUnit*>* inUnits);   // +0x0c 0x2b549
 
-    EEComputerPlayer* mPlayer;              // +0x10 (r12-ai-1-h8)
+    EEComputerPlayer* mPlayer;              // +0x10
 };
 
 // RTTI EEAIFOFavoriteUnitScreener > EEAIFOUnitSelectionScreener (vtable 0x43a660; ctor 0x2ddfb in EEComputerPlayer.cpp,
-// ret 0x1c: the init list before the vptr, mEpoch clamped to 0..14 in the body; r12-ai-1-h8). Needs ee/EECPUnitSelector.h.
+// ret 0x1c: the init list before the vptr, mEpoch clamped to 0..14 in the body). Needs ee/EECPUnitSelector.h.
 // Member names PROVISIONAL.
 class EEAIFOFavoriteUnitScreener : public EEAIFOUnitSelectionScreener {
 public:
@@ -162,7 +162,7 @@ class EECPAttackSubGroup;
 class EECPILocation;
 
 // RTTI EEAIFOBestRegionToAttack (vtable 0x43a4dc: ??_G 0x2b1a4, +0x04 _purecall): a sub group's strike-location
-// scorer; sizeof 0x10 (EECPAttackGroup::FindLandTarget's frame). r22-ai-planner-2; slot/member names PROVISIONAL
+// scorer; sizeof 0x10 (EECPAttackGroup::FindLandTarget's frame); slot/member names provisional
 class EEAIFOBestRegionToAttack {
 public:
     EEAIFOBestRegionToAttack(EECPAttackSubGroup* inSubGroup, const EETileLocation& inTile);   // 0x2b100

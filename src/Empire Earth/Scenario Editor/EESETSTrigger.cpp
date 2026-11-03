@@ -761,7 +761,7 @@ void EESETSTrigger::Activate()
     }
     gUIManager->mScenarioEditorForm->GetTriggerScreen()->HideText();
     gUIManager->mScenarioEditorForm->GetTriggerScreen()->HideAlphaSort();
-    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // NEAR: inline budget (the original expands GetTriggerScreen with operator[] refused at the first site)

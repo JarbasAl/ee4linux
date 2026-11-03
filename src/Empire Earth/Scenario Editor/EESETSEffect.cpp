@@ -282,7 +282,7 @@ void EESETSEffect::Load()
             this->mTypes[this->mType]->Show(this->mControls);
         this->mTypes[this->mType]->Load(theEffect, this->mControls);
     }
-    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in (round-13 depth sweep): the smallest n that makes this function exact (end of body)
+    EE_LOST_DEBUG(1);   // LOST-DEBUG: inline-budget stand-in: the smallest n that makes this function exact (end of body)
 }
 
 // FUNCTION: EXE 0x582d35

@@ -1744,7 +1744,7 @@ static void CloseMessageCallback(UIForm* inForm)
 // TEMPLATE: EXE 0x4d2d30
 // (a map family's member, named by its caller)
 // TEMPLATE: EXE 0x4cff2a
-// (CDKey's implicit dtor, emitted by the DEAD-IN-AOC Login/LoginCallback; r25-core-won)
+// (CDKey's implicit dtor, emitted by the DEAD-IN-AOC Login/LoginCallback)
 // TEMPLATE: EXE 0x4cff46
 // (r25pre-won-2: emitted by the DEAD-IN-AOC MOTD request (GetHTTPDocumentOp / tracker) or server list)
 // TEMPLATE: EXE 0x4cff95

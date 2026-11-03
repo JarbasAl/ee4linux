@@ -387,8 +387,8 @@ void EESEUITechListBox::Rebuild()
         this->GetCurrentSelection(theSelection);
         this->SetStartingDisplayLine(theSelection);
     }
-    // LOST-DEBUG: round-13 policy stand-in (no independent evidence): the original refuses _Ptrit::operator+ in the
-    // epoch loop's mTechs[i]; 11 units at the end make it exact (r13-stl-depth measurement)
+    // LOST-DEBUG: stand-in (no independent evidence): the original refuses _Ptrit::operator+ in the
+    // epoch loop's mTechs[i]; 11 units at the end make it exact
     EE_LOST_DEBUG(11);
 }
 

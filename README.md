@@ -2,7 +2,7 @@
 
 A matching decompilation of *Empire Earth: The Art of Conquest* (Stainless Steel Studios / Sierra, 2002): C++ source
 that compiles, with the original toolchain, to the same machine code as the retail release. It covers the game
-executable and its first-party DLLs.
+executable and its first-party DLLs. The source is not complete yet (see Status); every image links from it.
 
 Toolchain of the original build:
 
@@ -11,6 +11,11 @@ Toolchain of the original build:
   `include/dinkum/`
 - DirectX 7.0a SDK headers (renderer plug-ins), DirectX 8.1 SDK and Platform SDK (June 2001) libraries
 - third-party code linked into the images: IJG libjpeg 6b, libpng 1.0.12, zlib 1.1.3 (`src/ThirdParty/`)
+
+The engine's PKWARE Data Compression Library code (`implode`/`explode`, `src/ThirdParty/pkdcl/`) is not a
+reconstruction of the original library: it is a compatible reimplementation of the DCL format written for this
+project. It reads and writes the game's compressed data like the original (the game's data files decode identically,
+and data compressed by either one decompresses with the other), but its machine code differs from the retail engine's.
 
 This repository contains no game data and no original binaries. You need a legal copy of the game to play anything
 you build.
@@ -28,7 +33,7 @@ you build.
 | `dx7hrtnl` | `DX7HRTnLDisplay.dll` (T&L renderer) | same folder |
 | `tcp` | `TCP Protocol.dll` (network) | `src/Low-Level Engine/Network Engine/TCP Protocol/` |
 | `mixer` | `Miles Sound System Mixer.dll` (sound) | `src/Low-Level Engine/Sound Engine/Miles Sound System Mixer/` |
-| - | `Language.dll` (resources only) | `src/Empire Earth/Language/Language.rc` |
+| `language` | `Language.dll` (resources only) | `src/Empire Earth/Language/Language.rc` |
 
 ## Status
 
@@ -44,10 +49,15 @@ you build.
 | DX7HRDisplay.dll | 553 / 584 (94.7%) | 28,576 / 60,561 (47.2%) |
 | DX7HRTnLDisplay.dll | 594 / 626 (94.9%) | 29,549 / 62,738 (47.1%) |
 | libpng/zlib/libjpeg in the exe | 318 / 318 (100.0%) | 98,476 / 98,476 (100.0%) |
-| Language.dll | resources only | rebuilt byte-identical (apart from the link timestamp) |
+| Language.dll | resources only | identical to the original apart from the link time stamps and the debug record (PDB path) |
 
-Measured on 2026-11-03 at source revision d94ed06014f4: a function counts when its compiled code is identical to the original's, in the context of its own unit, with every reference resolving to the same symbol. Counts exclude CRT, SDK and import-thunk code; the exe row is the game code range (the WON networking library linked into the exe is not counted).
+Measured on 2026-11-03 at source revision 9768fc52e577: a function counts when its compiled code is identical to the original's, in the context of its own unit, with every reference resolving to the same symbol. Counts exclude CRT, SDK and import-thunk code; the exe row is the game code range (the WON networking library linked into the exe is not counted).
 <!-- status:end -->
+
+The images link from this source alone. Where a function is not byte-identical yet, the image carries this source's
+version of it, so the images are not byte-identical to the retail files. `EE-AOC.exe` links stubs for the functions the
+source does not define yet, almost all of them in the WON online library (the online services are not available in
+this build).
 
 Testing (automated, on the full-source build of the game and engine):
 
@@ -63,37 +73,67 @@ Testing (automated, on the full-source build of the game and engine):
 
 ## Building
 
-Requirements: Windows (the 32-bit VC6 tools run natively on 64-bit Windows 10/11), Python 3.12, 7-Zip, about 1 GB of
-free disk space, network access to github.com and archive.org for the toolchain downloads.
+Requirements: Windows (the 32-bit VC6 tools run natively on 64-bit Windows 10/11), Python 3.12 (standard library
+only), 7-Zip (`7z` on PATH, `C:\Program Files\7-Zip\7z.exe`, MSYS2's p7zip, or env `EE_7Z`), about 3 GB of free disk
+space while the libraries are extracted (about 1.7 GB afterwards, 1.1 GB of it the downloads cached in
+`toolchain/dl/`), network access to github.com and archive.org.
 
-1. Fetch the compilers (VC6 RTM and SP4 from the decomp.me compiler packages; sha256-pinned) and the DirectX 7.0a
-   SDK headers (archive.org; sha256-pinned):
-
-   ```
-   python -I tools/fetch_toolchain.py 6.0 6.4
-   python -I tools/fetch_libs.py
-   ```
-
-   Everything goes to `toolchain/` (not tracked). `python -I tools/fetch_libs.py --libs` also fetches the link
-   libraries (VC6 RTM `VC98\LIB`, DirectX 8.1 SDK, Platform SDK June 2001; several hundred MB of downloads).
-
-2. Compile:
+1. Fetch the toolchain. Everything goes to `toolchain/` (not tracked); every download and every extracted file is
+   sha256-pinned and checked.
 
    ```
-   python -I build.py --compile-only            # every module
-   python -I build.py --compile-only -j 4 lle   # one module, 4 parallel compiles
+   python -I tools/fetch_toolchain.py 6.0 6.3 6.4 6.5pp 7.0
+   python -I tools/fetch_libs.py --libs
    ```
 
-   Sources are staged under `C:\EEX\` (the original build tree, so that `__FILE__` strings match) before each
-   compile; set `EE_ORIG_SRC_ROOT` to `X:\EEX` to use another drive. VC6's code generation for a few functions
-   depends on the lengths of the paths it reads (its own directory, the include directories), so unless the checkout
-   path is 23 characters long the build first copies `src/`, `include/` and the compiler packages it uses to
-   `C:\EEX-root____________` (same drive as the staging root, padded to that length) and compiles from there.
-   Objects go to `build/obj/<module>/`.
+   - `fetch_toolchain.py`: the decomp.me compiler packages (github.com; about 60 MB): VC6 RTM (the compiler, LINK,
+     LIB), SP3 (LIB for one import library), SP4 (libjpeg in the engine, Dinkum's `operator new[]`/`delete[]`),
+     SP5 + Processor Pack (Miles' `MSS_auto_cleanup`) and Visual C++ .NET 2002 (only its RC, for the resource
+     scripts).
+   - `fetch_libs.py`: the DirectX 7.0a SDK headers, and with `--libs` the link libraries: the VC6 RTM import
+     libraries and `msvcrt.lib` (from the Visual C++ 6.0 Professional CD), DirectX 8.1 SDK `ddraw.lib`,
+     `dinput.lib`, `dxguid.lib` and the Platform SDK (June 2001) `IPHlpApi.Lib` (archive.org; about 1.1 GB of
+     downloads, cached in `toolchain/dl/`; `--dl DIR` reads downloads you already have).
 
-Linking the DLLs and the executable from this repository is not available yet (pending).
+   `python -I tools/fetch_libs.py` without `--libs` fetches only the headers, enough for `--compile-only`.
 
-CI (GitHub Actions, `windows-latest`) fetches the pinned toolchain and compiles every unit of every module.
+2. Build:
+
+   ```
+   python -I build.py                  # every image
+   python -I build.py -j 4 lle         # one image, 4 parallel compiles
+   python -I build.py --compile-only   # compile every unit, link nothing
+   ```
+
+   Outputs (each with its `.map` and `.pdb`):
+
+   | Target | Output |
+   |---|---|
+   | `tcp` | `build/tcp/TCP Protocol.dll` |
+   | `mixer` | `build/mixer/Miles Sound System Mixer.dll` |
+   | `default` | `build/default/Default.dll` |
+   | `lle` | `build/lle/Low-Level Engine.dll` (with libjpeg and the DCL) |
+   | `dx7hr` | `build/dx7hr/DX7HRDisplay.dll` |
+   | `dx7hrtnl` | `build/dx7hrtnl/DX7HRTnLDisplay.dll` |
+   | `language` | `build/language/Language.dll` |
+   | `exe` | `build/exe/EE-AOC.exe` (with the image libraries) |
+
+   Objects go to `build/obj/<module>/`; `--out DIR` puts everything under `DIR` instead of `build/`. A full build
+   compiles 845 units and links 8 images (about 3 minutes with `-j 2` on a current desktop).
+
+   Paths: sources are staged under `C:\EEX\` (the original build tree, so that `__FILE__` strings match) before each
+   compile; set `EE_ORIG_SRC_ROOT` to `X:\EEX` to use another drive. VC6's code generation depends on the lengths of
+   some paths it reads, so the build normalises them: unless the checkout path is 23 characters long it copies
+   `src/`, `include/` and the compiler packages it uses to `C:\EEX-root____________` (same drive as the staging
+   root, padded to that length) and compiles from there, and it runs every tool with `TMP`/`TEMP` set to
+   `C:\EEX-tmp_____________________` (31 characters).
+
+   Two builds of the same source give the same images apart from link time stamps, PDB paths and signatures, and
+   one more field: VC6 names an anonymous namespace after the source file and the time of the compile (in seconds),
+   so the RTTI type name of the one class in an anonymous namespace (`EELobbyConnectDialog.cpp`, in `EE-AOC.exe`)
+   carries a number that changes with every compile.
+
+CI (GitHub Actions, `windows-latest`) fetches the pinned toolchain and builds every image.
 
 ## License
 

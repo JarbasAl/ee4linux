@@ -2,7 +2,7 @@
 // [C] range 0x1273d7..0x127584 between EEAmbientSoundManager.cpp and EECameraControl.cpp, alphabetical). Eight
 // encoded (hex) key strings as UString globals that nothing in the exe reads; their `$E` chains are all the unit has
 // (the FSPath ??_G COMDAT 0x127567 at its end is not emitted by this source: TODO). Names PROVISIONAL (by address).
-// Unit flags: the exe module set. r23-core-scenario.
+// Unit flags: the exe module set.
 #include <windows.h>
 
 #include "lle/LowLevelEngine.h"

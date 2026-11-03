@@ -130,7 +130,7 @@ long EEE2DVortex::SetUp()
 // fading out; returns the draw result (0 before then)
 long EEE2DVortex::DrawPass5()
 {
-    // LOST-DEBUG: none independent (R12 policy): as EEE3DDisease::DrawPass5, the budget that makes mAngles[i] and
+    // LOST-DEBUG: none independent: as EEE3DDisease::DrawPass5, the budget that makes mAngles[i] and
     // mOrbitals[i] call operator+ out of line
 
     std::vector<long> theUnused;
