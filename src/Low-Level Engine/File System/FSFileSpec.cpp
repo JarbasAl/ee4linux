@@ -383,16 +383,20 @@ void FSFileSpec::GetParentDirectory(FSFileSpec& outDirectory) const
         outDirectory.mVolume = this->mVolume;
         outDirectory.mDirectory = this->mDirectory;
         outDirectory.mFile = "";
+        outDirectory.mHandle = NULL;
+        outDirectory.mStream = NULL;
+        outDirectory.mIsOpen = false;
+        outDirectory.mFileAccess = kFileAccessRead;
     } else {
         unsigned long theIndex = this->mDirectory.FindBackwards(theSeparator, this->mDirectory.GetLength() - 2);
         outDirectory.mVolume = this->mVolume;
         outDirectory.mDirectory = this->mDirectory.GetSubstring(0, theIndex + 1);
         outDirectory.mFile = "";
+        outDirectory.mHandle = NULL;
+        outDirectory.mStream = NULL;
+        outDirectory.mIsOpen = false;
+        outDirectory.mFileAccess = kFileAccessRead;
     }
-    outDirectory.mHandle = NULL;
-    outDirectory.mStream = NULL;
-    outDirectory.mIsOpen = false;
-    outDirectory.mFileAccess = kFileAccessRead;
 }
 
 // FUNCTION: LLE 0x100098d8
