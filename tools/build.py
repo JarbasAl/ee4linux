@@ -28,7 +28,7 @@ files) into a 32-bit checksum, and a host refuses a client whose checksum differ
 DLLs gets a compensation block appended after its last section (file overlay: the loader neither maps nor reads it),
 whose bytes make the file's byte sum, modulo 2^32 as the game adds it, equal to the retail file's (RETAIL_BYTE_SUM).
 The block is 0xff bytes plus one remainder byte. When the linked file's sum is below the retail sum the block is short
-(the difference / 255 bytes); when it is above, the sum has to wrap around 2^32 and the block is about 16.8 MB (2^32
+(the difference / 255 bytes); when it is above, the sum has to wrap past 2^32 and the block is about 16.8 MB (2^32
 / 255 bytes, less the difference / 255). The PE header checksum is recomputed when the linker set one (neither DLL
 has one).
 """
