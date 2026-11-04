@@ -1,4 +1,4 @@
-"""Build by-name import libraries for a module from its import table (analysis/<module>/imports.txt).
+"""Build by-name import libraries for a module from its import table (link/<module>/imports.txt).
 
   python -I tools/implib.py <module> <out_dir> <obj>...
 """
@@ -58,7 +58,7 @@ Import = collections.namedtuple("Import", "name hint ordinal import_by_ordinal")
 
 
 def read_imports(module):
-    path = verify.ANALYSIS / module / "imports.txt"
+    path = verify.LINK_DIR / module / "imports.txt"
     if not path.exists():
         sys.exit(f"{path} missing: python -I tools/gen_link_manifests.py {module}")
     out = []

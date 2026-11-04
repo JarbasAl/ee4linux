@@ -12,7 +12,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import exe_roundtrip
 import exe_units
 import verify
-from ee import ANALYSIS, COMPILER, ROOT
+from ee import LINK_DIR, COMPILER, ROOT
 from undname import undname
 EXE_RC = ROOT / "src" / "Empire Earth" / "EE-AOC.rc"
 GAME = (0x1000, 0x29d080)
@@ -107,7 +107,7 @@ DIR32, REL32 = 6, 0x14
 
 def read_names():
     at, of = collections.defaultdict(list), collections.defaultdict(set)
-    for f in (ANALYSIS / "exe" / "names.txt", ANALYSIS / "exeimg" / "names.txt"):
+    for f in (LINK_DIR / "exe" / "names.txt", LINK_DIR / "exeimg" / "names.txt"):
         for line in open(f):
             line = line.split("#", 1)[0].strip()
             if line:
@@ -309,7 +309,7 @@ PLACEHOLDER = [re.compile(r"^\?g[A-Z]{1,2}([0-9A-F]{6})@@"), re.compile(r"Fn([0-
 
 def read_vtable_slots():
     out = {}
-    for line in (ANALYSIS / "exe" / "vtable_slots.tsv").read_text(encoding="utf-8").splitlines():
+    for line in (LINK_DIR / "exe" / "vtable_slots.tsv").read_text(encoding="utf-8").splitlines():
         if line.startswith("#") or not line.strip():
             continue
         cols = line.split("\t")
@@ -320,7 +320,7 @@ def read_vtable_slots():
 
 def read_import_thunks():
     out = {}
-    for line in (ANALYSIS / "exe" / "import_thunks.tsv").read_text(encoding="utf-8").splitlines():
+    for line in (LINK_DIR / "exe" / "import_thunks.tsv").read_text(encoding="utf-8").splitlines():
         if line.startswith("#") or not line.strip():
             continue
         rva, sym = line.split("\t")
@@ -708,7 +708,7 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
         k = bisect.bisect_right(ulo, rva) - 1
         return units_sorted[k] if k >= 0 and rva < units_sorted[k]["hi"] else None
     imported = {i.name for _, imps in exe_imports for i in imps}
-    engine_exports = {ln.rsplit(" @", 1)[0] for ln in (ANALYSIS / "lle" / "exports.txt").read_text(encoding="utf-8")
+    engine_exports = {ln.rsplit(" @", 1)[0] for ln in (LINK_DIR / "lle" / "exports.txt").read_text(encoding="utf-8")
                       .splitlines() if ln.strip() and not ln.startswith("#")} - imported
     ctx = {"at": at, "of": of, "defined": defined, "by_scope": by_scope, "unit_at": unit_at, "fails": fails,
            "engine_exports": engine_exports, "alias": {}}

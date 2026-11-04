@@ -103,7 +103,7 @@ def relink(module, out):
 
     tools = pathlib.Path(__file__).resolve().parent
     carve_dir = out / "carve"
-    spec = verify.ANALYSIS / module / "carve.txt"
+    spec = verify.LINK_DIR / module / "carve.txt"
     shutil.rmtree(carve_dir, ignore_errors=True)
     if spec.exists():
         import carve
@@ -121,7 +121,7 @@ def relink(module, out):
         if isinstance(ms, dict):
             d = out / "libsrc" / stem
             d.mkdir(exist_ok=True)
-            units_txt = verify.ANALYSIS / ms["module"] / "units.txt"
+            units_txt = verify.LINK_DIR / ms["module"] / "units.txt"
             us = ([p for _, _, p in module_units(ms["module"])] if units_txt.exists()
                   else sorted(module_src(ms["module"]).glob("*.c")))
             ms["objs"] = [compile_unit(u, MODULE_FLAGS[ms["module"]], d / (u.stem + ".obj"), ms.get("compiler"))
@@ -181,7 +181,7 @@ def relink(module, out):
         else:
             objs.append(p)
 
-    exp = [ln.rsplit(" @", 1) for ln in (verify.ANALYSIS / module / "exports.txt").read_text(encoding="utf-8")
+    exp = [ln.rsplit(" @", 1) for ln in (verify.LINK_DIR / module / "exports.txt").read_text(encoding="utf-8")
            .splitlines() if ln.strip() and not ln.startswith("#")]
     deffile = out / f"{module}.def"
     long = {name for name, _ in exp if len(name) == 512}

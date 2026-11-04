@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from ee import ANALYSIS, COMPILER, EEX_INCLUDE_DIRS, ORIG_SRC_ROOT, ROOT, TOOLCHAIN
+from ee import LINK_DIR, COMPILER, EEX_INCLUDE_DIRS, ORIG_SRC_ROOT, ROOT, TOOLCHAIN
 DEFINES = "-DWIN32 -DNDEBUG -D_WINDOWS"
 
 

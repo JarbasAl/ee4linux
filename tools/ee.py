@@ -2,7 +2,7 @@
 import os
 import pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ANALYSIS = ROOT / "analysis"
+LINK_DIR = ROOT / "link"
 TOOLCHAIN = pathlib.Path(os.environ.get("EE_TOOLCHAIN", ROOT / "toolchain"))
 COMPILER = "msvc6.0"
 ORIG_SRC_ROOT = pathlib.Path(os.environ.get("EE_ORIG_SRC_ROOT", r"C:\EEX"))
@@ -48,7 +48,7 @@ def module_filename(mod):
 
 
 def module_units(mod):
-    uf = ANALYSIS / mod / "units.txt"
+    uf = LINK_DIR / mod / "units.txt"
     if not uf.exists():
         return [(None, None, p) for p in sorted(module_src(mod).glob("*.cpp"))]
     units = []

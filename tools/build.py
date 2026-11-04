@@ -11,7 +11,7 @@ tools/exe_fulllink.py (link_exe), the resources compile with tools/rsrc_rebuild.
 
 --compile-only modules (default: all): tcp mixer default lle jpeg dx7hr dx7hrtnl exeimg exe.
 
-Units come from analysis/<module>/units.txt (in link order), or every .cpp of the module's source folder when the
+Units come from link/<module>/units.txt (in link order), or every .cpp of the module's source folder when the
 module has no unit list. Each unit is compiled with the module's flags (tools/ee.py MODULE_FLAGS), or its own
 `// UNIT-FLAGS:` line, with the compiler package its `// UNIT-COMPILER:` line names (default VC6 RTM,
 toolchain/msvc6.0). Library members built from source (tools/relink.py LIB_UNITS: Dinkum's operator new[]/delete[],
@@ -46,14 +46,14 @@ os.environ["EE_NO_ORIGINALS"] = "1"
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import relink
 import verify
-from ee import ANALYSIS, COMPILER, MODULE_FLAGS, ORIG_SRC_ROOT, ROOT, TOOLCHAIN, module_units
+from ee import LINK_DIR, COMPILER, MODULE_FLAGS, ORIG_SRC_ROOT, ROOT, TOOLCHAIN, module_units
 
 MODULES = ["tcp", "mixer", "default", "lle", "jpeg", "dx7hr", "dx7hrtnl", "exeimg", "exe"]
 TARGETS = ["tcp", "mixer", "default", "lle", "dx7hr", "dx7hrtnl", "language", "exe"]
 TARGET_MODULES = {"lle": ["lle", "jpeg"], "exe": ["exe", "exeimg"], "language": []}
 PART_OF = {"jpeg": "lle", "exeimg": "exe"}
 LANGUAGE_RC = pathlib.PurePosixPath("Empire Earth/Language/Language.rc")
-EXE_MEMBERS = ANALYSIS / "exe" / "fulllink_members.tsv"
+EXE_MEMBERS = LINK_DIR / "exe" / "fulllink_members.tsv"
 MODULE_COMPILER = {"jpeg": "msvc6.4"}
 EXTRA_UNITS = {m: ["Low-Level Engine/Utilities/UFtol.cpp"] for m in ("tcp", "default", "dx7hr", "dx7hrtnl")}
 LIB_MEMBERS = {m: [n for g in relink.CARVED[m].values() for n in g]
