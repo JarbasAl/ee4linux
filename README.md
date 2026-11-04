@@ -1,5 +1,7 @@
 # Empire Earth: The Art of Conquest - source reconstruction
 
+[![build](https://github.com/Protryon/empire_earth/actions/workflows/ci.yml/badge.svg)](https://github.com/Protryon/empire_earth/actions/workflows/ci.yml)
+
 A matching decompilation of *Empire Earth: The Art of Conquest* (Stainless Steel Studios / Sierra, 2002): C++ source
 that compiles, with the original toolchain, to the same machine code as the retail release. It covers the game
 executable and its first-party DLLs. The source is not complete yet (see Status); every image links from it.
