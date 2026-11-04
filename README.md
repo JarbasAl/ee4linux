@@ -148,6 +148,10 @@ CI (GitHub Actions, `windows-latest`) fetches the pinned toolchain and builds ev
   guards, local display, interface and audio fixes, and reads of uninitialised data made to read zero. Simulation, AI,
   network traffic and save files stay exactly the original's, so a `fixes` build plays multiplayer with original
   players and loads their saves, and they load its saves.
+- **`fixes-all`**: `fixes` plus every other bug fix, including those that change the simulation or the AI. It
+  behaves as the game was meant to rather than as it shipped. Play multiplayer only with other `fixes-all` players
+  (the simulation differs from the original's, so mixed games go out of sync); saves load where the save format
+  allows. Its fixes beyond `fixes`: `git log --oneline fixes..fixes-all`.
 
 Every branch builds the same way (`python -I build.py`, see Building). To switch, check the branch out and rebuild:
 
