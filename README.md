@@ -121,6 +121,10 @@ space while the libraries are extracted (about 1.7 GB afterwards, 1.1 GB of it t
    Objects go to `build/obj/<module>/`; `--out DIR` puts everything under `DIR` instead of `build/`. A full build
    compiles 845 units and links 8 images (about 3 minutes with `-j 2` on a current desktop).
 
+   The engine and TCP DLLs carry a compensation block (appended after the image, never loaded) so their checksum
+   matches the retail files, which the game's multiplayer version check compares (`--no-retail-checksum` leaves them
+   as linked).
+
    Paths: sources are staged under `C:\EEX\` (the original build tree, so that `__FILE__` strings match) before each
    compile; set `EE_ORIG_SRC_ROOT` to `X:\EEX` to use another drive. VC6's code generation depends on the lengths of
    some paths it reads, so the build normalises them: unless the checkout path is 23 characters long it copies

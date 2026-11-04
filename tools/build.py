@@ -21,6 +21,16 @@ Sources are staged under C:\\EEX (env EE_ORIG_SRC_ROOT overrides it; it must sit
 original build tree, so that __FILE__ strings match. Objects go to <out>/obj/<module>/<unit path>.obj. Every unit is
 compiled once; the link steps take the objects from there. The build reads no original game file
 (EE_NO_ORIGINALS=1). Exit status 1 if any unit fails to compile or any link fails.
+
+Retail checksum (default on; --no-retail-checksum turns it off): the game's multiplayer version check
+(EEInitializeNetwork) adds up every byte of Low-Level Engine.dll and TCP Protocol.dll (with sxlrt233.dll and the data
+files) into a 32-bit checksum, and a host refuses a client whose checksum differs. After the link, each of these two
+DLLs gets a compensation block appended after its last section (file overlay: the loader neither maps nor reads it),
+whose bytes make the file's byte sum, modulo 2^32 as the game adds it, equal to the retail file's (RETAIL_BYTE_SUM).
+The block is 0xff bytes plus one remainder byte. When the linked file's sum is below the retail sum the block is short
+(the difference / 255 bytes); when it is above, the sum has to wrap around 2^32 and the block is about 16.8 MB (2^32
+/ 255 bytes, less the difference / 255). The PE header checksum is recomputed when the linker set one (neither DLL
+has one).
 """
 import argparse
 import concurrent.futures
@@ -54,6 +64,7 @@ EXE_LIB_FLAGS = "-O1"
 UNIT_COMPILER = re.compile(r"^// UNIT-COMPILER: (\S+)", re.M)
 ROOT_PATH_LEN = 23
 TMP_PATH_LEN = 31
+RETAIL_BYTE_SUM = {"lle": 115122776, "tcp": 1965119}
 LIB_DIRS = ["vc98lib", "dx81sdk", "psdk"]
 
 
@@ -210,6 +221,56 @@ def link_dll(target, out):
     return relink.relink(target, out / target)
 
 
+def byte_sum(data):
+    return sum(data) & 0xFFFFFFFF
+
+
+def pe_checksum(data, at):
+    words = bytes(data[:at]) + b"\0\0\0\0" + bytes(data[at + 4:]) + b"\0" * (len(data) & 1)
+    s = sum(memoryview(words).cast("H"))
+    while s >> 16:
+        s = (s & 0xFFFF) + (s >> 16)
+    return s + len(data)
+
+
+def retail_checksum(path, target):
+    data = bytearray(pathlib.Path(path).read_bytes())
+    before = byte_sum(data)
+    pe_at = int.from_bytes(data[0x3C:0x40], "little")
+    if data[:2] != b"MZ" or data[pe_at:pe_at + 4] != b"PE\0\0":
+        raise SystemExit(f"{path}: not a PE image")
+    cks_at = pe_at + 24 + 0x40
+    has_cks = data[cks_at:cks_at + 4] != b"\0\0\0\0"
+    core = len(data)
+
+    def fill(field):
+        data[cks_at:cks_at + 4] = field.to_bytes(4, "little")
+        need = (target - byte_sum(data[:core])) & 0xFFFFFFFF
+        data[core:] = b"\xff" * (need // 255) + (bytes([need % 255]) if need % 255 else b"")
+        return pe_checksum(data, cks_at) - len(data)
+
+    if has_cks:
+        field = fill(0) + len(data) + 0x10010
+        words = fill(field)
+        data += bytes(field - words - len(data))
+        if pe_checksum(data, cks_at) != field:
+            raise SystemExit(f"{path}: PE checksum {pe_checksum(data, cks_at):#x} != {field:#x}")
+    else:
+        fill(0)
+    block = data[core:]
+    if byte_sum(data) != target:
+        raise SystemExit(f"{path}: byte sum {byte_sum(data)} != {target}")
+    pathlib.Path(path).write_bytes(data)
+    return before, len(block)
+
+
+def compensate(target, out):
+    path = out / target / relink.module_filename(target)
+    before, n = retail_checksum(path, RETAIL_BYTE_SUM[target])
+    print(f"{target}: byte sum {before} -> {RETAIL_BYTE_SUM[target]} (retail), compensation block {n} bytes",
+          flush=True)
+
+
 def link_language(out):
     import rsrc_rebuild
     print("--- language: resources", flush=True)
@@ -253,6 +314,9 @@ def main():
     ap.add_argument("--compile-only", action="store_true", help="compile every unit, do not link")
     ap.add_argument("-j", type=int, default=2, help="parallel compiles (default 2)")
     ap.add_argument("--out", default=str(ROOT / "build"), help="output root (default build/)")
+    ap.add_argument("--no-retail-checksum", action="store_true",
+                    help="leave Low-Level Engine.dll and TCP Protocol.dll as linked (no compensation block; the "
+                         "multiplayer version check then refuses retail peers)")
     a = ap.parse_args()
     if a.compile_only:
         mods = a.names or MODULES
@@ -319,6 +383,8 @@ def main():
             results[t] = link_exe(out, objs)
         else:
             results[t] = link_dll(t, out)
+            if results[t] == 0 and t in RETAIL_BYTE_SUM and not a.no_retail_checksum:
+                compensate(t, out)
     if hook.compiled:
         print(f"note: {len(hook.compiled)} source(s) compiled during the link: {hook.compiled[:5]}")
     print()
