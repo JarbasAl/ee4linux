@@ -29,7 +29,7 @@ MODULE_FLAGS = {
     "tcp": "-O1 -G6 -MD -GR",
     "mixer": "-O1 -G6 -MD -GR",
     "default": "-O1 -G6 -MD -GR",
-    "lle": "-O1 -G6 -MD -GR -DLOWLEVELENGINE_EXPORTS",
+    "lle": "-O1 -G6 -MD -GR -DLOWLEVELENGINE_EXPORTS -Zi",
     "dx7hr": "-O1 -G6 -MD -GR -DLLE_CURRENT_HEADERS",
     "dx7hrtnl": "-O1 -G6 -MD -GR -DLLE_CURRENT_HEADERS",
     "exe": "-O1 -G6 -MD -GR -DLLE_CURRENT_HEADERS -DLLE_EXE_HEADERS",
