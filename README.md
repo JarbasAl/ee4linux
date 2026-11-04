@@ -147,11 +147,11 @@ CI (GitHub Actions, `windows-latest`) fetches the pinned toolchain and builds ev
 - **`fixes`**: `main` plus the fixes that keep compatibility with the original: crashes, resource leaks, memory-safety
   guards, local display, interface and audio fixes, and reads of uninitialised data made to read zero. Simulation, AI,
   network traffic and save files stay exactly the original's, so a `fixes` build plays multiplayer with original
-  players and loads their saves, and they load its saves.
+  players and loads their saves, and they load its saves. `FIXES.md` on the branch describes every fix.
 - **`fixes-all`**: `fixes` plus every other bug fix, including those that change the simulation or the AI. It
   behaves as the game was meant to rather than as it shipped. Play multiplayer only with other `fixes-all` players
   (the simulation differs from the original's, so mixed games go out of sync); saves load where the save format
-  allows. Its fixes beyond `fixes`: `git log --oneline fixes..fixes-all`.
+  allows. Its `FIXES.md` adds every fix beyond `fixes` and the behaviour changes a player will notice.
 
 Every branch builds the same way (`python -I build.py`, see Building). To switch, check the branch out and rebuild:
 
@@ -162,8 +162,9 @@ python -I build.py
 
 The fix branches are patch sets on top of `main`: whenever `main` is updated, their commits are replayed onto the new
 `main` (the branches are rewritten, so update a local copy with `git fetch` and `git reset --hard origin/<branch>`
-rather than a merge). Each fix is one commit that names the bug it fixes; the list is the branch's own history, for
-example `git log --oneline main..fixes`.
+rather than a merge). Each fix is one commit that names the bug it fixes (`git log --oneline main..fixes`).
+`FIXES.md` on each fix branch, added by the branch's first commit, describes every fix: the function and its address
+in the original game, what the original does wrong and what the fix does, grouped by area.
 
 ## License
 
