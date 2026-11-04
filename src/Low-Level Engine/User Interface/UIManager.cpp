@@ -250,6 +250,7 @@ UIManager::~UIManager()
     this->mRadioDownOn->Dereference();
     this->mAlphaSortUpBitmap->Dereference();
     this->mAlphaSortDownBitmap->Dereference();
+    EE_LOST_DEBUG(1);  // LOST-DEBUG: none: exact only (the original calls both mForms[i] out of line; window 1..2)
     for (unsigned long i = 0; i < this->mForms.size(); i++) {
         delete this->mForms[i];
         this->mForms[i] = NULL;

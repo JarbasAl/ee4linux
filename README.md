@@ -139,6 +139,28 @@ space while the libraries are extracted (about 1.7 GB afterwards, 1.1 GB of it t
 
 CI (GitHub Actions, `windows-latest`) fetches the pinned toolchain and builds every image.
 
+## Branches
+
+- **`main`**: the reconstruction. Its code is byte-identical to the retail release wherever it is matched, and the
+  game it builds behaves like the original in every tested game. It keeps the original's bugs on purpose, so it plays
+  multiplayer with the original game and shares saves with it.
+- **`fixes`**: `main` plus the fixes that keep compatibility with the original: crashes, resource leaks, memory-safety
+  guards, local display, interface and audio fixes, and reads of uninitialised data made to read zero. Simulation, AI,
+  network traffic and save files stay exactly the original's, so a `fixes` build plays multiplayer with original
+  players and loads their saves, and they load its saves.
+
+Every branch builds the same way (`python -I build.py`, see Building). To switch, check the branch out and rebuild:
+
+```
+git switch <branch>
+python -I build.py
+```
+
+The fix branches are patch sets on top of `main`: whenever `main` is updated, their commits are replayed onto the new
+`main` (the branches are rewritten, so update a local copy with `git fetch` and `git reset --hard origin/<branch>`
+rather than a merge). Each fix is one commit that names the bug it fixes; the list is the branch's own history, for
+example `git log --oneline main..fixes`.
+
 ## License
 
 No license is granted. Empire Earth is the property of its rights holders. The third-party libraries under

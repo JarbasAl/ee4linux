@@ -247,7 +247,10 @@ long FSPath::ListFiles(const UString& inPattern, std::set<UString>& outFiles)
         theResult = this->mDirectories[i].GetFirstFile(inPattern, theFile);
         while (theResult == kErrorOK) {
             thePath = theFile.GetVolume() + theFile.GetDirectory() + theFile.GetFile();
-            theName.Copy(thePath, theRoot.GetLength(), thePath.GetLength() - theRoot.GetLength(), 0, false);
+            // one GetLength of the root: a third inline site would leave the first operator[] of each loop too little
+            // budget for _Ptrit::operator+ (the original expands both; 68 -> 86, 531 -> 499 bytes)
+            unsigned long theStart = theRoot.GetLength();
+            theName.Copy(thePath, theStart, thePath.GetLength() - theStart, 0, false);
             outFiles.insert(theName);
             theResult = this->mDirectories[i].GetNextFile(theFile);
         }

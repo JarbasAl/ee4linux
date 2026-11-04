@@ -49,9 +49,10 @@ float UMArcCos(float inValue)
             thePower *= theSquare;
             inValue += kOneFifth * thePower;
             thePower *= theSquare;
-            return inValue - thePower * kOneSeventh;
-        }
-        return 0;
+            inValue -= thePower * kOneSeventh;
+        } else
+            inValue = 0;   // through the variable: the original loads it with fldz (a `return 0` is fld [0.0f])
+        return inValue;
     }
     if (inValue < 0.0f) {
         if (inValue < -1.0f)
