@@ -342,6 +342,13 @@ void EEPMHelicopter::Step2(EEComplexUnit* inUnit)
     } else {
         float theTurn = theAccel * 7.5f;
         theMaxRate = theMaxRate * 7.5f;
+        // the pitch rate before the yaw rate: the original (pitch after yaw) keeps theTurn * theStep on the x87
+        // stack for both (0x159655/0x15968e, fsub st(1) at 0x1596b0) because it calls the imported
+        // GEOrientation::operator= below; ours inlines it, and in source order spilled the product to a float slot
+        // for the pitch, 1 ulp off (Look to the Stars PT 4404). This order keeps it unrounded for both rates.
+        thePitchRate = thePitchRate - theTurn * theStep;
+        if (thePitchRate < -1.5707964f)
+            thePitchRate = -1.5707964f;
         if (!inUnit->mUnitClass->mRollsWithTerrain || !inUnit->mUnitClass->mPitchesWithTerrain) {
             theYawRate = theYawRate - theTurn * theStep;
             if (theYawRate < 0.0f)
@@ -356,9 +363,6 @@ void EEPMHelicopter::Step2(EEComplexUnit* inUnit)
             if (theYawRate <= theLeft)
                 theYawRate = theLeft;
         }
-        thePitchRate = thePitchRate - theTurn * theStep;
-        if (thePitchRate < -1.5707964f)
-            thePitchRate = -1.5707964f;
         inUnit->mAngularVelocity = GEOrientation(theYawRate, thePitchRate, 0.0f);
         theTransformation.Revolve(theYawRate * theStep, 0.0f, 0.0f);
         theTransformation.Apply(theForward, theResult);

@@ -503,10 +503,10 @@ void EECPASGSpaceTransport::Update(long inTime)
             this->SetState(kASGStateGather, inTime);
         break;
     case kASGStateGather:
-        if (this->TestCondition(kASGConditionHasUnits, inTime))
-            this->SetState(kASGStateIdle, inTime);
-        else
+        if (!this->TestCondition(kASGConditionHasUnits, inTime))
             this->SetState(kASGStateReturnToRallyPoint, inTime);
+        else
+            this->SetState(kASGStateIdle, inTime);
         break;
     case kASGStateRemove:
     case kASGStateReturnToRallyPoint:
@@ -546,10 +546,10 @@ void EECPASGSpaceTransport::Update(long inTime)
             this->SetState(kASGStateIdle, inTime);
         break;
     case kASGStateScatter:
-        if (this->TestCondition(kASGConditionHasCargo, inTime))
-            this->SetState(kASGStateLoad, inTime);
-        else
+        if (!this->TestCondition(kASGConditionHasCargo, inTime))
             this->SetState(kASGStateIdle, inTime);
+        else
+            this->SetState(kASGStateLoad, inTime);
         break;
     default:
         this->SetState(kASGStateIdle, inTime);

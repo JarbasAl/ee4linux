@@ -296,15 +296,17 @@ void EEPMAirplane::Step2(EEComplexUnit* inUnit)
         float theNewPitch = thePitchRate * theStep + thePitch;
         if (theNewPitch < -1.2566371f)
             theNewPitch = -1.2566371f;
+        // the roll acceleration first, then times the step (0x157eeb..0x157f09, unrounded): a single
+        // `theAccel * 4.0f * theStep` let VC6 reuse the pitch's theAccel * theStep, rounded to a float, times 4
+        theAccel = theAccel * 4.0f;
         theMaxRate = theMaxRate * 4.0f;
-        float theRollStep = theAccel * 4.0f * theStep;
         if (theYawRate < 0.0f) {
-            theRollRate = theRollRate - theRollStep;
+            theRollRate = theRollRate - theAccel * theStep;
             theAccel = -theMaxRate;
             if (theRollRate < theAccel)
                 theRollRate = theAccel;
         } else {
-            theRollRate = theRollStep + theRollRate;
+            theRollRate = theAccel * theStep + theRollRate;
             if (theRollRate > theMaxRate)
                 theRollRate = theMaxRate;
         }
@@ -523,11 +525,11 @@ float EEPMAirplane::ComputeRoll(EEComplexUnit* inUnit, float inValue)
 {
     float theRatio = inValue / inUnit->mStats->mMaxAngularVelocity;
     if (inValue < 0.0f) {
-        theRatio = theRatio + 0.1f;
+        theRatio = theRatio + 0.100000024f;
         if (theRatio > 0.0f)
             theRatio = 0.0f;
     } else {
-        theRatio = theRatio - 0.1f;
+        theRatio = theRatio - 0.100000024f;
         if (theRatio < 0.0f)
             theRatio = 0.0f;
     }

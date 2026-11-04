@@ -610,7 +610,7 @@ void EECPASGSea::PickSplitUnits(std::vector<EEComplexUnit*>& outUnits)
                     theLargest = theGroup->second;
             if (theLargest != NULL) {
                 for (long i = theLargest->size() - 1; i >= 0; i--)
-                    outUnits.push_back((*(theLargest->begin() + i))->GetUnit());
+                    outUnits.push_back(((*theLargest)[i])->GetUnit());
             }
         }
     }

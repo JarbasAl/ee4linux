@@ -52,7 +52,7 @@ void EEPMProjectile::Step0(EEComplexUnit* inUnit)
         theGravity = 0.0f;
     } else {
         theSpeed = inUnit->mPlayer->mUnitClassUpgrades[inUnit->mLauncherClass->mUnitType]->mLaunchSpeed;
-        if (!(theSpeed > 0.001))
+        if (!(theSpeed > 0.001f))
             theSpeed = inUnit->mPlayer->mUnitClassUpgrades[inUnit->mUnitClass->mUnitType]->mLaunchSpeed;
     }
     float theHorizontal = theSpeed * theCos;

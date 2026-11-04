@@ -160,12 +160,11 @@ void EEE3DScreenFlash::PrepareQueue()
 long EEE3DScreenFlash::SetUp()
 {
     GETransformation theTransformation;
-    GE3DPoint thePosition;
-    this->mUnit->mComplexUnit->GetPosition(thePosition);
-    theTransformation.SetPosition(thePosition.GetX(), thePosition.GetY(), thePosition.GetZ());
-    this->mTransformation = theTransformation;
-    this->MoveToTransformation(theTransformation);
-    this->mBoundingRadius = this->mGraphicEffect->mSize;
+    GE3DPoint thePoint;
+    this->mUnit->mComplexUnit->GetPosition(thePoint);
+    theTransformation.SetPosition(thePoint.GetX(), thePoint.GetY(), thePoint.GetZ());
+    this->SetTransformation(theTransformation);
+    this->mBoundingRadius = this->mGraphicEffect->GetSize();
     this->mGraphicObject = this->GetGraphicObject();
     return this->mGraphicObject->LoadMedia();
 }

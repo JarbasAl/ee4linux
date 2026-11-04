@@ -11,6 +11,8 @@
 #ifndef EE_EEAIASTARPATHFINDINGGOALBASE_H
 #define EE_EEAIASTARPATHFINDINGGOALBASE_H
 
+#include "ee/EEMathInline.h"   // Estimate's UMAbs(long): the original's COMDAT is the integer body (ICF twin 0x4ab2bd)
+
 class EEComplexUnit;
 
 class EEAIAStarPathfindingGoalBase {

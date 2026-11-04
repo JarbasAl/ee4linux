@@ -887,7 +887,7 @@ void EECPASGSpaceship::PlaceFormation(const EECPILocation& inLocation)
     float theDistance = EEGetSeaHeading(theTile, inLocation.mTile);
     this->mFormation->Build();
     this->mFormation->mNoForcedMove = true;
-    for (long i = this->mFormation->mNodes.size() - 1; i >= 0; i--)
+    for (long i = this->mFormation->GetNumNodes() - 1; i >= 0; i--)
         this->mFormation->mNodes[i]->mSpacing = 2.0f;
     this->mFormation->Place(inLocation, theDistance);
 }

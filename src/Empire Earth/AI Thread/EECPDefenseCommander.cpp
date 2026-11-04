@@ -1743,7 +1743,7 @@ unsigned long EECPDefenseCommander::CheckSpecials(unsigned long inTime)
         long thePlayerID = 0;
         EEGetPlayerUnitsOfType(kUnitTypeCapitol, this->mPlayer->mPlayerID, theUnits);
         EECalamityClass* theCalamity = NULL;
-        EECalamityManager::GetInstance()->FnC473(0x1f, theCalamity);
+        EECalamityManager::GetInstance()->GetCalamityClass(0x1f, theCalamity);
         for (unsigned long i = 0; i < theUnits.size(); i++) {
             EEComplexUnit* theUnit = (theUnits[i])->GetComplexUnit();
             long thePower = theUnit->mPower;

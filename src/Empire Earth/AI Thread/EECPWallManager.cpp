@@ -581,7 +581,8 @@ bool EECPWallManager::PlanWall()
         theTile.mX = theTo.mX;
         theTile.mY = theTo.GetY();
         theBounds.Extend(theTile);
-        gPathManager.FindPath(this->mFrom, theMap, theFrom, theTo, theBounds, theSegment, 1, 0x32, thePather, NULL);
+        // each step is searched backwards, from the later path tile to the earlier one (the original passes theTo first)
+        gPathManager.FindPath(this->mFrom, theMap, theTo, theFrom, theBounds, theSegment, 1, 0x32, thePather, NULL);
         this->mPath.insert(this->mPath.end(), theSegment.begin(), theSegment.end());
         this->mPath.pop_back();
         theSegment.clear();

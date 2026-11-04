@@ -355,7 +355,10 @@ long EECPASGAir::CountUnitsInRange(const EECPILocation& inLocation)
         long theFuel = theStats->mFlightTime;
         if (theFuel <= 0 || theStats->mMaxVelocity <= 0.0f)
             continue;
-        float theRange = (theFuel * 0.001f * theStats->mMaxVelocity * 0.9f) * (theFuel * 0.001f * theStats->mMaxVelocity * 0.9f);
+        // The parentheses keep VC6 from folding 0.001f * 0.9f into 0.0009f: the original multiplies in this order
+        // (0x4421ca..0x4421e4), which rounds differently
+        float theRange = ((theFuel * 0.001f) * theStats->mMaxVelocity * 0.9f)
+                         * ((theFuel * 0.001f) * theStats->mMaxVelocity * 0.9f);
         if (theBase->DistanceSquaredToTileXY(inLocation.mTile.GetX(), inLocation.mTile.GetY()) >= theRange)
             theCount--;
     }

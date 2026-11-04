@@ -501,13 +501,15 @@ long EEE3DRain::SetUp()
     float theCenterX = (float)theSumX / this->mTiles.size();
     float theCenterY = (float)theSumY / this->mTiles.size();
     theTransformation.SetPosition(theCenterX, theCenterY,
-                                  gWorld.GetMap()->mTerrainMesh.GetZ(UMFloor(theCenterX), UMFloor(theCenterY)));
+                                  gWorld.mMap->mTerrainMesh.GetZ(UMFloor(theCenterX), UMFloor(theCenterY)));
     this->SetTransformation(theTransformation);
     for (std::vector<EETileCoordinate>::iterator theOther = this->mTiles.begin(); theOther != this->mTiles.end(); theOther++) {
-        double theDistance = fabs(theOther->mX - theCenterX);
+        long theCoordinate = theOther->mX;
+        float theDistance = (float)fabs(theCoordinate - theCenterX);
         if (theDistance > theRadius)
             theRadius = theDistance;
-        theDistance = fabs(theOther->mY - theCenterY);
+        theCoordinate = theOther->mY;
+        theDistance = fabs(theCoordinate - theCenterY);
         if (theDistance > theRadius)
             theRadius = theDistance;
     }

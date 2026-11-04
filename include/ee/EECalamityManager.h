@@ -71,7 +71,6 @@ public:
     EECalamityClass* GetCalamityClass(unsigned long inClassEnum) const;   // 0xae774: 0 past the end
     unsigned long GetCalamityClassCount() const { return this->mCalamityClasses.size(); }  // inline (out-of-line COMDAT 0x138e4b, 33 callers; EESETSETGameCalamity::Virtual14; provisional name)
     bool GetCalamityClassIndex(EECalamityClass* inClass, long& outIndex);   // 0xae79a
-    void FnC473(unsigned long inClassEnum, EECalamityClass*& outClass);   // 0xc473 (ret 8; EECPDefenseCommander) (provisional name)
     bool GetCalamityType(EECalamityEnum inClassEnum, long& outType);  // 0xae7c5 (the class's Virtual14)
     bool IsCalamityActive(long inClassEnum);   // 0xae80e
     void LoadMedia(EEPlayer* inPlayer, const EECalamityEnum& inClassEnum);   // 0xae834 (the class's Virtual28)

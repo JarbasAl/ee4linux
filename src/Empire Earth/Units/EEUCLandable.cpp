@@ -323,7 +323,7 @@ void EEUCLandable::ActionChanged(EEComplexUnit* inUnit)
         if (inUnit->mHomeBase == NULL)
             return;
         theAirTraffic->RemovePlane(inUnit->mHomeBase, inUnit);
-        inUnit->LoadCargo(inUnit, 1, 0);
+        inUnit->mHomeBase->LoadCargo(inUnit, 1, 0);   // the carrier takes the plane aboard
         inUnit->SetHomeBase(NULL);
         inUnit->SetIsCommandable(true);
         inUnit->SetHeight(0.0f);
@@ -668,7 +668,7 @@ bool EEUCLandable::IsBombOnTarget(EEComplexUnit* inUnit)
     float theB = -(theHeading.GetZ() * theSpeed);
     float theHalf = theGravity * 0.5f;
     bool theResult = false;
-    float theDiscriminant = theB * theB - (theStart.GetZ() - theTarget.GetZ()) * theHalf * 4.0f;
+    float theDiscriminant = theB * theB - (theTarget.GetZ() - theStart.GetZ()) * theHalf * 4.0f;
     if (theDiscriminant >= 0.0f) {
         float theRoot = (float)sqrt(theDiscriminant);
         float theOther = (-theB - theRoot) / (theHalf + theHalf);
@@ -744,9 +744,10 @@ void EEUCLandable::ApproachCarrier(EEComplexUnit* inUnit, bool inSteep)
                  theCarrier->mPhysicalModel.GetLocation().GetY(), theCarrier->mPhysicalModel.GetLocation().GetZ(),
                  true);
     } else {
-        (theTags->mPoints[0])->GetPoint(inUnit->mPhysicalModel.GetFrame(), theTransformation, theDeck);
+        // braking: the deck's stop point is tag point 2, and the plane takes the carrier's own (unscaled) heading
+        (theTags->mPoints[2])->GetPoint(inUnit->mPhysicalModel.GetFrame(), theTransformation, theDeck);
         this->AddWaypointAt(inUnit, theDeck.GetX(), theDeck.GetY(), theDeck.GetZ(), true);
-        theTransformation.ConvertToOrientation(theOrientation);
+        theCarrier->mPhysicalModel.GetLocation().ConvertToOrientation(theOrientation);
         inUnit->mOrientation = theOrientation;
     }
     EEUGLocation* theLocation = NULL;
@@ -969,7 +970,7 @@ void EEUCLandable::ApproachRunway(EEComplexUnit* inUnit, long inDX, long inDY)
     theWaypoint.SetY(theOffsetY + theStartY);
     theWaypoint.SetZ(this->GetCruiseAltitude() * theFinal);
     this->PathToward(inUnit, thePosition, theWaypoint, true);
-    this->AddWaypointAt(inUnit, theDX * theFar + theStartX, theDY * theFar + theStartY, this->GetCruiseAltitude() * theLow, theCarrier);
+    this->AddWaypointAt(inUnit, theDX * theRun + theStartX, theDY * theRun + theStartY, this->GetCruiseAltitude() * theLow, theCarrier);
     this->AddWaypointAt(inUnit, theStartX, theStartY, this->GetCruiseAltitude() * theFlare, false);
     this->AddWaypointAt(inUnit, theDX * theNear + theX, theDY * theNear + theY, theGround, false);
     this->AddWaypointAt(inUnit, theDX + theX, theDY + theY, theGround, false);

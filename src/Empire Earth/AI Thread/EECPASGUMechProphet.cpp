@@ -1140,7 +1140,7 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerAntiMatterStorm::PickTarget()
     if (theTargets.size() > 0) {
         theTiles.resize(theTargets.size());
         for (long i = theTargets.size() - 1; i >= 0; i--)
-            *(theTiles.begin() + i) = theTargets[i]->mUnit->GetTile();
+            theTiles[i] = theTargets[i]->mUnit->GetTile();
         U2DPoint<long> theTile = U2DComputeCenterPoint(theTiles, true);
         for (i = theTargets.size() - 1; i >= 0; i--) {
             EETileCoordinate theUnitTile = theTargets[i]->mUnit->GetTile();
@@ -1159,7 +1159,7 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerAntiMatterStorm::PickTarget()
             break;
         }
         while (theTargets.size() > 0 && theResult == NULL) {
-            EETileCoordinate theTile = theTargets.back()->mUnit->GetTile();
+            EETileCoordinate theTile(theTargets.back()->mUnit->mTileX, theTargets.back()->mUnit->mTileY);
             GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
             if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theTargets.back()->mUnit) == 0) {
                 this->mTile.mX = theTile.GetX();
@@ -1197,25 +1197,25 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerNanoVirus::PickTarget()
             theTargets.pop_back();
         }
     }
-    if (theResult == NULL) {
-        theTargets.clear();
-        this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenRangedOrSpecialUnits(this->mProphet, this, true));
-        if (!theTargets.empty()) {
-            std::sort(theTargets.begin(), theTargets.end(), EECPAITargetPriority(this->mProphet->GetUnit()->GetTile()));
-            while (!theTargets.empty()) {
-                EETileLocation theTile(theTargets.back()->mUnit->GetTileX(), theTargets.back()->mUnit->mTileY);
-                GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.mY + 0.5f, 0.0f);
-                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation,
-                        theTile.GetX(), theTile.mY, true, theTargets.back()->mUnit) == 0) {
-                    this->mTile.mX = theTile.GetX();
-                    this->mTile.mY = theTile.mY;
-                    this->SetUnit(theTargets.back()->mUnit);
-                    theResult = this->mUnit;
-                    break;
-                }
-                theTargets.pop_back();
-            }
+    if (theResult != NULL)
+        return theResult;
+    theTargets.clear();
+    this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenRangedOrSpecialUnits(this->mProphet, this, true));
+    if (theTargets.empty())
+        return theResult;
+    std::sort(theTargets.begin(), theTargets.end(), EECPAITargetPriority(this->mProphet->GetUnit()->GetTile()));
+    while (!theTargets.empty()) {
+        EETileLocation theTile(theTargets.back()->mUnit->GetTileX(), theTargets.back()->mUnit->mTileY);
+        GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.mY + 0.5f, 0.0f);
+        if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation,
+                theTile.GetX(), theTile.mY, true, theTargets.back()->mUnit) == 0) {
+            this->mTile.mX = theTile.GetX();
+            this->mTile.mY = theTile.mY;
+            this->SetUnit(theTargets.back()->mUnit);
+            theResult = this->mUnit;
+            break;
         }
+        theTargets.pop_back();
     }
     return theResult;
 }
