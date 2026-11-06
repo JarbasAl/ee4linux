@@ -304,3 +304,4 @@ void MSGraphics::SetClipRectHook(int x, int y, int width, int height)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007cf110
 // (public: virtual void * __thiscall WONAPI::MSGraphics::`scalar deleting destructor'(unsigned int)    [??_GMSGraphics@WONAPI@@UAEPAXI@Z])
+// TEMPLATE: WON 0x007cf4e0

@@ -123,3 +123,9 @@ ByteBufferPtr GetHTTPDocumentOp::GetDocument(HTTPDocOwner inOwner) const
 // (public: virtual void * __thiscall WONAPI::AsyncOpWithTracker::`scalar deleting destructor'(unsigned int)    [??_GAsyncOpWithTracker@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006d0320
 // (public: virtual void * __thiscall WONAPI::GetHTTPDocumentOp::`scalar deleting destructor'(unsigned int)    [??_GGetHTTPDocumentOp@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006d9d20
+// (public: __thiscall WONAPI::AsyncOpTrackerMaps::AsyncOpTrackerMaps(bool,bool))
+// TEMPLATE: WON 0x00769650
+// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,struct std::pair<class WONAPI::SmartPtr<class WONAPI::AsyncOp> const ,class std)

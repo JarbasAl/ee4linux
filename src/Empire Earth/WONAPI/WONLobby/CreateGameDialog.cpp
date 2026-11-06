@@ -57,15 +57,15 @@ void CreateGameDialog::SetGameType(int inType)
 SmartPtr<LobbyGame> CreateGameDialog::GetGame()
 {
     SmartPtr<LobbyGame> aGame(LobbyGame::CreateGame(static_cast<LobbyGameType>(mGameType)));
-    aGame->mName = mNameInput->GetText();
-    if (mPasswordRadio->mChecked)
-        aGame->mPassword = mPasswordInput->GetText();
-    aGame->mB12 = mAskToJoinRadio->mChecked;
-    aGame->mB11 = mInviteOnlyRadio->mChecked;
+    aGame->SetName(mNameInput->GetText());
+    if (mPasswordRadio->IsChecked())
+        aGame->SetPassword(mPasswordInput->GetText());
+    aGame->SetAskToJoin(mAskToJoinRadio->IsChecked());
+    aGame->SetInviteOnly(mInviteOnlyRadio->IsChecked());
     int aSkill = mSkillCombo->GetSelItem();
     if (aSkill < 0 || aSkill >= 5)
         aSkill = 0;
-    aGame->mL30 = aSkill;
+    aGame->SetSkill(aSkill);
     return aGame;
 }
 // FUNCTION: WON 0x7f6920

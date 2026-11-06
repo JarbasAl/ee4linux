@@ -8,7 +8,6 @@ namespace WONAPI {
 class WONTabCtrl : public TabCtrl {
 public:
     WONTabCtrl(WONSkin* =NULL); //31a830 actual RET4, native skin caller passes NULL; bounded F allocation
-    virtual ~WONTabCtrl(); //31a910 true original external normal; deleting31a8f0
     void SetFrame(const WONFrame&); //31aaa0
     WONTabCtrl* Duplicate(); //31ad20 actual raw result, original external
     void SetTransparent(bool); //31ac50 support0 conditional forwarding

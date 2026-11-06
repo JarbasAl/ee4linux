@@ -71,6 +71,19 @@
 extern EEToHitTable gToHitTable;           // 0x5318e8
 extern long gNumPlayers;                    // 0x530e0c (provisional name)
 
+// Name tables that no function reads: three std::map<long, UString> class statics of two classes (the first
+// with guard byte 0x4e5cc1, the other two sharing 0x4e5cc0). Only the construction and destruction remain.
+struct EECPASGUNameTableA {
+    static std::map<long, UString> sNames;
+};
+struct EECPASGUNameTableB {
+    static std::map<long, UString> sNames;
+    static std::map<long, UString> sTitles;
+};
+std::map<long, UString> EECPASGUNameTableA::sNames;    // 0x4e5ce8
+std::map<long, UString> EECPASGUNameTableB::sNames;    // 0x4e5cd8
+std::map<long, UString> EECPASGUNameTableB::sTitles;   // 0x4e5cc8
+
 static const float kASGURange0 = 256.0f;    // 0x43bf38
 static const float kASGURange1 = 400.0f;    // 0x43bf3c
 static const float kASGURange2 = 576.0f;    // 0x43bf40
@@ -1586,14 +1599,23 @@ bool EECPAttackSubGroupUnit::IsTargetValid()
     return true;
 }
 
-// The three `$E` chains 0x462f8a/0x462fdb/0x46302c construct three unreferenced class statics of type
-// std::map<unsigned long, std::vector<unsigned long> > (0x4e5ce8 guard 0x4e5cc1 bit 1; 0x4e5cd8 and 0x4e5cc8 guard
-// 0x4e5cc0 bits 1/2: two classes), dtor COMDAT 0x46631c. Their declarations belong in a shared header; the
-// definitions go here once declared.
+// The chains of the name tables at the top of the file: wrapper, construction, atexit registration, guarded destruction.
 // SYNTHETIC: EXE 0x462f8a
+// SYNTHETIC: EXE 0x462f94
+// SYNTHETIC: EXE 0x462fb4
+// SYNTHETIC: EXE 0x462fc0
 // SYNTHETIC: EXE 0x462fdb
+// SYNTHETIC: EXE 0x462fe5
+// SYNTHETIC: EXE 0x463005
+// SYNTHETIC: EXE 0x463011
 // SYNTHETIC: EXE 0x46302c
+// SYNTHETIC: EXE 0x463036
+// SYNTHETIC: EXE 0x463056
+// SYNTHETIC: EXE 0x463062
 
+// TEMPLATE: EXE 0x46631c
+// TEMPLATE: EXE 0x4664be
+// TEMPLATE: EXE 0x466916
 // TEMPLATE: EXE 0x466372
 // TEMPLATE: EXE 0x46639d
 // TEMPLATE: EXE 0x466457

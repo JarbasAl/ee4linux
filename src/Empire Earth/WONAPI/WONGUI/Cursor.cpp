@@ -69,3 +69,11 @@ MSCursor::~MSCursor() { if(mDoDestroy) DestroyCursor(mNativeCursor); }
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00726770
 // (public: virtual __thiscall WONAPI::ComponentCursor::~ComponentCursor(void)    [??1ComponentCursor@WONAPI@@UAE@XZ])
+// TEMPLATE: WON 0x007264e0
+// (_$E74)
+// TEMPLATE: WON 0x007264f0
+// (_$E71)
+// TEMPLATE: WON 0x00726510
+// (_$E73)
+// TEMPLATE: WON 0x00726520
+// (_$E72)

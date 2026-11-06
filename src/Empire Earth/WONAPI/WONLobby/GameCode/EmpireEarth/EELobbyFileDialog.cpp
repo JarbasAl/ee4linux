@@ -67,12 +67,12 @@ void EELobbyFileDialog::ListFiles(const std::string& inDirectory, const std::str
 }
 
 // FUNCTION: EXE 0x69115e
-GUIString::GUIString(const char* inText) : mData(new GUIStringData(inText))
+inline GUIString::GUIString(const char* inText) : mData(new GUIStringData(inText))
 {
 }
 
 // FUNCTION: EXE 0x69119a
-void GUIString::resize(int inLength)
+inline void GUIString::resize(int inLength)
 {
     CopyOnWrite();
     GUIStringData* theData = mData.mPtr;
@@ -82,7 +82,7 @@ void GUIString::resize(int inLength)
 }
 
 // FUNCTION: EXE 0x6911c9
-void GUIStringData::Reserve(int inLength, bool inGrow)
+inline void GUIStringData::Reserve(int inLength, bool inGrow)
 {
     inLength++;
     if (mCapacity < inLength) {
@@ -99,7 +99,7 @@ void GUIStringData::Reserve(int inLength, bool inGrow)
 }
 
 // FUNCTION: EXE 0x69121b
-void GUIString::CopyOnWrite()
+inline void GUIString::CopyOnWrite()
 {
     if (mData->GetRefCount() > 1)
         mData = new GUIStringData(*mData.mPtr);

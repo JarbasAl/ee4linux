@@ -19,6 +19,14 @@
 #include "ee/wonapi/WONLobbyAccountLogic.h"
 using namespace WONAPI;
 namespace WONAPI {
+// Timeout for the firewall detect and accept operations, in milliseconds.
+unsigned long gLobbyTimeout4E0EBC = 20000;
+
+// The three controls the login screen disables while it initialises.
+struct LoginControlIds : public ControlIdSet {
+    LoginControlIds(int inA,int inB,int inC) { insert(inA); insert(inB); insert(inC); }
+};
+
 // FUNCTION: WON 0x7dd340
 void InitLogic::InitComponent(ComponentConfig* inConfig)
 {
@@ -261,10 +269,7 @@ void InitLogic::Init()
     if(aRoot == NULL)
         return;
 
-    ControlIdSet anIds;
-    anIds.insert(200001);
-    anIds.insert(200002);
-    anIds.insert(200003);
+    LoginControlIds anIds(200001,200002,200003);
     aRoot->Virtual8C(anIds, false);
     ::LobbyGlobal_LobbyMusic_Sound->SetLooping(true);
     if(LobbyFn35E350())
@@ -283,7 +288,7 @@ void InitLogic::CrossPromotionImageCompletion(AsyncOp* inOp)
     if (inOp->GetStatus() != 0)
         return;
     HTTPGetOp* op = static_cast<HTTPGetOp*>(inOp);
-    SmartPtr<NativeImage> image = Window::GetDefaultWindow()->DecodeImage(op->GetLocalPath().c_str());
+    SmartPtr<Image> image = Window::GetDefaultWindow()->DecodeImage(op->GetLocalPath().c_str());
     LobbyFn359100(new SetCrossPromotionEvent(image.get(),mCrossPromotion),true);
 }
 
@@ -357,11 +362,9 @@ void InitLogic::DirectoryCompletion(AsyncOp* inOp)
         firewall == NULL || directory == NULL)
         return;
     WONStatus status = inOp->GetStatus();
-    if (status != 0 && status != -1223) {
-        GUIString description = LobbyFormatString(::LobbyContainer_DirLookupFailure_String,LobbyFn366170(status));
-        SetError(0x20,description);
-        return;
-    }
+    switch (status) {
+    case 0:
+    case -1223: {
     GetMultiDirOp* op = static_cast<GetMultiDirOp*>(inOp);
     const GetEntityRequestList& requests = op->GetRequestList();
     int index = 0;
@@ -393,13 +396,13 @@ void InitLogic::DirectoryCompletion(AsyncOp* inOp)
         }
         if (account->GetNumAddresses() == 0) {
             if (names.length() != 0)
-                names.append(GUIString(new GUIStringData(", ")));
+                names.append(GUIString(", "));
             names.append(::LobbyContainer_AccountServers_String);
             errors |= 4;
         }
         if (versions->GetNumAddresses() == 0) {
             if (names.length() != 0)
-                names.append(GUIString(new GUIStringData(", ")));
+                names.append(GUIString(", "));
             names.append(::LobbyContainer_VersionServers_String);
             errors |= 0x10;
         }
@@ -410,6 +413,14 @@ void InitLogic::DirectoryCompletion(AsyncOp* inOp)
     }
     StartVersionCheck();
     StartFirewallTest();
+        break;
+    }
+    default: {
+        GUIString description = LobbyFormatString(::LobbyContainer_DirLookupFailure_String,LobbyFn366170(status));
+        SetError(0x20,description);
+        break;
+    }
+    }
 }
 
 }
@@ -448,10 +459,7 @@ void InitLogic::VersionCompletion(AsyncOp* inOp)
         SetError(0x40,description);
         return;
     }
-    ControlIdSet ids;
-    ids.insert(200001);
-    ids.insert(200002);
-    ids.insert(200003);
+    LoginControlIds ids(200001,200002,200003);
     root->Virtual8C(ids,true);
     LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_InitComplete_String,gEmptyGUIString,false,2),true);
 }

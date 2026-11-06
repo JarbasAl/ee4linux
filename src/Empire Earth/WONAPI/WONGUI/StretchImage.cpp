@@ -23,6 +23,8 @@ inline void CopyRawImageInfo(RawImage32* dst,RawImage32* src) { dst->mDoTranspar
 
 
 template <class ImageType, class PixelType> 
+// FUNCTION: WON 0x00755280
+// FUNCTION: WON 0x00755560
 static void CopyRawImage(ImageType *src, ImageType *dst, int destx, int desty, int x, int y, int width, int height)
 {
 	for(int i = 0; i<height; i++)
@@ -36,6 +38,8 @@ static void CopyRawImage(ImageType *src, ImageType *dst, int destx, int desty, i
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 template <class ImageType, class PixelType> 
+// FUNCTION: WON 0x00755170
+// FUNCTION: WON 0x00755410
 static void RawTileHorz(ImageType *src, ImageType *dst, int x1, int x2, int y, int tileLeft, int tileTop, int tileWidth, int tileHeight)
 {
 	int endX = x2 - tileWidth;
@@ -81,6 +85,8 @@ static void RawTileHorzVert(ImageType *src, ImageType *dst, int x1, int x2, int 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 template <class ImageType, class PixelType> 
+// FUNCTION: WON 0x00755060
+// FUNCTION: WON 0x007552f0
 static void RawStretch(ImageType *src, ImageType *dst, int x1, int x2, int y1, int y2, int tileLeft, int tileTop, int tileWidth, int tileHeight)
 {
 	int theNewWidth = x2 - x1;
@@ -160,8 +166,9 @@ static SmartPtr<ImageType> DoFilter(ImageType *theImage, StretchImageFilter *the
 	// Simplification: Assume left and top are 0, and width and height are mWidth and mHeight
 	int imageLeft = 0;
 	int imageTop = 0;
-	int imageRight = src->mWidth-mRightWidth;
-	int imageBottom = src->mHeight-mBottomHeight;
+	unsigned short sw=src->mWidth, sh=src->mHeight;
+	int imageRight = sw-mRightWidth;
+	int imageBottom = sh-mBottomHeight;
 	
 	left = x;
 	top = y;
@@ -171,8 +178,8 @@ static SmartPtr<ImageType> DoFilter(ImageType *theImage, StretchImageFilter *the
 	int centerWidth = mWidth - mLeftWidth - mRightWidth;
 	int centerHeight = mHeight - mTopHeight - mBottomHeight;
 
-	int imageCenterWidth = src->mWidth - mLeftWidth - mRightWidth;
-	int imageCenterHeight = src->mHeight - mTopHeight - mBottomHeight;
+	int imageCenterWidth = sw - mLeftWidth - mRightWidth;
+	int imageCenterHeight = sh - mTopHeight - mBottomHeight;
 
 	int minCenterWidth = centerWidth<imageCenterWidth?centerWidth:imageCenterWidth; 
 	int minCenterHeight = centerHeight<imageCenterHeight?centerHeight:imageCenterHeight; 
@@ -267,7 +274,13 @@ SmartPtr<RawImage> StretchImageFilter::Filter(RawImage *theImage)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-StretchImageFilter::StretchImageFilter() : mWidth(0),mHeight(0),mLeftWidth(0),mRightWidth(0),mTopHeight(0),mBottomHeight(0),mTileHorz(true),mTileVert(true),mSkipCenter(false) {}
+StretchImageFilter::StretchImageFilter()
+{
+	mWidth = mHeight = 0;
+	mLeftWidth = mRightWidth = mTopHeight = mBottomHeight = 0;
+	mTileHorz = mTileVert = true;
+	mSkipCenter = false;
+}
 
 // FUNCTION: WON 0x00749650
 StretchImage::StretchImage(RawImage *theImage, int leftWidth, int topHeight, int rightWidth, int bottomHeight)
@@ -433,6 +446,7 @@ void StretchCenterImage::Paint(Graphics &g)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// FUNCTION: WON 0x00749d20
 void StretchCenterImage::SetSize(int theWidth, int theHeight)
 {
 	mWidth = theWidth;
@@ -447,3 +461,7 @@ SmartPtr<Image> StretchCenterImage::Duplicate()
 {
 	return new StretchCenterImage(mStretchImage->Duplicate().get(),mCenterImage.get());
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00749540
+// (public: __thiscall WONAPI::StretchImageFilter::StretchImageFilter(void))

@@ -57,3 +57,7 @@ void HTMLDisplayGen::HandleGUIComponent(HTMLGUIComponentTag* tag)
     mLastWasSpace=false;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0073aef0
+// (public: virtual int __thiscall WONAPI::OrderedListElement::GetHeight(void))

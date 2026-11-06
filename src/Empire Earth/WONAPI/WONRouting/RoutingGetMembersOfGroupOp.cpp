@@ -26,24 +26,25 @@ WONStatus RoutingGetMembersOfGroupOp::Virtual10(unsigned char inMsgType, ReadBuf
     WONStatus status = inMsg.ReadShort();
     unsigned short groupId = inMsg.ReadShort();
     if (groupId != mGroupId) return (WONStatus)100104;
-    if (status != 0) return status;
+    if (status == 0) {
 
-    unsigned char flags = inMsg.ReadByte();
-    mHasClientNames = (flags & 1) != 0;
-    mHasClientFlags = (flags & 2) != 0;
-    mObserverCount = inMsg.ReadShort();
-    int count = (unsigned short)inMsg.ReadShort();
-    for (int i = 0; i < count; ++i) {
-        unsigned short length = inMsg.ReadShort();
-        long start = inMsg.mL00;
-        RoutingMemberInfoPtr member = GetNewMemberInfo();
-        member->mClientId = inMsg.ReadShort();
-        member->mFlags = inMsg.ReadByte(); // actual BYTE+a field gate, not WORD store
-        mMembers[member->mClientId] = member;
-        if (flags != 0) member->mClientInfo = GetNewClientInfo();
-        if (mHasClientNames) inMsg.ReadWString(member->mClientInfo->mName, 2);
-        if (mHasClientFlags) member->mClientInfo->mFlags = inMsg.ReadLong();
-        inMsg.ReadBytes(length - inMsg.mL00 + start);
+        unsigned char flags = inMsg.ReadByte();
+        mHasClientNames = (flags & 1) != 0;
+        mHasClientFlags = (flags & 2) != 0;
+        mObserverCount = inMsg.ReadShort();
+        int count = (unsigned short)inMsg.ReadShort();
+        for (int i = 0; i < count; ++i) {
+            unsigned short length = inMsg.ReadShort();
+            long start = inMsg.pos();
+            RoutingMemberInfoPtr member = GetNewMemberInfo();
+            member->mClientId = inMsg.ReadShort();
+            member->mFlags = inMsg.ReadByte(); // actual BYTE+a field gate, not WORD store
+            mMembers[member->mClientId] = member;
+            if (flags != 0) member->mClientInfo = GetNewClientInfo();
+            if (mHasClientNames) inMsg.ReadWString(member->mClientInfo->mName, 2);
+            if (mHasClientFlags) member->mClientInfo->mFlags = inMsg.ReadLong();
+            inMsg.ReadBytes(length - inMsg.pos() + start);
+        }
     }
     return status;
 }

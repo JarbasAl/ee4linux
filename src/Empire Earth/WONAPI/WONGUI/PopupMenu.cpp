@@ -15,9 +15,9 @@ namespace WONAPI {
 // Native2fd150/458, initialization-only support0; mLastX/Y intentionally untouched.
 PopupMenu::PopupMenu()
 {
-    mFont=GetNamedFont("Menu");
+    SetFont(GetNamedFont("Menu"));
     Fn2FB600(0x806,true);
-    mBackground=Background(new MSPopup);
+    SetBackground(Background(new MSPopup));
     mTextColor=0x8000000c;
     mMouseUpCount=0;
     mTimerAcc=0;

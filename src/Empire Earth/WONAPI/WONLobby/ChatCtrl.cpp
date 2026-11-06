@@ -302,11 +302,11 @@ void ChatCtrl::Fn3B85B0(RecvChatEvent* inEvent)
     GUIString aFormat(GetEmptyGUIStringData());
     if(inEvent->IsWhisper()) aFormat=crossRoom?::ChatCtrl_TeamEmote_String : ::ChatCtrl_Emote_String;
     else if(inEvent->IsEmote() && inEvent->mTarget.get()!=NULL) {
-        if(inEvent->mSender->mClientId==mClientId)
+        if(inEvent->mSender->GetClientId()==mClientId)
             aFormat=inEvent->mTarget->mClientId==mClientId?::ChatCtrl_YouWhisperToYourself_String : ::ChatCtrl_YouWhisper_String;
         else aFormat=::ChatCtrl_SomeoneWhispersToYou_String;
     } else if(inEvent->IsWarning() && inEvent->mTarget.get()!=NULL) {
-        if(inEvent->mSender->mClientId==mClientId)
+        if(inEvent->mSender->GetClientId()==mClientId)
             aFormat=inEvent->mTarget->mClientId==mClientId?::ChatCtrl_YouWarnYourself_String : ::ChatCtrl_YouWarnSomeone_String;
         else if(inEvent->mTarget->mClientId==mClientId) aFormat=::ChatCtrl_SomeoneWarnsYou_String;
         else aFormat=::ChatCtrl_SomeoneWarnsSomeone_String;
@@ -423,7 +423,7 @@ void ChatCtrl::Fn3B82F0(SetChatInputEvent* inEvent)
     GUIString input(GetEmptyGUIStringData());
     input.append(parser->mPrefix);
     input.append(parser->GetCommandString(inEvent->mCommand));
-    input.append(GUIString(new GUIStringData(" \"")));
+    input.append(GUIString(" \""));
     input.append(inEvent->mText);
     input.append(GUIString(new GUIStringData("\" ")));
     mChatInput->SetText(input,false);
@@ -513,7 +513,7 @@ void ChatCtrl::Fn3B9240(ClientModeratedEvent* inEvent)
     } else {
         char text[20];
         sprintf(text,"%lu",value);
-        GUIString number(new GUIStringData(text));
+        GUIString number(text);
         const GUIString* args[2]={&inEvent->mRoomName,&number};
         Fn3B6F10(format,args,2,&link,1,true);
     }
@@ -551,7 +551,7 @@ void ChatCtrl::Fn3B8BF0()
             GUIString command(GetEmptyGUIStringData());
             command.append(parser->mPrefix);
             command.append(parser->GetCommandString(2));
-            command.append(GUIString(new GUIStringData(" \"")));
+            command.append(GUIString(" \""));
             command.append(parser->mTargetName);
             command.append(GUIString(new GUIStringData("\" ")));
             mChatInput->SetText(command,false);
@@ -711,3 +711,7 @@ ComponentConfig* ChatCtrlConfig::CfgFactory()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007b7170
 // (public: virtual void * __thiscall ChatLink::`scalar deleting destructor'(unsigned int)    [??_GChatLink@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00765240
+// (public: virtual void * __thiscall WONAPI::ChatCtrlConfig::`scalar deleting destructor'(unsigned int))

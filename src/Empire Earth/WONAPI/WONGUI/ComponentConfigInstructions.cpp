@@ -51,14 +51,14 @@ ComponentConfig* ComponentConfig::GetComponentConfig(const GUIString& path,bool 
             StringToUpperCaseInPlace(predefined);
             Component* component=NULL;
             if (Virtual28(predefined,config,component) && config!=NULL && component!=NULL) {
-                mConfigMap[(std::string)name]=config;
+                mConfigMap[name]=config;
                 config->Virtual34(component);
                 config->mL38=this;
             }
         }
     }
     if (config==NULL) {
-        if (fail) throw ConfigObjectException(std::string("Component not found: ")+(std::string)name);
+        if (fail) throw ConfigObjectException("Component not found: "+(std::string)name);
         return NULL;
     }
     if (rest.length()==0) return config;
@@ -83,16 +83,16 @@ bool ComponentConfig::HandleMapComponent()
             name=name.substr((unsigned short)(dot+1));
             ComponentConfig* target=GetComponentConfig(component,true);
             if (name.length()==0) name=GUIString(config->mS18);
-            target->mConfigMap[(std::string)name]=config;
+            target->mConfigMap[name]=config;
         }
-        mConfigMap[(std::string)name]=config;
+        mConfigMap[name]=config;
     } else config->mConfigMap[mS18]=this;
     return true;
 }
-// SUPPORT-ONLY: EXE 0x00786c30 (thin named map insertion helper, zeroquota)
+// FUNCTION: WON 0x00786c30
 void ComponentConfig::AddChildToConfigMap(const GUIString& name,ComponentConfig* config)
 {
-    if (name.length()!=0) mConfigMap[(std::string)name]=config;
+    if (name.length()!=0) mConfigMap[name]=config;
 }
 // FUNCTION: WON 0x00786d80
 bool ComponentConfig::HandleModifyGroup(ConfigParser& parser)
@@ -278,3 +278,4 @@ ComponentConfig* ComponentConfig::GetChildConfig(const std::string& theName)
 // (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WONAPI::SmartPtr<cla)
 // TEMPLATE: WON 0x0079d140
 // (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+// TEMPLATE: WON 0x007a2d00

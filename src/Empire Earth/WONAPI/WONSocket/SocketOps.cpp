@@ -21,11 +21,11 @@ WONStatus SendBytesOp::Virtual0C()
 // FUNCTION: WON 0x006b5e70
 WONStatus SendBytesOp::Virtual10()
 {
-    while (mReadBuffer.mL00 < mReadBuffer.length()) {
+    while (mReadBuffer.pos() < mReadBuffer.length()) {
         mSocket->Fn2B1360(TimeLeft());
         int aSent = 0;
-        WONStatus aStatus = mSocket->Send(mReadBuffer.mData + mReadBuffer.mL00,
-            mReadBuffer.mL08 - mReadBuffer.mL00, &aSent);
+        WONStatus aStatus = mSocket->Send(mReadBuffer.data()+mReadBuffer.pos(),
+            mReadBuffer.length()-mReadBuffer.pos(), &aSent);
         if (aSent > 0)
             mReadBuffer.ReadBytes(aSent);
         if (aStatus != 100001)
@@ -183,20 +183,26 @@ WONStatus RecvMsgOp::Fn2B5B50()
     case 1: aLength = aMessage.ReadByte(); break;
     case 2: aLength = (unsigned short)aMessage.ReadShort(); break;
     case 4: aLength = aMessage.ReadLong(); break;
-    default: return 100024;
+    default: goto aBadLength;
     }
-    if (aLength <= aMessage.length() || aLength >= 256000)
-        return 100024;
-    if (aLength == 65535 && aMessage.length() == 2) {
-        mLength = 4;
-        mState = 1;
+    if (aLength > aMessage.length() && aLength < 256000) {
+        if (aLength == 65535 && aMessage.length() == 2) {
+            mLength = 4;
+            mState = 1;
+            WONStatus aStatus = Fn2B5000();
+            if (aStatus == 0)
+                return Fn2B5B50();
+            return aStatus;
+        }
+        mState = 2;
+        mLength = aLength - aMessage.length();
         WONStatus aStatus = Fn2B5000();
-        return aStatus == 0 ? Fn2B5B50() : aStatus;
+        if (aStatus != 0)
+            return aStatus;
+        return Fn2B5D20();
     }
-    mState = 2;
-    mLength = aLength - aMessage.length();
-    WONStatus aStatus = Fn2B5000();
-    return aStatus == 0 ? Fn2B5D20() : aStatus;
+aBadLength:
+    return 100024;
 }
 
 // FUNCTION: WON 0x006b5d20
@@ -336,5 +342,3 @@ ByteBufferPtr RecvBytesFromOp::GetBytes() const
 // (public: virtual void * __thiscall WONAPI::RecvBytesOp::`scalar deleting destructor'(unsigned int)    [??_GRecvBytesOp@WONAPI@@UAEPAXI@Z])
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x006b4b70
-// (public: virtual void * __thiscall WONAPI::SocketOp::`scalar deleting destructor'(unsigned int)    [??_GSocketOp@WONAPI@@UAEPAXI@Z])

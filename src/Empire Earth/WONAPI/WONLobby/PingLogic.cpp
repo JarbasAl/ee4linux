@@ -277,3 +277,9 @@ void PingLogic::Fn3E68B0(AsyncOp* inOp)
 // (public: virtual void * __thiscall WONAPI::LogicCompletion<class WONAPI::PingLogic>::`scalar deleting destructor'(unsigned int)    [??_G?$LogicCompleti)
 // TEMPLATE: WON 0x007f15d0
 // (public: virtual __thiscall WONAPI::LogicCompletion<class WONAPI::PingLogic>::~LogicCompletion<class WONAPI::PingLogic>(void)    [??1?$LogicCompletion@)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007f1b00
+// (public: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::LobbyGame>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::LobbyGame>)
+// TEMPLATE: WON 0x007f26a0
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::LobbyGame>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::LobbyGa)

@@ -162,14 +162,8 @@ int TreeItem::GetNextNonChildPos(TreeArea *theTreeArea)
 // FUNCTION: WON 0x007144d0
 int TreeItem::GetInsertPos(TreeArea* tree,TreeItem* item,int position) {
     if(tree->mTreeSortType==2) return position;
-    ListArea::LineSortPred less(tree,tree->GetSortFunc(),tree->mTreeSortType);
-    int first=0,count=mChildren.size();
-    while(count>0) {
-        int step=count/2,mid=first+step;
-        if(less(mChildren[mid].get(),item)) { first=mid+1;count-=step+1; }
-        else count=step;
-    }
-    return first;
+    std::vector<SmartPtr<TreeItem> >::iterator itr=std::lower_bound(mChildren.begin(),mChildren.end(),item,ListArea::LineSortPred(tree,tree->GetSortFunc(),tree->mTreeSortType));
+    return itr-mChildren.begin();
 }
 
 // FUNCTION: WON 0x00714570
@@ -473,3 +467,11 @@ void TreeItem::Sort(TreeArea *theTreeArea, bool recursive)
 // (public: virtual void * __thiscall WONAPI::TreeItemOpenedEvent::`scalar deleting destructor'(unsigned int)    [??_GTreeItemOpenedEvent@WONAPI@@UAEPAXI@)
 // TEMPLATE: WON 0x00714a60
 // (public: virtual __thiscall WONAPI::TreeItemOpenedEvent::~TreeItemOpenedEvent(void)    [??1TreeItemOpenedEvent@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071b880
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::TreeItem>,int,class WONAPI::SmartPtr<class WONAPI::TreeItem> *,class WONAPI::SmartPtr<c)
+// TEMPLATE: WON 0x0071d500
+// (public: void __thiscall std::vector<class WONAPI::SmartPtr<class WONAPI::TreeItem>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::TreeItem>)
+// TEMPLATE: WON 0x00723f80
+// (class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::TreeItem>,int,class WONAPI::SmartPtr<class WONAPI::TreeItem> *,class WONAPI::SmartPtr<class WON)

@@ -39,8 +39,7 @@ bool Auth2Certificate::UnpackHook(ReadBuffer& input)
         }
         case 1: {
             DWORD id = input.ReadLong();
-            ByteBufferPtr bytes = input.ReadBuf(2);
-            mUserDataMap[id] = bytes;
+            mUserDataMap[id] = input.ReadBuf(2);
             break;
         }
         case 2: {
@@ -189,3 +188,45 @@ ByteBufferPtr Auth2Certificate::GetFirstUserData() const
 // (public: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned short,struct std)
 // TEMPLATE: WON 0x006ef940
 // (public: void __thiscall std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned short,)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006e9760
+// (public: __thiscall std::map<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,clas)
+// TEMPLATE: WON 0x006eaa30
+// (public: struct std::pair<class std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned)
+// TEMPLATE: WON 0x006eab20
+// (public: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned short,struct std)
+// TEMPLATE: WON 0x006eac20
+// (public: struct std::pair<class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned)
+// TEMPLATE: WON 0x006ead20
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x006eafb0
+// (public: struct std::pair<class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::ByteBuffer> >,struc)
+// TEMPLATE: WON 0x006eb0a0
+// (public: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::ByteBuffer> >,struct std::_Mapk<unsi)
+// TEMPLATE: WON 0x006ec3f0
+// (protected: void __thiscall std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned sho)
+// TEMPLATE: WON 0x006ec430
+// (protected: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned short,struct )
+// TEMPLATE: WON 0x006ec730
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x006ecc60
+// (protected: void __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned sho)
+// TEMPLATE: WON 0x006ecca0
+// (protected: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,stru)
+// TEMPLATE: WON 0x006ed490
+// (protected: void __thiscall std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::ByteBuffer> >,struct st)
+// TEMPLATE: WON 0x006ed4d0
+// (protected: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::ByteBuffer> >,struct std::_Mapk<u)
+// TEMPLATE: WON 0x006efe10
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsi)
+// TEMPLATE: WON 0x006f0070
+// (public: void * __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006eadd0
+// (public: __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> > con)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0076f3c0
+// (protected: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned short,struct )

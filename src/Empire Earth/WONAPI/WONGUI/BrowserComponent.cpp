@@ -84,10 +84,12 @@ void BrowserComponent::GetLinkPath(const std::string &theLink, std::string &theP
 }
 
 namespace WONAPI {
-// Native3fb230/27 conditional accessor, support0.
+// FUNCTION: WON 0x007fb230
 bool BrowserComponent::StopButtonEnabled()
 {
-    return mHTTPSession.get()!=NULL && mNumPendingOps>0;
+    if(mHTTPSession.get()==NULL)
+        return false;
+    return mNumPendingOps>0;
 }
 // Native3fb250/45 and3fb280/63 history accessors, support0.
 // FUNCTION: WON 0x007fb250
@@ -337,8 +339,10 @@ BrowserComponent::~BrowserComponent()
 void BrowserComponent::SetTransparent(bool transparent)
 {
     mHaveBackground=transparent;
-    if(mHaveBackground)
-        mHTMLView->mBackground=Background(-1);
+    if(transparent) {
+        Background background(-1,-1);
+        mHTMLView->mBackground=background;
+    }
     mHTMLView->SetComponentFlags(0x100,mHaveBackground);
 }
 }
@@ -346,3 +350,31 @@ void BrowserComponent::SetTransparent(bool transparent)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007faf10
 // (public: virtual void * __thiscall WONAPI::BrowserComponent::`scalar deleting destructor'(unsigned int)    [??_GBrowserComponent@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007fd650
+// (public: unsigned int __thiscall std::vector<struct WONAPI::BrowserComponent::PageLocation,class std::allocator<struct WONAPI::BrowserComponent::PageLo)
+// TEMPLATE: WON 0x007fd800
+// (public: virtual void * __thiscall WONAPI::GUICompletion<class WONAPI::SmartPtr<class WONAPI::AsyncOp> >::`scalar deleting destructor'(unsigned int))
+// TEMPLATE: WON 0x007fd960
+// (protected: bool __thiscall std::vector<struct WONAPI::BrowserComponent::PageLocation,class std::allocator<struct WONAPI::BrowserComponent::PageLocatio)
+// TEMPLATE: WON 0x007fde30
+// (private: virtual void __thiscall WONAPI::GUICompletion<class WONAPI::SmartPtr<class WONAPI::AsyncOp> >::Complete(class WONAPI::SmartPtr<class WONAPI::)
+// TEMPLATE: WON 0x007fdf50
+// (struct WONAPI::BrowserComponent::PageLocation * __cdecl std::copy(class std::_Ptrit<struct WONAPI::BrowserComponent::PageLocation,int,struct WONAPI::B)
+// TEMPLATE: WON 0x007fe000
+// (void __cdecl std::fill(class std::_Ptrit<struct WONAPI::BrowserComponent::PageLocation,int,struct WONAPI::BrowserComponent::PageLocation *,struct WONA)
+// TEMPLATE: WON 0x007fe070
+// (class std::_Ptrit<struct WONAPI::BrowserComponent::PageLocation,int,struct WONAPI::BrowserComponent::PageLocation *,struct WONAPI::BrowserComponent::P)
+// TEMPLATE: WON 0x007fe0f0
+// (public: virtual void __thiscall WONAPI::GUICompletionEvent<class WONAPI::SmartPtr<class WONAPI::AsyncOp> >::Deliver(void))
+// TEMPLATE: WON 0x007fe130
+// (public: virtual void * __thiscall WONAPI::GUICompletionEvent<class WONAPI::SmartPtr<class WONAPI::AsyncOp> >::`scalar deleting destructor'(unsigned in)
+// TEMPLATE: WON 0x007fe150
+// (public: virtual __thiscall WONAPI::GUICompletionEvent<class WONAPI::SmartPtr<class WONAPI::AsyncOp> >::~GUICompletionEvent<class WONAPI::SmartPtr<clas)
+// TEMPLATE: WON 0x007fda40
+// TEMPLATE: WON 0x007fd900
+// TEMPLATE: WON 0x007fd600
+// TEMPLATE: WON 0x007fd670
+// TEMPLATE: WON 0x007fdfc0
+// TEMPLATE: WON 0x007fd840

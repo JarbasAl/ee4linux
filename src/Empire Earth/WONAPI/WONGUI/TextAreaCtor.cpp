@@ -39,3 +39,7 @@ TextArea::TextArea()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00711b00
 // (public: virtual void * __thiscall WONAPI::TextArea::`scalar deleting destructor'(unsigned int)    [??_GTextArea@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00711b20
+// (public: __thiscall std::map<class WONAPI::GUIString,int,struct std::less<class WONAPI::GUIString>,class std::allocator<struct std::pair<class WONAPI::)

@@ -86,11 +86,16 @@ void TabBar::EnableTab(int inId,bool inEnabled)
     if(tab!=NULL) tab->SetEnabled(inEnabled);
 }
 // Native3085d0..30860a,58B. Invalid or null tabs are disabled.
+// FUNCTION: WON 0x007085d0
 bool TabBar::Disabled(int inId)
 {
-    if(inId<0 || inId>=mTabVector.size()) return true;
-    Button* tab=mTabVector[inId].get();
-    return tab==NULL || tab->IsDisabled();
+    if(inId>=0 && inId<mTabVector.size())
+    {
+        Button* tab=mTabVector[inId].get();
+        if(tab!=NULL)
+            return tab->IsDisabled();
+    }
+    return true;
 }
 // Native308610..30866a,90B. Selected sender must equal current indexed Button.
 // FUNCTION: WON 0x00708610
@@ -503,3 +508,21 @@ void TabCtrl::RemoveTab(int theId)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071d270
 // (protected: bool __thiscall std::vector<class WONAPI::Container *,class std::allocator<class WONAPI::Container *> >::_Buy(unsigned int)    [?_Buy@?$vec)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007081f0
+// (public: virtual __thiscall WONAPI::TabBar::~TabBar(void))
+// TEMPLATE: WON 0x00723cf0
+// (protected: class WONAPI::SmartPtr<class WONAPI::Button> * __thiscall std::vector<class WONAPI::SmartPtr<class WONAPI::Button>,class std::allocator<cla)
+// TEMPLATE: WON 0x00708160
+// (public: __thiscall WONAPI::TabBar::TabBar(class WONAPI::TabCtrl *))
+// TEMPLATE: WON 0x0071d1b0
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::Button>,int,class WONAPI::SmartPtr<class WONAPI::Button> *,class WONAPI::SmartPtr<class)
+// TEMPLATE: WON 0x0071d210
+// (public: class std::_Ptrit<class WONAPI::Container *,int,class WONAPI::Container * *,class WONAPI::Container * &,class WONAPI::Container * *,class WONA)
+// TEMPLATE: WON 0x00721820
+// (public: void __thiscall std::vector<class WONAPI::SmartPtr<class WONAPI::Button>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::Button> > >)
+// TEMPLATE: WON 0x00721c10
+// (public: void __thiscall std::vector<class WONAPI::Container *,class std::allocator<class WONAPI::Container *> >::insert(class std::_Ptrit<class WONAPI)
+// TEMPLATE: WON 0x00723900
+// (protected: void __thiscall std::vector<class WONAPI::Container *,class std::allocator<class WONAPI::Container *> >::_Xlen(void)const )

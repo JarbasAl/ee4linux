@@ -28,21 +28,22 @@ void ServerContext::Clear()
 // FUNCTION: WON 0x006ac4b0
 bool ServerContext::AddAddress(const IPAddr& inAddress)
 {
-    if (!inAddress.IsValid()) return false;
-    AutoCrit guard(mLock);
-    typedef std::map<IPAddr,AddrList::iterator> AddrMap;
-    std::pair<AddrMap::iterator,bool> inserted =
-        mPingMap.insert(AddrMap::value_type(inAddress,mAddresses.end()));
-    if (!inserted.second) return false;
-    mAddresses.push_back(inAddress);
-    AddrList::iterator last = mAddresses.end();
-    --last;
-    inserted.first->second = last;
-    return true;
+    if (inAddress.IsValid()) {
+        AutoCrit guard(mLock);
+        typedef std::map<IPAddr,AddrList::iterator> AddrMap;
+        std::pair<AddrMap::iterator,bool> inserted =
+            mPingMap.insert(AddrMap::value_type(inAddress,mAddresses.end()));
+        if (inserted.second) {
+            mAddresses.push_back(inAddress);
+            AddrList::iterator last = mAddresses.end();
+            --last;
+            inserted.first->second = last;
+            return true;
+        }
+    }
+    return false;
 }
 
-
-// Next ServerContext source fragment, scratch only.
 // FUNCTION: WON 0x006ac980
 void ServerContext::NotifyFailed(const IPAddr& inAddress)
 {
@@ -72,20 +73,6 @@ bool ServerContext::AddAddressesFromDir(const DirEntityList& inEntities,const wc
     return added;
 }
 
-// Native default-shuffle random selector2b0073..2b009a, cohesive support0.
-// Three-argument SDK shuffle starts at divisor2; default bundled overload starts1.
-class ServerAddressShuffleRandom {
-public:
-    int operator()(int upperBound) {
-        unsigned long range=0x7fff;
-        unsigned long value=rand() & 0x7fff;
-        while(range<(unsigned long)upperBound && range!=~0UL) {
-            range=(range<<15)|0x7fff;
-            value=(value<<15)|0x7fff;
-        }
-        return (int)(value%(unsigned long)upperBound);
-    }
-};
 // FUNCTION: WON 0x006ac6d0
 void ServerContext::CopyAddresses(AddrList& inCopy)
 {
@@ -96,8 +83,7 @@ void ServerContext::CopyAddresses(AddrList& inCopy)
         for (AddrList::iterator anItr=mAddresses.begin();anItr!=mAddresses.end();++anItr)
             anAddresses.push_back(*anItr);
         srand(time(NULL));
-        ServerAddressShuffleRandom aRandom;
-        std::random_shuffle(anAddresses.begin(),anAddresses.end(),aRandom);
+        std::random_shuffle(anAddresses.begin(),anAddresses.end());
         mPingMap.clear();
         mAddresses.clear();
         std::vector<IPAddr>::iterator aPos;
@@ -107,10 +93,7 @@ void ServerContext::CopyAddresses(AddrList& inCopy)
             mAddresses.push_back(*aPos);
             AddrList::iterator aLast=mAddresses.end();
             --aLast;
-            std::map<IPAddr,AddrList::iterator>::iterator anEntry=
-                mPingMap.insert(std::map<IPAddr,AddrList::iterator>::value_type(
-                    *aPos,AddrList::iterator())).first;
-            anEntry->second=aLast;
+            mPingMap[*aPos]=aLast;
             ++aPos;
         }
         mB09=true;
@@ -239,3 +222,13 @@ bool ServerContext::AtomicClearAndAddAddressesFromDir(const DirEntityMap &theDir
 // (void __cdecl std::random_shuffle(class std::_Ptrit<class WONAPI::IPAddr,int,class WONAPI::IPAddr *,class WONAPI::IPAddr &,class WONAPI::IPAddr *,class)
 // TEMPLATE: WON 0x006b0110
 // (void __cdecl std::_Iter_swap(class std::_Ptrit<class WONAPI::IPAddr,int,class WONAPI::IPAddr *,class WONAPI::IPAddr &,class WONAPI::IPAddr *,class WON)
+// TEMPLATE: WON 0x006b0050
+// (void __cdecl std::_Random_shuffle(class std::_Ptrit<class WONAPI::IPAddr,int,class WONAPI::IPAddr *,class WONAPI::IPAddr &,class WONAPI::IPAddr *,c)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006ae670
+// (public: __thiscall std::pair<class WONAPI::IPAddr const ,class std::list<class WONAPI::IPAddr,class std::allocator<class WONAPI::IPAddr> >::iterator>:)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00770090
+// (public: void * __thiscall WONAPI::IPAddr::`scalar deleting destructor'(unsigned int))

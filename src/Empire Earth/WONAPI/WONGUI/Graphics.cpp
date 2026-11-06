@@ -265,3 +265,13 @@ void Graphics::FillRectHook(int x, int y, int width, int height)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00726b70
 // (public: virtual void * __thiscall WONAPI::Graphics::`scalar deleting destructor'(unsigned int)    [??_GGraphics@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00726b50
+// (public: virtual unsigned long __thiscall WONAPI::Graphics::GetPixelHook(int,int))
+// TEMPLATE: WON 0x00727430
+// (public: virtual void __thiscall WONAPI::Graphics::FillRectBlendHook(int,int,int,int,int))
+// TEMPLATE: WON 0x00727450
+// (public: virtual void __thiscall WONAPI::Graphics::DrawArcHook(int,int,int,int,int,int))
+// TEMPLATE: WON 0x00731910
+// (protected: void __thiscall std::list<class WONAPI::WONRectangle,class std::allocator<class WONAPI::WONRectangle> >::_Incsize(unsigned int))

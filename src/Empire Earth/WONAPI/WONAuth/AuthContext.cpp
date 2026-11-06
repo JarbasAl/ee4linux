@@ -180,7 +180,6 @@ void AuthContext::StartAutoRefresh(bool force)
 }
 
 
-AuthLoginCommunityData::AuthLoginCommunityData() {}
 inline AuthContext::SecretData::SecretData() : mExpireTime(0) {}
 inline AuthContext::SecretData::SecretData(time_t expires,const ByteBuffer* secret)
     : mExpireTime(expires),mSecret(secret) {}
@@ -470,7 +469,7 @@ bool AuthContext::SetHashFile(const std::wstring& community)
         return SetHashFile(community,path);
     return false;
 }
-// SUPPORT: EXE 0x006e07f0 (239B one-file-list forwarding adapter, quota0)
+// FUNCTION: WON 0x006e07f0
 bool AuthContext::SetHashFile(const std::wstring& community,const std::string& file)
 {
     return SetHashFileList(community,std::list<std::string>(1,file));
@@ -815,3 +814,71 @@ bool AuthContext::AddAddressesFromDir(const DirEntityMap &theDir, const std::wst
 // (protected: struct std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,str)
 // TEMPLATE: WON 0x006f0090
 // (public: void * __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006e9400
+// (public: __thiscall std::basic_string<unsigned char,struct std::char_traits<unsigned char>,class std::allocator<unsigned char> >::basic_string<unsigned)
+// TEMPLATE: WON 0x006e98b0
+// (public: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct>,struct std::_Map)
+// TEMPLATE: WON 0x006e9e20
+// (public: struct std::pair<class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned)
+// TEMPLATE: WON 0x006ea1d0
+// (public: __thiscall WONAPI::AuthContext::SessionStruct::~SessionStruct(void))
+// TEMPLATE: WON 0x006ea230
+// (public: __thiscall std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct>::~pair<class WONAPI::IPAddr const ,struct WONAPI::)
+// TEMPLATE: WON 0x006eb180
+// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::LightGetCertOp>,class WONAPI::SmartPtr<class WONAPI::LightGetCertOp>,struct std::_Setk<c)
+// TEMPLATE: WON 0x006eb230
+// (protected: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::LightGetCertOp>,class WONAPI::SmartPtr<class WONAPI::LightGetCertOp>,struct std::_Set)
+// TEMPLATE: WON 0x006eb530
+// (public: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::AuthSession>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::AuthSess)
+// TEMPLATE: WON 0x006eb5b0
+// (public: struct std::pair<class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct>)
+// TEMPLATE: WON 0x006eb6a0
+// (public: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct>,struct std::_Map)
+// TEMPLATE: WON 0x006eb7a0
+// (public: __thiscall std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct>::pair<class WONAPI::IPAddr const ,struct WONAPI::A)
+// TEMPLATE: WON 0x006eb990
+// (protected: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,stru)
+// TEMPLATE: WON 0x006ede50
+// (protected: void __thiscall std::_Tree<class WONAPI::SmartPtr<class WONAPI::LightGetCertOp>,class WONAPI::SmartPtr<class WONAPI::LightGetCertOp>,struct)
+// TEMPLATE: WON 0x006ede90
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::AuthSession>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::AuthS)
+// TEMPLATE: WON 0x006edfe0
+// (protected: void __thiscall std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct>,str)
+// TEMPLATE: WON 0x006ee060
+// (protected: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct>,struct std::_)
+// TEMPLATE: WON 0x006ee360
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x006eea00
+// (protected: void __thiscall std::list<struct WONAPI::AuthContext::SecretData,class std::allocator<struct WONAPI::AuthContext::SecretData> >::_Incsize(u)
+// TEMPLATE: WON 0x006eeb50
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x006eff70
+// (void __cdecl std::_Construct(struct std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct> *,struct std::pair<class WONAPI::)
+// TEMPLATE: WON 0x006f0050
+// (public: void * __thiscall std::pair<class WONAPI::IPAddr const ,struct WONAPI::AuthContext::SessionStruct>::`scalar deleting destructor'(unsigned int))
+// TEMPLATE: WON 0x006f00b0
+// (public: void * __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short)
+// TEMPLATE: WON 0x006f00d0
+// (public: void * __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006aec20
+// (public: __thiscall std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class std::list<class WONAPI::IPAddr,class std::alloca)
+// TEMPLATE: WON 0x006e00d0
+// (public: __thiscall WONAPI::CDKey::CDKey(class WONAPI::CDKey const &))
+// TEMPLATE: WON 0x006e9f20
+// (public: __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> > con)
+// TEMPLATE: WON 0x006ea030
+// (public: __thiscall std::list<struct WONAPI::AuthContext::SecretData,class std::allocator<struct WONAPI::AuthContext::SecretData> >::~list<struct WONAP)
+// TEMPLATE: WON 0x006ea090
+// (public: class std::list<struct WONAPI::AuthContext::SecretData,class std::allocator<struct WONAPI::AuthContext::SecretData> >::iterator __thiscall std)
+// TEMPLATE: WON 0x006eabd0
+// (public: __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,st)
+// TEMPLATE: WON 0x006ebce0
+// (public: class std::list<struct WONAPI::AuthContext::SecretData,class std::allocator<struct WONAPI::AuthContext::SecretData> >::iterator __thiscall std)
+// TEMPLATE: WON 0x006efb80
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsi)
+// TEMPLATE: WON 0x006f0110
+// (public: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::AuthSession>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::AuthSess)

@@ -31,12 +31,13 @@ void Container::LeaveModal()
 void Container::VirtualC4(Component* child)
 {
     if(child->mParent!=this) return;
+    SmartPtr<Component> keep;
     if(!mRemovingAllChildren && child->ComponentFlagSet(0x100)) {
         child->Invalidate();
         RootContainer* root=Fn2F58F0();
         if(root!=NULL) root->AddBG(child->GetGrabBG());
     } else Invalidate();
-    SmartPtr<Component> keep=child;
+    keep=SmartPtr<Component>(child);
     mChildList.erase(child->mChildListItr);
     if(!mRemovingAllChildren) mChildLayout.RemoveComponent(child);
     if(child==mFocusChild) SetFocusToLastFocusChild();

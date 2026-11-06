@@ -111,3 +111,7 @@ void SmartRoutingConnection::HandleMemberFlagsChanged(RoutingMemberFlagsChangedO
     InitHandlerVariables(group.get(),i->second.get());
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006ca290
+// (protected: struct std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<struct WONAPI::RoutingMemberInfo> >,struct s)

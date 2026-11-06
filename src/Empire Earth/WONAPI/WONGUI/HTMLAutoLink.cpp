@@ -15,12 +15,12 @@
 // definition, initializer, destructor registration or source-owned storage.
 extern const WONAPI::GUIString gProtocols[5]; //5662cc actual five4B GUIString objects
 extern const WONAPI::GUIString gProtocolPrepends[5]; //5662a4 actual five4B objects
+static int gNumProtocols = 5;
 namespace WONAPI {
 // FUNCTION: WON 0x0073F8B0
 bool HTMLFromText::CheckURL(GUIString &aStr, int &aPos)
 {
-	const int protocolCount=sizeof(gProtocols)/sizeof(gProtocols[0]);
-	for(int i=0; i<protocolCount; i++)
+	for(int i=0; i<gNumProtocols; i++)
 	{
 		if(StartsWith(aStr,aPos,gProtocols[i],0) &&
 		   (aPos==0 || aStr[aPos-1]== ' '))

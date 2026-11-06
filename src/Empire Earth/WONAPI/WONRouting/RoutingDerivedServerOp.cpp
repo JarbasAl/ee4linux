@@ -13,7 +13,7 @@ namespace WONAPI {
 WONStatus RoutingDerivedServerOp::Virtual10(unsigned char messageType,ReadBuffer& message)
 {
     mMsgType=messageType;
-    mRecvMsg=new ByteBuffer(message.mData+message.mL00,message.mL08-message.mL00,false);
+    mRecvMsg=new ByteBuffer(message.data()+message.pos(),message.Available(),false);
     return 0;
 }
 // FUNCTION: WON 0x006bc6c0
@@ -30,3 +30,7 @@ SmartPtr<RoutingOp> RoutingConnection::Virtual28(unsigned char)
 // (public: virtual void * __thiscall WONAPI::RoutingDerivedServerOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingDerivedServerOp@WONAPI@@UA)
 // TEMPLATE: WON 0x006bc7b0
 // (public: virtual __thiscall WONAPI::RoutingDerivedServerOp::~RoutingDerivedServerOp(void)    [??1RoutingDerivedServerOp@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006bc780
+// (public: virtual long __thiscall WONAPI::RoutingDerivedServerOp::GetType(void)const )

@@ -118,7 +118,7 @@ WONStatus UDPManagerRecvOp::Virtual0C(ReadBuffer& inMessage)
 // FUNCTION: WON 0x006b6d70
 void UDPManagerRecvOp::Fn2B6D70(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
 {
-    if (inOp->GetStatus() != 0 || inOp->mB39)
+    if (!inOp->Succeeded())
         return;
     static_cast<UDPManagerRecvOp*>(inParam.get())->Fn2B6E60(static_cast<RecvBytesFromOp*>(inOp.get()));
 }
@@ -274,8 +274,9 @@ void UDPManagerSendRecvOp::Virtual08()
 // FUNCTION: WON 0x006b8230
 void UDPManager::Fn2B8230(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
 {
-    if (inOp->Succeeded())
-        static_cast<UDPManager*>(inParam.get())->Fn2B8320(static_cast<RecvBytesFromOp*>(inOp.get()));
+    if (!inOp->Succeeded())
+        return;
+    static_cast<UDPManager*>(inParam.get())->Fn2B8320(static_cast<RecvBytesFromOp*>(inOp.get()));
 }
 
 // FUNCTION: WON 0x006b79c0
@@ -368,8 +369,8 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
     }
     if (mAutoRecvOp.get() != NULL) {
         mAutoRecvOp->mReceivedData = aBuffer;
-        mAutoRecvOp->mAddress = inOp->mFromAddress;
-        mAutoRecvOp->mCompletion = mDefaultCompletion;
+        mAutoRecvOp->mAddress = inOp->GetAddr();
+        mAutoRecvOp->SetCompletion(mDefaultCompletion);
         mAutoRecvOp->ForceFinish(0);
         mAutoRecvOp = new UDPManagerRecvOp;
     }
@@ -396,3 +397,23 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b77b0
 // (public: virtual __thiscall WONAPI::UDPManager::~UDPManager(void)    [??1UDPManager@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006b8c10
+// (public: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::UDPManagerRecvOp> >,st)
+// TEMPLATE: WON 0x006b9570
+// (public: struct std::pair<class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::UDPMa)
+// TEMPLATE: WON 0x006b95f0
+// (public: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::UDPManagerRecvOp> >,st)
+// TEMPLATE: WON 0x006b9e10
+// (protected: struct std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::UDPManagerRecvOp> )
+// TEMPLATE: WON 0x006b9510
+// (public: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::UDPManagerRecvOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::UDP)
+// TEMPLATE: WON 0x006b9ad0
+// (protected: void __thiscall std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::UDPManage)
+// TEMPLATE: WON 0x006b9b10
+// (protected: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::UDPManagerRecvOp> >)
+// TEMPLATE: WON 0x006b9fa0
+// (void __cdecl std::_Construct(struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::UDPManagerRecvOp> > *,struct std::pair<)
+// TEMPLATE: WON 0x006b9980
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::UDPManagerRecvOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::)

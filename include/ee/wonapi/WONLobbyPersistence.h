@@ -184,8 +184,6 @@ class LobbyOptionSet {
 public:
     typedef std::list<GUIString> StringList;
     typedef std::map<GUIString, StringList::iterator> StringMap;
-    LobbyOptionSet(); //35dd20
-    ~LobbyOptionSet(); //35ddb0
     void Add(const GUIString& inValue); //35baa0
     bool Erase(const GUIString& inValue); //35bc20
     void clear(); //genuine SDK ServerListFilterSet::clear; Source-only NativeID unlocated

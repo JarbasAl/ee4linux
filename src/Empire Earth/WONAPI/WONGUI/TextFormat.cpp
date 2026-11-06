@@ -24,8 +24,11 @@ void LobbyFn34A1C0(TextArea* area,const GUIString& format,
     GUIString text;
     int start=0;
     int open;
-    while((open=format.find('<',start))>=0)
+    while(true)
     {
+        open=format.find('<',start);
+        if(open<0)
+            break;
         text.append(format,(unsigned short)start,(unsigned short)(open-start));
         int command=format[open+1];
         if(command=='<')
@@ -36,7 +39,7 @@ void LobbyFn34A1C0(TextArea* area,const GUIString& format,
         }
         if(open+1<format.length())
         {
-            if(text.length()!=0)
+            if(!text.empty())
             {
                 area->AddSegment(text,color,font,false);
                 text.erase();
@@ -70,7 +73,7 @@ void LobbyFn34A1C0(TextArea* area,const GUIString& format,
     }
     if(start<format.length())
         text.append(format,(unsigned short)start,(unsigned short)(format.length()-start));
-    if(text.length()!=0 || lineBreak)
+    if(!text.empty() || lineBreak)
         area->AddSegment(text,color,font,lineBreak);
 }
 }

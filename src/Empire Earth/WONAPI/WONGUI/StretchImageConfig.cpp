@@ -22,33 +22,43 @@ StretchImageConfig::StretchImageConfig()
 // FUNCTION: WON 0x0078b630
 bool StretchImageConfig::Virtual24(const std::string& instruction)
 {
-    if(instruction=="SRC") mStretchImage->SetImage(ReadRawImage().get());
-    else if(instruction=="TILE" || instruction=="BORDERS")
-    {
-        if(instruction=="BORDERS")
-        {
-            int left=ReadInt();EnsureComma();
-            int top=ReadInt();EnsureComma();
-            int right=ReadInt();EnsureComma();
-            int bottom=ReadInt();
-            mStretchImage->SetBorders(left,top,right,bottom);
-            if(EndOfString()) return true;
-            EnsureComma();
-        }
+    if(instruction=="SRC") {
+        mStretchImage->SetImage(ReadRawImage().get());
+        return true;
+    }
+    if(instruction=="TILE") {
         bool horz=Fn3837F0();EnsureComma();
         bool vert=Fn3837F0();
         mStretchImage->SetTile(horz,vert);
+        return true;
     }
-    else if(instruction=="SKIPCENTER") mStretchImage->SetSkipCenter(Fn3837F0());
-    else if(instruction=="MULTIEXPORT")
-    {
+    if(instruction=="BORDERS") {
+        int left=ReadInt();EnsureComma();
+        int top=ReadInt();EnsureComma();
+        int right=ReadInt();EnsureComma();
+        mStretchImage->SetBorders(left,top,right,ReadInt());
+        if(EndOfString())
+            return true;
+        EnsureComma();
+        bool horz=Fn3837F0();EnsureComma();
+        bool vert=Fn3837F0();
+        mStretchImage->SetTile(horz,vert);
+        return true;
+    }
+    if(instruction=="SKIPCENTER") {
+        mStretchImage->SetSkipCenter(Fn3837F0());
+        return true;
+    }
+    if(instruction=="MULTIEXPORT") {
         int count=ReadInt();EnsureComma();
         std::string imagePrefix=ReadRawString(false);EnsureComma();
         std::string configPrefix=ReadRawString(false);
         int offset=0;
-        if(!EndOfString()) { EnsureComma();offset=ReadInt()-1; }
-        for(int i=1;i<=count;++i)
-        {
+        if(!EndOfString()) {
+            EnsureComma();
+            offset=ReadInt()-1;
+        }
+        for(int i=1;i<=count;++i) {
             char imageName[512],configName[512];
             sprintf(imageName,"%s%d",imagePrefix.c_str(),i+offset);
             sprintf(configName,"%s%d",configPrefix.c_str(),i);
@@ -58,9 +68,9 @@ bool StretchImageConfig::Virtual24(const std::string& instruction)
             child->mStretchImage->SetImage(image.get());
             static_cast<ComponentConfig*>(mL38)->AddChildToConfigMap(configName,child.get());
         }
+        return true;
     }
-    else if(instruction=="MULTICROPEXPORT")
-    {
+    if(instruction=="MULTICROPEXPORT") {
         int count=ReadInt();EnsureComma();
         SmartPtr<RawImage> image=ReadRawImage();EnsureComma();
         std::string configPrefix=ReadRawString(false);
@@ -68,29 +78,27 @@ bool StretchImageConfig::Virtual24(const std::string& instruction)
         SmartPtr<CropImageFilter> crop=new CropImageFilter;
         crop->SetSize(width,image->mHeight);
         int x=0;
-        for(int i=0;i<count;++i)
-        {
+        for(int i=0;i<count;x+=width) {
             crop->SetPos(x,0);
             char configName[512];
-            sprintf(configName,"%s%d",configPrefix.c_str(),i+1);
+            sprintf(configName,"%s%d",configPrefix.c_str(),++i);
             SmartPtr<RawImage> cropped=crop->Filter(image.get());
             SmartPtr<StretchImageConfig> child=new StretchImageConfig;
             child->mStretchImage->CopyAttributes(mStretchImage);
             child->mStretchImage->SetImage(cropped.get());
             static_cast<ComponentConfig*>(mL38)->AddChildToConfigMap(configName,child.get());
-            x+=width;
         }
+        return true;
     }
-    else if(instruction=="EXPORT")
-    {
+    if(instruction=="EXPORT") {
         GUIString name=Fn3842F0(false);EnsureComma();
         SmartPtr<StretchImageConfig> child=new StretchImageConfig;
         child->mStretchImage->CopyAttributes(mStretchImage);
         child->mStretchImage->SetImage(ReadRawImage().get());
         static_cast<ComponentConfig*>(mL38)->AddChildToConfigMap(name,child.get());
+        return true;
     }
-    else return ImageConfig::Virtual24(instruction);
-    return true;
+    return ImageConfig::Virtual24(instruction);
 }
 
 // FUNCTION: WON 0x0078bf90

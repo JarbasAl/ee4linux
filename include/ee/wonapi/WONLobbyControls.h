@@ -253,7 +253,7 @@ public:
     SmartPtr<InputBox> mChatInput; //b8
     SmartPtr<Button> mSendButton; //bc
     SmartPtr<TextArea> mChatOutput; //c0, pointer only
-    int mRoomSpecFlags; //c4
+    long mRoomSpecFlags; //c4
     unsigned short mClientId; //c8
     GUIString mRoomName; //cc
 };

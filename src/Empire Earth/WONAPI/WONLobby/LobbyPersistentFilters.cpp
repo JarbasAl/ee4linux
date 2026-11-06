@@ -52,3 +52,7 @@ void LobbyFn35DED0(const GUIString& column,const GUIString& value)
     if(options.Erase(value)) data->mUserDirty=true;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007670a0
+// (public: class WONAPI::LobbyOptionSet & __thiscall std::map<class WONAPI::GUIString,class WONAPI::LobbyOptionSet,struct WONAPI::GUIStringLessNoCase,cla)

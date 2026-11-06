@@ -251,10 +251,17 @@ void ConfigParser::PopDefineStack()
 }
 // FUNCTION: WON 0x007b2610
 // Original3b2610/947; literals retain original misspelling.
+static inline ConfigParser* RootParserOf(ConfigParser* parser,ConfigParser* parent)
+{
+    while(parent!=NULL) {
+        parser=parent;
+        parent=parser->mParent;
+    }
+    return parser;
+}
 bool ConfigParser::AddDefine(const std::string& name,const std::string& value,bool redefine)
 {
-    ConfigParser* root=this;
-    while(root->mParent!=NULL) root=root->mParent;
+    ConfigParser* root=RootParserOf(this,mParent);
     if(name.find(' ')!=std::string::npos) {
         root->AddWarning("Not allowed to have spaces in define names.");
         return true;
@@ -273,11 +280,14 @@ bool ConfigParser::GetDefine(const std::string& name,std::string& outValue)
 {
     ConfigParser* root=this;
     while(root->mParent!=NULL) root=root->mParent;
-    for(DefineStack::reverse_iterator i=root->mDefineStack.rbegin();i!=root->mDefineStack.rend();++i) {
-        if(i->get()==NULL) continue;
-        DefineMapContainer::DefineMap& defines=(*i)->mDefineMap;
-        DefineMapContainer::DefineMap::iterator found=defines.find(name);
-        if(found!=defines.end()) {outValue=found->second;return true;}
+    DefineStack::reverse_iterator i=root->mDefineStack.rbegin();
+    while(i!=root->mDefineStack.rend()) {
+        if(i->get()!=NULL) {
+            DefineMapContainer::DefineMap& defines=(*i)->mDefineMap;
+            DefineMapContainer::DefineMap::iterator found=defines.find(name);
+            if(found!=defines.end()) {outValue=found->second;return true;}
+        }
+        ++i;
     }
     return false;
 }
@@ -313,11 +323,14 @@ bool ConfigParser::GetGroupDefine(const std::string& name,ConfigParserState& out
 {
     ConfigParser* root=this;
     while(root->mParent!=NULL) root=root->mParent;
-    for(DefineStack::reverse_iterator i=root->mDefineStack.rbegin();i!=root->mDefineStack.rend();++i) {
-        if(i->get()==NULL) continue;
-        DefineMapContainer::GroupDefineMap& groups=(*i)->mGroupDefineMap;
-        DefineMapContainer::GroupDefineMap::iterator found=groups.find(name);
-        if(found!=groups.end()) {outState=found->second;return true;}
+    DefineStack::reverse_iterator i=root->mDefineStack.rbegin();
+    while(i!=root->mDefineStack.rend()) {
+        if(i->get()!=NULL) {
+            DefineMapContainer::GroupDefineMap& groups=(*i)->mGroupDefineMap;
+            DefineMapContainer::GroupDefineMap::iterator found=groups.find(name);
+            if(found!=groups.end()) {outState=found->second;return true;}
+        }
+        ++i;
     }
     return false;
 }
@@ -377,4 +390,46 @@ void ConfigParser::UngetStr(const std::wstring &theStr)
 // TEMPLATE: WON 0x007b29f0
 // (public: virtual __thiscall WONAPI::ConfigParser::DefineMapContainer::~DefineMapContainer(void)    [??1DefineMapContainer@ConfigParser@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x007b3e30
+// (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007b5210
+// (protected: struct std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic)
+// TEMPLATE: WON 0x007b5260
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x007b5860
+// (protected: struct std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic)
+// TEMPLATE: WON 0x006d9c90
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class std::basic_string<ch)
+// TEMPLATE: WON 0x007b4b00
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+// TEMPLATE: WON 0x007b4e00
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<struct WONAPI::ConfigParser::DefineMapContainer>,int,class WONAPI::SmartPtr<struct WONAPI::ConfigPars)
+// TEMPLATE: WON 0x007b4ee0
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<struct WONAPI::ConfigParser::DefineMapContainer>,int,class WONAPI::SmartPtr<struct WONAPI::ConfigPars)
+// TEMPLATE: WON 0x007b5200
+// (public: __thiscall std::reverse_iterator<class std::_Ptrit<class WONAPI::SmartPtr<struct WONAPI::ConfigParser::DefineMapContainer>,int,class WONAPI::S)
+// TEMPLATE: WON 0x007b4a50
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x007b4e60
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<struct WONAPI::ConfigParser::DefineMapContainer>,int,class WONAPI::SmartPtr<struct WONAPI::ConfigPars)
+// TEMPLATE: WON 0x007b52d0
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x007b5820
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class s)
+// TEMPLATE: WON 0x007b58b0
+// (public: void __thiscall std::vector<class WONAPI::SmartPtr<struct WONAPI::ConfigParser::DefineMapContainer>,class std::allocator<class WONAPI::SmartPt)
+// TEMPLATE: WON 0x007b6a30
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct WO)
+// TEMPLATE: WON 0x006aa7b0
+// (public: __thiscall std::length_error::length_error(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &))
+// TEMPLATE: WON 0x006da260
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class std::basic_string<ch)
+// TEMPLATE: WON 0x006dcb40
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class std)
+// TEMPLATE: WON 0x00754be0
+// (class std::_Ptrit<class WONAPI::SmartPtr<struct WONAPI::ConfigParser::DefineMapContainer>,int,class WONAPI::SmartPtr<struct WONAPI::ConfigParser::Defi)
+// TEMPLATE: WON 0x007b48c0
+// (public: __thiscall WONAPI::ConfigParserState::ConfigParserState(struct WONAPI::ConfigParserState const &))
+// TEMPLATE: WON 0x007693f0
 // (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)

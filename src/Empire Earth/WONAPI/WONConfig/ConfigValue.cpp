@@ -149,3 +149,11 @@ void ConfigObject::RegisterWStringListListValue(const char *theKey, std::list<st
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007b4790
 // (public: virtual void __thiscall WONAPI::ConfigListValue<class std::list<class std::basic_string<char,struct std::char_traits<char>,class std::allocato)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006aa250
+// (public: __thiscall std::list<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,cla)
+// TEMPLATE: WON 0x006aa710
+// (public: void * __thiscall std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >::`scalar del)
+// TEMPLATE: WON 0x006aa760
+// (public: void * __thiscall std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >::`scalar deleting destructor'(unsigned int)

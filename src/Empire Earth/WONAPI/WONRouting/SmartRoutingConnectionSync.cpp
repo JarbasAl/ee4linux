@@ -199,12 +199,11 @@ void SmartRoutingConnection::SyncMemberMapWithClientMap(RoutingMemberMap &theMap
 // FUNCTION: WON 0x6c2070
 void SmartRoutingConnection::HandleGetGroupList(RoutingGetGroupListOp *theOp)
 {
-	const RoutingGroupMap &aNewMap = theOp->GetGroupMap();
-	RoutingGroupMap::const_iterator aNewItr = aNewMap.begin();
-	RoutingGroupMap::iterator anOldItr = mGroupMap.begin();
 	RoutingMemberMap anEmptyMemberMap;
-
-	bool hasMembers = ((theOp->mFlags&0x80)!=0);
+	const RoutingGroupMap &aNewMap = theOp->GetGroupMap();
+	RoutingGroupMap::iterator anOldItr = mGroupMap.begin();
+	bool hasMembers = theOp->IncludeMembers();
+	RoutingGroupMap::const_iterator aNewItr = aNewMap.begin();
 
 	while(anOldItr!=mGroupMap.end() || aNewItr!=aNewMap.end())
 	{
@@ -286,3 +285,23 @@ void SmartRoutingConnection::SetProductName(const std::string &thePath)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c2370
 // (public: __thiscall std::map<unsigned short,class WONAPI::SmartPtr<struct WONAPI::RoutingMemberInfo>,struct std::less<unsigned short>,class std::alloca)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006c9300
+// (protected: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<struct WONAPI::RoutingMemberInfo> >,struct st)
+// TEMPLATE: WON 0x006c96e0
+// (protected: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<struct WONAPI::RoutingGroupInfo> >,struct std)
+// TEMPLATE: WON 0x006c9b90
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,class s)
+// TEMPLATE: WON 0x006c9c40
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,class s)
+// TEMPLATE: WON 0x006cb490
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,class s)
+// TEMPLATE: WON 0x006cb550
+// (protected: struct std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,cla)
+// TEMPLATE: WON 0x006cbe00
+// (void __cdecl std::_Distance(class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsig)
+// TEMPLATE: WON 0x006cbc60
+// (void __cdecl std::_Construct(struct std::pair<unsigned short const ,class WONAPI::SmartPtr<struct WONAPI::RoutingMemberInfo> > *,struct std::pair<unsi)
+// TEMPLATE: WON 0x006c9040
+// (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<struct WONAPI::RoutingClientInfo> >,struct std::)

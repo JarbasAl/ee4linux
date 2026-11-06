@@ -13,10 +13,11 @@
 #include "ee/wonapi/WONLobbyConfig.h"
 #include "ee/wonapi/WONLobbyCore.h"
 namespace WONAPI {
-// Original-carved data/initializers remain their sole providers; no storage here.
-extern SmartPtr<Dialog> gLobbyFailureDialog5662F4;
-extern GUIString gLobbyInitError5662FC;
-extern bool gLobbyInitFailed56633C;
+// The lobby singleton and its initialization failure state.
+SmartPtr<WONLobbyPrv> gLobbyData;
+GUIString gLobbyInitError5662FC;
+SmartPtr<Dialog> gLobbyFailureDialog5662F4;
+bool gLobbyInitFailed56633C;
 void LobbyFn358F70(); //original cdecl initialization provider; no new body
 
 // Actual target return is bool; legacy public void declaration requires Root correction.
@@ -51,3 +52,17 @@ void LobbySetProductName(const std::wstring& inLoginCommunity,const char* inHash
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00762150
 // (void __cdecl WONAPI::LobbySetProductName(class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned )
+
+// Dynamic initializers and exit handlers of the globals above:
+// TEMPLATE: WON 0x00761ef0
+// TEMPLATE: WON 0x00761f00
+// TEMPLATE: WON 0x00761f10
+// TEMPLATE: WON 0x00761f20
+// TEMPLATE: WON 0x00761f30
+// TEMPLATE: WON 0x00761f40
+// TEMPLATE: WON 0x00761f50
+// TEMPLATE: WON 0x00761f60
+// TEMPLATE: WON 0x00761f70
+// TEMPLATE: WON 0x00761f80
+// TEMPLATE: WON 0x00761f90
+// TEMPLATE: WON 0x00761fa0

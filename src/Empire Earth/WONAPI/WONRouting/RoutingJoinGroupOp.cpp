@@ -40,18 +40,21 @@ WONStatus RoutingJoinGroupOp::Virtual10(unsigned char inMsgType, ReadBuffer& inM
     if (inMsgType == 41) {
         WONStatus status = inMsg.ReadShort();
         unsigned short groupId = inMsg.ReadShort();
-        if (groupId != mGroupId) return (WONStatus)100104;
-        inMsg.ReadWString(mJoinComment, 2);
-        if (status == (WONStatus)-2541) return (WONStatus)100105;
-        if (status != 0) return status;
-        return (mJoinFlags & 1) ? (WONStatus)100105 : (WONStatus)0;
+        if (groupId == mGroupId) {
+            inMsg.ReadWString(mJoinComment, 2);
+            if (status == (WONStatus)-2541) return (WONStatus)100105;
+            if (status != 0) return status;
+            return (mJoinFlags & 1) ? (WONStatus)100105 : (WONStatus)0;
+        }
+    } else if (inMsgType == 29) {
+        SmartPtr<RoutingGetMembersOfGroupOp> op =
+            new RoutingGetMembersOfGroupOp(mConnection.get());
+        op->SetGroupId(mGroupId);
+        WONStatus status = op->Virtual10(29, inMsg);
+        if (status == 0) mMemberMap = op->GetMembers();
+        return status;
     }
-    if (inMsgType != 29) return (WONStatus)100104;
-    SmartPtr<RoutingGetMembersOfGroupOp> op =
-        new RoutingGetMembersOfGroupOp(mConnection.get(), mGroupId);
-    WONStatus status = op->Virtual10(inMsgType, inMsg);
-    if (status == 0) mMemberMap = op->mMembers;
-    return status;
+    return (WONStatus)100104;
 }
 }
 

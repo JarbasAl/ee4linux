@@ -12,6 +12,11 @@
 #include "ee/wonapi/WONLobbyComboBoxConfig.h"
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 namespace WONAPI {
+// FUNCTION: WON 0x00782050
+ComboBoxConfig::ComboBoxConfig()
+{
+}
+
 // FUNCTION: WON 0x007821b0
 bool ComboBoxConfig::Virtual24(const std::string& key)
 {

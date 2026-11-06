@@ -406,7 +406,6 @@ public:
 class ChildLayoutManager : public RefCount {
 public:
     typedef std::list<SmartPtr<ChildLayoutInstructionBase> > InstructionList;
-    virtual ~ChildLayoutManager(); // call-only original normal2f5da0, deleting2f5e60
     void ExecuteInstructions(Component*);
     void AddInstruction(ChildLayoutInstructionBase*);
     void AddLayoutPoint(LayoutPoint*);
@@ -1294,6 +1293,10 @@ public:
 
 // one local network address (a std::list element, 0x14 bytes; struct and member names PROVISIONAL)
 struct LobbyNetAddress {
+#ifdef EE_DINKUM_SXL233
+    LobbyNetAddress() {}
+    LobbyNetAddress(const std::string& theName,long theHost) : mName(theName),mHandle(theHost) {}
+#endif
     std::string mName;                      // +0x00
     long mHandle;                           // +0x10, numeric IPv4 adapter address
 };
@@ -1484,6 +1487,7 @@ public:
     std::list<std::string> mL60;            // +0x60
     std::list<std::string> mL6C;            // +0x6c
     std::string mS78;                       // +0x78
+    const std::string& GetProductName() const { return mS78; }
     std::wstring mW88;                      // +0x88
     std::string mS98;                       // +0x98
     std::string mSA8;                       // +0xa8
@@ -1501,7 +1505,7 @@ public:
     bool mAllowDuplicateNames;              // +0xe6
     bool mAppendNumberToDefaultLanName;      // +0xe7
     bool mAllowJoinGameWithoutPing;          // +0xe8
-    std::map<std::string, std::string> mMEC;               // +0xec (node value 0x20; pair dtor 0x296a48)
+    std::map<std::string, std::string, StringLessNoCase> mMEC;               // +0xec (node value 0x20; pair dtor 0x296a48)
 };
 
 // 0x358710: the lobby's configuration object (an EELobbyConfig: EELobbyInit.cpp's factory)
@@ -1770,6 +1774,11 @@ public:
     virtual GUIString Virtual64(short inStatus) { return gEmptyGUIString; } //genuine SDK GetStatusStringHook default, owned result
     void CopyFrom(LobbyGame* inGame);       // 0x3a69d0
     void SetClients(LobbyClientList* inClients); // 0x3a6c10
+    void SetName(const GUIString& inName) { mName = inName; }
+    void SetPassword(const GUIString& inPassword) { mPassword = inPassword; }
+    void SetAskToJoin(bool inAsk) { mB12 = inAsk; }
+    void SetInviteOnly(bool inInvite) { mB11 = inInvite; }
+    void SetSkill(long inSkill) { mL30 = inSkill; }
     LobbyClient* FindClient(unsigned short inId); // 0x3a6c70
     bool Fn3A6D40(long inFlags);
     bool Fn3A6D70();
@@ -1893,6 +1902,8 @@ public:
     bool mB27;
     SmartPtr<LobbyPlayer> mPlayer;          // +0x28; setter and destructor own the reference
 public:
+    void SetIsFriend(bool inFriend) { mB24 = inFriend; }
+    void SetB27(bool inValue) { mB27 = inValue; }
     unsigned long GetU14() const { return mU14; }
     unsigned short GetGroupId1E() const { return mGroupId1E; }
     unsigned short GetGroupId20() const { return mGroupId20; }
@@ -2805,6 +2816,7 @@ public:
     Scroller* mScroller; //d4 borrowed
     WONRectangle mScrollArea; //d8, visible height e4
     Background mBackground; //e8..fb actual external-owned Background20
+    void SetBackground(const Background& theBackground) { mBackground=theBackground; }
     int mExtraHeight; //fc
     int mUpScrollAmount,mDownScrollAmount,mLeftScrollAmount,mRightScrollAmount; //100..10f
 };
@@ -2847,8 +2859,7 @@ public:
     struct LineSortPred {
         ListArea* mListArea; SortFunc mSortFunc; bool mAscending;
         LineSortPred(ListArea* area,SortFunc func,int type):mListArea(area),mSortFunc(func),mAscending(type==0) {}
-        bool operator()(const ListItem* a,const ListItem* b) { return mAscending ? mSortFunc(mListArea,a,b)<0 : mSortFunc(mListArea,a,b)>0; }
-        bool operator()(const SmartPtr<ListItem>& a,const SmartPtr<ListItem>& b) { return (*this)(a.get(),b.get()); }
+        bool operator()(const ListItem* a,const ListItem* b) { if(mAscending) return mSortFunc(mListArea,a,b)<0; else return mSortFunc(mListArea,a,b)>0; }
     };
     static int DefaultSortFunc(ListArea* area,const ListItem* a,const ListItem* b) { return a->Virtual10(b,area); }
     SortFunc GetSortFunc(); //2fab20 support0
@@ -3267,7 +3278,6 @@ public:
     void LinkDown(); //30ab50
     bool LinkUp(); //30ab80
     TextLinkParam(const GUIString& p,bool launch) : mLinkParam(p),mLinkIsDown(false),mLaunchBrowser(launch) {}
-    virtual ~TextLinkParam(); //actual ordinary33a170/deleting33a150, external lifetime
 };
 // Complete actual HyperLinkEvent24; native30ac35/30adbd/30ae5f allocate24.
 // Genuine SDK inline constructor retains actual param20 after original ComponentEvent20.
@@ -3287,7 +3297,6 @@ public:
         ShapeLink(TextLinkParam* p,WONRectangle& r) : mLinkParam(p),mShape(r) {}
     }; //complete14 value: SP4 + rectangle10
     std::list<ShapeLink> mShapeList; //08..13, complete14 owner
-    virtual ~ImageMap(); //actual ordinary33df20/deleting33df00 external lifetime
     TextLinkParam* GetLink(int,int); //30aed0 borrowed result
     void AddLink(TextLinkParam* p,WONRectangle& r) { mShapeList.push_back(ShapeLink(p,r)); } //actual SDK/native support0
 };

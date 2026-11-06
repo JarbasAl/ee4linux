@@ -138,3 +138,9 @@ WONMSSkin::WONMSSkin()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00725040
 // (public: void * __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONButton> >::`scalar deleting destructor'(uns)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00722a50
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONButton> >,str)
+// TEMPLATE: WON 0x00722f70
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WON)

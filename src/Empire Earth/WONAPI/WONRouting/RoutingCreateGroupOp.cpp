@@ -63,7 +63,7 @@ WONStatus RoutingCreateGroupOp::Virtual10(unsigned char inMsgType, ReadBuffer& i
     }
     // Target2c4e24 compares the reader positions unsigned. Current canonical
     // member spellings are signed; retain the actual bounds comparison explicitly.
-    if ((unsigned long)inMsg.mL00 < (unsigned long)inMsg.mL08)
+    if ((unsigned long)inMsg.pos() < inMsg.length())
         mParentGroupId = inMsg.ReadShort();
     return status;
 }

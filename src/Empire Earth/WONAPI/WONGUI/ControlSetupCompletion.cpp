@@ -54,3 +54,7 @@ void WONScrollContainer::CopyAttributes(WONScrollContainer* from)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00719cc0
 // (public: virtual void * __thiscall WONAPI::WONScrollContainer::`scalar deleting destructor'(unsigned int)    [??_GWONScrollContainer@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00719ce0
+// (public: virtual __thiscall WONAPI::WONScrollContainer::~WONScrollContainer(void))

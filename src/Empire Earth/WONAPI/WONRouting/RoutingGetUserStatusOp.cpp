@@ -12,10 +12,10 @@ namespace WONAPI {
 // FUNCTION: WON 0x006c6630
 RoutingGetUserStatusOp::RoutingGetUserStatusOp(const IPAddr& inAddress, UDPManager* inManager)
 {
-    mAddress = inAddress;
-    mManager = inManager;
-    mRetryLimit = 3;
-    mReceiveTimeout = 1000;
+    SetDestAddr(inAddress);
+    SetUDPManager(inManager);
+    SetNumRetransmits(3);
+    SetMsgTimeout(1000);
 }
 // FUNCTION: WON 0x006c68c0
 void RoutingGetUserStatusOp::AddWONUserId(unsigned long inUserId)
@@ -30,7 +30,7 @@ void RoutingGetUserStatusOp::Virtual04()
     message.AppendByte(7);
     message.AppendByte(72);
     message.AppendByte((unsigned char)mFriendStatusMap.size());
-    for (FriendStatusMap::const_iterator i = mFriendStatusMap.begin(); i != mFriendStatusMap.end(); ++i)
+    for (FriendStatusMap::const_iterator i = mFriendStatusMap.begin(); i != GetFriendStatusMap().end(); ++i)
         message.AppendLong(i->first);
     mOutgoing = message.ToByteBuffer(true);
     UDPManagerSendRecvOp::Virtual04();
@@ -61,3 +61,7 @@ WONStatus RoutingGetUserStatusOp::Virtual0C(ReadBuffer& inMessage)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c6750
 // (public: virtual __thiscall WONAPI::RoutingGetUserStatusOp::~RoutingGetUserStatusOp(void)    [??1RoutingGetUserStatusOp@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006c9f90
+// (protected: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned char>,struct std::_Mapk<unsigned long,unsigned char,struct st)

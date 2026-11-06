@@ -60,7 +60,7 @@ void RoutingConnection::AddOp(RoutingOp* inOp)
 {
     AutoCrit crit(mDataCrit);
     CalcCompletion(inOp);
-    mOpList.insert(mOpList.end(),inOp);
+    mOpList.push_back(inOp);
 }
 
 // FUNCTION: WON 0x006bd430
@@ -117,7 +117,7 @@ void RoutingConnection::JoinGroup(unsigned short inGroupId,
 //         unsigned char service = msg.ReadByte();
 //         unsigned char msgType = msg.ReadByte();
 //         bool derived = service != 7;
-//         int savedPos = msg.mL00;
+//         int savedPos = msg.pos();
 //         op = GetUnsolicitedOp(msgType, derived);
 //         if (op.get() != NULL) {
 //             mOpList.push_front(op);
@@ -129,7 +129,7 @@ void RoutingConnection::JoinGroup(unsigned short inGroupId,
 //             status = op->Virtual10(msgType, msg);
 //             if (status == (WONStatus)100105) break;
 //             if (status == (WONStatus)100104) {
-//                 msg.mL00 = savedPos;
+//                 msg.SetPos(savedPos);
 //                 continue;
 //             }
 //             mOpList.erase(itr);
@@ -227,35 +227,35 @@ void RoutingConnection::Register(const std::wstring& name,const std::wstring& pa
 {
     SmartPtr<RoutingRegisterClientOp> op=new RoutingRegisterClientOp(this,name,password,
         reconnectId,asyncFlags,registerFlags,clientFlags);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bcd40
 void RoutingConnection::GetClientList(CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingGetClientListOp> op=new RoutingGetClientListOp(this);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bcf90
 void RoutingConnection::GetGroupList(unsigned char flags,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingGetGroupListOp> op=new RoutingGetGroupListOp(this,flags);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bd1e0
 void RoutingConnection::GetMembersOfGroup(unsigned short id,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingGetMembersOfGroupOp> op=new RoutingGetMembersOfGroupOp(this,id);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bd850
 void RoutingConnection::LeaveGroup(unsigned short id,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingLeaveGroupOp> op=new RoutingLeaveGroupOp(this,id);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 }
@@ -265,7 +265,7 @@ namespace WONAPI {
 void RoutingConnection::CancelJoinGroup(unsigned short id,bool leave,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingCancelJoinGroupOp> op=new RoutingCancelJoinGroupOp(this,id,leave);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bd9f0
@@ -277,7 +277,7 @@ void RoutingConnection::AcceptClient(unsigned short group,unsigned short client,
     op->mClientId=client;
     op->mAccepted=on;
     op->SetAcceptComment(explanation);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bdb00
@@ -289,7 +289,7 @@ void RoutingConnection::InviteClient(unsigned short group,unsigned short client,
     op->mClientId=client;
     op->mInvited=on;
     op->SetInviteComment(explanation);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bdc10
@@ -297,28 +297,28 @@ void RoutingConnection::SetGroupFlags(unsigned short id,unsigned long mask,unsig
     unsigned long asyncMask,unsigned long asyncFlags,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingSetGroupFlagsOp> op=new RoutingSetGroupFlagsOp(this,id,mask,flags,asyncMask,asyncFlags);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bddd0
 void RoutingConnection::SendServerAlert(const std::wstring& text,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingSendServerAlertOp> op=new RoutingSendServerAlertOp(this,text);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006be010
 void RoutingConnection::StartServerShutdown(const std::wstring& text,unsigned long seconds,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingStartServerShutdownOp> op=new RoutingStartServerShutdownOp(this,text,seconds);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006be200
 void RoutingConnection::AbortServerShutdown(CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingAbortServerShutdownOp> op=new RoutingAbortServerShutdownOp(this);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006be390
@@ -326,7 +326,7 @@ void RoutingConnection::SetClientFlags(unsigned long mask,unsigned long flags,
     unsigned long asyncMask,unsigned long asyncFlags,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingSetClientFlagsOp> op=new RoutingSetClientFlagsOp(this,(unsigned short)mask,flags,asyncMask,asyncFlags);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006be540
@@ -342,9 +342,9 @@ void RoutingConnection::SendChatTo(const std::wstring& text,unsigned short flags
 {
     SmartPtr<RoutingSendChatOp> op=new RoutingSendChatOp(this);
     op->SetText(text);
-    op->mFlags=flags;
-    op->mRecipients=recipients;
-    op->mCompletion=completion;
+    op->SetFlags(flags);
+    op->SetRecipients(recipients);
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006be910
@@ -360,17 +360,17 @@ void RoutingConnection::SendData(const ByteBuffer* data,unsigned char flags,
 {
     SmartPtr<RoutingSendDataOp> op=new RoutingSendDataOp(this);
     // SDK ConstSmartPtr retains a mutable T* internally from its const input.
-    op->mData=const_cast<ByteBuffer*>(data);
-    op->mFlags=flags;
-    op->mRecipients=recipients;
-    op->mCompletion=completion;
+    op->SetData(data);
+    op->SetFlags(flags);
+    op->SetRecipients(recipients);
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bf3f0
 void RoutingConnection::BecomeModerator(bool on,CompletionBase<AsyncOpPtr>* completion)
 {
     SmartPtr<RoutingBecomeModeratorOp> op=new RoutingBecomeModeratorOp(this,on);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 }
@@ -390,7 +390,7 @@ void RoutingConnection::Virtual18(const ByteBuffer* inData)
         unsigned char service = msg.ReadByte();
         unsigned char msgType = msg.ReadByte();
         bool derived = service != 7;
-        int savedPos = msg.mL00;
+        int savedPos = msg.pos();
         op = GetUnsolicitedOp(msgType, derived);
         if (op.get() != NULL) {
             mOpList.push_front(op);
@@ -402,7 +402,7 @@ void RoutingConnection::Virtual18(const ByteBuffer* inData)
             status = op->Virtual10(msgType, msg);
             if (status == (WONStatus)100105) break;
             if (status == (WONStatus)100104) {
-                msg.mL00 = savedPos;
+                msg.SetPos(savedPos);
                 continue;
             }
             mOpList.erase(itr);
@@ -439,7 +439,7 @@ void RoutingConnection::CreateDataObject(unsigned char flags,unsigned short link
     op->SetDataName(name);
     // Genuine SDK ConstSmartPtr storage bridge, no payload mutation.
     op->mData=const_cast<ByteBuffer*>(data);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bee30
@@ -450,7 +450,7 @@ void RoutingConnection::ReplaceDataObject(unsigned short link,const std::string&
     op->mLinkId=link;
     op->SetDataType(type);
     op->SetDataName(name);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bef50
@@ -465,7 +465,7 @@ void RoutingConnection::ModifyDataObject(unsigned short link,const std::string& 
     op->mIsInsert=insert;
     // Genuine SDK ConstSmartPtr storage bridge, no payload mutation.
     op->mData=const_cast<ByteBuffer*>(data);
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bf0c0
@@ -476,7 +476,7 @@ void RoutingConnection::Fn2BF0C0(unsigned short link,const std::string& type,uns
     op->mLinkId=link;
     op->SetDataType(type);
     op->mFlag=(unsigned char)flags;
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bf1d0
@@ -487,7 +487,7 @@ void RoutingConnection::ReadDataObject(unsigned short link,const std::string& ty
     op->mLinkId=link;
     op->SetDataType(type);
     op->mFlag=(unsigned char)flags;
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 // FUNCTION: WON 0x006bf2e0
@@ -497,7 +497,7 @@ void RoutingConnection::Fn2BF2E0(unsigned short link,const std::string& type,uns
     op->mLinkId=link;
     op->SetDataType(type);
     op->mFlags=(unsigned char)flags;
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 }
@@ -576,7 +576,7 @@ void RoutingConnection::BanClientByCDKeyId(unsigned short groupId,bool isBanned,
     op->mWONId=cdKeyId;
     op->mBanByWONId=true;
     op->mWONIdIsCDKeyId=true;
-    op->mCompletion=completion;
+    op->SetCompletion(completion);
     op->Run(-1);
 }
 }
@@ -876,3 +876,63 @@ void RoutingConnection::GetBadUserList(RoutingBadUserListType theListType, unsig
 // (public: virtual void * __thiscall WONAPI::RoutingClientInfo::`scalar deleting destructor'(unsigned int)    [??_GRoutingClientInfo@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006ba1c0
 // (public: virtual __thiscall WONAPI::RoutingClientInfo::~RoutingClientInfo(void)    [??1RoutingClientInfo@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006bb0d0
+// (public: virtual long __thiscall WONAPI::RoutingClientFlagsChangedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb180
+// (public: virtual long __thiscall WONAPI::RoutingClientJoinedGroupOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb260
+// (public: virtual long __thiscall WONAPI::RoutingClientJoinedServerOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb330
+// (public: virtual long __thiscall WONAPI::RoutingClientLeftGroupOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb3e0
+// (public: virtual long __thiscall WONAPI::RoutingClientLeftServerOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb490
+// (public: virtual long __thiscall WONAPI::RoutingDataObjectCreatedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb5d0
+// (public: virtual long __thiscall WONAPI::RoutingDataObjectDeletedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb6e0
+// (public: virtual long __thiscall WONAPI::RoutingDataObjectModifiedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb820
+// (public: virtual long __thiscall WONAPI::RoutingGroupCaptainChangedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb8d0
+// (public: virtual long __thiscall WONAPI::RoutingGroupCreatedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bb9b0
+// (public: virtual long __thiscall WONAPI::RoutingGroupDeletedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bba60
+// (public: virtual long __thiscall WONAPI::RoutingGroupFlagsChangedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bbb10
+// (public: virtual long __thiscall WONAPI::RoutingGroupInvitationOp::GetType(void)const )
+// TEMPLATE: WON 0x006bbbf0
+// (public: virtual long __thiscall WONAPI::RoutingGroupJoinAttemptOp::GetType(void)const )
+// TEMPLATE: WON 0x006bbcd0
+// (public: virtual long __thiscall WONAPI::RoutingGroupMemberCountOp::GetType(void)const )
+// TEMPLATE: WON 0x006bbd80
+// (public: virtual long __thiscall WONAPI::RoutingGroupMaxPlayersChangedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bbe30
+// (public: virtual long __thiscall WONAPI::RoutingGroupNameChangedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bbf10
+// (public: virtual long __thiscall WONAPI::RoutingGroupObserverCountOp::GetType(void)const )
+// TEMPLATE: WON 0x006bbfc0
+// (public: virtual long __thiscall WONAPI::RoutingMemberFlagsChangedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bc070
+// (public: virtual long __thiscall WONAPI::RoutingPeerChatOp::GetType(void)const )
+// TEMPLATE: WON 0x006bc190
+// (public: virtual long __thiscall WONAPI::RoutingPeerDataOp::GetType(void)const )
+// TEMPLATE: WON 0x006bc260
+// (public: virtual long __thiscall WONAPI::RoutingServerAlertOp::GetType(void)const )
+// TEMPLATE: WON 0x006bc340
+// (public: virtual long __thiscall WONAPI::RoutingServerShutdownAbortedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bc420
+// (public: virtual long __thiscall WONAPI::RoutingServerShutdownStartedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bc500
+// (public: virtual long __thiscall WONAPI::RoutingYouWereBannedOp::GetType(void)const )
+// TEMPLATE: WON 0x006bc5e0
+// (public: virtual long __thiscall WONAPI::RoutingYouWereMutedOp::GetType(void)const )
+// TEMPLATE: WON 0x006ca2c0
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::RoutingOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::Routing)
+// TEMPLATE: WON 0x006ca410
+// (public: class std::list<struct WONAPI::RoutingBadUser,class std::allocator<struct WONAPI::RoutingBadUser> >::iterator __thiscall std::list<struct WONA)
+// TEMPLATE: WON 0x006cbaf0
+// (public: void __thiscall std::list<unsigned short,class std::allocator<unsigned short> >::assign(class std::list<unsigned short,class std::allocator<un)

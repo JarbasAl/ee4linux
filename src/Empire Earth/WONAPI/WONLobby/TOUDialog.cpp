@@ -38,8 +38,8 @@ void TOUDialog::Reset()
     if(mNeedGenHTML) {
         mNeedGenHTML=false;
         HTMLDocumentGen aGenerator(NULL);
-        aGenerator.AddDocParam(GUIString(new GUIStringData(LobbyFn35B630())),6);
-        aGenerator.AddDocParam(GUIString(new GUIStringData(LobbyFn35B650())),6);
+        aGenerator.AddDocParam(GUIString(LobbyFn35B630()),6);
+        aGenerator.AddDocParam(GUIString(LobbyFn35B650()),6);
         aGenerator.printf(GUIString(new GUIStringData("<body>%1%<br><br>%2%</body>")));
         mBrowser->Go(aGenerator.GetDocument());
     }

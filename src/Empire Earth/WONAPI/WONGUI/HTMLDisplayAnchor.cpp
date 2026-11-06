@@ -36,6 +36,11 @@ void HTMLDisplayGen::HandleAnchor(HTMLAnchorTag* tag)
 }
 }
 
+namespace WONAPI {
+// FUNCTION: WON 0x0073a170
+// (??1TextLinkParam@WONAPI@@UAE@XZ)
+}
+
 // FUNCTION: WON 0x0073a0c0
 // (?GetVertAlign@AnchorLineSegment@WONAPI@@UAEDXZ)
 

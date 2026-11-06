@@ -214,7 +214,7 @@ Component* SplitterConfig::CompFactory()
 }
 
 namespace WONAPI {
-// SUPPORT: EXE 0x00765120; genuine SDK static allocator, zero primary.
+// FUNCTION: WON 0x00765120
 Component* ContainerConfig::CompFactory()
 {
     return new Container;

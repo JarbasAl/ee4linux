@@ -67,3 +67,19 @@ WONSkin::~WONSkin() {}
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007154d0
 // (public: virtual void * __thiscall WONAPI::WONSkin::`scalar deleting destructor'(unsigned int)    [??_GWONSkin@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00725020
+// (public: void * __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONButton> >::`scalar deleting destructor'(uns)
+// TEMPLATE: WON 0x0071bb50
+// (public: __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONButton> )
+// TEMPLATE: WON 0x0071bc60
+// (public: __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONSimpleBu)
+// TEMPLATE: WON 0x00722fb0
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONSimpleButton>)
+// TEMPLATE: WON 0x007234d0
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WON)
+// TEMPLATE: WON 0x00725060
+// (public: __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONButton> >::~pair<class WONAPI::GUIString const ,cl)
+// TEMPLATE: WON 0x007250e0
+// (public: __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONSimpleButton> >::~pair<class WONAPI::GUIString con)

@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 #include <deque>
+#include <algorithm>
 #include <map>
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
@@ -135,17 +136,13 @@ void TextArea::VirtualD4(Graphics& g) {
     }
 }
 
+struct TextLineYLess {
+    bool operator()(const SmartPtr<TextLine>& a,const SmartPtr<TextLine>& b) const { return a->my<b->my; }
+};
 // FUNCTION: WON 0x007131b0
 TextArea::LineVector::iterator TextArea::FindLineAt(int y) {
     mSearchLine->my=y;
-    LineVector::difference_type first=0,count=mLineVector.end()-mLineVector.begin();
-    while(count>0) {
-        LineVector::difference_type step=count/2;
-        LineVector::difference_type mid=first+step;
-        if(mLineVector[mid]->my<y) { first=mid+1;count-=step+1; }
-        else count=step;
-    }
-    LineVector::iterator itr=mLineVector.begin()+first;
+    LineVector::iterator itr=std::lower_bound(mLineVector.begin(),mLineVector.end(),mSearchLine,TextLineYLess());
     if(itr==mLineVector.end() || (*itr)->my>y) {
         if(itr!=mLineVector.begin()) --itr;
     }
@@ -603,3 +600,11 @@ void TextArea::AddSegmentPrv(TextSegmentBase* segment) {
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00713860
 // (public: virtual __thiscall WONAPI::TextLinkActivatedEvent::~TextLinkActivatedEvent(void)    [??1TextLinkActivatedEvent@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071d350
+// (public: void __thiscall std::deque<class WONAPI::SmartPtr<class WONAPI::TextLine>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::TextLine> )
+// TEMPLATE: WON 0x0071efd0
+// (public: class std::list<class WONAPI::SmartPtr<class WONAPI::TextSegmentBase>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::TextSegmentBas)
+// TEMPLATE: WON 0x007255a0
+// (class std::deque<class WONAPI::SmartPtr<class WONAPI::TextLine>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::TextLine> > >::iterator __cd)

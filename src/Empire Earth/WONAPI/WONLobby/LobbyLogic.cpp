@@ -73,3 +73,9 @@ bool LobbyLogic::Fn3E5C00(AsyncOp* inOp)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007e5a20
 // (public: virtual void * __thiscall WONAPI::LobbyLogic::`scalar deleting destructor'(unsigned int)    [??_GLobbyLogic@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0076c4f0
+// (protected: void __thiscall std::_Tree<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,struct std::pair<class WONAPI::SmartPtr<class WONAPI::AsyncOp> con)
+// TEMPLATE: WON 0x007672b0
+// (public: __thiscall std::_Tree<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,struct std::pair<class WONAPI::SmartPtr<class WONAPI::AsyncOp> const ,clas)

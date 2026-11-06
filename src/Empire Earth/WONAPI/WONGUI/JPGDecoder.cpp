@@ -171,3 +171,12 @@ SmartPtr<RawImage> JPGDecoder::DoDecodeRaw()
     return image.get();
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007d2b20
+// (_init_source)
+// TEMPLATE: WON 0x007d2cb0
+// (_my_error_exit)
+// TEMPLATE: WON 0x007d2fa0
+// TEMPLATE: WON 0x007d2fc0
+// TEMPLATE: WON 0x007d2be0

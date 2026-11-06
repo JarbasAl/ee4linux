@@ -32,10 +32,10 @@ void AdminActionDialog::HandleComponentEvent(ComponentEvent* inEvent)
     }
     Dialog::HandleComponentEvent(inEvent);
 }
-// Zero-credit field accessor: original3f4d10,15B.
+// FUNCTION: WON 0x007f4d10
 bool AdminActionDialog::GetApplyToServer()
 {
-    return mApplyToServer->mChecked != 0;
+    return mApplyToServer->IsChecked();
 }
 // Zero-credit pure forwarder: original3f4d20,11B.
 // FUNCTION: WON 0x007f4d20
@@ -85,7 +85,7 @@ void AdminActionDialog::Reset(int inAction, LobbyClient* inTarget)
     bool showDuration,enableReason,showScope;
     mApplyToServer->SetCheck(false,false);
     mApplyToRoom->SetCheck(true,false);
-    mExplanation->SetText(GUIString(new GUIStringData("")),false);
+    mExplanation->SetText(GUIString(""),false);
     mDurationCombo->SetSelItem(1,false);
     mTimeSegmentCombo->SetSelItem(0,false);
     switch(mActionType) {

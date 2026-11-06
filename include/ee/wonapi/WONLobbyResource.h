@@ -41,7 +41,11 @@ public:
     void AssignStr(const char*,int); //327a20 unsigned-byte widening
     void AssignWStr(const wchar_t*,int); //327ac0
     void assign(const GUIStringData*,unsigned short,unsigned short); //327c10
+#ifdef EE_DINKUM_SXL233
+    void resize(int inLength, bool inGrow) { Reserve(inLength,inGrow); mLength=inLength; mText[mLength]=0; } // 0x30a1d0
+#else
     void resize(int inLength, bool inGrow); // 0x30a1d0; distinct from Reserve
+#endif
     void Fill(int,unsigned short,unsigned short); //327b60 actual external data Fill
     int ToInt(unsigned short inStart) const; // 0x3281e0
     int find(int inChar, int inStart) const; // 0x328280; -1 if absent
@@ -114,6 +118,7 @@ public:
     void reserve(int length) { mData->Reserve(length,false); } //genuineSDKinline, deliberately noCOW; native33ff52/34053e
 #ifdef EE_DINKUM_SXL233 // WON library view: built inline (ChatCommandParser::AddHelpEntry 0x757800, GetHelp 0x7579c0)
     GUIString(const char* inText) : mData(new GUIStringData(inText)) {}
+    GUIString(const wchar_t* inText) : mData(new GUIStringData(inText)) {}
 #else
     GUIString(const char* inText);         // 0x29115e (new GUIStringData(inText); no caller expands it)
 #endif
@@ -146,7 +151,7 @@ public:
 #endif
     void Fill(int ch,unsigned short offset,unsigned short length) { CopyOnWrite(); mData->Fill(ch,offset,length); } //actual SDKinline; support0
 #ifdef EE_DINKUM_SXL233
-    void resize(int inLength) { CopyOnWrite(); GUIStringData* theData = mData.mPtr; theData->Reserve(inLength,false); theData->mLength = inLength; theData->mText[theData->mLength] = 0; }
+    void resize(int inLength) { CopyOnWrite(); mData->resize(inLength,false); }
 #else
     void resize(int inLength);              // 0x29119a
 #endif
@@ -168,10 +173,11 @@ public:
     void toLowerCase() { CopyOnWrite(); mData->toLowerCase(); } //genuine SDK COW forwarder;0Native
     void append(int inChar) { CopyOnWrite(); mData->append(inChar); } //genuine SDK int API; existing algorithm retained through true data owner
     void append(const GUIString& inText) { append(inText, 0, inText.length()); }
+    void append(const GUIString& inText, unsigned short inStart) { append(inText, inStart, inText.length()-inStart); }
     void append(const GUIString& inText, unsigned short inStart, unsigned short inLength)
     {
         CopyOnWrite();
-        mData->append(inText.mData.mPtr, inStart, inLength);
+        mData->append(inText.mData.get(), inStart, inLength);
     }
     // a std::set<GUIString> key (0x298c87: `key.mData->Compare(node.mData) < 0`)
     bool operator<(const GUIString& inOther) const { return mData->Compare(inOther.mData.get()) < 0; }

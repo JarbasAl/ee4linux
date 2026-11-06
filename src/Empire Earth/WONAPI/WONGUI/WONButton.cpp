@@ -436,3 +436,15 @@ void WONButton::SetVertAlign(VertAlign align)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00722490
 // (public: class std::_Tree<class WONAPI::Font *,struct std::pair<class WONAPI::Font * const,class WONAPI::SmartPtr<class WONAPI::WrappedText> >,struct s)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071ba60
+// (public: struct std::pair<class std::_Tree<class WONAPI::Font *,struct std::pair<class WONAPI::Font * const,class WONAPI::SmartPtr<class WONAPI::Wrappe)
+// TEMPLATE: WON 0x0071b8e0
+// (public: class std::_Tree<class WONAPI::Font *,struct std::pair<class WONAPI::Font * const,class WONAPI::SmartPtr<class WONAPI::WrappedText> >,struct s)
+// TEMPLATE: WON 0x0071d8f0
+// (public: class std::_Tree<class WONAPI::Font *,struct std::pair<class WONAPI::Font * const,class WONAPI::SmartPtr<class WONAPI::WrappedText> >,struct s)
+// TEMPLATE: WON 0x0071d9a0
+// (protected: class std::_Tree<class WONAPI::Font *,struct std::pair<class WONAPI::Font * const,class WONAPI::SmartPtr<class WONAPI::WrappedText> >,struc)
+// TEMPLATE: WON 0x00722980
+// (protected: struct std::_Tree<class WONAPI::Font *,struct std::pair<class WONAPI::Font * const,class WONAPI::SmartPtr<class WONAPI::WrappedText> >,stru)

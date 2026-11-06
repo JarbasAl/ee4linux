@@ -163,14 +163,17 @@ VertAlign ComponentConfig::ReadVertAlign()
 // FUNCTION: WON 0x00782f40
 int ComponentConfig::GetIntValue()
 {
-    int value;
-    if(mStringParser->ReadValue(value)) return value;
+    {
+        int value;
+        if(mStringParser->ReadValue(value)) return value;
+    }
     std::string name;
     while(!mStringParser->EndOfString())
     {
         char next=mStringParser->GetChar(0);
-        if(next<0 || isspace(next)) break;
-        if(next!='@' && next!='_' && next!='.' && !isalnum(next)) break;
+        unsigned int c=next;
+        if(c<256 && isspace(c)) break;
+        if(next!='@' && next!='_' && next!='.' && !(c<256 && isalnum(c))) break;
         name+=next;
         mStringParser->IncrementPos(1);
     }
@@ -208,7 +211,7 @@ int ComponentConfig::GetIntValue()
             for(;;)
             {
                 int param=ReadInt();
-                params.insert(params.end(),std::vector<int>::size_type(1),param);
+                params.push_back(param);
                 if(mStringParser->CheckNextChar(')')) break;
                 EnsureComma();
                 if(mStringParser->CheckNextChar(')')) break;
@@ -276,3 +279,11 @@ bool ComponentConfig::Virtual30(const std::string& inName,const std::vector<int>
 // (protected: void __thiscall std::vector<int,class std::allocator<int> >::_Xlen(void)const     [?_Xlen@?$vector@HV?$allocator@H@std@@@std@@IBEXXZ])
 // TEMPLATE: WON 0x007a2ce0
 // (void __cdecl std::fill(class std::_Ptrit<int,int,int *,int &,int *,int &>,class std::_Ptrit<int,int,int *,int &,int *,int &>,int const &)    [?fill@st)
+// TEMPLATE: WON 0x007a1230
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00754b50
+// (protected: int * __thiscall std::vector<int,class std::allocator<int> >::_Ucopy(class std::_Ptrit<int,int,int *,int &,int *,int &>,class std::_Ptrit<i)
+// TEMPLATE: WON 0x00754b80
+// (class std::_Ptrit<int,int,int *,int &,int *,int &> __cdecl std::copy_backward(class std::_Ptrit<int,int,int *,int &,int *,int &>,class std::_Ptrit<int)
+// TEMPLATE: WON 0x0079c980

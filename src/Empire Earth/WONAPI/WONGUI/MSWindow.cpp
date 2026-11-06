@@ -669,6 +669,7 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 // Native3d14d0 support0: actual caller already selected a nativeCursor.
+// FUNCTION: WON 0x007d14d0
 void MSWindow::Virtual18(Cursor* cursor) { ::SetCursor(((MSCursor*)cursor)->mNativeCursor); }
 
 // Compiler-generated and header-inline functions this unit emits:

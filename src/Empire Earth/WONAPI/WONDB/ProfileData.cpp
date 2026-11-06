@@ -154,3 +154,7 @@ unsigned long ProfileData::GetBirthDate()
 // (protected: void __thiscall std::_Tree<unsigned short,struct std::pair<unsigned short const ,bool>,struct std::_Mapk<unsigned short,bool,struct std::le)
 // TEMPLATE: WON 0x006cf590
 // (protected: struct std::_Tree<unsigned short,struct std::pair<unsigned short const ,bool>,struct std::_Mapk<unsigned short,bool,struct std::less<unsign)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006cf290
+// (protected: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,bool>,struct std::_Mapk<unsigned short,bool,struct std::less<unsigne)

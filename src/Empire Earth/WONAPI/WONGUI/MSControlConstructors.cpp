@@ -133,8 +133,7 @@ void MSCheckbox::Init()
 }
 // FUNCTION: WON 0x006ff3e0
 MSCheckbox::MSCheckbox() { Init(); }
-// Genuine SDK helper expanded in native2ff530; source-only, no separate extent credit.
-void MSRadioButton::Init()
+inline void MSRadioButton::Init()
 {
     Fn2F3370(8,true);
     mHAlign=HorzAlign_Left;
@@ -273,3 +272,15 @@ MSEtchedFrame::MSEtchedFrame() { SetComponentFlags(0x800,true); }
 // (public: virtual void * __thiscall WONAPI::MSHeaderControl::`scalar deleting destructor'(unsigned int)    [??_GMSHeaderControl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00700fa0
 // (public: virtual void * __thiscall WONAPI::MSListCtrl::`scalar deleting destructor'(unsigned int)    [??_GMSListCtrl@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006ff250
+// (public: virtual void __thiscall WONAPI::MSCloseButton::Virtual0C(int &,int &))
+// TEMPLATE: WON 0x00700700
+// (public: virtual void __thiscall WONAPI::MSSeperator::Virtual0C(int &,int &))
+// TEMPLATE: WON 0x007009c0
+// (public: virtual __thiscall WONAPI::MSEtchedFrameGroup::~MSEtchedFrameGroup(void))
+// TEMPLATE: WON 0x00700fc0
+// (public: virtual __thiscall WONAPI::MSListCtrl::~MSListCtrl(void))
+// TEMPLATE: WON 0x00700d60
+// (public: virtual __thiscall WONAPI::MSHeaderControl::~MSHeaderControl(void))

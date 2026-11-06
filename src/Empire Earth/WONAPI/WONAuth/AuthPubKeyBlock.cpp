@@ -48,5 +48,11 @@ bool AuthPubKeyBlock::IsValidAndVerified(const ElGamal& verifier) const
 // (protected: virtual __thiscall WONAPI::AuthPubKeyBlock::~AuthPubKeyBlock(void)    [??1AuthPubKeyBlock@WONAPI@@MAE@XZ])
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x006eb150
-// (protected: struct std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::_Node * __thiscall std::list<class WONAPI::ElGamal,cl)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006ef990
+// (void __cdecl std::_Construct(class WONAPI::ElGamal *,class WONAPI::ElGamal const &))
+// TEMPLATE: WON 0x006ed7d0
+// (public: class std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::iterator __thiscall std::list<class WONAPI::ElGamal,class)
+// TEMPLATE: WON 0x006ed810
+// (protected: void __thiscall std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::_Incsize(unsigned int))

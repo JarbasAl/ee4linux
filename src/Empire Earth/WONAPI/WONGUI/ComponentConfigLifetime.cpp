@@ -45,3 +45,16 @@ std::string ComponentConfig::mResourceFolder;
 // (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
 // TEMPLATE: WON 0x0079d100
 // (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class s)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007a32e0
+// (public: void * __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WONAPI::Smart)
+
+// TEMPLATE: WON 0x007824c0
+// TEMPLATE: WON 0x007824d0
+// TEMPLATE: WON 0x007824e0
+// TEMPLATE: WON 0x007824f0
+// TEMPLATE: WON 0x00782510
+// TEMPLATE: WON 0x00782520
+// TEMPLATE: WON 0x00782540
+// TEMPLATE: WON 0x00782550

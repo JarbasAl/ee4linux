@@ -486,3 +486,9 @@ Splitter::~Splitter() {}
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00722070
 // (protected: void __thiscall std::list<struct WONAPI::Splitter::Quadrant,class std::allocator<struct WONAPI::Splitter::Quadrant> >::_Incsize(unsigned in)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071d320
+// (protected: struct std::list<struct WONAPI::Splitter::SplitterParam,class std::allocator<struct WONAPI::Splitter::SplitterParam> >::_Node * __thiscall )
+// TEMPLATE: WON 0x00722200
+// (protected: void __thiscall std::list<struct WONAPI::Splitter::SplitterParam,class std::allocator<struct WONAPI::Splitter::SplitterParam> >::_Incsize(u)

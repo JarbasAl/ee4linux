@@ -122,3 +122,14 @@ bool BrowserComponent::DownloadImages()
     return false;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007fd6f0
+// (public: __thiscall WONAPI::ParamCompletion<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,class WONAPI::SmartPtr<struct WONAPI::BrowserComponent::Image)
+// TEMPLATE: WON 0x007fd9c0
+// (protected: static struct std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLDocument::LoadedImageSt)
+// TEMPLATE: WON 0x007fd750
+// TEMPLATE: WON 0x007fd820
+// TEMPLATE: WON 0x007fd8a0
+// TEMPLATE: WON 0x007fd9a0
+// TEMPLATE: WON 0x007fd9e0

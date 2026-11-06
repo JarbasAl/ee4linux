@@ -13,7 +13,7 @@ RoutingGetGroupListReqOp::RoutingGetGroupListReqOp(const IPAddr& inAddress,unsig
  : ServerRequestOp(inAddress),mOp(new RoutingGetGroupListOp)
 {
     mLengthFieldSize=2;
-    mOp->mFlags=inFlags;
+    mOp->SetFlags(inFlags);
 }
 // FUNCTION: WON 0x006c6150
 WONStatus RoutingGetGroupListReqOp::Virtual10()
@@ -38,7 +38,7 @@ WONStatus RoutingGetGroupListReqOp::Virtual14()
     WONStatus aStatus=aMessage.ReadShort();
     if(aStatus!=0)
         return aStatus;
-    if(!mOp->ParseGroupListObj(aMessage.mData+aMessage.mL00,aMessage.mL08-aMessage.mL00))
+    if(!mOp->ParseGroupListObj(aMessage.data()+aMessage.pos(),aMessage.Available()))
         return 100012;
     return 0;
 }

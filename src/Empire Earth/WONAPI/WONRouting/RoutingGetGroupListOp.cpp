@@ -35,22 +35,19 @@ void RoutingGetGroupListOp::ParseReplyExceptForStatus(ReadBuffer& inMsg)
     mGroupMap.clear();
     mFlags = inMsg.ReadShort();
     int count = (unsigned short)inMsg.ReadShort();
-    int i;
-    i=0;
-    while(true) {
-        if(!(i < count)) break;
+    for (int i = 0; i < count; ++i) {
         unsigned short length = inMsg.ReadShort();
-        long start = inMsg.mL00;
+        long start = inMsg.pos();
         RoutingGroupInfoPtr group = GetNewGroupInfo();
         group->mId = inMsg.ReadShort();
-        if (mFlags & 1) inMsg.ReadWString(group->mName, 2);
-        if (mFlags & 2) group->mCaptainId = inMsg.ReadShort();
-        if (mFlags & 4) group->mMaxClients = inMsg.ReadShort();
-        if (mFlags & 8) group->mFlags = inMsg.ReadLong();
-        if (mFlags & 0x10) group->mAsyncFlags = inMsg.ReadLong();
-        if (mFlags & 0x40) group->mObserverCount = inMsg.ReadShort();
-        if (mFlags & 0x20) group->mMaxPlayers = inMsg.ReadShort(); // canonical2a spelling, actual membercount
-        if (mFlags & 0x80) {
+        if (IncludeName()) inMsg.ReadWString(group->mName, 2);
+        if (IncludeCaptain()) group->mCaptainId = inMsg.ReadShort();
+        if (IncludeMaxPlayers()) group->mMaxClients = inMsg.ReadShort();
+        if (IncludeFlags()) group->mFlags = inMsg.ReadLong();
+        if (IncludeAsyncFlags()) group->mAsyncFlags = inMsg.ReadLong();
+        if (IncludeObserverCount()) group->mObserverCount = inMsg.ReadShort();
+        if (IncludeMemberCount()) group->mMaxPlayers = inMsg.ReadShort(); // canonical2a spelling, actual membercount
+        if (IncludeMembers()) {
             for (int j = 0; j < group->mMaxPlayers; ++j) {
                 RoutingMemberInfoPtr member = GetNewMemberInfo();
                 member->mClientId = inMsg.ReadShort();
@@ -59,8 +56,7 @@ void RoutingGetGroupListOp::ParseReplyExceptForStatus(ReadBuffer& inMsg)
             }
         }
         mGroupMap[group->mId] = group;
-        inMsg.ReadBytes(length - inMsg.mL00 + start);
-        ++i;
+        inMsg.ReadBytes(length - inMsg.pos() + start);
     }
 }
 }
@@ -89,3 +85,7 @@ bool RoutingGetGroupListOp::ParseGroupListObj(const void* data,unsigned long siz
     return false;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006c8f50
+// (public: struct std::pair<class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<struct WONAPI::RoutingMemberInf)

@@ -115,3 +115,9 @@ void HTMLDocumentGen::AddTagParam(HTMLTag *theTag)
 	mDocumentVector.push_back(aDoc);
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0074cb90
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::HTMLDocument>,int,class WONAPI::SmartPtr<class WONAPI::HTMLDocument> *,class WONAPI::Sm)
+// TEMPLATE: WON 0x00750a10
+// (public: void __thiscall std::vector<class WONAPI::SmartPtr<class WONAPI::HTMLDocument>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::HTMLD)

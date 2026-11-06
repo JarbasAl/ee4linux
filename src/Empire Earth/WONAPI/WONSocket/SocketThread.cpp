@@ -92,3 +92,13 @@ void SocketThreadSimple::ThreadFunc()
 // (public: virtual void * __thiscall WONAPI::SocketThreadSimple::`scalar deleting destructor'(unsigned int)    [??_GSocketThreadSimple@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006b62c0
 // (public: __thiscall std::set<class WONAPI::SmartPtr<class WONAPI::SocketOp>,struct WONAPI::SmartPtr<class WONAPI::SocketOp>::Comp,class std::allocator<)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006b8720
+// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::SocketOp>,class WONAPI::SmartPtr<class WONAPI::SocketOp>,struct std::_Setk<class WONAPI:)
+// TEMPLATE: WON 0x006b9160
+// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::SocketOp>,class WONAPI::SmartPtr<class WONAPI::SocketOp>,struct std::_Setk<class WONAPI:)
+// TEMPLATE: WON 0x006b9210
+// (protected: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::SocketOp>,class WONAPI::SmartPtr<class WONAPI::SocketOp>,struct std::_Setk<class WONA)
+// TEMPLATE: WON 0x006b9940
+// (protected: void __thiscall std::_Tree<class WONAPI::SmartPtr<class WONAPI::SocketOp>,class WONAPI::SmartPtr<class WONAPI::SocketOp>,struct std::_Setk<)

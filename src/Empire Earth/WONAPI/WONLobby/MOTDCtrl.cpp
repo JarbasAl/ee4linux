@@ -35,11 +35,11 @@ void MOTDCtrl::Paint(Graphics& inGraphics)
         mNeedGenHTML=false;
         if(!mSysMOTDPath.empty() && !mGameMOTDPath.empty()) {
             HTMLDocumentGen generator(NULL);
-            generator.AddDocParam(GUIString(new GUIStringData(mSysMOTDPath)),14);
-            generator.AddDocParam(GUIString(new GUIStringData(mGameMOTDPath)),14);
+            generator.AddDocParam(GUIString(mSysMOTDPath),14);
+            generator.AddDocParam(GUIString(mGameMOTDPath),14);
             mSysMOTDPath.erase();
             mGameMOTDPath.erase();
-            generator.printf(GUIString(new GUIStringData("<body>%1%<br><br>%2%</body>")));
+            generator.printf(GUIString("<body>%1%<br><br>%2%</body>"));
             mBrowser->Go(generator.GetDocument());
         }
     }
@@ -72,3 +72,9 @@ void MOTDCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 // (public: __thiscall WONAPI::MOTDCtrl::MOTDCtrl(void)    [??0MOTDCtrl@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007c0bc0
 // (public: virtual void * __thiscall WONAPI::MOTDCtrl::`scalar deleting destructor'(unsigned int)    [??_GMOTDCtrl@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007c0fb0
+// (public: __thiscall WONAPI::HTMLDocumentGen::~HTMLDocumentGen(void))
+// TEMPLATE: WON 0x0071b370
+// (protected: void __thiscall std::vector<class WONAPI::SmartPtr<class WONAPI::HTMLDocument>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::HT)

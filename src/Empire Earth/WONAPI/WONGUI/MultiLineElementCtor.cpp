@@ -24,3 +24,9 @@ MultiLineElement::MultiLineElement()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071b440
 // (public: __thiscall std::vector<struct WONAPI::FloatingSegment,class std::allocator<struct WONAPI::FloatingSegment> >::~vector<struct WONAPI::FloatingS)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0070c930
+// (public: virtual __thiscall WONAPI::MultiLineElement::~MultiLineElement(void))
+// TEMPLATE: WON 0x0070c910
+// (public: virtual void * __thiscall WONAPI::MultiLineElement::`scalar deleting destructor'(unsigned int))

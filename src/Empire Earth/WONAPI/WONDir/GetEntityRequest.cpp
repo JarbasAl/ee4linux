@@ -13,10 +13,6 @@
 namespace WONAPI {
 // Default protocol initialization is native-inline in AddPath/CheckResponse.
 
-GetEntityRequest::GetEntityRequest()
-{
-    mFlags=0x06020837;
-}
 // FUNCTION: WON 0x6f0da0
 GetEntityRequest::~GetEntityRequest() {}
 // FUNCTION: WON 0x6f0fa0
@@ -111,3 +107,21 @@ const DirEntityMap& GetEntityRequest::GetDirEntityMap()
 // (protected: virtual void * __thiscall WONAPI::GetEntityRequest::`scalar deleting destructor'(unsigned int)    [??_GGetEntityRequest@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x006f0ef0
 // (public: __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> > con)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006f1e60
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x006f20d0
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x006f2630
+// (protected: void __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned sho)
+// TEMPLATE: WON 0x006f2730
+// (public: void * __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006cfd70
+// (public: __thiscall std::set<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::less<class std::basic_)
+// TEMPLATE: WON 0x006d9de0
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struct s)
+// TEMPLATE: WON 0x006db310
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<)

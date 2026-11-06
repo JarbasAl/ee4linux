@@ -72,3 +72,7 @@ bool AuthPeerData::IsValid2() const
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e9850
 // (public: __thiscall std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::~list<class WONAPI::ElGamal,class std::allocator<cla)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006eb150
+// (protected: struct std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::_Node * __thiscall std::list<class WONAPI::ElGamal,cl)

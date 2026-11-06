@@ -62,8 +62,9 @@ void AsyncSocket::Fn2B0620(MsgTransform* inTransform)
 WONStatus AsyncSocket::Fn2B0730(ByteBufferPtr& inMessage)
 {
     AutoCrit aCrit(mDataCrit);
-    for (std::list<MsgTransform*>::reverse_iterator anItr = mMsgTransformQueue.rbegin();
-         anItr != mMsgTransformQueue.rend(); ++anItr) {
+    std::list<MsgTransform*>::iterator anItr = mMsgTransformQueue.end();
+    while (anItr != mMsgTransformQueue.begin()) {
+        --anItr;
         WONStatus aStatus = (*anItr)->Recv(inMessage);
         if (aStatus != 0)
             return aStatus;
@@ -165,8 +166,11 @@ WONStatus AsyncSocket::Send(const void* inData, int inLength, int* outSent)
     NetStats::IncrementBytesSent(aSent);
     if (outSent != NULL)
         *outSent = aSent;
-    if (aSent < inLength)
-        return mType == 1 ? 100017 : 100001;
+    if (aSent < inLength) {
+        if (mType == 1)
+            return 100017;
+        return 100001;
+    }
     return 0;
 }
 
@@ -248,7 +252,9 @@ WONStatus AsyncSocket::Fn2B1700(const void* inData, int inLength, const IPAddr& 
     if (aSent < 0)
         return Fn2B0890();
     NetStats::IncrementBytesSent(aSent);
-    return aSent == inLength ? 0 : 100017;
+    if (aSent == inLength)
+        return 0;
+    return 100017;
 }
 
 // FUNCTION: WON 0x006b1840

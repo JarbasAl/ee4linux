@@ -653,3 +653,7 @@ void StagingLogic::Fn3F1200()
 // TEMPLATE: WON 0x007f06d0
 // (public: __thiscall WONAPI::StagingLeaveOnError::~StagingLeaveOnError(void)    [??1StagingLeaveOnError@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007f45d0
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007f16f0
+// (public: class WONAPI::LobbyGame const * __thiscall WONAPI::SmartPtrRep<class WONAPI::LobbyGame>::operator=(class WONAPI::LobbyGame const *))

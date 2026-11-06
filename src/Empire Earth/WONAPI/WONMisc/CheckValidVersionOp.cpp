@@ -22,10 +22,13 @@ CheckValidVersionOp::~CheckValidVersionOp()
 WONStatus CheckValidVersionOp::Virtual14()
 {
     WONStatus result=DBProxyOp::Virtual14();
-    if (result!=-2816 && result!=-2815 && result!=-2814 && result!=0)
+    if (result<-2816 || (result>-2814 && result!=0))
         return result;
     if (mSubMessageReplyType!=mMsgType+1) return InvalidReplyHeader();
     ReadBuffer reply(mReplyData->data(),mReplyData->length());
+    // Constructed and destroyed without being read.
+    std::string unusedVersion;
+    std::string unusedURL;
     reply.ReadString(mVersionTo);
     reply.ReadString(mVersionToDescriptionURL);
     int count=(unsigned short)reply.ReadShort();

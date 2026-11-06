@@ -155,7 +155,7 @@ void AccountLogic::QueryAccount()
     profile->AddNewsletterSub(1,false);
     LobbyFn358E70(op.get(),::LobbyContainer_QueryAccountTitle_String,::LobbyContainer_QueryAccountDetails_String,1,0);
     if (op->GetStatus() == 0)
-        LobbyFn359100(new QueryAccountResultEvent(GUIString(new GUIStringData(op->mEmail)),
+        LobbyFn359100(new QueryAccountResultEvent(GUIString(op->mEmail),
                                                   profile->GetNewsletterSub(1)),true);
 }
 
@@ -168,8 +168,8 @@ void AccountLogic::HandleUpdateAccount(ComponentEvent* inEvent)
         return;
     SmartPtr<UpdateAccountOp> op = new UpdateAccountOp(account,auth);
     UpdateAccountEvent* event = static_cast<UpdateAccountEvent*>(inEvent);
-    op->mEmail = static_cast<std::string>(event->mEmail);
-    op->mNewPassword = static_cast<std::wstring>(event->mNewPassword);
+    op->mEmail = event->mEmail;
+    op->mNewPassword = event->mNewPassword;
     op->mProfileData->AddNewsletterSub(1,event->mNewsletter);
     LobbyFn358E70(op.get(),::LobbyContainer_UpdateAccountTitle_String,::LobbyContainer_UpdateAccountDetails_String,0,0);
 }
@@ -210,8 +210,8 @@ void AccountLogic::HandleCreateAccount(ComponentEvent* inBaseEvent)
     if(user) LobbyFn35B600(user->mValue04,user->mValue08);
     LobbyFn35E660(true);
     LobbyFn359120(100052,true);
-    LobbyFn359100(new SetLoginFieldsEvent(GUIString(new GUIStringData(event->mUserName)),
-        GUIString(new GUIStringData(event->mPassword)),false),true);
+    LobbyFn359100(new SetLoginFieldsEvent(GUIString(event->mUserName),
+        GUIString(event->mPassword),false),true);
 }
 }
 

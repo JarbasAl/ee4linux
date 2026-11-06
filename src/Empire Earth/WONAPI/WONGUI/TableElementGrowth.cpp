@@ -26,6 +26,16 @@ void TableElement::EnsureNumCols(int numCols)
         EnsureNumCols(mRowVector[i],numCols);
 }
 
+// FUNCTION: WON 0x0070da90
+void TableElement::EnsureNumCols(RowInfo& row,int numCols)
+{
+    int oldNumCols=row.mRow.size();
+    if(numCols<oldNumCols) return;
+    row.mRow.reserve(numCols);
+    for(int i=oldNumCols;i<numCols;++i)
+        row.mRow.push_back(CellInfo());
+}
+
 // FUNCTION: WON 0x0070dd20
 void TableElement::EnsureNumRows(int numRows)
 {
@@ -68,3 +78,41 @@ void TableElement::EnsureNumRows(int numRows)
 // (public: struct WONAPI::TableElement::CellInfo & __thiscall WONAPI::TableElement::CellInfo::operator=(struct WONAPI::TableElement::CellInfo const &)   )
 // TEMPLATE: WON 0x00725700
 // (struct WONAPI::TableElement::CellInfo * __cdecl std::copy(class std::_Ptrit<struct WONAPI::TableElement::CellInfo,int,struct WONAPI::TableElement::Cel)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007241a0
+// (protected: void __thiscall std::vector<struct WONAPI::TableElement::CellInfo,class std::allocator<struct WONAPI::TableElement::CellInfo> >::_Destroy(s)
+// TEMPLATE: WON 0x0071cd20
+// (public: void __thiscall std::vector<struct WONAPI::TableElement::ColumnInfo,class std::allocator<struct WONAPI::TableElement::ColumnInfo> >::resize(un)
+// TEMPLATE: WON 0x0071ce60
+// (public: class std::_Ptrit<struct WONAPI::TableElement::RowInfo,int,struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElement::RowInfo &,struc)
+// TEMPLATE: WON 0x0071fe50
+// (public: void __thiscall std::vector<struct WONAPI::TableElement::ColumnInfo,class std::allocator<struct WONAPI::TableElement::ColumnInfo> >::insert(cl)
+// TEMPLATE: WON 0x007201d0
+// (public: void __thiscall std::vector<struct WONAPI::TableElement::RowInfo,class std::allocator<struct WONAPI::TableElement::RowInfo> >::insert(class st)
+// TEMPLATE: WON 0x007235e0
+// (protected: void __thiscall std::vector<struct WONAPI::TableElement::ColumnInfo,class std::allocator<struct WONAPI::TableElement::ColumnInfo> >::_Xlen()
+// TEMPLATE: WON 0x007245b0
+// (protected: struct WONAPI::TableElement::RowInfo * __thiscall std::vector<struct WONAPI::TableElement::RowInfo,class std::allocator<struct WONAPI::Tabl)
+// TEMPLATE: WON 0x007245f0
+// (void __cdecl std::fill(class std::_Ptrit<struct WONAPI::TableElement::RowInfo,int,struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElement::)
+// TEMPLATE: WON 0x00725000
+// (public: void * __thiscall WONAPI::TableElement::RowInfo::`scalar deleting destructor'(unsigned int))
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007243c0
+// (void __cdecl std::fill(class std::_Ptrit<struct WONAPI::TableElement::CellInfo,int,struct WONAPI::TableElement::CellInfo *,struct WONAPI::TableElement)
+// TEMPLATE: WON 0x00724450
+// (class std::_Ptrit<struct WONAPI::TableElement::CellInfo,int,struct WONAPI::TableElement::CellInfo *,struct WONAPI::TableElement::CellInfo &,struct WON)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071cca0
+// (public: class std::_Ptrit<struct WONAPI::TableElement::CellInfo,int,struct WONAPI::TableElement::CellInfo *,struct WONAPI::TableElement::CellInfo &,st)
+// TEMPLATE: WON 0x0071f980
+// (public: void __thiscall std::vector<struct WONAPI::TableElement::CellInfo,class std::allocator<struct WONAPI::TableElement::CellInfo> >::insert(class )
+// TEMPLATE: WON 0x00723da0
+// (protected: struct WONAPI::TableElement::CellInfo * __thiscall std::vector<struct WONAPI::TableElement::CellInfo,class std::allocator<struct WONAPI::Ta)
+// TEMPLATE: WON 0x00724df0
+// (void __cdecl std::_Construct(struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElement::RowInfo const &))
+// TEMPLATE: WON 0x00724810
+// (class std::_Ptrit<struct WONAPI::TableElement::RowInfo,int,struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElement::RowInfo &,struct WONAPI)

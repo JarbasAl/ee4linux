@@ -99,7 +99,7 @@ public:
     {
         if (gWonNet == NULL)
             return;
-        if (((RoutingOp*)inOp.get())->mConnection == gWonNet->mRouting.get())
+        if (((RoutingOp*)inOp.get())->mConnection.get() == gWonNet->mRouting.get())
             (gWonNet->*mCallback)(inOp.get());
     }
 
@@ -1007,7 +1007,7 @@ void EEWonNet::Login(const char* inName, const char* inPassword)
 {
     CDKey theKey(kWonProductName);
 
-    if (theKey.LoadFromRegistry(2, gCDKeyRegistryKey) && theKey.mValid) {
+    if (theKey.LoadFromRegistry() && theKey.mValid) {
         this->mLoginOp = new GetCertOp(this->mUser);
         this->mLoginOp->mCompletion = new EEWonNetCompletion(&EEWonNet::LoginCallback);
         ((GetCertOp*)this->mLoginOp.get())->SetCreateAccount(false);
@@ -1026,7 +1026,7 @@ void EEWonNet::LoginCallback(AsyncOp* inOp)
     if (inOp->GetStatus() == 0)
         gUserInterface->PostLoginDone();
     else
-        theKey.SaveToRegistry(2, gCDKeyRegistryKey);
+        theKey.SaveToRegistry();
 }
 
 // DEAD-IN-AOC: base exe 0x4c9612 (AoC: GetHTTPDocumentOp's and AsyncOpWithTracker's implicit dtors 0x4cff46/

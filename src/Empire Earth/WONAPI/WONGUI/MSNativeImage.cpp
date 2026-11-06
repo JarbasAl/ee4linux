@@ -14,7 +14,7 @@ using namespace WONAPI;
 SmartPtr<RawImage32> MSNativeImage::GetRaw() {
     SmartPtr<RawImage32> image=new RawImage32(mWidth,mHeight);
     SelectBitmap(false);
-    char infoBuffer[sizeof(BITMAPINFO)+8];
+    char infoBuffer[sizeof(BITMAPINFO)+12];
     BITMAPINFO& info=*(BITMAPINFO*)infoBuffer;
     BITMAPINFOHEADER& header=info.bmiHeader;
     header.biSize=sizeof(BITMAPINFOHEADER);
@@ -203,3 +203,7 @@ SmartPtr<Cursor> MSNativeImage::GetCursor(int hotX,int hotY) {
 // (public: virtual void * __thiscall WONAPI::MSNativeImage::`scalar deleting destructor'(unsigned int)    [??_GMSNativeImage@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007d0300
 // (protected: virtual void * __thiscall WONAPI::MSCursor::`scalar deleting destructor'(unsigned int)    [??_GMSCursor@WONAPI@@MAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007d02f0
+// (public: virtual class WONAPI::Cursor * __thiscall WONAPI::MSCursor::GetNative(void))

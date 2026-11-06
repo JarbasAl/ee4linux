@@ -473,3 +473,7 @@ void BigInteger::st_div(BigInteger &dv, const BigInteger &m, const BigInteger &d
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d4380
 // (public: __thiscall WONAPI::ArithmeticException::ArithmeticException(class WONAPI::ArithmeticException const &)    [??0ArithmeticException@WONAPI@@QAE@)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007daf30
+// (public: __thiscall std::auto_ptr<class WONAPI::BigInteger>::~auto_ptr<class WONAPI::BigInteger>(void))

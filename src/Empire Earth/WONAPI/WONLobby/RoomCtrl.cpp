@@ -24,7 +24,7 @@ RoomListItem::RoomListItem(WONAPI::LobbyServer* inServer,bool inLoading)
 }
 // FUNCTION: WON 0x007c1c50
 RoomListItem::RoomListItem(WONAPI::LobbyGroup* inGroup,WONAPI::LobbyServer* inServer)
-    :mColor(-1),mLoading(false),mAddress(inServer->mAddress),mGroupId(inGroup->mId)
+    :mColor(-1),mLoading(false),mAddress(inServer->mAddress),mGroupId(inGroup->GetId())
 {
     Fn3C1D40(inServer,inGroup);
 }
@@ -131,10 +131,12 @@ void RoomCtrl::AddServer(LobbyServer* inServer,bool inOpen,int inPos)
     mRoomList->Fn2FAA00();
     RoomListItem* aItem=new RoomListItem(inServer,false);
     TreeItem* aServer=mRoomList->Fn315080(NULL,aItem,inPos);
-    for(LobbyGroupMap::iterator it=inServer->mGroups.begin();it!=inServer->mGroups.end();++it)
+    LobbyGroupMap::iterator it=inServer->mGroups.begin();
+    while(it!=inServer->mGroups.end())
     {
         LobbyGroup* aGroup=it->second.get();
         if(aGroup->Fn3A9050()) AddGroup(aServer,inServer,aGroup);
+        ++it;
     }
     if(!inServer->Fn3AA430() && inServer->mGroups.empty())
     {

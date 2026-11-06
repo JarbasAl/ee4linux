@@ -41,3 +41,9 @@ TextLine* TextArea::AddLine(int height,int baseline)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00711710
 // (public: virtual void * __thiscall WONAPI::TextLine::`scalar deleting destructor'(unsigned int)    [??_GTextLine@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071d3b0
+// (protected: void __thiscall std::deque<class WONAPI::SmartPtr<class WONAPI::TextLine>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::TextLin)
+// TEMPLATE: WON 0x00722350
+// (protected: void __thiscall std::deque<class WONAPI::SmartPtr<class WONAPI::TextLine>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::TextLin)

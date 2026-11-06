@@ -110,11 +110,13 @@ void ScrollArea::Virtual0C(int& width,int& height)
 }
 // Original80B rectangle predicate wrapper. Direct borrowed rectangle expression
 // expands actual external349450 (edge inequalities intentionally asymmetric);support0.
+// FUNCTION: WON 0x007054f0
 bool ScrollArea::IsRectVisible(const WONRectangle& r)
 {
-    if(r.x+r.width<mHorzOffset || r.x>=mHorzOffset+mScrollArea.width) return false;
-    if(r.y+r.height<mVertOffset || r.y>=mVertOffset+mScrollArea.height) return false;
-    return true;
+    WONRectangle view=mScrollArea;
+    view.x=mHorzOffset;
+    view.y=mVertOffset;
+    return r.Intersects(view);
 }
 }
 namespace WONAPI {

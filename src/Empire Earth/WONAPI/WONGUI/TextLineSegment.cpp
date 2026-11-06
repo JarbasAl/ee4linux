@@ -311,7 +311,9 @@ bool TextPieceLineSegment::GetSelCharPos(int &x, int &y, int theSelIndex, int th
 }
 
 // Support0 direct forwarding virtuals on the actual borrowed text piece.
+// FUNCTION: WON 0x0070b330
 int TextPieceLineSegment::GetSelChar(int x,int y) { return mSegment->GetSelChar(x,y,mStartChar,mEndChar); }
+// FUNCTION: WON 0x0070b350
 void TextPieceLineSegment::Paint(Graphics& g,int x,int y,ElementPaintInfo& info) {
     mSegment->Paint(g,x,y,mStartSelIndex,mStartChar,mEndChar,GetWidth(),GetHeight(),info);
 }
@@ -372,3 +374,23 @@ void TextLineSegment::PaintSelection(Graphics &g, int x, int y, int theSelIndex,
 }
 // TEMPLATE: WON 0x0070a7d0
 // (LineSegment::SetSelIndex, header inline; out-of-line copy for the vtable)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00709f90
+// (public: virtual int __thiscall WONAPI::TextLineSegment::GetSelChar(int,int))
+// TEMPLATE: WON 0x0070a810
+// (public: virtual void __thiscall WONAPI::TextPieceLineSegment::MouseEnter(int,int))
+// TEMPLATE: WON 0x0070a830
+// (public: virtual void __thiscall WONAPI::TextPieceLineSegment::MouseExit(void))
+// TEMPLATE: WON 0x0070a860
+// (public: virtual void __thiscall WONAPI::TextPieceLineSegment::MouseUp(int,int,enum WONAPI::MouseButton))
+// TEMPLATE: WON 0x0070a8a0
+// (public: virtual void __thiscall WONAPI::TextPieceLineSegment::MouseDrag(int,int))
+// TEMPLATE: WON 0x0070a8c0
+// (public: virtual bool __thiscall WONAPI::TextPieceLineSegment::IsInvalid(void))
+// TEMPLATE: WON 0x0070a8d0
+// (public: virtual bool __thiscall WONAPI::TextPieceLineSegment::CanStartSelection(void))
+// TEMPLATE: WON 0x0070a8e0
+// (public: virtual int __thiscall WONAPI::TextPieceLineSegment::GetWidth(void))
+// TEMPLATE: WON 0x0070a8f0
+// (public: virtual int __thiscall WONAPI::TextPieceLineSegment::GetHeight(void))

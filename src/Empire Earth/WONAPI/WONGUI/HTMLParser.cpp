@@ -186,6 +186,7 @@ void HTMLParser::CloseFile()
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// FUNCTION: WON 0x00742fc0
 static int GetWesternChar(int theChar)
 {
 	switch(theChar)
@@ -626,8 +627,7 @@ bool HTMLParser::ReadWord(GUIString &theWord,  const char *theStopChars, bool st
 	if(erase)
 	{
 		theWord.resize(0);
-		theWord.CopyOnWrite();
-		theWord.mData->Reserve(32,false);
+		theWord.reserve(32);
 	}
 
 	if(stopAtSpace)
@@ -900,3 +900,47 @@ HTMLParser::HTMLParser() :mTagNameMap(GetTagNameMap())
     mFile=NULL;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00742a20
+// (public: __thiscall std::map<class WONAPI::GUIString,struct WONAPI::HTMLParser::TagLookupInfo,struct WONAPI::GUIStringLessNoCase,class std::allocator<s)
+// TEMPLATE: WON 0x00742f10
+// (public: void __thiscall WONAPI::GUIString::append(int))
+// TEMPLATE: WON 0x0074b300
+// (public: struct WONAPI::HTMLParser::TagLookupInfo & __thiscall std::map<class WONAPI::GUIString,struct WONAPI::HTMLParser::TagLookupInfo,struct WONAPI:)
+// TEMPLATE: WON 0x0074b470
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,int>,struct std::_Mapk<class WONAPI::GUIString,int,st)
+// TEMPLATE: WON 0x0074cc40
+// (public: struct std::pair<class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLParser::TagLookup)
+// TEMPLATE: WON 0x0074cd40
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLParser::TagLookupInfo>,struct std:)
+// TEMPLATE: WON 0x0074cd90
+// (public: __thiscall std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLParser::TagLookupInfo>::pair<class WONAPI::GUIString const ,struct WONA)
+// TEMPLATE: WON 0x0074cdd0
+// (public: struct std::pair<class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,int>,struct std::_Mapk<class WONAPI:)
+// TEMPLATE: WON 0x00750e00
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLParser::TagLookupInfo>,struct std:)
+// TEMPLATE: WON 0x007512f0
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLParser::TagLookupInfo)
+// TEMPLATE: WON 0x00751330
+// (protected: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLParser::TagLookupInfo>,struct s)
+// TEMPLATE: WON 0x00751630
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,int>,struct std::_Mapk<class WONAPI::GUIString,int,st)
+// TEMPLATE: WON 0x00751b20
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,int>,struct std::_Mapk<class WONAPI::GUI)
+// TEMPLATE: WON 0x00751e60
+// (protected: struct std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,int>,struct std::_Mapk<class WONAPI::GUIString,in)
+// TEMPLATE: WON 0x00754dd0
+// (void __cdecl std::_Construct(struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLParser::TagLookupInfo> *,struct std::pair<class WONAPI)
+// TEMPLATE: WON 0x0074cbf0
+// (public: __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLParser::TagLookupInfo>,struct)
+// TEMPLATE: WON 0x00751b60
+// (protected: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,int>,struct std::_Mapk<class WONAPI::GUIString,int)
+// TEMPLATE: WON 0x007f1b60
+// (public: __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,int>,struct std::_Mapk<class WONAPI::GUIString,i)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007022d0
+// (public: void __thiscall WONAPI::GUIStringData::append(int))
+// TEMPLATE: WON 0x0070a1d0
+// (public: void __thiscall WONAPI::GUIStringData::resize(int,bool))

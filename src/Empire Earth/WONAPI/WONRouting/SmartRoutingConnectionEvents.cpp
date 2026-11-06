@@ -67,7 +67,7 @@ void SmartRoutingConnection::HandleRegisterClient(RoutingRegisterClientOp *theOp
 
 	LoadIgnoreSet();
 
-	mClientId = theOp->mClientId;
+	mClientId = theOp->GetClientId();
 	mAsyncFlags = theOp->mAsyncMessageFlags;
 
 	mGroupMap.clear();
@@ -342,3 +342,9 @@ void SmartRoutingConnection::HandleDataObjectDeleted(RoutingDataObjectDeletedOp	
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c1550
 // (public: unsigned short __thiscall WONAPI::RoutingDataObjectCreatedOp::GetLinkId(void)const     [?GetLinkId@RoutingDataObjectCreatedOp@WONAPI@@QBEGXZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006c9200
+// (public: struct std::pair<class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<struct WONAPI::RoutingGroupInfo)
+// TEMPLATE: WON 0x006c92f0
+// (public: class WONAPI::SmartPtr<struct WONAPI::RoutingDataObject> const & __thiscall std::list<class WONAPI::SmartPtr<struct WONAPI::RoutingDataObject>)

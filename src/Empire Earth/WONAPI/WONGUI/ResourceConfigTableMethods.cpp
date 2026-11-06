@@ -29,3 +29,4 @@ ResourceConfig* ResourceConfigTable::AddConfig(const std::string& name,bool* alr
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0079bfd0
 // (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+// TEMPLATE: WON 0x007a2ad0

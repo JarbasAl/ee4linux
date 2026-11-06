@@ -10,7 +10,7 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/EELobbySound.h"
 namespace WONAPI {
-// SUPPORT-ONLY: native34a530/16, complete RefCount8 constructor.
+// FUNCTION: WON 0x0074a530
 SoundDecoder::SoundDecoder()
 {
 }
@@ -18,5 +18,11 @@ SoundDecoder::SoundDecoder()
 // SUPPORT-ONLY: native328590/7, explicit SDK empty body then RefCount cleanup.
 SoundDecoder::~SoundDecoder()
 {
+}
+
+// FUNCTION: WON 0x0074a540
+SoundPtr SoundDecoder::DecodeDescriptor(const SoundDescriptor& inDescriptor)
+{
+	return Decode(inDescriptor);
 }
 }

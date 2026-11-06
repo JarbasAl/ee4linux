@@ -1377,7 +1377,7 @@ void EERandomMap::Fn288839()
             if (theZ < 0.0f && (theZ > -0.25f || this->mData.mIsSpaceMap))
                 theZ = 0.0f;
             theZ = theZ * theScale;
-            if (this->mData.mIsSpaceMap && (this->mData.mTiles[x][y] & 0x7fff) == 0) {
+            if (this->mData.mIsSpaceMap && EERMIsTileFree(this->mData.mTiles, x, y)) {
                 if (theMesh->GetIsValidPoint(x, y))
                     theMesh->SetZ(x, y, 0.0f);
                 this->mMap->PaintTerrain(x, y, gSpaceTerrain);

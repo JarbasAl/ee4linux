@@ -273,7 +273,7 @@ WONStatus RoutingClientJoinedServerOp::Virtual10(unsigned char inMsgType, ReadBu
     mClientInfo->mClientId = inMsg.ReadShort();
     inMsg.ReadWString(mClientInfo->mName, 2);
     mClientInfo->mFlags = inMsg.ReadLong();
-    if (inMsg.mL08 - inMsg.mL00 > 0)
+    if (inMsg.Available() > 0)
         ParseExClientData(inMsg, mClientInfo.get());
     return (WONStatus)0;
 }

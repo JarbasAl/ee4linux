@@ -75,3 +75,9 @@ void HTMLDisplayGen::GenerateTableData(HTMLDisplayGen& parent,MultiLineElement* 
     parent.mTagListItr=mTagListItr;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0074ca20
+// (protected: void __thiscall std::vector<struct WONAPI::HTMLDisplayGen::FontInfo,class std::allocator<struct WONAPI::HTMLDisplayGen::FontInfo> >::_Tidy()
+// TEMPLATE: WON 0x00750580
+// (protected: void __thiscall std::vector<struct WONAPI::HTMLDisplayGen::FontInfo,class std::allocator<struct WONAPI::HTMLDisplayGen::FontInfo> >::_Destr)

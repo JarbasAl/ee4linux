@@ -270,3 +270,9 @@ WrappedText::WrappedText(const GUIString &theText)
 	mText = theText;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007508c0
+// (protected: void __thiscall std::list<struct WONAPI::WrappedText::BreakInfo,class std::allocator<struct WONAPI::WrappedText::BreakInfo> >::_Incsize(uns)
+// TEMPLATE: WON 0x00754bc0
+// (void __cdecl std::_Construct(struct WONAPI::WrappedText::BreakInfo *,struct WONAPI::WrappedText::BreakInfo const &))

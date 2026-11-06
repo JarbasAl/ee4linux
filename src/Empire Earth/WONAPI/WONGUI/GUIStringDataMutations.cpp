@@ -11,10 +11,20 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 namespace WONAPI {
+// FUNCTION: WON 0x00727460
+// (_$E33)
+// FUNCTION: WON 0x00727470
+// (_$E30)
+// FUNCTION: WON 0x00727480
+// (_$E32)
+// FUNCTION: WON 0x00727490
+// (_$E31)
+GUIString gEmptyGUIString;
 // Native3274b0/14 support-only actual initialization helper.
 // FUNCTION: WON 0x007274b0
 void GUIStringData::Init() { mLength=mCapacity=0; mText=NULL; }
 // Native capacity3274e0/273 throughRET4 at3275ee; complete constructor support0.
+// FUNCTION: WON 0x007274e0
 GUIStringData::GUIStringData(unsigned short capacity) { Init(); resize(capacity,false); resize(0,false); }
 // Nativecopy327600/225, natural member initialization/copy support0.
 GUIStringData::GUIStringData(const GUIStringData& other)

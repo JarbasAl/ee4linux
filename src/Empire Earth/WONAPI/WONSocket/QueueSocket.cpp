@@ -112,7 +112,9 @@ void QueueSocket::Fn2B4190(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
 void QueueSocket::Fn2B4220(SocketOp* inOp)
 {
     AutoCrit aCrit(mDataCrit);
-    bool aClose = (inOp->GetStatus() != 0 && mType != 1) || !Fn2B08C0();
+    bool aClose = false;
+    if ((inOp->GetStatus() != 0 && GetType() != 1) || !Fn2B08C0())
+        aClose = true;
     OpCompletionBasePtr aCompletion;
     if (inOp == mQueueOp.get()) {
         aCompletion = mCurQueueCompletion;
@@ -200,15 +202,16 @@ void QueueSocket::Fn2B4740(SocketOp* inOp, long inTimeout)
 void QueueSocket::Fn2B48B0()
 {
     AutoCrit aCrit(mDataCrit);
-    if (mQueueOp.get() != NULL || mOpQueue.empty())
+    if (mQueueOp.get() != NULL)
+        return;
+    if (mOpQueue.empty())
         return;
     mQueueOp = mOpQueue.front();
     mOpQueue.pop_front();
-    mCurQueueCompletion = mQueueOp->mCompletion;
-    mQueueOp->mCompletion =
-        new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(Fn2B4190, this);
-    mQueueOp->mSocket = this;
-    mQueueOp->Run(mQueueOp->mTimeout);
+    mCurQueueCompletion = mQueueOp->GetCompletion();
+    mQueueOp->SetCompletion(new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(Fn2B4190, this));
+    mQueueOp->SetSocket(this);
+    mQueueOp->Run(mQueueOp->GetTimeout());
 }
 
 // FUNCTION: WON 0x006b4a70
@@ -304,9 +307,11 @@ void QueueSocket::QueueOpFast(SocketOp *theOp, DWORD theTimeout)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b3a40
 // (public: virtual void * __thiscall WONAPI::QueueSocket::`scalar deleting destructor'(unsigned int)    [??_GQueueSocket@WONAPI@@UAEPAXI@Z])
-// TEMPLATE: WON 0x006b4b90
-// (public: virtual __thiscall WONAPI::SocketOp::~SocketOp(void)    [??1SocketOp@WONAPI@@UAE@XZ])
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b3a60
 // (public: virtual __thiscall WONAPI::QueueSocket::~QueueSocket(void)    [??1QueueSocket@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006b96a0
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::SocketOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::SocketOp)

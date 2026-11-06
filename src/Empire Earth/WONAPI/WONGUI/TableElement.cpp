@@ -891,3 +891,9 @@ void TableElement::AddSegment(LineSegment *theSegment, unsigned short theFlags)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00723c60
 // (class std::_Ptrit<struct WONAPI::TableElement::RowInfo,int,struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElement::RowInfo &,struct WONAPI)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071ce10
+// (public: class std::_Ptrit<struct WONAPI::TableElement::ColumnInfo,int,struct WONAPI::TableElement::ColumnInfo *,struct WONAPI::TableElement::ColumnInf)
+// TEMPLATE: WON 0x0070de70
+// (public: __thiscall WONAPI::TableElement::RowInfo::~RowInfo(void))

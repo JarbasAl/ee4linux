@@ -39,7 +39,7 @@ void ClientOptionsPopup::Init(LobbyClient* inClient,LobbyClient* inMyClient,int 
     if(isModerator) {
         char aBuffer[256];
         sprintf(aBuffer,"%d",inClient->GetU14());
-        MenuItem* anItem=mPopupMenu->AddItem(GUIString(new GUIStringData(aBuffer)),0);
+        MenuItem* anItem=mPopupMenu->AddItem(GUIString(aBuffer),0);
         anItem->mB09=false;
     }
     mPopupMenu->mFont=anOldFont;

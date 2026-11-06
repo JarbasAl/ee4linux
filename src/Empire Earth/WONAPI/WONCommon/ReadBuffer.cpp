@@ -23,9 +23,9 @@ void ReadBuffer::Rewind() {mL00=0;}
 // FUNCTION: WON 0x006a3a30
 const void* ReadBuffer::ReadBytes(unsigned long amount)
 {
-    if((unsigned long)mL08-(unsigned long)mL00<amount)
+    if(length()-pos()<amount)
         throw ReadBufferException("Attempt to read past end of buffer.");
-    const char* result=mData+mL00;
+    const char* result=(const char*)data()+pos();
     mL00+=amount;
     return result;
 }
@@ -88,3 +88,7 @@ ByteBufferPtr ReadBuffer::ReadBuf(unsigned char fieldSize)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a3bb0
 // (public: __thiscall WONAPI::ReadBufferException::ReadBufferException(class WONAPI::ReadBufferException const &)    [??0ReadBufferException@WONAPI@@QAE@)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006a1d40
+// (_wmemmove)

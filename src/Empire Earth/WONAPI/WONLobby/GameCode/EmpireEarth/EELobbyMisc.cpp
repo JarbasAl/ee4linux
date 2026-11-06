@@ -26,6 +26,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/EELobbySound.h"
 #include "ee/wonapi/EELobbyGameCode.h"
+#include "LostDebug.h"
 
 using namespace WONAPI;
 
@@ -155,8 +156,10 @@ void EELobbySetupSavedGame(const EEGameOptions& inOptions, const char* inFile, c
 }
 
 // FUNCTION: EXE 0x69848e
-GUIString::GUIString(const std::string& inText) : mData(new GUIStringData(inText))
+inline GUIString::GUIString(const std::string& inText) : mData(new GUIStringData(inText))
 {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(8);
 }
 
 // FUNCTION: EXE 0x6984ca

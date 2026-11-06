@@ -129,3 +129,16 @@ bool ResourceConfig::HandleBackground(StringParser& value)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a33a0
 // (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)
+// TEMPLATE: WON 0x007a3a00
+// TEMPLATE: WON 0x007a4d10
+// TEMPLATE: WON 0x007a34a0
+// TEMPLATE: WON 0x007a3d00
+// TEMPLATE: WON 0x007a4d90
+// TEMPLATE: WON 0x007a35a0
+// TEMPLATE: WON 0x007a4000
+// TEMPLATE: WON 0x007a4e10
+// TEMPLATE: WON 0x007a3850
+// TEMPLATE: WON 0x007a4900
+// TEMPLATE: WON 0x007a50c0
+// TEMPLATE: WON 0x007a4e90
+// TEMPLATE: WON 0x007a5000

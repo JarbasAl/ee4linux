@@ -171,8 +171,7 @@ Font* WindowManager::GetDefaultFont()
 {
 	if(mDefaultFont.get()==NULL)
 		{
-        FontDescriptor desc;desc.mFace="Tahoma";desc.mStyle=0;desc.mSize=8;
-        mDefaultFont=mDefaultWindow->GetFont(desc);
+        mDefaultFont=mDefaultWindow->GetFont(FontDescriptor("Tahoma",0,8));
     }
 
 	return mDefaultFont.get();
@@ -298,7 +297,7 @@ SmartPtr<Sound> WindowManager::DecodeSound(const SoundDescriptor &theDesc)
 	if(mSoundDecoder.get()==NULL)
 		return new Sound(theDesc);
 	else
-		return mSoundDecoder->Decode(theDesc);
+		return mSoundDecoder->DecodeDescriptor(theDesc);
 }
 
 // FUNCTION: WON 0x0072d5b0
@@ -1424,3 +1423,15 @@ void WindowManager::PumpOnce()
 
 // FUNCTION: WON 0x00735300
 // (??_G?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@QAEPAXI@Z)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0072fab0
+// (public: class WONAPI::SmartPtr<class WONAPI::Font> & __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocat)
+// TEMPLATE: WON 0x00735010
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WON)
+// TEMPLATE: WON 0x00735090
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WON)
+// TEMPLATE: WON 0x00735110
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WON)
+// TEMPLATE: WON 0x00735220
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WON)

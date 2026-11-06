@@ -20,15 +20,15 @@ int LineSegment::GetMinWidth() { return GetWidth(); }
 int LineSegment::GetMaxWidth() { return GetWidth(); }
 // SUPPORT-ONLY: EXE 0x006c7b10
 int LineSegment::GetHeight() { return 0; }
-// SUPPORT-ONLY: EXE 0x0070b840
+// FUNCTION: WON 0x0070b840
 int LineSegment::GetAscent() { return GetHeight(); }
-// SUPPORT-ONLY: EXE 0x0070a7a0
+// FUNCTION: WON 0x0070a7a0
 int LineSegment::GetFirstWrapWidth() { return GetWidth(); }
 // SUPPORT-ONLY: EXE 0x0070a7b0
 char LineSegment::GetVertAlign() { return 0; }
-// SUPPORT-ONLY: EXE 0x0070a7c0
+// FUNCTION: WON 0x0070a7c0
 int LineSegment::GetStartSelIndex() { return mStartSelIndex; }
-// SUPPORT-ONLY: EXE 0x0070a7c0
+// FUNCTION: WON 0x0070a7c0
 int LineSegment::GetEndSelIndex() { return mStartSelIndex; }
 // SUPPORT-ONLY: EXE 0x006fa2a0
 void LineSegment::MouseEnter(int,int) {}
@@ -48,13 +48,13 @@ void LineSegment::LinkDown() {}
 void LineSegment::LinkUp() {}
 // SUPPORT-ONLY: EXE 0x006f30d0
 bool LineSegment::CanStartSelection() { return true; }
-// SUPPORT-ONLY: EXE 0x0070b850
+// FUNCTION: WON 0x0070b850
 bool LineSegment::GetSelCharPos(int&,int&,int,int) { return false; }
 // SUPPORT-ONLY: EXE 0x00727440
 void LineSegment::GetSelText(GUIString&,ElementSelectionInfo&) {}
 // SUPPORT-ONLY: EXE 0x007a90d0
 bool LineSegment::FindStr(ElementFindInfo&) { return false; }
-// SUPPORT-ONLY: EXE 0x0070a7f0
+// FUNCTION: WON 0x0070a7f0
 LineSegment* LineSegment::GetSegmentAt(int&,int&,bool) { return this; }
 // SUPPORT-ONLY: EXE 0x0070a7b0
 bool LineSegment::IsInvalid() { return false; }
@@ -62,7 +62,7 @@ bool LineSegment::IsInvalid() { return false; }
 bool LineSegment::AllowModalInput() { return false; }
 // FUNCTION: WON 0x00787ff0
 bool LineSegment::PerformInstructions(MultiLineBuilder*) { return true; }
-// SUPPORT-ONLY: EXE 0x0070b860
+// FUNCTION: WON 0x0070b860
 void LineSegment::Paint(Graphics&,int,int,ElementPaintInfo&) {}
 // SUPPORT-ONLY: EXE 0x0070a800
 void LineSegment::SetMaxWidth(int) {}

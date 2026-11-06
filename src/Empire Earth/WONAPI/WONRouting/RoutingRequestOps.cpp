@@ -134,6 +134,7 @@ WONStatus RoutingAbortServerShutdownOp::Virtual10(unsigned char inMsgType, ReadB
     return inMsg.ReadShort();
 }
 // Native type accessor, support only.
+// FUNCTION: WON 0x006be2e0
 RoutingOpType RoutingAbortServerShutdownOp::GetType() const { return 1; }
 
 // FUNCTION: WON 0x6c8c10
@@ -461,3 +462,7 @@ RoutingUnsubscribeDataObjectOp::RoutingUnsubscribeDataObjectOp(RoutingConnection
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c8370
 // (public: virtual void * __thiscall WONAPI::RoutingDataObject::`scalar deleting destructor'(unsigned int)    [??_GRoutingDataObject@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006ca600
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<struct WONAPI::RoutingDataObject>,class std::allocator<class WONAPI::SmartPtr<struct WONAP)

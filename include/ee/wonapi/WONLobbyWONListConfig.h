@@ -7,7 +7,6 @@ namespace WONAPI {
 class WONScrollbar : public Scrollbar {
 public:
     WONScrollbar(bool=true); //319540 original external RET4, bounded F newbc
-    virtual ~WONScrollbar(); //shared original normal2ffa50, deleting319560
     bool mIsTransparent; //b8; natural padding throughbb, ctor319553
 };
 // Actual configuration prefixes, original lifetimes external; no allocation/copy/sizeof.

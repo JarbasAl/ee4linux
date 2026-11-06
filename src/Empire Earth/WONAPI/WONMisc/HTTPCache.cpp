@@ -15,7 +15,7 @@ namespace WONAPI {
 // FUNCTION: WON 0x006d1260
 HTTPCacheEntry::HTTPCacheEntry()
 {
-    mIsValid=false;
+    SetValid(false);
     mId=0;
     mExpirationTime=0;
     mLastAccessTime=0;
@@ -92,7 +92,8 @@ void HTTPCache::WriteCacheMap()
         unsigned long position=writer.pos();
         writer.WriteLong(size);
         int count=0;
-        for (CacheIdMap::iterator i=mCacheIdMap.begin();i!=mCacheIdMap.end();++i) {
+        CacheIdMap::iterator i=mCacheIdMap.begin();
+        while (i!=mCacheIdMap.end()) {
             HTTPCacheEntry* entry=i->second.get();
             if (entry->IsValid() && now-entry->mLastAccessTime<1209600) {
                 entry->WriteToFile(writer);
@@ -101,6 +102,7 @@ void HTTPCache::WriteCacheMap()
                 WONFile file(entry->mLocalPath);
                 file.Delete(true);
             }
+            ++i;
         }
         writer.SetPos(position);
         writer.WriteLong(count);
@@ -207,3 +209,45 @@ namespace WONAPI { const long gHTTPCacheVersion=1; }
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d15b0
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class WONAPI::SmartPtr<class WONAP)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006da940
+// (public: __thiscall std::pair<int const ,class WONAPI::SmartPtr<class WONAPI::HTTPCacheEntry> >::pair<int const ,class WONAPI::SmartPtr<class WONAPI::H)
+// TEMPLATE: WON 0x006dc130
+// (protected: struct std::_Tree<int,struct std::pair<int const ,class WONAPI::SmartPtr<class WONAPI::HTTPCacheEntry> >,struct std::_Mapk<int,class WONAPI)
+// TEMPLATE: WON 0x006dcca0
+// (public: void * __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WONAPI::Smart)
+// TEMPLATE: WON 0x006cff20
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WONAPI::SmartPtr<cla)
+// TEMPLATE: WON 0x006d9ab0
+// (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)
+// TEMPLATE: WON 0x006da3f0
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x006da4a0
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+// TEMPLATE: WON 0x006db3a0
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x006db8c0
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class s)
+// TEMPLATE: WON 0x006d1760
+// (public: __thiscall std::map<int,class WONAPI::SmartPtr<class WONAPI::HTTPCacheEntry>,struct std::less<int>,class std::allocator<struct std::pair<int c)
+// TEMPLATE: WON 0x006da7a0
+// (public: struct std::pair<class std::_Tree<int,struct std::pair<int const ,class WONAPI::SmartPtr<class WONAPI::HTTPCacheEntry> >,struct std::_Mapk<int)
+// TEMPLATE: WON 0x006da890
+// (public: class std::_Tree<int,struct std::pair<int const ,class WONAPI::SmartPtr<class WONAPI::HTTPCacheEntry> >,struct std::_Mapk<int,class WONAPI::Sm)
+// TEMPLATE: WON 0x006dbdf0
+// (protected: void __thiscall std::_Tree<int,struct std::pair<int const ,class WONAPI::SmartPtr<class WONAPI::HTTPCacheEntry> >,struct std::_Mapk<int,cla)
+// TEMPLATE: WON 0x006dbe30
+// (protected: class std::_Tree<int,struct std::pair<int const ,class WONAPI::SmartPtr<class WONAPI::HTTPCacheEntry> >,struct std::_Mapk<int,class WONAPI:)
+// TEMPLATE: WON 0x006dca40
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WON)
+// TEMPLATE: WON 0x006d9bb0
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WONAPI::SmartPtr<cla)
+// TEMPLATE: WON 0x006d1550
+// (_$E74)
+// TEMPLATE: WON 0x006d1560
+// (_$E71)
+// TEMPLATE: WON 0x006d1570
+// (_$E73)
+// TEMPLATE: WON 0x006d1580
+// (_$E72)

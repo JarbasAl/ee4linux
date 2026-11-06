@@ -38,16 +38,12 @@ void HTMLDisplayGen::CalcFont()
     FontInfo info=mFontStack.back();
     int size=info.mSize-1;
     if(size<0) size=0;
-    if(size>6) size=6;
+    else if(size>6) size=6;
     if(!info.mIsMonoSpace) size++;
     int pointSize=FONT_SIZE_TABLE[mFontSize][size];
-    int style=GetFontStyle();
-    FontDescriptor descriptor;
-    descriptor.mFace=info.mFace;
-    descriptor.mStyle=style;
-    descriptor.mSize=pointSize;
+    FontDescriptor descriptor(info.mFace,GetFontStyle(),pointSize);
     mCurFont=mWindow->GetFont(descriptor);
-    mCurColor=(info.mColor==-1)?mDefaultTextColor:info.mColor;
+    if(info.mColor==-1) mCurColor=mDefaultTextColor; else mCurColor=info.mColor;
 }
 // FUNCTION: WON 0x00738920
 // (??1FontInfo@HTMLDisplayGen@WONAPI@@QAE@XZ)
@@ -86,3 +82,21 @@ HTMLAlign HTMLDisplayGen::GetCurAlign()
     return mAlignStack.empty()?mDefaultAlign:mAlignStack.back();
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0074c8a0
+// (public: class std::_Ptrit<struct WONAPI::HTMLDisplayGen::FontInfo,int,struct WONAPI::HTMLDisplayGen::FontInfo *,struct WONAPI::HTMLDisplayGen::FontInf)
+// TEMPLATE: WON 0x0074c920
+// (public: class std::_Ptrit<struct WONAPI::HTMLDisplayGen::FontInfo,int,struct WONAPI::HTMLDisplayGen::FontInfo *,struct WONAPI::HTMLDisplayGen::FontInf)
+// TEMPLATE: WON 0x007500f0
+// (public: void __thiscall std::vector<struct WONAPI::HTMLDisplayGen::FontInfo,class std::allocator<struct WONAPI::HTMLDisplayGen::FontInfo> >::insert(cl)
+// TEMPLATE: WON 0x007543c0
+// (class std::_Ptrit<struct WONAPI::HTMLDisplayGen::FontInfo,int,struct WONAPI::HTMLDisplayGen::FontInfo *,struct WONAPI::HTMLDisplayGen::FontInfo &,stru)
+// TEMPLATE: WON 0x00754880
+// (protected: struct WONAPI::HTMLDisplayGen::FontInfo * __thiscall std::vector<struct WONAPI::HTMLDisplayGen::FontInfo,class std::allocator<struct WONAPI)
+// TEMPLATE: WON 0x007548c0
+// (void __cdecl std::fill(class std::_Ptrit<struct WONAPI::HTMLDisplayGen::FontInfo,int,struct WONAPI::HTMLDisplayGen::FontInfo *,struct WONAPI::HTMLDisp)
+// TEMPLATE: WON 0x00754a30
+// (class std::_Ptrit<struct WONAPI::HTMLDisplayGen::FontInfo,int,struct WONAPI::HTMLDisplayGen::FontInfo *,struct WONAPI::HTMLDisplayGen::FontInfo &,stru)
+// TEMPLATE: WON 0x00754e40
+// (void __cdecl std::_Construct(struct WONAPI::HTMLDisplayGen::FontInfo *,struct WONAPI::HTMLDisplayGen::FontInfo const &))

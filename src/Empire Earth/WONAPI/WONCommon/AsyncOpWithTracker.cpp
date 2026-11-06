@@ -45,3 +45,7 @@ bool AsyncOpWithTracker::CallbackHook(AsyncOp*,int) { return false; }
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a0210
 // (public: virtual void * __thiscall WONAPI::AsyncOpWithTracker::TrackerCompletion::`scalar deleting destructor'(unsigned int)    [??_GTrackerCompletion@)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006a01a0
+// (public: virtual void __thiscall WONAPI::AsyncOpWithTracker::TrackerCompletion::Complete(class WONAPI::SmartPtr<class WONAPI::AsyncOp>))

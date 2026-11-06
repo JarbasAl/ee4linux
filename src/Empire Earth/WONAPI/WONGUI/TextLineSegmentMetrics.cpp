@@ -12,11 +12,13 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyTextSegment.h"
 namespace WONAPI {
+int LineSegment::mCounter;
+Table* LineSegment::mTableContext;
 // FUNCTION: WON 0x00739720
 int TextLineSegment::GetHeight() { return mFont->GetHeight(); }
 // FUNCTION: WON 0x00739730
 int TextLineSegment::GetAscent() { return mFont->GetAscent(); }
-// SUPPORT-ONLY: EXE 0x0070b310
+// FUNCTION: WON 0x0070b310
 void TextLineSegment::MouseEnter(int,int)
 {
     mTableContext->Virtual78(Cursor::GetStandardCursor(StandardCursor_IBeam));

@@ -13,7 +13,9 @@
 namespace WONAPI {
 // Genuine current Font virtualdefaults, allsupport0/sharednative0newcredit.
 void Font::Virtual04(DisplayContext*) {}
+// FUNCTION: WON 0x00726a20
 void Font::Virtual08(DisplayContext*,const GUIString&,unsigned short,unsigned short,int,int) {}
+// FUNCTION: WON 0x00726a30
 int Font::GetStringWidth(const GUIString&,unsigned short,unsigned short) { return 0; }
 int Font::Virtual10(int) { return 0; }
 int Font::GetHeight() { return 0; }

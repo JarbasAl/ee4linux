@@ -31,9 +31,10 @@ Sound::Sound(const SoundDescriptor& descriptor)
     mIsLooping=false;
 }
 // Native329bd0/21, public play gate wrapper, support0.
+// FUNCTION: WON 0x00729bd0
 void Sound::Fn329BD0()
 {
-    if((mL08&4)==0) PlayHook();
+    if(!GetMuted()) PlayHook();
 }
 // FUNCTION: WON 0x00729bf0
 void Sound::Fn329BF0(bool muted)
@@ -56,9 +57,10 @@ void WONAPI::Sound::Resume()
 }
 
 // Genuine SDK Sound.cpp GetMuted; native329c20/9. Existing flags08 and SoundFlag_Muted4.
+// FUNCTION: WON 0x00729c20
 bool WONAPI::Sound::GetMuted()
 {
-    return (mL08&4)!=0;
+    return (mL08&4)?true:false;
 }
 
 namespace WONAPI {

@@ -116,3 +116,16 @@ ResourceConfigTable::~ResourceConfigTable()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0079be20
 // (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x0079e490
+// TEMPLATE: WON 0x0079e970
+// TEMPLATE: WON 0x00790ad0
+// TEMPLATE: WON 0x0079ef80
+// TEMPLATE: WON 0x0079f460
+// TEMPLATE: WON 0x00790c50
+// TEMPLATE: WON 0x0079bed0
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0074ef20
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x00754fc0
+// (public: void * __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<in)

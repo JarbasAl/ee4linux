@@ -18,21 +18,23 @@
 #include "ee/wonapi/WONLobbyConfigImages.h"
 
 namespace WONAPI {
+inline HTMLDocument::LoadedImageStruct::LoadedImageStruct(NativeImage* image,Animation* animation) : mImage(image),mAnimation(animation)
+{
+    mHaveUsedAnimation=false;
+}
 // FUNCTION: WON 0x0073c780
 // (??_GHTMLDocument@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x0073ccf0
 void HTMLDocument::SetBasePath(const GUIString& path)
 {
-    int pos=(int)path.length()-1;
-    while(pos>=0 && path[pos]!='\\') --pos;
-    if(pos<0)
-    {
-        pos=(int)path.length()-1;
-        while(pos>=0 && path[pos]!='/') --pos;
-    }
-    if(pos<0) mBasePath.erase();
-    else mBasePath=path.substr(0,(unsigned short)(pos+1));
+    int pos=path.rFind('\\');
+    if(pos==-1)
+        pos=path.rFind('/',pos);
+    if(pos==-1)
+        mBasePath.erase();
+    else
+        mBasePath=path.substr(0,pos+1);
 }
 // FUNCTION: WON 0x0073d350
 // (??1LoadedImageStruct@HTMLDocument@WONAPI@@QAE@XZ)
@@ -48,6 +50,9 @@ void HTMLDocument::SetBasePath(const GUIString& path)
 
 // FUNCTION: WON 0x0073de80
 // (??1?$pair@$$CBVGUIString@WONAPI@@V?$SmartPtr@VImageMap@WONAPI@@@2@@std@@QAE@XZ)
+
+// FUNCTION: WON 0x0073df20
+// (??1ImageMap@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x0073df00
 // (??_GImageMap@WONAPI@@UAEPAXI@Z)
@@ -75,9 +80,12 @@ void HTMLDocument::AddTag(HTMLTag* tag)
     case HTMLTagType_ListItem: HandleListItem((HTMLListItemTag*)tag); break;
     }
 }
+// FUNCTION: WON 0x0073ef70
 HTMLTagList::iterator HTMLDocument::GetBodyStart()
 {
-    return mBodyStart!=mTagList.end() ? mBodyStart : mTagList.begin();
+    if(mBodyStart!=mTagList.end())
+        return mBodyStart;
+    return mTagList.begin();
 }
 // FUNCTION: WON 0x0073efa0
 HTMLTagList::iterator HTMLDocument::GetBodyEnd()
@@ -265,7 +273,7 @@ void HTMLDocument::HandleListItem(HTMLListItemTag *theTag)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-HTMLDocument::LoadedImageStruct::LoadedImageStruct(NativeImage* image,Animation* animation) : mImage(image),mAnimation(animation),mHaveUsedAnimation(false) {} //actual SDK value ctor, support0
+// FUNCTION: WON 0x0074b600
 // FUNCTION: WON 0x0073ce10
 bool HTMLDocument::DoDecodeImage(LoadedImageStruct *theStruct, Window *theWindow, const std::string &theImagePath)
 {
@@ -652,3 +660,87 @@ void HTMLDocument::HandleBody(HTMLBodyTag *theTag)
 ///////////////////////////////////////////////////////////////////////////////
 
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0073c7a0
+// (public: __thiscall std::map<class WONAPI::GUIString,struct WONAPI::HTMLDocument::LoadedImageStruct,struct WONAPI::GUIStringLessNoCase,class std::alloc)
+// TEMPLATE: WON 0x0073c860
+// (public: __thiscall std::map<class WONAPI::GUIString,class WONAPI::SmartPtr<class WONAPI::ImageMap>,struct WONAPI::GUIStringLessNoCase,class std::alloc)
+// TEMPLATE: WON 0x0073c920
+// (public: __thiscall std::multimap<class WONAPI::GUIString,class WONAPI::SmartPtr<class WONAPI::HTMLTag>,struct WONAPI::GUIStringLessNoCase,class std::a)
+// TEMPLATE: WON 0x0073d9b0
+// (public: virtual class WONAPI::SmartPtr<class WONAPI::RawImage> __thiscall WONAPI::ImageFilter::Filter(class WONAPI::RawImage *))
+// TEMPLATE: WON 0x0074b030
+// (public: __thiscall std::list<struct WONAPI::ImageMap::ShapeLink,class std::allocator<struct WONAPI::ImageMap::ShapeLink> >::list<struct WONAPI::ImageM)
+// TEMPLATE: WON 0x0074be80
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLDocument::LoadedImageStruct>,struc)
+// TEMPLATE: WON 0x0074bf30
+// (protected: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLDocument::LoadedImageStruct>,st)
+// TEMPLATE: WON 0x0074c230
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::ImageMap> >,stru)
+// TEMPLATE: WON 0x0074c2e0
+// (protected: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::ImageMap> >,s)
+// TEMPLATE: WON 0x0074c5e0
+// (public: class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument::ListInfo &,st)
+// TEMPLATE: WON 0x0074c650
+// (public: class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument::ListInfo &,st)
+// TEMPLATE: WON 0x0074c6c0
+// (public: class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument::ListInfo &,st)
+// TEMPLATE: WON 0x0074c710
+// (protected: bool __thiscall std::vector<struct WONAPI::HTMLDocument::ListInfo,class std::allocator<struct WONAPI::HTMLDocument::ListInfo> >::_Buy(unsig)
+// TEMPLATE: WON 0x0074c750
+// (public: class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument::ListInfo &,st)
+// TEMPLATE: WON 0x0074c770
+// (public: struct std::pair<class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI:)
+// TEMPLATE: WON 0x0074c7f0
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::HTMLTag> >,struc)
+// TEMPLATE: WON 0x0074dd70
+// (protected: void __thiscall std::list<struct WONAPI::ImageMap::ShapeLink,class std::allocator<struct WONAPI::ImageMap::ShapeLink> >::_Incsize(unsigned )
+// TEMPLATE: WON 0x0074e840
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::HTMLTag>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::HTMLTag> )
+// TEMPLATE: WON 0x0074e990
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLDocument::LoadedImageStruct>,struc)
+// TEMPLATE: WON 0x0074eee0
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLDocument::LoadedImage)
+// TEMPLATE: WON 0x0074ef90
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::ImageMap> >,stru)
+// TEMPLATE: WON 0x0074f4b0
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::Ima)
+// TEMPLATE: WON 0x0074f4f0
+// (public: void __thiscall std::vector<struct WONAPI::HTMLDocument::ListInfo,class std::allocator<struct WONAPI::HTMLDocument::ListInfo> >::insert(class )
+// TEMPLATE: WON 0x0074f870
+// (public: class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument::ListInfo &,st)
+// TEMPLATE: WON 0x0074f890
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::HTMLTag> >,struc)
+// TEMPLATE: WON 0x0074fdb0
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::HTM)
+// TEMPLATE: WON 0x0074fdf0
+// (protected: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::HTMLTag> >,st)
+// TEMPLATE: WON 0x00751fa0
+// (protected: void __thiscall std::vector<struct WONAPI::HTMLDocument::ListInfo,class std::allocator<struct WONAPI::HTMLDocument::ListInfo> >::_Xlen(void)
+// TEMPLATE: WON 0x00754330
+// (class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument::ListInfo &,struct WON)
+// TEMPLATE: WON 0x00754380
+// (struct WONAPI::HTMLDocument::ListInfo * __cdecl std::copy(class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::Lis)
+// TEMPLATE: WON 0x007546d0
+// (void __cdecl std::_Construct(struct WONAPI::ImageMap::ShapeLink *,struct WONAPI::ImageMap::ShapeLink const &))
+// TEMPLATE: WON 0x00754720
+// (void __cdecl std::_Construct(struct std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLDocument::LoadedImageStruct> *,struct std::pair<class )
+// TEMPLATE: WON 0x007547a0
+// (protected: struct WONAPI::HTMLDocument::ListInfo * __thiscall std::vector<struct WONAPI::HTMLDocument::ListInfo,class std::allocator<struct WONAPI::HT)
+// TEMPLATE: WON 0x007547f0
+// (void __cdecl std::fill(class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument)
+// TEMPLATE: WON 0x00754830
+// (class std::_Ptrit<struct WONAPI::HTMLDocument::ListInfo,int,struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument::ListInfo &,struct WON)
+// TEMPLATE: WON 0x00754e20
+// (void __cdecl std::_Construct(struct WONAPI::HTMLDocument::ListInfo *,struct WONAPI::HTMLDocument::ListInfo const &))
+// TEMPLATE: WON 0x00755000
+// (public: void * __thiscall std::pair<class WONAPI::GUIString const ,struct WONAPI::HTMLDocument::LoadedImageStruct>::`scalar deleting destructor'(unsig)
+// TEMPLATE: WON 0x00755020
+// (public: void * __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::ImageMap> >::`scalar deleting destructor'(unsi)
+// TEMPLATE: WON 0x00755040
+// (public: void * __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::HTMLTag> >::`scalar deleting destructor'(unsig)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00702390
+// (public: void __thiscall WONAPI::GUIString::append(class WONAPI::GUIString const &,unsigned short,unsigned short))

@@ -187,7 +187,7 @@ bool WONLobbyPrv::Init(ResourceConfigTable* input,void (*initFunc)(ComponentConf
     ComponentConfig::SetResourceFolder(WONAPICore::GetDefaultFileDirectory()+mConfig->mSC8);
     SmartPtr<ResourceConfigTable> resources=GetLobbyResourceConfigTable(input);
     ServerListCtrl::InitColumnMap();
-    std::map<std::string,std::string>::iterator itr=mConfig->mMEC.begin();
+    std::map<std::string,std::string,StringLessNoCase>::iterator itr=mConfig->mMEC.begin();
     while(itr!=mConfig->mMEC.end()) {
         parser.AddDefine(itr->first,itr->second,false);
         ++itr;
@@ -238,13 +238,13 @@ void WONLobbyPrv::InitAuth(const std::wstring& loginCommunity,const char* hashFi
     mHashFileList.clear();
     if(hashFileListStr!=NULL) {
         StringParser parser(hashFileListStr);
-        parser.ReadStrings(mHashFileList);
+        parser.ReadValue(mHashFileList);
     }
     mLoginCommunity=loginCommunity;
     mAuthContext->SetCommunity(mLoginCommunity);
     if(mConfig->mCDKeyCheck) {
         mCDKey.SetProductString(mConfig->mS78);
-        mCDKey.LoadFromRegistry(2,gCDKeyRegistryKey);
+        mCDKey.LoadFromRegistry();
         mAuthContext->SetCDKey(mLoginCommunity,mCDKey);
     }
 }
@@ -300,6 +300,20 @@ WONLobbyPrv::WONLobbyPrv()
     mLogicMgr.AddLogic(mPingLogic.get());
 }
 
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x007652c0
+Component* FriendsListCtrl::CompFactory()
+{
+    return new FriendsListCtrl;
+}
+
+// FUNCTION: WON 0x00765320
+ComponentConfig* FriendsListCtrl::CfgFactory()
+{
+    return new ContainerConfig;
+}
 }
 
 // Compiler-generated and header-inline functions this unit emits:

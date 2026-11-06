@@ -138,3 +138,5 @@ bool WONSkinConfig::Virtual24(const std::string &theInstruction)
 // (public: struct std::pair<class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI:)
 
 // Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007a1560
+// TEMPLATE: WON 0x007a1860

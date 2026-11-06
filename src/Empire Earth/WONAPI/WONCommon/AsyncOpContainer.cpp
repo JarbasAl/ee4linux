@@ -67,3 +67,7 @@ void AsyncOpContainer::Pump(unsigned long waitTime,int maxOps)
 // (public: virtual void * __thiscall WONAPI::Event::`scalar deleting destructor'(unsigned int)    [??_GEvent@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0069f810
 // (public: virtual void * __thiscall WONAPI::AsyncOpContainer::`scalar deleting destructor'(unsigned int)    [??_GAsyncOpContainer@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006a9800
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::AsyncOp> )

@@ -39,31 +39,32 @@ SmartPtr<Font> ComponentConfig::ReadFont()
     if(mStringParser->GetChar(0)=='(') {
         mStringParser->IncrementPos(1);
         std::string type;
-        StringParser* aParser=mStringParser;
-        aParser->ReadString(type,false);
-        if(_stricmp(type.c_str(),"CFG")!=0)
-            throw ConfigObjectException("Bad Font Type: "+type);
-        EnsureComma();
-        std::string name;
-        mStringParser->ReadString(name,false);
-        ComponentConfig* current=this;
-        FontConfig* fontConfig=NULL;
-        while(true) {
-            fontConfig=dynamic_cast<FontConfig*>(current->GetComponentConfig(name,false));
-            if(fontConfig!=NULL) break;
-            current=(ComponentConfig*)current->mL38;
+        mStringParser->ReadString(type,false);
+        if(_stricmp(type.c_str(),"CFG")==0) {
+            EnsureComma();
+            std::string name;
+            mStringParser->ReadString(name,false);
+            ComponentConfig* current=this;
+            FontConfig* fontConfig;
+            while(true) {
+                fontConfig=dynamic_cast<FontConfig*>(current->GetComponentConfig(name,false));
+                if(fontConfig!=NULL) break;
+                current=(ComponentConfig*)current->mL38;
+            }
+            if(fontConfig->GetFont()==NULL)
+                throw ConfigObjectException("NULL Font: "+name);
+            if(!mStringParser->CheckNextChar(')'))
+                throw ConfigObjectException("Expecting ')'");
+            return fontConfig->GetFont();
         }
-        if(fontConfig->GetFont()==NULL)
-            throw ConfigObjectException("NULL Font: "+name);
-        if(!mStringParser->CheckNextChar(')'))
-            throw ConfigObjectException("Expecting ')'");
-        return fontConfig->GetFont();
+        throw ConfigObjectException("Bad Font Type: "+type);
     }
     return ResourceConfig::SafeReadFont(*mStringParser);
 }
 // FUNCTION: WON 0x00784890
 SmartPtr<Image> ComponentConfig::GetImageFromStr(const std::string& spec,bool getRaw)
 {
+    SmartPtr<Image> image;
     if(spec[0]=='@') {
         std::string::size_type split=spec.find_first_of('_');
         if(split!=std::string::npos) {
@@ -79,7 +80,6 @@ SmartPtr<Image> ComponentConfig::GetImageFromStr(const std::string& spec,bool ge
                 }
                 if(config==NULL)
                     throw ConfigObjectException("Invalid ImageConfig: "+spec);
-                SmartPtr<Image> image;
                 if(getRaw) image=config->GetRawImage();
                 else image=config->GetImage();
                 if(image.get()==NULL)
@@ -90,7 +90,6 @@ SmartPtr<Image> ComponentConfig::GetImageFromStr(const std::string& spec,bool ge
         else return GetImageResource(spec.c_str()+1);
         throw ConfigObjectException("Bad Image Specification: "+spec);
     }
-    SmartPtr<Image> image;
     if(getRaw)
         image=Window::GetDefaultWindow()->DecodeImageRaw(GetResourceFile(spec).c_str()).get();
     else image=WONAPI::WindowManager::GetDefaultWindowManager()->DecodeDelayImage(GetResourceFile(spec).c_str()).get();

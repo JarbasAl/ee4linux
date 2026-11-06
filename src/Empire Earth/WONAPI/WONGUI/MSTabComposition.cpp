@@ -37,6 +37,7 @@ void MSTabCtrl::SetTransparent(bool transparent)
     mIsTransparent=transparent;
 }
 // Original301670/5, genuine AddedToParent forwarding support0.
+// FUNCTION: WON 0x00701670
 void MSTabCtrl::Virtual6C()
 {
     TabCtrl::Virtual6C();
@@ -56,3 +57,9 @@ void MSTabCtrl::AddStandardTab(const GUIString& text,Container* container)
 // (public: virtual void * __thiscall WONAPI::MSTabCtrl::`scalar deleting destructor'(unsigned int)    [??_GMSTabCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00706860
 // (public: virtual __thiscall WONAPI::MSDlgBack::~MSDlgBack(void)    [??1MSDlgBack@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00701340
+// (public: virtual __thiscall WONAPI::TabCtrl::~TabCtrl(void))
+// TEMPLATE: WON 0x007014d0
+// (public: virtual __thiscall WONAPI::MSTabCtrl::~MSTabCtrl(void))

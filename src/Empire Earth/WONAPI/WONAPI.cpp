@@ -11,7 +11,8 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONAPICore.h"
 namespace WONAPI {
-// Actual mInstance5661fc and mHaveWrittenVersion566200 remain external static owners.
+WONAPICore* WONAPICore::mInstance;
+bool WONAPICore::mHaveWrittenVersion;
 // SUPPORT: EXE 0x006f2750 (321B basic state/version initializer, quota0)
 void WONAPICore::Init()
 {
@@ -105,7 +106,7 @@ const std::string& WONAPICore::GetDefaultFileDirectory()
     static std::string anEmptyStr;
     return mInstance==NULL?anEmptyStr:mInstance->mFileDirectory;
 }
-// SUPPORT: EXE 0x006f2e60 (62B real existing canonical dispatch API, quota0)
+// FUNCTION: WON 0x006f2e60
 void WONAPICore::QueueOp(AsyncOp* op)
 {
     if(IsStarted()) mInstance->mOpContainer.QueueOp(op);
@@ -113,24 +114,24 @@ void WONAPICore::QueueOp(AsyncOp* op)
         if(op->mStatus!=100000) mInstance->mOpContainer.QueueOp(op);
     }
 }
-// SUPPORT: EXE 0x006f2ea0 (46B dispatch/kill adapter, quota0)
+// FUNCTION: WON 0x006f2ea0
 void WONAPICore::AddTimerOp(AsyncOp* op,unsigned long timeout)
 {
     if(IsStarted()) mInstance->mTimerThread.AddTimerOp(op,timeout);
     else op->Kill(true);
 }
-// SUPPORT: EXE 0x006f2ed0 (29B conditional dispatch adapter, quota0)
+// FUNCTION: WON 0x006f2ed0
 void WONAPICore::RemoveTimerOp(AsyncOp* op)
 {
     if(IsStarted()) mInstance->mTimerThread.RemoveTimerOp(op);
 }
-// SUPPORT: EXE 0x006f2ef0 (43B dispatch/kill adapter, quota0)
+// FUNCTION: WON 0x006f2ef0
 void WONAPICore::AddToSocketThread(SocketOp* op)
 {
     if(IsStarted()) mInstance->mSocketThread->AddSocketOp(op);
     else op->Kill(true);
 }
-// SUPPORT: EXE 0x006f2f20 (31B conditional dispatch adapter, quota0)
+// FUNCTION: WON 0x006f2f20
 void WONAPICore::RemoveFromSocketThread(SocketOp* op)
 {
     if(IsStarted()) mInstance->mSocketThread->RemoveSocketOp(op);
@@ -188,3 +189,11 @@ void WONAPICoreEx::SetDoSocketAndTimerThreads(bool doSocketAndTimerThreads)
 		mDoSocketAndTimerThreads = doSocketAndTimerThreads;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006f2f40
+// (public: __thiscall WONAPI::WONAPICoreEx::WONAPICoreEx(void))
+// TEMPLATE: WON 0x006f2f80
+// (public: virtual __thiscall WONAPI::WONAPICoreEx::~WONAPICoreEx(void))
+// TEMPLATE: WON 0x006f2f60
+// (public: virtual void * __thiscall WONAPI::WONAPICoreEx::`scalar deleting destructor'(unsigned int))

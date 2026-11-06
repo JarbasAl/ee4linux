@@ -113,3 +113,7 @@ void HTMLDisplayGen::HandleBlock(HTMLBlockTag* tag)
     }
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00702370
+// (public: __thiscall WONAPI::GUIString::operator class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >(void)const )

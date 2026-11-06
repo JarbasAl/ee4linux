@@ -93,3 +93,9 @@ void LobbyFn35E470(const GUIString& name)
     }
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007682a0
+// (public: __thiscall std::map<class WONAPI::IPAddr,class WONAPI::GUIString,struct std::less<class WONAPI::IPAddr>,class std::allocator<struct std::pair<)
+// TEMPLATE: WON 0x0076d9f0
+// (protected: struct std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::LobbyOptionSet>,struct std::_Mapk<c)

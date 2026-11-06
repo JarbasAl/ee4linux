@@ -153,3 +153,5 @@ Component* MSButtonConfig::LabelFactory() { return new MSLabel; }
 // (public: static class WONAPI::ComponentConfig * __cdecl WONAPI::MSTabButtonConfig::CfgFactory(void)    [?CfgFactory@MSTabButtonConfig@WONAPI@@SAPAVComp)
 // TEMPLATE: WON 0x0078eb80
 // (public: static class WONAPI::ComponentConfig * __cdecl WONAPI::MSHeaderButtonConfig::CfgFactory(void)    [?CfgFactory@MSHeaderButtonConfig@WONAPI@@SAP)
+
+// TEMPLATE: WON 0x0078e770

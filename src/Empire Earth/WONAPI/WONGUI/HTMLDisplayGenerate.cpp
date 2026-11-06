@@ -11,6 +11,12 @@
 #include "ee/wonapi/WONLobbyHTMLDisplayGen.h"
 namespace WONAPI {
 // Actual566278 real string16: native338000 constructs this literal,338090 destroys it.
+// FUNCTION: WON 0x00737ff0
+// (_$E74)
+// FUNCTION: WON 0x00738080
+// (_$E73)
+// FUNCTION: WON 0x00738090
+// (_$E72)
 static std::string gGlobalDefaultFontFace("Times New Roman");
 // FUNCTION: WON 0x007380e0
 void HTMLDisplayGen::SetGlobalDefaultFontFace(const std::string& face)
@@ -54,3 +60,15 @@ void HTMLDisplayGen::Generate(HTMLDocument* document,MultiLineElement* display,T
     mDisplay->SetSelIndex();
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00738000
+// (_$E71)
+// TEMPLATE: WON 0x0074c9a0
+// (public: class std::_Ptrit<struct WONAPI::HTMLDisplayGen::FontInfo,int,struct WONAPI::HTMLDisplayGen::FontInfo *,struct WONAPI::HTMLDisplayGen::FontInf)
+// TEMPLATE: WON 0x0074cb40
+// (public: class std::_Ptrit<enum WONAPI::HTMLAlign,int,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign &,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign)
+// TEMPLATE: WON 0x007544e0
+// (struct WONAPI::HTMLDisplayGen::FontInfo * __cdecl std::copy(class std::_Ptrit<struct WONAPI::HTMLDisplayGen::FontInfo,int,struct WONAPI::HTMLDisplayGe)
+// TEMPLATE: WON 0x007546a0
+// (enum WONAPI::HTMLAlign * __cdecl std::copy(class std::_Ptrit<enum WONAPI::HTMLAlign,int,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign &,enum WONAPI:)

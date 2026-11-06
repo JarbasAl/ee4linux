@@ -46,3 +46,7 @@ FontConfig::FontConfig()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00788340
 // (public: virtual __thiscall ColorSchemeConfig::~ColorSchemeConfig(void)    [??1ColorSchemeConfig@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00788320
+// (public: virtual void * __thiscall ColorSchemeConfig::`scalar deleting destructor'(unsigned int))

@@ -190,3 +190,11 @@ SmartPtr<Animation> Animation::Duplicate()
 
 	return anAnim;
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00735680
+// (public: virtual __thiscall WONAPI::Animation::~Animation(void))
+// TEMPLATE: WON 0x007542b0
+// (public: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::AnimationFrame>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::Anima)
+// TEMPLATE: WON 0x00755600
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::AnimationFrame>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::An)

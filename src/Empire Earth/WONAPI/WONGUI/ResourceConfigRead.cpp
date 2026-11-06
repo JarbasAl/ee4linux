@@ -107,13 +107,14 @@ int ResourceConfig::SafeReadFontStyle(StringParser& inParser)
     for(;;)
     {
         inParser.ReadString(name,true);
-        if(name.empty()) return style;
+        if(name.empty()) break;
         if(_stricmp(name.c_str(),"Bold")==0) style|=1;
         else if(_stricmp(name.c_str(),"Italic")==0) style|=2;
         else if(_stricmp(name.c_str(),"Plain")==0) {}
         else if(_stricmp(name.c_str(),"Underline")==0) style|=4;
         else throw ConfigObjectException("Unknown font style: "+name);
     }
+    return style;
 }
 
 // Additional real ResourceConfig (SDK ResourceConfig) literals.
@@ -126,14 +127,10 @@ SmartPtr<Font> ResourceConfig::SafeReadFont(StringParser& parser)
     EnsureComma(parser);
     int style=SafeReadFontStyle(parser);
     EnsureComma(parser);
-    int size=0;
+    int size;
     if(!parser.ReadValue(size) || size<=0)
         throw ConfigObjectException("Invalid font size.");
-    FontDescriptor desc;
-    desc.mFace=face;
-    desc.mStyle=style;
-    desc.mSize=size;
-    return Window::GetDefaultWindow()->GetFont(desc);
+    return Window::GetDefaultWindow()->GetFont(FontDescriptor(face,style,size));
 }
 
 // FUNCTION: WON 0x00791ab0

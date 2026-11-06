@@ -43,7 +43,6 @@ public:
     SameSizeLayout(bool horz=true,bool vert=true) : mHorz(horz),mVert(vert) {} //actual388e56..ea1
     SameSizeLayout(Component* first,bool horz=true,bool vert=true) : mHorz(horz),mVert(vert) { Add(first); } //actual301964..301999: first insertion is construction-owned
     SameSizeLayout* Add(Component*); //3377a0 genuine external native algorithm
-    virtual ~SameSizeLayout(); // external original generated lifetime
     virtual void Execute(Component*);
     std::list<Component*> mComponentList; //0c
     bool mHorz, mVert; //18,19; full1c
@@ -52,7 +51,6 @@ class ClearRightLayout : public ChildLayoutInstructionBase {
 public:
     ClearRightLayout(Component* component,int pad=0) : mComponent(component),mPad(pad) {} //3890d8..116
     ClearRightLayout* Add(Component* component) { mComponentList.push_back(component); return this; }
-    virtual ~ClearRightLayout();
     virtual void Execute(Component*);
     Component* mComponent; //0c borrowed
     int mPad; //10

@@ -39,7 +39,7 @@ void GetMultiDirOp::Virtual18()
 // FUNCTION: WON 0x6f17c0
 void GetMultiDirOp::AddRequest(GetEntityRequest* inRequest)
 {
-    mRequestList.insert(mRequestList.end(),inRequest);
+    mRequestList.push_back(inRequest);
 }
 // FUNCTION: WON 0x6f18f0
 void GetMultiDirOp::AddPath(const std::wstring& inPath)
@@ -98,3 +98,19 @@ WONStatus GetMultiDirOp::Virtual14()
 // (public: virtual void * __thiscall WONAPI::GetMultiDirOp::`scalar deleting destructor'(unsigned int)    [??_GGetMultiDirOp@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006f1630
 // (public: virtual __thiscall WONAPI::GetMultiDirOp::~GetMultiDirOp(void)    [??1GetMultiDirOp@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006f2060
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struct s)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006d9e90
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<)
+// TEMPLATE: WON 0x006db280
+// (protected: struct std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,stru)
+// TEMPLATE: WON 0x006db380
+// (protected: struct std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,stru)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006f1db0
+// (public: __thiscall std::map<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,clas)

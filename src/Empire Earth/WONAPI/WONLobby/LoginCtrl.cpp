@@ -50,9 +50,11 @@ void LoginCtrl::FillUserNames()
     const LobbyUserInfoMap& users=LobbyFn35CE60();
     long newest=0;
     ListItem* latest=NULL;
-    for(LobbyUserInfoMap::const_iterator i=users.begin();i!=users.end();++i) {
+    LobbyUserInfoMap::const_iterator i=users.begin();
+    while(i!=users.end()) {
         ListItem* item=mUserNameCombo->AddString(i->first,-1);
         if(i->second.mLastUseTime>newest) { newest=i->second.mLastUseTime;latest=item; }
+        ++i;
     }
     if(latest!=NULL) {
         mUserNameCombo->SetSelItem(mUserNameCombo->mListArea->GetItemPos(latest),false);
@@ -84,8 +86,9 @@ void LoginCtrl::SavePassword()
     GUIString password(GetEmptyGUIStringData());
     if (mRememberPasswordCheck->IsChecked())
         password=mPasswordInput->GetText();
-    if (userName.length()!=0)
-        LobbyFn35C910(userName,password,true);
+    if (userName.length()==0)
+        return;
+    LobbyFn35C910(userName,password,true);
 }
 //3bf760..3bf7a5,69B. Event exact RTTI naming/producer still pending; no allocation.
 // FUNCTION: WON 0x007bf760

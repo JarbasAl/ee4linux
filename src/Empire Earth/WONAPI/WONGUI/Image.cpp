@@ -17,6 +17,7 @@ namespace WONAPI {
 // SUPPORT-ONLY: actual shared empty normal328590; zero primary credit.
 Image::~Image() {}
 // SUPPORT-ONLY: actual Image vslot04 ->3285d0, RET1c.
+// FUNCTION: WON 0x007285d0
 void Image::Draw(DisplayContext*,int,int,int,int,int,int) {}
 // SUPPORT-ONLY: actual Image vslot08 ->2fa2a0, RET8.
 void Image::SetSize(int,int) {}
@@ -296,3 +297,9 @@ SmartPtr<NativeImage> RawImage8::GetNative(DisplayContext* context) {
 // (public: virtual void * __thiscall WONAPI::RawImage8::`scalar deleting destructor'(unsigned int)    [??_GRawImage8@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00729770
 // (public: virtual void * __thiscall WONAPI::RawImage1::`scalar deleting destructor'(unsigned int)    [??_GRawImage1@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00728d70
+// (public: virtual bool __thiscall WONAPI::RawImage32::HasTransparency(void))
+// TEMPLATE: WON 0x00729250
+// (public: virtual bool __thiscall WONAPI::RawImage8::HasTransparency(void))

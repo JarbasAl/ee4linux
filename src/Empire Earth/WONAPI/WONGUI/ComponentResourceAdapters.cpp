@@ -38,9 +38,10 @@ void Component::SetDefaultCursor(Cursor* cursor)
     mExtraStuff->mDefaultCursor=cursor;
 }
 // Original2f5360/28, manager forwarding support0.
+// FUNCTION: WON 0x006f5360
 void Component::Fn2F5360(bool subscribe)
 {
-    GetRoot()->mManager->SubscribeToBroadcast(this,subscribe);
+    GetRoot()->GetWindowManager()->SubscribeToBroadcast(this,subscribe);
 }
 // Original2f5770/39, coordinate adapting helper support0.
 // FUNCTION: WON 0x006f5770
@@ -70,7 +71,7 @@ ColorScheme* Component::GetColorScheme()
     if(mExtraStuff!=NULL && mExtraStuff->mColorScheme.get()!=NULL)
         return mExtraStuff->mColorScheme.get();
     if(mParent!=NULL) return mParent->GetColorScheme();
-    return GetRoot()->mManager->mColorScheme.get();
+    return GetRoot()->GetWindowManager()->mColorScheme.get();
 }
 // Original2f59a0/89, existing external Extra allocation plus true owning setter support0.
 // FUNCTION: WON 0x006f59a0
@@ -86,14 +87,15 @@ Font* Component::Fn2F5B20()
     return GetRoot()->mManager->GetDefaultFont();
 }
 // Original2f5b30/23, borrowed font forwarding support0.
+// FUNCTION: WON 0x006f5b30
 Font* Component::GetNamedFont(const std::string& name)
 {
-    return GetRoot()->mManager->GetNamedFont(name);
+    return GetRoot()->GetWindowManager()->GetNamedFont(name);
 }
 // Original2f5b50/28, borrowed font forwarding support0.
 // FUNCTION: WON 0x006f5b50
 Font* Component::Fn2F5B50(int style,int size)
 {
-    return GetRoot()->mManager->GetDefaultFontMod(style,size);
+    return GetRoot()->GetWindowManager()->GetDefaultFontMod(style,size);
 }
 }

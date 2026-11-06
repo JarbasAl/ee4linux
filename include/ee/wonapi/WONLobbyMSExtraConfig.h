@@ -44,7 +44,6 @@ protected:
 class MSEtchedFrameGroup : public Container {
 public:
     MSEtchedFrameGroup(); //3008d0 genuine explicit SDK complete8c owner
-    virtual ~MSEtchedFrameGroup(); //3009c0 original external, actual SP88 then84 cleanup
     virtual void Virtual0C(int&,int&); //300a60 actual desiredsize0c, support0
     virtual void Virtual6C(); //300ab0 actual AddedToParent6c
     virtual void Paint(Graphics&); //300c00 actual18slot
@@ -60,7 +59,6 @@ class MSTabCtrl : public TabCtrl {
 public:
     MSTabCtrl(); //3010e0 actual575B composition
     virtual void Virtual6C(); //301670 actual5B AddedToParent JMP TabCtrl308cb0; real override
-    virtual ~MSTabCtrl(); //3014d0 original external
     void SetTransparent(bool); //301660 original provider
     void AddStandardTab(const GUIString&,Container*); //301680 original provider
     bool mIsTransparent; //d8 native constructor/setter, actual natural d9..db alignment
@@ -71,7 +69,6 @@ public:
 class MSScrollContainer : public ScrollbarScroller {
 public:
     MSScrollContainer(ScrollArea* =NULL); //2ffeb0 actual composition constructor387B/RET4
-    virtual ~MSScrollContainer(); //300120 original external
     virtual void Virtual08(); //300290 actualSizeChanged08slot
     virtual void Paint(Graphics&); //300390 actual18slot
     int mHeaderHeight; //9c actual390000 predecessor38fffa store
@@ -83,7 +80,6 @@ public:
 class MSHeaderControl : public MultiListHeader {
 public:
     MSHeaderControl(MultiListArea* =NULL); //300d10 completeb0 SDK owner
-    virtual ~MSHeaderControl(); //300d60 original external
     void SetColumn(int,const GUIString&); //300dd0 genuine original provider
     int mTextLeftPad; //ac genuine SDK scalar tail; allocation300eed isb0
 
@@ -92,7 +88,6 @@ class MSListCtrl : public MSScrollContainer {
 public:
     MSListCtrl(MultiListArea* =NULL); //300e80 completea8 SDK owner
     virtual void Virtual08(); //3010b0 genuine SDK SizeChanged override, existing actual08slot
-    virtual ~MSListCtrl(); //300fc0 original external, retained mHeadera4/base cleanup
     void SetHeaderHeight(int v) { mHeaderHeight=v; } //actual SDK inline/native38fffa
     MultiListArea* GetListArea() { return (MultiListArea*)GetScrollArea(); } //genuine SDK inline, borrowed84
     MSHeaderControl* GetHeader() { return mHeader.get(); } //genuine SDK inline, borroweda4

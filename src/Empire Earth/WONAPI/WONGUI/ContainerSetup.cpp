@@ -11,6 +11,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
+bool Container::mMouseWheelGoesToFocusChildDef=false;
 // FUNCTION: WON 0x006f5b70
 Container::Container()
 {
@@ -28,3 +29,11 @@ Container::Container()
     SetComponentFlags(8,true);
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071de50
+// (protected: void __thiscall std::_Tree<class WONAPI::SmartPtr<class WONAPI::Component>,class WONAPI::SmartPtr<class WONAPI::Component>,struct std::_Set)
+// TEMPLATE: WON 0x0074d4a0
+// (protected: struct std::_Tree<class WONAPI::SmartPtr<class WONAPI::Component>,class WONAPI::SmartPtr<class WONAPI::Component>,struct std::_Setk<class W)
+// TEMPLATE: WON 0x006f5e60
+// (public: virtual void * __thiscall WONAPI::ChildLayoutManager::`scalar deleting destructor'(unsigned int))

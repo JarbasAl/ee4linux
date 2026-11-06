@@ -76,12 +76,14 @@ void AnimationComponentConfig::Virtual34(Component *theComponent)
 	mAnimationComponent = (AnimationComponent*)theComponent;
 }
 
+// FUNCTION: WON 0x00794e30
 void ScreenContainerConfig::Virtual34(Component *theComponent)
 {
 	ComponentConfig::Virtual34(theComponent);
 	mScreenContainer = (ScreenContainer*)theComponent;
 }
 
+// FUNCTION: WON 0x00794e10
 bool AnimationComponentConfig::Virtual24(const std::string &theInstruction)
 {
 	if(ComponentConfig::Virtual24(theInstruction))

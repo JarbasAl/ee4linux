@@ -13,8 +13,14 @@
 #include "ee/wonapi/WONLobbyAnimation.h"
 #include "ee/wonapi/WONLobbyImageDecoder.h"
 namespace WONAPI {
-ImageAttributes::ImageAttributes() : mWidth(0),mHeight(0) {}
-ImageDecoder::ImageDecoder() : mFileReader(NULL) {}
+ImageAttributes::ImageAttributes()
+{
+    mWidth=mHeight=0;
+}
+ImageDecoder::ImageDecoder()
+{
+    mFileReader=NULL;
+}
 ImageDecoder::~ImageDecoder() {}
 SmartPtr<Animation> ImageDecoder::GetAnimation() { return NULL; }
 // FUNCTION: WON 0x00747910
@@ -94,7 +100,12 @@ MultiImageDecoder::MultiImageDecoder() {}
 // FUNCTION: WON 0x00747eb0
 MultiImageDecoder::~MultiImageDecoder()
 {
-    for(DecoderSet::iterator i=mDecoderSet.begin();i!=mDecoderSet.end();++i) delete *i;
+    DecoderSet::iterator i=mDecoderSet.begin();
+    while(i!=mDecoderSet.end())
+    {
+        delete *i;
+        ++i;
+    }
 }
 // FUNCTION: WON 0x00748080
 void MultiImageDecoder::AddDecoder(ImageDecoder* decoder,const char* extension)
@@ -169,10 +180,12 @@ ImageDecoder* MultiImageDecoder::Duplicate()
 {
     MultiImageDecoder* decoder=new MultiImageDecoder;
     decoder->mDecoderMap=mDecoderMap;
-    for(DecoderMap::iterator i=decoder->mDecoderMap.begin();i!=decoder->mDecoderMap.end();++i)
+    DecoderMap::iterator i=decoder->mDecoderMap.begin();
+    while(i!=decoder->mDecoderMap.end())
     {
         i->second=i->second->Duplicate();
         decoder->mDecoderSet.insert(i->second);
+        ++i;
     }
     return decoder;
 }
@@ -211,3 +224,35 @@ SmartPtr<RawImage8> ImageDecoder::CreateRawImage8(int theWidth,int theHeight,Pal
     return new RawImage8(theWidth,theHeight,thePalette);
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00747900
+// (public: __thiscall WONAPI::ImageDecoder::ImageDecoder(void))
+// TEMPLATE: WON 0x00747df0
+// (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class WONAPI::ImageDecoder *,struc)
+// TEMPLATE: WON 0x007478f0
+// (public: __thiscall WONAPI::ImageAttributes::ImageAttributes(void))
+// TEMPLATE: WON 0x0074b670
+// (protected: class std::_Tree<class WONAPI::ImageDecoder *,class WONAPI::ImageDecoder *,struct std::_Setk<class WONAPI::ImageDecoder *,struct std::less<)
+// TEMPLATE: WON 0x0074b970
+// (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)
+// TEMPLATE: WON 0x0074ba70
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x0074bb20
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class s)
+// TEMPLATE: WON 0x0074cfb0
+// (public: class std::_Tree<class WONAPI::ImageDecoder *,class WONAPI::ImageDecoder *,struct std::_Setk<class WONAPI::ImageDecoder *,struct std::less<cla)
+// TEMPLATE: WON 0x0074d460
+// (protected: void __thiscall std::_Tree<class WONAPI::ImageDecoder *,class WONAPI::ImageDecoder *,struct std::_Setk<class WONAPI::ImageDecoder *,struct )
+// TEMPLATE: WON 0x0074d9a0
+// (protected: struct std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic)
+// TEMPLATE: WON 0x0074da30
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class s)
+// TEMPLATE: WON 0x0074da70
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+// TEMPLATE: WON 0x00751f80
+// (protected: struct std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic)
+// TEMPLATE: WON 0x0074d4c0
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x00754c60
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WON)

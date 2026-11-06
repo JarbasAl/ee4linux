@@ -121,7 +121,11 @@ void Component::Virtual60(WONRectangle& rect)
 // FUNCTION: WON 0x006f5660
 void Component::Virtual8C(const ControlIdSet& ids,bool enabled)
 {
-    if(mControlId!=0 && ids.find(mControlId)!=ids.end()) SetEnabled(enabled);
+    if(mControlId!=0)
+    {
+        int id=mControlId;
+        if(ids.find(id)!=ids.end()) SetEnabled(enabled);
+    }
 }
 
 // FUNCTION: WON 0x006f5080

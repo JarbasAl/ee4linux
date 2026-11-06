@@ -440,6 +440,7 @@ void InputBox::SetInputHistory(const GUIString &theText, bool clearTraversalStat
 		mHaveTraversedHistory = false;
 }
 
+static int SmallerOf(int a,int b);
 // FUNCTION: WON 0x006f93b0
 bool InputBox::Virtual54(int theKey)
 {
@@ -465,7 +466,7 @@ bool InputBox::Virtual54(int theKey)
 		case 40:
 		{
 
-			int aSize=mMaxInputHistory<=(int)mInputHistory.size() ? mMaxInputHistory : (int)mInputHistory.size();
+			int aSize=SmallerOf(mMaxInputHistory,mInputHistory.size());
 			if(aSize>0)
 			{
 				if(!mHaveTraversedHistory && mInputHistoryPos<mInputHistory.size())
@@ -503,24 +504,24 @@ bool InputBox::Virtual54(int theKey)
 			GUIString left, right;
 			if(mSelStartChar!=mSelEndChar) 
 			{
-				left=aText.substr(0,mSelStartChar);
-				right=aText.substr(mSelEndChar);
+				left.append(aText,0,mSelStartChar);
+				right.append(aText,mSelEndChar,aText.length()-mSelEndChar);
 			}
 			else 
 			{
 				if(theKey==8) 
 				{
 					if(mSelStartChar>0)
-						left=aText.substr(0,mSelStartChar-1);
+						left.append(aText,0,mSelStartChar-1);
 
-					right=aText.substr(mSelEndChar);
+					right.append(aText,mSelEndChar,aText.length()-mSelEndChar);
 				}
 				else  
 				{
-					left=aText.substr(0,mSelStartChar);
+					left.append(aText,0,mSelStartChar);
 					
 					if(mSelEndChar<aText.length())
-						right=aText.substr(mSelEndChar+1);
+						right.append(aText,mSelEndChar+1,aText.length()-(mSelEndChar+1));
 				}
 			}	
 								
@@ -594,6 +595,12 @@ bool InputBox::Virtual54(int theKey)
 	AdjustPosition();
 	Invalidate();	
 	return true;
+}
+
+// FUNCTION: WON 0x006f9950
+static int SmallerOf(int a,int b)
+{
+	return a>b ? b : a;
 }
 
 
@@ -807,3 +814,11 @@ InputBox::InputBox()
 // (public: virtual __thiscall WONAPI::InputBox::~InputBox(void)    [??1InputBox@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x0071c350
 // (protected: void __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::_Growmap(unsigned int)    [?_Growmap@?$)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071ed00
+// (protected: void __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::_Xlen(void)const )
+// TEMPLATE: WON 0x00723510
+// (public: __thiscall WONAPI::SmartPtr<class WONAPI::GUIStringData>::SmartPtr<class WONAPI::GUIStringData>(class WONAPI::SmartPtr<class WONAPI::GUIString)
+// TEMPLATE: WON 0x0071c480
+// (public: class WONAPI::GUIString & __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::iterator::operator*(v)

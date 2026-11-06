@@ -548,7 +548,7 @@ bool HTTPGetOp::ExtractHeaderLine(const char *theHeaderLine)
 bool HTTPGetOp::SendRequest()
 {
     WriteBuffer aRequest(0,true);
-    char aRangeOffset[10];
+    char aRangeOffset[20];
     aRequest.AppendString("GET ",0);
     if (!mProxyHost.empty())
         aRequest.AppendString("http://"+mHost,0);
@@ -611,7 +611,10 @@ bool HTTPGetOp::DoConnect()
     if (mSocket->Fn2B08D0())
         return true;
     IPAddr anAddress;
-    anAddress.SetWithDefaultPort(mProxyHost.empty()?mHost:mProxyHost,80);
+    if (!mProxyHost.empty())
+        anAddress.SetWithDefaultPort(mProxyHost,80);
+    else
+        anAddress.SetWithDefaultPort(mHost,80);
     if (mRunMode==1) {
         mSocket->Fn2B4740(static_cast<SocketOp*>(Track(
             new ConnectOp(anAddress),HTTP_Track_Connect)),-1);
@@ -773,15 +776,20 @@ void HTTPGetOp::RecvContent()
         DoFinish();
         return;
     }
-    bool skip=mHTTPStatus<200 || mHTTPStatus>=300;
-    if (skip && mDoClose) {
-        Fn29F220(100093);
-        return;
+    bool skip;
+    if (mHTTPStatus>=200 && mHTTPStatus<300) skip=false;
+    else {
+        skip=true;
+        if (mDoClose) {
+            Fn29F220(100093);
+            return;
+        }
     }
     for (;;) {
-        unsigned long length=mContentIsChunked?mChunkLength:mContentLength;
+        unsigned long length=mContentLength;
+        if (mContentIsChunked) length=mChunkLength;
         SmartPtr<RecvBytesOp> recv=new RecvBytesOp(length,mSocket.get());
-        if (skip) recv->mB80=true;
+        if (skip) recv->SetSkipBytes(true);
         else {
             if (mRecvChunkCompletion.get()!=NULL)
                 recv->Fn2B4F90(mRecvChunkCompletion.get(),mRecvChunkSize);
@@ -794,10 +802,10 @@ void HTTPGetOp::RecvContent()
                     mContentIsNew=false;
                     return;
                 }
-                recv->mBinary=mBinaryFile;
-                recv->mPath=mLocalPath;
-                recv->mAppend=append;
-                recv->mFileModifyTime=mLastModified;
+                recv->SetBinaryFile(mBinaryFile);
+                recv->SetFilePath(mLocalPath);
+                recv->SetAppendFile(append);
+                recv->SetFileModifyTime(mLastModified);
             }
         }
         if (mRunMode==1) {
@@ -808,7 +816,7 @@ void HTTPGetOp::RecvContent()
         if (recv->RunBlock(TimeLeft())) {
             if (!DoneRecvContent(recv.get())) return;
         } else {
-            Fn29F220(recv->mStatus);
+            Fn29F220(recv->GetStatus());
             return;
         }
     }
@@ -1111,3 +1119,15 @@ void HTTPGetOp::SetProxy(const std::string &theHost, unsigned short thePort)
 
 // TEMPLATE: WON 0x006cfe50
 // (AsyncOpTracker no-argument constructor: the inline refused here, kept out of line)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006d9c70
+// (public: void * __thiscall WONAPI::AsyncOpTrackerEntry::`scalar deleting destructor'(unsigned int))
+// TEMPLATE: WON 0x006d3790
+// (_$E79)
+// TEMPLATE: WON 0x006d37a0
+// (_$E75)
+// TEMPLATE: WON 0x006d37c0
+// (_$E78)
+// TEMPLATE: WON 0x006d37d0
+// (_$E76)

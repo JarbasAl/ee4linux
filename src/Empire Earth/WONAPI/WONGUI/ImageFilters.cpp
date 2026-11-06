@@ -150,13 +150,13 @@ SmartPtr<RawImage> ScaleImageFilter::Filter(RawImage* image)
 
 static inline DWORD TintColor(DWORD color,int redPercent,int greenPercent,int bluePercent)
 {
-    unsigned int red=((color>>16)&0xff)*redPercent/100;
-    unsigned int green=((color>>8)&0xff)*greenPercent/100;
-    unsigned int blue=(color&0xff)*bluePercent/100;
+    int red=((color>>16)&0xff)*redPercent/100;
+    int green=((color>>8)&0xff)*greenPercent/100;
+    int blue=(color&0xff)*bluePercent/100;
     if(red>255) red=255;
     if(green>255) green=255;
     if(blue>255) blue=255;
-    return (red<<16)|(green<<8)|blue;
+    return (((red<<8)|green)<<8)|blue;
 }
 
 // FUNCTION: WON 0x00748dd0

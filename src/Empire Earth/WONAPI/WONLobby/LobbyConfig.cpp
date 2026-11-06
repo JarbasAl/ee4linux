@@ -19,8 +19,11 @@ using namespace WONAPI;
 // Data4d954c contains originalVA0x757f30 (genuine SDK class-static factory default).
 LobbyConfig::ConfigAllocator LobbyConfig::mAllocator = LobbyConfig::DefaultAllocator;
 
-// Original static string357fa0/358020/358030, backing566310.
 std::string LobbyConfig::mDefaultFileName("WONLobby.cfg");
+
+namespace WONAPI {
+bool gLobbyUseLocalIP56634D;
+}
 
 // FUNCTION: WON 0x757f30
 LobbyConfig* LobbyConfig::DefaultAllocator()
@@ -106,9 +109,8 @@ bool LobbyConfig::Virtual10(ConfigParser* parser)
     if (mSC8.empty())
         mSC8 = ".\\" + mS78;
     if (mW88.empty())
-        mW88 = L"/" + StringToWString(mS78);
-    std::string product("Product");
-    mMEC[product] = mS78;
+        mW88 = std::wstring(L"/") + StringToWString(mS78);
+    mMEC["Product"] = GetProductName();
     return true;
 }
 
@@ -133,3 +135,16 @@ LobbyConfig* WONAPI::GetLobbyConfig()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00758650
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class WONAPI::SmartPtr<class WONAP)
+// TEMPLATE: WON 0x758020
+// TEMPLATE: WON 0x758030
+// TEMPLATE: WON 0x757f90
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007695a0
+// (public: class std::list<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::allocator<class std::basic_)
+// TEMPLATE: WON 0x0076c080
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class s)
+// TEMPLATE: WON 0x0076c0c0
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+// TEMPLATE: WON 0x00770050
+// (public: void * __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WONAPI::Smart)

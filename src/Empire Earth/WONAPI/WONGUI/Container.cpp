@@ -21,9 +21,11 @@ Component* Container::VirtualC8(int inControlId)
             return component;
         Container* container=dynamic_cast<Container*>(component);
         if (container!=NULL) {
-            for (std::list<SmartPtr<Component> >::iterator child=container->mChildList.begin();
-                 child!=container->mChildList.end(); ++child)
+            std::list<SmartPtr<Component> >::iterator child=container->mChildList.begin();
+            while(child!=container->mChildList.end()) {
                 pending.push_back(child->get());
+                ++child;
+            }
         }
     }
     return NULL;
@@ -248,3 +250,9 @@ void Container::Virtual28()
 // (public: class std::list<class WONAPI::Component *,class std::allocator<class WONAPI::Component *> >::iterator __thiscall std::list<class WONAPI::Compo)
 // TEMPLATE: WON 0x0071ebb0
 // (protected: void __thiscall std::list<class WONAPI::Component *,class std::allocator<class WONAPI::Component *> >::_Incsize(unsigned int)    [?_Incsize)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071dd00
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::Component>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::Compone)
+// TEMPLATE: WON 0x007241d0
+// (void __cdecl std::_Construct(class WONAPI::SmartPtr<class WONAPI::Component> *,class WONAPI::SmartPtr<class WONAPI::Component> const &))

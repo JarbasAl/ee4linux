@@ -9,8 +9,8 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
-// Existing native writable formatter storage565a44, declaration only; no array extent invented.
-extern char gWONStatusBuffer[];
+// Formatter storage for unnamed status codes.
+char gWONStatusBuffer[1024];
 // FUNCTION: WON 0x0069deb0
 const char* WONStatusToString(WONStatus inStatus)
 {

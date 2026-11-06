@@ -24,6 +24,7 @@ public:
     GUIString mLocation;         //38
     unsigned long mLastSearch;   //3c provisional meaning: ctor zero; reset preserves
     unsigned char mFlags;       //40
+    void SetLastLocate(unsigned long inTime) { mLastLocate = inTime; }
     unsigned long mLastLocate;   //44
     unsigned long mSearchStart;  //48
     bool mAnonymous;             //4c

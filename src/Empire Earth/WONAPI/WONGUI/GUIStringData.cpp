@@ -49,14 +49,13 @@ std::wstring GUIStringData::GetWString() const
 // FUNCTION: WON 0x00727fa0
 int GUIStringData::Compare(const GUIStringData* other) const
 {
-    int count=mLength;
-    if(other->mLength<count) count=other->mLength;
-    const wchar_t* a=mText;
-    const wchar_t* b=other->mText;
-    for(int i=0;i<count;++i,++a,++b)
-        if(*a!=*b) return *a-*b;
-    if(mLength==other->mLength) return 0;
-    return mLength<other->mLength?-1:1;
+    unsigned short len1=mLength, len2=other->mLength;
+    int count=len2;
+    if(len1<count) count=len1;
+    for(int i=0;i<count;++i)
+        if(mText[i]!=other->mText[i]) return mText[i]-other->mText[i];
+    if(len1==len2) return 0;
+    return len1<len2?-1:1;
 }
 // Original328030/177: both character results are16-bit CRT wide-uppercase values.
 // FUNCTION: WON 0x00728030

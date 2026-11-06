@@ -23,13 +23,18 @@ void ConfigObject::Virtual18(bool resetName)
 {
     Clear();
     if(resetName) {mS18.erase();mS28.erase();}
-    for(KeyValMap::iterator i=mKeyMap.begin();i!=mKeyMap.end();++i) {
+    KeyValMap::iterator i=mKeyMap.begin();
+    while(i!=mKeyMap.end()) {
         ConfigValueBase* value=i->second.get();
         value->InitializeDefaultHook();
         value->mIsDefault=true;
+        ++i;
     }
-    for(KeyGroupMap::iterator j=mM48.begin();j!=mM48.end();++j)
+    KeyGroupMap::iterator j=mM48.begin();
+    while(j!=mM48.end()) {
         if(j->second.mL04!=NULL) *j->second.mL04=NULL;
+        ++j;
+    }
 }
 // FUNCTION: WON 0x007aedf0
 bool ConfigObject::QueryValue(KeyValMap::const_iterator itr,std::string& outValue)
@@ -50,11 +55,13 @@ bool ConfigObject::Virtual14(const std::string& key,std::string& outValue)
 // FUNCTION: WON 0x007af040
 void ConfigObject::Virtual1C(std::string& outValues)
 {
-    for(KeyValMap::const_iterator itr=mKeyMap.begin();itr!=mKeyMap.end();++itr) {
+    KeyValMap::const_iterator itr=mKeyMap.begin();
+    while(itr!=mKeyMap.end()) {
         outValues+=itr->first;
         outValues+=": ";
         QueryValue(itr,outValues);
-        outValues+='\n';
+        outValues+="\n";
+        ++itr;
     }
 }
 // FUNCTION: WON 0x007af280
@@ -110,8 +117,9 @@ bool ConfigObject::Virtual10(ConfigParser*) {return true;}
 // FUNCTION: WON 0x007af7a0
 bool ConfigObject::ParseTopLevel(ConfigParser& parser,const char* filePath)
 {
-    if(filePath!=NULL && !parser.OpenFile(filePath)) {
-        parser.SetError(std::string("File not found: ")+filePath,false);
+    if(filePath!=NULL && !parser.OpenFile(std::string(filePath))) {
+        std::string error=std::string("File not found: ")+filePath;
+        parser.SetError(error,false);
         return false;
     }
     ConfigDefineScope scope(parser);
@@ -190,7 +198,9 @@ bool ConfigObject::HandleChildGroup(ConfigParser& parser,KeyGroupMap::iterator& 
 {
     ConfigDefineScope scope(parser);
     ConfigObjectEntry& group=itr->second;
-    SmartPtr<ConfigObject> child=group.mL00!=NULL ? group.mL00() : group.mObject.get();
+    SmartPtr<ConfigObject> child;
+    if(group.mL00!=NULL) child=group.mL00();
+    else child=group.mObject.get();
     child->Virtual18(true);
     child->mL38=this;
     if(!child->ParseGroup(parser,true,false,true,true)) return false;
@@ -209,14 +219,13 @@ bool ConfigObject::HandleKeyVal(ConfigParser& parser,StringParser& value,KeyValM
 // FUNCTION: WON 0x007b18e0
 void ConfigObject::RegisterKeyValue(const char* key,ConfigValueBase* value)
 {
-    ConfigValueBasePtr hold=value;
-    mKeyMap.insert(std::make_pair(std::string(key),hold));
+    mKeyMap.insert(KeyValMap::value_type(std::string(key),value));
 }
 // FUNCTION: WON 0x007b00b0
 bool ConfigObject::IncludeFile(ConfigParser& parser,const std::string& path,bool required)
 {
     std::string file=path;
-    std::string::size_type slash=file.find_last_of('/');
+    std::string::size_type slash=file.find_last_of("/");
     if(slash==std::string::npos) slash=file.find_last_of('\\');
     if(parser.mIgnorePathOnIncludeFile && slash!=std::string::npos)
         file=file.substr(slash+1,file.length()-slash-1);
@@ -248,28 +257,6 @@ bool ConfigObject::IncludeGroup(ConfigParser& parser,const std::string& name,boo
     return result;
 }
 
-static bool ConfigConditional(ConfigObject* object,ConfigParser& parser,bool inverted)
-{
-    std::string name,expected;
-    if(!object->ReadGroupStart(parser,name,expected)) return true;
-    std::string actual;
-    bool matched=parser.GetDefine(name,actual) &&
-        (expected.empty() || StringCompareNoCase(expected,actual)==0);
-    bool selected=inverted ? !matched : matched;
-    if(selected) object->ParseGroup(parser,true,false,false,false);
-    else object->SkipGroup(parser,true,false);
-    std::string token;
-    parser.ReadToken(token,false,false);
-    if(_stricmp(token.c_str(),"else")!=0) {
-        parser.UngetStr(token);
-        return true;
-    }
-    parser.ReadToken(token,false,false);
-    if(token!="{") {parser.SetError("Expecting '{'",false);return true;}
-    if(selected) object->SkipGroup(parser,true,false);
-    else object->ParseGroup(parser,true,false,false,false);
-    return true;
-}
 // FUNCTION: WON 0x007b0910
 bool ConfigObject::Virtual04(ConfigParser* parser,const std::string& instruction)
 {
@@ -279,8 +266,54 @@ bool ConfigObject::Virtual04(ConfigParser* parser,const std::string& instruction
         parser->AddGroupDefine(name,NULL);
         return SkipGroup(*parser,true,false);
     }
-    if(instruction=="IFDEFINED") return ConfigConditional(this,*parser,false);
-    if(instruction=="IFNOTDEFINED") return ConfigConditional(this,*parser,true);
+    if(instruction=="IFDEFINED") {
+        std::string name,expected;
+        if(!ReadGroupStart(*parser,name,expected)) return true;
+        std::string actual;
+        bool selected=false;
+        if(parser->GetDefine(name,actual) && (expected.empty() || StringCompareNoCase(expected,actual)==0)) {
+            selected=true;
+            ParseGroup(*parser,true,false,false,false);
+        } else SkipGroup(*parser,true,false);
+        std::string token;
+        parser->ReadToken(token,false,false);
+        if(_stricmp(token.c_str(),"else")!=0) {
+            parser->UngetStr(token);
+            return true;
+        }
+        parser->ReadToken(token,false,false);
+        if(token!="{") {
+            parser->SetError("Expecting '{'",false);
+            return true;
+        }
+        if(selected) SkipGroup(*parser,true,false);
+        else ParseGroup(*parser,true,false,false,false);
+        return true;
+    }
+    if(instruction=="IFNOTDEFINED") {
+        std::string name,expected;
+        if(!ReadGroupStart(*parser,name,expected)) return true;
+        std::string actual;
+        bool selected=false;
+        if(parser->GetDefine(name,actual) && (expected.empty() || StringCompareNoCase(expected,actual)==0)) {
+            selected=true;
+            SkipGroup(*parser,true,false);
+        } else ParseGroup(*parser,true,false,false,false);
+        std::string token;
+        parser->ReadToken(token,false,false);
+        if(_stricmp(token.c_str(),"else")!=0) {
+            parser->UngetStr(token);
+            return true;
+        }
+        parser->ReadToken(token,false,false);
+        if(token!="{") {
+            parser->SetError("Expecting '{'",false);
+            return true;
+        }
+        if(selected) ParseGroup(*parser,true,false,false,false);
+        else SkipGroup(*parser,true,false);
+        return true;
+    }
     KeyGroupMap::iterator itr=mM48.find(instruction);
     if(itr==mM48.end()) return false;
     return HandleChildGroup(*parser,itr);
@@ -398,3 +431,11 @@ void ConfigObject::RegisterKeyGroup(const char* theKey, ConfigObject* theGroup)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007aeba0
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct WONAPI::ConfigObjectEntry,s)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007b5ca0
+// (protected: struct std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic)
+// TEMPLATE: WON 0x007b4f00
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+// TEMPLATE: WON 0x007b6b00
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WON)

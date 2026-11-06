@@ -271,3 +271,11 @@ void Button::SetClickSound(Sound* sound) { mClickSound=sound; }
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f3100
 // (public: virtual __thiscall WONAPI::Button::~Button(void)    [??1Button@WONAPI@@UAE@XZ])
+// SYNTHETIC: WON 0x6f2fd0
+// SYNTHETIC: WON 0x6f2fe0
+// SYNTHETIC: WON 0x6f2ff0
+// SYNTHETIC: WON 0x6f3000
+// SYNTHETIC: WON 0x6f3020
+// SYNTHETIC: WON 0x6f3030
+// SYNTHETIC: WON 0x6f3040
+// SYNTHETIC: WON 0x6f3050

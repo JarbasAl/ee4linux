@@ -40,3 +40,9 @@ WONScrollThumb::WONScrollThumb()
 // (public: virtual void * __thiscall WONAPI::WONSimpleButton::`scalar deleting destructor'(unsigned int)    [??_GWONSimpleButton@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007194c0
 // (public: virtual void * __thiscall WONAPI::WONScrollThumb::`scalar deleting destructor'(unsigned int)    [??_GWONScrollThumb@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00717a30
+// (public: virtual __thiscall WONAPI::WONSimpleButton::~WONSimpleButton(void))
+// TEMPLATE: WON 0x007194e0
+// (public: virtual __thiscall WONAPI::WONScrollThumb::~WONScrollThumb(void))

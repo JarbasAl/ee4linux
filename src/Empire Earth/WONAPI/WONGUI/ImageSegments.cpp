@@ -12,6 +12,8 @@
 #include "ee/wonapi/WONLobbyImageSegment.h"
 namespace WONAPI {
 
+SmartPtr<Image> LineSegment::mSelectImageMask;
+
 // FUNCTION: WON 0x00709570
 bool LineSegment::DrawSelection1(Graphics &g, int x, int y, ElementPaintInfo &theInfo)
 {
@@ -132,3 +134,7 @@ TextLinkParam* ImageMap::GetLink(int x, int y)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00709860
 // (public: virtual void * __thiscall WONAPI::Palette::`scalar deleting destructor'(unsigned int)    [??_GPalette@WONAPI@@UAEPAXI@Z])
+// SYNTHETIC: WON 0x7094d0
+// SYNTHETIC: WON 0x7094e0
+// SYNTHETIC: WON 0x7094f0
+// SYNTHETIC: WON 0x709500

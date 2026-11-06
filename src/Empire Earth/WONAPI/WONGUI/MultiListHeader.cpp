@@ -192,12 +192,14 @@ void MultiListHeader::Virtual38(int x,int y)
     } else Container::Virtual38(x,y);
 }
 // Original303350/51B dispatch gating, support0.
+// FUNCTION: WON 0x00703350
 void MultiListHeader::Virtual30(int x,int y,int button)
 {
     if(button==0 && mDragColumn!=-1) mDragColumn=-1;
     else Container::Virtual30(x,y,button);
 }
 // Original303390/15B reset and base dispatch, support0.
+// FUNCTION: WON 0x00703390
 void MultiListHeader::Virtual28()
 {
     mDragColumn=-1;
@@ -238,5 +240,13 @@ MultiListHeader::MultiListHeader(MultiListArea* area)
 // (public: virtual __thiscall WONAPI::MultiListHeader::~MultiListHeader(void)    [??1MultiListHeader@WONAPI@@UAE@XZ])
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x00700d60
-// (public: virtual __thiscall WONAPI::MSHeaderControl::~MSHeaderControl(void)    [??1MSHeaderControl@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071cf80
+// (public: void __thiscall std::vector<struct WONAPI::MultiListHeader::ColumnInfo,class std::allocator<struct WONAPI::MultiListHeader::ColumnInfo> >::res)
+// TEMPLATE: WON 0x00720f70
+// (public: void __thiscall std::vector<struct WONAPI::MultiListHeader::ColumnInfo,class std::allocator<struct WONAPI::MultiListHeader::ColumnInfo> >::ins)
+// TEMPLATE: WON 0x00721280
+// (public: class std::_Ptrit<struct WONAPI::MultiListHeader::ColumnInfo,int,struct WONAPI::MultiListHeader::ColumnInfo *,struct WONAPI::MultiListHeader::)
+// TEMPLATE: WON 0x00723780
+// (protected: void __thiscall std::vector<struct WONAPI::MultiListHeader::ColumnInfo,class std::allocator<struct WONAPI::MultiListHeader::ColumnInfo> >::)

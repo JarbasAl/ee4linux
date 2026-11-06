@@ -231,3 +231,7 @@ void LineElement::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInfo)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070b880
 // (public: virtual void * __thiscall WONAPI::LineElement::`scalar deleting destructor'(unsigned int)    [??_GLineElement@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0070b8a0
+// (public: virtual __thiscall WONAPI::LineElement::~LineElement(void))

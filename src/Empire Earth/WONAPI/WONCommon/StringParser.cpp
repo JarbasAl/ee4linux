@@ -81,28 +81,27 @@ bool StringParser::ReadString(std::string& out,bool stopAtWhitespace)
         if(ch=='\\' && quoted) {
             char escaped=GetChar(0);
             IncrementPos(1);
-            wchar_t value;
             switch(escaped) {
-            case 't':value='\t';break;
-            case 'n':value='\n';break;
-            case 'r':value='\r';break;
-            case '"':value='"';break;
-            case '$':value='$';break;
-            case '\\':value='\\';break;
+            case 't':wideChar='\t';break;
+            case 'n':wideChar='\n';break;
+            case 'r':wideChar='\r';break;
+            case '"':wideChar='"';break;
+            case '$':wideChar='$';break;
+            case '\\':wideChar='\\';break;
             case 'x': {
-                value=0;
+                wideChar=0;
                 int maxDigits=wideLiteral?4:2;
                 for(int digit=0;digit<maxDigits;++digit) {
                     if(!isxdigit(GetChar(0))) break;
-                    value=(value<<4)|ScannerHexValue(GetChar(0));
+                    wideChar=(wideChar<<4)|ScannerHexValue(GetChar(0));
                     IncrementPos(1);
                 }
                 break;
             }
-            default:IncrementPos(-1);value='\\';break;
+            default:IncrementPos(-1);wideChar='\\';break;
             }
-            if(wideLiteral) ScannerAppend(out,value);
-            else ScannerAppend(out,(char)value);
+            if(wideLiteral) ScannerAppend(out,wideChar);
+            else ScannerAppend(out,(char)wideChar);
             keepLength=out.length();
         } else if(!quoted && ch=='L' && GetChar(0)=='"') {
             IncrementPos(1);

@@ -52,3 +52,9 @@ WONComboBox::WONComboBox()
 // (public: __thiscall WONAPI::MultiListArea::MultiListArea(int)    [??0MultiListArea@WONAPI@@QAE@H@Z])
 // TEMPLATE: WON 0x00703540
 // (public: virtual __thiscall WONAPI::MultiListArea::~MultiListArea(void)    [??1MultiListArea@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00719970
+// (public: virtual __thiscall WONAPI::WONComboBox::~WONComboBox(void))
+// TEMPLATE: WON 0x00719950
+// (public: virtual void * __thiscall WONAPI::WONComboBox::`scalar deleting destructor'(unsigned int))

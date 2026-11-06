@@ -13,6 +13,26 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyHTMLTag.h"
 #include "ee/wonapi/WONLobbyHTMLFromText.h"
+// FUNCTION: WON 0x0073f6e0
+// (_$E74)
+// FUNCTION: WON 0x0073f6f0
+// (_$E71)
+// FUNCTION: WON 0x0073f740
+// (_$E73)
+// FUNCTION: WON 0x0073f750
+// (_$E72)
+extern const WONAPI::GUIString gProtocols[5];
+extern const WONAPI::GUIString gProtocolPrepends[5];
+const WONAPI::GUIString gProtocols[] = { "HTTP://", "HTTPS://", "FTP://", "MAILTO:", "WWW." };
+// FUNCTION: WON 0x0073f770
+// (_$E79)
+// FUNCTION: WON 0x0073f780
+// (_$E76)
+// FUNCTION: WON 0x0073f7d0
+// (_$E78)
+// FUNCTION: WON 0x0073f7e0
+// (_$E77)
+const WONAPI::GUIString gProtocolPrepends[] = { "", "", "", "", "HTTP://" };
 namespace WONAPI {
 
 // FUNCTION: WON 0x0073F610

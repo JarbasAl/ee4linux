@@ -52,37 +52,26 @@ void LobbyOptionsCtrl::InitComponent(ComponentInit& inInit)
     if (inInit.mType==2) {
         SmartPtr<Button> button;
         ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(config,mChatSoundEffectsCheck,"ChatSoundEffectsCheck",__FILE__,95);
-        mChatSoundEffectsCheck->mControlId=2;
+        SafeGetComponent(config,mChatSoundEffectsCheck,"ChatSoundEffectsCheck",2,__FILE__,95);
         SafeGetComponent(config,mConnectionSpeedCombo,"ConnectionSpeedCombo",__FILE__,96);
-        SafeGetComponent(config,mCrossPromotionCheck,"CrossPromotionCheck",__FILE__,97);
-        mCrossPromotionCheck->mControlId=3;
+        SafeGetComponent(config,mCrossPromotionCheck,"CrossPromotionCheck",3,__FILE__,97);
         SafeGetComponent(config,mFirewalledIcon,"FirewalledIcon",__FILE__,98);
-        SafeGetComponent(config,mLobbyMusicCheck,"LobbyMusicCheck",__FILE__,99);
-        mLobbyMusicCheck->mControlId=5;
-        SafeGetComponent(config,mLobbySoundEffectsCheck,"LobbySoundEffectsCheck",__FILE__,100);
-        mLobbySoundEffectsCheck->mControlId=6;
+        SafeGetComponent(config,mLobbyMusicCheck,"LobbyMusicCheck",5,__FILE__,99);
+        SafeGetComponent(config,mLobbySoundEffectsCheck,"LobbySoundEffectsCheck",6,__FILE__,100);
         SafeGetComponent(config,mLocalAddressDetailLabel,"LocalAddressDetailLabel",__FILE__,101);
         SafeGetComponent(config,mPublicAddressDetailLabel,"PublicAddressDetailLabel",__FILE__,102);
-        SafeGetComponent(config,button,"ResetFiltersButton",__FILE__,103);
-        button->mControlId=8;
-        SafeGetComponent(config,button,"RestoreDefaultsButton",__FILE__,104);
-        button->mControlId=9;
-        SafeGetComponent(config,mShowConfirmationsCheck,"ShowConfirmationsCheck",__FILE__,105);
-        mShowConfirmationsCheck->mControlId=10;
-        SafeGetComponent(config,mShowGamesInProgressCheck,"ShowGamesInProgressCheck",__FILE__,106);
-        mShowGamesInProgressCheck->mControlId=11;
-        SafeGetComponent(config,mStagingSoundEffectsCheck,"StagingSoundEffectsCheck",__FILE__,107);
-        mStagingSoundEffectsCheck->mControlId=12;
+        SafeGetComponent(config,button,"ResetFiltersButton",8,__FILE__,103);
+        SafeGetComponent(config,button,"RestoreDefaultsButton",9,__FILE__,104);
+        SafeGetComponent(config,mShowConfirmationsCheck,"ShowConfirmationsCheck",10,__FILE__,105);
+        SafeGetComponent(config,mShowGamesInProgressCheck,"ShowGamesInProgressCheck",11,__FILE__,106);
+        SafeGetComponent(config,mStagingSoundEffectsCheck,"StagingSoundEffectsCheck",12,__FILE__,107);
         SafeGetComponent(config,mTabSelectCombo,"TabSelectCombo",__FILE__,108);
         if (mIsLan) {
             SafeGetComponent(config,mLANBroadcastDetailLabel,"LANBroadcastDetailLabel",__FILE__,112);
-            SafeGetComponent(config,button,"RemoveLanNameButton",__FILE__,113);
-            button->mControlId=7;
+            SafeGetComponent(config,button,"RemoveLanNameButton",7,__FILE__,113);
             SafeGetComponent(config,mUserNameCombo,"UserNameCombo",__FILE__,114);
         } else {
-            SafeGetComponent(config,mAnonymousToFriendsCheck,"AnonymousToFriendsCheck",__FILE__,118);
-            mAnonymousToFriendsCheck->mControlId=0x30d56;
+            SafeGetComponent(config,mAnonymousToFriendsCheck,"AnonymousToFriendsCheck",0x30d56,__FILE__,118);
             SafeGetComponent(config,mAutoPingGamesCheck,"AutoPingGamesCheck",1,__FILE__,119);
             SafeGetComponent(config,mDoAutoAFKCheck,"DoAutoAFKCheck",4,__FILE__,120);
             SafeGetComponent(config,mFilterDirtyWordsCheck,"FilterDirtyWordsCheck",0x30d55,__FILE__,121);

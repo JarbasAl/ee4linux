@@ -88,3 +88,7 @@ WONStatus RoutingRegisterClientOp::Virtual10(unsigned char inMsgType, ReadBuffer
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c8550
 // (public: virtual void * __thiscall WONAPI::RoutingRegisterClientOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingRegisterClientOp@WONAPI@@)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006c96c0
+// (protected: static struct std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<struct WONAPI::RoutingClientInfo> >,s)

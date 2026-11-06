@@ -22,9 +22,17 @@ Container::~Container()
 }
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x0071b2a0
-// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::Component>,class WONAPI::SmartPtr<class WONAPI::Component>,struct std::set<class WONAPI:)
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f5cc0
 // (public: virtual void * __thiscall WONAPI::Container::`scalar deleting destructor'(unsigned int)    [??_GContainer@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071adb0
+// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::Component>,class WONAPI::SmartPtr<class WONAPI::Component>,struct std::_Setk<class WONAP)
+// TEMPLATE: WON 0x0071bd50
+// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::Component>,class WONAPI::SmartPtr<class WONAPI::Component>,struct std::_Setk<class WONAP)
+// TEMPLATE: WON 0x006f5ce0
+// (public: __thiscall std::set<class WONAPI::SmartPtr<class WONAPI::Component>,struct WONAPI::SmartPtr<class WONAPI::Component>::Comp,class std::allocato)
+// TEMPLATE: WON 0x006f5da0
+// (public: virtual __thiscall WONAPI::ChildLayoutManager::~ChildLayoutManager(void))

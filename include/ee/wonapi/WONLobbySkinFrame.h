@@ -9,7 +9,6 @@ class StretchImage;
 class WONSimpleButton : public Button {
 public:
     WONSimpleButton(); //317990 external full58, bounded F allocation
-    virtual ~WONSimpleButton(); //317a30 external normal/deleting317a10
     WONSimpleButton* Duplicate(); //317ae0 actual raw result, original external
     virtual void Virtual0C(int&,int&); //317a90 actual SDK GetDesiredSize slot0c
     virtual void Paint(Graphics&); //317bd0 actual18
@@ -24,7 +23,6 @@ public:
 class WONScrollThumb : public WONSimpleButton {
 public:
     WONScrollThumb(); //3194a0 original external
-    virtual ~WONScrollThumb(); //3194e0 actual normal cleanup, external only
 };
 }
 #endif

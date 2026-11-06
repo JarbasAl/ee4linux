@@ -28,14 +28,7 @@ void HTMLDisplayGen::HandleInput(HTMLInputTag* tag)
         return;
     }
     SmartPtr<LineSegment> segment;
-    SmartPtr<Font> font;
-    {
-        FontDescriptor descriptor;
-        descriptor.mFace="Tahoma";
-        descriptor.mStyle=FontStyle_Plain;
-        descriptor.mSize=10;
-        font=mWindow->GetFont(descriptor);
-    }
+    SmartPtr<Font> font=mWindow->GetFont(FontDescriptor("Tahoma",FontStyle_Plain,10));
     switch(tag->mInputType) {
     case HTMLInputType_Button:
     case HTMLInputType_Submit:
@@ -102,3 +95,7 @@ void HTMLDisplayGen::HandleInput(HTMLInputTag* tag)
 
 // FUNCTION: WON 0x0073bea0
 // (??_GMSInputBox@WONAPI@@UAEPAXI@Z)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0073bec0
+// (public: virtual __thiscall WONAPI::MSInputBox::~MSInputBox(void))

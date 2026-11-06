@@ -105,9 +105,9 @@ void HTMLHorizontalRuleTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 	GUIString *aParam = theAttributes.GetAttribute("ALIGN");
 	if(aParam!=NULL)
 	{
-		if(aParam->CompareNoCase("RIGHT")==0)
+		if(StringCompareNoCase(*aParam,"RIGHT")==0)
 			mAlign = HTMLAlign_Right;
-		else if(aParam->CompareNoCase("LEFT")==0)
+		else if(StringCompareNoCase(*aParam,"LEFT")==0)
 			mAlign = HTMLAlign_Left;
 	}
 }
@@ -801,3 +801,15 @@ int HTMLTagAttributes::GetColor(const GUIString &theKey)
 
 // FUNCTION: WON 0x007478e0
 // (_$E72)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0074b1f0
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std::_Mapk<class WONA)
+// TEMPLATE: WON 0x0074bbf0
+// (public: struct std::pair<class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std:)
+// TEMPLATE: WON 0x0074e420
+// (protected: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std::_Mapk<class W)
+// TEMPLATE: WON 0x0074e720
+// (protected: struct std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std::_Mapk<class )
+// TEMPLATE: WON 0x0074b060
+// (public: class WONAPI::GUIString & __thiscall std::map<class WONAPI::GUIString,class WONAPI::GUIString,struct WONAPI::StringLessNoCase,class std::alloc)

@@ -55,3 +55,7 @@ Container* LobbyFn362250()
     return NULL;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00766b30
+// (public: __thiscall std::list<class WONAPI::Component *,class std::allocator<class WONAPI::Component *> >::list<class WONAPI::Component *,class std::al)

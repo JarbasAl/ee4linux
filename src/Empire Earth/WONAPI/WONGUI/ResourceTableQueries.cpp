@@ -179,3 +179,17 @@ void ResourceConfigTable::ClearAll()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0079cbe0
 // (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x0079ff60
+// TEMPLATE: WON 0x007a0440
+// TEMPLATE: WON 0x007a07d0
+// TEMPLATE: WON 0x007a0cb0
+// TEMPLATE: WON 0x007a2b50
+// TEMPLATE: WON 0x007a2d80
+// TEMPLATE: WON 0x0079b660
+
+// TEMPLATE: WON 0x00790520
+// TEMPLATE: WON 0x00790540
+// TEMPLATE: WON 0x00790550
+// TEMPLATE: WON 0x00790630
+// TEMPLATE: WON 0x00790650
+// TEMPLATE: WON 0x00790660

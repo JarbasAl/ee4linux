@@ -363,3 +363,11 @@ void ServerRequestOp::Virtual18() {}
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ad870
 // (public: virtual long __thiscall WONAPI::MsgTransform::Send(class WONAPI::SmartPtr<class WONAPI::ByteBuffer> &)    [?Send@MsgTransform@WONAPI@@UAEJAAV?)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006ad880
+// (public: virtual void * __thiscall WONAPI::MsgTransform::`scalar deleting destructor'(unsigned int))
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006f2670
+// (public: class std::list<class WONAPI::IPAddr,class std::allocator<class WONAPI::IPAddr> >::iterator __thiscall std::list<class WONAPI::IPAddr,class st)

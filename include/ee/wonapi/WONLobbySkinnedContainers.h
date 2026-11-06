@@ -8,7 +8,6 @@ namespace WONAPI {
 class WONComboBox : public ComboBox {
 public:
     WONComboBox(); //319800 original external fullbc, bounded F allocation
-    virtual ~WONComboBox(); //319970 original external normal/deleting319950
     WONComboBox* Duplicate(); //3199e0 actual raw result, original external
     virtual void Virtual08(); //319b00 actual SizeChanged08
     virtual void Virtual0C(int&,int&); //319a70 desired-size0c
@@ -25,7 +24,6 @@ public:
     void CopyAttributes(WONScrollContainer*); //319f70 original deep attribute composition
     void SetFrame(const WONFrame& f) { mFrame=f; } //genuineSDKinline
     void SetCorner(Image* i) { mCorner=i; } //genuineSDKinline retained imageb8
-    virtual ~WONScrollContainer(); //319ce0 original external normal/deleting319cc0
     WONScrollContainer* Duplicate(); //319f00 actual raw result, original external
     virtual void Virtual08(); //319df0 actual08, direct Container base hook
     virtual void Paint(Graphics&); //319ff0 actual18

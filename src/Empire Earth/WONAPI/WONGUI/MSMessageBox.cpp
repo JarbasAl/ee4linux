@@ -12,6 +12,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyMSMessageBox.h"
 namespace WONAPI {
+static RawBuffer gMessageBoxEmptyBuffer;
 // FUNCTION: WON 0x007016f0
 MSMessageBox::MSMessageBox(const GUIString& title,const GUIString& message,
     const GUIString& button1,const GUIString& button2,const GUIString& button3)
@@ -135,3 +136,13 @@ int MSMessageBox::DoDialog(Window* parent)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00701e80
 // (public: virtual void * __thiscall WONAPI::MSMessageBox::`scalar deleting destructor'(unsigned int)    [??_GMSMessageBox@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00701e00
+// (public: virtual __thiscall WONAPI::SameSizeLayout::~SameSizeLayout(void))
+// SYNTHETIC: WON 0x702240
+// SYNTHETIC: WON 0x702250
+// SYNTHETIC: WON 0x702270
+// SYNTHETIC: WON 0x702280
+// TEMPLATE: WON 0x0074af60
+// (public: class WONAPI::SmartPtr<class WONAPI::GUIStringData> & __thiscall WONAPI::SmartPtr<class WONAPI::GUIStringData>::operator=(class WONAPI::SmartP)

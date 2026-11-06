@@ -13,7 +13,7 @@
 #include "ee/wonapi/WONLobbyMSExtraConfig.h"
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x00781860 (18B genuine explicit SDK constructor; zero primary)
+// FUNCTION: WON 0x00781860
 ButtonConfig::ButtonConfig()
 {
 }

@@ -13,7 +13,7 @@
 #include "ee/wonapi/WONLobbyMSExtraConfig.h"
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x00796960 (87B genuine declared static Component factory)
+// FUNCTION: WON 0x00796960
 Component* ComponentConfig::CompFactory()
 {
     return new Component;

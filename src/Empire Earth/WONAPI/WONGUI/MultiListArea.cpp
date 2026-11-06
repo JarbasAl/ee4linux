@@ -321,3 +321,17 @@ MultiListItem* MultiListArea::InsertRow(int theRow)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00724ad0
 // (protected: struct WONAPI::MultiListArea::ColumnInfo * __thiscall std::vector<struct WONAPI::MultiListArea::ColumnInfo,class std::allocator<struct WONA)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00703db0
+// (public: virtual __thiscall WONAPI::MultiListItem::~MultiListItem(void))
+// TEMPLATE: WON 0x0071d060
+// (public: void __thiscall std::vector<struct WONAPI::MultiListArea::ColumnInfo,class std::allocator<struct WONAPI::MultiListArea::ColumnInfo> >::resize()
+// TEMPLATE: WON 0x007212e0
+// (public: void __thiscall std::vector<struct WONAPI::MultiListArea::ColumnInfo,class std::allocator<struct WONAPI::MultiListArea::ColumnInfo> >::insert()
+// TEMPLATE: WON 0x007217a0
+// (public: class std::_Ptrit<struct WONAPI::MultiListArea::ColumnInfo,int,struct WONAPI::MultiListArea::ColumnInfo *,struct WONAPI::MultiListArea::Column)
+// TEMPLATE: WON 0x007238e0
+// (public: class std::_Ptrit<struct WONAPI::MultiListArea::ColumnInfo,int,struct WONAPI::MultiListArea::ColumnInfo *,struct WONAPI::MultiListArea::Column)
+// TEMPLATE: WON 0x00725160
+// (public: class std::_Ptrit<struct WONAPI::MultiListArea::ColumnInfo,int,struct WONAPI::MultiListArea::ColumnInfo *,struct WONAPI::MultiListArea::Column)

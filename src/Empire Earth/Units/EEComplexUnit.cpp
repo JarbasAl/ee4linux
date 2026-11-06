@@ -4581,11 +4581,10 @@ unsigned long EEGraphicObject::GetWheelCount() const
 
 // TEMPLATE: EXE 0x6010ec
 
-// Init chain at 0x6010fd (wrapper): object 0x96700c, ctor 0x546866, dtor 0x54630b (not emitted by ours):
-// UList<EEComplexUnit*>::sNodePool (RTTI .?AV?$UMemoryPool@U?$UListNode@PAVEEComplexUnit@@@@@@, vtable 0x4421b4;
-// a guarded template static, ctor/dtor ICF'd at 0x14624d/0x1462a6): needs the unit to instantiate a UList<EEComplexUnit*>
-// member (mU0C4 is UList<long> in EEUnit.h; dtor 0x200d66)
-// (chain wrapper 0x6010fd, registrar 0x601107; ctor/dtor ICF-kept at 0x54624d/0x5462a6)
+// SYNTHETIC: EXE 0x6010fd
+// SYNTHETIC: EXE 0x601107
+// The chain of UList<EEComplexUnit*>::sNodePool (object 0x96700c): wrapper and registrar; its ctor and dtor are the
+// copies at 0x54624d / 0x5462a6.
 
 // TEMPLATE: EXE 0x601113
 

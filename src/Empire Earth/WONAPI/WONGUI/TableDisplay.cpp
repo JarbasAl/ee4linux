@@ -145,3 +145,9 @@ bool Table::GotoAnchor(const GUIString &theName)
 // (public: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::Table::AnchorCoordinate>,str)
 // TEMPLATE: WON 0x00723a40
 // (public: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::Table::AnchorCoordinate>,str)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071b510
+// (public: struct WONAPI::Table::AnchorCoordinate & __thiscall std::map<class WONAPI::GUIString,struct WONAPI::Table::AnchorCoordinate,struct WONAPI::GUI)
+// TEMPLATE: WON 0x00720c20
+// (protected: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::Table::AnchorCoordinate>,struct std)

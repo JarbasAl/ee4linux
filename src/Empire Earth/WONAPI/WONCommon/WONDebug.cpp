@@ -126,6 +126,7 @@ struct MY_SYMBOL_INFO
 	CHAR    szSymbol[SYMBOL_NAME_LEN];
 };
 
+// FUNCTION: WON 0x006a72f0
 static LPVOID __stdcall FunctionTableAccess(HANDLE hProcess, DWORD dwPCAddress)
 {
 	return gSymFunctionTableAccessFunc(hProcess, dwPCAddress);
@@ -412,3 +413,15 @@ int WONDebug::DumpStackToFile(void *theInfo)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a7190
 // (bool __cdecl LoadWinDebugFunctions(void)    [?LoadWinDebugFunctions@@YA_NXZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006a6dd0
+// (public: __thiscall `bool __cdecl TryLoadWinDebugFunctions(void)'::`2'::AutoUnloadLibrary::~AutoUnloadLibrary(void))
+// TEMPLATE: WON 0x006a6d30
+// (_$E47)
+// TEMPLATE: WON 0x006a6d40
+// (_$E44)
+// TEMPLATE: WON 0x006a6d60
+// (_$E46)
+// TEMPLATE: WON 0x006a6d70
+// (_$E45)

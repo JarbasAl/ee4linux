@@ -24,10 +24,10 @@ void HTMLDisplayGen::HandleBody(HTMLBodyTag* tag)
     if(mDisplayContainer.get()!=NULL)
     {
         if(mNoBackground)
-            mDisplayContainer->mBackground=Background(-1);
+            mDisplayContainer->SetBackground(Background(-1));
         else if(tag->mBGImage.get()!=NULL)
         {
-            mDisplayContainer->mBackground=Background(tag->mBGImage.get());
+            mDisplayContainer->SetBackground(Background(tag->mBGImage.get()));
             if(tag->mTextColor<0) mDefaultTextColor=0;
             if(tag->mLinkColor<0) mDefaultLinkColor=0x0000ff;
             if(tag->mALinkColor<0) mDefaultALinkColor=0xff0000;
@@ -51,8 +51,8 @@ void HTMLDisplayGen::HandleBody(HTMLBodyTag* tag)
     if(mTopMargin>0)
         AddNonDisplaySegment(new LineBreakSegment(mTopMargin),LineSegmentFlag_PostLineBreak);
 }
-// FUNCTION: WON 0x00739710
-// (??0LineSegment@WONAPI@@QAE@XZ)
+// FUNCTION: WON 0x00739100
+// (??4Background@WONAPI@@QAEAAV01@ABV01@@Z)
 
 // FUNCTION: WON 0x00739d50
 void HTMLDisplayGen::HandleLineBreak(HTMLLineBreakTag* tag)
@@ -64,5 +64,6 @@ void HTMLDisplayGen::HandleLineBreak(HTMLLineBreakTag* tag)
 }
 }
 
-// FUNCTION: WON 0x0074af60
-// (??4?$SmartPtr@VComponent@WONAPI@@@WONAPI@@QAEAAV01@ABV01@@Z)
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00711480
+// (public: virtual void * __thiscall WONAPI::MarginLineSegment::`scalar deleting destructor'(unsigned int))

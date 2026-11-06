@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
+#include "ee/wonapi/WONBuffer.h"
 #include "ee/wonapi/WONLobbyResource.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006a7610

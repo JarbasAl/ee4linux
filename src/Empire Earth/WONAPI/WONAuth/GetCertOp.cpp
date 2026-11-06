@@ -417,3 +417,11 @@ WONStatus GetCertOp::Virtual14()
 // (protected: void __thiscall std::vector<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::allocator<cl)
 // TEMPLATE: WON 0x006f00f0
 // (public: void * __thiscall WONAPI::GetCertOp::COMMUNITY_STATUS::`scalar deleting destructor'(unsigned int)    [??_GCOMMUNITY_STATUS@GetCertOp@WONAPI@@Q)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006ebd70
+// (public: void __thiscall std::list<struct WONAPI::GetCertOp::COMMUNITY_STATUS,class std::allocator<struct WONAPI::GetCertOp::COMMUNITY_STATUS> >::_Inse)
+// TEMPLATE: WON 0x006ef6e0
+// (protected: void __thiscall std::list<struct WONAPI::GetCertOp::COMMUNITY_STATUS,class std::allocator<struct WONAPI::GetCertOp::COMMUNITY_STATUS> >::_I)
+// TEMPLATE: WON 0x006efca0
+// (void __cdecl std::_Construct(struct WONAPI::GetCertOp::COMMUNITY_STATUS *,struct WONAPI::GetCertOp::COMMUNITY_STATUS const &))

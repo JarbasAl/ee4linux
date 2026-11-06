@@ -44,6 +44,9 @@ public:
     // +0x0c/+0x10/+0x14: SocketOp's +0x14 returns 0, AcceptOp's a new AcceptOp; RoutingOp's +0x14 is GetType)
 
     WONStatus GetStatus() const { return mStatus; }
+    CompletionBase<SmartPtr<AsyncOp> >* GetCompletion() const { return mCompletion; }
+    unsigned long GetTimeout() const { return mTimeout; }
+    void SetCompletion(CompletionBase<SmartPtr<AsyncOp> >* theCompletion) { mCompletion=theCompletion; }
     void SetMode(AsyncRunMode); //native29f190, actual enum32/ret4 conditional setter, call-only
     void ForceFinish(WONStatus inStatus); //29f2f0, actual full status argument
     void RunAsync(unsigned long inTimeout); //29f610, DWORD timeout/ret4
@@ -68,7 +71,11 @@ public:
     unsigned long mTimeout;                 // +0x2c, unsignedelapsed comparison29f700
     long mRunMode;                          // +0x30
     //: 0x291983 (an inline COMDAT of EELobbyFileTransfer.cpp): finished without error
+#ifdef EE_DINKUM_SXL233
+    bool Succeeded() { return mStatus==0 && !mB39; }
+#else
     bool Succeeded();                       // 0x691983
+#endif
 
     WONStatus mStatus;                      // +0x34
     bool mCompletionPending;                // +0x38
@@ -271,7 +278,7 @@ public:
 
 // connects its socket to an address (RTTI ConnectOp > SocketOp, vtable 0x84c480; 0x84 bytes: EELobbyFileTransfer
 // 0x291b79 news it and inlines the ctor: SocketOp(NULL), the IPAddr copy ctor 0x291d59 at +0x5c, the vptr, then
-// +0x59 and +0x5a = true; r24, argument order PROVISIONAL)
+// +0x59 and +0x5a = true, argument order PROVISIONAL)
 class ConnectOp : public SocketOp {
 public:
     ConnectOp(const IPAddr& inAddr, AsyncSocket* inSocket = NULL) : SocketOp(inSocket), mAddr(inAddr)
@@ -880,18 +887,21 @@ public:
 
 class RoutingGetMembersOfGroupOp : public RoutingOp {
 public:
-    RoutingGetMembersOfGroupOp(RoutingConnection* c,unsigned short id=0) : RoutingOp(c),mGroupId(id) {}
+    RoutingGetMembersOfGroupOp(RoutingConnection* c,unsigned short id) : RoutingOp(c),mGroupId(id) {}
+    RoutingGetMembersOfGroupOp(RoutingConnection* c) : RoutingOp(c) {}
     virtual void Virtual0C(); //44cf20+0c native
     virtual WONStatus Virtual10(unsigned char,ReadBuffer&); //2c63f0
     virtual RoutingOpType GetType() const { return (RoutingOpType)22; } //22
 
     unsigned short mGroupId; //64, reply2c6447 comparesrequestgroup
     unsigned short GetGroupId() const { return mGroupId; }
+    void SetGroupId(unsigned short v) { mGroupId=v; }
     unsigned short mObserverCount; //66, response2c6491 fullwordstore
     unsigned short GetObserverCount() const { return mObserverCount; }
     bool mHasClientNames; //68, response2c6480 storesReadByte&1
     bool mHasClientFlags; //69, response2c6487 stores(ReadByte>>1)&1
     RoutingMemberMap mMembers; //6c, typed dtor2bd36b->d2a1e; naturalalignment6a..6b
+    const RoutingMemberMap& GetMembers() const { return mMembers; }
 };
 
 class RoutingGetGroupListOp : public RoutingOp {
@@ -907,6 +917,14 @@ public:
     virtual void Virtual0C(); //nativeSendRequest, actualslot from44cf04
     virtual WONStatus Virtual10(unsigned char,ReadBuffer&); //2c5bd0
     virtual RoutingOpType GetType() const { return (RoutingOpType)21; } //type21
+    bool IncludeName() const { return (mFlags & 1) ? true : false; }
+    bool IncludeCaptain() const { return (mFlags & 2) ? true : false; }
+    bool IncludeMaxPlayers() const { return (mFlags & 4) ? true : false; }
+    bool IncludeFlags() const { return (mFlags & 8) ? true : false; }
+    bool IncludeAsyncFlags() const { return (mFlags & 0x10) ? true : false; }
+    bool IncludeMemberCount() const { return (mFlags & 0x20) ? true : false; }
+    bool IncludeObserverCount() const { return (mFlags & 0x40) ? true : false; }
+    bool IncludeMembers() const { return (mFlags & 0x80) ? true : false; }
     unsigned short mFlags; //64
     unsigned short mParentGroupId; //66
     RoutingGroupMap mGroupMap; //68..73
@@ -914,6 +932,7 @@ public:
     // Implicit destructor, no explicit empty/out-of-line decl requested.
 public:
     unsigned short GetFlags() const { return mFlags; }
+    void SetFlags(unsigned short v) { mFlags=v; }
 };
 
 class RoutingLeaveGroupOp : public RoutingOp {
@@ -1392,10 +1411,14 @@ public:
     unsigned long mGroupFlags; //8c
     unsigned long mAsyncFlags; //90
     bool mLeaveGroupOnCancel; //94, natural tail95..97
+    void SetGroupFlags(unsigned long v) { mGroupFlags=v; }
+    void SetJoinFlags(unsigned char v) { mJoinFlags=v; }
+    void SetLeaveGroupOnCancel(bool v) { mLeaveGroupOnCancel=v; }
     unsigned short GetGroupId() const { return mGroupId; }
 };
 class RoutingJoinGroupOp : public RoutingOp {
 public:
+    void SetGroupId(unsigned short v) { mGroupId=v; }
     RoutingJoinGroupOp(RoutingConnection*); //2c7140
     virtual void Virtual0C(); //2c7370 SendRequest
     virtual WONStatus Virtual10(unsigned char,ReadBuffer&); //2c73e0 HandleReply
@@ -1483,6 +1506,8 @@ public:
     virtual RoutingOpType GetType() const; //native type44 existing slot14
     unsigned short mFlags; //64
     std::wstring mText; //68
+    void SetFlags(unsigned short v) { mFlags=v; }
+    void SetRecipients(const std::list<unsigned short>& v) { mRecipients=v; }
     void SetText(const std::wstring& v) { mText=v; }
     std::list<unsigned short> mRecipients; //78
 public:
@@ -1495,7 +1520,10 @@ public:
     virtual WONStatus Virtual10(unsigned char, ReadBuffer&); //shared physical2c8e90 slot10
     virtual RoutingOpType GetType() const; //native type46 existing slot14
     unsigned char mFlags; //64
-    ByteBufferPtr mData; //68
+    void SetFlags(unsigned char v) { mFlags=v; }
+    void SetData(const ByteBuffer* v) { mData=v; }
+    void SetRecipients(const std::list<unsigned short>& v) { mRecipients=v; }
+    ConstSmartPtr<ByteBuffer> mData; //68
     std::list<unsigned short> mRecipients; //6c
 public:
     unsigned char GetFlags() const { return mFlags; }
@@ -1615,6 +1643,7 @@ public:
     virtual void Virtual04(); //RunHook2c6970
     virtual WONStatus Virtual0C(ReadBuffer&); //UnpackMsg2c6ab0
     void AddWONUserId(unsigned long); //2c68c0/ret4
+    const FriendStatusMap& GetFriendStatusMap() const { return mFriendStatusMap; }
     FriendStatusMap mFriendStatusMap; //88 allocator/header8c/count90, full94
     // No explicit destructor: ordinary2c6750 has NOown-vptr write and inlines
     // genuine map destruction followed by complete base88 member/base cleanup.
@@ -1663,6 +1692,7 @@ typedef std::multimap<unsigned long, AsyncOpTrackerEntry*> AsyncOpTrackerEntryMa
 typedef std::multimap<AsyncOpPtr, AsyncOpTrackerEntryMap::iterator> AsyncOpTrackerOpMap;
 // Originalallocation8, constructor2a9380: owningop then inverse-op-map iterator.
 struct AsyncOpTrackerEntry {
+    AsyncOpTrackerEntry(const AsyncOpPtr& op,const AsyncOpTrackerOpMap::iterator& opItr) : mOp(op),mOpItr(opItr) {}
     AsyncOpPtr mOp;                         // +0x00
     AsyncOpTrackerOpMap::iterator mOpItr;   // +0x04
 };
@@ -1867,7 +1897,7 @@ protected:
 public:
     // Actual constructor is inline in original AddPath2f18f0, no invented native RVA.
     // No source allocation/construction of this child record is authorized by this fragment.
-    GetEntityRequest(); // declaration only; do not substitute an implicit default ctor
+    GetEntityRequest() { mFlags=0x06020837; }
     enum PACKFLAG { Pack_GetDirOp, Pack_GetMultiDirOp };
     void SetPath(const std::wstring& inPath) { mPath=inPath; }
     void SetFlags(DWORD inFlags) { mFlags=inFlags; }
@@ -2298,7 +2328,7 @@ public:
 // implicit dtor 0x4cff2a: the SmartPtr at +0x14, the string at +4; names PROVISIONAL)
 // CDKey complete declaration moved to EEWonNet foundation before AuthContext mapped value.
 // Exact storage, methods and inline virtual bodies retained; no duplicate class definition.
-extern const char* gCDKeyRegistryKey;      // 0x4d5ae8 -> "SOFTWARE\Sierra\CDKeys" (WONAPI data; name PROVISIONAL)
+
 
 // Complete actual AoC11fc owner. Constructor/destructor/protocol remain original-owned.
 // Actual RTTI GetCertOp >ServerRequestOp >ServerOp >AsyncOpWithTracker >AsyncOp >RefCount.

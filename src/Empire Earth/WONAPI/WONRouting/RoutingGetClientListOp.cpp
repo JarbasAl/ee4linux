@@ -25,15 +25,16 @@ WONStatus RoutingGetClientListOp::Virtual10(unsigned char inMsgType,ReadBuffer& 
     if (inMsgType!=23 && inMsgType!=74) return (WONStatus)100104;
     mIsEx=inMsgType==74;
     WONStatus status=inMsg.ReadShort();
-    if (status!=0) return status;
-    int count=(unsigned short)inMsg.ReadShort();
-    for (int i=0;i<count;++i) {
-        RoutingClientInfoPtr client=GetNewClientInfo();
-        client->mClientId=inMsg.ReadShort();
-        inMsg.ReadWString(client->mName,2);
-        client->mFlags=inMsg.ReadLong();
-        if (mIsEx) RoutingClientJoinedServerOp::ParseExClientData(inMsg,client.get());
-        mClientMap[client->mClientId]=client;
+    if (status==0) {
+        int count=(unsigned short)inMsg.ReadShort();
+        for (int i=0;i<count;++i) {
+            RoutingClientInfoPtr client=GetNewClientInfo();
+            client->mClientId=inMsg.ReadShort();
+            inMsg.ReadWString(client->mName,2);
+            client->mFlags=inMsg.ReadLong();
+            if (mIsEx) RoutingClientJoinedServerOp::ParseExClientData(inMsg,client.get());
+            mClientMap[client->mClientId]=client;
+        }
     }
     return status;
 }

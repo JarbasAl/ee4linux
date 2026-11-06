@@ -32,3 +32,5 @@ TextLineSegment* HTMLDisplayGen::GetTextLineSegment(const GUIString& text,int co
 
 // FUNCTION: WON 0x00739810
 // (??1TextLinkLineSegment@WONAPI@@UAE@XZ)
+// TEMPLATE: WON 0x00739710
+// (public: __thiscall WONAPI::LineSegment::LineSegment(void))

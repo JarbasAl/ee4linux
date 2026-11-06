@@ -311,3 +311,7 @@ void RootContainer::Virtual78(Cursor *theCursor)
 // (public: void * __thiscall std::pair<int const ,struct WONAPI::RootContainer::BGStruct>::`scalar deleting destructor'(unsigned int)    [??_G?$pair@$$CB)
 // TEMPLATE: WON 0x007043c0
 // (RootContainer implicit destructor)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00704250
+// (public: __thiscall std::set<class WONAPI::Component *,struct std::less<class WONAPI::Component *>,class std::allocator<class WONAPI::Component *> >::~)

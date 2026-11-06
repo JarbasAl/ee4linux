@@ -2042,3 +2042,5 @@ ac9c8 ?Virtual38@Component@WONAPI@@UAEXHH@Z
 2f35e0 ?Virtual2C@Button@WONAPI@@UAEXHHH@Z
 2f3600 ?Virtual30@Button@WONAPI@@UAEXHHH@Z
 3a54e0 ?Fn3A54E0@LobbyClient@WONAPI@@QAE_N_N@Z
+2f2f40 ??0WONAPICoreEx@WONAPI@@QAE@XZ
+4d9550 ?gLobbyGlobalPrefsVersion@WONAPI@@3JA

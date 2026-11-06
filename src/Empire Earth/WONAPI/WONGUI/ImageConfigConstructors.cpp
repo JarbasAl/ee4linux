@@ -31,3 +31,7 @@ ImageFilterConfig::ImageFilterConfig()
 // (public: virtual void * __thiscall WONAPI::ImageFilterConfig::`scalar deleting destructor'(unsigned int)    [??_GImageFilterConfig@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0078c2b0
 // (public: virtual __thiscall WONAPI::ImageFilterConfig::~ImageFilterConfig(void)    [??1ImageFilterConfig@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0078c280
+// (public: virtual class WONAPI::RawImage * __thiscall WONAPI::ImageFilterConfig::GetRawImage(void))

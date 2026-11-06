@@ -100,6 +100,7 @@ void ImageFilterConfig::SetRawImage(RawImage* inImage)
 // FUNCTION: WON 0x0078c780
 bool ImageFilterConfig::Virtual24(const std::string& inInstruction)
 {
+    SmartPtr<RawImage> anImage;
     if(inInstruction=="SRC") SetRawImage(ReadRawImage().get());
     else if(inInstruction=="FILTER") SetRawImage(HandleFilter().get());
     else if(inInstruction=="DUPLICATE")

@@ -259,8 +259,29 @@ public:
 		if (key_compare(_Key(_P._Mynode()), _Kfn()(_V)))
 			return (_Pairib(_Insert(_Addleft, _Y, _V), true));
 		return (_Pairib(_P, false)); }
+#ifdef EE_DINKUM_SXL233
+	iterator insert(iterator _P, const value_type& _V)
+		{if (size() == 0)
+			return (_Insert(true, _Head, _V));
+		else if (_P == begin())
+			{if (key_compare(_Kfn()(_V), _Key(_P._Mynode())))
+				return (_Insert(true, _P._Mynode(), _V)); }
+		else if (_P == end())
+			{if (key_compare(_Key(_Rmost()), _Kfn()(_V)))
+				return (_Insert(false, _Rmost(), _V)); }
+		else
+			{iterator _Pb = _P;
+			if (key_compare(_Key((--_Pb)._Mynode()), _Kfn()(_V))
+				&& key_compare(_Kfn()(_V), _Key(_P._Mynode())))
+				{if (_Isnil(_Right(_Pb._Mynode())))
+					return (_Insert(false, _Pb._Mynode(), _V));
+				else
+					return (_Insert(true, _P._Mynode(), _V)); }}
+		return (insert(_V).first); }
+#else
 	iterator insert(iterator _P, const value_type& _V)
 		{return (insert(_V).first); }
+#endif
 	void insert(iterator _F, iterator _L)
 		{for (; _F != _L; ++_F)
 			insert(*_F); }

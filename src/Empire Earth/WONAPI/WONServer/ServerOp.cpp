@@ -77,3 +77,7 @@ void ServerOp::RecvMsgAsync(int theTrackId)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006accf0
 // (public: virtual __thiscall WONAPI::ServerOp::~ServerOp(void)    [??1ServerOp@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006ae9f0
+// (public: __thiscall std::_Tree<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,struct std::pair<class WONAPI::SmartPtr<class WONAPI::AsyncOp> const ,clas)

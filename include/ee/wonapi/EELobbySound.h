@@ -46,6 +46,7 @@ class SoundDecoder : public RefCount {
 public:
     SoundDecoder();                         // 0x34a530
     virtual ~SoundDecoder();                // 0x328590 (ICF: ~LobbyPlayer; ??_GEELobbySoundDecoder 0x297dc5 calls it)
+    SoundPtr DecodeDescriptor(const SoundDescriptor& inDescriptor); // 0x34a540, forwards to Decode
     virtual SoundPtr Decode(const SoundDescriptor& inDescriptor) = 0;   // +0x04
 };
 

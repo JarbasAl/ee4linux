@@ -34,7 +34,7 @@ void AsyncOp::AddToTimerMap(AsyncOpTimeoutMap& map,unsigned long deadline)
 {
     RemoveFromTimerMap(true);
     mTimeoutMap=&map;
-    mTimeoutItr=map.insert(std::make_pair(deadline,AsyncOpPtr(this)));
+    mTimeoutItr=map.insert(AsyncOpTimeoutMap::value_type(deadline,this));
 }
 // FUNCTION: WON 0x0069f160
 void AsyncOp::RemoveFromTimerMap(bool erase)
@@ -177,3 +177,21 @@ DWORD AsyncOp::RealTimeLeft()
 // (public: __thiscall WONAPI::CriticalSection::~CriticalSection(void)    [??1CriticalSection@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x0069f2c0
 // (public: __thiscall WONAPI::AutoCrit::~AutoCrit(void)    [??1AutoCrit@WONAPI@@QAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006a8770
+// (public: class WONAPI::CompletionBase<class WONAPI::SmartPtr<class WONAPI::AsyncOp> > * __thiscall WONAPI::SmartPtr<class WONAPI::CompletionBase<class )
+// TEMPLATE: WON 0x006a8910
+// (public: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::AsyncOp> >,struct std::_Mmapk<unsign)
+// TEMPLATE: WON 0x006a8e00
+// (public: virtual __thiscall std::out_of_range::~out_of_range(void))
+// TEMPLATE: WON 0x006a8f10
+// (public: struct std::pair<class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::AsyncOp> >,struct s)
+// TEMPLATE: WON 0x006a9490
+// (protected: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::AsyncOp> >,struct std::_Mmapk<uns)
+// TEMPLATE: WON 0x006a9790
+// (public: virtual __thiscall std::length_error::~length_error(void))
+// TEMPLATE: WON 0x006aa210
+// (void __cdecl std::_Construct(struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::AsyncOp> > *,struct std::pair<unsigned long co)
+// TEMPLATE: WON 0x00769eb0
+// (protected: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::AsyncOp> >,struct std::_Mmapk<uns)

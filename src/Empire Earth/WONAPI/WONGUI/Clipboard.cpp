@@ -8,6 +8,7 @@
 #include <memory.h>
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
+#include "ee/wonapi/WONBuffer.h"
 #include "ee/wonapi/WONLobbyResource.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007cea00

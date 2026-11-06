@@ -21,16 +21,28 @@
 
 _STD_BEGIN
 		// TEMPLATE CLASS map
+#ifdef LLE_EXE_HEADERS
+		// key extractor in a holder: the same _Tree instantiation as the library objects' derived form
+template<class _K, class _Ty, class _Pr, class _A>
+	struct _Mapk {
+	struct _Kfn : public unary_function<pair<const _K, _Ty>, _K> {
+		const _K& operator()(const pair<const _K, _Ty>& _X) const
+		{return (_X.first); }
+		};
+	};
+#endif
 template<class _K, class _Ty, class _Pr = less<_K>,
 	class _A = allocator<pair<const _K, _Ty> > >
 	class map {
 public:
 	typedef map<_K, _Ty, _Pr, _A> _Myt;
 	typedef pair<const _K, _Ty> value_type;
+#ifndef LLE_EXE_HEADERS
 	struct _Kfn : public unary_function<value_type, _K> {
 		const _K& operator()(const value_type& _X) const
 		{return (_X.first); }
 		};
+#endif
 	class value_compare
 		: public binary_function<value_type, value_type, bool> {
 		friend class map<_K, _Ty, _Pr, _A>;
@@ -48,7 +60,11 @@ public:
 	typedef _Pr key_compare;
 	typedef _A allocator_type;
 	typedef _A::reference _Tref;
+#ifdef LLE_EXE_HEADERS
+	typedef _Tree<_K, value_type, _Mapk<_K, _Ty, _Pr, _A>::_Kfn, _Pr, _A, false> _Imp;
+#else
 	typedef _Tree<_K, value_type, _Kfn, _Pr, _A, false> _Imp;
+#endif
 	typedef _Imp::size_type size_type;
 	typedef _Imp::difference_type difference_type;
 	typedef _Imp::reference reference;
@@ -176,16 +192,28 @@ template<class _K, class _Ty, class _Pr, class _A> inline
 		const map<_K, _Ty, _Pr, _A>& _Y)
 	{return (!(_X < _Y)); }
 		// TEMPLATE CLASS multimap
+#ifdef LLE_EXE_HEADERS
+		// key extractor in a holder: the same _Tree instantiation as the library objects' derived form
+template<class _K, class _Ty, class _Pr, class _A>
+	struct _Mmapk {
+	struct _Kfn : public unary_function<pair<const _K, _Ty>, _K> {
+		const _K& operator()(const pair<const _K, _Ty>& _X) const
+		{return (_X.first); }
+		};
+	};
+#endif
 template<class _K, class _Ty, class _Pr = less<_K>,
 	class _A = allocator<pair<const _K, _Ty> > >
 	class multimap {
 public:
 	typedef multimap<_K, _Ty, _Pr, _A> _Myt;
 	typedef pair<const _K, _Ty> value_type;
+#ifndef LLE_EXE_HEADERS
 	struct _Kfn : public unary_function<value_type, _K> {
 		const _K& operator()(const value_type& _X) const
 		{return (_X.first); }
 		};
+#endif
 	class value_compare
 		: public binary_function<value_type, value_type, bool> {
 		friend class map<_K, _Ty, _Pr, _A>;
@@ -202,7 +230,11 @@ public:
 	typedef _Ty referent_type;
 	typedef _Pr key_compare;
 	typedef _A allocator_type;
+#ifdef LLE_EXE_HEADERS
+	typedef _Tree<_K, value_type, _Mmapk<_K, _Ty, _Pr, _A>::_Kfn, _Pr, _A, true> _Imp;
+#else
 	typedef _Tree<_K, value_type, _Kfn, _Pr, _A, true> _Imp;
+#endif
 	typedef _Imp::size_type size_type;
 	typedef _Imp::difference_type difference_type;
 	typedef _Imp::reference reference;

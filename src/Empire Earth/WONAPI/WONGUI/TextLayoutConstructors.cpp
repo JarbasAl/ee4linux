@@ -65,3 +65,13 @@ TextLine::~TextLine() {}
 // (public: virtual int __thiscall WONAPI::TableElement::GetWidth(void)    [?GetWidth@TableElement@WONAPI@@UAEHXZ])
 // TEMPLATE: WON 0x0070d8b0
 // (public: virtual int __thiscall WONAPI::TableElement::GetHeight(void)    [?GetHeight@TableElement@WONAPI@@UAEHXZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0070d8e0
+// (public: virtual __thiscall WONAPI::TableElement::~TableElement(void))
+// TEMPLATE: WON 0x00710cb0
+// (public: virtual int __thiscall WONAPI::TextSegment::GetLength(void))
+// TEMPLATE: WON 0x0071b6a0
+// (protected: void __thiscall std::vector<struct WONAPI::TableElement::CellInfo,class std::allocator<struct WONAPI::TableElement::CellInfo> >::_Tidy(void)
+// TEMPLATE: WON 0x0071b4c0
+// (public: __thiscall std::vector<struct WONAPI::TableElement::RowInfo,class std::allocator<struct WONAPI::TableElement::RowInfo> >::~vector<struct WONAP)

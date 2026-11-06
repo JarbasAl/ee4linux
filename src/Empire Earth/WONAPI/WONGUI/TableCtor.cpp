@@ -28,3 +28,11 @@ Table::Table(LineSegment* contents)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070fad0
 // (public: virtual void * __thiscall WONAPI::Table::`scalar deleting destructor'(unsigned int)    [??_GTable@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071ced0
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::Table::AnchorCoordinate>,struct std::_)
+// TEMPLATE: WON 0x00720be0
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,struct WONAPI::Table::AnchorCoordinate>,)
+// TEMPLATE: WON 0x0070faf0
+// (public: __thiscall std::map<class WONAPI::GUIString,struct WONAPI::Table::AnchorCoordinate,struct WONAPI::GUIStringLessNoCase,class std::allocator<str)

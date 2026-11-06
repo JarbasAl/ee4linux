@@ -68,3 +68,7 @@ WONTabCtrl* WONSkin::GetTabCtrl()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00728770
 // (public: virtual void * __thiscall WONAPI::WONMSSkin::MSImage::`scalar deleting destructor'(unsigned int)    [??_GMSImage@WONMSSkin@WONAPI@@UAEPAXI@Z])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007159f0
+// (public: virtual void __thiscall WONAPI::ProgramImage::SetSize(int,int))

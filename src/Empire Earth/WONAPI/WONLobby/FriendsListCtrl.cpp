@@ -90,14 +90,16 @@ void FriendsListCtrl::UpdateSeparator()
 void FriendsListCtrl::UpdateFriend(LobbyFriend* inFriend,FriendsListItem* inItem)
 {
     inItem->mFriend=inFriend;
-    if((inFriend->mFlags&3)!=0&&!inFriend->mAnonymous) inItem->mSortGroup=2;
+    if((inFriend->GetFlags()&3)!=0&&!inFriend->GetAnonymous()) inItem->mSortGroup=2;
     else inItem->mSortGroup=0;
-    if((inFriend->mFlags&4)!=0) inItem->mImage=::LobbyGlobal_Searching_Image;
-    else if(!inFriend->mAnonymous) {
-        if((inFriend->mFlags&2)!=0) inItem->mImage=::FriendsListCtrl_InGame_Image;
-        else if((inFriend->mFlags&1)!=0) inItem->mImage=::FriendsListCtrl_InChat_Image;
-        else inItem->mImage=::FriendsListCtrl_Unknown_Image;
-    } else inItem->mImage=::FriendsListCtrl_Unknown_Image;
+    Image* anImage;
+    if((inFriend->GetFlags()&4)!=0) anImage=::LobbyGlobal_Searching_Image;
+    else if(!inFriend->GetAnonymous()) {
+        if((inFriend->GetFlags()&2)!=0) anImage=::FriendsListCtrl_InGame_Image;
+        else if((inFriend->GetFlags()&1)!=0) anImage=::FriendsListCtrl_InChat_Image;
+        else anImage=::FriendsListCtrl_Unknown_Image;
+    } else anImage=::FriendsListCtrl_Unknown_Image;
+    inItem->mImage=anImage;
     inItem->mText=inFriend->GetName();
     if((inFriend->GetFlags()&3)!=0&&!inFriend->GetAnonymous()) {
         inItem->mL1C=0x8000000e;

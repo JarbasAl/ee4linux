@@ -51,7 +51,7 @@ public:
 	explicit basic_string(const _A& _Al)
 		: allocator(_Al) {_Tidy(); }
 	basic_string(const _Myt& _X)
-		: allocator(_X.allocator)
+		: allocator(_X.get_allocator())
 		{_Tidy(), assign(_X, 0, npos); }
 	basic_string(const _Myt& _X, size_type _P, size_type _M)
 		: allocator(_A()) {_Tidy(), assign(_X, _P, _M); }

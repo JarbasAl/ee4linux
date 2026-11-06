@@ -14,7 +14,6 @@ public:
     };
     typedef std::map<Font*,SmartPtr<WrappedText> > FontTextMap;
     WONButton(); //317c70 external full100, bounded F allocation
-    virtual ~WONButton(); //317f50 external normal/deleting317df0
     virtual void Virtual08(); //318100 actual SizeChanged08
     virtual void Virtual0C(int&,int&); //318640 actual GetDesiredSize0c
     virtual void Paint(Graphics&); //319080 actual18

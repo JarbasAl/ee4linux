@@ -570,3 +570,39 @@ bool Window::IsMouseDown(MouseButton theButton)
 // (public: __thiscall std::set<class WONAPI::Window *,struct std::less<class WONAPI::Window *>,class std::allocator<class WONAPI::Window *> >::~set<class)
 // TEMPLATE: WON 0x0072a5b0
 // (public: __thiscall std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class WONAPI::Font> >::~pair<struct WONAPI::FontDescriptor co)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00729f60
+// (public: __thiscall std::map<struct WONAPI::FontDescriptor,class WONAPI::SmartPtr<class WONAPI::Font>,struct std::less<struct WONAPI::FontDescriptor>,c)
+// TEMPLATE: WON 0x0072a470
+// (public: __thiscall WONAPI::FontDescriptor::FontDescriptor(struct WONAPI::FontDescriptor const &))
+// TEMPLATE: WON 0x00731190
+// (public: class std::_Tree<class WONAPI::Window *,class WONAPI::Window *,struct std::_Setk<class WONAPI::Window *,struct std::less<class WONAPI::Window )
+// TEMPLATE: WON 0x00731240
+// (protected: class std::_Tree<class WONAPI::Window *,class WONAPI::Window *,struct std::_Setk<class WONAPI::Window *,struct std::less<class WONAPI::Wind)
+// TEMPLATE: WON 0x00731540
+// (public: class std::_Tree<struct WONAPI::FontDescriptor,struct std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class WONAPI::Font)
+// TEMPLATE: WON 0x007315f0
+// (protected: class std::_Tree<struct WONAPI::FontDescriptor,struct std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class WONAPI::F)
+// TEMPLATE: WON 0x00734460
+// (public: class std::_Tree<class WONAPI::Window *,class WONAPI::Window *,struct std::_Setk<class WONAPI::Window *,struct std::less<class WONAPI::Window )
+// TEMPLATE: WON 0x00734910
+// (protected: void __thiscall std::_Tree<class WONAPI::Window *,class WONAPI::Window *,struct std::_Setk<class WONAPI::Window *,struct std::less<class WO)
+// TEMPLATE: WON 0x00734950
+// (protected: static struct std::_Tree<class WONAPI::Window *,class WONAPI::Window *,struct std::_Setk<class WONAPI::Window *,struct std::less<class WONA)
+// TEMPLATE: WON 0x00734970
+// (public: class std::_Tree<struct WONAPI::FontDescriptor,struct std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class WONAPI::Font)
+// TEMPLATE: WON 0x00734e90
+// (protected: void __thiscall std::_Tree<struct WONAPI::FontDescriptor,struct std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class)
+// TEMPLATE: WON 0x00734ed0
+// (protected: void __thiscall std::_Tree<struct WONAPI::FontDescriptor,struct std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class)
+// TEMPLATE: WON 0x00734f10
+// (protected: struct std::_Tree<class WONAPI::Window *,class WONAPI::Window *,struct std::_Setk<class WONAPI::Window *,struct std::less<class WONAPI::Win)
+// TEMPLATE: WON 0x00734f40
+// (protected: struct std::_Tree<class WONAPI::Window *,class WONAPI::Window *,struct std::_Setk<class WONAPI::Window *,struct std::less<class WONAPI::Win)
+// TEMPLATE: WON 0x00734fc0
+// (public: void __thiscall std::_Tree<struct WONAPI::FontDescriptor,struct std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class WO)
+// TEMPLATE: WON 0x00735190
+// (void __cdecl std::_Construct(struct std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class WONAPI::Font> > *,struct std::pair<str)
+// TEMPLATE: WON 0x00735320
+// (public: void * __thiscall std::pair<struct WONAPI::FontDescriptor const ,class WONAPI::SmartPtr<class WONAPI::Font> >::`scalar deleting destructor'(un)

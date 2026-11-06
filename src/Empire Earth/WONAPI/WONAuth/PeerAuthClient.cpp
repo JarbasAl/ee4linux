@@ -198,3 +198,7 @@ WONStatus PeerAuthClient::HandleRecvMsg(const void *inMsg, unsigned long inMsgLe
 ///////////////////////////////////////////////////////////////////////////////
 
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006e6450
+// (public: __thiscall WONAPI::Blowfish::Blowfish(class WONAPI::Blowfish const &))

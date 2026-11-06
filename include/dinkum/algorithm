@@ -487,7 +487,11 @@ template<class _RI, class _Pd> inline
 	{const int _RBITS = 15;
 	const int _RMAX = (1U << _RBITS) - 1;
 	_RI _X = _F;
+#ifdef EE_DINKUM_SXL233
+	for (_Pd _D = 2; ++_X != _L; ++_D)
+#else
 	for (_Pd _D = 1; ++_X != _L; ++_D)
+#endif
 		{unsigned long _Rm = _RMAX;
 		unsigned long _Rn = rand() & _RMAX;
 		for (; _Rm < _D && _Rm != ~0UL;

@@ -28,10 +28,10 @@ public:
 BadUserItem::BadUserItem(const RoutingBadUser& inUser, bool inSimple)
 {
     mIsSimple = inSimple;
-    mStrings[0] = GUIString(new GUIStringData(inUser.mName));
+    mStrings[0] = GUIString(inUser.mName);
     char aBuffer[100];
     sprintf(aBuffer, "%d", inUser.mWONId);
-    mStrings[1] = GUIString(new GUIStringData(aBuffer));
+    mStrings[1] = GUIString(aBuffer);
     mValues[1] = inUser.mWONId;
 
     unsigned long aDuration = inUser.mExpirationDiff;
@@ -160,3 +160,7 @@ void BadUserDialog::GetIds(IdList& outIds)
 // (public: virtual void * __thiscall BadUserItem::`scalar deleting destructor'(unsigned int)    [??_GBadUserItem@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f5920
 // (public: __thiscall WONAPI::BadUserDialog::BadUserDialog(void)    [??0BadUserDialog@WONAPI@@QAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007fa200
+// (protected: void __thiscall std::list<unsigned long,class std::allocator<unsigned long> >::_Incsize(unsigned int))

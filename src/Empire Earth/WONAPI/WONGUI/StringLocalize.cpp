@@ -47,7 +47,7 @@ GUIString StringLocalize::GetStr(const GUIString &theStr, const GUIString **subs
 	}
 
 	if(aStartPos < theStr.length())
-		aNewStr.append(theStr,aStartPos,theStr.length()-aStartPos);
+		aNewStr.append(theStr,aStartPos);
 
 	return aNewStr;
 }

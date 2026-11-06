@@ -49,6 +49,8 @@ int LobbyFn361190()
 ColorScheme* LobbyFn361210() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->GetColorScheme():NULL; }
 // FUNCTION: WON 0x00761230
 Window* LobbyFn361230() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->GetRoot():NULL; }
+// FUNCTION: WON 0x00761250
+WindowManager* GetLobbyWindow() { return WindowManager::GetDefaultWindowManager(); }
 // FUNCTION: WON 0x007628b0
 bool LobbyFn3628B0()
 {

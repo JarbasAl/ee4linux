@@ -97,9 +97,9 @@ void Component::Fn2F54E0(ComponentEvent* event)
 }
 }
 
-// Actual retained original scalar state at RVAs4d5e5c/60; no new definitions/initializers.
-extern DWORD gComponentToolTipStartTime;
-extern DWORD gComponentToolTipEndTime;
+// Tool tip delay and display time, in milliseconds.
+DWORD gComponentToolTipStartTime=500;
+DWORD gComponentToolTipEndTime=5000;
 namespace WONAPI {
 // Original2f4cc0/19B defaultcursor forwarding support0.
 // FUNCTION: WON 0x006f4cc0
@@ -137,6 +137,7 @@ void Component::Virtual84(bool visible)
     SetComponentFlags(0x40000,visible);
 }
 // Original2f5850/49B default tab-focus adapter, support0; actual RET8.
+// FUNCTION: WON 0x006f5850
 bool Component::Virtual88(bool forward,bool init)
 {
     if(init && ComponentFlagSet(0x4000) && WantFocus()) {

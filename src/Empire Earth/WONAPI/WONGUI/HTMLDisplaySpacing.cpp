@@ -73,3 +73,17 @@ void HTMLDisplayGen::HandleList(HTMLListTag* tag)
     }
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007385b0
+// (public: virtual int __thiscall WONAPI::LineBreakSegment::GetHeight(void))
+// TEMPLATE: WON 0x0074ca70
+// (public: class std::_Ptrit<enum WONAPI::HTMLAlign,int,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign &,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign)
+// TEMPLATE: WON 0x0074cad0
+// (public: class std::_Ptrit<enum WONAPI::HTMLAlign,int,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign &,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign)
+// TEMPLATE: WON 0x007505b0
+// (public: void __thiscall std::vector<enum WONAPI::HTMLAlign,class std::allocator<enum WONAPI::HTMLAlign> >::insert(class std::_Ptrit<enum WONAPI::HTMLA)
+// TEMPLATE: WON 0x007520e0
+// (protected: void __thiscall std::vector<enum WONAPI::HTMLAlign,class std::allocator<enum WONAPI::HTMLAlign> >::_Xlen(void)const )
+// TEMPLATE: WON 0x00754660
+// (class std::_Ptrit<enum WONAPI::HTMLAlign,int,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign &,enum WONAPI::HTMLAlign *,enum WONAPI::HTMLAlign &> __cd)

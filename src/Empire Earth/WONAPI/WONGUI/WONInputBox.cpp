@@ -24,6 +24,7 @@ WONInputBox* WONInputBox::Duplicate()
     return input;
 }
 // Native3197e0 forwards base content then actual frame paint; support0.
+// FUNCTION: WON 0x007197e0
 void WONInputBox::Paint(Graphics& graphics)
 {
     InputBox::Paint(graphics);

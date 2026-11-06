@@ -9,7 +9,6 @@ namespace WONAPI {
 class WONHeaderButton : public WONButton {
 public:
     WONHeaderButton(); //3191a0 external fieldless100, bounded F allocation
-    virtual ~WONHeaderButton(); //319240 original external normal/deleting319220
     virtual void Paint(Graphics&); //3193c0 actual18
     WONHeaderButton* Duplicate(); //319350 genuine SDK raw duplicate provider
 };

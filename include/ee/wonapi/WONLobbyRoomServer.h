@@ -161,7 +161,7 @@ public:
         unsigned char mGameTypeFlags; //10
         GUIString mColumnName; //14
         ColumnInfo(); //3c5f80
-        // Implicit normal3c5ef0 support0, no classvptr.
+        ~ColumnInfo(); //3c5ef0
     }; //complete18
     typedef std::vector<ColumnInfo> ColumnInfoVector;
     typedef std::map<GUIString,ColumnInfo,GUIStringLessNoCase> ColumnMap;

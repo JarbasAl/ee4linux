@@ -82,7 +82,7 @@ WONStatus DirEntityReplyParser::ParseMultiEntityReply(const void* inData,
                 DirDataObject data;
                 if (flags & 0x200) message.ReadString(data.mDataType, 1);
                 if (flags & 0x400) data.mData = message.ReadBuf(2);
-                entity->mDataObjects.insert(entity->mDataObjects.end(),data);
+                entity->mDataObjects.push_back(data);
             }
         }
         if (flags & 0x1000) {
@@ -192,3 +192,11 @@ WONStatus DirEntityReplyParser::ParseSingleEntityReply(const void *theMsg, unsig
 	return (WONStatus)0;
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006f1f10
+// (protected: void __thiscall std::list<struct WONAPI::DirDataObject,class std::allocator<struct WONAPI::DirDataObject> >::_Incsize(unsigned int))
+// TEMPLATE: WON 0x006f2680
+// (void __cdecl std::_Construct(struct WONAPI::DirDataObject *,struct WONAPI::DirDataObject const &))
+// TEMPLATE: WON 0x006f2700
+// (void __cdecl std::_Construct(struct WONAPI::DirACL *,struct WONAPI::DirACL const &))

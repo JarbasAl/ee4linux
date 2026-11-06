@@ -206,3 +206,7 @@ void CreditsDialog::HandleComponentEvent(ComponentEvent* event)
 // (public: virtual void * __thiscall WONAPI::CreditsDialog::`scalar deleting destructor'(unsigned int)    [??_GCreditsDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f7580
 // (public: virtual __thiscall WONAPI::CreditsDialog::~CreditsDialog(void)    [??1CreditsDialog@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007fa350
+// (protected: void __thiscall std::list<class WONAPI::CreditLineInfo,class std::allocator<class WONAPI::CreditLineInfo> >::_Incsize(unsigned int))

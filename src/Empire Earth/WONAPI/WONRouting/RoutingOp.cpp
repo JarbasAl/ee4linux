@@ -49,6 +49,7 @@ void RoutingOp::Virtual04()
 }
 
 void RoutingOp::Virtual0C() {}
+// FUNCTION: WON 0x006bcd30
 WONStatus RoutingOp::Virtual10(unsigned char,ReadBuffer&) { return (WONStatus)100104; }
 // FUNCTION: WON 0x006c7b10
 RoutingOpType RoutingOp::GetType() const { return 0; }

@@ -17,9 +17,8 @@ namespace WONAPI {
 void ComponentConfig::SetResourceFolder(const std::string& inFolder)
 {
     mResourceFolder=inFolder;
-    if(mResourceFolder.empty() ||
-        (mResourceFolder[mResourceFolder.length()-1]!='/' &&
-         mResourceFolder[mResourceFolder.length()-1]!='\\'))
+    if(mResourceFolder[mResourceFolder.length()-1]!='/' &&
+        mResourceFolder[mResourceFolder.length()-1]!='\\')
         mResourceFolder+='/' ;
 }
 

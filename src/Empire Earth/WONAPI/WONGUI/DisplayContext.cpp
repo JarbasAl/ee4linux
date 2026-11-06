@@ -10,7 +10,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x007cedd0 (143B genuine native factory, primary0).
+// FUNCTION: WON 0x007cedd0
 SmartPtr<NativeImage> DisplayContext::CreateImage(int width,int height)
 {
     return new MSNativeImage(this,width,height);

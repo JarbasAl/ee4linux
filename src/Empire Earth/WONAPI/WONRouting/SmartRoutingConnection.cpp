@@ -17,9 +17,7 @@ static bool RoutingNamesMatch(const std::wstring& query,const std::wstring& name
     partial=false;
     std::wstring::const_iterator q=query.begin(),n=name.begin();
     while(q!=query.end() && n!=name.end()) {
-        wint_t qUpper=towupper(*q);
-        wint_t nUpper=towupper(*n);
-        if(qUpper!=nUpper) return false;
+        if(towupper(*q)!=towupper(*n)) return false;
         ++q;
         ++n;
     }
@@ -34,7 +32,7 @@ SmartRoutingConnection::MatchResult SmartRoutingConnection::FindClient(
     AutoCrit crit(mDataCrit);
     MatchResult result=MatchResult_NotFound;
     for(RoutingClientMap::iterator i=mClientMap.begin();i!=mClientMap.end();++i) {
-        bool partial;
+        bool partial=false;
         if(RoutingNamesMatch(inName,i->second->mName,partial)) {
             if(result==MatchResult_Exact) return MatchResult_Ambiguous;
             result=MatchResult_Exact;
@@ -63,7 +61,7 @@ void SmartRoutingConnection::LoadIgnoreSet()
     while(!feof(file)) {
         wchar_t ch=0;
         if(fread(&ch,sizeof(wchar_t),1,file)!=1) break;
-        if(ch!=0) name.append(1,ch);
+        if(ch!=0) name+=ch;
         else {
             mIgnoreSet.insert(name);
             name.erase();
@@ -194,3 +192,27 @@ void SmartRoutingConnection::Virtual08()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c0130
 // (public: virtual __thiscall WONAPI::SmartRoutingConnection::~SmartRoutingConnection(void)    [??1SmartRoutingConnection@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006c9ae0
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x006c9c90
+// (protected: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,clas)
+// TEMPLATE: WON 0x006cac30
+// (protected: void __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned sho)
+// TEMPLATE: WON 0x006cb5a0
+// (public: void __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short>)
+// TEMPLATE: WON 0x006cacb0
+// (protected: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,stru)
+// TEMPLATE: WON 0x006cb4e0
+// (protected: void __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned sho)
+// TEMPLATE: WON 0x006c99e0
+// (public: struct std::pair<class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned)
+// TEMPLATE: WON 0x006ca750
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x006cafb0
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,class s)
+// TEMPLATE: WON 0x006cbca0
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsi)
+// TEMPLATE: WON 0x006c3420
+// (_wmemset)

@@ -297,10 +297,10 @@ void MultiLineBuilder::AddSegments(SegmentList *theSegmentList, LineVector *theL
 		mHeight = mMaxRightHeight;
 }
 
-// Support0 native SetMaxWidth30d1d0 orchestration with complete80 external builder lifetime.
+// FUNCTION: WON 0x0070d1d0
 void MultiLineElement::SetMaxWidth(int theMaxWidth)
 {
-	GetMinWidth(); //native virtual call retained for its real side effects
+	GetMinWidth();
 
 
 	MultiLineBuilder aBuilder;
@@ -337,3 +337,23 @@ void MultiLineElement::SetMaxWidth(int theMaxWidth)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071ee80
 // (protected: void __thiscall std::list<class WONAPI::LineSegment *,class std::allocator<class WONAPI::LineSegment *> >::_Incsize(unsigned int)    [?_Inc)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071ca60
+// (public: void __thiscall std::list<struct WONAPI::FloatingSegment,class std::allocator<struct WONAPI::FloatingSegment> >::_Insert(class std::list<struc)
+// TEMPLATE: WON 0x0071f010
+// (protected: void __thiscall std::list<struct WONAPI::FloatingSegment,class std::allocator<struct WONAPI::FloatingSegment> >::_Incsize(unsigned int))
+// TEMPLATE: WON 0x00724200
+// (void __cdecl std::_Construct(struct WONAPI::FloatingSegment *,struct WONAPI::FloatingSegment const &))
+// TEMPLATE: WON 0x00724240
+// (protected: struct WONAPI::FloatingSegment * __thiscall std::vector<struct WONAPI::FloatingSegment,class std::allocator<struct WONAPI::FloatingSegment>)
+// TEMPLATE: WON 0x0071cac0
+// (public: class std::_Ptrit<struct WONAPI::FloatingSegment,int,struct WONAPI::FloatingSegment *,struct WONAPI::FloatingSegment &,struct WONAPI::Floating)
+// TEMPLATE: WON 0x0071cbc0
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::LineElement>,int,class WONAPI::SmartPtr<class WONAPI::LineElement> *,class WONAPI::Smar)
+// TEMPLATE: WON 0x0071f160
+// (public: void __thiscall std::vector<struct WONAPI::FloatingSegment,class std::allocator<struct WONAPI::FloatingSegment> >::insert(class std::_Ptrit<st)
+// TEMPLATE: WON 0x0071f590
+// (public: void __thiscall std::vector<class WONAPI::SmartPtr<class WONAPI::LineElement>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::LineEl)
+// TEMPLATE: WON 0x0070d3e0
+// (public: __thiscall WONAPI::MultiLineBuilder::~MultiLineBuilder(void))

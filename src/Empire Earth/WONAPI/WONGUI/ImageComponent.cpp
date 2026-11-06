@@ -96,6 +96,7 @@ void RectangleComponent::SetOutlineColor(int theOutlineColor)
 	mOutlineColor = theOutlineColor;
 }
 
+// FUNCTION: WON 0x00706890
 void RectangleComponent::Paint(Graphics &g)
 {
 	Component::Paint(g);
@@ -125,6 +126,7 @@ RectangleComponent3D::RectangleComponent3D(bool up, int theThickness)
 	mSolidColor = -1;
 }
 
+// FUNCTION: WON 0x00706930
 void RectangleComponent3D::Paint(Graphics &g)
 {
 	int width = Width()-1;

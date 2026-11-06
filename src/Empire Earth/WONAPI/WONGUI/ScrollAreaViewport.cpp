@@ -73,3 +73,7 @@ namespace WONAPI {
 // Genuine SDK ChildChanged empty default, sharednative2fa500/3; primary/physicalnew0.
 void ScrollAreaViewport::VirtualBC(Component*) {}
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071b2a0
+// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::Component>,class WONAPI::SmartPtr<class WONAPI::Component>,struct std::_Setk<class WONAP)

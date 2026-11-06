@@ -11,7 +11,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x00786140 (10B actual SDK post-parse hook)
+// FUNCTION: WON 0x00786140
 bool ComponentConfig::Virtual10(ConfigParser*)
 {
     SetDesiredSizeIfNecessary();

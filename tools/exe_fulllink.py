@@ -22,7 +22,7 @@ DATA_RAW_END = 0x4b4000 + 0x32000
 LINK_FLAGS = ("/INCREMENTAL:NO /OPT:REF /OPT:ICF /MACHINE:I386 /SUBSYSTEM:WINDOWS /NODEFAULTLIB /FIXED "
               "/ENTRY:WinMainCRTStartup")
 ODS, IDP, EXITP = "__imp__OutputDebugStringA@4", "__imp__IsDebuggerPresent@0", "__imp__ExitProcess@4"
-CLASSES = ("won", "engine", "icf", "vslot", "pure", "mismatch", "compile", "unwritten", "unregistered", "unbound", "data",
+CLASSES = ("won", "won-alias", "sxl", "engine", "icf", "vslot", "pure", "mismatch", "compile", "unwritten", "unregistered", "unbound", "data",
            "library")
 
 
@@ -136,6 +136,40 @@ def coff_symbols(path):
         elif s["sec"] == 0:
             undef[s["name"]] = undef.get(s["name"], False) or s["type"] == 0x20
     return defined, undef
+
+
+def dedupe_object(src, dst, what):
+    c = exe_units.CoffEdit(src)
+    for sym in c.syms.values():
+        if sym["cls"] != 2 or sym["sec"] <= 0 or sym["name"] not in what:
+            continue
+        if what[sym["name"]] == "comdat-any":
+            for s in c.syms.values():
+                if s["cls"] == 3 and s["naux"] == 1 and s["sec"] == sym["sec"] and s["value"] == 0                         and s["name"] == c.secs[s["sec"] - 1]["name"]:
+                    c.b[s["off"] + 18 + 14] = 2
+        else:
+            struct.pack_into("<IhH", c.b, sym["off"] + 8, 0, 0, sym["type"])
+    pathlib.Path(dst).write_bytes(bytes(c.b))
+
+
+def sxl_lib(lib_dir, extra, pkg, libobj):
+    import implib
+    lib = lib_dir / "sxlrt233.lib"
+    hints = {sym.encode(): hint for (dll, _), (sym, hint) in exe_roundtrip.short_imports(lib).items()}
+    deff = lib_dir / "sxlrt233.def"
+    lines = deff.read_text().splitlines()
+    have = {ln.split()[0] for ln in lines[2:] if ln.strip()}
+    lines += [f"    {n}{' DATA' if implib.is_cpp_data(n) else ''}" for n in extra if n not in have]
+    deff.write_text("\n".join(lines) + "\n")
+    code, log = exe_roundtrip.run([str(pkg / "Bin" / "LIB.EXE"), "/nologo", "/MACHINE:IX86", f"/DEF:{deff.name}",
+                                   f"/OUT:{lib.name}"], lib_dir, pkg)
+    if code:
+        sys.exit(log)
+    implib.fix_members(lib, hints)
+    code, log = exe_roundtrip.run([str(pkg / "Bin" / "LIB.EXE"), "/nologo", f"/OUT:{lib.name}", str(libobj["newaop"]),
+                                   str(libobj["delaop"]), lib.name], lib_dir, pkg)
+    if code:
+        sys.exit(log)
 
 
 def engine_lib(lib_dir, extra, pkg, functions=()):
@@ -254,6 +288,14 @@ def classify1(sym, is_func, ctx):
     if bare in ctx["engine_exports"]:
         return "engine", "Low-Level Engine.dll exports it; the original exe does not import it" + \
             (" (dllimport)" if bare != sym else f" ({virtual_tag(sym)}, referenced directly)")
+    if bare in ctx.get("sxl_exports", ()):
+        return "sxl", "sxlrt233.dll exports it; the original exe does not import it"
+    if ctx.get("won_linked") and any(lo <= r < hi for r in rvas for lo, hi in WON):
+        for r in rvas:
+            alias = [n for n in ctx["at"].get(r, ()) if n != sym and n in defined]
+            if alias:
+                ctx["alias"][sym] = alias[0]
+                return "won-alias", f"{r:#x}: {alias[0]} ({defined[alias[0]]})"
     if any(lo <= r < hi for r in rvas for lo, hi in WON):
         return "won", ", ".join(f"{r:#x}" for r in rvas)
     own = own_scope(sym)
@@ -646,6 +688,7 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
     ok = [it for it in items if it["obj"] not in fails]
     game = [it for it in ok if it["mod"] == "exe"]
     img = [it for it in ok if it["mod"] == "exeimg"]
+    won = [it for it in ok if it["mod"] == "won"]
 
     defined = {}
     dup_pre = collections.defaultdict(list)
@@ -691,6 +734,15 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
     if code:
         sys.exit(log)
     libs.insert(1, imglib)
+    if won:
+        wonlib = lib_dir / "won.lib"
+        (lib_dir / "won.rsp").write_text("\n".join(f'"{it["obj"]}"' for it in won) + "\n")
+        code, log = exe_roundtrip.run([str(pkg / "Bin" / "LIB.EXE"), "/nologo", f"/OUT:{wonlib.name}", "@won.rsp"],
+                                      lib_dir, pkg)
+        if code:
+            sys.exit(log)
+        libs.insert(1, wonlib)
+        libs.append(verify.TOOLCHAIN / "vc98lib" / "rtm" / "OLDNAMES.LIB")
     direct = {n for n, (f, _) in refs.items() if f and not n.startswith("__imp_")}
     undata = engine_lib(lib_dir, [], pkg, direct)
     print(f"Low-Level Engine.lib: call thunks for {len(undata)} `)const` methods (implib, no local repair)")
@@ -699,6 +751,8 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
 
     objs = [it["obj"] for it in game]
     dedupe = patch(out, objs, dup_pre, game) if patch else []
+    if won:
+        dedupe += won_comdat_patch(out, objs, dup_pre, game)
     code1, log1 = link(out, objs, libs, res, debug, "pass1")
     unres1, dups1, other1 = parse_log(log1)
     print(f"pass 1: link exit {code1}: {len(unres1)} unresolved symbols, {len(dups1)} duplicates, "
@@ -715,8 +769,11 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
     engine_exports = {ln.rsplit(" @", 1)[0] for ln in (LINK_DIR / "lle" / "exports.txt").read_text(encoding="utf-8")
                       .splitlines() if ln.strip() and not ln.startswith("#")} - imported
     ctx = {"at": at, "of": of, "defined": defined, "by_scope": by_scope, "unit_at": unit_at, "fails": fails,
-           "engine_exports": engine_exports, "alias": {}}
-    inferred = infer_addresses(unres1, game, at, of, read_vtable_slots())
+           "engine_exports": engine_exports, "alias": {}, "won_linked": bool(won),
+           "sxl_exports": set() if not won else
+           {ln for ln in (LINK_DIR / "exe" / "sxlrt233_exports.txt").read_text(encoding="utf-8").splitlines()
+            if ln and not ln.startswith("#")} - imported}
+    inferred = infer_addresses(unres1, game + won, at, of, read_vtable_slots())
     ctx["inferred"] = inferred
     thunks = read_import_thunks()
 
@@ -751,7 +808,7 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
 
         kinds = collections.Counter()
         fallback = collections.Counter()
-        engine = set()
+        engine, sxl = set(), set()
         members = read_members(members, at, lambda n: n in defined or n in stubbed) if members else {}
         member_alias = {}
         data_stub_rvas = {}
@@ -760,6 +817,10 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
             if c == "engine":
                 engine.add(s[6:] if s.startswith("__imp_") else s)
                 kinds["engine import"] += 1
+                continue
+            if c == "sxl":
+                sxl.add(s[6:] if s.startswith("__imp_") else s)
+                kinds["sxlrt233 import"] += 1
                 continue
             if s in LIB_SHIMS:
                 stubs.shim(s, *LIB_SHIMS[s])
@@ -806,6 +867,8 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
 
         if engine:
             engine_lib(lib_dir, sorted(engine), pkg)
+        if sxl:
+            sxl_lib(lib_dir, sorted(sxl), pkg, libobj)
         code2, log2 = link(out, objs + [out / "stubs.obj"], libs, res, debug, "pass2")
         unres2, dups2, other2 = parse_log(log2)
         print(f"pass 2: link exit {code2}: {len(unres2)} unresolved, {len(dups2)} duplicates, "
@@ -819,3 +882,27 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
     report["counts1"] = counts1
     return report, {"ok": ok, "img": img, "objs": objs, "values": values, "by3_obj": by3_obj,
                     "data_stub_rvas": data_stub_rvas, "of": of, "defined": defined, "patched": dedupe}
+
+
+def won_comdat_patch(out, objs, dup_pre, game):
+    wonrels = set()
+    patch = collections.defaultdict(dict)
+    by_rel = {it["rel"]: it for it in game}
+    for n, v in dup_pre.items():
+        sel_game = [rel for rel, sel in v if rel in by_rel and sel == 1]
+        if sel_game and any(rel not in by_rel and sel == 2 for rel, sel in v):
+            for rel in sel_game:
+                patch[rel][n] = "comdat-any"
+    del wonrels
+    done = []
+    (out / "obj" / "dedupe").mkdir(exist_ok=True)
+    for rel, what in patch.items():
+        it = by_rel[rel]
+        dst = out / "obj" / "dedupe" / it["obj"].name
+        dedupe_object(it["obj"], dst, what)
+        objs[objs.index(it["obj"])] = dst
+        done += [(n, rel, how) for n, how in what.items()]
+    if done:
+        print(f"--won: {len(done)} game COMDAT(s) set to SELECT_ANY in object copies: " +
+              ", ".join(sorted({n for n, _, _ in done})), flush=True)
+    return done

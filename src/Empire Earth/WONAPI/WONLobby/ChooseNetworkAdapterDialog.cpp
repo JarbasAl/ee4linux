@@ -86,3 +86,9 @@ void ChooseNetworkAdapterDialog::HandleComponentEvent(ComponentEvent* inEvent)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007fa110
 // (public: __thiscall WONAPI::MultiListItem::MultiListItem(void)    [??0MultiListItem@WONAPI@@QAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007fa0f0
+// (public: virtual void * __thiscall NetworkAdapterListItem::`scalar deleting destructor'(unsigned int))
+// TEMPLATE: WON 0x007fa160
+// (public: virtual __thiscall NetworkAdapterListItem::~NetworkAdapterListItem(void))

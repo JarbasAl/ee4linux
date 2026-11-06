@@ -212,7 +212,11 @@ public:
 		insert(begin(), _N, _X); }
 	iterator insert(iterator _P, const _Ty& _X = _Ty())
 		{size_type _O = size() == 0 ? 0 : _P - begin();	// size() == 0 guard: TCP 0x3466, exe no-/Og 0x5451f2 (r38 D1)
+#ifdef EE_DINKUM_SXL233
+		insert(_P, (size_type)1, _X);
+#else
 		insert(_P, 1, _X);
+#endif
 		return (begin() + _O); }
 	void insert(iterator _P, size_type _M, const _Ty& _X)
 		{_Ty _Tx = _X;	// proven shape: TCP 0x3827 (copy of _X, _M == 0 out, _Xlen, grow by half)

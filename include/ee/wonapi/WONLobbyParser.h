@@ -59,8 +59,6 @@ public:
     bool ReadValue(char &theByte) { int anInt; bool aRet = ReadValue(anInt); theByte = (char)anInt; return aRet; }
     bool ReadValue(unsigned char &theByte) { int anInt; bool aRet = ReadValue(anInt); theByte = (unsigned char)anInt; return aRet; }
     bool ReadValue(bool& outValue); //2a5550
-    bool ReadStrings(std::list<std::string>& outStrings); //2a57e0 actual narrow-list wrapper
-    bool ReadStrings(std::list<std::wstring>& outStrings); // 0x2a5800; underlying parser returns AL 0/1
     bool ReadString(std::string& outString, bool inFlag); // 0x2a49f0
     // Genuine nominal static formatting overloads; call-only original-owned implementations.
     static void ValueToString(const bool&,std::string&); //2a5820

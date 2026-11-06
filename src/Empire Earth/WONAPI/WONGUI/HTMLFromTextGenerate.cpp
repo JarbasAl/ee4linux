@@ -102,3 +102,17 @@ HTMLDocument* HTMLFromText::Generate(const GUIString& text,int flags)
     return GenerateFromText(text,flags);
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0074b130
+// (public: __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std::_Mapk<class)
+// TEMPLATE: WON 0x0074b580
+// (public: __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>::~pair<class WONAPI::GUIString const ,class WONAPI::GUIString>(vo)
+// TEMPLATE: WON 0x0074bdd0
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std::_Mapk<class WONA)
+// TEMPLATE: WON 0x0074dec0
+// (public: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std::_Mapk<class WONA)
+// TEMPLATE: WON 0x0074e3e0
+// (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std::_Ma)
+// TEMPLATE: WON 0x00754fe0
+// (public: void * __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>::`scalar deleting destructor'(unsigned int))

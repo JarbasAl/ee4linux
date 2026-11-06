@@ -77,3 +77,4 @@ bool ButtonConfig::Virtual24(const std::string& inInstruction)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00781af0
 // (public: virtual void * __thiscall WONAPI::ConfigObjectException::`scalar deleting destructor'(unsigned int)    [??_GConfigObjectException@WONAPI@@UAEP)
+// TEMPLATE: WON 0x00781b80

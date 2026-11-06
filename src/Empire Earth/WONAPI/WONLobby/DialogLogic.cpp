@@ -120,13 +120,10 @@ int DialogLogic::DoDialog(Component* inDialog)
         mDialogStack.push_back(DialogInfo());
     }
     DialogInfo& anInfo = mDialogStack.back();
-    anInfo.mWindow = aWindow;
+    anInfo.mWindow = aWindow.get();
     anInfo.mComponent = inDialog;
     anInfo.mInModal = true;
-    anInfo.mOldRect.x = inDialog->Left();
-    anInfo.mOldRect.y = inDialog->Top();
-    anInfo.mOldRect.width = inDialog->Width();
-    anInfo.mOldRect.height = inDialog->Height();
+    anInfo.mOldRect = inDialog->GetBounds();
     if (mPopupWindows)
         aWindow->Show(true);
     int aResult = aWindow->RunDialog(inDialog);
@@ -226,6 +223,7 @@ void DialogLogic::UpdateStatus(WONStatus inStatus)
 {
     int anOldWidth = mStatusDialog->Width();
     int anOldHeight = mStatusDialog->Height();
+    std::wstring aText; // constructed and destroyed; no statement reads it
     mStatusDialog->SetStatus(LobbyFn366170(inStatus), false);
     if (inStatus != 0 && LobbyFn35E320())
         LobbyFn35B9A0(::LobbyGlobal_Error_Sound.get());
@@ -278,3 +276,9 @@ void DialogLogic::UpdateStatus(WONStatus inStatus)
 // (public: virtual void * __thiscall WONAPI::LogicCompletion<class WONAPI::DialogLogic>::`scalar deleting destructor'(unsigned int)    [??_G?$LogicComple)
 // TEMPLATE: WON 0x007f14b0
 // (public: virtual __thiscall WONAPI::LogicCompletion<class WONAPI::DialogLogic>::~LogicCompletion<class WONAPI::DialogLogic>(void)    [??1?$LogicComplet)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007f1690
+// (public: void __thiscall std::list<struct WONAPI::DialogLogic::DialogInfo,class std::allocator<struct WONAPI::DialogLogic::DialogInfo> >::_Insert(class)
+// TEMPLATE: WON 0x007f1f50
+// (protected: void __thiscall std::list<struct WONAPI::DialogLogic::DialogInfo,class std::allocator<struct WONAPI::DialogLogic::DialogInfo> >::_Incsize(u)

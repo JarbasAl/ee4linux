@@ -177,3 +177,9 @@ void TreeArea::SetTreeFlags(int theFlags, bool on)
 // (public: virtual void * __thiscall WONAPI::TreeArea::`scalar deleting destructor'(unsigned int)    [??_GTreeArea@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00714fc0
 // (public: virtual __thiscall WONAPI::TreeArea::~TreeArea(void)    [??1TreeArea@WONAPI@@UAE@XZ])
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071cc20
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::TreeItem>,int,class WONAPI::SmartPtr<class WONAPI::TreeItem> *,class WONAPI::SmartPtr<c)
+// TEMPLATE: WON 0x00723d30
+// (class WONAPI::SmartPtr<class WONAPI::TreeItem> * __cdecl std::copy(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::TreeItem>,int,class WONAPI::)

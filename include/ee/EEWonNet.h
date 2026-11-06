@@ -132,100 +132,36 @@ public:
 class DirEntity; //complete native definition follows SmartPtr; preserves all borrowed offsets
 
 // WONAPI's reference-counting pointer (only operator-> is needed here; its out-of-line copy is 0x8306a)
-#ifdef EE_DINKUM_SXL233
-template <class T> class SmartPtrRep { public: T* mPtr; SmartPtrRep() : mPtr(NULL) {} SmartPtrRep(const T* theObject) : mPtr((T*)(theObject?theObject->CreateRef():NULL)) {} SmartPtrRep(const SmartPtrRep<T>& theCopy) : mPtr((T*)(theCopy.mPtr?theCopy.mPtr->CreateRef():NULL)) {} ~SmartPtrRep() { if(mPtr!=NULL) mPtr->Release(); } const T* operator=(const T* thePtr) { if(mPtr!=thePtr) { if(mPtr!=NULL) mPtr->Release(); mPtr=(T*)(thePtr?thePtr->CreateRef():NULL); } return thePtr; } };
-template <class T> class SmartPtr : public SmartPtrRep<T> {
-public:
-    operator T*() const { return mPtr; }
-    SmartPtr() {}
-    // the ternary shape: one store after the test (_Construct<SmartPtr<DirEntity>> 0x2942a1)
-    SmartPtr(const SmartPtr<T>& theCopy) : SmartPtrRep<T>(theCopy.mPtr) {}
-    // (the lobby GameCode units): from a raw pointer (GUIString's ctor 0x29171b) and its assignment
-    // (0x299ae3, called out of line everywhere)
-    SmartPtr(T* thePtr) : SmartPtrRep<T>(thePtr) {}
-    T* operator=(T* thePtr) { SmartPtrRep<T>::operator=(thePtr); return thePtr; }               // returns the raw pointer (0x299ae3 ends `mov eax, edi`)
-    SmartPtr<T>& operator=(const SmartPtr<T>& theCopy)
-    {
-        { T* thePtr = theCopy.get(); *this = thePtr; }
-        return *this;
-    }
-    T* operator->() const { return mPtr; }
-    T* get() const { return mPtr; }         // (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
-    // Target set bounds compare raw addresses unsigned. Existing SmartPtr ordering is retained;
-    // the genuine SDK borrowed raw-pointer conversion is declared above.
-    bool operator<(const SmartPtr<T>& inOther) const { return mPtr < inOther.mPtr; }
-    struct Comp {
-        bool operator()(const SmartPtr<T>& a, const SmartPtr<T>& b) const
-        { return a.get() < b.get(); }
-    };
-
-
-};
-#else
-template <class T> class SmartPtr {
-public:
-    operator T*() const { return mPtr; }
-    SmartPtr() : mPtr(NULL) {}
-    // the ternary shape: one store after the test (_Construct<SmartPtr<DirEntity>> 0x2942a1)
-    SmartPtr(const SmartPtr<T>& theCopy)
-    {
-        T* thePtr = theCopy.mPtr;
-        this->mPtr = thePtr != NULL ? (thePtr->AddRef(), thePtr) : NULL;
-    }
-    // (the lobby GameCode units): from a raw pointer (GUIString's ctor 0x29171b) and its assignment
-    // (0x299ae3, called out of line everywhere)
-    SmartPtr(T* thePtr) { this->mPtr = thePtr != NULL ? (thePtr->AddRef(), thePtr) : NULL; }
-    T* operator=(T* thePtr);               // returns the raw pointer (0x299ae3 ends `mov eax, edi`)
-    SmartPtr<T>& operator=(const SmartPtr<T>& theCopy)
-    {
-        { T* thePtr = theCopy.get(); *this = thePtr; }
-        return *this;
-    }
-    ~SmartPtr() { if (mPtr != NULL) mPtr->Release(); }
-    T* operator->() const { return mPtr; }
-    T* get() const { return mPtr; }         // (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
-    // Target set bounds compare raw addresses unsigned. Existing SmartPtr ordering is retained;
-    // the genuine SDK borrowed raw-pointer conversion is declared above.
-    bool operator<(const SmartPtr<T>& inOther) const { return mPtr < inOther.mPtr; }
-    struct Comp {
-        bool operator()(const SmartPtr<T>& a, const SmartPtr<T>& b) const
-        { return a.get() < b.get(); }
-    };
-
-
-    T* mPtr;
-};
-#endif
-
-// Genuine SDK ConstSmartPtr four-byte owned const-view pointer; existing SmartPtr stays unchanged.
+// WONAPI's ConstSmartPtr, SmartPtr's base. One operator= symbol per T: the game's -O1 COMDAT wins the link for a T the
+// game also assigns (0x299ae3), the library's /O2 copy for any other T (0x3f16f0, ICF-shared).
 template <class T> class ConstSmartPtr
 {
-protected:
-	T *mObject;
+public:
+	T *mPtr;
 
 public:
-	ConstSmartPtr() : mObject(NULL) {}
+	ConstSmartPtr() : mPtr(NULL) {}
 
 	// Copy constructor.  Assign and add reference to underlying object.
-	ConstSmartPtr(const T* theObject) : mObject((T*)(theObject?theObject->CreateRef():NULL)) {} 
-	ConstSmartPtr(const ConstSmartPtr& theCopy) : mObject((T*)(theCopy?theCopy.mObject->CreateRef():NULL)){}
+	ConstSmartPtr(const T* theObject) : mPtr((T*)(theObject?theObject->CreateRef():NULL)) {} 
+	ConstSmartPtr(const ConstSmartPtr& theCopy) : mPtr((T*)(theCopy?theCopy.mPtr->CreateRef():NULL)){}
 
 	// Destructor.  Remove reference to underlying object.
-	~ConstSmartPtr() { if(mObject!=NULL) mObject->Release(); }
+	~ConstSmartPtr() { if(mPtr!=NULL) mPtr->Release(); }
 
 	// Arrow operator allows ConstSmartPtr to be treated like actual pointer.
-	const T* operator->() const { return mObject; }
+	const T* operator->() const { return mPtr; }
 
 	// Type case operator allows ConstSmartPtr to be cast to const T*,
-	operator const T*() const { return mObject; }
+	operator const T*() const { return mPtr; }
 
 	// Assignment operator.  Release old underlying object if not null.  Add reference to new object.
 	const T* operator=(const T* thePtr) 
 	{ 
-		if(mObject!=thePtr) // prevent self-assignment
+		if(mPtr!=thePtr) // prevent self-assignment
 		{
-			if(mObject!=NULL) mObject->Release(); 
-			mObject = (T*)(thePtr?thePtr->CreateRef():NULL); 
+			if(mPtr!=NULL) mPtr->Release(); 
+			mPtr = (T*)(thePtr?thePtr->CreateRef():NULL); 
 		}
 
 		return thePtr; 
@@ -238,28 +174,41 @@ public:
 	}
 
 	// Allow comparions just like normal pointer.
-	bool operator==(const T* thePtr) const { return mObject==thePtr; }
-	bool operator!=(const T* thePtr) const { return mObject!=thePtr; }
-	bool operator<(const T *thePtr) const { return mObject < thePtr; } 
+	bool operator==(const T* thePtr) const { return mPtr==thePtr; }
+	bool operator!=(const T* thePtr) const { return mPtr!=thePtr; }
+	bool operator<(const T *thePtr) const { return mPtr < thePtr; } 
 
 	// Accessor to actual object
-	const T* get() const { return mObject; }
+	const T* get() const { return mPtr; }
 
 	struct Comp { bool operator()(const ConstSmartPtr &a, const ConstSmartPtr &b) const { return a.get()<b.get(); } };
 };
-
-// defined outside the class: no caller expands it (0x299ae3, ICF-shared by every instantiation)
-#ifndef EE_DINKUM_SXL233
-template <class T> T* SmartPtr<T>::operator=(T* thePtr)
-{
-    if (this->mPtr != thePtr) {
-        if (this->mPtr != NULL)
-            this->mPtr->Release();
-        this->mPtr = thePtr != NULL ? (thePtr->AddRef(), thePtr) : NULL;
+template <class T> class SmartPtr : public ConstSmartPtr<T> {
+public:
+    operator T*() const { return mPtr; }
+    SmartPtr() {}
+    // the ternary shape: one store after the test (_Construct<SmartPtr<DirEntity>> 0x2942a1)
+    SmartPtr(const SmartPtr<T>& theCopy) : ConstSmartPtr<T>(theCopy.mPtr) {}
+    // from a raw pointer (GUIString's ctor 0x29171b) and its assignment
+    SmartPtr(T* thePtr) : ConstSmartPtr<T>(thePtr) {}
+    T* operator=(T* thePtr) { ConstSmartPtr<T>::operator=(thePtr); return thePtr; }
+    SmartPtr<T>& operator=(const SmartPtr<T>& theCopy)
+    {
+        { T* thePtr = theCopy.get(); *this = thePtr; }
+        return *this;
     }
-    return thePtr;
-}
-#endif
+    T* operator->() const { return mPtr; }
+    T* get() const { return mPtr; }         // (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
+    // Target set bounds compare raw addresses unsigned. Existing SmartPtr ordering is retained;
+    // the genuine SDK borrowed raw-pointer conversion is declared above.
+    bool operator<(const SmartPtr<T>& inOther) const { return mPtr < inOther.mPtr; }
+    struct Comp {
+        bool operator()(const SmartPtr<T>& a, const SmartPtr<T>& b) const
+        { return a.get() < b.get(); }
+    };
+
+
+};
 
 // Native directory value records. DataObject14, ACL10; node sizes1c/18.
 class ByteBuffer;
@@ -298,10 +247,10 @@ public:
     bool mValid; //18; actual SDK mIsValid; complete extent1c
 };
 
-// Full real SDK mapped value3c. Constructor remains out of line until ByteBuffer is complete.
+// Full real SDK mapped value3c. Its empty inline constructor is defined in WONBuffer.h, where ByteBuffer is complete.
 class AuthLoginCommunityData {
 public:
-    AuthLoginCommunityData(); //actual SDK empty body, generated owner initialization/support0
+    AuthLoginCommunityData();
     CDKey mCDKey; //00..1c
     std::basic_string<unsigned char> mSimpleHash; //1c..2c, exact canonical RawBuffer alias expansion
     std::basic_string<unsigned char> mKeyedHashData; //2c..3c

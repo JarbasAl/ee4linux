@@ -20,6 +20,8 @@ public:
     char* mData;                            // +0x08
     unsigned long mDataLen;                 // +0x0c
 };
+
+inline AuthLoginCommunityData::AuthLoginCommunityData() {}
 typedef SmartPtr<ByteBuffer> ByteBufferPtr;
 
 // Complete actual 20-byte offset buffer: owns the original allocation at +10.

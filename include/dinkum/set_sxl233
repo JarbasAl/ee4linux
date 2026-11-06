@@ -47,7 +47,11 @@ public:
 	typedef _Imp::const_reverse_iterator const_reverse_iterator;
 	typedef pair<iterator, iterator> _Pairii;
 	typedef pair<const_iterator, const_iterator> _Paircc;
-	explicit set(const _Pr& _Pred = _Pr(), const _A& _Al = _A())
+	set()
+		: _Imp(_Pr(), _A()) {}
+	explicit set(const _Pr& _Pred)
+		: _Imp(_Pred, _A()) {}
+	set(const _Pr& _Pred, const _A& _Al)
 		: _Imp(_Pred, _Al) {}
 	typedef const value_type *_It;
 	set(_It _F, _It _L, const _Pr& _Pred = _Pr(),

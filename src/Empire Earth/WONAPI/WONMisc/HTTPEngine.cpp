@@ -17,10 +17,10 @@ namespace WONAPI {
 void HTTPSession::AddOp(HTTPGetOp* inOp)
 {
     AutoCrit guard(mDataCrit);
-    HTTPConnectionPtr connection;
-    HTTPConnectionPtr& stored = mConnectionMap[inOp->mHost];
+    ConnectionMap::iterator anItr = mConnectionMap.insert(ConnectionMap::value_type(inOp->mHost, HTTPConnectionPtr())).first;
+    HTTPConnectionPtr& stored = anItr->second;
     if (stored.get() == NULL) stored = new HTTPConnection(NULL);
-    connection = stored;
+    HTTPConnectionPtr connection = stored;
     connection->QueueOp(inOp);
 }
 
@@ -28,8 +28,10 @@ void HTTPSession::AddOp(HTTPGetOp* inOp)
 void HTTPSession::KillAll()
 {
     AutoCrit guard(mDataCrit);
-    for (ConnectionMap::iterator it=mConnectionMap.begin(); it!=mConnectionMap.end(); ++it)
-        it->second->Kill();
+    ConnectionMap::iterator it=mConnectionMap.begin();
+    while(it!=mConnectionMap.end()) { it->second->Kill();
+        ++it;
+    }
 }
 
 // FUNCTION: WON 0x006d2c80
@@ -106,7 +108,11 @@ HTTPSession::HTTPSession()
 void HTTPConnection::RunOp(int inId)
 {
     AutoCrit guard(mDataCrit);
-    if (mRetryMode || mOpQueue[inId].empty() || mCurOp[inId]!=NULL)
+    if (mRetryMode)
+        return;
+    if (mOpQueue[inId].empty())
+        return;
+    if (mCurOp[inId]!=NULL)
         return;
     SmartPtr<HTTPGetOp> op=mOpQueue[inId].front();
     mOpQueue[inId].pop_front();
@@ -123,6 +129,7 @@ void HTTPConnection::RunOp(int inId)
 
 // New native callback behavior; scratch only, no canonical publication or CL.
 
+// FUNCTION: WON 0x006d2df0
 void HTTPConnection::StaticOpCallback(AsyncOpPtr inOp,SmartPtr<RefCount> inConnection)
 {
     static_cast<HTTPConnection*>(inConnection.get())->OpCallback(
@@ -252,3 +259,23 @@ int HTTPConnection::GetNumOps()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d2b30
 // (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WONAPI::SmartPtr<cla)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006dad40
+// (public: class std::list<class WONAPI::SmartPtr<class WONAPI::HTTPGetOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::HTTPGetOp> > >::iter)
+// TEMPLATE: WON 0x006dc9b0
+// (public: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::HTTPGetOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::HTTPGetOp>)
+// TEMPLATE: WON 0x006d9c10
+// (public: __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::HTTPGetOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::HTTPGetOp> > >:)
+// TEMPLATE: WON 0x006daa30
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+// TEMPLATE: WON 0x006dc680
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class s)
+// TEMPLATE: WON 0x006dc6c0
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::HTTPGetOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::HTTPGet)
+// TEMPLATE: WON 0x006da980
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x006dc160
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_str)
+// TEMPLATE: WON 0x006dcac0
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WON)

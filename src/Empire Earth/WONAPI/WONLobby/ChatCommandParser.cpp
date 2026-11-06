@@ -114,7 +114,7 @@ void ChatCommandParser::AddCommands(const std::wstring& names,int command)
 {
  StringParser parser(names.c_str());
  std::list<std::wstring> tokens;
- parser.ReadStrings(tokens);
+ parser.ReadValue(tokens);
  if(!names.empty() && !tokens.empty()) {
   for(std::list<std::wstring>::iterator i=tokens.begin();i!=tokens.end();++i)
    AddCommand(GUIString(*i),command);
@@ -215,12 +215,15 @@ bool ChatCommandParser::ParseCommand(const GUIString& text)
  switch(mCommand) {
  case 18: mTargetName=mInput; break;
  case 5:
+  mTargetName=GetRestOfLine(text,pos);
+  if(mTargetName.length()==0) goto target_done;
+  break;
+ case 4: mTargetName=GetRestOfLine(text,pos); break;
  case 12:
  case 13:
   mTargetName=GetRestOfLine(text,pos);
   if(mTargetName.length()==0) goto target_done;
   break;
- case 4: mTargetName=GetRestOfLine(text,pos); break;
  case 2:case 8:case 9:case 10:case 11:case 16:case 17:case 25:
   mTargetName=GetToken(text,pos,false,true); break;
  default: goto target_done;
@@ -365,3 +368,37 @@ GUIString ChatCommandParser::GetHelp(unsigned short clientId)
 // (public: __thiscall std::map<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,int,)
 // TEMPLATE: WON 0x00755930
 // (public: __thiscall std::map<int,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x00768ab0
+// (public: __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> > con)
+// TEMPLATE: WON 0x00768de0
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x00768e90
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x00769040
+// (public: class std::_Tree<int,struct std::pair<int const ,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::all)
+// TEMPLATE: WON 0x007690f0
+// (protected: class std::_Tree<int,struct std::pair<int const ,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::)
+// TEMPLATE: WON 0x0076b7f0
+// (protected: void __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned sho)
+// TEMPLATE: WON 0x0076b830
+// (protected: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,stru)
+// TEMPLATE: WON 0x0076c010
+// (protected: void __thiscall std::_Tree<int,struct std::pair<int const ,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,c)
+// TEMPLATE: WON 0x0076c050
+// (protected: struct std::_Tree<int,struct std::pair<int const ,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std:)
+// TEMPLATE: WON 0x00770010
+// (public: void * __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short)
+// TEMPLATE: WON 0x00770030
+// (public: void * __thiscall std::pair<int const ,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<uns)
+// TEMPLATE: WON 0x0076b310
+// (public: class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,struct )
+// TEMPLATE: WON 0x0076bb30
+// (public: class std::_Tree<int,struct std::pair<int const ,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::all)
+// TEMPLATE: WON 0x0076f890
+// (void __cdecl std::_Construct(struct std::pair<int const ,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::all)
+// TEMPLATE: WON 0x0076fc30
+// (void __cdecl std::_Construct(struct std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsi)
+// TEMPLATE: WON 0x00768ce0
+// (public: struct std::pair<class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned)

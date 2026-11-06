@@ -13,10 +13,18 @@
 namespace WONAPI {
 // Native3494a0/23 support-only field initialization.
 SelectionColor::SelectionColor()
-    :mBackgroundColor(0x80000007),mForegroundColor(0x80000008),mMode(ForegroundSelectionMode_UseForegroundColor) {}
+{
+    mForegroundColor=0x80000008;
+    mBackgroundColor=0x80000007;
+    mMode=ForegroundSelectionMode_UseForegroundColor;
+}
 // Native3494c0/25 support-only field initialization.
 SelectionColor::SelectionColor(DWORD background,ForegroundSelectionMode mode)
-    :mBackgroundColor(background),mForegroundColor(0xffffff),mMode(mode) {}
+{
+    mForegroundColor=0xffffff;
+    mBackgroundColor=background;
+    mMode=mode;
+}
 // Native3494e0/25 support-only field initialization.
 SelectionColor::SelectionColor(DWORD background,DWORD foreground)
     :mBackgroundColor(background),mForegroundColor(foreground),mMode(ForegroundSelectionMode_UseForegroundColor) {}
@@ -38,3 +46,9 @@ unsigned long SelectionColor::GetForegroundColor(Graphics&,unsigned long origina
     }
 }
 }
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007494a0
+// (public: __thiscall WONAPI::SelectionColor::SelectionColor(void))
+// TEMPLATE: WON 0x007494c0
+// (public: __thiscall WONAPI::SelectionColor::SelectionColor(unsigned long,enum WONAPI::ForegroundSelectionMode))

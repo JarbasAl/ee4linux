@@ -1,5 +1,4 @@
-// Native-backed localized status description; primary SDK WONStatusString.cpp identity.
-// Existing caller name LobbyFn366170 retained; real SDK role FriendlyWONStatusToString.
+// Localized text for a WONStatus (LobbyFn366170).
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,8 +12,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyCore.h"
 namespace WONAPI {
-const char* WONStatusToString(WONStatus); //actual existing29deb0
-// Existing original GUIString storage; native address identities only, no definitions/init.
+const char* WONStatusToString(WONStatus);
 }
 using namespace WONAPI;
 
@@ -28,18 +26,13 @@ namespace WONAPI {
 // FUNCTION: WON 0x00766170
 GUIString LobbyFn366170(WONStatus status)
 {
-    // Primary SDK explicitly declares this local; native entry/exit corroborate its owner lifetime.
-    // It is retained as actual source/lazy-empty-data lifetime, not as an EH or score surrogate.
     GUIString aString;
     switch(status) {
     case -2803:
-    case -1505:
         return ::WONStatus_UserExists_String;
     case -2804:
-    case -1508:
         return ::WONStatus_InvalidUserName_String;
     case -2805:
-    case -1503:
         return ::WONStatus_CDKeyInUse_String;
     case -2806:
         return ::WONStatus_UserNotFound_String;
@@ -155,12 +148,18 @@ GUIString LobbyFn366170(WONStatus status)
         return ::WONStatus_InvalidCDKey_String;
     case -1502:
         return ::WONStatus_CDKeyBanned_String;
+    case -1503:
+        return ::WONStatus_CDKeyInUse_String;
     case -1504:
         return ::WONStatus_CRCFailed_String;
+    case -1505:
+        return ::WONStatus_UserExists_String;
     case -1506:
         return ::WONStatus_UserNotFound_String;
     case -1507:
         return ::WONStatus_BadPassword_String;
+    case -1508:
+        return ::WONStatus_InvalidUserName_String;
     case -1509:
         return ::WONStatus_BadCommunity_String;
     case -1511:
@@ -169,58 +168,6 @@ GUIString LobbyFn366170(WONStatus status)
         return ::WONStatus_UserSeqInUse_String;
     case -1513:
     case -1500:
-    case 100025:
-    case 100026:
-    case 100027:
-    case 100028:
-    case 100029:
-    case 100030:
-    case 100031:
-    case 100032:
-    case 100033:
-    case 100034:
-    case 100035:
-    case 100036:
-    case 100037:
-    case 100038:
-    case 100039:
-    case 100040:
-    case 100041:
-    case 100042:
-    case 100043:
-    case 100044:
-    case 100045:
-    case 100046:
-    case 100047:
-    case 100048:
-    case 100049:
-    case 100050:
-    case 100051:
-    case 100052:
-    case 100053:
-    case 100065:
-    case 100066:
-    case 100067:
-    case 100068:
-    case 100069:
-    case 100070:
-    case 100071:
-    case 100072:
-    case 100073:
-    case 100074:
-    case 100075:
-    case 100076:
-    case 100077:
-    case 100078:
-    case 100079:
-    case 100080:
-    case 100081:
-    case 100082:
-    case 100083:
-    case 100084:
-    case 100085:
-    case 100086:
-    case 100087:
         return GeneralStatusError(::WONStatus_AuthFailure_String,status);
     case -1224:
     case -1223:
@@ -270,6 +217,17 @@ GUIString LobbyFn366170(WONStatus status)
     case -4:
     case -2:
     case -1:
+        return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
+    case -3:
+        return ::WONStatus_NotAllowed_String;
+    case 0:
+        return ::WONStatus_Success_String;
+    case 10061:
+        return ::WONStatus_ConnRefused_String;
+    case 100001:
+        return ::WONStatus_TimedOut_String;
+    case 100002:
+        return ::WONStatus_Killed_String;
     case 100000:
     case 100003:
     case 100004:
@@ -282,15 +240,52 @@ GUIString LobbyFn366170(WONStatus status)
     case 100011:
     case 100012:
     case 100013:
+        return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
+    case 100014:
+        return ::WONStatus_InvalidAddress_String;
     case 100015:
     case 100016:
     case 100017:
     case 100018:
     case 100019:
     case 100020:
+        return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
+    case 100021:
+        return ::WONStatus_ConnRefused_String;
     case 100022:
     case 100023:
     case 100024:
+        return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
+    case 100025:
+    case 100026:
+    case 100027:
+    case 100028:
+    case 100029:
+    case 100030:
+    case 100031:
+    case 100032:
+    case 100033:
+    case 100034:
+    case 100035:
+    case 100036:
+    case 100037:
+    case 100038:
+    case 100039:
+    case 100040:
+    case 100041:
+    case 100042:
+    case 100043:
+    case 100044:
+    case 100045:
+    case 100046:
+    case 100047:
+    case 100048:
+    case 100049:
+    case 100050:
+    case 100051:
+    case 100052:
+    case 100053:
+        return GeneralStatusError(::WONStatus_AuthFailure_String,status);
     case 100054:
     case 100055:
     case 100056:
@@ -302,25 +297,33 @@ GUIString LobbyFn366170(WONStatus status)
     case 100062:
     case 100063:
     case 100064:
-    case 100088:
-    case 100100:
-    case 100101:
-    case 100102:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
-    case -3:
-        return ::WONStatus_NotAllowed_String;
-    case 0:
-        return ::WONStatus_Success_String;
-    case 10061:
-        return ::WONStatus_ConnRefused_String;
-    case 100001:
-        return ::WONStatus_TimedOut_String;
-    case 100002:
-        return ::WONStatus_Killed_String;
-    case 100014:
-        return ::WONStatus_InvalidAddress_String;
-    case 100021:
-        return ::WONStatus_ConnRefused_String;
+    case 100065:
+    case 100066:
+    case 100067:
+    case 100068:
+    case 100069:
+    case 100070:
+    case 100071:
+    case 100072:
+    case 100073:
+    case 100074:
+    case 100075:
+    case 100076:
+    case 100077:
+    case 100078:
+    case 100079:
+    case 100080:
+    case 100081:
+    case 100082:
+    case 100083:
+    case 100084:
+    case 100085:
+    case 100086:
+    case 100087:
+        return GeneralStatusError(::WONStatus_AuthFailure_String,status);
+    case 100088:
+        return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
     case 100089:
     case 100090:
     case 100091:
@@ -335,6 +338,10 @@ GUIString LobbyFn366170(WONStatus status)
     case 100098:
     case 100099:
         return GeneralStatusError(::WONStatus_MOTDFailure_String,status);
+    case 100100:
+    case 100101:
+    case 100102:
+        return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
     case 100103:
     case 100104:
     case 100105:

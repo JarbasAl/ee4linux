@@ -16,9 +16,9 @@
 #include "ee/wonapi/WONLobbyWONFrameValueConfig.h"
 #include "ee/wonapi/WONLobbyWONSkinConfig.h"
 #include "LostDebug.h"
-// gSkin is the existing original global reference from WONLobbyWONButtonConfig.h.
-// No new global definition, initializer, destructor, callback alias or state.
 using namespace WONAPI;
+SmartPtr<WONSkin> gSkin;
+
 // FUNCTION: WON 0x00796d70
 static Component* PushButtonFactory() { return gSkin->GetPushButton(); }
 
@@ -144,3 +144,9 @@ void WONControlsConfig_Init(ResourceConfigTable *theTable)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00796c80
 // (public: virtual void __thiscall WONAPI::WONScrollContainerConfig::Virtual34(class WONAPI::Component *)    [?Virtual34@WONScrollContainerConfig@WONAPI@)
+
+// TEMPLATE: WON 0x00795f70
+// TEMPLATE: WON 0x00795f80
+// TEMPLATE: WON 0x00795f60
+// TEMPLATE: WON 0x00795f90
+// TEMPLATE: WON 0x00796a90

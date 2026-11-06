@@ -121,10 +121,11 @@ bool IPAddr::SetLocalHost(long inHost,bool inValidate)
     if (inValidate && inHost!=0) {
         std::list<LobbyNetAddress> aAddresses;
         LobbyGetNetAddresses(aAddresses,false);
+        std::list<LobbyNetAddress>::iterator aEnd=aAddresses.end();
         std::list<LobbyNetAddress>::iterator it=aAddresses.begin();
-        for (;it!=aAddresses.end();++it)
+        for (;it!=aEnd;++it)
             if (it->mHandle==inHost) break;
-        if (it==aAddresses.end()) return false;
+        if (it==aEnd) return false;
     }
     mLocalHost=inHost;
     return true;
@@ -162,10 +163,7 @@ static bool IPAddr_PlatformGetNetworkAdapterList(std::list<LobbyNetAddress>& out
     while(anAdapter!=NULL) {
         std::string aName=anAdapter->Description;
         long aHost=ntohl(inet_addr(anAdapter->IpAddressList.IpAddress.String));
-        LobbyNetAddress anEntry;
-        anEntry.mName=aName;
-        anEntry.mHandle=aHost;
-        outAddresses.push_back(anEntry);
+        outAddresses.push_back(LobbyNetAddress(aName,aHost));
         anAdapter=anAdapter->Next;
     }
     return true;
@@ -310,3 +308,13 @@ long IPAddr::mLocalHost = INADDR_ANY;
 // Compiler-generated for this unit:
 // SYNTHETIC: WON 0x006b3790
 // (_$E72: atexit destructor of IPAddr_PlatformGetNetworkAdapterList's static anUnload)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006b8710
+// (public: __thiscall std::auto_ptr<char>::~auto_ptr<char>(void))
+// TEMPLATE: WON 0x006b9130
+// (protected: struct std::list<struct WONAPI::LobbyNetAddress,class std::allocator<struct WONAPI::LobbyNetAddress> >::_Node * __thiscall std::list<struct)
+// TEMPLATE: WON 0x006b97f0
+// (protected: void __thiscall std::list<struct WONAPI::LobbyNetAddress,class std::allocator<struct WONAPI::LobbyNetAddress> >::_Incsize(unsigned int))
+// TEMPLATE: WON 0x006b9e30
+// (void __cdecl std::_Construct(struct WONAPI::LobbyNetAddress *,struct WONAPI::LobbyNetAddress const &))

@@ -81,7 +81,7 @@ void EELobbyGame::SetGameFile(const GUIString& inName, unsigned long inSize, uns
 }
 
 // FUNCTION: EXE 0x692419
-void GUIStringData::append(const GUIStringData* inText, unsigned short inStart, unsigned short inLength)
+inline void GUIStringData::append(const GUIStringData* inText, unsigned short inStart, unsigned short inLength)
 {
     int theLength = mLength;
     int theNewLength = theLength + inLength;

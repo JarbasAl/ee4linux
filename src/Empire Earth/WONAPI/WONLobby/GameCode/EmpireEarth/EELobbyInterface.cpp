@@ -134,11 +134,9 @@ public:
 };
 
 // FUNCTION: EXE 0x696b06
-// NEAR: the original keeps the game in edi and the player pointer in ebx, and materialises theMine (sete [ebp-8])
 void EELobbyFn296B06(EEGameOptionsPlayer& outMyPlayer)
 {
     bool theRandom;
-    bool theMine;
     int i;
     EELobbyGame* theGame = (EELobbyGame*)GetMyLobbyGame();
     if (theGame == NULL)
@@ -148,8 +146,8 @@ void EELobbyFn296B06(EEGameOptionsPlayer& outMyPlayer)
         EEGameOptionsPlayer thePlayer;
         EELobbyFn296B9A(thePlayer, theGame->GetPlayerSlot(i));
         thePlayer.mSlot = i;
-        theMine = theGame->GetMySlot() == i;
-        if (theMine)
+        thePlayer.mIsLocal = theGame->GetMySlot() == i;
+        if (thePlayer.mIsLocal)
             outMyPlayer = thePlayer;
         if (theRandom)
             thePlayer.mLoadedType = thePlayer.mType;

@@ -42,18 +42,18 @@ you build.
 <!-- status:begin -->
 | Module | Functions byte-identical | Code bytes byte-identical |
 |---|---:|---:|
-| EE-AOC.exe (game code) | 15,214 / 16,883 (90.1%) | 1,677,842 / 2,736,250 (61.3%) |
+| EE-AOC.exe (game code) | 15,234 / 16,884 (90.2%) | 1,678,616 / 2,736,250 (61.3%) |
 | TCP Protocol.dll | 124 / 125 (99.2%) | 13,417 / 13,649 (98.3%) |
 | Miles Sound System Mixer.dll | 106 / 106 (100.0%) | 5,021 / 5,021 (100.0%) |
 | Default.dll | 795 / 845 (94.1%) | 52,833 / 97,011 (54.5%) |
-| Low-Level Engine.dll | 5,876 / 6,030 (97.4%) | 442,615 / 538,055 (82.3%) |
+| Low-Level Engine.dll | 5,880 / 6,030 (97.5%) | 443,832 / 538,055 (82.5%) |
 | libjpeg in the engine | 295 / 295 (100.0%) | 64,136 / 64,136 (100.0%) |
 | DX7HRDisplay.dll | 553 / 584 (94.7%) | 28,576 / 60,561 (47.2%) |
 | DX7HRTnLDisplay.dll | 594 / 626 (94.9%) | 29,549 / 62,738 (47.1%) |
 | libpng/zlib/libjpeg in the exe | 318 / 318 (100.0%) | 98,476 / 98,476 (100.0%) |
 | Language.dll | resources only | identical to the original apart from the link time stamps and the debug record (PDB path) |
 
-Measured on 2026-11-03 at source revision 9768fc52e577: a function counts when its compiled code is identical to the original's, in the context of its own unit, with every reference resolving to the same symbol. Counts exclude CRT, SDK and import-thunk code; the exe row is the game code range (the WON networking library linked into the exe is not counted).
+Measured on 2026-11-05 at source revision 49876f0b7078: a function counts when its compiled code is identical to the original's, in the context of its own unit, with every reference resolving to the same symbol. Counts exclude CRT, SDK and import-thunk code; the exe row is the game code range (the WON networking library linked into the exe is not counted).
 <!-- status:end -->
 
 The images link from this source alone. Where a function is not byte-identical yet, the image carries this source's

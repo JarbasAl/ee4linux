@@ -573,7 +573,8 @@ void LanLogic::Fn3E4EC0(ReadBuffer& inBuffer, const IPAddr& inAddress)
 {
     IPAddr anAddress = inAddress;
     anAddress.SetPort(inBuffer.ReadShort());
-    if (inAddress.Fn2B2FB0() != anAddress.Fn2B2FB0())
+    long anIP = inAddress.Fn2B2FB0();
+    if (anAddress.Fn2B2FB0() != anIP)
         return;
     LobbyGame* aGame = mLanGames->GetGame(anAddress);
     if (aGame != NULL)
@@ -875,7 +876,7 @@ void LanLogic::Fn3E0760(ReadBuffer& inBuffer, LobbyLanSocket* inSocket)
     mClients->Fn3A5CC0(aClient.get());
     WriteBuffer aNotify(2, true);
     aNotify.AppendByte(3);
-    aNotify.AppendShort(aClient->mClientId);
+    aNotify.AppendShort(aClient->GetClientId());
     aNotify.AppendWString(aClient->mName, 2);
     Fn3E1AD0(aNotify.ToByteBuffer(true).get(), true);
     inSocket->Fn3DFB90(aClient.get());
@@ -1029,8 +1030,8 @@ bool LanLogic::Virtual18(LobbyGame* inGame)
     mListenSocket->Fn2B3BF0(new LogicCompletion<LanLogic>(&LanLogic::Fn3E1700, this));
     mListenSocket->Fn2B4500(new AcceptOp(NULL));
     int aRoomSpec = 10;
-    LobbyFn359100(new JoinedRoomEvent(GUIString(new GUIStringData("")),
-        inGame->mName, aRoomSpec, mMyClient->mClientId, inGame->mClients.get()), true);
+    LobbyFn359100(new JoinedRoomEvent(GUIString(""),
+        inGame->mName, aRoomSpec, mMyClient->GetClientId(), inGame->mClients.get()), true);
     mLastBroadcastTime = 0;
     Fn3E0620();
     return true;
@@ -1123,6 +1124,7 @@ namespace WONAPI {
 // FUNCTION: WON 0x007e3d20
 bool LanLogic::Virtual1C(LobbyGame* game)
 {
+    int joined=0;
     SmartPtr<AuthContext> auth;
     Fn3E0190();
     if(game->GetGameType()==3 && LobbyFn35B540()) {
@@ -1133,7 +1135,6 @@ bool LanLogic::Virtual1C(LobbyGame* game)
     mServerSocket=new LobbyLanSocket;
     bool needPassword=game->mB10;
     bool needConnect=true;
-    bool joined=false;
     while(!joined) {
         GUIString password(GetEmptyGUIStringData());
         if(needPassword) {
@@ -1151,8 +1152,8 @@ bool LanLogic::Virtual1C(LobbyGame* game)
         }
         WriteBuffer request(2,true);
         request.AppendByte(1);
-        request.AppendWString(static_cast<std::wstring>(LobbyFn35D640()),2);
-        request.AppendWString(static_cast<std::wstring>(password),2);
+        request.AppendWString(LobbyFn35D640(),2);
+        request.AppendWString(password,2);
         mServerSocket->Fn2B4740(new SendMsgOp(request.ToByteBuffer(true).get()),-1);
         mLastServerPing=time(NULL);
         SmartPtr<RecvMsgOp> reply=new RecvMsgOp(mServerSocket.get());
@@ -1178,7 +1179,7 @@ bool LanLogic::Virtual1C(LobbyGame* game)
     game->SetClients(mClients.get());
     int roomSpec=10;
     LobbyFn359100(new JoinedRoomEvent(GUIString(new GUIStringData("")),game->mName,
-        roomSpec,mMyClient->mClientId,game->mClients.get()),true);
+        roomSpec,mMyClient->GetClientId(),game->mClients.get()),true);
     return true;
 }
 }
@@ -1268,3 +1269,17 @@ void LanLogic::Fn3E1700(AsyncOp* inOp)
 // (public: virtual void * __thiscall WONAPI::LogicCompletion<class WONAPI::LanLogic>::`scalar deleting destructor'(unsigned int)    [??_G?$LogicCompletio)
 // TEMPLATE: WON 0x007f1570
 // (public: virtual __thiscall WONAPI::LogicCompletion<class WONAPI::LanLogic>::~LogicCompletion<class WONAPI::LanLogic>(void)    [??1?$LogicCompletion@VL)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007dfe10
+// (public: __thiscall std::set<class WONAPI::SmartPtr<class WONAPI::LobbyLanSocket>,struct std::less<class WONAPI::SmartPtr<class WONAPI::LobbyLanSocket>)
+// TEMPLATE: WON 0x007f1750
+// (std::_Tree::erase)
+// TEMPLATE: WON 0x007f1800
+// (std::_Tree::_Insert)
+// TEMPLATE: WON 0x007f25c0
+// (std::_Tree::_Erase)
+// TEMPLATE: WON 0x007f2600
+// (std::_Tree::_Init)
+// TEMPLATE: WON 0x007f2640
+// ( ?? ?? :: ?? ::const_iterator::_Dec)

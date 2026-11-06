@@ -33,20 +33,18 @@ void ListArea::Fn2FAA10()
         if(!Sort()) EnforceInvariants();
     }
 }
+struct ListItemTopLess {
+    bool operator()(const SmartPtr<ListItem>& a,const SmartPtr<ListItem>& b) const { return a->mTop<b->mTop; }
+};
 // FUNCTION: WON 0x006facf0
 std::vector<SmartPtr<ListItem> >::iterator ListArea::FindLineAt(int y)
 {
     mSearchLine->mTop=y;
-    std::vector<SmartPtr<ListItem> >::iterator first=mItems.begin(),last=mItems.end();
-    // lower_bound by item top; the original uses its persistent search item.
-    int count=last-first;
-    while(count>0) {
-        int step=count/2;
-        std::vector<SmartPtr<ListItem> >::iterator mid=first+step;
-        if((*mid)->mTop<mSearchLine->mTop) { first=mid+1; count-=step+1; }
-        else count=step;
+    std::vector<SmartPtr<ListItem> >::iterator first=std::lower_bound(mItems.begin(),mItems.end(),mSearchLine,ListItemTopLess());
+    if(first==mItems.end() || (*first)->mTop>y)
+    {
+        if(first!=mItems.begin()) --first;
     }
-    if((first==mItems.end() || (*first)->mTop>y) && first!=mItems.begin()) --first;
     return first;
 }
 // FUNCTION: WON 0x006fad80
@@ -110,13 +108,12 @@ bool ListArea::SetSelItem(ListItem* item,bool add,bool fire)
 void ListArea::SelectRange(int start,int end)
 {
     ClearSelectionPrv(false);
-    int count=mItems.size();
-    if(start>=count) start=count-1;
-    if(end>=count) end=count-1;
+    if(start>=(int)mItems.size()) start=mItems.size()-1;
+    if(end>=(int)mItems.size()) end=mItems.size()-1;
     if(start<0) start=0;
     if(end<0) end=0;
-    if(start>=count || end>=count) return;
-    int step=start>end ? -1 : 1;
+    if(start>=(int)mItems.size() || end>=(int)mItems.size()) return;
+    int step=start<=end ? 1 : -1;
     for(int i=start;i!=end+step;i+=step) GetItem(i)->mB08=true;
     SetSelItem(GetItem(start),false,true);
 }
@@ -185,7 +182,12 @@ int ListArea::GetItemPos(ListItem* item)
     return -1;
 }
 // Native37B position conversion support.
-int ListArea::GetItemPosAtYPos(int y) { return FindLineAt(y)-mItems.begin(); }
+// FUNCTION: WON 0x006fc4b0
+int ListArea::GetItemPosAtYPos(int y)
+{
+    std::vector<SmartPtr<ListItem> >::iterator itr=FindLineAt(y);
+    return itr-mItems.begin();
+}
 // Native46B bounds getter support.
 // FUNCTION: WON 0x006fc4e0
 ListItem* ListArea::GetItem(int index)
@@ -238,18 +240,13 @@ bool ListArea::Sort()
 // FUNCTION: WON 0x006fabe0
 int ListArea::FindInsertPos(ListItem* item,int position)
 {
-    if(mDoingMultiChange || mSortType==2) {
-        if(position<0 || (unsigned int)position>mItems.size()) position=mItems.size();
-        return position;
+    if(!mDoingMultiChange && mSortType!=2)
+    {
+        std::vector<SmartPtr<ListItem> >::iterator itr=std::lower_bound(mItems.begin(),mItems.end(),item,LineSortPred(this,GetSortFunc(),mSortType));
+        return itr-mItems.begin();
     }
-    LineSortPred less(this,GetSortFunc(),mSortType);
-    int first=0,count=mItems.size();
-    while(count>0) {
-        int step=count/2,mid=first+step;
-        if(less(mItems[mid].get(),item)) { first=mid+1;count-=step+1; }
-        else count=step;
-    }
-    return first;
+    if(position<0 || (unsigned int)position>mItems.size()) position=mItems.size();
+    return position;
 }
 // FUNCTION: WON 0x006fadf0
 void ListArea::VirtualCC(bool scrollbar)
@@ -716,3 +713,63 @@ void ListArea::ListSelChangedHook()
 // (public: __thiscall std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::Smart)
 // TEMPLATE: WON 0x006fbe60
 // (ListItemClickedEvent implicit destructor)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071b3e0
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<c)
+// TEMPLATE: WON 0x0071c5c0
+// (public: void __thiscall std::vector<class WONAPI::SmartPtr<class WONAPI::ListItem>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::ListItem>)
+// TEMPLATE: WON 0x00723a90
+// (void __cdecl std::sort(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WON)
+// TEMPLATE: WON 0x00724000
+// (void __cdecl std::fill(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WON)
+// TEMPLATE: WON 0x00725180
+// (void __cdecl std::_Insertion_sort(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> )
+// TEMPLATE: WON 0x007251c0
+// (void __cdecl std::_Sort(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WO)
+// TEMPLATE: WON 0x007252f0
+// (void __cdecl std::_Unguarded_insertion_sort(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::)
+// TEMPLATE: WON 0x007257a0
+// (void __cdecl std::_Insertion_sort_1(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem)
+// TEMPLATE: WON 0x00725970
+// (void __cdecl std::make_heap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,clas)
+// TEMPLATE: WON 0x007259d0
+// (void __cdecl std::sort_heap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,clas)
+// TEMPLATE: WON 0x00725c90
+// (void __cdecl std::_Unguarded_insert(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem)
+// TEMPLATE: WON 0x00725e50
+// (void __cdecl std::_Make_heap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,cla)
+// TEMPLATE: WON 0x00725ee0
+// (void __cdecl std::pop_heap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class)
+// TEMPLATE: WON 0x00725fc0
+// (void __cdecl std::_Adjust_heap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,c)
+// TEMPLATE: WON 0x00726110
+// (void __cdecl std::_Pop_heap_0(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,cl)
+// TEMPLATE: WON 0x007262b0
+// (void __cdecl std::_Push_heap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,cla)
+// TEMPLATE: WON 0x007263d0
+// (void __cdecl std::_Pop_heap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,clas)
+// TEMPLATE: WON 0x00723ba0
+// (class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<class WON)
+// TEMPLATE: WON 0x00725360
+// (class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<class WON)
+// TEMPLATE: WON 0x00725dc0
+// (void __cdecl std::_Distance(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,clas)
+// TEMPLATE: WON 0x00725f20
+// (void __cdecl std::iter_swap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,clas)
+// TEMPLATE: WON 0x007261b0
+// (void __cdecl std::_Iter_swap(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,cla)
+// TEMPLATE: WON 0x007212d0
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<c)
+// TEMPLATE: WON 0x00723ca0
+// (class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<class WON)
+// TEMPLATE: WON 0x00725960
+// (public: class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<c)
+// TEMPLATE: WON 0x00725fa0
+// (void __cdecl std::_Distance(class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,clas)
+// TEMPLATE: WON 0x007264d0
+// (public: int __thiscall std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::S)
+// TEMPLATE: WON 0x00725630
+// (class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<class WON)
+// TEMPLATE: WON 0x00725a40
+// (class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<class WON)

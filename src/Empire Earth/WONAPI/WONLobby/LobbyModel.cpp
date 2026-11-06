@@ -172,8 +172,8 @@ void LobbyClientList::Fn3A5770() { mClients.clear(); }
 void LobbyClientList::Fn3A5820(const RoutingClientMap& inMap)
 {
     LobbyClientMap::iterator aClient = mClients.begin();
+    LobbyClientMap::iterator anInsert = mClients.begin();
     RoutingClientMap::const_iterator anInfo = inMap.begin();
-    LobbyClientMap::iterator anInsert = aClient;
     while (aClient != mClients.end() && anInfo != inMap.end()) {
         if (anInfo->first > aClient->first) mClients.erase(aClient++);
         else if (anInfo->first < aClient->first) {
@@ -237,7 +237,10 @@ SmartPtr<LobbyClient> LobbyClientList::Fn3A5D90(unsigned short inId)
 LobbyClient* LobbyClientList::Fn3A5EA0(unsigned long inId)
 {
     for (LobbyClientMap::iterator anItr = mClients.begin(); anItr != mClients.end(); ++anItr)
-        if (anItr->second->mU14 == inId) return anItr->second.get();
+    {
+        LobbyClient* aClient = anItr->second;
+        if (aClient->GetU14() == inId) return aClient;
+    }
     return NULL;
 }
 
@@ -246,7 +249,7 @@ LobbyClient* LobbyClientList::Fn3A5EA0(unsigned long inId)
 void LobbyClientList::Fn3A5F10()
 {
     for (LobbyClientMap::iterator anItr = mClients.begin(); anItr != mClients.end(); ++anItr)
-        anItr->second->mB27 = false;
+        anItr->second->SetB27(false);
 }
 
 // CONTRIBUTOR: client/LobbyClient.cpp.draft
@@ -649,16 +652,19 @@ void LobbyGroup::Fn3A8C30(RoutingGroupInfo* inInfo, LobbyClientList* inClients)
 void LobbyGroup::Fn3A8D50(const RoutingMemberMap& inMembers, LobbyClientList* inClients)
 {
     mClients->Fn3A5770();
-    for (RoutingMemberMap::const_iterator it = inMembers.begin(); it != inMembers.end(); ++it) {
+    RoutingMemberMap::const_iterator it = inMembers.begin();
+    while (it != inMembers.end()) {
         LobbyClient* client = inClients->FindClient(it->first);
         if (client != NULL) {
-            if (Fn3A9060()) client->mFlags1D = it->second->mFlags;
-            else client->mFlags1C = it->second->mFlags;
+            RoutingMemberInfo* aMember = it->second;
+            if (Fn3A9060()) client->mFlags1D = aMember->mFlags;
+            else client->mFlags1C = aMember->mFlags;
             client->Fn3A5500(client->mClientId == mCaptainId, Fn3A9060());
             if (Fn3A9060()) client->mGroupId20 = mId;
             else client->mGroupId1E = mId;
             mClients->Fn3A5CC0(client);
         }
+        ++it;
     }
     mNumClients = mClients->mClients.size();
 }
@@ -818,13 +824,13 @@ void LobbyServer::Fn3A9AF0()
 {
     LobbyClientMap& aClients = mClients->mClients;
     for (LobbyClientMap::iterator it = aClients.begin(); it != aClients.end(); ++it) {
-        LobbyClient* client = it->second.get();
-        LobbyFriend* aFriend = LobbyFn35D3F0(client->mU14);
+        LobbyClient* client = it->second;
+        LobbyFriend* aFriend = LobbyFn35D3F0(client->GetU14());
         if (aFriend != NULL) {
-            client->mB24 = true;
+            client->SetIsFriend(true);
             aFriend->Fn3A6440(mAddress, mName, 0);
             aFriend->Fn3A66B0(client);
-        } else client->mB24 = false;
+        } else client->SetIsFriend(false);
     }
 }
 
@@ -835,13 +841,12 @@ void LobbyServer::Fn3A9B60()
     time_t now = time(NULL);
     LobbyClientMap& aClients = mClients->mClients;
     for (LobbyClientMap::iterator it = aClients.begin(); it != aClients.end(); ++it) {
-        LobbyClient* client = it->second.get();
-        // Actual Client byte24 field; original shared predicate call remains a near codegen difference.
-        if (client->mB24) {
-            LobbyFriend* aFriend = LobbyFn35D3F0(client->mU14);
+        LobbyClient* client = it->second;
+        if (client->IsFriend()) {
+            LobbyFriend* aFriend = LobbyFn35D3F0(client->GetU14());
             if (aFriend != NULL) {
                 if (client->Fn3A5470()) aFriend->Fn3A65B0();
-                else aFriend->mLastLocate = now;
+                else aFriend->SetLastLocate(now);
             }
         }
     }
@@ -853,10 +858,10 @@ void LobbyServer::Fn3A9BE0(const RoutingGroupMap& inGroups, bool inUpdateClients
 {
     mNumChatClients = 0;
     mNumClients = 0;
-    LobbyClientList* clients = inUpdateClients ? mClients.get() : NULL;
+    LobbyClientList* clients = inUpdateClients ? mClients : SmartPtr<LobbyClientList>(NULL);
     LobbyGroupMap::iterator groupIt = mGroups.begin();
+    LobbyGroupMap::iterator insertIt = mGroups.begin();
     RoutingGroupMap::const_iterator infoIt = inGroups.begin();
-    LobbyGroupMap::iterator insertIt = groupIt;
     while (groupIt != mGroups.end() && infoIt != inGroups.end()) {
         if (infoIt->first > groupIt->first) mGroups.erase(groupIt++);
         else if (infoIt->first < groupIt->first) {
@@ -879,7 +884,7 @@ void LobbyServer::Fn3A9BE0(const RoutingGroupMap& inGroups, bool inUpdateClients
     while (infoIt != inGroups.end()) {
         SmartPtr<LobbyGroup> group = new LobbyGroup;
         group->Fn3A8C30(infoIt->second.get(), clients);
-        insertIt = mGroups.insert(insertIt, LobbyGroupMap::value_type(group->mId, group));
+        insertIt = mGroups.insert(insertIt, LobbyGroupMap::value_type(group->GetId(), group));
         if (group->Fn3A9050()) mNumChatClients += group->mNumClients;
         mNumClients += group->mNumClients;
         ++infoIt;
@@ -911,7 +916,7 @@ LobbyGroup* LobbyServer::Fn3AA030(RoutingGroupInfo* inInfo)
 {
     SmartPtr<LobbyGroup> group = new LobbyGroup;
     group->Fn3A8C30(inInfo, mClients.get());
-    mGroups[group->mId] = group;
+    mGroups[group->GetId()] = group;
     return group.get();
 }
 
@@ -1131,7 +1136,7 @@ short LobbyGame::Fn3A7570(ReadBuffer& inBuffer,LobbyClient* inClient,WriteBuffer
         LobbyClient* client;
         LobbyPlayer* otherPlayer=it.Next(&client);
         if (otherPlayer!=NULL) {
-            outBuffer.AppendShort(client->mClientId);
+            outBuffer.AppendShort(client->GetClientId());
             otherPlayer->WriteToBuffer(outBuffer);
         }
     }
@@ -1288,10 +1293,12 @@ LobbyServer::~LobbyServer() {}
 }
 
 namespace WONAPI {
+// The stored count is little-endian, as is the host.
+static unsigned short ShortFromLittleEndian(unsigned short theShort);
 // FUNCTION: WON 0x007a9700
 void LobbyServer::Fn3A9700(DirEntity* inEntity)
 {
-    mName = GUIString(new GUIStringData(inEntity->mDisplayName));
+    mName = GUIString(inEntity->mDisplayName);
     mAddress = inEntity->GetNetAddrAsIP();
     for (DirDataObjectList::iterator anItr = inEntity->mDataObjects.begin();
          anItr != inEntity->mDataObjects.end(); ++anItr) {
@@ -1299,7 +1306,7 @@ void LobbyServer::Fn3A9700(DirEntity* inEntity)
             anItr->mData->length() == 2) {
             unsigned short aCount;
             memcpy(&aCount,anItr->mData->data(),2);
-            mNumClients = ntohs(aCount);
+            mNumClients = ShortFromLittleEndian(aCount);
         } else if (anItr->mDataType == "_L") {
             mAddresses.clear();
             ByteBuffer* aData = anItr->mData.get();
@@ -1307,12 +1314,18 @@ void LobbyServer::Fn3A9700(DirEntity* inEntity)
                               aData != NULL ? aData->length() : 0);
             StringParser aParser(aText.c_str());
             std::list<std::string> aNames;
-            aParser.ReadStrings(aNames);
+            aParser.ReadValue(aNames);
             for (std::list<std::string>::iterator aName = aNames.begin();
                  aName != aNames.end(); ++aName)
                 mAddresses.insert(*aName);
         }
     }
+}
+
+// FUNCTION: WON 0x7a9ac0
+static unsigned short ShortFromLittleEndian(unsigned short theShort)
+{
+    return theShort;
 }
 }
 
@@ -1368,6 +1381,7 @@ LobbyPlayer::~LobbyPlayer() {}
 
 namespace WONAPI {
 // SUPPORT-ONLY: genuine SDK CPP implementation LobbyGame::Virtual2C, positive native 4B; no primary credit.
+// FUNCTION: WON 0x007a7a80
 short LobbyGame::Virtual2C()
 {
     return 0;
@@ -1442,3 +1456,85 @@ LobbyPlayer::LobbyPlayerFactory LobbyPlayer::mPlayerFactory = LobbyPlayer::Defau
 // (public: __thiscall std::map<unsigned short,class WONAPI::SmartPtr<class WONAPI::LobbyGame>,struct std::less<unsigned short>,class std::allocator<struc)
 // TEMPLATE: WON 0x007a84d0
 // (public: __thiscall std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >::~pair<class WONAPI::IPAddr const ,class WO)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007aace0
+// (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyClient> >,struct std::_Mapk<u)
+// TEMPLATE: WON 0x007ab310
+// (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >,struct std::_Mapk<uns)
+// TEMPLATE: WON 0x007ab990
+// (public: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >,struct st)
+// TEMPLATE: WON 0x007ac070
+// (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >,struct std::_Mapk<un)
+// TEMPLATE: WON 0x007ac560
+// (public: __thiscall std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >::pair<unsigned short const ,class WONAPI::SmartP)
+// TEMPLATE: WON 0x007ac5a0
+// (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyClient> >,struct std::_Mapk<u)
+// TEMPLATE: WON 0x007ac700
+// (protected: void __thiscall std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyClient> >,struct)
+// TEMPLATE: WON 0x007aca40
+// (protected: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >,struct std::_Mapk<)
+// TEMPLATE: WON 0x007acd40
+// (public: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >,struct st)
+// TEMPLATE: WON 0x007acdf0
+// (protected: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >,struct)
+// TEMPLATE: WON 0x007ad0f0
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struct s)
+// TEMPLATE: WON 0x007ad1a0
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struc)
+// TEMPLATE: WON 0x007ad940
+// (protected: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyServer> >,stru)
+// TEMPLATE: WON 0x007adc40
+// (protected: void __thiscall std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >,struct s)
+// TEMPLATE: WON 0x007adc80
+// (protected: void __thiscall std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame)
+// TEMPLATE: WON 0x007adcc0
+// (protected: struct std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >,struc)
+// TEMPLATE: WON 0x007ae260
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<)
+// TEMPLATE: WON 0x007ae2a0
+// (protected: struct std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,stru)
+// TEMPLATE: WON 0x007ae330
+// (protected: void __thiscall std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >,struct )
+// TEMPLATE: WON 0x007ae370
+// (public: class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyServer> >,struct )
+// TEMPLATE: WON 0x007ae890
+// (protected: void __thiscall std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyServ)
+// TEMPLATE: WON 0x007ae8d0
+// (public: void __thiscall std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> >)
+// TEMPLATE: WON 0x007aa9e0
+// (public: class WONAPI::SmartPtr<class WONAPI::LobbyClient> & __thiscall std::map<unsigned short,class WONAPI::SmartPtr<class WONAPI::LobbyClient>,struc)
+// TEMPLATE: WON 0x007ab1d0
+// (public: class WONAPI::SmartPtr<class WONAPI::LobbyGame> & __thiscall std::map<unsigned short,class WONAPI::SmartPtr<class WONAPI::LobbyGame>,struct st)
+// TEMPLATE: WON 0x007ab800
+// (public: class WONAPI::SmartPtr<class WONAPI::LobbyGame> & __thiscall std::map<class WONAPI::IPAddr,class WONAPI::SmartPtr<class WONAPI::LobbyGame>,str)
+// TEMPLATE: WON 0x007ac610
+// (public: struct std::pair<class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyClient> >,st)
+// TEMPLATE: WON 0x007ac740
+// (protected: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyClient> >,struct std::_Map)
+// TEMPLATE: WON 0x007ad4a0
+// (public: struct std::pair<class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >,str)
+// TEMPLATE: WON 0x007ad590
+// (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >,struct std::_Mapk<un)
+// TEMPLATE: WON 0x007ad640
+// (protected: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >,struct std::_Mapk)
+// TEMPLATE: WON 0x007add10
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struct s)
+// TEMPLATE: WON 0x007ae1f0
+// (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<)
+// TEMPLATE: WON 0x007ae2f0
+// (protected: void __thiscall std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >,struct )
+// TEMPLATE: WON 0x007ae930
+// (void __cdecl std::_Construct(struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyGame> > *,struct std::pair<class W)
+// TEMPLATE: WON 0x007ae9e0
+// (void __cdecl std::_Construct(struct std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyServer> > *,struct std::pair<class)
+// TEMPLATE: WON 0x007a6880
+// (public: virtual void __thiscall WONAPI::LobbyGame::Virtual60(unsigned char,class WONAPI::ReadBuffer &,class WONAPI::LobbyClient *))
+// TEMPLATE: WON 0x0076cff0
+// (protected: void __thiscall std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >,struct )
+// TEMPLATE: WON 0x007aab20
+// (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyClient> >,struct std::_Mapk<u)
+// TEMPLATE: WON 0x007abeb0
+// (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyGroup> >,struct std::_Mapk<un)
+// TEMPLATE: WON 0x007a5140
+// (protected: static class WONAPI::LobbyPlayer * __cdecl WONAPI::LobbyPlayer::DefaultPlayerFactory(void))

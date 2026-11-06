@@ -203,10 +203,7 @@ public:
 // RTTI EEAIFOAMBToKill (vtable 0x43c188): the anti-missile batteries (unit type 0x2e5) to delete
 class EEAIFOAMBToKill : public EEAIFOUnitsToKillScoringBase {
 public:
-    EEAIFOAMBToKill(long inCount)
-    {
-        this->mCount = inCount;
-    }
+    EEAIFOAMBToKill() {}
     virtual bool CanKill(EEComplexUnit* inUnit)      // +0x10 0x7c023
     {
         return inUnit->mHitPoints > 0 && inUnit->mUnitClass->mUnitType == kUnitType14AntiMissileBattery && inUnit->mContainer == NULL;
@@ -1729,24 +1726,25 @@ unsigned long EECPDefenseCommander::CheckSpecials(unsigned long inTime)
         unsigned long theCount = theAMBs.mUnits + theAMBs.mRequested;
         if (theCount >= 1) {
             if (theCount > 10) {
-                EEAIFOAMBToKill theScorer(theAMBs.mUnits + theAMBs.mRequested - 10);
+                EEAIFOAMBToKill theScorer;
+                theScorer.mCount = theAMBs.mUnits + theAMBs.mRequested - 10;
                 this->mPlayer->ChooseUnitsToKill(theScorer, 0);
             } else if (theCount < theUnits.size() && theCount + 1 < 10)
-                this->mPlayer->mCivilizationManager->mUnitManager->RequestUnits(0x2e5, 1, 0, 0);
+                this->mPlayer->mCivilizationManager->GetUnitManager()->RequestUnits(0x2e5, 1, 0, 0);
         } else
-            this->mPlayer->mCivilizationManager->mUnitManager->RequestUnits(0x2e5, 1, 0, 0);
+            this->mPlayer->mCivilizationManager->GetUnitManager()->RequestUnits(0x2e5, 1, 0, 0);
     }
     if (gCivPowersManager.HasPower(this->mPlayer, kCivPowerCloaking)) {
         std::vector<EEUnit*> theUnits;
         EETileLocation theTile;
         EETileLocation theOther;
         long thePlayerID = 0;
-        EEGetPlayerUnitsOfType(kUnitTypeCapitol, this->mPlayer->mPlayerID, theUnits);
+        EEGetPlayerUnitsOfType(kUnitTypeCapitol, this->mPlayer->GetPlayerID(), theUnits);
         EECalamityClass* theCalamity = NULL;
         EECalamityManager::GetInstance()->GetCalamityClass(0x1f, theCalamity);
         for (unsigned long i = 0; i < theUnits.size(); i++) {
             EEComplexUnit* theUnit = (theUnits[i])->GetComplexUnit();
-            long thePower = theUnit->mPower;
+            long thePower = theUnit->GetPower();
             if (!(thePower >= theCalamity->GetCost()))
                 continue;
             theTile = theUnit->GetTile();
@@ -1759,7 +1757,7 @@ unsigned long EECPDefenseCommander::CheckSpecials(unsigned long inTime)
             theUnit->SetGoal(new EEUGCastCalamity(theUnit, NULL, theUnit->GetTileX(), theUnit->GetTileY(), 0x43d, true),
                              0, 0);
             theUnit->StartAction(kActionCalamityPreCast);
-            theUnit->mUnitClass->ActionChanged(theUnit);
+            theUnit->GetUnitClass()->ActionChanged(theUnit);
         }
     }
     if (gCivPowersManager.HasPower(this->mPlayer, kCivPowerMissileBase)) {
@@ -1767,10 +1765,10 @@ unsigned long EECPDefenseCommander::CheckSpecials(unsigned long inTime)
         if (theNode2 != NULL && !theNode2->GetIsObsolete() && this->mPlayer->GetTechTree()->mCurrentEpoch >= theNode2->mEpoch &&
             theNode2->GetIsAvailable()) {
             EECPUGatherSpecialUnitsCount theOthers(this->mPlayer, 0x2ee, 0);
-            this->mPlayer->mCivilizationManager->mUnitManager->GatherUnits(theOthers);
+            this->mPlayer->mCivilizationManager->GetUnitManager()->GatherUnits(theOthers);
             unsigned long theTotal = theOthers.mUnits + theOthers.mRequested;
             if (theTotal < 1)
-                this->mPlayer->mCivilizationManager->mUnitManager->RequestUnits(0x2ee, 1, 0, 0);
+                this->mPlayer->mCivilizationManager->GetUnitManager()->RequestUnits(0x2ee, 1, 0, 0);
         }
     }
     this->mNextSpecialTime = this->mPlayer->mShipMaintenanceTimer * 30000 + inTime;
@@ -2012,9 +2010,7 @@ void EECPDefenseCommander::AssignSubGroupTask(EECPAttackSubGroup* inSubGroup, EE
         inSubGroup->mMission = 1;
 }
 
-// Compiler-generated for this unit (names in analysis/exe/names.txt). Not emitted by this build (NEAR): the base ctor
-// 0x47b7e4 (EEAIFOUnitsToKillScoringBase), which the original calls out of line where this build refuses the derived
-// ctor instead (inline budget). 0x478937 (EECPUMGatherUnitsScreenBase) is emitted and exact.
+// Compiler-generated for this unit (names in analysis/exe/names.txt). 0x478937 (EECPUMGatherUnitsScreenBase) is emitted and exact.
 // TEMPLATE: EXE 0x4783b8
 // TEMPLATE: EXE 0x4783ca
 // TEMPLATE: EXE 0x4785a1
@@ -2025,6 +2021,7 @@ void EECPDefenseCommander::AssignSubGroupTask(EECPAttackSubGroup* inSubGroup, EE
 // TEMPLATE: EXE 0x4799a9
 // TEMPLATE: EXE 0x4799c2
 // TEMPLATE: EXE 0x479bb5
+// TEMPLATE: EXE 0x47b7e4
 // TEMPLATE: EXE 0x47b906
 // TEMPLATE: EXE 0x47bc40
 // TEMPLATE: EXE 0x47c023
