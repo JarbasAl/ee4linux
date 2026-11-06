@@ -6,10 +6,10 @@
 Targets (default: all): tcp mixer default lle dx7hr dx7hrtnl language exe. Each links into <out>/<target>/ (default
 out: build/): TCP Protocol.dll, Miles Sound System Mixer.dll, Default.dll, Low-Level Engine.dll (with libjpeg, module
 jpeg), DX7HRDisplay.dll, DX7HRTnLDisplay.dll, Language.dll (resources only) and EE-AOC.exe (with the image libraries,
-module exeimg), each with its .map and .pdb. The DLLs link with tools/relink.py, the executable with
+module exeimg, and the WON library, module won), each with its .map and .pdb. The DLLs link with tools/relink.py, the executable with
 tools/exe_fulllink.py (link_exe), the resources compile with tools/rsrc_rebuild.py.
 
---compile-only modules (default: all): tcp mixer default lle jpeg dx7hr dx7hrtnl exeimg exe.
+--compile-only modules (default: all): tcp mixer default lle jpeg dx7hr dx7hrtnl exeimg won exe.
 
 Units come from link/<module>/units.txt (in link order), or every .cpp of the module's source folder when the
 module has no unit list. Each unit is compiled with the module's flags (tools/ee.py MODULE_FLAGS), or its own
@@ -48,10 +48,10 @@ import relink
 import verify
 from ee import LINK_DIR, COMPILER, MODULE_FLAGS, ORIG_SRC_ROOT, ROOT, TOOLCHAIN, module_units
 
-MODULES = ["tcp", "mixer", "default", "lle", "jpeg", "dx7hr", "dx7hrtnl", "exeimg", "exe"]
+MODULES = ["tcp", "mixer", "default", "lle", "jpeg", "dx7hr", "dx7hrtnl", "exeimg", "won", "exe"]
 TARGETS = ["tcp", "mixer", "default", "lle", "dx7hr", "dx7hrtnl", "language", "exe"]
-TARGET_MODULES = {"lle": ["lle", "jpeg"], "exe": ["exe", "exeimg"], "language": []}
-PART_OF = {"jpeg": "lle", "exeimg": "exe"}
+TARGET_MODULES = {"lle": ["lle", "jpeg"], "exe": ["exe", "exeimg", "won"], "language": []}
+PART_OF = {"jpeg": "lle", "exeimg": "exe", "won": "exe"}
 LANGUAGE_RC = pathlib.PurePosixPath("Empire Earth/Language/Language.rc")
 EXE_MEMBERS = LINK_DIR / "exe" / "fulllink_members.tsv"
 MODULE_COMPILER = {"jpeg": "msvc6.4"}
@@ -81,6 +81,9 @@ def jobs_for(mod):
     flags = MODULE_FLAGS[mod]
     paths = [p for _, _, p in module_units(mod)]
     paths += [ROOT / "src" / rel for rel in EXTRA_UNITS.get(mod, [])]
+    if mod == "won":
+        import exe_fulllink
+        paths += [p for _, _, p in exe_fulllink.won_extra_units()]
     out = []
     for p in paths:
         if not p.exists():
@@ -137,6 +140,7 @@ def sync_tree(src, dst):
     want = {p.relative_to(src): p for p in src.rglob("*") if p.is_file()} if src.exists() else {}
     have = {p.relative_to(dst): p for p in dst.rglob("*") if p.is_file()} if dst.exists() else {}
     for rel in have.keys() - want.keys():
+        have[rel].chmod(0o666)
         have[rel].unlink()
     for rel, f in want.items():
         g = dst / rel
@@ -144,6 +148,8 @@ def sync_tree(src, dst):
         if rel in have and g.stat().st_size == st.st_size and g.stat().st_mtime_ns == st.st_mtime_ns:
             continue
         g.parent.mkdir(parents=True, exist_ok=True)
+        if rel in have:
+            g.chmod(0o666)
         shutil.copy2(f, g)
 
 
@@ -284,8 +290,8 @@ def link_exe(out, objs):
     dst = out / "exe"
     dst.mkdir(parents=True, exist_ok=True)
     items, missing = [], []
-    for mod in ("exe", "exeimg"):
-        for lo, hi, p in module_units(mod):
+    for mod in ("exe", "exeimg", "won"):
+        for lo, hi, p in module_units(mod) + (exe_fulllink.won_extra_units() if mod == "won" else []):
             if not p.exists():
                 missing.append(p)
                 continue

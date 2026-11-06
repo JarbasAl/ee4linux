@@ -229,6 +229,16 @@ EEWonNet::EEWonNet()
     this->mL168 = 0;
 }
 
+// DEAD-IN-AOC: base exe 0x6a2220, only the dead dtor below calls it. Partial: the base body also waits when inFlag
+// is set (0x6a2270).
+void WONLobbyWindow::Close(bool inFlag)
+{
+    if (!this->mClosed) {
+        this->mClosed = true;
+        this->Virtual18();
+    }
+}
+
 // DEAD-IN-AOC: base exe 0x4c5924 (see the ctor)
 EEWonNet::~EEWonNet()
 {

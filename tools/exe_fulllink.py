@@ -1,5 +1,5 @@
-"""Link EE-AOC.exe: its compiled units, the image libraries, the import libraries and
-resources, plus stubs.obj for the symbols the source does not define yet."""
+"""Link EE-AOC.exe: its compiled units, the image and WON libraries, the import libraries
+and resources, plus stubs.obj for the names that run another defined body."""
 import bisect
 import collections
 import pathlib
@@ -12,7 +12,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import exe_roundtrip
 import exe_units
 import verify
-from ee import LINK_DIR, COMPILER, ROOT
+from ee import LINK_DIR, COMPILER, ROOT, module_units
 from undname import undname
 EXE_RC = ROOT / "src" / "Empire Earth" / "EE-AOC.rc"
 GAME = (0x1000, 0x29d080)
@@ -100,7 +100,6 @@ class Obj:
 
 TEXT = 0x60500020
 RDATA_S = 0x40400040
-DATA_S = 0xC0400040
 BSS_S = 0xC0400080
 DIR32, REL32 = 6, 0x14
 
@@ -290,7 +289,7 @@ def classify1(sym, is_func, ctx):
             (" (dllimport)" if bare != sym else f" ({virtual_tag(sym)}, referenced directly)")
     if bare in ctx.get("sxl_exports", ()):
         return "sxl", "sxlrt233.dll exports it; the original exe does not import it"
-    if ctx.get("won_linked") and any(lo <= r < hi for r in rvas for lo, hi in WON):
+    if any(lo <= r < hi for r in rvas for lo, hi in WON):
         for r in rvas:
             alias = [n for n in ctx["at"].get(r, ()) if n != sym and n in defined]
             if alias:
@@ -494,7 +493,6 @@ class Stubs:
         self.initialised = initialised
         self.text = self.o.section(".text", TEXT)
         self.rdata = self.o.section(".rdata", RDATA_S)
-        self.flags = self.o.section(".data", DATA_S)
         self.ids = []
         t = self.o.secs[self.text - 1][1]
         self.o.define("$ee_trap", self.text, 0, func=True, cls=3)
@@ -538,36 +536,6 @@ class Stubs:
         self._align()
         return name
 
-    def won(self, sym):
-        conv, args, kind = signature(sym)
-        if args is None or kind == "struct" or conv is None:
-            self.trap(sym, "WON, no graceful stub: by-value class or unknown convention")
-            return "trap"
-        flag = len(self.o.secs[self.flags - 1][1])
-        self.o.secs[self.flags - 1][1].extend(b"\0\0\0\0")
-        fname = f"$ee_f{flag:x}"
-        self.o.define(fname, self.flags, flag, cls=3)
-        msg = self.string(f"EE-WON-STUB {sym}\n")
-        t = self.o.secs[self.text - 1][1]
-        at = len(t)
-        self.o.define(sym, self.text, at, func=True)
-        if kind == "this":
-            t += b"\x51"
-        p = len(t)
-        t += b"\x80\x3d\0\0\0\0\x00\x75\x12\xc6\x05\0\0\0\0\x01\x68\0\0\0\0\xff\x15\0\0\0\0"
-        self.o.reloc(self.text, p + 2, fname, DIR32)
-        self.o.reloc(self.text, p + 11, fname, DIR32)
-        self.o.reloc(self.text, p + 17, msg, DIR32)
-        self.o.reloc(self.text, p + 23, ODS, DIR32)
-        t += b"\x58\xc7\x00\0\0\0\0" if kind == "this" else b"\x33\xc0"
-        t += b"\x33\xd2"
-        if kind == "float":
-            t += b"\xd9\xee"
-        pop = args if conv in ("__thiscall", "__stdcall", "stdcall") else 0
-        t += struct.pack("<BH", 0xC2, pop) if pop else b"\xc3"
-        self._align()
-        return "won"
-
     def alias(self, sym, target):
         t = self.o.secs[self.text - 1][1]
         at = len(t)
@@ -606,10 +574,6 @@ class Stubs:
             fb["zero, size guessed"] += 1
             return fb
         if rva >= DATA_RAW_END:
-            sec = self.o.section(".bss", BSS_S, bytes(size))
-            self.o.define(sym, sec, 0)
-            return fb
-        if "@WONAPI@@" in sym and not sym.startswith("??_"):
             sec = self.o.section(".bss", BSS_S, bytes(size))
             self.o.define(sym, sec, 0)
             return fb
@@ -734,15 +698,14 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
     if code:
         sys.exit(log)
     libs.insert(1, imglib)
-    if won:
-        wonlib = lib_dir / "won.lib"
-        (lib_dir / "won.rsp").write_text("\n".join(f'"{it["obj"]}"' for it in won) + "\n")
-        code, log = exe_roundtrip.run([str(pkg / "Bin" / "LIB.EXE"), "/nologo", f"/OUT:{wonlib.name}", "@won.rsp"],
-                                      lib_dir, pkg)
-        if code:
-            sys.exit(log)
-        libs.insert(1, wonlib)
-        libs.append(verify.TOOLCHAIN / "vc98lib" / "rtm" / "OLDNAMES.LIB")
+    wonlib = lib_dir / "won.lib"
+    (lib_dir / "won.rsp").write_text("\n".join(f'"{it["obj"]}"' for it in won) + "\n")
+    code, log = exe_roundtrip.run([str(pkg / "Bin" / "LIB.EXE"), "/nologo", f"/OUT:{wonlib.name}", "@won.rsp"],
+                                  lib_dir, pkg)
+    if code:
+        sys.exit(log)
+    libs.insert(1, wonlib)
+    libs.append(verify.TOOLCHAIN / "vc98lib" / "rtm" / "OLDNAMES.LIB")
     direct = {n for n, (f, _) in refs.items() if f and not n.startswith("__imp_")}
     undata = engine_lib(lib_dir, [], pkg, direct)
     print(f"Low-Level Engine.lib: call thunks for {len(undata)} `)const` methods (implib, no local repair)")
@@ -751,8 +714,7 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
 
     objs = [it["obj"] for it in game]
     dedupe = patch(out, objs, dup_pre, game) if patch else []
-    if won:
-        dedupe += won_comdat_patch(out, objs, dup_pre, game)
+    dedupe += won_comdat_patch(out, objs, dup_pre, game)
     code1, log1 = link(out, objs, libs, res, debug, "pass1")
     unres1, dups1, other1 = parse_log(log1)
     print(f"pass 1: link exit {code1}: {len(unres1)} unresolved symbols, {len(dups1)} duplicates, "
@@ -769,9 +731,8 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
     engine_exports = {ln.rsplit(" @", 1)[0] for ln in (LINK_DIR / "lle" / "exports.txt").read_text(encoding="utf-8")
                       .splitlines() if ln.strip() and not ln.startswith("#")} - imported
     ctx = {"at": at, "of": of, "defined": defined, "by_scope": by_scope, "unit_at": unit_at, "fails": fails,
-           "engine_exports": engine_exports, "alias": {}, "won_linked": bool(won),
-           "sxl_exports": set() if not won else
-           {ln for ln in (LINK_DIR / "exe" / "sxlrt233_exports.txt").read_text(encoding="utf-8").splitlines()
+           "engine_exports": engine_exports, "alias": {},
+           "sxl_exports": {ln for ln in (LINK_DIR / "exe" / "sxlrt233_exports.txt").read_text(encoding="utf-8").splitlines()
             if ln and not ln.startswith("#")} - imported}
     inferred = infer_addresses(unres1, game + won, at, of, read_vtable_slots())
     ctx["inferred"] = inferred
@@ -835,11 +796,8 @@ def link_exe(out, items, fails, libobj, debug=True, members=None, stubs_pass=Tru
                     kinds["data alias (weak external) " + c] += 1
                 continue
             if is_func and not s.startswith("??_7"):
-                if c == "won":
-                    kinds["won " + stubs.won(s)] += 1
-                else:
-                    stubs.trap(s, f"{c}: {d}")
-                    kinds["trap " + c] += 1
+                stubs.trap(s, f"{c}: {d}")
+                kinds["trap " + c] += 1
                 continue
             if s in members and not is_func:
                 member_alias[s] = members[s]
@@ -895,7 +853,7 @@ def won_comdat_patch(out, objs, dup_pre, game):
                 patch[rel][n] = "comdat-any"
     del wonrels
     done = []
-    (out / "obj" / "dedupe").mkdir(exist_ok=True)
+    (out / "obj" / "dedupe").mkdir(parents=True, exist_ok=True)
     for rel, what in patch.items():
         it = by_rel[rel]
         dst = out / "obj" / "dedupe" / it["obj"].name
@@ -903,6 +861,12 @@ def won_comdat_patch(out, objs, dup_pre, game):
         objs[objs.index(it["obj"])] = dst
         done += [(n, rel, how) for n, how in what.items()]
     if done:
-        print(f"--won: {len(done)} game COMDAT(s) set to SELECT_ANY in object copies: " +
+        print(f"won: {len(done)} game COMDAT(s) set to SELECT_ANY in object copies: " +
               ", ".join(sorted({n for n, _, _ in done})), flush=True)
     return done
+
+
+def won_extra_units():
+    have = {p.resolve() for mod in ("won", "exe") for _, _, p in module_units(mod)}
+    return [(0, 0, p) for p in sorted((ROOT / "src" / "Empire Earth" / "WONAPI").rglob("*.cpp"))
+            if p.resolve() not in have]

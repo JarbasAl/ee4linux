@@ -43,6 +43,7 @@ you build.
 | Module | Functions byte-identical | Code bytes byte-identical |
 |---|---:|---:|
 | EE-AOC.exe (game code) | 15,234 / 16,884 (90.2%) | 1,678,616 / 2,736,250 (61.3%) |
+| EE-AOC.exe (WON library) | 5,698 / 8,380 (68.0%) | 347,590 / 1,386,594 (25.1%) |
 | TCP Protocol.dll | 124 / 125 (99.2%) | 13,417 / 13,649 (98.3%) |
 | Miles Sound System Mixer.dll | 106 / 106 (100.0%) | 5,021 / 5,021 (100.0%) |
 | Default.dll | 795 / 845 (94.1%) | 52,833 / 97,011 (54.5%) |
@@ -53,13 +54,12 @@ you build.
 | libpng/zlib/libjpeg in the exe | 318 / 318 (100.0%) | 98,476 / 98,476 (100.0%) |
 | Language.dll | resources only | identical to the original apart from the link time stamps and the debug record (PDB path) |
 
-Measured on 2026-11-05 at source revision 49876f0b7078: a function counts when its compiled code is identical to the original's, in the context of its own unit, with every reference resolving to the same symbol. Counts exclude CRT, SDK and import-thunk code; the exe row is the game code range (the WON networking library linked into the exe is not counted).
+Measured on 2026-11-06 at source revision c70d53ef010a: a function counts when its compiled code is identical to the original's, in the context of its own unit, with every reference resolving to the same symbol. Counts exclude CRT, SDK and import-thunk code.
 <!-- status:end -->
 
 The images link from this source alone. Where a function is not byte-identical yet, the image carries this source's
-version of it, so the images are not byte-identical to the retail files. `EE-AOC.exe` links stubs for the functions the
-source does not define yet, almost all of them in the WON online library (the online services are not available in
-this build).
+version of it, so the images are not byte-identical to the retail files. `EE-AOC.exe` includes the WON library from
+source. The WON online services themselves were not tested: the servers no longer exist.
 
 Testing (automated, on the full-source build of the game and engine):
 
@@ -71,6 +71,8 @@ Testing (automated, on the full-source build of the game and engine):
   of the game, no out-of-sync.
 - The original executable running on the rebuilt `Low-Level Engine.dll` plays identically to the retail engine.
 - The settings screens and the menu tour pass on both the original and the rebuilt images.
+- The multiplayer lobby opens and its LAN and Direct Connect screens behave as on the original. Direct Connect games
+  start in every direction between original and rebuilt images. Peer sync during play was not shown there.
 - Not covered yet: audio output, physical input devices.
 
 ## Building
