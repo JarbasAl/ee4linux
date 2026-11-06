@@ -16,6 +16,7 @@ MODULE_SRC = {
     "exe": "",
     "jpeg": "ThirdParty/libjpeg",
     "exeimg": "ThirdParty",
+    "won": "Empire Earth/WONAPI",
 }
 EEX_INCLUDE_DIRS = ["Low-Level Engine/Thread System", "Low-Level Engine/Graphics Engine",
                     "Empire Earth/Database", "Empire Earth/AI Thread"]
@@ -35,10 +36,12 @@ MODULE_FLAGS = {
     "exe": "-O1 -G6 -MD -GR -DLLE_CURRENT_HEADERS -DLLE_EXE_HEADERS -Zi -Zm200",
     "jpeg": "-O1 -G6 -MD",
     "exeimg": "-O2 -MD",
+    "won": "-O2 -MD -GR -GX -DEE_DINKUM_SXL233",
 }
 MODULE_FILES = {"exe": "EE-AOC.exe", "lle": "Low-Level Engine.dll", "default": "Default.dll", "tcp": "TCP Protocol.dll",
                 "dx7hr": "DX7HRDisplay.dll", "dx7hrtnl": "DX7HRTnLDisplay.dll",
-                "mixer": "Miles Sound System Mixer.dll", "jpeg": "Low-Level Engine.dll", "exeimg": "EE-AOC.exe"}
+                "mixer": "Miles Sound System Mixer.dll", "jpeg": "Low-Level Engine.dll", "exeimg": "EE-AOC.exe",
+                "won": "EE-AOC.exe"}
 
 
 def module_filename(mod):

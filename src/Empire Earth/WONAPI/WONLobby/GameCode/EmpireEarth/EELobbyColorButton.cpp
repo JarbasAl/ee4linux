@@ -73,9 +73,9 @@ void EELobbyColorButton::Paint(Graphics& inGraphics)
 {
     Component::Paint(inGraphics);
     inGraphics.SetColor(gEELobbyColors[mColor]);
-    inGraphics.FillRect(0, 0, mWidth, mHeight);
+    inGraphics.FillRect(0, 0, Width(), Height());
     if (!IsDisabled())
-        LobbyDraw3DFrame(inGraphics, 0, 0, mWidth, mHeight, mButtonFlag5);
+        LobbyDraw3DFrame(inGraphics, 0, 0, Width(), Height(), mButtonFlag5);
 }
 
 // FUNCTION: EXE 0x690669
@@ -90,13 +90,13 @@ bool EELobbyColorButton::VirtualAC()
         return false;
     }
     mChooser->mSelected = -1;
-    int theX = (mWidth - mChooser->mWidth) / 2;
-    int theY = mHeight;
+    int theX = (Width() - mChooser->Width()) / 2;
+    int theY = Height();
     Fn2F56D0(theX, theY);
     PopupParams theParams(mChooser.mPtr, 0x23e7, this, theX, theY);
-    theParams.mL28 = mHeight;
-    theParams.mL20 = theY - mHeight;
-    theParams.mOwner = this;
+    theParams.mAvoidRect.height = Height();
+    theParams.mAvoidRect.y = theY - Height();
+    theParams.mInputComponent = this;
     GetRoot()->OpenPopup(theParams);
     return false;
 }
@@ -191,8 +191,8 @@ void EELobbyColorChooser::Paint(Graphics& inGraphics)
 {
     Component::Paint(inGraphics);
     inGraphics.SetSysColor(11);
-    inGraphics.FillRect(0, 0, mWidth, mHeight);
-    LobbyDrawFrame(inGraphics, 0, 0, mWidth, mHeight, false);
+    inGraphics.FillRect(0, 0, Width(), Height());
+    LobbyDrawFrame(inGraphics, 0, 0, Width(), Height(), false);
     int theIndex = 0;
     int theY = 8;
     for (int theRow = 0; theRow < 4; theRow++) {

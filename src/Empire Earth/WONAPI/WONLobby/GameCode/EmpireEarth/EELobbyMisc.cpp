@@ -169,9 +169,9 @@ void EELobbySetSlot(EELobbyPlayerSlot* inSlot, const EEGameOptionsPlayer& inPlay
         break;
     case 1:
     case 2:
-        if (inSlot->mClient.mPtr != NULL && inSlot->mClient->mPlayer != NULL) {
+        if (inSlot->mClient.mPtr != NULL && inSlot->mClient->mPlayer.mPtr != NULL) {
             inSlot->mOptions[4] = inPlayer.mType == 2;
-            inSlot->SetPlayer(inSlot->mClient.mPtr, (EELobbyPlayer*)inSlot->mClient->mPlayer);
+            inSlot->SetPlayer(inSlot->mClient.mPtr, (EELobbyPlayer*)inSlot->mClient->mPlayer.mPtr);
         } else if (inPlayer.mName == "") {
             inSlot->Fn29997B();
         } else {
@@ -323,9 +323,9 @@ void EELobbyGetVersion(GUIString& outVersion, unsigned long& outChecksum)
 }
 
 // FUNCTION: EXE 0x6989ef
-void EELobbyFn2989EF(ResourceCollection* inCollection)
+void EELobbyFn2989EF(ResourceConfigTable* inCollection)
 {
-    ResourceConfigTable* theTable = inCollection->GetTable("LobbyGlobal", false);
+    ResourceConfig* theTable = inCollection->AddConfig("LobbyGlobal", NULL);
     theTable->AddSound("LobbyMusic", new EELobbyMusic(SoundDescriptor("", 2)));
 }
 

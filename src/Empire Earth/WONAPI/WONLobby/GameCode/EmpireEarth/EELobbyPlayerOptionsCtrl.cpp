@@ -209,9 +209,9 @@ void EELobbyPlayerOptionsCtrl::PlayerOptionChanged(int inSlot, int inWhat)
 // FUNCTION: EXE 0x69a240
 void EELobbyPlayerOptionsCtrl::Fn29A240(ComponentEvent* inEvent)
 {
-    LobbyTargetEvent* theEvent = (LobbyTargetEvent*)inEvent;
-    if (theEvent->Fn359470() && theEvent->mTarget->mPlayer != NULL
-        && ((EELobbyPlayer*)theEvent->mTarget->mPlayer)->GetSlot() == mMySlot)
+    PlayerChangedEvent* theEvent = static_cast<PlayerChangedEvent*>(inEvent);
+    if (theEvent->Fn359470() && theEvent->mClient.mPtr->mPlayer.mPtr != NULL
+        && ((EELobbyPlayer*)theEvent->mClient.mPtr->mPlayer.mPtr)->GetSlot() == mMySlot)
         UpdatePlayer(mMySlot);
 }
 
@@ -229,7 +229,7 @@ void EELobbyPlayerOptionsCtrl::HandleComponentEvent(ComponentEvent* inEvent)
         Fn29A240(inEvent);
     case 100063:
         if (mB88)
-            UpdatePlayer(((LobbyEvent*)inEvent)->mParam);
+            UpdatePlayer(static_cast<EELobbySyncPlayerEvent*>(inEvent)->mParam);
         break;
     case 100065:
         if (mB88)
@@ -244,7 +244,7 @@ void EELobbyPlayerOptionsCtrl::HandleComponentEvent(ComponentEvent* inEvent)
         }
         break;
     case 100054:
-        mL84 |= ((LobbyEvent*)inEvent)->mParam;
+        mL84 |= static_cast<SetRoomSpecFlagsEvent*>(inEvent)->mFlags;
         break;
     }
 }

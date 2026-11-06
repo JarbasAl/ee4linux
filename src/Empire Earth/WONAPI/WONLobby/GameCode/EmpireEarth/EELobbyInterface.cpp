@@ -322,8 +322,8 @@ void EELobbyFn296EAC(EEGameOptionsPlayer& outMyPlayer)
 void EELobbyFn2970E3()
 {
     unsigned long theIndex = 0;
-    void* theHandle = gLobbyNetHandle;
-    if (theHandle != NULL) {
+    long theHandle = WONAPI::IPAddr::GetLocalHost();
+    if (theHandle != 0) {
         unsigned long i = 1;
         std::list<LobbyNetAddress> theAddresses;
         LobbyGetNetAddresses(theAddresses, false);
@@ -404,8 +404,8 @@ void EELobbyFn2972C6()
     gEELobbyWindowManager->Virtual04();
     gEELobbyRootWindow = new MSWindowManager(NULL);
     gEELobbyRootWindow->mBA5 = false;
-    LobbyFn3D2A20(&gEELobbyRootWindow->mImageDecoder);
-    LobbyFn3D24E0(&gEELobbyRootWindow->mImageDecoder);
+    JPGDecoder::Add(&gEELobbyRootWindow->mImageDecoder);
+    PNGDecoder::Add(&gEELobbyRootWindow->mImageDecoder);
     gEELobbyRootWindow->SetSoundDecoder(new EELobbySoundDecoder);
     gEELobbyPlatformWindow = new MSWindow;
     gEELobbyPlatformWindow->mBC5 = true;
@@ -422,8 +422,8 @@ void EELobbyFn2972C6()
     LobbyFn3D08C0(NULL);
     if (GetClassNameA(gGameWindow->GetOSRepresentation(), theText, 256) &&
         GetClassInfoA(gInstance, theText, &theClass) && theClass.hIcon != NULL)
-        gEELobbyPlatformWindow->SetIcon(new MSNativeIcon(gEELobbyPlatformWindow->mDisplayContext, theClass.hIcon));
-    RootContainer* theRoot = gEELobbyPlatformWindow->mRoot;
+        gEELobbyPlatformWindow->SetIcon(new MSNativeIcon(gEELobbyPlatformWindow->mDisplayContext.get(), theClass.hIcon));
+    RootContainer* theRoot = gEELobbyPlatformWindow->mRoot.get();
     EELobbyInit();
     SmartPtr<Container> theScreen = LobbyFn362250();
     theRoot->Fn2F6140(theScreen.get(), 3, theRoot, 0, 0, 0, 0, 0);
@@ -675,7 +675,7 @@ void EELobbyFn297DE1()
             gUIManager->Pop();
         LobbyFn362880();
         if (gEELobbyGameDone)
-            LobbyMessageBox(gLobbyGameDoneTitle, gLobbyGameDoneText);
+            LobbyMessageBox(::RoutingLogic_GameDissolvedTitle_String, ::RoutingLogic_GameDissolvedDetails_String);
         EELobbyFn2976C7();
     }
 }

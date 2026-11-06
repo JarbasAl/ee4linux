@@ -26,7 +26,7 @@ namespace {
 // one player's line (0x2c bytes; vtable 0x84c2c0: TextListItem's slots)
 class ConnectListItem : public TextListItem {
 public:
-    ConnectListItem(const GUIString& inName, Font* inFont, unsigned char inSlot) : TextListItem(inName, inFont)
+    ConnectListItem(const GUIString& inName, Image* inImage, unsigned char inSlot) : TextListItem(inName, inImage)
     {
         mSlot = inSlot;
     }
@@ -77,9 +77,9 @@ bool EELobbyConnectDialog::Run(EELobbyGame* inGame)
     for (int i = 0; i < 8; i++) {
         EELobbyPlayerSlot* theSlot = inGame->GetPlayerSlot(i);
         if (theSlot != NULL && theSlot->mOptions[0] == 3) {
-            Font* theFont = (i == 0 ? gLobbyFont5665C0 : gLobbyFont5668AC).mPtr;
-            mConnectList->InsertItem(new ConnectListItem(theSlot->GetName(), theFont, i), -1);
-            if (theFont != gLobbyFont5665C0.mPtr)
+            Image* theImage = (i == 0 ? ::GameUserListCtrl_Ready_Image : ::LobbyGlobal_Searching_Image).mPtr;
+            mConnectList->InsertItem(new ConnectListItem(theSlot->GetName(), theImage, i), -1);
+            if (theImage != ::GameUserListCtrl_Ready_Image.mPtr)
                 theAllConnected = false;
         }
     }
@@ -97,7 +97,7 @@ bool EELobbyConnectDialog::Run(EELobbyGame* inGame)
 // FUNCTION: EXE 0x690c85
 void EELobbyConnectDialog::End(bool inOK)
 {
-    RootContainer* theRoot = Fn2F5940();
+    Window* theRoot = Fn2F5940();
     if (theRoot != NULL) {
         mIsEnded = true;
         theRoot->Fn32B0A0(inOK ? 100001 : 100002, this);
@@ -114,10 +114,10 @@ void EELobbyConnectDialog::SetConnected(unsigned char inSlot, bool inConnected)
     for (int i = 0; i < mConnectList->GetNumItems(); i++) {
         ConnectListItem* theItem = (ConnectListItem*)mConnectList->GetItem(i);
         if (theItem->mSlot == inSlot) {
-            theItem->mFont = (inConnected ? gLobbyFont5665C0 : gLobbyFont5666BC).mPtr;
+            theItem->mImage = (inConnected ? ::GameUserListCtrl_Ready_Image : ::ServerListCtrl_PingFailed_Image).mPtr;
             theChanged = theItem;
         }
-        if (theItem->mFont.mPtr != gLobbyFont5665C0.mPtr)
+        if (theItem->mImage.mPtr != ::GameUserListCtrl_Ready_Image.mPtr)
             theAllConnected = false;
     }
     if (theChanged.mPtr != NULL)

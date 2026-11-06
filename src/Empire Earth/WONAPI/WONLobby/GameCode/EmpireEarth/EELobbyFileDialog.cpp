@@ -141,7 +141,7 @@ void EELobbyFileDialog::HandleComponentEvent(ComponentEvent* inEvent)
         }
     } else if (inEvent->mType == 23) {
         ListItemClickedEvent* theEvent = (ListItemClickedEvent*)inEvent;
-        if (theEvent->mDoubleClick && theEvent->mParam == 0)
+        if (theEvent->mDoubleClick && theEvent->mButton == 0)
             LoadSelectedFile();
         return;
     }

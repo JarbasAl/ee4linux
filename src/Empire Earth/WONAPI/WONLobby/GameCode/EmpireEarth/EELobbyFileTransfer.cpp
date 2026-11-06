@@ -98,7 +98,7 @@ WONStatus SendFileOp::Virtual10()
     for (;;) {
         if ((unsigned long)mReadBuffer.mL00 < (unsigned long)mReadBuffer.mL08) {
             mSocket->Fn2B1360(TimeLeft());
-            unsigned long theSent = 0;
+            int theSent = 0;
             WONStatus theStatus = mSocket->Send(mReadBuffer.mData + mReadBuffer.mL00,
                 mReadBuffer.mL08 - mReadBuffer.mL00, &theSent);
             if ((long)theSent > 0)
@@ -185,9 +185,9 @@ void EELobbyFileTransfer::OnClientAccepted(AsyncOp* inOp)
         return;
     SmartPtr<AsyncSocket> theSocket = ((AcceptOp*)inOp)->mAcceptedSocket;
     mClients.insert(theSocket);
-    theSocket->SetCloseCompletion(new LobbyCompletion<EELobbyFileTransfer>(&EELobbyFileTransfer::OnClientClosed, this));
-    theSocket->Fn2B4740(new SendFileOp(mPath, NULL), -1);
-    theSocket->Fn2B4740(new CloseOp(NULL), -1);
+    static_cast<QueueSocket*>(theSocket.get())->SetCloseCompletion(new LobbyCompletion<EELobbyFileTransfer>(&EELobbyFileTransfer::OnClientClosed, this));
+    static_cast<QueueSocket*>(theSocket.get())->Fn2B4740(new SendFileOp(mPath, NULL), -1);
+    static_cast<QueueSocket*>(theSocket.get())->Fn2B4740(new CloseOp(NULL), -1);
 }
 
 // FUNCTION: EXE 0x691983
@@ -223,7 +223,7 @@ void EELobbyFileTransfer::OnFileReceived(AsyncOp* inOp)
 WONStatus EELobbyFileTransfer::Serve(unsigned short inPort)
 {
     Stop();
-    mConnection = new AsyncSocket(0);
+    mConnection = new QueueSocket(0);
     WONStatus theStatus = mConnection->Fn2B0D90(inPort, 0);
     if (theStatus != 0)
         return theStatus;
@@ -271,14 +271,14 @@ void EELobbyFileTransfer::Download()
     if (mPath.empty() || !mHost.IsValid())
         return;
     mLastProgressTime = GetTickCount();
-    SmartPtr<AsyncSocket> theSocket = new AsyncSocket(0);
-    theSocket->SetCloseCompletion(new LobbyCompletion<EELobbyFileTransfer>(&EELobbyFileTransfer::OnClientClosed, this));
+    SmartPtr<AsyncSocket> theSocket = new QueueSocket(0);
+    static_cast<QueueSocket*>(theSocket.get())->SetCloseCompletion(new LobbyCompletion<EELobbyFileTransfer>(&EELobbyFileTransfer::OnClientClosed, this));
     SmartPtr<RecvBytesOp> theOp = new RecvBytesOp(0, NULL);
     theOp->mCompletion = new LobbyCompletion<EELobbyFileTransfer>(&EELobbyFileTransfer::OnFileReceived, this);
     theOp->mPath = mPath;
     theOp->Fn2B4F90(new LobbyCompletion<EELobbyFileTransfer>(&EELobbyFileTransfer::OnProgress, this), 10000);
-    theSocket->Fn2B4740(new ConnectOp(mHost), -1);
-    theSocket->Fn2B4740(theOp.mPtr, -1);
+    static_cast<QueueSocket*>(theSocket.get())->Fn2B4740(new ConnectOp(mHost), -1);
+    static_cast<QueueSocket*>(theSocket.get())->Fn2B4740(theOp.mPtr, -1);
     mClients.insert(theSocket);
 }
 

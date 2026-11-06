@@ -302,10 +302,10 @@ void EELobbyGameOptionsCtrl::HandleComponentEvent(ComponentEvent* inEvent)
         break;
     case 100062:
         if (mB94)
-            UpdateOption(((LobbyEvent*)inEvent)->mParam);
+            UpdateOption(static_cast<EELobbySyncOptionEvent*>(inEvent)->mParam);
         break;
     case 100054:
-        mL90 |= ((LobbyEvent*)inEvent)->mParam;
+        mL90 |= static_cast<SetRoomSpecFlagsEvent*>(inEvent)->mFlags;
         break;
     case 100032:
         Fn2948E2();

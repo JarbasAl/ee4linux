@@ -76,23 +76,23 @@ EELobbyMusic::EELobbyMusic(const SoundDescriptor& inDescriptor) : Sound(inDescri
 // (compiler-generated; name in analysis/exe/names.txt)
 
 // FUNCTION: EXE 0x69ce46
-void EELobbyMusic::Play()
+void EELobbyMusic::PlayHook()
 {
     if (gUIManager != NULL)
         gUIManager->SetMusicVolume(gGamePreferences.mSettings.GetMusicVolume());
 }
 
 // FUNCTION: EXE 0x69ce61
-void EELobbyMusic::Stop()
+void EELobbyMusic::StopHook()
 {
     if (gUIManager != NULL)
         gUIManager->SetMusicVolume(0.0f);
 }
 
 // FUNCTION: EXE 0x69ce78
-void EELobbyMusic::Virtual0C()
+void EELobbyMusic::ResumeHook()
 {
-    Play();
+    PlayHook();
 }
 
 // FUNCTION: EXE 0x69ce7d
@@ -112,14 +112,14 @@ EELobbySound::~EELobbySound()
 }
 
 // FUNCTION: EXE 0x69ceeb
-void EELobbySound::Play()
+void EELobbySound::PlayHook()
 {
     if (gSoundManager != NULL)
         mInstanceID = gSoundManager->Play(mSampleID, 1.0f, 0.0f, 1.0f, false, NULL);
 }
 
 // FUNCTION: EXE 0x69cf1c
-void EELobbySound::Stop()
+void EELobbySound::StopHook()
 {
     if (gSoundManager != NULL && mInstanceID != -1)
         gSoundManager->Stop(mInstanceID, false);

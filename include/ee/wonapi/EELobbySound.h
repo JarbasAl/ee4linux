@@ -10,6 +10,9 @@ namespace WONAPI {
 
 // what a sound is made from (Sound's ctor copies mL00 to +0x08 and mPath to +0x0c; the decoder loads mPath)
 struct SoundDescriptor {
+    SoundDescriptor(); //329810 actual default, native flags0 and empty path
+    SoundDescriptor(const char*);
+    void SetSoundFlags(int,bool); //329990 actual native bit update
     SoundDescriptor(const std::string& inPath, long inType);    // 0x329830 (WONAPI; r12-misc-h5)
 
     long mL00;                              // +0x00
@@ -20,14 +23,21 @@ class Sound : public RefCount {
 public:
     Sound(const SoundDescriptor& inDescriptor);     // 0x3299c0 (WONAPI, /GX)
     // no user dtor: EELobbyMusic's ??_G 0x29ce1e destroys mPath and stores RefCount's vptr only
-    virtual void Play();                    // +0x04 (0x326b60: empty)
-    virtual void Stop();                    // +0x08 (0x326b60)
-    virtual void Virtual0C();               // +0x0c (empty)
-    virtual void Virtual10();               // +0x10 (empty)
+    virtual void PlayHook() {}              // +0x04 genuine SDK empty hook; native326b60
+    virtual void StopHook() {}              // +0x08, genuine SDK empty hook; native326b60
+    virtual void ResumeHook() {}            // +0x0c, genuine SDK empty hook; native326b60
+    virtual void RewindHook() {}            // +0x10 genuine SDK empty hook; native326b60
+    void Fn329BD0();                        // 0x329bd0, actual public Play wrapper (call-only)
+    void Stop();                           // genuine SDK public CPP API, native3a6db0
+    void Resume();                         // genuine SDK public CPP API, native3a6dc0
+    void Rewind();
+    void SetLooping(bool inLooping) { mIsLooping = inLooping; }
+    void Fn329BF0(bool inMuted);            // 0x329bf0: toggles descriptor flag4; call-only provisional name
+    bool GetMuted();                       //genuine SDK CPP, native329c20/9
 
     long mL08;                              // +0x08
     std::string mPath;                      // +0x0c
-    long mL1C;                              // +0x1c
+    bool mIsLooping;                        // +0x1c; natural padding through1f, actual ctor byte store
 };
 
 typedef SmartPtr<Sound> SoundPtr;
@@ -44,9 +54,9 @@ class EELobbyMusic : public Sound {
 public:
     EELobbyMusic(const SoundDescriptor& inDescriptor);    // 0x29ce06
 
-    virtual void Play();                    // +0x04 0x29ce46
-    virtual void Stop();                    // +0x08 0x29ce61
-    virtual void Virtual0C();               // +0x0c 0x29ce78 (plays again)
+    virtual void PlayHook();                // +0x04 0x29ce46
+    virtual void StopHook();                // +0x08 0x29ce61
+    virtual void ResumeHook();              // +0x0c 0x29ce78 (plays again)
 };
 
 // a lobby sound effect: a sample of the engine's sound manager
@@ -55,8 +65,8 @@ public:
     EELobbySound(const SoundDescriptor& inDescriptor, unsigned long inSampleID);    // 0x29ce7d
     virtual ~EELobbySound();                // 0x29cebc (unloads the sample)
 
-    virtual void Play();                    // +0x04 0x29ceeb
-    virtual void Stop();                    // +0x08 0x29cf1c
+    virtual void PlayHook();                // +0x04 0x29ceeb
+    virtual void StopHook();                // +0x08 0x29cf1c
 
     unsigned long mSampleID;                // +0x20
     unsigned long mInstanceID;              // +0x24 (-1: not playing)

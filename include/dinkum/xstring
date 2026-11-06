@@ -1,0 +1,9 @@
+// Proposed scoped ownership/configuration repair; archived full _Grow patch remains separate.
+#ifndef EE_DINKUM_XSTRING_PROFILE
+#define EE_DINKUM_XSTRING_PROFILE
+#ifdef EE_DINKUM_SXL233
+#include "xstring_sxl233"
+#else
+#include "../../toolchain/msvc6.0/Include/XSTRING"
+#endif
+#endif

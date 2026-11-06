@@ -16,6 +16,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/EELobbyGameCode.h"
+#include "ee/wonapi/WONLobbyModel.h"
 
 using namespace WONAPI;
 
@@ -384,7 +385,7 @@ void EELobbyGame::Virtual30(LobbyClient* inClient)
     mOptions[15] = 1;
     EELobbyFn2988D8(this);
     ResetSlots();
-    mSlots[0].SetPlayer(inClient, (EELobbyPlayer*)inClient->mPlayer);
+    mSlots[0].SetPlayer(inClient, (EELobbyPlayer*)inClient->mPlayer.mPtr);
 }
 
 // FUNCTION: EXE 0x692ade
@@ -462,7 +463,7 @@ bool EELobbyGame::Virtual5C(ReadBuffer& inBuffer)
         ReadOption(inBuffer, i);
     if (inBuffer.mL08 - inBuffer.mL00 > 0) {
         unsigned char theCount = inBuffer.ReadByte();
-        LobbyRoomClients* theClients = LobbyFn35B6F0();
+        LobbyServer* theClients = LobbyFn35B6F0();
         if (theClients == NULL && mL2C == 2)
             return true;
         mFiles.reserve(theCount);
@@ -557,7 +558,7 @@ short EELobbyGame::Virtual38(ReadBuffer& inBuffer, LobbyClient* inClient)
     }
     if (i >= 8)
         return theSaved ? 10000 : 2;
-    mSlots[i].SetPlayer(inClient, (EELobbyPlayer*)inClient->mPlayer);
+    mSlots[i].SetPlayer(inClient, (EELobbyPlayer*)inClient->mPlayer.mPtr);
     if (!theSaved)
         mSlots[i].Reset();
     return 0;
@@ -579,7 +580,7 @@ void EELobbyGame::Virtual3C(LobbyClient* inClient, WriteBuffer& outBuffer)
 int EELobbyGame::SeatClient(LobbyClient* inClient)
 {
     if (inClient != NULL) {
-        EELobbyPlayer* thePlayer = (EELobbyPlayer*)inClient->mPlayer;
+        EELobbyPlayer* thePlayer = (EELobbyPlayer*)inClient->mPlayer.mPtr;
         if (thePlayer != NULL) {
             unsigned char theSlot = thePlayer->GetSlot();
             if (theSlot < 8) {
@@ -603,7 +604,7 @@ void EELobbyGame::Virtual44(ReadBuffer& inBuffer)
         mSlots[i].ReadData(inBuffer);
     if (HasGameFile())
         ReadGameFile(inBuffer);
-    LobbyClientSetIterator theIterator(mClients);
+    LobbyClientSetIterator theIterator(mClients.mPtr);
     while (theIterator.HasMore()) {
         LobbyClient* theClient = NULL;
         theIterator.Next(&theClient);
@@ -740,7 +741,7 @@ void EELobbyGame::HandlePlayerOptionRequest(ReadBuffer& inBuffer, LobbyClient* i
 {
     if (!mIsHost)
         return;
-    EELobbyPlayer* thePlayer = (EELobbyPlayer*)inFrom->mPlayer;
+    EELobbyPlayer* thePlayer = (EELobbyPlayer*)inFrom->mPlayer.mPtr;
     if (thePlayer == NULL)
         return;
     int theIndex = thePlayer->GetSlot();
@@ -900,9 +901,9 @@ void EELobbyGame::HandleGameState(ReadBuffer& inBuffer, LobbyClient* inFrom)
     for (i = 0; i < 8; i++) {
         mSlots[i].ReadData(inBuffer);
         if (mSlots[i].mOptions[0] == 3) {
-            LobbyClient* theClient = mClients->FindClient(inBuffer.ReadShort());
-            if (theClient != NULL && theClient->mPlayer != NULL)
-                mSlots[i].SetPlayer(theClient, (EELobbyPlayer*)theClient->mPlayer);
+            LobbyClient* theClient = mClients.mPtr->FindClient(inBuffer.ReadShort());
+            if (theClient != NULL && theClient->mPlayer.mPtr != NULL)
+                mSlots[i].SetPlayer(theClient, (EELobbyPlayer*)theClient->mPlayer.mPtr);
             else
                 mSlots[i].Fn299973();
         }

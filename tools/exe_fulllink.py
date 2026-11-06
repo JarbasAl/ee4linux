@@ -567,6 +567,10 @@ class Stubs:
             sec = self.o.section(".bss", BSS_S, bytes(size))
             self.o.define(sym, sec, 0)
             return fb
+        if "@WONAPI@@" in sym and not sym.startswith("??_"):
+            sec = self.o.section(".bss", BSS_S, bytes(size))
+            self.o.define(sym, sec, 0)
+            return fb
         if self.initialised is None:
             raise SystemExit(f"data stub {sym} at {rva:#x}: initialised contents unknown (define the global in its "
                              f"unit)")

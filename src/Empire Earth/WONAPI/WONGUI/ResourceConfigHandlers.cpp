@@ -1,0 +1,131 @@
+// Native resource value parsing with per-parse-generation duplicate policy.
+// UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
+#include <windows.h>
+#include <stdio.h>
+#include <string>
+#include <list>
+#include <map>
+#include <set>
+#include <vector>
+#include "lle/LowLevelEngine.h"
+#include "ee/EEWonNet.h"
+#include "ee/wonapi/WONLobbyResource.h"
+#include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONLobbyParser.h"
+namespace WONAPI {
+// Resource map insert with the per-parse duplicate check (the DWORD instance stays out of line: TEMPLATE below).
+template <class Type,class Map>
+bool ResourceConfig_AddToMap(const char* typeName,StringParser& value,Map& values,int generation,Type*& output)
+{
+    std::string key;
+    value.ReadString(key,true);
+    if(key.empty()) throw ConfigObjectException("Invalid resource key.");
+    std::pair<Map::iterator,bool> inserted=values.insert(Map::value_type(key,Map::referent_type(Type(),generation)));
+    int& oldGeneration=inserted.first->second.second;
+    if(inserted.second) {
+        output=&inserted.first->second.first;
+        return true;
+    } else if(oldGeneration==generation) {
+        char text[512];
+        sprintf(text,"%s resource already exists: %s",typeName,key.c_str());
+        throw ConfigObjectException(text);
+    }
+    return false;
+}
+// FUNCTION: WON 0x007923d0
+bool ResourceConfig::HandleColor(StringParser& value)
+{
+    DWORD* output;
+    if(ResourceConfig_AddToMap("Color",value,mColorMap,mParseCount,output)) {
+        *output=SafeReadColor(value);
+    }
+    return true;
+}
+
+// FUNCTION: WON 0x00792410
+bool ResourceConfig::HandleFont(StringParser& value)
+{
+    SmartPtr<Font>* output;
+    if(ResourceConfig_AddToMap("Font",value,mFontMap,mParseCount,output)) {
+        *output=SafeReadFont(value);
+    }
+    return true;
+}
+
+// FUNCTION: WON 0x00792820
+bool ResourceConfig::HandleSound(StringParser& value)
+{
+    SmartPtr<Sound>* output;
+    if(ResourceConfig_AddToMap("Sound",value,mSoundMap,mParseCount,output)) {
+        *output=SafeReadSound(value);
+    }
+    return true;
+}
+
+// FUNCTION: WON 0x00792ac0
+bool ResourceConfig::HandleString(StringParser& value)
+{
+    GUIString* output;
+    if(ResourceConfig_AddToMap("String",value,mStringMap,mParseCount,output)) {
+        std::wstring text;
+        value.ReadString(text,false);
+        *output=text;
+    }
+    return true;
+}
+
+// FUNCTION: WON 0x00792d90
+bool ResourceConfig::HandleImage(StringParser& value)
+{
+    SmartPtr<Image>* output;
+    if(ResourceConfig_AddToMap("Image",value,mImageMap,mParseCount,output)) {
+        *output=SafeReadImage(value);
+    }
+    return true;
+}
+
+// FUNCTION: WON 0x00793020
+bool ResourceConfig::HandleBackground(StringParser& value)
+{
+    Background* output;
+    if(ResourceConfig_AddToMap("Background",value,mBackgroundMap,mParseCount,output)) {
+        *output=SafeReadBackground(value);
+    }
+    return true;
+}
+
+}
+
+// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// TEMPLATE: WON 0x007932d0
+// (public: __thiscall WONAPI::Background::Background(class WONAPI::Background const &)    [??0Background@WONAPI@@QAE@ABV01@@Z])
+// TEMPLATE: WON 0x007a3200
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<class WON)
+// TEMPLATE: WON 0x007a4c50
+// (public: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std:)
+
+// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// TEMPLATE: WON 0x007a36a0
+// (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)
+// TEMPLATE: WON 0x007a4600
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+
+// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// TEMPLATE: WON 0x007a21e0
+// (bool __cdecl WONAPI::ResourceConfig_AddToMap(char const *,class WONAPI::StringParser &,class WONAPI::ResourceConfig::ResMap<unsigned long> &,int,unsig)
+
+// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// TEMPLATE: WON 0x007a2f40
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<class WON)
+// TEMPLATE: WON 0x007a2fd0
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<class WON)
+// TEMPLATE: WON 0x007a3060
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<class WON)
+// TEMPLATE: WON 0x007a30f0
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<class WON)
+// TEMPLATE: WON 0x007a4300
+// (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
+
+// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// TEMPLATE: WON 0x007a33a0
+// (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)

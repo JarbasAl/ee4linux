@@ -89,6 +89,11 @@ public:
 	typedef const _Ty _FARQ *const_pointer;
 	typedef _Ty value_type;
 	};
+#if defined(EE_DINKUM_SXL233) && defined(_DLL)
+#pragma warning(disable:4231)
+extern template class _CRTIMP allocator<char>;
+#pragma warning(default:4231)
+#endif
 _STD_END
 #ifdef  _MSC_VER
 #pragma pack(pop)

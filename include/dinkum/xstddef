@@ -5,7 +5,7 @@
 #ifndef EE_DINKUM_XSTDDEF
 #define EE_DINKUM_XSTDDEF
 #include "../../toolchain/msvc6.0/Include/XSTDDEF"
-#ifndef _CPPUNWIND
+#if !defined(_CPPUNWIND) || defined(EE_DINKUM_SXL233)
  #undef _TRY_BEGIN
  #undef _CATCH
  #undef _CATCH_ALL

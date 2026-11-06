@@ -1,3 +1,8 @@
+// <set>: WON (EE_DINKUM_SXL233, the sxlrt233 DLL's headers) uses the derived form (set_sxl233); the exe and the engine
+// keep the wrapper below.
+#ifdef EE_DINKUM_SXL233
+#include "set_sxl233"
+#else
 // <set> as seen through the Dinkum C++ Library 2.33. RECONSTRUCTION.
 // The stock VC6 <set> over the 2.33 <xtree> (see <map>): _Multi is the tree's template argument (no bool member).
 // Shapes beyond that are unproven (first user: LLE FSArchive::ListFiles / FSPath::ListFiles).
@@ -314,3 +319,4 @@ _STD_END
  * suitability of this software for any purpose. It is provided
  * "as is" without express or implied warranty.
  */
+#endif

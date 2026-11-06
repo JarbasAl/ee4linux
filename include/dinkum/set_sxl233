@@ -1,0 +1,190 @@
+// <set> as seen through the Dinkum C++ Library 2.33. RECONSTRUCTION.
+// The stock VC6 <set> over the 2.33 <xtree> (see <map>): _Multi is the tree's template argument (no bool member).
+// Shapes beyond that are unproven (first user: LLE FSArchive::ListFiles / FSPath::ListFiles).
+// set standard header
+
+#if     _MSC_VER > 1000
+#pragma once
+#endif
+
+#ifndef _SET_
+#define _SET_
+#include <functional>
+#include <xtree>
+
+#ifdef  _MSC_VER
+#pragma pack(push,8)
+#endif  /* _MSC_VER */
+
+_STD_BEGIN
+		// TEMPLATE CLASS set
+		// derived form (set/multiset derive from _Tree; key extractor in a holder, see <map>)
+template<class _K, class _Pr, class _A>
+	struct _Setk {
+	struct _Kfn : public unary_function<_K, _K> {
+		const _K& operator()(const _K& _X) const
+		{return (_X); }
+		};
+	};
+template<class _K, class _Pr = less<_K>,
+	class _A = allocator<_K> >
+	class set : public _Tree<_K, _K, _Setk<_K, _Pr, _A>::_Kfn, _Pr, _A, false> {
+public:
+	typedef set<_K, _Pr, _A> _Myt;
+	typedef _K value_type;
+	typedef _Pr value_compare;
+	typedef _K key_type;
+	typedef _Pr key_compare;
+	typedef _A allocator_type;
+	typedef _Tree<_K, _K, _Setk<_K, _Pr, _A>::_Kfn, _Pr, _A, false> _Imp;
+	typedef _Imp::size_type size_type;
+	typedef _Imp::difference_type difference_type;
+	typedef _Imp::reference reference;
+	typedef _Imp::const_reference const_reference;
+	typedef _Imp::iterator iterator;
+	typedef _Imp::const_iterator const_iterator;
+	typedef _Imp::reverse_iterator reverse_iterator;
+	typedef _Imp::const_reverse_iterator const_reverse_iterator;
+	typedef pair<iterator, iterator> _Pairii;
+	typedef pair<const_iterator, const_iterator> _Paircc;
+	explicit set(const _Pr& _Pred = _Pr(), const _A& _Al = _A())
+		: _Imp(_Pred, _Al) {}
+	typedef const value_type *_It;
+	set(_It _F, _It _L, const _Pr& _Pred = _Pr(),
+		const _A& _Al = _A())
+		: _Imp(_Pred, _Al)
+		{for (; _F != _L; ++_F)
+			_Imp::insert(*_F); }
+	value_compare value_comp() const
+		{return (key_comp()); }
+	};
+		// set TEMPLATE OPERATORS
+template<class _K, class _Pr, class _A> inline
+	bool operator==(const set<_K, _Pr, _A>& _X,
+		const set<_K, _Pr, _A>& _Y)
+	{return (_X.size() == _Y.size()
+		&& equal(_X.begin(), _X.end(), _Y.begin())); }
+template<class _K, class _Pr, class _A> inline
+	bool operator!=(const set<_K, _Pr, _A>& _X,
+		const set<_K, _Pr, _A>& _Y)
+	{return (!(_X == _Y)); }
+template<class _K, class _Pr, class _A> inline
+	bool operator<(const set<_K, _Pr, _A>& _X,
+		const set<_K, _Pr, _A>& _Y)
+	{return (lexicographical_compare(_X.begin(), _X.end(),
+		_Y.begin(), _Y.end())); }
+template<class _K, class _Pr, class _A> inline
+	bool operator>(const set<_K, _Pr, _A>& _X,
+		const set<_K, _Pr, _A>& _Y)
+	{return (_Y < _X); }
+template<class _K, class _Pr, class _A> inline
+	bool operator<=(const set<_K, _Pr, _A>& _X,
+		const set<_K, _Pr, _A>& _Y)
+	{return (!(_Y < _X)); }
+template<class _K, class _Pr, class _A> inline
+	bool operator>=(const set<_K, _Pr, _A>& _X,
+		const set<_K, _Pr, _A>& _Y)
+	{return (!(_X < _Y)); }
+		// TEMPLATE CLASS multiset
+		// derived form (set/multiset derive from _Tree; key extractor in a holder, see <map>)
+template<class _K, class _Pr, class _A>
+	struct _Msetk {
+	struct _Kfn : public unary_function<_K, _K> {
+		const _K& operator()(const _K& _X) const
+		{return (_X); }
+		};
+	};
+template<class _K, class _Pr = less<_K>,
+	class _A = allocator<_K> >
+	class multiset : public _Tree<_K, _K, _Msetk<_K, _Pr, _A>::_Kfn, _Pr, _A, true> {
+public:
+	typedef multiset<_K, _Pr, _A> _Myt;
+	typedef _K value_type;
+	typedef _Pr value_compare;
+	typedef _K key_type;
+	typedef _Pr key_compare;
+	typedef _A allocator_type;
+	typedef _Tree<_K, _K, _Msetk<_K, _Pr, _A>::_Kfn, _Pr, _A, true> _Imp;
+	typedef _Imp::size_type size_type;
+	typedef _Imp::difference_type difference_type;
+	typedef _Imp::reference reference;
+	typedef _Imp::const_reference const_reference;
+	typedef _Imp::iterator iterator;
+	typedef _Imp::const_iterator const_iterator;
+	typedef _Imp::reverse_iterator reverse_iterator;
+	typedef _Imp::const_reverse_iterator const_reverse_iterator;
+	typedef pair<iterator, iterator> _Pairii;
+	typedef pair<const_iterator, const_iterator> _Paircc;
+	explicit multiset(const _Pr& _Pred = _Pr(), const _A& _Al = _A())
+		: _Imp(_Pred, _Al) {}
+	typedef const value_type *_It;
+	multiset(_It _F, _It _L, const _Pr& _Pred = _Pr(),
+		const _A& _Al = _A())
+		: _Imp(_Pred, _Al)
+		{for (; _F != _L; ++_F)
+			_Imp::insert(*_F); }
+	value_compare value_comp() const
+		{return (key_comp()); }
+	iterator insert(const value_type& _X)
+		{return (_Imp::insert(_X).first); }
+	iterator insert(iterator _P, const value_type& _X)
+		{return (_Imp::insert(_P, _X)); }
+	void insert(_It _F, _It _L)
+		{for (; _F != _L; ++_F)
+			_Imp::insert(*_F); }
+	};
+		// multiset TEMPLATE OPERATORS
+template<class _K, class _Pr, class _A> inline
+	bool operator==(const multiset<_K, _Pr, _A>& _X,
+		const multiset<_K, _Pr, _A>& _Y)
+	{return (_X.size() == _Y.size()
+		&& equal(_X.begin(), _X.end(), _Y.begin())); }
+template<class _K, class _Pr, class _A> inline
+	bool operator!=(const multiset<_K, _Pr, _A>& _X,
+		const multiset<_K, _Pr, _A>& _Y)
+	{return (!(_X == _Y)); }
+template<class _K, class _Pr, class _A> inline
+	bool operator<(const multiset<_K, _Pr, _A>& _X,
+		const multiset<_K, _Pr, _A>& _Y)
+	{return (lexicographical_compare(_X.begin(), _X.end(),
+		_Y.begin(), _Y.end())); }
+template<class _K, class _Pr, class _A> inline
+	bool operator>(const multiset<_K, _Pr, _A>& _X,
+		const multiset<_K, _Pr, _A>& _Y)
+	{return (_Y < _X); }
+template<class _K, class _Pr, class _A> inline
+	bool operator<=(const multiset<_K, _Pr, _A>& _X,
+		const multiset<_K, _Pr, _A>& _Y)
+	{return (!(_Y < _X)); }
+template<class _K, class _Pr, class _A> inline
+	bool operator>=(const multiset<_K, _Pr, _A>& _X,
+		const multiset<_K, _Pr, _A>& _Y)
+	{return (!(_X < _Y)); }
+_STD_END
+#ifdef  _MSC_VER
+#pragma pack(pop)
+#endif  /* _MSC_VER */
+
+#endif /* _SET_ */
+
+/*
+ * Copyright (c) 1995 by P.J. Plauger.  ALL RIGHTS RESERVED. 
+ * Consult your license regarding permissions and restrictions.
+ */
+
+/*
+ * This file is derived from software bearing the following
+ * restrictions:
+ *
+ * Copyright (c) 1994
+ * Hewlett-Packard Company
+ *
+ * Permission to use, copy, modify, distribute and sell this
+ * software and its documentation for any purpose is hereby
+ * granted without fee, provided that the above copyright notice
+ * appear in all copies and that both that copyright notice and
+ * this permission notice appear in supporting documentation.
+ * Hewlett-Packard Company makes no representations about the
+ * suitability of this software for any purpose. It is provided
+ * "as is" without express or implied warranty.
+ */
