@@ -76,6 +76,6 @@ void ComponentListItem::Virtual34(ListArea* area,int x,int y,int button)
 ComponentListItem::~ComponentListItem() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fdaa0
 // (protected: virtual __thiscall WONAPI::ComponentListItem::~ComponentListItem(void)    [??1ComponentListItem@WONAPI@@MAE@XZ])

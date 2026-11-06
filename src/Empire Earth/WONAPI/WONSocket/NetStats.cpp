@@ -20,7 +20,7 @@ __int64 NetStats::mNumMessagesSent = 0;
 __int64 NetStats::mNumMessagesReceived = 0;
 }
 
-// Compiler-generated for this unit (names in analysis/exe/names.txt):
+// Compiler-generated for this unit:
 // SYNTHETIC: WON 0x006b38e0
 // (_$E48)
 // SYNTHETIC: WON 0x006b38f0

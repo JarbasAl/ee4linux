@@ -124,10 +124,10 @@ WONStatus DetectFirewallOp::Virtual1C()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cf690
 // (public: virtual __thiscall WONAPI::DetectFirewallOp::~DetectFirewallOp(void)    [??1DetectFirewallOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cf670
 // (public: virtual void * __thiscall WONAPI::DetectFirewallOp::`scalar deleting destructor'(unsigned int)    [??_GDetectFirewallOp@WONAPI@@UAEPAXI@Z])

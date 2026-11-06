@@ -27,7 +27,7 @@ int NetworkAdapterListItem::Virtual10(const ListItem* inOther,ListArea* inList) 
     return MultiListItem::Virtual10(inOther,inList);
 }
 namespace WONAPI {
-// Empty constructor: two automatic owning pointer members, zero body quota.
+
 ChooseNetworkAdapterDialog::ChooseNetworkAdapterDialog() {}
 // FUNCTION: WON 0x7f9c80
 ChooseNetworkAdapterDialog::~ChooseNetworkAdapterDialog() {}
@@ -77,12 +77,12 @@ void ChooseNetworkAdapterDialog::HandleComponentEvent(ComponentEvent* inEvent)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f9c40
 // (public: __thiscall WONAPI::ChooseNetworkAdapterDialog::ChooseNetworkAdapterDialog(void)    [??0ChooseNetworkAdapterDialog@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007f9c60
 // (public: virtual void * __thiscall WONAPI::ChooseNetworkAdapterDialog::`scalar deleting destructor'(unsigned int)    [??_GChooseNetworkAdapterDialog@WO)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007fa110
 // (public: __thiscall WONAPI::MultiListItem::MultiListItem(void)    [??0MultiListItem@WONAPI@@QAE@XZ])

@@ -316,7 +316,7 @@ void MultiLineElement::SetMaxWidth(int theMaxWidth)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071c9b0
 // (public: void __thiscall std::list<class WONAPI::LineSegment *,class std::allocator<class WONAPI::LineSegment *> >::_Insert(class std::list<class WONAP)
 // TEMPLATE: WON 0x0071cba0
@@ -330,10 +330,10 @@ void MultiLineElement::SetMaxWidth(int theMaxWidth)
 // TEMPLATE: WON 0x007242f0
 // (class std::_Ptrit<struct WONAPI::FloatingSegment,int,struct WONAPI::FloatingSegment *,struct WONAPI::FloatingSegment &,struct WONAPI::FloatingSegment )
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071cb20
 // (public: class std::_Ptrit<struct WONAPI::FloatingSegment,int,struct WONAPI::FloatingSegment *,struct WONAPI::FloatingSegment &,struct WONAPI::Floating)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071ee80
 // (protected: void __thiscall std::list<class WONAPI::LineSegment *,class std::allocator<class WONAPI::LineSegment *> >::_Incsize(unsigned int)    [?_Inc)

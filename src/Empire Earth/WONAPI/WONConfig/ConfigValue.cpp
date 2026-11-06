@@ -146,6 +146,6 @@ void ConfigObject::RegisterWStringListListValue(const char *theKey, std::list<st
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007b4790
 // (public: virtual void __thiscall WONAPI::ConfigListValue<class std::list<class std::basic_string<char,struct std::char_traits<char>,class std::allocato)

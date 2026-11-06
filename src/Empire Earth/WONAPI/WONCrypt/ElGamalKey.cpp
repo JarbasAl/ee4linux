@@ -160,12 +160,12 @@ void IntegerInserter::Insert(const BigInteger &theInt)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d7690
 // (public: __thiscall WONAPI::ElGamal::ElGamal(void)    [??0ElGamal@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007d7740
 // (public: __thiscall WONAPI::ElGamal::ElGamal(void const *,int,bool)    [??0ElGamal@WONAPI@@QAE@PBXH_N@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e93e0
 // (public: __thiscall WONAPI::IntegerInserter::IntegerInserter(void)    [??0IntegerInserter@WONAPI@@QAE@XZ])

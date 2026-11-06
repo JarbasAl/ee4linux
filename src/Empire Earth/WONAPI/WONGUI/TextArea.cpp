@@ -582,7 +582,7 @@ void TextArea::AddSegmentPrv(TextSegmentBase* segment) {
     }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00713840
 // (public: virtual void * __thiscall WONAPI::TextLinkActivatedEvent::`scalar deleting destructor'(unsigned int)    [??_GTextLinkActivatedEvent@WONAPI@@UA)
 // TEMPLATE: WON 0x0071b800
@@ -600,6 +600,6 @@ void TextArea::AddSegmentPrv(TextSegmentBase* segment) {
 // TEMPLATE: WON 0x00723eb0
 // (class std::deque<class WONAPI::SmartPtr<class WONAPI::TextLine>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::TextLine> > >::iterator __cd)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00713860
 // (public: virtual __thiscall WONAPI::TextLinkActivatedEvent::~TextLinkActivatedEvent(void)    [??1TextLinkActivatedEvent@WONAPI@@UAE@XZ])

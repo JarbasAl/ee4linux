@@ -25,7 +25,7 @@ static WONAPI::CriticalSection& GetVerifierCrit()
     return verifierCritical;
 }
 
-// Genuine SDK file-static public verifier bytes, exactly original4d57ac/817B.
+
 static char VerifierKeyBuf[] = 
 	"\x30\x82\x03\x2c\x02\x82\x01\x01\x00\x86\x18\x0e\x3d\xd4\x9e\xfa\x42\xb9\x4c\xb3\x3e"
 	"\xf7\x2b\x76\xce\xe6\xb0\x27\x8c\x64\x07\x93\x3b\x24\x64\x6c\x47\xb6\x9e\x51\x7b\xbf"
@@ -179,12 +179,12 @@ void AuthContext::StartAutoRefresh(bool force)
     }
 }
 
-// Genuine SDK empty mapped-value ctor, actual complete owners only; support0, no standalone quota.
+
 AuthLoginCommunityData::AuthLoginCommunityData() {}
 inline AuthContext::SecretData::SecretData() : mExpireTime(0) {}
 inline AuthContext::SecretData::SecretData(time_t expires,const ByteBuffer* secret)
     : mExpireTime(expires),mSecret(secret) {}
-// Genuine SDK nested value helpers; native construction is inlined into secret methods, no standalone source quota.
+
 // FUNCTION: WON 0x006e1240
 bool AuthContext::LoadSecretList()
 {
@@ -702,7 +702,7 @@ bool AuthContext::AddAddressesFromDir(const DirEntityMap &theDir, const std::wst
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ddf90
 // (protected: virtual void * __thiscall WONAPI::AuthContext::`scalar deleting destructor'(unsigned int)    [??_GAuthContext@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x006dfae0
@@ -712,7 +712,7 @@ bool AuthContext::AddAddressesFromDir(const DirEntityMap &theDir, const std::wst
 // TEMPLATE: WON 0x006dff00
 // (public: __thiscall WONAPI::AuthLoginCommunityData::AuthLoginCommunityData(void)    [??0AuthLoginCommunityData@WONAPI@@QAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ddfb0
 // (public: __thiscall std::set<class WONAPI::SmartPtr<class WONAPI::LightGetCertOp>,struct WONAPI::SmartPtr<class WONAPI::LightGetCertOp>::Comp,class std)
 // TEMPLATE: WON 0x006de070
@@ -726,13 +726,13 @@ bool AuthContext::AddAddressesFromDir(const DirEntityMap &theDir, const std::wst
 // TEMPLATE: WON 0x006dff60
 // (public: __thiscall WONAPI::AuthLoginCommunityData::AuthLoginCommunityData(class WONAPI::AuthLoginCommunityData const &)    [??0AuthLoginCommunityData@)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ddda0
 // (class WONAPI::CriticalSection & __cdecl GetVerifierCrit(void)    [?GetVerifierCrit@@YAAAVCriticalSection@WONAPI@@XZ])
 // TEMPLATE: WON 0x006e0140
 // (public: class WONAPI::CDKey & __thiscall WONAPI::CDKey::operator=(class WONAPI::CDKey const &)    [??4CDKey@WONAPI@@QAEAAV01@ABV01@@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ddde0
 // (_$E72    [_$E72])
 // TEMPLATE: WON 0x006df2d0
@@ -744,11 +744,11 @@ bool AuthContext::AddAddressesFromDir(const DirEntityMap &theDir, const std::wst
 // TEMPLATE: WON 0x006df310
 // (_$E74    [_$E74])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cac70
 // (protected: void __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned sho)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e9530
 // (public: class std::basic_string<unsigned char,struct std::char_traits<unsigned char>,class std::allocator<unsigned char> > & __thiscall std::basic_str)
 // TEMPLATE: WON 0x006e9630

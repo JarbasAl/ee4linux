@@ -67,10 +67,10 @@ void GetAccountOp::Virtual18()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cd0a0
 // (public: virtual __thiscall WONAPI::GetAccountOp::~GetAccountOp(void)    [??1GetAccountOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cd080
 // (public: virtual void * __thiscall WONAPI::GetAccountOp::`scalar deleting destructor'(unsigned int)    [??_GGetAccountOp@WONAPI@@UAEPAXI@Z])

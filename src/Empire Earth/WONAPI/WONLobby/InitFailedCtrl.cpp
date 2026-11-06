@@ -1,4 +1,4 @@
-// Initialization failure controls; constructor/destructor support excluded from primary quota.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <string>
 #include <list>
@@ -73,12 +73,12 @@ Implicit member/base destruction is the source candidate; require actual normal
 COFF functions/relocations/EH actions before admission.
 */
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bdad0
 // (public: virtual void * __thiscall WONAPI::InitFailedCtrl::`scalar deleting destructor'(unsigned int)    [??_GInitFailedCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007bdaf0
 // (public: virtual __thiscall WONAPI::InitFailedCtrl::~InitFailedCtrl(void)    [??1InitFailedCtrl@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bdaa0
 // (public: __thiscall WONAPI::InitFailedCtrl::InitFailedCtrl(void)    [??0InitFailedCtrl@WONAPI@@QAE@XZ])

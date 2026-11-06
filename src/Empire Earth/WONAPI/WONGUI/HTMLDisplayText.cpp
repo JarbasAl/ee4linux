@@ -11,9 +11,9 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyHTMLDisplayGen.h"
 namespace WONAPI {
-// Genuine pinned SDK StringUtil inline predicate, no standalone primary quota.
+
 inline int safe_isspace(unsigned long ch) { return ch<256?isspace(ch):0; }
-// Genuine pinned SDK inline method, expanded in both original algorithms; no separate body quota.
+
 inline void HTMLDisplayGen::HandlePreSpace(int ch,GUIString& text)
 {
     if(ch=='\n')

@@ -303,7 +303,7 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 				break;
 
 			case 5: 
-				//ReadNickNameInfo(aDecryptIn); 
+				//ReadNickNameInfo(aDecryptIn);
 				break;
 		}
 	}
@@ -396,17 +396,17 @@ WONStatus GetCertOp::Virtual14()
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e3d70
 // (protected: virtual void * __thiscall WONAPI::GetCertOp::`scalar deleting destructor'(unsigned int)    [??_GGetCertOp@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x006e57c0
 // (public: __thiscall WONAPI::GetCertOp::COMMUNITY_STATUS::~COMMUNITY_STATUS(void)    [??1COMMUNITY_STATUS@GetCertOp@WONAPI@@QAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e5760
 // (public: __thiscall WONAPI::AuthCertificateBase::AuthCertificateBase(void const *,unsigned long)    [??0AuthCertificateBase@WONAPI@@QAE@PBXK@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e9820
 // (public: __thiscall std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::list<class WONAPI::ElGamal,class std::allocator<clas)
 // TEMPLATE: WON 0x006ea0d0

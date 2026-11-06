@@ -67,10 +67,10 @@ void UpdateAccountOp::Virtual18()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cea10
 // (public: virtual __thiscall WONAPI::UpdateAccountOp::~UpdateAccountOp(void)    [??1UpdateAccountOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ce9f0
 // (public: virtual void * __thiscall WONAPI::UpdateAccountOp::`scalar deleting destructor'(unsigned int)    [??_GUpdateAccountOp@WONAPI@@UAEPAXI@Z])

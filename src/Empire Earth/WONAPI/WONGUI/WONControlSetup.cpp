@@ -39,7 +39,7 @@ WONComboBox::WONComboBox()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00703520
 // (public: virtual void * __thiscall WONAPI::MultiListArea::`scalar deleting destructor'(unsigned int)    [??_GMultiListArea@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0070be20
@@ -47,7 +47,7 @@ WONComboBox::WONComboBox()
 // TEMPLATE: WON 0x00719800
 // (public: __thiscall WONAPI::WONComboBox::WONComboBox(void)    [??0WONComboBox@WONAPI@@QAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007033a0
 // (public: __thiscall WONAPI::MultiListArea::MultiListArea(int)    [??0MultiListArea@WONAPI@@QAE@H@Z])
 // TEMPLATE: WON 0x00703540

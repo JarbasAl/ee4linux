@@ -171,11 +171,11 @@ void SmartRoutingConnection::Virtual08()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006bff90
 // (public: virtual void * __thiscall WONAPI::SmartRoutingConnection::`scalar deleting destructor'(unsigned int)    [??_GSmartRoutingConnection@WONAPI@@UA)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006bfce0
 // (public: __thiscall std::map<unsigned short,class WONAPI::SmartPtr<struct WONAPI::RoutingClientInfo>,struct std::less<unsigned short>,class std::alloca)
 // TEMPLATE: WON 0x006bffb0
@@ -183,7 +183,7 @@ void SmartRoutingConnection::Virtual08()
 // TEMPLATE: WON 0x006c0070
 // (public: __thiscall std::set<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,stru)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006bfda0
 // (public: __thiscall std::map<unsigned short,class WONAPI::SmartPtr<struct WONAPI::RoutingGroupInfo>,struct std::less<unsigned short>,class std::allocat)
 // TEMPLATE: WON 0x006bff00
@@ -191,6 +191,6 @@ void SmartRoutingConnection::Virtual08()
 // TEMPLATE: WON 0x006bff20
 // (public: virtual __thiscall WONAPI::SmartRoutingClientInfo::~SmartRoutingClientInfo(void)    [??1SmartRoutingClientInfo@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c0130
 // (public: virtual __thiscall WONAPI::SmartRoutingConnection::~SmartRoutingConnection(void)    [??1SmartRoutingConnection@WONAPI@@UAE@XZ])

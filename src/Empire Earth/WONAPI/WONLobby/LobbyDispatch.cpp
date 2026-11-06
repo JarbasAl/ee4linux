@@ -57,18 +57,18 @@ void LobbyFn361020()
 
 namespace WONAPI {
 // Genuine missing SDK namespace entry points; retained canonical ABI spellings.
-// SUPPORT: EXE 0x00759100 (zero primary quota)
+
 void LobbyFn359100(ComponentEvent* event,bool sendNow)
 {
     if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->Fn2F52A0(event,sendNow);
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00759100
 // (void __cdecl WONAPI::LobbyFn359100(class WONAPI::ComponentEvent *,bool)    [?LobbyFn359100@WONAPI@@YAXPAVComponentEvent@1@_N@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007591e0
 // (public: virtual void * __thiscall WONAPI::LobbyEvent::`scalar deleting destructor'(unsigned int)    [??_GLobbyEvent@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00759200

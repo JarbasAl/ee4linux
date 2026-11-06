@@ -97,7 +97,7 @@ WONStatus CreateAccountOp::Virtual14()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cc010
 // (public: __thiscall WONAPI::ElGamal::~ElGamal(void)    [??1ElGamal@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x006cc140
@@ -107,10 +107,10 @@ WONStatus CreateAccountOp::Virtual14()
 // TEMPLATE: WON 0x006cc2e0
 // (public: virtual __thiscall WONAPI::CreateAccountOp::~CreateAccountOp(void)    [??1CreateAccountOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cc210
 // (public: virtual void * __thiscall WONAPI::CreateAccountOp::`scalar deleting destructor'(unsigned int)    [??_GCreateAccountOp@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ced50
 // (private: void __thiscall std::basic_string<unsigned char,struct std::char_traits<unsigned char>,class std::allocator<unsigned char> >::_Tidy(bool)    )

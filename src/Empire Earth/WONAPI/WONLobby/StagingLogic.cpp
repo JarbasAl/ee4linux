@@ -647,7 +647,7 @@ void StagingLogic::Fn3F1200()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ef190
 // (public: virtual void * __thiscall WONAPI::StagingLogic::`scalar deleting destructor'(unsigned int)    [??_GStagingLogic@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f06d0

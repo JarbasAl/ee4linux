@@ -60,11 +60,11 @@ Implicit member/base destruction is the source candidate; require actual normal
 COFF functions/relocations/EH actions before admission.
 */
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c0ab0
 // (public: virtual __thiscall WONAPI::GetLostUserNameEvent::~GetLostUserNameEvent(void)    [??1GetLostUserNameEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c0770
 // (public: virtual void * __thiscall WONAPI::LostUserNameCtrl::`scalar deleting destructor'(unsigned int)    [??_GLostUserNameCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007c0790
@@ -72,6 +72,6 @@ COFF functions/relocations/EH actions before admission.
 // TEMPLATE: WON 0x007c0a90
 // (public: virtual void * __thiscall WONAPI::GetLostUserNameEvent::`scalar deleting destructor'(unsigned int)    [??_GGetLostUserNameEvent@WONAPI@@UAEPAX)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c0750
 // (public: __thiscall WONAPI::LostUserNameCtrl::LostUserNameCtrl(void)    [??0LostUserNameCtrl@WONAPI@@QAE@XZ])

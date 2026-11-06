@@ -16,6 +16,6 @@ namespace WONAPI {
 MultiLineBuilder::MultiLineBuilder() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070bd60
 // (public: __thiscall WONAPI::MultiLineBuilder::MultiLineBuilder(void)    [??0MultiLineBuilder@WONAPI@@QAE@XZ])

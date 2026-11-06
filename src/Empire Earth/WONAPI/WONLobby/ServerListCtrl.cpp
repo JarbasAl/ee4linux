@@ -478,7 +478,7 @@ void ServerListCtrl::AddFilteredEntries(bool inPreserve,ServerDetailsList& ioLis
         }
     }
 }
-// SUPPORT ONLY fieldstore+vector-resize sequence25, zero primary quota.
+
 void ServerListCtrl::SetNumColumns(int inCount)
 {
     mNumColumns=inCount;
@@ -880,7 +880,7 @@ ServerDetailsItem::ItemFactoryFunc ServerDetailsItem::mItemFactoryFunc = ServerD
 // TEMPLATE: WON 0x007c5ef0
 // TEMPLATE: WON 0x007cc350
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bad40
 // (protected: static class WONAPI::ServerDetailsItem * __cdecl WONAPI::ServerDetailsItem::DefaultItemFactory(void)    [?DefaultItemFactory@ServerDetailsI)
 // TEMPLATE: WON 0x007c4cf0
@@ -894,7 +894,7 @@ ServerDetailsItem::ItemFactoryFunc ServerDetailsItem::mItemFactoryFunc = ServerD
 // TEMPLATE: WON 0x007c6970
 // (public: virtual __thiscall FilterListItem::~FilterListItem(void)    [??1FilterListItem@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007cb7c0
 // (public: __thiscall std::vector<struct WONAPI::ServerListCtrl::ColumnInfo,class std::allocator<struct WONAPI::ServerListCtrl::ColumnInfo> >::~vector<st)
 // TEMPLATE: WON 0x007cc1d0
@@ -920,13 +920,13 @@ ServerDetailsItem::ItemFactoryFunc ServerDetailsItem::mItemFactoryFunc = ServerD
 // TEMPLATE: WON 0x007ce7f0
 // (void __cdecl std::_Construct(struct WONAPI::ServerListCtrl::ColumnInfo *,struct WONAPI::ServerListCtrl::ColumnInfo const &)    [?_Construct@std@@YAXPA)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007cbfc0
 // (public: __thiscall std::pair<class WONAPI::SmartPtr<class WONAPI::LobbyGame> const ,class WONAPI::SmartPtr<class WONAPI::ServerDetailsItem> >::~pair<c)
 // TEMPLATE: WON 0x007cd260
 // (protected: void __thiscall std::_Tree<class WONAPI::SmartPtr<class WONAPI::LobbyGame>,struct std::pair<class WONAPI::SmartPtr<class WONAPI::LobbyGame>)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c6950
 // (public: virtual void * __thiscall FilterListItem::`scalar deleting destructor'(unsigned int)    [??_GFilterListItem@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007cb9d0

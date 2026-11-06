@@ -101,6 +101,6 @@ void CreateGameDialog::HandleComponentEvent(ComponentEvent* inEvent)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f6430
 // (protected: virtual void * __thiscall WONAPI::CreateGameDialog::`scalar deleting destructor'(unsigned int)    [??_GCreateGameDialog@WONAPI@@MAEPAXI@Z])

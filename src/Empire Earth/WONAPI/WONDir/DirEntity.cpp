@@ -39,6 +39,6 @@ IPAddr DirEntity::GetNetAddrAsIP() const
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f0270
 // (protected: virtual void * __thiscall WONAPI::DirEntity::`scalar deleting destructor'(unsigned int)    [??_GDirEntity@WONAPI@@MAEPAXI@Z])

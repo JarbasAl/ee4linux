@@ -125,16 +125,16 @@ WONMSSkin::WONMSSkin()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00717100
 // (public: virtual __thiscall WONAPI::WONMSSkin::~WONMSSkin(void)    [??1WONMSSkin@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x0071bc10
 // (public: __thiscall std::map<class WONAPI::GUIString,class WONAPI::SmartPtr<class WONAPI::WONButton>,struct WONAPI::GUIStringLessNoCase,class std::allo)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007170e0
 // (public: virtual void * __thiscall WONAPI::WONMSSkin::`scalar deleting destructor'(unsigned int)    [??_GWONMSSkin@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00725040
 // (public: void * __thiscall std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONButton> >::`scalar deleting destructor'(uns)

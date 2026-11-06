@@ -11,7 +11,7 @@
 namespace WONAPI {
 // Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
 CreateRoomDialog::CreateRoomDialog() {}
-// Original ordinary destructor is implicit; generated cleanup has zero body quota.
+
 // FUNCTION: WON 0x7f6bc0
 void CreateRoomDialog::InitComponent(ComponentInit& inInit)
 {
@@ -78,14 +78,14 @@ const GUIString& CreateRoomDialog::GetRoomName()
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f6a90
 // (public: virtual __thiscall WONAPI::CreateRoomDialog::~CreateRoomDialog(void)    [??1CreateRoomDialog@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f6a70
 // (public: virtual void * __thiscall WONAPI::CreateRoomDialog::`scalar deleting destructor'(unsigned int)    [??_GCreateRoomDialog@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f6a30
 // (public: __thiscall WONAPI::CreateRoomDialog::CreateRoomDialog(void)    [??0CreateRoomDialog@WONAPI@@QAE@XZ])

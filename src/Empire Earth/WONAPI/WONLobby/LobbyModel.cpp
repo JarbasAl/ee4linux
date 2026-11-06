@@ -7,7 +7,7 @@
 // PROVISIONAL: canonical hinted insertion ignores hints; invalid/stale-hint behavior and complexity are unproved.
 // Near bodies have no runtime substitution authority. Primary code matches do not certify complete EH/data.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Source contributors: client, social, player. Evidence: build/wonlobby_r1/client/assembly_inputs.json.
+
 #include <windows.h>
 #include <string.h>
 #include <time.h>
@@ -1035,7 +1035,7 @@ LobbyServer* LobbyServerList::Fn3AA980(const IPAddr& inAddress)
 // // DEFERRED FUNCTION: EXE 0x7a9500
 // LobbyServer::~LobbyServer() {}
 
-// Root-authorized additional original-backed model bodies; ordinary COFF/EH admission remains required.
+
 namespace WONAPI {
 // Original data4dec84/4dec88 are function pointers, initialized to3a6730/3a5140.
 // FUNCTION: WON 0x7a6c90
@@ -1284,7 +1284,7 @@ namespace WONAPI {
 LobbyGame::~LobbyGame() {}
 // FUNCTION: WON 0x7a9500
 LobbyServer::~LobbyServer() {}
-// LobbyFriend destructor stays naturally implicit after the separate header correction; zero user-body quota.
+
 }
 
 namespace WONAPI {
@@ -1397,7 +1397,7 @@ LobbyGame::LobbyGameFactory LobbyGame::mGameFactory = LobbyGame::DefaultGameFact
 LobbyPlayer::LobbyPlayerFactory LobbyPlayer::mPlayerFactory = LobbyPlayer::DefaultPlayerFactory;
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a5240
 // (public: virtual void * __thiscall WONAPI::LobbyClient::`scalar deleting destructor'(unsigned int)    [??_GLobbyClient@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007a5680
@@ -1419,17 +1419,17 @@ LobbyPlayer::LobbyPlayerFactory LobbyPlayer::mPlayerFactory = LobbyPlayer::Defau
 // TEMPLATE: WON 0x007aa580
 // (public: virtual void * __thiscall WONAPI::LobbyServerList::`scalar deleting destructor'(unsigned int)    [??_GLobbyServerList@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a6870
 // (public: virtual short __thiscall WONAPI::LobbyGame::Virtual38(class WONAPI::ReadBuffer &,class WONAPI::LobbyClient *)    [?Virtual38@LobbyGame@WONAPI@)
 // TEMPLATE: WON 0x007a6890
 // (public: virtual class WONAPI::GUIString __thiscall WONAPI::LobbyGame::Virtual64(short)    [?Virtual64@LobbyGame@WONAPI@@UAE?AVGUIString@2@F@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a6360
 // (public: virtual void * __thiscall WONAPI::LobbyFriend::`scalar deleting destructor'(unsigned int)    [??_GLobbyFriend@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a5c20
 // (public: __thiscall std::pair<unsigned short const ,class WONAPI::SmartPtr<class WONAPI::LobbyClient> >::~pair<unsigned short const ,class WONAPI::Smar)
 // TEMPLATE: WON 0x007a9310
@@ -1437,7 +1437,7 @@ LobbyPlayer::LobbyPlayerFactory LobbyPlayer::mPlayerFactory = LobbyPlayer::Defau
 // TEMPLATE: WON 0x007aa8f0
 // (public: __thiscall std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::LobbyServer> >::~pair<class WONAPI::IPAddr const ,class )
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a7d40
 // (public: __thiscall std::map<unsigned short,class WONAPI::SmartPtr<class WONAPI::LobbyGame>,struct std::less<unsigned short>,class std::allocator<struc)
 // TEMPLATE: WON 0x007a84d0

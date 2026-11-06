@@ -2,7 +2,7 @@
 // between EELobbyInit.cpp and EELobbyPlayer.cpp). The lobby's glue to the game: the lobby lock (a WONAPI critical
 // section the renderer takes too), saved games in the game room (header checks, set-up from the saved options), the
 // game options and map types, the player colours, the version check and the lobby music: 0x297ee7..0x299838 (the
-// std::set/map COMDATs 0x298b02..0x299838 close it). Module flags (r12-misc-h5, round 12).
+// std::set/map COMDATs 0x298b02..0x299838 close it). Module flags.
 #include <windows.h>
 #include <string>
 #include <list>

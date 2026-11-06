@@ -156,15 +156,15 @@ void RectangleComponent3D::Paint(Graphics &g)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00706ba0
 // (public: virtual __thiscall WONAPI::ImageComponent::~ImageComponent(void)    [??1ImageComponent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00706b80
 // (public: virtual void * __thiscall WONAPI::ImageComponent::`scalar deleting destructor'(unsigned int)    [??_GImageComponent@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00706840
 // (public: __thiscall WONAPI::RectangleComponent::RectangleComponent(void)    [??0RectangleComponent@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007068f0

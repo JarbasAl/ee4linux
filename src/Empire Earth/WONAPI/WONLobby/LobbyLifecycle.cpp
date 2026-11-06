@@ -48,6 +48,6 @@ void LobbySetProductName(const std::wstring& inLoginCommunity,const char* inHash
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00762150
 // (void __cdecl WONAPI::LobbySetProductName(class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned )

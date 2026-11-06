@@ -1,4 +1,4 @@
-// R3 reviewed Item/Ctrl source; actual normal/EH/data admission pending.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -260,7 +260,7 @@ void UserListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 }
 }
 // Private UserListCtrlConfig family is separate and not yet drafted here.
-// No quota/admission until peer, actual normal/EH/data and Root closure.
+
 
 namespace WONAPI {
 // FUNCTION: WON 0x00765a60
@@ -281,11 +281,11 @@ bool UserListCtrlConfig::Virtual24(const std::string& instruction)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ca940
 // (public: virtual void * __thiscall WONAPI::UserListCtrl::`scalar deleting destructor'(unsigned int)    [??_GUserListCtrl@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ca720
 // (public: virtual void * __thiscall WONAPI::UserListItem::`scalar deleting destructor'(unsigned int)    [??_GUserListItem@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007ca740

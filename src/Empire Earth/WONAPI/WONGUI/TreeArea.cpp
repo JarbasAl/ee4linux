@@ -172,7 +172,7 @@ void TreeArea::SetTreeFlags(int theFlags, bool on)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00714fa0
 // (public: virtual void * __thiscall WONAPI::TreeArea::`scalar deleting destructor'(unsigned int)    [??_GTreeArea@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00714fc0

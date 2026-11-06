@@ -11,7 +11,7 @@
 namespace WONAPI {
 // Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
 DirectConnectDialog::DirectConnectDialog() {}
-// Original ordinary destructor is implicit; generated cleanup has zero body quota.
+
 // FUNCTION: WON 0x7f7aa0
 void DirectConnectDialog::InitComponent(ComponentInit& inInit)
 {
@@ -43,12 +43,12 @@ const GUIString& DirectConnectDialog::GetName()
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f7970
 // (public: virtual void * __thiscall WONAPI::DirectConnectDialog::`scalar deleting destructor'(unsigned int)    [??_GDirectConnectDialog@WONAPI@@UAEPAXI@)
 // TEMPLATE: WON 0x007f7990
 // (public: virtual __thiscall WONAPI::DirectConnectDialog::~DirectConnectDialog(void)    [??1DirectConnectDialog@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f7940
 // (public: __thiscall WONAPI::DirectConnectDialog::DirectConnectDialog(void)    [??0DirectConnectDialog@WONAPI@@QAE@XZ])

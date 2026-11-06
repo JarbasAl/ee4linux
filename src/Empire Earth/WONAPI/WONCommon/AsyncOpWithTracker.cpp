@@ -34,14 +34,14 @@ AsyncOp* AsyncOpWithTracker::Track(AsyncOp* op,int param)
 void AsyncOpWithTracker::Virtual08() {mTracker.KillAll();}
 }
 namespace WONAPI {
-// SUPPORT: EXE 0x006accc0 (actual inherited callback default; zero quota)
+
 bool AsyncOpWithTracker::CallbackHook(AsyncOp*,int) { return false; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a0230
 // (public: virtual __thiscall WONAPI::AsyncOpWithTracker::TrackerCompletion::~TrackerCompletion(void)    [??1TrackerCompletion@AsyncOpWithTracker@WONAPI@)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a0210
 // (public: virtual void * __thiscall WONAPI::AsyncOpWithTracker::TrackerCompletion::`scalar deleting destructor'(unsigned int)    [??_GTrackerCompletion@)

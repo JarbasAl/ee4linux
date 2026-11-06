@@ -190,20 +190,20 @@ void HTTPCache::SetGlobalCache(HTTPCache* theCache)
 }
 
 namespace WONAPI { const long gHTTPCacheVersion=1; }
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d1330
 // (public: virtual __thiscall WONAPI::HTTPCacheEntry::~HTTPCacheEntry(void)    [??1HTTPCacheEntry@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x006d1590
 // (protected: virtual void * __thiscall WONAPI::HTTPCache::`scalar deleting destructor'(unsigned int)    [??_GHTTPCache@WONAPI@@MAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d1310
 // (public: virtual void * __thiscall WONAPI::HTTPCacheEntry::`scalar deleting destructor'(unsigned int)    [??_GHTTPCacheEntry@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d2720
 // (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,class WONAPI::SmartPtr<cla)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d15b0
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class WONAPI::SmartPtr<class WONAP)

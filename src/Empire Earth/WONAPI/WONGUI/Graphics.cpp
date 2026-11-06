@@ -262,6 +262,6 @@ void Graphics::FillRectHook(int x, int y, int width, int height)
 		DrawLineHook(x,y+i,x+width,y+i);
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00726b70
 // (public: virtual void * __thiscall WONAPI::Graphics::`scalar deleting destructor'(unsigned int)    [??_GGraphics@WONAPI@@UAEPAXI@Z])

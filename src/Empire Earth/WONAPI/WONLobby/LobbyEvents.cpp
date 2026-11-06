@@ -177,7 +177,7 @@ RecvChatEvent::~RecvChatEvent() {}
 ServerChangedEvent::~ServerChangedEvent() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007594d0
 // (public: virtual void * __thiscall WONAPI::AcceptClientEvent::`scalar deleting destructor'(unsigned int)    [??_GAcceptClientEvent@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00759660
@@ -227,7 +227,7 @@ ServerChangedEvent::~ServerChangedEvent() {}
 // TEMPLATE: WON 0x0075b040
 // (public: virtual void * __thiscall WONAPI::ServerChangedEvent::`scalar deleting destructor'(unsigned int)    [??_GServerChangedEvent@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007593d0
 // (public: virtual void * __thiscall WONAPI::LobbyChangeEvent::`scalar deleting destructor'(unsigned int)    [??_GLobbyChangeEvent@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007593f0

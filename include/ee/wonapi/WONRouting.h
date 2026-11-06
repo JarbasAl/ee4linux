@@ -1,5 +1,5 @@
 // WONAPI routing-server API as the game's WON front end (EEWonNet.cpp, 0xcd4ee..0xd3ff4) sees it (RECONSTRUCTION;
-// r13-breadth-core-h7, round 13). WONAPI proper (0x29deb0..) is not decompiled: class names come from RTTI
+//). WONAPI proper (0x29deb0..) is not decompiled: class names come from RTTI
 // (.?AVRoutingConnection@WONAPI@@, ...), members and offsets from EEWonNet.cpp's use; methods are named by address
 // where the WONAPI name is unknown. Every name PROVISIONAL. Requires <string>, <list>, <map>, ee/EEWonNet.h.
 #ifndef EE_WONAPI_WONROUTING_H
@@ -36,11 +36,11 @@ class AsyncOp : public RefCount {
 public:
     WONStatus Fn29F500(long inMode,unsigned long inTimeout); //29f500, actual status return/ret8
 
-    AsyncOp();                              // 0x29ef80 (r23: SocketOp's inline ctor calls it)
-    virtual ~AsyncOp();                     // 0x29f000 (r23: SocketOp's dtor calls it directly)
+    AsyncOp();                              // 0x29ef80
+    virtual ~AsyncOp();                     // 0x29f000
     virtual void Virtual04();
     virtual void Virtual08();
-    // (r24: AsyncOp's own vtable 0x84c834 has these three slots only; SocketOp and RoutingOp each introduce their
+    // (: AsyncOp's own vtable 0x84c834 has these three slots only; SocketOp and RoutingOp each introduce their
     // +0x0c/+0x10/+0x14: SocketOp's +0x14 returns 0, AcceptOp's a new AcceptOp; RoutingOp's +0x14 is GetType)
 
     WONStatus GetStatus() const { return mStatus; }
@@ -52,13 +52,13 @@ public:
     bool RunBlock(unsigned long inTimeout); //native29f6e0, true20Bexternalwrapper, support0
     void Run(long inTimeout);               // 0x29f6d0
     void Kill(bool inFlag);                 // 0x29f1e0
-    void SetFlag3A(bool inFlag);            // 0x29f1d0 (stores +0x3a; r23 PROVISIONAL)
+    void SetFlag3A(bool inFlag);            // 0x29f1d0
     void AddToTimerMap(AsyncOpTimeoutMap&, unsigned long); //29f080, ret8
     void RemoveFromTimerMap(bool); //29f160, ret4
     void QueueInOpContainer(); //29f200, actual container/core dispatch
     void Complete(); //29f3a0
     void StartRunAsync(); //29f4c0
-    unsigned long TimeLeft();               // 0x29f700 (from +0x28 start, +0x2c timeout, +0x30 mode; r23 PROVISIONAL)
+    unsigned long TimeLeft();               // 0x29f700
     DWORD RealTimeLeft();
 
     CriticalSection mLock;                  // +0x08, originalInitialize/DeleteCriticalSection
@@ -67,12 +67,12 @@ public:
     unsigned long mStartTime;               // +0x28, GetTickCount
     unsigned long mTimeout;                 // +0x2c, unsignedelapsed comparison29f700
     long mRunMode;                          // +0x30
-    // r23: 0x291983 (an inline COMDAT of EELobbyFileTransfer.cpp): finished without error
-    bool Succeeded();                       // 0x691983 (not inline: EELobbyFileTransfer.cpp; r38 core C7)
+    //: 0x291983 (an inline COMDAT of EELobbyFileTransfer.cpp): finished without error
+    bool Succeeded();                       // 0x691983
 
     WONStatus mStatus;                      // +0x34
     bool mCompletionPending;                // +0x38
-    bool mB39;                              // +0x39 (r23: Succeeded)
+    bool mB39;                              // +0x39
     bool mFlag3A;                           // +0x3a; byte3b is normalalignment
     AsyncOpTimeoutMap* mTimeoutMap;         // +0x3c, nonowning
     AsyncOpTimeoutMap::iterator mTimeoutItr; // +0x40, associateddeadline entry
@@ -163,7 +163,7 @@ public:
     static WONStatus StartWinsock(); //2b0940 actual SDK cdecl, external source owner
     static WONStatus StopWinsock(); //2b0980 actual SDK cdecl, external source owner
     static int mWinsockStartCount; //565f34 actual4B zero static, pinned genuine SDK
-    static bool HasInternetConnection(); //2b09a0, genuine SDK static cdecl Internet probe
+    static bool HasInternetConnection();
     WONStatus Fn2B0A50(bool); //2b0a50, native broadcast socketoption
     WONStatus Fn2B0A90(); //2b0a90, native create
     WONStatus Fn2B1840(void*,int,IPAddr*,int*); //2b1840, signed count/output on success
@@ -221,7 +221,7 @@ public:
 
 
 // a WON operation on a socket (RTTI SocketOp > AsyncOp, vtable 0x84c424; its inline members are emitted by
-// EELobbyFileTransfer.cpp 0x29151c..0x291555, 0x2914c2; r23)
+// EELobbyFileTransfer.cpp 0x29151c..0x291555, 0x2914c2)
 class SocketOp : public AsyncOp {
 public:
     static bool mRunAsyncImmediatelyDef; //genuine SDK bool static, native565f08 virtual-zero byte
@@ -238,11 +238,11 @@ public:
     // Implicit destructor: original29153d has no own-vptr store.
     virtual void Virtual04();               // +0x04 0x2b6070 actualRunHook
     virtual void Virtual08();               // +0x08 0x2b60c0
-    // r23: +0x0c starts the operation, +0x10 continues it (SendFileOp 0x2915d2 / 0x291613 return a WONStatus)
+    //: +0x0c starts the operation, +0x10 continues it (SendFileOp 0x2915d2 / 0x291613 return a WONStatus)
     virtual WONStatus Virtual0C() { return Virtual10(); }   // +0x0c 0x29151c
     virtual WONStatus Virtual10() = 0;      // +0x10 (_purecall)
     // +0x14 (vtable 0x84c424: 0x1ad67e `xor eax, eax`, ICF): a fresh copy of the op, none by default (AcceptOp's
-    // 0x291ab7 news one on the same socket; r24, name PROVISIONAL)
+    // 0x291ab7 news one on the same socket, name PROVISIONAL)
     virtual AsyncOp* Duplicate() { return NULL; }
 
     bool mB44;                              // +0x44
@@ -251,27 +251,27 @@ public:
     bool mB58[3];                           // +0x58
 };
 
-// closes its socket (RTTI CloseOp > SocketOp, vtable 0x84c448; 0x5c bytes; r23)
+// closes its socket
 class CloseOp : public SocketOp {
 public:
     CloseOp(AsyncSocket* inSocket) : SocketOp(inSocket) {}
     virtual WONStatus Virtual10() { mSocket->Fn2B1AD0(); return 0; }    // +0x10 0x291993
 };
 
-// waits for a connection on its (listening) socket (RTTI AcceptOp > SocketOp, vtable 0x84c464; 0x60 bytes; r23)
+// waits for a connection on its (listening) socket
 class AcceptOp : public SocketOp {
 public:
     AcceptOp(AsyncSocket* inSocket) : SocketOp(inSocket) { mB58[0] = true; }
     AsyncSocket* GetAcceptedSocket() { return mAcceptedSocket.get(); }
     virtual WONStatus Virtual10();          // +0x10 0x2b0310 (WONAPI)
-    virtual AsyncOp* Duplicate() { return new AcceptOp(mSocket.get()); }   // +0x14 0x291ab7 (r24)
+    virtual AsyncOp* Duplicate() { return new AcceptOp(mSocket.get()); }   // +0x14 0x291ab7
 
     SmartPtr<AsyncSocket> mAcceptedSocket;  // +0x5c
 };
 
 // connects its socket to an address (RTTI ConnectOp > SocketOp, vtable 0x84c480; 0x84 bytes: EELobbyFileTransfer
 // 0x291b79 news it and inlines the ctor: SocketOp(NULL), the IPAddr copy ctor 0x291d59 at +0x5c, the vptr, then
-// +0x59 and +0x5a = true; r24 R1, argument order PROVISIONAL)
+// +0x59 and +0x5a = true; r24, argument order PROVISIONAL)
 class ConnectOp : public SocketOp {
 public:
     ConnectOp(const IPAddr& inAddr, AsyncSocket* inSocket = NULL) : SocketOp(inSocket), mAddr(inAddr)
@@ -350,7 +350,7 @@ public:
 };
 
 // what a RecvBytesOp's progress completion (+0xa0) gets: 0x2b520d news one (0x48 bytes; RTTI RecvChunkOp : AsyncOp,
-// vtable 0x84cae4) with +0x44 = the receiving op (r24, name PROVISIONAL)
+// vtable 0x84cae4) with +0x44 = the receiving op
 class RecvChunkOp : public AsyncOp {
 public:
     RecvChunkOp(RecvBytesOp* inOp) : mRecvOp(inOp) {} //actual new48/base44/owning44; support0
@@ -371,7 +371,7 @@ public:
 // Complete actual LightGetCertOp48: AsyncOp44 plus ConstPeer44, no private tail.
 // PeerAuthOp::AsyncRefreshCert native2e74a0 allocates48 and calls the existing AsyncOp constructor.
 // Natural implicit constructor/destructor match native2e74e0..2e74f2 and2e7580 owned-pointer/base cleanup;
-// no fabricated lifetime provider, new virtual override or own lifecycle source quota.
+
 class LightGetCertOp : public AsyncOp {
     ConstSmartPtr<AuthPeerData> mPeerData; //44..48, native GetCertCallback2de677
 public:
@@ -932,7 +932,7 @@ public:
 // Actual RTTI .?AVRoutingRegisterClientOp@WONAPI@@, VT44d21c, type42.
 // Base RoutingOp64; ctor2c8450; ordinary dtor2c8570; true allocationac3ee504.
 // Target ctor+writer connection_lifetime.txt; full lifetime/EH packet retained.
-// SDK nominal sdk_nominal/sdk_routingregisterclientop.h.txt with blob provenance.
+
 class RoutingRegisterClientOp : public RoutingOp {
 public:
     RoutingRegisterClientOp(RoutingConnection*); //2c8450
@@ -1200,7 +1200,7 @@ public:
     virtual WONStatus Virtual10(unsigned char, ReadBuffer&); // native 0x2c7e00
     unsigned short mClientId; //64
     ByteBufferPtr mData; //68
-    ByteBufferPtr GetData() const { return mData; } //SUPPORT3e79f0; zero new-body quota
+    ByteBufferPtr GetData() const { return mData; }
 public:
     unsigned short GetClientId() const { return mClientId; }
 };
@@ -1585,7 +1585,7 @@ public:
     unsigned char GetFlags() const { return mFlags; }
 };
 
-// Inline getters are natural header accessors, zero support quota; no forced emission.
+
 
 // Actual REQUEST11, distinct from notificationCreated13 and read/subscription41.
 // Native2becd0 alloc8c/ctor2c4870; ctor writes VT44d0e4. SDK and target agree.
@@ -1626,7 +1626,7 @@ inline const char* GetBufferData(const ByteBufferPtr& inBuffer)
     return inBuffer->data();
 }
 
-// the WON server list the account ops use (??_G 0xceaec, dtor 0xceb08; sizeof 0x3c). r25pre-won-2: layout from
+// the WON server list the account ops use (??_G 0xceaec, dtor 0xceb08; sizeof 0x3c).: layout from
 // the dtor and the base game's out-of-line ctor (base exe 0x4c772a; AoC's WONAPI inlines it: 0x2ddb70, 0x3628c0);
 // member names PROVISIONAL
 typedef std::map<std::wstring,DirEntityList> DirEntityMap;
@@ -1655,7 +1655,7 @@ public:
     AddrList mAddresses; //30, actual owned IPAddr priority list
 };
 
-// AsyncOpWithTracker's op tracker (r25pre-won-2; the lock, then the maps: ~AsyncOpWithTracker 0x4cff95 addresses the
+// AsyncOpWithTracker's op tracker (; the lock, then the maps: ~AsyncOpWithTracker 0x4cff95 addresses the
 // maps from the lock (+0x18) and destroys them first; names and key types PROVISIONAL)
 // Original2a9140/2a9270 insert without unique-key rejection: BOTH multimaps.
 struct AsyncOpTrackerEntry;
@@ -1705,7 +1705,7 @@ public:
     AsyncOpTrackerMaps mMaps;               // +0x18
 };
 
-// an op that tracks sub-ops (r25pre-won-2; implicit dtor 0x4cff95: the tracker, then ~AsyncOp 0x29f000)
+// an op that tracks sub-ops
 class AsyncOpWithTracker : public AsyncOp {
 private:
     class TrackerCompletion; //actual nested16 owner, RTTI44c854/native2a0100
@@ -2239,7 +2239,7 @@ public:
 
 
 // WONAPI's HTTP document request (sizeof 0xdc; implicit dtor 0x4cff46; ctor out of line in the base game,
-// base exe 0x6cc4d0; r25pre-won-2, members PROVISIONAL)
+// base exe 0x6cc4d0, members PROVISIONAL)
 // All target enums are32-bit int under VC6; no narrowed bool getter argument.
 enum HTTPDocType {
     HTTPDocType_MOTD=0,
@@ -2287,7 +2287,7 @@ public:
 };
 
 
-// the message of the day (dead in AoC; base exe vtable 0x829880 .?AVGetMOTDOp@WONAPI@@; r25pre-won-2)
+// the message of the day
 class GetMOTDOp : public GetHTTPDocumentOp {
 public:
     GetMOTDOp(const std::string& inProduct)
@@ -2624,9 +2624,9 @@ public:
     virtual void Virtual08();
     virtual void Virtual0C();
     virtual void Virtual10();
-    virtual ~WONLobbyWindow();              // +0x14 (r25pre-won-2: the base game's EEWonNet dtor deletes it)
+    virtual ~WONLobbyWindow();              // +0x14
     virtual void Virtual18();
-    void Close(bool inFlag);                // base exe 0x6a2220 (r25pre-won-2; PROVISIONAL)
+    void Close(bool inFlag);                // base exe 0x6a2220
 
     bool mClosed;                           // +0x04 (the base dtor waits for it after Close)
 };
@@ -2871,7 +2871,7 @@ struct GroupInfo
 		unsigned short mMaxPlayers;
 		unsigned long mFlags;
 		unsigned long mAsyncFlags;
-		unsigned short mObserverCount; // only applicable if non-detailed observers is on		
+		unsigned short mObserverCount; // only applicable if non-detailed observers is on
 
 		GroupInfo() : mId(0), mCaptainId(0), mMaxPlayers(0), mFlags(0), mAsyncFlags(0), mObserverCount(0) {}
 	};

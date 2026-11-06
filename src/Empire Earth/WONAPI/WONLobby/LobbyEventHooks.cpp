@@ -61,6 +61,6 @@ void LobbyFn3590E0(ComponentEvent* event)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007590d0
 // (public: virtual void __thiscall WONAPI::ComponentListenerFunc::Virtual04(class WONAPI::ComponentEvent *)    [?Virtual04@ComponentListenerFunc@WONAPI@@)

@@ -39,7 +39,7 @@ std::string GUIStringData::GetString() const
     }
     return result;
 }
-// SUPPORT ONLY327f30/100: direct typed conversion constructor, zero substantive quota.
+
 // FUNCTION: WON 0x00727f30
 std::wstring GUIStringData::GetWString() const
 {
@@ -198,6 +198,6 @@ void GUIStringData::toLowerCase()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007274c0
 // (public: virtual void * __thiscall WONAPI::GUIStringData::`scalar deleting destructor'(unsigned int)    [??_GGUIStringData@WONAPI@@UAEPAXI@Z])

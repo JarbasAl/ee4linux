@@ -173,11 +173,11 @@ Implicit member/base destruction is the source candidate; require actual normal
 COFF functions/relocations/EH actions before admission.
 */
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bfb50
 // (public: virtual __thiscall WONAPI::LoginEvent::~LoginEvent(void)    [??1LoginEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bf1d0
 // (public: virtual void * __thiscall WONAPI::LoginCtrl::`scalar deleting destructor'(unsigned int)    [??_GLoginCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007bf1f0

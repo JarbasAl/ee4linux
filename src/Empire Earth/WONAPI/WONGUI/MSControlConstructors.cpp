@@ -204,7 +204,7 @@ MSScrollThumb::MSScrollThumb() {}
 MSEtchedFrame::MSEtchedFrame() { SetComponentFlags(0x800,true); }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fec30
 // (public: __thiscall WONAPI::MSButton::MSButton(void)    [??0MSButton@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x006fec80
@@ -260,7 +260,7 @@ MSEtchedFrame::MSEtchedFrame() { SetComponentFlags(0x800,true); }
 // TEMPLATE: WON 0x00700e80
 // (public: __thiscall WONAPI::MSListCtrl::MSListCtrl(class WONAPI::MultiListArea *)    [??0MSListCtrl@WONAPI@@QAE@PAVMultiListArea@1@@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006feeb0
 // (public: virtual void * __thiscall WONAPI::MSTabButton::`scalar deleting destructor'(unsigned int)    [??_GMSTabButton@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006fefd0

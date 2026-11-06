@@ -343,6 +343,6 @@ void BrowserComponent::SetTransparent(bool transparent)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007faf10
 // (public: virtual void * __thiscall WONAPI::BrowserComponent::`scalar deleting destructor'(unsigned int)    [??_GBrowserComponent@WONAPI@@UAEPAXI@Z])

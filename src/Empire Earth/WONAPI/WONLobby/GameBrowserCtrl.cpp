@@ -19,7 +19,7 @@ GameBrowserCtrl::GameBrowserCtrl(const GUIString& inHome)
     mHomeLocation=inHome;
     mIsReset=true;
 }
-// Native normal3bbee0 has no own-vptr write: implicit cleanup0 primary quota.
+
 // Original3bc0b0..3bc244,404B.
 // FUNCTION: WON 0x007bc0b0
 void GameBrowserCtrl::InitComponent(ComponentInit& inInit)
@@ -147,15 +147,15 @@ bool GameBrowserCtrlConfig::Virtual24(const std::string& instruction)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bc6b0
 // (public: __thiscall WONAPI::URL::~URL(void)    [??1URL@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007cdd20
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bbec0
 // (public: virtual void * __thiscall WONAPI::GameBrowserCtrl::`scalar deleting destructor'(unsigned int)    [??_GGameBrowserCtrl@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bbee0
 // (public: virtual __thiscall WONAPI::GameBrowserCtrl::~GameBrowserCtrl(void)    [??1GameBrowserCtrl@WONAPI@@UAE@XZ])

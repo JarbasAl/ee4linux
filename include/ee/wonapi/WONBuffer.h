@@ -40,13 +40,13 @@ public:
     unsigned long ReadLength(unsigned char); //2a3d70, native signedbyte/short extension toDWORD
     void ReadRawString(std::string&,unsigned long); //2a3db0
     void ReadRawWString(std::wstring&,unsigned long); //2a3f60
-    bool ReadBool();                        // 0x2a3d30 (r12-misc-h7)
+    bool ReadBool();                        // 0x2a3d30
     unsigned char ReadByte();               // 0x2a3d40
-    short ReadShort();                      // 0x2a3d50 (r12-misc-h7)
-    long ReadLong();                        // 0x2a3d60 (r12-misc-h7)
-    void ReadWString(std::wstring& outText, int inLengthSize);    // 0x2a40f0 (r12-misc-h7)
+    short ReadShort();                      // 0x2a3d50
+    long ReadLong();                        // 0x2a3d60
+    void ReadWString(std::wstring& outText, int inLengthSize);    // 0x2a40f0
 
-    // r23 (SendFileOp's file window: a 0xc-byte ReadBuffer over its buffer; names PROVISIONAL)
+    // (SendFileOp's file window: a 0xc-byte ReadBuffer over its buffer; names PROVISIONAL)
     ReadBuffer(const void* inData, unsigned long inLength);   // 0x2a39f0
     void SetData(const void* inData, unsigned long inLength);  // 0x2a3a10 (rewinds)
     const void* ReadBytes(unsigned long inLength);      // 0x2a3a30 (throws past the end)
@@ -55,7 +55,7 @@ public:
     ByteBufferPtr ReadBuf(unsigned char inLengthSize); // 0x2a4110, native owning return
     unsigned long length() const { return mL08; } // actual public SDK width; no field migration
 
-    // r23 (EELobbyGame 0x292c7e: `[+8] - [+0] > 0`, bytes left to read; names PROVISIONAL)
+    // (EELobbyGame 0x292c7e: `[+8] - [+0] > 0`, bytes left to read; names PROVISIONAL)
     long mL00;                              // +0x00 the read position
     const char* mData;                      // +0x04
     long mL08;                              // +0x08 the length
@@ -76,26 +76,26 @@ public:
     void Fn2A8260(unsigned long); //2a8260, full27B, grows then advances actual length
     void AppendString(const std::string&, unsigned char = 2); //2a8350, full54B
 
-    // r23 (EELobbyGame 0x293437/0x2934a0: a 0x18-byte local, ctor (0, true), the dtor called directly)
+    // (EELobbyGame 0x293437/0x2934a0: a 0x18-byte local, ctor (0, true), the dtor called directly)
     WriteBuffer(unsigned char inLengthFieldSize, bool inLengthIncludesField);   // 0x2a8140 (vtable 0x84c930)
     virtual ~WriteBuffer();                 // 0x2a8190 (delete[] of +0x14)
-    SmartPtr<ByteBuffer> ToByteBuffer(bool inRelease);    // 0x2a8480 (the message so far; r23)
+    SmartPtr<ByteBuffer> ToByteBuffer(bool inRelease);    // 0x2a8480
     void AppendByte(unsigned char inByte);  // 0x2a82c0
-    void AppendBool(bool inValue);          // 0x2a82d0 (r12-misc-h7)
-    void AppendShort(short inValue);        // 0x2a82f0 (r12-misc-h7)
+    void AppendBool(bool inValue);          // 0x2a82d0
+    void AppendShort(short inValue);        // 0x2a82f0
     void SetShort(unsigned long inPos, short inValue); // 0x2a8460
-    void AppendLong(long inValue);          // 0x2a8300 (r12-misc-h7)
+    void AppendLong(long inValue);          // 0x2a8300
     void Reserve(unsigned long inNumBytes); // 0x2a81e0, actual91B
     void ReserveChunk(unsigned long theNumBytesToReserve,unsigned long theMaxSize=0);
     void AppendBuffer(const ByteBuffer* inBuffer, unsigned char inLengthFieldSize = 0); // 0x2a83d0
     void AppendBytes(const void* inData, unsigned long inLength); // 0x2a8280 (LobbyGame summary writes six address bytes)
-    void AppendWString(const std::wstring& inText, int inLengthSize);    // 0x2a8390 (r12-misc-h7)
-    void SetByte(unsigned long inPos, unsigned char inByte);   // 0x2a8440 (back-patches a count; r23 PROVISIONAL)
+    void AppendWString(const std::wstring& inText, int inLengthSize);    // 0x2a8390
+    void SetByte(unsigned long inPos, unsigned char inByte);   // 0x2a8440
 
     unsigned char mLengthFieldSize;         // +0x04
     bool mLengthIncludesField;              // +0x05; natural alignment +06/+07
     unsigned long mCapacity;                // +0x08
-    unsigned long mLength;                  // +0x0c (the bytes written so far; 0x292be0 saves it; r23)
+    unsigned long mLength;                  // +0x0c
     char* mData;                           // +0x10; allocation +6 after growth
     char* mAllocation;                     // +0x14; delete[] owner
 };

@@ -45,12 +45,12 @@ void WONScrollContainer::CopyAttributes(WONScrollContainer* from)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f7970
 // (public: virtual void * __thiscall WONAPI::Dialog::`scalar deleting destructor'(unsigned int)    [??_GDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00719c50
 // (public: __thiscall WONAPI::WONScrollContainer::WONScrollContainer(void)    [??0WONScrollContainer@WONAPI@@QAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00719cc0
 // (public: virtual void * __thiscall WONAPI::WONScrollContainer::`scalar deleting destructor'(unsigned int)    [??_GWONScrollContainer@WONAPI@@UAEPAXI@Z])

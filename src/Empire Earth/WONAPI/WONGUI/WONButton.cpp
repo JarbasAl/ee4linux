@@ -395,7 +395,7 @@ void WONButton::Paint(Graphics &g)
 	}
 }
 
-// Support0 scalar-state/forwarding helper, no primary quota.
+
 // FUNCTION: WON 0x00718200
 void WONButton::SetAdjustHeightToFitText(bool adjust)
 {
@@ -406,7 +406,7 @@ void WONButton::SetAdjustHeightToFitText(bool adjust)
 	AdjustHeightToFitText();
 }
 
-// Support0 scalar-state/forwarding helper, no primary quota.
+
 // FUNCTION: WON 0x007182a0
 void WONButton::SetTransparent(bool isTransparent)
 {
@@ -433,6 +433,6 @@ void WONButton::SetVertAlign(VertAlign align)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00722490
 // (public: class std::_Tree<class WONAPI::Font *,struct std::pair<class WONAPI::Font * const,class WONAPI::SmartPtr<class WONAPI::WrappedText> >,struct s)

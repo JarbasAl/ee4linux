@@ -1,5 +1,5 @@
 // Original RoomLabelCtrl complete0xa0, actual Container0x84/51slots.
-// Root narrowB header lease; source implementation admission remains separate.
+
 #ifndef EE_WONAPI_WONLOBBYROOMSERVER_H
 #define EE_WONAPI_WONLOBBYROOMSERVER_H
 #include "ee/wonapi/WONLobbyGUI.h"

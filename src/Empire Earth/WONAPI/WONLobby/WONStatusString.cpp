@@ -17,7 +17,7 @@ const char* WONStatusToString(WONStatus); //actual existing29deb0
 // Existing original GUIString storage; native address identities only, no definitions/init.
 }
 using namespace WONAPI;
-// Actual primary-SDK file-local formatter; real body retained with zero adapter quota.
+
 // FUNCTION: WON 0x00766a60
 static GUIString GeneralStatusError(const GUIString& text,WONStatus status)
 {

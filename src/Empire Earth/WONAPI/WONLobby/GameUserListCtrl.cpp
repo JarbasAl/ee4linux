@@ -83,7 +83,7 @@ void GameUserListItem::Virtual04(Graphics& inGraphics,ListArea* inArea)
         return;
     }
 }
-// Original3bcfc0..3bcff0,48B. Natural implicit cleanup is not primary quota.
+
 // FUNCTION: WON 0x007bcfc0
 GameUserListCtrl::GameUserListCtrl() : mInGame(false) { mRoomSpecFlags = 2; }
 // Original3bd2e0..3bd2f5,21B.
@@ -255,13 +255,13 @@ bool GameUserListCtrlConfig::Virtual24(const std::string& instruction)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bcb30
 // (public: virtual __thiscall WONAPI::GameUserListItem::~GameUserListItem(void)    [??1GameUserListItem@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x007bd9e0
 // (public: virtual __thiscall WONAPI::SetChatInputEvent::~SetChatInputEvent(void)    [??1SetChatInputEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bcb10
 // (public: virtual void * __thiscall WONAPI::GameUserListItem::`scalar deleting destructor'(unsigned int)    [??_GGameUserListItem@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007bcff0

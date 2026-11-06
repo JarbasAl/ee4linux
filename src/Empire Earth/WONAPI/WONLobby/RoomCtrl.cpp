@@ -1,4 +1,4 @@
-// Scratch whole RoomCtrl and global RoomListItem original family, no admission markers.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <string>
 #include <list>
@@ -354,14 +354,14 @@ void RoomCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c1b70
 // (public: virtual __thiscall RoomListItem::~RoomListItem(void)    [??1RoomListItem@@UAE@XZ])
 // TEMPLATE: WON 0x007c2190
 // (public: __thiscall WONAPI::RoomCtrl::RoomCtrl(void)    [??0RoomCtrl@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007ce350
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c21c0
 // (public: virtual void * __thiscall WONAPI::RoomCtrl::`scalar deleting destructor'(unsigned int)    [??_GRoomCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007c21e0
@@ -379,6 +379,6 @@ void RoomCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 // TEMPLATE: WON 0x007c3120
 // (public: virtual __thiscall WONAPI::QueryServerGroupsEvent::~QueryServerGroupsEvent(void)    [??1QueryServerGroupsEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c1b50
 // (public: virtual void * __thiscall RoomListItem::`scalar deleting destructor'(unsigned int)    [??_GRoomListItem@@UAEPAXI@Z])

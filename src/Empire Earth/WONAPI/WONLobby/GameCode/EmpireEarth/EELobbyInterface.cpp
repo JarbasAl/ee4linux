@@ -2,7 +2,7 @@
 // gEELobbyInterface_* texts are its strings and it sorts between EELobbyInit.cpp and EELobbyMisc.cpp). The game's
 // side of the external lobby: the lobby windows' globals, the game options read back from the lobby game, the local
 // address, opening and closing the lobby through EEALobbyAction, the game-done event: 0x296aaa..0x297ee7.
-// Module flags (r12-misc-h5, round 12). Every function has source (r24pre-won: 0x2972c6 with its EELobbySoundDecoder /
+// Module flags. Every function has source (: 0x2972c6 with its EELobbySoundDecoder /
 // MSNativeIcon ??_G 0x297dc5 / 0x297531, and 0x29754d).
 // UNIT-INCLUDE: dx7sdk
 // (0x29754d calls IDirectDraw7::FlipToGDISurface through the DX7 screen: built against the DirectX 7 SDK headers)
@@ -81,10 +81,10 @@ static WONAPICoreEx* gEELobbyWindowManager;      // 0x565898
 static bool gEELobbyOpen;                   // 0x56589c
 static bool gEELobbyShown;                  // 0x56589d
 static bool gEELobbyClosing;                // 0x56589e
-static long sEELobbyHeight;                 // 0x565888 (the game window's size when the lobby opened; r23)
+static long sEELobbyHeight;                 // 0x565888
 static long sEELobbyWidth;                  // 0x56588c
 static bool gEELobbyGameDone;               // 0x5658a0
-static unsigned long sEELobbyStartTime;     // 0x5658a8 (the external lobby's Start time; r23)
+static unsigned long sEELobbyStartTime;     // 0x5658a8
 
 void EELobbyFn296B9A(EEGameOptionsPlayer& outPlayer, EELobbyPlayerSlot* inSlot);
 void EELobbyFn296B06(EEGameOptionsPlayer& outMyPlayer);
@@ -210,7 +210,7 @@ UWideString& EEGetLocalAddress(NEProtocol* inProtocol, unsigned long inAdapter)
 }
 
 // FUNCTION: EXE 0x696d1e
-// the host's local server for the lobby game and the host's own connection request (r23)
+// the host's local server for the lobby game and the host's own connection request
 bool EELobbyFn296D1E()
 {
     UWideString theUnused1;
@@ -243,7 +243,7 @@ bool EELobbyFn296D1E()
 }
 
 // FUNCTION: EXE 0x696eac
-// the lobby game's options into gGameOptions (from the lobby defaults), then the players (r23)
+// the lobby game's options into gGameOptions (from the lobby defaults), then the players
 void EELobbyFn296EAC(EEGameOptionsPlayer& outMyPlayer)
 {
     EELobbyGame* theGame = (EELobbyGame*)GetMyLobbyGame();
@@ -340,7 +340,7 @@ void EELobbyFn2970E3()
 // TEMPLATE: EXE 0x698bf9
 // TEMPLATE: EXE 0x698c1c
 // (list<LobbyNetAddress>'s ctor and dtor for EELobbyFn2970E3's local: the linker placed the COMDATs inside
-// EELobbyMisc.cpp's range, which does not instantiate them; r24-lobby-player-gfx)
+// EELobbyMisc.cpp's range, which does not instantiate them)
 
 // FUNCTION: EXE 0x69713f
 long EELobbyGameDoneEvent::ProcessEvent(UIForm* inForm, UIEntity* inEntity)
@@ -389,9 +389,9 @@ void EELobbyPostAction(void (*inFunc)())
 // FUNCTION: EXE 0x6972c6
 // NEAR (93.5): (1) the original loads the window and its vtable before it builds the rectangle (a temporary's
 // shape), but a WONRectangle temporary here moves below theClass in the frame and loses the esi = 0x100 reuse (84.6);
-// (2) it keeps theClass.hIcon in edi from the test on. r24pre-won
+// (2) it keeps theClass.hIcon in edi from the test on.
 // opens the external lobby: the WONAPI core, the window manager with its image and sound decoders, the lobby window
-// (the game window's title and icon), the lobby screen in it; then shows it and runs it until it is left (r24pre-won)
+// (the game window's title and icon), the lobby screen in it; then shows it and runs it until it is left
 void EELobbyFn2972C6()
 {
     char theText[256];
@@ -528,7 +528,7 @@ void EELobbyFn2976C7()
 }
 
 // FUNCTION: EXE 0x69775d
-// the host starts the game from the external lobby (EEUIELEStart::ProcessEvent 0x5da6b3's twin; r23)
+// the host starts the game from the external lobby
 void EELobbyFn29775D()
 {
     EEGameOptionsPlayer thePlayer;
@@ -554,7 +554,7 @@ void EELobbyFn29775D()
 }
 
 // FUNCTION: EXE 0x697897
-// a client's connection to the lobby game's host (EEAJoinOrHostAGame::Virtual4 0x402120's join path; r23)
+// a client's connection to the lobby game's host
 void EELobbyFn297897()
 {
     UWideString theMessage;
@@ -595,7 +595,7 @@ void EELobbyFn297897()
 }
 
 // FUNCTION: EXE 0x697ac9
-// back from the lobby to the game: the game window takes the lobby window's place, input resumes (r23)
+// back from the lobby to the game: the game window takes the lobby window's place, input resumes
 void EELobbyFn297AC9()
 {
     if (!gEELobbyShown || gEELobbyPlatformWindow.mPtr == NULL)
@@ -629,7 +629,7 @@ void EELobbyFn297AC9()
 }
 
 // FUNCTION: EXE 0x697be0
-// the lobby asked for an update: run Sierra Update and quit, or tell the player it is missing (r23)
+// the lobby asked for an update: run Sierra Update and quit, or tell the player it is missing
 void EELobbyFn297BE0()
 {
     FSFileSpec theFile;

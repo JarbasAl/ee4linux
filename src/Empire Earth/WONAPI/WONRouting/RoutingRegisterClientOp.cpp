@@ -31,7 +31,7 @@ RoutingRegisterClientOp::RoutingRegisterClientOp(RoutingConnection* inConnection
 {
     // Native overloaded constructor leaves mClientId and reply counters untouched.
 }
-// Native six-byte discriminator; zero primary quota.
+
 // FUNCTION: WON 0x006c8540
 RoutingOpType RoutingRegisterClientOp::GetType() const { return (RoutingOpType)42; }
 
@@ -81,10 +81,10 @@ WONStatus RoutingRegisterClientOp::Virtual10(unsigned char inMsgType, ReadBuffer
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c8570
 // (public: virtual __thiscall WONAPI::RoutingRegisterClientOp::~RoutingRegisterClientOp(void)    [??1RoutingRegisterClientOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c8550
 // (public: virtual void * __thiscall WONAPI::RoutingRegisterClientOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingRegisterClientOp@WONAPI@@)

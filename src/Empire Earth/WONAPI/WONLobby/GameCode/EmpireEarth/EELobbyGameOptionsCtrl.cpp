@@ -1,6 +1,6 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyGameOptionsCtrl.cpp (__FILE__ 0x8d09ac, InitComponent's
 // lines 74..89). The game room's game options: 16 named combo/check boxes showing the lobby game's options:
-// 0x2942c8..0x294d62 (the option table's chain first; EELobbyInit.cpp follows). Module flags (r12-misc-h4, round 12).
+// 0x2942c8..0x294d62 (the option table's chain first; EELobbyInit.cpp follows). Module flags.
 #include <windows.h>
 #include <stdio.h>
 #include <string>

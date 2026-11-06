@@ -23,7 +23,7 @@ void TableElement::EnsureNumCols(RowInfo& row,int numCols)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007243c0
 // (void __cdecl std::fill(class std::_Ptrit<struct WONAPI::TableElement::CellInfo,int,struct WONAPI::TableElement::CellInfo *,struct WONAPI::TableElement)
 // TEMPLATE: WON 0x00724450

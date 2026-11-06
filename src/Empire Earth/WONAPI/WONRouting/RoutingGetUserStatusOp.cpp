@@ -54,10 +54,10 @@ WONStatus RoutingGetUserStatusOp::Virtual0C(ReadBuffer& inMessage)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c6730
 // (public: virtual void * __thiscall WONAPI::RoutingGetUserStatusOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingGetUserStatusOp@WONAPI@@UA)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c6750
 // (public: virtual __thiscall WONAPI::RoutingGetUserStatusOp::~RoutingGetUserStatusOp(void)    [??1RoutingGetUserStatusOp@WONAPI@@UAE@XZ])

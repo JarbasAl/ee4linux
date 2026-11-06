@@ -1,5 +1,5 @@
 // Genuine ComponentLineSegment dimension, mouse forwarding and flag predicates.
-// All methods are support-only; no primary byte/function quota.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>

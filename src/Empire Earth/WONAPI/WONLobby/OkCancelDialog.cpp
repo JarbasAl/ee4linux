@@ -13,7 +13,7 @@
 namespace WONAPI {
 // Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
 OkCancelDialog::OkCancelDialog() {}
-// Original ordinary destructor is implicit; generated cleanup has zero body quota.
+
 // FUNCTION: WON 0x7f8bc0
 void OkCancelDialog::InitComponent(ComponentInit& inInit)
 {
@@ -88,15 +88,15 @@ void OkCancelDialog::SetText(const GUIString& inTitle, const GUIString& inBody,
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f8a40
 // (public: virtual __thiscall WONAPI::OkCancelDialog::~OkCancelDialog(void)    [??1OkCancelDialog@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x007fa620
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f8a20
 // (public: virtual void * __thiscall WONAPI::OkCancelDialog::`scalar deleting destructor'(unsigned int)    [??_GOkCancelDialog@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f89e0
 // (public: __thiscall WONAPI::OkCancelDialog::OkCancelDialog(void)    [??0OkCancelDialog@WONAPI@@QAE@XZ])

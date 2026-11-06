@@ -86,7 +86,7 @@ void HTMLFromText::AddStr(GUIString &theStr)
 		mDocument->AddTag(new HTMLTextTag(theStr));
 }
 
-// Support0 stream cleanup98 and EOF31, no independent quota.
+
 // FUNCTION: WON 0x0073f580
 void HTMLFromText::CloseFile()
 {

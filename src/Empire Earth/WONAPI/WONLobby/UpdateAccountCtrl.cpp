@@ -13,7 +13,7 @@
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
-// Original3c9c40 constructor180 has only default member/base setup: zero primary quota.
+
 UpdateAccountCtrl::UpdateAccountCtrl() {}
 // Original3c9d20..3c9eed,461B. Own-vptr3c9d3f; normal automatic cleanup definition.
 // FUNCTION: WON 0x007c9d20
@@ -115,7 +115,7 @@ void UpdateAccountCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c9d00
 // (public: virtual void * __thiscall WONAPI::UpdateAccountCtrl::`scalar deleting destructor'(unsigned int)    [??_GUpdateAccountCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007ca5d0
@@ -123,6 +123,6 @@ void UpdateAccountCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 // TEMPLATE: WON 0x007ca5f0
 // (public: virtual __thiscall WONAPI::UpdateAccountEvent::~UpdateAccountEvent(void)    [??1UpdateAccountEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c9c40
 // (public: __thiscall WONAPI::UpdateAccountCtrl::UpdateAccountCtrl(void)    [??0UpdateAccountCtrl@WONAPI@@QAE@XZ])

@@ -301,6 +301,6 @@ void MSGraphics::SetClipRectHook(int x, int y, int width, int height)
 	IntersectClipRect(mDC, x, y, x+width, y+height);
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007cf110
 // (public: virtual void * __thiscall WONAPI::MSGraphics::`scalar deleting destructor'(unsigned int)    [??_GMSGraphics@WONAPI@@UAEPAXI@Z])

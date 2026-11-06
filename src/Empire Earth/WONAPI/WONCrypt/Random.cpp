@@ -93,7 +93,7 @@ void Random::nextBytes(void* data, int theLen)
 
 	while (numGot < numRequested) 
 	{
-		// If no more random bytes, make some more 
+		// If no more random bytes, make some more
 		if (randomBytes.length() == 0 || randomBytesUsed == randomBytes.length()) 
 		{
 			digest.update(state);
@@ -122,6 +122,6 @@ unsigned int Random::next(int numBits)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007dade0
 // (public: class std::basic_string<unsigned char,struct std::char_traits<unsigned char>,class std::allocator<unsigned char> > & __thiscall std::basic_str)

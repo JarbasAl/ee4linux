@@ -215,11 +215,11 @@ void RootScreen::HandleTabCtrlTabSelected(ComponentEvent* inEvent)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c3cf0
 // (public: virtual void * __thiscall WONAPI::RootScreen::`scalar deleting destructor'(unsigned int)    [??_GRootScreen@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c4650
 // (public: virtual void * __thiscall WONAPI::SetRoomSpecFlagsEvent::`scalar deleting destructor'(unsigned int)    [??_GSetRoomSpecFlagsEvent@WONAPI@@UAEP)
 // TEMPLATE: WON 0x007c4670

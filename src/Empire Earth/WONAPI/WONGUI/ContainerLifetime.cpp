@@ -21,10 +21,10 @@ Container::~Container()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071b2a0
 // (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::Component>,class WONAPI::SmartPtr<class WONAPI::Component>,struct std::set<class WONAPI:)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f5cc0
 // (public: virtual void * __thiscall WONAPI::Container::`scalar deleting destructor'(unsigned int)    [??_GContainer@WONAPI@@UAEPAXI@Z])

@@ -23,7 +23,7 @@ bool CreditsDialogConfig::Virtual24(const std::string& inInstruction)
     mCredits->AddLine(aLine,Fn386860(std::string("DialogComponent")),aColor);
     return true;
 }
-// Actual25B SetComponent bridge38f100, zero helper quota.
+
 void CreditsDialogConfig::Virtual34(Component* inComponent)
 {
     DialogConfig::Virtual34(inComponent);
@@ -52,7 +52,7 @@ void CreditsDialog::InitComponent(ComponentInit& inInit)
 }
 }
 
-// R5 primary-SDK/global color algorithm and actual credits text/list/timer/paint behavior.
+// primary-SDK/global color algorithm and actual credits text/list/timer/paint behavior.
 // FUNCTION: WON 0x007f7100
 DWORD DimColor(DWORD color,int percent)
 {
@@ -171,7 +171,7 @@ void CreditsDialog::ResetScrolling()
 
 namespace WONAPI {
 // Genuine SDK CreditLineInfo owned GUIString accessor; complete original local class.
-// SUPPORT: EXE 0x007f7450 (zero primary quota)
+
 // FUNCTION: WON 0x007f7450
 GUIString CreditLineInfo::GetLine()
 {
@@ -193,15 +193,15 @@ void CreditsDialog::HandleComponentEvent(ComponentEvent* event)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f6e70
 // (public: virtual void * __thiscall WONAPI::ScrollingTextComponent::`scalar deleting destructor'(unsigned int)    [??_GScrollingTextComponent@WONAPI@@UA)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007fa7a0
 // (void __cdecl std::_Construct(class WONAPI::CreditLineInfo *,class WONAPI::CreditLineInfo const &)    [?_Construct@std@@YAXPAVCreditLineInfo@WONAPI@@AB)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f7560
 // (public: virtual void * __thiscall WONAPI::CreditsDialog::`scalar deleting destructor'(unsigned int)    [??_GCreditsDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f7580

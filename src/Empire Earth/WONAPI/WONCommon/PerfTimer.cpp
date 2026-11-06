@@ -4,7 +4,7 @@
 #include "ee/wonapi/WONPerfTimer.h"
 using namespace WONAPI;
 // Actual native state: RVA565ec0/8,565ed0/8,565ed8/8,565ee0/4,565ee4/1.
-// Retain the authored file-static declarations; data contributes zero quota.
+
 static __int64 gPerfTotalTime = 0;
 static __int64 gPerfResetTick = 0;
 static double gPerfElapsedTime = 0;
@@ -81,7 +81,7 @@ void PerfTimer::GlobalStop(const char*)
     gPerfTimerStarted=false;
 }
 
-// R11 genuine missing instance family; SOURCE_ONLY_NO_NATIVE_ID.
+// genuine missing instance family; SOURCE_ONLY_NO_NATIVE_ID.
 // Existing static APIs/calibration/data remain unchanged above.
 static __int64 gPerfStartTick = 0; // genuine SDK file-static instance accumulation tick
 
@@ -142,6 +142,6 @@ void PerfTimer::DumpTimesToFile(const char *theFileName)
 {
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a37f0
 // (__int64 __cdecl MyQueryPerformanceCounter(void)    [?MyQueryPerformanceCounter@@YA_JXZ])

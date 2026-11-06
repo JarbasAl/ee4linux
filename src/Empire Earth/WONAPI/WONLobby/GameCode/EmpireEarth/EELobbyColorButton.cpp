@@ -2,7 +2,7 @@
 // sorts before EELobbyConnectDialog.cpp, and .data opens with the colour table before the two classes' type
 // descriptors). A player's colour button in the game room and the 4 x 4 colour chooser popup it opens; the lobby's
 // sixteen player colours: 0x290578..0x2909a1 (the first lobby unit: Component's and Button's inline virtuals are its
-// COMDATs). Module flags (r12-misc-h7, round 12).
+// COMDATs). Module flags.
 #include <windows.h>
 #include <string>
 #include <list>
@@ -226,5 +226,5 @@ void EELobbyColorChooser::Paint(Graphics& inGraphics)
 // SYNTHETIC: EXE 0x6907a6
 // (??_G EELobbyColorChooser)
 
-// r24-lobby-player-gfx: the ICF-shared copy LINK kept in this unit's range
+//: the ICF-shared copy LINK kept in this unit's range
 // SYNTHETIC: EXE 0x6907a3

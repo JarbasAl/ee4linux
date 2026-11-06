@@ -54,6 +54,6 @@ void ResourceConfig::AddInt(const std::string &theKey, int theInt)
 	ResourceConfig_AddToMap(mIntMap,theKey,theInt,mParseCount);
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a39c0
 // (public: __thiscall std::pair<class WONAPI::GUIString,int>::pair<class WONAPI::GUIString,int>(struct std::pair<class WONAPI::GUIString,int> const &)   )

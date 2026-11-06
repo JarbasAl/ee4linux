@@ -11,7 +11,7 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyPersistence.h"
 namespace WONAPI {
-// Original support0x2a0ce0/20B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a0ce0
 void FileReader::Init()
 {
@@ -22,7 +22,7 @@ void FileReader::Init()
     mOwnBuffer = false;
     mMemoryMode = false;
 }
-// Original support0x2a0d00/12B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 FileReader::FileReader() { Init(); }
 // FUNCTION: WON 0x006a0d10
 FileReader::FileReader(const char* inPath) { Init(); Open(inPath); }
@@ -74,7 +74,7 @@ void FileReader::Close()
     }
     mMemoryMode = false;
 }
-// Original support0x2a0e20/31B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a0e20
 unsigned long FileReader::pos()
 {
@@ -172,13 +172,13 @@ void FileReader::ReadIntoMemory()
         }
     }
 }
-// Original support0x2a1b20/19B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a1b20
 unsigned char FileReader::ReadByte() { unsigned char value; ReadBytes(&value, 1); return value; }
-// Original support0x2a1b40/20B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a1b40
 unsigned short FileReader::ReadShort() { unsigned short value; ReadBytes(&value, 2); return value; }
-// Original support0x2a1b60/19B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a1b60
 long FileReader::ReadLong() { long value; ReadBytes(&value, 4); return value; }
 // FUNCTION: WON 0x006a1b80
@@ -210,7 +210,7 @@ void FileReader::Rewind()
     if (mBuffer != NULL) mPosition = 0;
     else if (mFile != NULL) rewind(mFile);
 }
-// Original support0x2a1de0/37B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a1de0
 bool FileReader::EndOfFile()
 {
@@ -229,7 +229,7 @@ FileReader::FileReader(const void *theMemDataP, unsigned long theMemDataLen)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a0d00
 // (public: __thiscall WONAPI::FileReader::FileReader(void)    [??0FileReader@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x006a10b0
@@ -237,10 +237,10 @@ FileReader::FileReader(const void *theMemDataP, unsigned long theMemDataLen)
 // TEMPLATE: WON 0x006a10c0
 // (public: virtual void * __thiscall WONAPI::FileReaderException::`scalar deleting destructor'(unsigned int)    [??_GFileReaderException@WONAPI@@UAEPAXI@)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a10e0
 // (public: virtual __thiscall WONAPI::FileReaderException::~FileReaderException(void)    [??1FileReaderException@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a1150
 // (public: __thiscall WONAPI::FileReaderException::FileReaderException(class WONAPI::FileReaderException const &)    [??0FileReaderException@WONAPI@@QAE@)

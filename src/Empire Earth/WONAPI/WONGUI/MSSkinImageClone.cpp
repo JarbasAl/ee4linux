@@ -18,6 +18,6 @@ SmartPtr<Image> WONMSSkin::MSImage::Duplicate()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00715ad0
 // (public: virtual __thiscall WONAPI::WONMSSkin::MSImage::~MSImage(void)    [??1MSImage@WONMSSkin@WONAPI@@UAE@XZ])

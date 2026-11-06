@@ -147,7 +147,7 @@ void MSWindowManager::GetScreenResolutionHook(int &theWidth, int &theHeight)
 // FUNCTION: WON 0x007d0b60
 MSWindowManager::~MSWindowManager() {}
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d08d0
 // (unsigned long __cdecl MyGetSysColor(int)    [?MyGetSysColor@@YAKH@Z])
 // TEMPLATE: WON 0x007d0b40

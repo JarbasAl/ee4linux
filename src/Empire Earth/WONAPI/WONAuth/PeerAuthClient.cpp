@@ -137,7 +137,7 @@ ByteBufferPtr PeerAuthClient::Start(const AuthPeerData *theData, AuthType theTyp
 	aMsg.AppendLong(50);								// Auth1 Request
 
 
-	aMsg.AppendByte(sessioned ? 2 : 1);					// 1 = persistent, 2 = sessioned	
+	aMsg.AppendByte(sessioned ? 2 : 1);					// 1 = persistent, 2 = sessioned
 	aMsg.AppendByte(encrypted ? 1 : 0);					// Encrypt Blowfish
 
 	int anEncryptFlags = 0;

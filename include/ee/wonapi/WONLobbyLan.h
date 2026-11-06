@@ -102,7 +102,7 @@ public:
     void Fn3E12A0(AsyncOp*); //262B, reference-only RecvMsgOp
     void Fn3E1210(ByteBuffer*,LobbyLanSocket*); //128B
     void Fn3E0760(ReadBuffer&,LobbyLanSocket*); //1815B original handler; socket/IP canonical API pending
-    int Fn3E0F90(ByteBuffer*,LobbyGame*); //603B hot plus owned EH return continuation24B zero extra quota
+    int Fn3E0F90(ByteBuffer*,LobbyGame*);
     void Fn3E2CE0(LobbyClient*,int); //212B, Dialogs full ClientOptionsPopup90 proposal required
     void Fn3E13B0(LobbyLanSocket*); //579B, complete RecvMsgOpB4 proposal and Queue API/header pending
     bool Fn3E35A0(); //512B auth initialization remains originalcallee; no giant partial op allocation

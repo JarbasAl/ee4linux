@@ -57,6 +57,6 @@ void TextAnchorInstruction::PerformInstructions(TextArea *theTextArea)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00712b40
 // (public: bool __thiscall WONAPI::GUIString::operator<(class WONAPI::GUIString const &)const     [??MGUIString@WONAPI@@QBE_NABV01@@Z])

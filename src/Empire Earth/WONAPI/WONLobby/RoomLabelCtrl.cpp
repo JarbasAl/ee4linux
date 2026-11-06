@@ -154,10 +154,10 @@ ComponentConfig* RoomLabelCtrlConfig::CfgFactory()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c33a0
 // (public: virtual __thiscall WONAPI::RoomLabelCtrl::~RoomLabelCtrl(void)    [??1RoomLabelCtrl@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c3380
 // (public: virtual void * __thiscall WONAPI::RoomLabelCtrl::`scalar deleting destructor'(unsigned int)    [??_GRoomLabelCtrl@WONAPI@@UAEPAXI@Z])

@@ -37,12 +37,12 @@ void LoginHelpCtrl::Paint(Graphics& inGraphics)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bfc40
 // (public: virtual void * __thiscall WONAPI::LoginHelpCtrl::`scalar deleting destructor'(unsigned int)    [??_GLoginHelpCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007bfc60
 // (public: virtual __thiscall WONAPI::LoginHelpCtrl::~LoginHelpCtrl(void)    [??1LoginHelpCtrl@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bfc20
 // (public: __thiscall WONAPI::LoginHelpCtrl::LoginHelpCtrl(void)    [??0LoginHelpCtrl@WONAPI@@QAE@XZ])

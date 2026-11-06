@@ -53,6 +53,6 @@ bool MultiListHeaderConfig::Virtual24(const std::string& instruction)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a20d0
 // (class WONAPI::MultiListArea * __cdecl WONAPI::SafeConfigGetComponent(class WONAPI::Component *,char const *)    [?SafeConfigGetComponent@WONAPI@@YAPAV)

@@ -275,7 +275,7 @@ void InitLogic::Init()
 }
 } //WONAPI
 
-// R3 cross-promotion source candidate; preserves admitted17 above byte-for-byte.
+// cross-promotion source candidate; preserves admitted17 above byte-for-byte.
 namespace WONAPI {
 // FUNCTION: WON 0x7dda10
 void InitLogic::CrossPromotionImageCompletion(AsyncOp* inOp)
@@ -324,7 +324,7 @@ void InitLogic::ParseCrossPromotion(ByteBuffer* inDocument)
 
 } //WONAPI
 
-// R3 directory cohort SCRATCH ONLY; whole typed operation gate still pending.
+// directory cohort SCRATCH ONLY; whole typed operation gate still pending.
 namespace WONAPI {
 // FUNCTION: WON 0x007df410
 void InitLogic::StartDirectoryQuery()
@@ -414,7 +414,7 @@ void InitLogic::DirectoryCompletion(AsyncOp* inOp)
 
 }
 
-// R3 remaining Version/Firewall cohort; original-backed source, normal capture pending.
+// remaining Version/Firewall cohort; original-backed source, normal capture pending.
 namespace WONAPI {
 // FUNCTION: WON 0x007df6c0
 void InitLogic::StartVersionCheck()
@@ -520,14 +520,14 @@ void InitLogic::AcceptCompletion(AsyncOp* inOp)
 }
 // TEMPLATE: WON 0x007f20a0
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007dd1e0
 // (public: virtual void * __thiscall WONAPI::InitLogic::`scalar deleting destructor'(unsigned int)    [??_GInitLogic@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007df3f0
 // (public: __thiscall WONAPI::LogicCompletionBase::LogicCompletionBase(void)    [??0LogicCompletionBase@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007f36d0
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007dd4a0
 // (public: virtual void * __thiscall WONAPI::LoginInitStatusEvent::`scalar deleting destructor'(unsigned int)    [??_GLoginInitStatusEvent@WONAPI@@UAEPAX)
 // TEMPLATE: WON 0x007dd4c0
@@ -537,7 +537,7 @@ void InitLogic::AcceptCompletion(AsyncOp* inOp)
 // TEMPLATE: WON 0x007ddb70
 // (public: virtual __thiscall WONAPI::SetCrossPromotionEvent::~SetCrossPromotionEvent(void)    [??1SetCrossPromotionEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f1430
 // (public: virtual void * __thiscall WONAPI::LogicCompletion<class WONAPI::InitLogic>::`scalar deleting destructor'(unsigned int)    [??_G?$LogicCompleti)
 // TEMPLATE: WON 0x007f1510

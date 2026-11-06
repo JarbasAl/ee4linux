@@ -1,4 +1,4 @@
-// WONAPI GUI / lobby framework classes as the game's lobby glue sees them (RECONSTRUCTION; r12-misc-h2, round 12).
+// WONAPI GUI / lobby framework classes as the game's lobby glue sees them.
 // WONAPI proper (0x29deb0..) is not decompiled: bases come from the RTTI class hierarchy descriptors, sizes from the
 // glue's `new` calls; every other name PROVISIONAL (by behaviour); `_gap` arrays are undecoded. Requires <string>,
 // ee/EEWonNet.h, ee/wonapi/WONLobbyResource.h.
@@ -251,13 +251,13 @@ class ComponentListener;
 struct PopupParams;
 extern GUIString gEmptyGUIString;           // 0x966244
 
-// a GUI component (0x30 bytes: EELobbyColorChooser's members start at +0x30 (r12-misc-h7); vtable 0x84d71c, 43
+// a GUI component (0x30 bytes: EELobbyColorChooser's members start at +0x30; vtable 0x84d71c, 43
 // slots). Unknown slots are named by vtable offset. The inline bodies are the COMDATs the first lobby unit
 // (EELobbyColorButton.cpp 0x29059d, 0x2905a2) keeps; the other tiny slots are ICF-folded into game code.
 class WONRectangle {
 public:
     WONRectangle();                         // 0x349300
-    WONRectangle(int inX, int inY, int inWidth, int inHeight);    // 0x349310 (r24pre-won)
+    WONRectangle(int inX, int inY, int inWidth, int inHeight);    // 0x349310
     void DoIntersect(const WONRectangle&); //349330, native3271b1 call
     void DoUnion(const WONRectangle&); //3493b0 nativeRoot30498b external
     bool Intersects(const WONRectangle&) const; //349450 native complete69B predicate
@@ -473,7 +473,7 @@ public:
     unsigned char GetNextFocusId(); //2f6010 actual18B primitiveaccessor support0
     void SetFocusToLastFocusChild(); //2f6030 actual196B
     void EnsureOnTopOf(Component*,Component*); //2f6f60 actual352B
-    void Fn2F6A60(Component* inChild);      // 0x2f6a60 (then this; r24pre-won PROVISIONAL)
+    void Fn2F6A60(Component* inChild);      // 0x2f6a60
     virtual Component* VirtualAC(int inX, int inY); // 0x2f65b0
     virtual Component* VirtualB0(int inX, int inY) { return VirtualAC(inX, inY); } // 0x2909c7
     virtual void VirtualB4(Component* inChild);
@@ -565,7 +565,7 @@ public:
 };
 
 // a modal or popup dialog (0x98 bytes: EELobbyConnectDialog's members start at +0x98; its implicit dtor is the
-// lobby glue's COMDAT 0x290a26; r12-misc-h7)
+// lobby glue's COMDAT 0x290a26)
 class Dialog : public Container {
 public:
     virtual void Virtual08();               // 0x2f7a60
@@ -1508,7 +1508,7 @@ public:
 LobbyConfig* GetLobbyConfig();
 
 // one item of a list (0x18 bytes: TextListItem's members start at +0x18; vtable 0x84dba4, 14 slots; the inline
-// bodies are the COMDATs EELobbyConnectDialog.cpp keeps, 0x290bb4..0x290bc4; r12-misc-h7)
+// bodies are the COMDATs EELobbyConnectDialog.cpp keeps, 0x290bb4..0x290bc4)
 class ListItem : public RefCount {
 protected:
     virtual ~ListItem() {} //genuine SDK protected inline explicit destructor, inherited RefCount cleanup
@@ -1719,7 +1719,7 @@ void LobbyDraw3DFrame(Graphics& inGraphics, int inX, int inY, int inWidth, int i
 void LobbyDrawFrame(Graphics& inGraphics, int inX, int inY, int inWidth, int inHeight, bool inFlag);
 
 // a game of the lobby (0x68 bytes: original factory 0x3a6730; vtable 26 slots, the game's overrides
-// named by offset; r12-misc-h7)
+// named by offset)
 class LobbyGame : public RefCount {
 public:
     void Fn3A6C90();
@@ -1747,25 +1747,25 @@ public:
     virtual long Virtual24() { return 1; } // the derived EELobbyGame 0x2926f9 returns through eax (long, as main had it); the SDK default folds to a `mov al, 1` body 0x2f30d0: open
     virtual bool Virtual28() { return true; } //genuine SDK inline CanReadyHook
     virtual short Virtual2C();
-    // r23 (EELobbyGame's overrides): +0x30 a new game hosted by inClient, +0x34 the game's version
+    // (EELobbyGame's overrides): +0x30 a new game hosted by inClient, +0x34 the game's version
     virtual void Virtual30(LobbyClient* inClient) {} //genuine SDK inline HandleHostGameHook
     virtual void Virtual34(WriteBuffer& outBuffer) {} //genuine SDK inline GetJoinGameRequestHook
-    // +0x38 a join request's check (0 accepted; r23)
+    // +0x38 a join request's check
     virtual short Virtual38(ReadBuffer& inBuffer, LobbyClient* inClient) { return 0; } //genuine SDK HandleJoinGameRequestHook default
-    // +0x3c the game's state for a joining client (the counterpart of +0x44; inClient unused; type PROVISIONAL, r23)
+    // +0x3c the game's state for a joining client
     virtual void Virtual3C(LobbyClient* inClient, WriteBuffer& outBuffer) {} //genuine SDK inline GetJoinGameReplyHook
     virtual void Virtual40(LobbyGame* inGame) {} //genuine SDK inline CopyFromHook
-    virtual void Virtual44(ReadBuffer& inBuffer) {} //genuine SDK inline HandleJoinGameReplyHook     // +0x44 a joined game's state read (r23)
-    // r23: +0x48 a client left (inPlayer: its player), +0x4c a client joined
+    virtual void Virtual44(ReadBuffer& inBuffer) {} //genuine SDK inline HandleJoinGameReplyHook     // +0x44 a joined game's state read
+    //: +0x48 a client left (inPlayer: its player), +0x4c a client joined
     virtual void Virtual48(LobbyClient* inClient, LobbyPlayer* inPlayer) {} //genuine SDK inline HandlePlayerLeftHook
     virtual void Virtual4C(LobbyClient* inClient) {} //genuine SDK inline HandlePlayerJoinedHook
-    // r23: +0x50 the summary (three options), +0x54 the details (options and the slots' clients), +0x58 the summary
+    //: +0x50 the summary (three options), +0x54 the details (options and the slots' clients), +0x58 the summary
     // read back, +0x64 a join status' text
     virtual void Virtual50(WriteBuffer& outBuffer) {} //genuine SDK inline WriteSummaryHook
     virtual void Virtual54(WriteBuffer& outBuffer) {} //genuine SDK inline WriteDetailsHook
     virtual bool Virtual58(ReadBuffer& inBuffer) { return true; } //genuine SDK inline ReadSummaryHook
-    virtual bool Virtual5C(ReadBuffer& inBuffer) { return true; } //genuine SDK inline ReadDetailsHook     // +0x5c the details read back (r23)
-    // +0x60 a game message (inType 0x64..0x6a) from inFrom (r23)
+    virtual bool Virtual5C(ReadBuffer& inBuffer) { return true; } //genuine SDK inline ReadDetailsHook     // +0x5c the details read back
+    // +0x60 a game message (inType 0x64..0x6a) from inFrom
     virtual void Virtual60(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom) {} //genuine SDK inline HandleGameMessageHook
     virtual GUIString Virtual64(short inStatus) { return gEmptyGUIString; } //genuine SDK GetStatusStringHook default, owned result
     void CopyFrom(LobbyGame* inGame);       // 0x3a69d0
@@ -1843,11 +1843,11 @@ LobbyGame* GetMyLobbyGame();
 class ByteBuffer;
 template <class T> class SmartPtr;
 
-// 0x361b60 / 0x361b80 (cdecl): a game message to the lobby (EELobbyGame 0x293437, 0x2934a0; names PROVISIONAL, r23)
+// 0x361b60 / 0x361b80 (cdecl): a game message to the lobby
 void LobbyFn361B60(ByteBuffer* inMessage);
 void LobbyFn361B80(ByteBuffer* inMessage);
-void LobbyFn361BA0(LobbyClient* inClient, ByteBuffer* inMessage);  // 0x361ba0 (to one client; r23 PROVISIONAL)
-void LobbyFn361290();                       // 0x361290 (after the game options changed; r23 PROVISIONAL)
+void LobbyFn361BA0(LobbyClient* inClient, ByteBuffer* inMessage);  // 0x361ba0
+void LobbyFn361290();                       // 0x361290
 
 // a client of the lobby's room (its name at +0x08; class PROVISIONAL)
 class LobbyPlayer;
@@ -1927,10 +1927,10 @@ public:
 
 };
 
-// a rectangle (0x10 bytes; its out-of-line ctor zeroes it; r23 PROVISIONAL name)
+// a rectangle
 
 // The lobby's core, window manager and window (EELobbyInterface.cpp's globals 0x565898, 0x565894, 0x565890). Class
-// names and bases from RTTI (r24pre-won): WONAPICoreEx : WONAPICore; MSWindowManager : WindowManager : RefCount;
+// names and bases from RTTI: WONAPICoreEx : WONAPICore; MSWindowManager : WindowManager : RefCount;
 // MSWindow : Window : RefCount; MSNativeIcon : NativeIcon : RefCount; MultiImageDecoder, DisplayContext. Sizes from
 // EELobbyInterface 0x2972c6's `new`s; member and slot names PROVISIONAL.
 class WindowEventBase;
@@ -2268,13 +2268,13 @@ public:
 // 0x3d08c0 (cdecl): the parent window of the MS windows created next (PROVISIONAL)
 void LobbyFn3D08C0(HWND inParent);
 
-// WONAPI lobby state functions the game's lobby glue calls (EELobbyInterface.cpp; names PROVISIONAL, r12-misc-h5)
+// WONAPI lobby state functions the game's lobby glue calls
 int LobbyFn362760();                        // 0x362760 (how the lobby was left: 1, 2 or 3)
 void LobbyFn362830();                       // 0x362830
 void LobbyFn362880();                       // 0x362880
 void LobbyFn362170();                       // 0x362170
-Container* LobbyFn362250();                 // 0x362250 (the lobby's screen, added to the window's root; r24pre-won)
-void LobbyFn362740();                       // 0x362740 (after the lobby window is shown; r24pre-won)
+Container* LobbyFn362250();                 // 0x362250
+void LobbyFn362740();                       // 0x362740
 void LobbyGetNetAddresses(std::list<LobbyNetAddress>& outAddresses, bool inFlag);   // 0x2b32b0 (cdecl)
 
 // 0x361390: the local player (NULL when none)
@@ -2284,8 +2284,8 @@ GUIString LobbyFormatString(const GUIString& inFormat, const GUIString& inArg);
 void LobbyFn3612B0(bool inFlag);            //0x3612b0 genuine SDK SetGameInProgress(bool)
 bool LobbyFn361310(bool inFlag);             // 0x361310
 bool LobbyFn3613C0();                       // 0x3613c0
-void LobbyFn361260();                       // 0x361260 (r12-misc-h7: after the open slot count changed)
-void LobbyFn3613E0();                       // 0x3613e0 (r12-misc-h7: after a file transfer step)
+void LobbyFn361260();                       // 0x361260
+void LobbyFn3613E0();                       // 0x3613e0
 
 class ServerListCtrl;
 class ServerDetailsItem;
@@ -2465,16 +2465,16 @@ bool LobbyFn35D010(const GUIString& inName); // persistent ignore predicates; cd
 bool LobbyFn35D090(unsigned long inAddress);
 unsigned short GetLobbyProductId();        // 0x35b580 (LobbyGame summary wire product id)
 
-// 0x361370 (cdecl): the local client (EELobbyInterface 0x296d1e: its name +0x08; r23 PROVISIONAL)
+// 0x361370 (cdecl): the local client
 LobbyClient* LobbyFn361370();
-// 0x361b20 (cdecl): EELobbyInterface 0x296d1e passes it as the connection request's flag (r23 PROVISIONAL)
+// 0x361b20 (cdecl): EELobbyInterface 0x296d1e passes it as the connection request's flag
 bool LobbyFn361B20();
 
-// 0x359120 (cdecl): fires a component event of inType (EELobbyGame 0x2939be: 100065; r23 PROVISIONAL)
+// 0x359120 (cdecl): fires a component event of inType
 void LobbyFn359120(int inType, bool inFlag);
-// 0x359100 (cdecl): delivers inEvent to the lobby's components (name PROVISIONAL, r23)
+// 0x359100 (cdecl): delivers inEvent to the lobby's components
 void LobbyFn359100(ComponentEvent* inEvent, bool inFlag);
-// 0x361bc0 (cdecl; EELobbyGame 0x293b36 with a slot's client, 0; name PROVISIONAL, r23)
+// 0x361bc0
 void LobbyFn361BC0(LobbyClient* inClient, bool inFlag);
 
 // 0x361250: default GUI manager (global 0x566270, assigned by WindowManager constructor).
@@ -2661,7 +2661,7 @@ public:
     SmartPtr<NativeImage> Fn3D0410(DisplayContext*); //real native platform method
     DWORD GetPixel(int,int); //328ee0
     DWORD* StartRowTraversal(int); //328f00
-    // Genuine SDK inline row/transparency APIs, zero quota; no fields orslots added.
+
     void SetDoTransparency(bool value) { mDoTransparency=value; }
     void SetRowPixel(DWORD value) { *mRowPtr=value; }
     void NextRowPixel() { ++mRowPtr; }
@@ -3092,7 +3092,7 @@ public:
     virtual void VirtualBC(Component*); //bc actual2fa500
     virtual bool VirtualC0(Component*); //c0 actual305d70
 };
-// Complete28 external-lifetime MultiListItem; no own ctor/dtor implementation or quota.
+
 class MultiListItem : public ListItem {
 protected:
     typedef std::vector<SmartPtr<ListItem> > ItemVector;
@@ -3111,7 +3111,7 @@ public:
     virtual int Virtual10(const ListItem*,ListArea*) const;
     virtual bool Virtual14(ListArea*,int,int);
     virtual void Virtual18(int,int);
-    virtual bool Virtual1C(int,int inY) { return inY>=mTop && inY<mTop+mHeight; } //native inline, zero quota
+    virtual bool Virtual1C(int,int inY) { return inY>=mTop && inY<mTop+mHeight; }
     virtual void Virtual20(ListArea*,int,int);
     virtual void Virtual24(ListArea*);
     virtual void Virtual28(ListArea*,int,int);
@@ -3253,7 +3253,7 @@ public:
     int mMouseSegmentDX,mMouseSegmentDY; //12c,130
     struct AnchorCoordinate {
         int mx,my;
-        AnchorCoordinate(int x=0,int y=0) : mx(x),my(y) {} //actual genuine8 value; no quota
+        AnchorCoordinate(int x=0,int y=0) : mx(x),my(y) {}
     };
     typedef std::map<GUIString,AnchorCoordinate,GUIStringLessNoCase> AnchorMap;
     AnchorMap mAnchorMap; //134 allocator/compare bytes,138 native head,13c size; actual12 map

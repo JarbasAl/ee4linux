@@ -448,7 +448,7 @@ void Window::ShowNativeCursor(bool show)
 	Virtual1C(show);
 }
 
-// Native target skip flag56626f; no quota for static storage/setter.
+
 static bool gWindowSkipDecodeImages = false;
 
 // FUNCTION: WON 0x0072a640
@@ -561,7 +561,7 @@ bool Window::IsMouseDown(MouseButton theButton)
     return mMouseIsDown[theButton];
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071de90
 // (public: class std::_Tree<class WONAPI::Window *,class WONAPI::Window *,struct std::set<class WONAPI::Window *,struct std::less<class WONAPI::Window *>)
 // TEMPLATE: WON 0x00729e90

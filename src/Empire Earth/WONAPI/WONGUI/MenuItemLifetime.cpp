@@ -39,7 +39,7 @@ MenuItem* PopupMenu::AddItem(const GUIString& text,ComponentListener* listener,i
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fcdc0
 // (public: virtual void * __thiscall WONAPI::MenuItem::`scalar deleting destructor'(unsigned int)    [??_GMenuItem@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006fcde0

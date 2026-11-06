@@ -494,12 +494,12 @@ void TabCtrl::RemoveTab(int theId)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007081d0
 // (public: virtual void * __thiscall WONAPI::TabBar::`scalar deleting destructor'(unsigned int)    [??_GTabBar@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00708940
 // (public: virtual void * __thiscall WONAPI::TabCtrl::`scalar deleting destructor'(unsigned int)    [??_GTabCtrl@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071d270
 // (protected: bool __thiscall std::vector<class WONAPI::Container *,class std::allocator<class WONAPI::Container *> >::_Buy(unsigned int)    [?_Buy@?$vec)

@@ -288,6 +288,6 @@ void MultiLineElement::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInf
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00724380
 // (void __cdecl std::_Construct(struct WONAPI::SegmentInfo *,struct WONAPI::SegmentInfo const &)    [?_Construct@std@@YAXPAUSegmentInfo@WONAPI@@ABU23@@Z])

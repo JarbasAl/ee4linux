@@ -120,16 +120,16 @@ LobbyConfig* WONAPI::GetLobbyConfig()
     return NULL;
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00758570
 // (public: virtual void * __thiscall WONAPI::LobbyConfig::`scalar deleting destructor'(unsigned int)    [??_GLobbyConfig@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00758590
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struc)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00757fa0
 // (_$E72    [_$E72])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00758650
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class WONAPI::SmartPtr<class WONAP)

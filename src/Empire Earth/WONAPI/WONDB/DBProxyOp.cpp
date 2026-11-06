@@ -1,5 +1,5 @@
 // New native DBProxy operation source; original grouping is provisional.
-// Source-only reconstruction; actual normal/support gates and Root admission remain required.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -77,10 +77,10 @@ void DBProxyOp::Virtual18()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ccb20
 // (public: virtual __thiscall WONAPI::DBProxyOp::~DBProxyOp(void)    [??1DBProxyOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ccb00
 // (public: virtual void * __thiscall WONAPI::DBProxyOp::`scalar deleting destructor'(unsigned int)    [??_GDBProxyOp@WONAPI@@UAEPAXI@Z])

@@ -327,18 +327,18 @@ void ComboBox::SetEnabled(bool inEnabled)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f3a30
 // (public: virtual void * __thiscall WONAPI::ComboBox::`scalar deleting destructor'(unsigned int)    [??_GComboBox@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006f4250
 // (public: virtual __thiscall WONAPI::ComponentEvent::~ComponentEvent(void)    [??1ComponentEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f41a0
 // (public: virtual void * __thiscall WONAPI::ComboSelChangedEvent::`scalar deleting destructor'(unsigned int)    [??_GComboSelChangedEvent@WONAPI@@UAEPAX)
 // TEMPLATE: WON 0x006f41c0
 // (public: virtual __thiscall WONAPI::ComboSelChangedEvent::~ComboSelChangedEvent(void)    [??1ComboSelChangedEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f3970
 // (public: __thiscall WONAPI::ComboBox::ComboBox(void)    [??0ComboBox@WONAPI@@QAE@XZ])

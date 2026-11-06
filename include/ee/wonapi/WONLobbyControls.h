@@ -1,5 +1,5 @@
 // Original WONLobby control contracts: actual Container base84 and owned fields.
-// Root-approved narrow header lease; implementation admission is separate.
+
 #ifndef EE_WONAPI_WONLOBBYCONTROLS_H
 #define EE_WONAPI_WONLOBBYCONTROLS_H
 #include "ee/wonapi/WONLobbyGUI.h"

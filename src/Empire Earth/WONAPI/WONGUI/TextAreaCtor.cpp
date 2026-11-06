@@ -36,6 +36,6 @@ TextArea::TextArea()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00711b00
 // (public: virtual void * __thiscall WONAPI::TextArea::`scalar deleting destructor'(unsigned int)    [??_GTextArea@WONAPI@@UAEPAXI@Z])

@@ -61,8 +61,8 @@ FTPGetOp::FTPGetOp(const std::string &theURL, bool doExtractUserAndPassword)
 ///////////////////////////////////////////////////////////////////////////////
 // The ftp format string is:
 //   ftp://username:password@ftpserver/url-path
-//
-// At this point, we have already stripped the 'ftp://', so now we look to see 
+
+// At this point, we have already stripped the 'ftp://', so now we look to see
 // if there is a 'username' and a 'password'.
 ///////////////////////////////////////////////////////////////////////////////
 void FTPGetOp::ExtractUserNameAndPasswordFromURL(std::string &theURL)

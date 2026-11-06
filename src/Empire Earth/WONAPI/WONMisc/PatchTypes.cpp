@@ -189,7 +189,7 @@ bool PatchData::operator!=(const PatchData& thePatchData) const
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d84f0
 // (protected: virtual void * __thiscall WONAPI::VersionData::`scalar deleting destructor'(unsigned int)    [??_GVersionData@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x006d8a30

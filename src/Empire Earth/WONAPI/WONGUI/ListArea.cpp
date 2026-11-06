@@ -691,13 +691,13 @@ bool WONAPI::ListItemClickedEvent::IsSelectedItem()
 }
 
 namespace WONAPI {
-// SUPPORT: EXE 0x008142a0; genuine SDK ListArea::ListSelChangedHook, no primary quota.
+
 void ListArea::ListSelChangedHook()
 {
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fa770
 // (public: virtual void * __thiscall WONAPI::ListArea::`scalar deleting destructor'(unsigned int)    [??_GListArea@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006fa790
@@ -705,11 +705,11 @@ void ListArea::ListSelChangedHook()
 // TEMPLATE: WON 0x006fbe40
 // (public: virtual void * __thiscall WONAPI::ListItemClickedEvent::`scalar deleting destructor'(unsigned int)    [??_GListItemClickedEvent@WONAPI@@UAEPAX)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fab30
 // (public: static int __cdecl WONAPI::ListArea::DefaultSortFunc(class WONAPI::ListArea *,class WONAPI::ListItem const *,class WONAPI::ListItem const *)  )
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fb770
 // (bool __cdecl WONAPI::ListMouseContains(class WONAPI::ListItem *,int,int,bool)    [?ListMouseContains@WONAPI@@YA_NPAVListItem@1@HH_N@Z])
 // TEMPLATE: WON 0x0071d2b0

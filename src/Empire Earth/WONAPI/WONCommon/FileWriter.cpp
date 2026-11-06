@@ -10,9 +10,9 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyPersistence.h"
 namespace WONAPI {
-// Original support0x2a1e10/9B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 FileWriter::FileWriter() : mFile(NULL) {}
-// Original support0x2a1e20/5B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 FileWriter::~FileWriter() { Close(); }
 // FUNCTION: WON 0x006a1e30
 bool FileWriter::Open(const char* inPath, bool inOpenIfReadOnly)
@@ -36,7 +36,7 @@ void FileWriter::Close()
         mFile = NULL;
     }
 }
-// Original support0x2a2080/20B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a2080
 unsigned long FileWriter::pos()
 {
@@ -56,13 +56,13 @@ void FileWriter::WriteBytes(const void* inData, unsigned long inLength)
     if (fwrite(inData, 1, inLength, mFile) != inLength)
         throw FileWriterException("fwrite failed (disk full)");
 }
-// Original support0x2a25f0/15B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a25f0
 void FileWriter::WriteByte(unsigned char inValue) { WriteBytes(&inValue, 1); }
-// Original support0x2a2600/15B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a2600
 void FileWriter::WriteShort(unsigned short inValue) { WriteBytes(&inValue, 2); }
-// Original support0x2a2610/15B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a2610
 void FileWriter::WriteLong(long inValue) { WriteBytes(&inValue, 4); }
 // FUNCTION: WON 0x006a2620
@@ -74,7 +74,7 @@ void FileWriter::WriteLength(unsigned long inLength, unsigned char inFieldSize)
     case 4: WriteLong((long)inLength); break;
     }
 }
-// Original support0x2a2660/29B; simple initialization, accessor or forwarding support, zero breadth quota.
+
 // FUNCTION: WON 0x006a2660
 void FileWriter::WriteRawString(const std::string& inString)
 {
@@ -115,18 +115,18 @@ void FileWriter::WriteWString(const std::wstring &theWStr, unsigned char theLeng
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a1e20
 // (public: __thiscall WONAPI::FileWriter::~FileWriter(void)    [??1FileWriter@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x006a21f0
 // (public: virtual void * __thiscall WONAPI::FileWriterException::`scalar deleting destructor'(unsigned int)    [??_GFileWriterException@WONAPI@@UAEPAXI@)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a1e10
 // (public: __thiscall WONAPI::FileWriter::FileWriter(void)    [??0FileWriter@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x006a2210
 // (public: virtual __thiscall WONAPI::FileWriterException::~FileWriterException(void)    [??1FileWriterException@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a2280
 // (public: __thiscall WONAPI::FileWriterException::FileWriterException(class WONAPI::FileWriterException const &)    [??0FileWriterException@WONAPI@@QAE@)

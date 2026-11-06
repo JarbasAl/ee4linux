@@ -45,7 +45,7 @@ WONStatus RoutingBanClientOp::Virtual10(unsigned char inMsgType, ReadBuffer& inM
 RoutingOpType RoutingBanClientOp::GetType() const { return 3; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c43a0
 // (public: virtual void * __thiscall WONAPI::RoutingBanClientOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingBanClientOp@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006c43c0

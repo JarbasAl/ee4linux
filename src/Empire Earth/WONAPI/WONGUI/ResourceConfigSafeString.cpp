@@ -65,7 +65,7 @@ int ResourceConfig::SafeGetInt(const std::string &theKey)
 	return ResourceConfig_SafeGetRes("Int",theKey,mIntMap,this);
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a27f0
 // (class WONAPI::SmartPtr<class WONAPI::Image> & __cdecl ResourceConfig_SafeGetRes(char const *,class std::basic_string<char,struct std::char_traits<char)
 // TEMPLATE: WON 0x007a2960

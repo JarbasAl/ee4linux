@@ -9,7 +9,7 @@ enum DirGetFlags
 	// Bits 0-15 are for decomposition and common flags
 
 	// Decomposition Flags - apply these decompositions for Directories
-	DIR_GF_DECOMPROOT      = 0x00000001,  // Add the dir itself 
+	DIR_GF_DECOMPROOT      = 0x00000001,  // Add the dir itself
 	DIR_GF_DECOMPSERVICES  = 0x00000002,  // Add dir services
 	DIR_GF_DECOMPSUBDIRS   = 0x00000004,  // Add dir subdirs
 	DIR_GF_DECOMPRECURSIVE = 0x00000008,  // Recursive into dir subdirs
@@ -469,7 +469,7 @@ public:
 	void SetPath(const std::wstring &thePath) { mPath = thePath; }
 
 	// DataObjectSetMode defined in DirTypes.h
-	void SetDataObjectMode(DirDataObjectSetMode theMode) { mDataObjectMode = theMode; } //
+	void SetDataObjectMode(DirDataObjectSetMode theMode) { mDataObjectMode = theMode; }
 	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=const_cast<ByteBuffer*>(theData); mDataObjects.push_back(anObject); }
 	void ClearDataObjects() { mDataObjects.clear(); }
 	

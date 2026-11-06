@@ -47,7 +47,7 @@ WONStatus GetDirOp::Virtual14()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f1330
 // (public: virtual void * __thiscall WONAPI::GetDirOp::`scalar deleting destructor'(unsigned int)    [??_GGetDirOp@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006f1350

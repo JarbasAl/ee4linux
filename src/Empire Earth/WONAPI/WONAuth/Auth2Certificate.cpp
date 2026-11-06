@@ -148,21 +148,21 @@ ByteBufferPtr Auth2Certificate::GetFirstUserData() const
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006dd520
 // (protected: virtual void * __thiscall WONAPI::Auth2Certificate::`scalar deleting destructor'(unsigned int)    [??_GAuth2Certificate@WONAPI@@MAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006dd540
 // (public: __thiscall std::map<unsigned long,unsigned short,struct std::less<unsigned long>,class std::allocator<struct std::pair<unsigned long const ,un)
 // TEMPLATE: WON 0x006dd5f0
 // (public: __thiscall std::map<unsigned long,class WONAPI::SmartPtr<class WONAPI::ByteBuffer>,struct std::less<unsigned long>,class std::allocator<struct)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006dd3d0
 // (public: virtual __thiscall WONAPI::AuthCertificateBase::~AuthCertificateBase(void)    [??1AuthCertificateBase@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ca5a0
 // (public: void __thiscall std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned short,)
 // TEMPLATE: WON 0x006cb600
@@ -174,7 +174,7 @@ ByteBufferPtr Auth2Certificate::GetFirstUserData() const
 // TEMPLATE: WON 0x006db900
 // (public: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::ByteBuffer> >,struct std::_Mapk<unsi)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ea130
 // (public: __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> > con)
 // TEMPLATE: WON 0x006eaf60
@@ -184,7 +184,7 @@ ByteBufferPtr Auth2Certificate::GetFirstUserData() const
 // TEMPLATE: WON 0x006ef830
 // (public: void __thiscall std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short>)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ebf40
 // (public: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,unsigned short>,struct std::_Mapk<unsigned long,unsigned short,struct std)
 // TEMPLATE: WON 0x006ef940

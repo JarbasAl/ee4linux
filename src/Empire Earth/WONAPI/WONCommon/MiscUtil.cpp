@@ -5,7 +5,7 @@
 #include <string.h>
 namespace WONAPI {
 typedef void (*BrowseCallback)(const std::string&,void*);
-// Actual565eb8/565ebc externally retained callback/data pair; no new data allocation or quota.
+
 BrowseCallback gPreBrowseCallback = NULL;
 void* gPreBrowseData = NULL;
 bool GetBrowserCommandLineFromRegistry(std::string& browser);

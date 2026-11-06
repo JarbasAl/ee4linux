@@ -76,6 +76,6 @@ int MSFont::GetAscent() { return mTextMetrics.tmAscent; }
 // FUNCTION: WON 0x007cf0e0
 int MSFont::GetDescent() { return mTextMetrics.tmDescent; }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007cef10
 // (public: virtual void * __thiscall WONAPI::MSFont::`scalar deleting destructor'(unsigned int)    [??_GMSFont@WONAPI@@UAEPAXI@Z])

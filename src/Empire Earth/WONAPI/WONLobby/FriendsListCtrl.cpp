@@ -232,11 +232,11 @@ Implicit member/base destruction is the source candidate; require actual normal
 COFF functions/relocations/EH actions before admission.
 */
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bb2a0
 // (public: virtual __thiscall WONAPI::FriendsListCtrl::~FriendsListCtrl(void)    [??1FriendsListCtrl@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bb080
 // (public: virtual void * __thiscall WONAPI::FriendsListItem::`scalar deleting destructor'(unsigned int)    [??_GFriendsListItem@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007bb0a0
@@ -244,6 +244,6 @@ COFF functions/relocations/EH actions before admission.
 // TEMPLATE: WON 0x007bb280
 // (public: virtual void * __thiscall WONAPI::FriendsListCtrl::`scalar deleting destructor'(unsigned int)    [??_GFriendsListCtrl@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bb250
 // (public: __thiscall WONAPI::FriendsListCtrl::FriendsListCtrl(void)    [??0FriendsListCtrl@WONAPI@@QAE@XZ])

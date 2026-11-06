@@ -14,7 +14,7 @@
 namespace WONAPI {
 // FUNCTION: WON 0x7f7c50
 FriendOptionsPopup::~FriendOptionsPopup() {}
-// Actual3f5ea0/28 shared physical wrapper, zero forwarding quota; no alias admission implied.
+
 void FriendOptionsPopup::AddItem(const GUIString& inText,int inAction)
 {
     mPopupMenu->AddItem(inText,NULL,NULL,inAction);
@@ -62,6 +62,6 @@ FriendOptionsPopup::FriendOptionsPopup()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f7c30
 // (protected: virtual void * __thiscall WONAPI::FriendOptionsPopup::`scalar deleting destructor'(unsigned int)    [??_GFriendOptionsPopup@WONAPI@@MAEPAXI)

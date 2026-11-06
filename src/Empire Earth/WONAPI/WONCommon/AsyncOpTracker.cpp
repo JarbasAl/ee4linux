@@ -73,7 +73,7 @@ void AsyncOpTracker::KillAll()
 }
 
 // PRIVATE PREP ONLY. Requires Root review of genuine existing BiMap model API.
-// Zero primary quota; actual SDK BiMap<ULONG,AsyncOpPtr> authored support.
+
 namespace WONAPI {
 AsyncOpTrackerMaps::EntryMap::iterator
 AsyncOpTrackerMaps::erase(EntryMap::iterator itr)

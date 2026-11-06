@@ -110,11 +110,11 @@ bool StretchCenterImageConfig::Virtual24(const std::string& instruction)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078b2d0
 // (public: virtual class WONAPI::Image * __thiscall WONAPI::ImageConfig::GetImage(void)    [?GetImage@ImageConfig@WONAPI@@UAEPAVImage@2@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078b300
 // (public: virtual __thiscall WONAPI::ImageConfig::~ImageConfig(void)    [??1ImageConfig@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x0078b5a0

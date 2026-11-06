@@ -55,7 +55,7 @@ WONFrame::WONFrame(StretchImage* image)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00717550
 // (public: __thiscall WONAPI::WONFrame::WONFrame(class WONAPI::StretchImage *)    [??0WONFrame@WONAPI@@QAE@PAVStretchImage@1@@Z])
 // TEMPLATE: WON 0x007175f0

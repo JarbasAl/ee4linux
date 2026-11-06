@@ -185,7 +185,7 @@ static string MakeInternetDateTime(time_t theTime)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Potential internet date/time formats:
-//
+
 //      Sun, 06 Nov 1994 08:49:37 GMT    ; RFC 822, updated by RFC 1123
 //      Sunday, 06-Nov-94 08:49:37 GMT   ; RFC 850, obsoleted by RFC 1036
 //      Sun Nov  6 08:49:37 1994         ; ANSI C's asctime() format
@@ -875,7 +875,7 @@ bool HTTPGetOp::CallbackHook(AsyncOp* inOp,int inParam)
 }
 }
 
-// Compiler-generated singleton/lazy getter support below carries zero source quota.
+
 #include "ee/wonapi/WONLobbyGUI.h"
 using WONAPI::CriticalSection;
 static string& GetProxyHostFileName()
@@ -1092,7 +1092,7 @@ void HTTPGetOp::SetProxy(const std::string &theHost, unsigned short thePort)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d3a70
 // (_$E72    [_$E72])
 // TEMPLATE: WON 0x006d3b00
@@ -1103,7 +1103,7 @@ void HTTPGetOp::SetProxy(const std::string &theHost, unsigned short thePort)
 // TEMPLATE: WON 0x006d3d50
 // (HTTPGetOp implicit destructor)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d39c0
 // (class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > & __cdecl GetProxyHostFileName(void)    [?GetProxyHostFileName)
 // TEMPLATE: WON 0x006d3ac0

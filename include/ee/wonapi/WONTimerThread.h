@@ -1,4 +1,4 @@
-// Native complete TimerThread80 owner; Thread14/Thread1c contracts supplied by HTTP lane.
+
 #ifndef EE_WONAPI_WONTIMERTHREAD_H
 #define EE_WONAPI_WONTIMERTHREAD_H
 #include "ee/wonapi/WONRouting.h"

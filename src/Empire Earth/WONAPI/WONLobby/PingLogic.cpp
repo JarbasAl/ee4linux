@@ -21,7 +21,7 @@ using namespace WONAPI;
 class PingGameOp : public WONAPI::UDPManagerSendRecvOp {
 public:
     PingGameOp(WONAPI::LobbyGame*, unsigned short, unsigned char); //3e5ed0
-    // Implicit destructor3e6110: no own-vtable store. Generated lifetime support, zero quota.
+
     virtual void Virtual04(); //3e6240
     virtual WONAPI::WONStatus Virtual0C(WONAPI::ReadBuffer&); //3e6360
     WONAPI::SmartPtr<WONAPI::LobbyGame> mGame; //88
@@ -262,17 +262,17 @@ void PingLogic::Fn3E68B0(AsyncOp* inOp)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007e6110
 // (public: virtual __thiscall PingGameOp::~PingGameOp(void)    [??1PingGameOp@@UAE@XZ])
 // TEMPLATE: WON 0x007e6500
 // (public: virtual void * __thiscall WONAPI::PingLogic::`scalar deleting destructor'(unsigned int)    [??_GPingLogic@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007e60f0
 // (public: virtual void * __thiscall PingGameOp::`scalar deleting destructor'(unsigned int)    [??_GPingGameOp@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f1470
 // (public: virtual void * __thiscall WONAPI::LogicCompletion<class WONAPI::PingLogic>::`scalar deleting destructor'(unsigned int)    [??_G?$LogicCompleti)
 // TEMPLATE: WON 0x007f15d0

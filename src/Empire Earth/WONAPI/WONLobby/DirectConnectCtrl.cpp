@@ -1,6 +1,6 @@
 // Reviewed original-backed controls, source-only; generated support has zeroquota.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Scratch complete control methods; zero primary/admission/runtime credit.
+
 // Actual ServerListCtrl reference-only contract requires root header gate.
 #include <windows.h>
 #include <string>
@@ -14,7 +14,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "ee/wonapi/WONLobbyControls.h"
-// Scratch: actualVT452f18, Container-derived90,51slots; no admission authority.
+
 namespace WONAPI {
 // Reference-only contract: actual RTTI ServerListCtrl>Container>Component>RefCount,
 // VT453fec exactly51slots. No sizeof/new/ctor/copy/byvalue allowed for this view.
@@ -67,12 +67,12 @@ void DirectConnectCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 // No full ServerList allocation is reconstructed. Empty destructor has zeroquota.
 // TEMPLATE: WON 0x007cdba0
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007badd0
 // (public: virtual void * __thiscall WONAPI::DirectConnectCtrl::`scalar deleting destructor'(unsigned int)    [??_GDirectConnectCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007badf0
 // (public: virtual __thiscall WONAPI::DirectConnectCtrl::~DirectConnectCtrl(void)    [??1DirectConnectCtrl@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bada0
 // (public: __thiscall WONAPI::DirectConnectCtrl::DirectConnectCtrl(void)    [??0DirectConnectCtrl@WONAPI@@QAE@XZ])

@@ -5,15 +5,15 @@
 namespace WONAPI {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // GetPatchListOp - StatusReply
 // Request to add a patch to the database, will be added as valid.  Its active status is based on the specified parameter
-// ·	ProductName - string 
+// ·	ProductName - string
 // ·	ConfigName - string (optional)
 // ·	FromVersion - string
 // ·	ToVersion - string
 // ·	StateFilter - BYTE (All, Active, Inactive) (optional)
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class GetPatchListOp: public DBProxyOp
 {
@@ -75,16 +75,16 @@ typedef SmartPtr<GetPatchListOp> GetPatchListOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // ReportPatchStatus - StatusReply
 // Report the status of a requested patch download.
-// ·	ProductName - string 
+// ·	ProductName - string
 // ·	ConfigName - string (optional)
 // ·	FromVersion - string
 // ·	ToVersion - string
 // ·	NetAddress - string
 // .    PatchStatus - BYTE
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class ReportPatchStatusOp: public DBProxyOp
 {

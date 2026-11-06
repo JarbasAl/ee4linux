@@ -35,6 +35,6 @@ bool AuthCertificate::VerifyPermissions(DWORD userId, DWORD community, unsigned 
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006dd100
 // (protected: virtual void * __thiscall WONAPI::AuthCertificate::`scalar deleting destructor'(unsigned int)    [??_GAuthCertificate@WONAPI@@MAEPAXI@Z])

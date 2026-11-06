@@ -186,13 +186,13 @@ WONStatus ServerConnection::ConnectBlock(const IPAddr &theAddr, DWORD theTimeout
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ac1a0
 // (public: virtual __thiscall WONAPI::ServerConnectionConnectOp::~ServerConnectionConnectOp(void)    [??1ServerConnectionConnectOp@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x006aeab0
 // (public: virtual void * __thiscall WONAPI::ParamCompletion<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,class WONAPI::SmartPtr<class WONAPI::RefCount>)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006aabc0
 // (public: virtual void * __thiscall WONAPI::ServerConnection::`scalar deleting destructor'(unsigned int)    [??_GServerConnection@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006aabe0
@@ -202,20 +202,20 @@ WONStatus ServerConnection::ConnectBlock(const IPAddr &theAddr, DWORD theTimeout
 // TEMPLATE: WON 0x006abb60
 // (public: virtual void * __thiscall WONAPI::SendMsgOp::`scalar deleting destructor'(unsigned int)    [??_GSendMsgOp@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ac180
 // (public: virtual void * __thiscall WONAPI::ServerConnectionConnectOp::`scalar deleting destructor'(unsigned int)    [??_GServerConnectionConnectOp@WONA)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ae7e0
 // (public: __thiscall WONAPI::ParamCompletion<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,class WONAPI::SmartPtr<class WONAPI::RefCount> >::ParamComple)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ae840
 // (public: virtual void __thiscall WONAPI::ParamCompletion<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,class WONAPI::SmartPtr<class WONAPI::RefCount> >)
 // TEMPLATE: WON 0x006aead0
 // (public: virtual __thiscall WONAPI::ParamCompletion<class WONAPI::SmartPtr<class WONAPI::AsyncOp>,class WONAPI::SmartPtr<class WONAPI::RefCount> >::~Pa)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006aad90
 // (public: virtual __thiscall WONAPI::BlockingSocket::~BlockingSocket(void)    [??1BlockingSocket@WONAPI@@UAE@XZ])

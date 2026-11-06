@@ -19,7 +19,7 @@ WriteBuffer::WriteBuffer(unsigned char lengthSize,bool includesLength)
     mLengthIncludesField=includesLength;
     Reset();
 }
-// Native2a8190/17, normal owned-array deletion, not implicit/scalar quota.
+
 // FUNCTION: WON 0x006a8190
 WriteBuffer::~WriteBuffer()
 {
@@ -222,6 +222,6 @@ void WriteBuffer::ReserveChunk(unsigned long theNumBytesToReserve, unsigned long
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a8170
 // (public: virtual void * __thiscall WONAPI::WriteBuffer::`scalar deleting destructor'(unsigned int)    [??_GWriteBuffer@WONAPI@@UAEPAXI@Z])

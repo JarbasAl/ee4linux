@@ -230,7 +230,7 @@ void PeerAuthOp::Virtual04()
 			return;
 
 
-		// Send challenge 2 
+		// Send challenge 2
 		aStatus = mSocket->SendMsg(aSendMsg.get(), SendTime());
 		if(CheckStatus(aStatus))
 			return;
@@ -280,18 +280,18 @@ void PeerAuthOp::Virtual08()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e7580
 // (public: virtual __thiscall WONAPI::LightGetCertOp::~LightGetCertOp(void)    [??1LightGetCertOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e7560
 // (public: virtual void * __thiscall WONAPI::LightGetCertOp::`scalar deleting destructor'(unsigned int)    [??_GLightGetCertOp@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e6b90
 // (protected: virtual void * __thiscall WONAPI::PeerAuthOp::`scalar deleting destructor'(unsigned int)    [??_GPeerAuthOp@WONAPI@@MAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e6bb0
 // (public: __thiscall WONAPI::PeerAuthClient::~PeerAuthClient(void)    [??1PeerAuthClient@WONAPI@@QAE@XZ])

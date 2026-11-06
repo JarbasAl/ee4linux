@@ -39,7 +39,7 @@ LanLogic::LanLogic()
 LanLogic::~LanLogic() {}
 
 // Original filename/line association proves the four typed resources.
-// Before admission, match physical original call lines105..108 using normal mapper.
+
 // FUNCTION: WON 0x007e00a0
 
 
@@ -236,7 +236,7 @@ void LanLogic::Virtual34(LobbyGame* inGame)
         Fn3E4A10(inGame);
 }
 
-// Empty original overrides fold to shared return bodies; zero independent quota.
+
 void LanLogic::Virtual3C(bool) {}
 void LanLogic::Virtual44() {}
 
@@ -797,7 +797,7 @@ void LanLogic::Fn3E1210(ByteBuffer* inBuffer, LobbyLanSocket* inSocket)
 
 namespace WONAPI {
 // Original catch landing/return continuation11f1..1209 is owned EH support,
-// retained in boundary_supplement.json; no extra nominal quota claimed.
+
 // FUNCTION: WON 0x007e0f90
 int LanLogic::Fn3E0F90(ByteBuffer* inBuffer, LobbyGame* inGame)
 {
@@ -935,7 +935,7 @@ void LanLogic::Fn3E2DC0(ClientActionEvent* inEvent)
 }
 
 namespace WONAPI {
-// Game20 is model-proved mIsFiltered; full type/field remains steward-controlled.
+
 // FUNCTION: WON 0x007e3290
 void LanLogic::Fn3E3290()
 {
@@ -1091,7 +1091,7 @@ void LanLogic::Fn3E5200(AsyncOp* inOp)
 
 #include "ee/wonapi/EELobbyGameCode.h" //genuine LobbyMessageBox call declaration
 extern unsigned short gEmptyWideString[]; // 0x8e60bc, an empty wide string (zero .bss; defined in EEWonNet.cpp)
-// R5 actual external GetCert11fc owner; only this auth initializer is newly closed.
+// actual external GetCert11fc owner; only this auth initializer is newly closed.
 namespace WONAPI {
 // FUNCTION: WON 0x007e35a0
 bool LanLogic::Fn3E35A0()
@@ -1118,7 +1118,7 @@ bool LanLogic::Fn3E35A0()
 }
 }
 
-// R5 private next-cohort draft: requires Root F actual PeerAuthOp2244 owner before canonical allocation.
+// private next-cohort draft: requires Root F actual PeerAuthOp2244 owner before canonical allocation.
 namespace WONAPI {
 // FUNCTION: WON 0x007e3d20
 bool LanLogic::Virtual1C(LobbyGame* game)
@@ -1223,7 +1223,7 @@ void LanLogic::Fn3E1700(AsyncOp* inOp)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007dfde0
 // (public: virtual void * __thiscall WONAPI::LanLogic::`scalar deleting destructor'(unsigned int)    [??_GLanLogic@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007dfe00
@@ -1233,7 +1233,7 @@ void LanLogic::Fn3E1700(AsyncOp* inOp)
 // TEMPLATE: WON 0x007e0f80
 // (public: virtual __thiscall WONAPI::LobbyLanClient::~LobbyLanClient(void)    [??1LobbyLanClient@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f20d0
 // (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::LobbyLanSocket>,class WONAPI::SmartPtr<class WONAPI::LobbyLanSocket>,struct std::set<cla)
 // TEMPLATE: WON 0x007f47e0
@@ -1243,11 +1243,11 @@ void LanLogic::Fn3E1700(AsyncOp* inOp)
 // TEMPLATE: WON 0x007f3b50
 // TEMPLATE: WON 0x007f3cd0
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007e3af0
 // (public: virtual class WONAPI::AsyncSocket * __thiscall WONAPI::LobbyLanSocket::Duplicate(void)    [?Duplicate@LobbyLanSocket@WONAPI@@UAEPAVAsyncSocket)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007dfed0
 // (public: virtual void * __thiscall WONAPI::NetLogic::`scalar deleting destructor'(unsigned int)    [??_GNetLogic@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007e0f60
@@ -1259,11 +1259,11 @@ void LanLogic::Fn3E1700(AsyncOp* inOp)
 // TEMPLATE: WON 0x007e3b80
 // (public: virtual void * __thiscall WONAPI::LobbyLanSocket::`scalar deleting destructor'(unsigned int)    [??_GLobbyLanSocket@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007e3ba0
 // (public: virtual __thiscall WONAPI::LobbyLanSocket::~LobbyLanSocket(void)    [??1LobbyLanSocket@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f1450
 // (public: virtual void * __thiscall WONAPI::LogicCompletion<class WONAPI::LanLogic>::`scalar deleting destructor'(unsigned int)    [??_G?$LogicCompletio)
 // TEMPLATE: WON 0x007f1570

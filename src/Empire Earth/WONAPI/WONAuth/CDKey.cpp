@@ -14,10 +14,10 @@
 #include "ee/wonapi/WONBlowfish.h"
 #include "ee/wonapi/WONCRC16.h"
 namespace WONAPI {
-// Default owner initialization support, no breadth quota.
+
 // FUNCTION: WON 0x006e3090
 CDKey::CDKey() { mValid = false; }
-// Setter support, no breadth quota.
+
 // FUNCTION: WON 0x006e30c0
 void CDKey::Invalidate() { mValid = false; }
 // FUNCTION: WON 0x006e30d0

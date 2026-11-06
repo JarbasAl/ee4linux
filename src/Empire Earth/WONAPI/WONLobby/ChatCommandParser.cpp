@@ -1,4 +1,4 @@
-// ChatCommandParser original-backed reconstruction, WONLobby round 1.
+// ChatCommandParser original-backed reconstruction, WONLobby.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 // Original body family: RVA355750..357d67, allocation0x54 at362aed..362b06,
 // RefCount-derived RTTI/vtable451a9c and matching original EH ownership.
@@ -352,7 +352,7 @@ GUIString ChatCommandParser::GetHelp(unsigned short clientId)
  return out;
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00755850
 // (public: virtual void * __thiscall WONAPI::ChatCommandParser::`scalar deleting destructor'(unsigned int)    [??_GChatCommandParser@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00756190
@@ -360,7 +360,7 @@ GUIString ChatCommandParser::GetHelp(unsigned short clientId)
 // TEMPLATE: WON 0x00756470
 // (public: __thiscall std::pair<int const ,class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned s)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00755870
 // (public: __thiscall std::map<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,int,)
 // TEMPLATE: WON 0x00755930

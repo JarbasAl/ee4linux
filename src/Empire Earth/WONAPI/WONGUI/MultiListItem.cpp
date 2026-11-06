@@ -158,7 +158,7 @@ void MultiListItem::Virtual2C(ListArea* inList,int inX,int inY)
     ListItem* anItem=anArea->mMouseColItem;
     if(anItem!=NULL) anItem->Virtual2C(inList,inX-anArea->GetColumnPos(anArea->mMouseColNum),inY);
 }
-// Actual302a10..302a44,52B; coordinate/state adapting dispatch, quota classification pending Root.
+
 // FUNCTION: WON 0x00702a10
 void MultiListItem::Virtual30(ListArea* inList,int inX,int inY,int inButton)
 {

@@ -30,7 +30,7 @@ public:
 	InsertBannedKeyOp(ServerContext* theContext);
 
 	std::wstring mCommunityName;    // [in]
-	std::string  mProductName;	    // [in]	
+	std::string  mProductName;	    // [in]
 	time_t       mBannedUntil;	    // [in]
 
 	std::list<std::string> mKeyList;// [in]
@@ -59,7 +59,7 @@ public:
 	QueryBannedKeyOp(ServerContext* theContext);
 
 	std::wstring mCommunityName;   // [in]
-	std::string  mProductName;	   // [in]	
+	std::string  mProductName;	   // [in]
 
 	typedef std::pair<std::string, time_t> BANNED_KEY_PAIR;
 	typedef std::list<BANNED_KEY_PAIR>     BANNED_KEY_LIST;
@@ -88,7 +88,7 @@ public:
 	QueryListBannedKeyOp(ServerContext* theContext);
 
 	std::wstring mCommunityName;     // [in]
-	std::string  mProductName;	     // [in]	
+	std::string  mProductName;	     // [in]
 	std::list<std::string> mKeyList; // [in]
 
 	typedef std::pair<time_t, short>   BANNED_KEY_PAIR;
@@ -118,7 +118,7 @@ public:
 	RemoveBannedKeyOp(ServerContext* theContext);
 
 	std::wstring mCommunityName;     // [in]
-	std::string  mProductName;	     // [in]	
+	std::string  mProductName;	     // [in]
 
 	std::list<std::string> mKeyList; // [in]
 	std::list<short>  mStatusList;   // [out]

@@ -14,7 +14,7 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
-// R3 scratch NEW ServerContext behaviors. Complete3c fields already canonical.
+// scratch NEW ServerContext behaviors. Complete3c fields already canonical.
 // Actual AutoCrit8 protects map/list and preserves original mutation order.
 // FUNCTION: WON 0x006ac390
 void ServerContext::Clear()
@@ -176,7 +176,7 @@ bool ServerContext::AtomicClearAndAddAddressesFromDir(const DirEntityMap &theDir
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006aeb30
 // (public: void __thiscall std::list<class WONAPI::IPAddr,class std::allocator<class WONAPI::IPAddr> >::_Insert(class std::list<class WONAPI::IPAddr,clas)
 // TEMPLATE: WON 0x006aebf0
@@ -200,13 +200,13 @@ bool ServerContext::AtomicClearAndAddAddressesFromDir(const DirEntityMap &theDir
 // TEMPLATE: WON 0x006af9f0
 // (protected: class WONAPI::IPAddr * __thiscall std::vector<class WONAPI::IPAddr,class std::allocator<class WONAPI::IPAddr> >::_Ucopy(class std::_Ptrit<c)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006afd60
 // (void __cdecl std::fill(class std::_Ptrit<class WONAPI::IPAddr,int,class WONAPI::IPAddr *,class WONAPI::IPAddr &,class WONAPI::IPAddr *,class WONAPI::I)
 // TEMPLATE: WON 0x006aff00
 // (class std::_Ptrit<class WONAPI::IPAddr,int,class WONAPI::IPAddr *,class WONAPI::IPAddr &,class WONAPI::IPAddr *,class WONAPI::IPAddr &> __cdecl std::c)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006af260
 // (protected: void __thiscall std::list<class WONAPI::IPAddr,class std::allocator<class WONAPI::IPAddr> >::_Incsize(unsigned int)    [?_Incsize@?$list@VI)
 // TEMPLATE: WON 0x006af3b0
@@ -214,7 +214,7 @@ bool ServerContext::AtomicClearAndAddAddressesFromDir(const DirEntityMap &theDir
 // TEMPLATE: WON 0x006afa30
 // (void __cdecl std::_Construct(class WONAPI::IPAddr *,class WONAPI::IPAddr const &)    [?_Construct@std@@YAXPAVIPAddr@WONAPI@@ABV23@@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ae8f0
 // (protected: void __thiscall std::vector<class WONAPI::IPAddr,class std::allocator<class WONAPI::IPAddr> >::_Tidy(void)    [?_Tidy@?$vector@VIPAddr@WONA)
 // TEMPLATE: WON 0x006aec70
@@ -224,7 +224,7 @@ bool ServerContext::AtomicClearAndAddAddressesFromDir(const DirEntityMap &theDir
 // TEMPLATE: WON 0x006af0f0
 // (protected: void __thiscall std::vector<class WONAPI::IPAddr,class std::allocator<class WONAPI::IPAddr> >::_Destroy(class WONAPI::IPAddr *,class WONAPI)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ae580
 // (public: struct std::pair<class std::_Tree<class WONAPI::IPAddr,struct std::pair<class WONAPI::IPAddr const ,class std::list<class WONAPI::IPAddr,class)
 // TEMPLATE: WON 0x006aeb90
@@ -234,7 +234,7 @@ bool ServerContext::AtomicClearAndAddAddressesFromDir(const DirEntityMap &theDir
 // TEMPLATE: WON 0x006b00e0
 // (void __cdecl std::iter_swap(class std::_Ptrit<class WONAPI::IPAddr,int,class WONAPI::IPAddr *,class WONAPI::IPAddr &,class WONAPI::IPAddr *,class WONA)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006af900
 // (void __cdecl std::random_shuffle(class std::_Ptrit<class WONAPI::IPAddr,int,class WONAPI::IPAddr *,class WONAPI::IPAddr &,class WONAPI::IPAddr *,class)
 // TEMPLATE: WON 0x006b0110

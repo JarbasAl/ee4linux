@@ -66,7 +66,7 @@ void TextLinkLineSegment::MouseExit()
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070acc0
 // (public: virtual void * __thiscall WONAPI::HyperLinkEvent::`scalar deleting destructor'(unsigned int)    [??_GHyperLinkEvent@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0070ace0

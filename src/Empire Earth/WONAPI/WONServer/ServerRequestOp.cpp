@@ -333,14 +333,14 @@ void ServerRequestOp::QueueSocketOp(SocketOp* op,DWORD timeout)
 
 namespace WONAPI {
 // Genuine SDK explicitly authored default virtual methods. Native contexts are
-// already represented/shared; all source-only definitions receive zero new native quota.
+
 // FUNCTION: WON 0x006ad020
 WONStatus ServerRequestOp::Virtual10() { return 100059; }
 WONStatus ServerRequestOp::Virtual14() { return 0; }
 void ServerRequestOp::Virtual18() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ad030
 // (protected: virtual void * __thiscall WONAPI::ServerRequestOp::`scalar deleting destructor'(unsigned int)    [??_GServerRequestOp@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x006ad8e0
@@ -350,16 +350,16 @@ void ServerRequestOp::Virtual18() {}
 // TEMPLATE: WON 0x006ae940
 // (public: __thiscall std::multimap<unsigned long,struct WONAPI::AsyncOpTrackerEntry *,struct std::less<unsigned long>,class std::allocator<struct std::p)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ad8c0
 // (public: virtual void * __thiscall WONAPI::CryptTransform::`scalar deleting destructor'(unsigned int)    [??_GCryptTransform@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ad8a0
 // (public: virtual long __thiscall WONAPI::CryptTransform::Recv(class WONAPI::SmartPtr<class WONAPI::ByteBuffer> &)    [?Recv@CryptTransform@WONAPI@@UAEJ)
 // TEMPLATE: WON 0x006ad8b0
 // (public: virtual long __thiscall WONAPI::CryptTransform::Send(class WONAPI::SmartPtr<class WONAPI::ByteBuffer> &)    [?Send@CryptTransform@WONAPI@@UAEJ)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ad870
 // (public: virtual long __thiscall WONAPI::MsgTransform::Send(class WONAPI::SmartPtr<class WONAPI::ByteBuffer> &)    [?Send@MsgTransform@WONAPI@@UAEJAAV?)

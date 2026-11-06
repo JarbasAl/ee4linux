@@ -23,10 +23,10 @@ Button::Button()
 }
 // Native normal109B member cleanup; compiler/lifetime support0.
 Button::~Button() {}
-// Native true hook3B, no quota.
+
 // FUNCTION: WON 0x006f30d0
 bool Button::VirtualAC() { return true; }
-// Actual empty text hook folded156dd8; no quota.
+
 void Button::VirtualB0(const GUIString&) {}
 // FUNCTION: WON 0x006f3180
 void Button::SetText(const GUIString& text,bool invalidate)
@@ -264,10 +264,10 @@ void Button::Virtual40(unsigned long delta) { Component::Virtual40(delta); }
 void Button::SetClickSound(Sound* sound) { mClickSound=sound; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f30e0
 // (public: virtual void * __thiscall WONAPI::Button::`scalar deleting destructor'(unsigned int)    [??_GButton@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f3100
 // (public: virtual __thiscall WONAPI::Button::~Button(void)    [??1Button@WONAPI@@UAE@XZ])

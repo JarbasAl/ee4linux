@@ -87,7 +87,7 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 
 				DWORD aColor = (r<<16) | (g<<8) | b;
 //				if(aColor==mTransparentColor)
-//					aTransparentIndex = i; 
+//					aTransparentIndex = i;
 				
 				aPalette->mColors[i]=aColor;
 			}

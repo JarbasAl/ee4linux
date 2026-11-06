@@ -217,7 +217,7 @@ MultiListHeader::MultiListHeader(MultiListArea* area)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00702b30
 // (public: virtual void * __thiscall WONAPI::MultiListHeader::`scalar deleting destructor'(unsigned int)    [??_GMultiListHeader@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0071d040
@@ -233,10 +233,10 @@ MultiListHeader::MultiListHeader(MultiListArea* area)
 // TEMPLATE: WON 0x00724aa0
 // (struct WONAPI::MultiListHeader::ColumnInfo * __cdecl std::copy(class std::_Ptrit<struct WONAPI::MultiListHeader::ColumnInfo,int,struct WONAPI::MultiLi)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00702b50
 // (public: virtual __thiscall WONAPI::MultiListHeader::~MultiListHeader(void)    [??1MultiListHeader@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00700d60
 // (public: virtual __thiscall WONAPI::MSHeaderControl::~MSHeaderControl(void)    [??1MSHeaderControl@WONAPI@@UAE@XZ])

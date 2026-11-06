@@ -25,7 +25,7 @@ SmartPtr<RoutingOp> RoutingConnection::Virtual28(unsigned char)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006bc790
 // (public: virtual void * __thiscall WONAPI::RoutingDerivedServerOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingDerivedServerOp@WONAPI@@UA)
 // TEMPLATE: WON 0x006bc7b0

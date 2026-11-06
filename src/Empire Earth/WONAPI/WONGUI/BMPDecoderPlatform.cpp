@@ -18,7 +18,7 @@ SmartPtr<NativeImage> BMPDecoder::DoDecode(DisplayContext *theContext)
 {
 	try
 	{
-		// Read file header		
+		// Read file header
 		BITMAPFILEHEADER aHeader;
 		mFileReader->ReadBytes(&aHeader,sizeof(aHeader));
 		if (aHeader.bfType != ((unsigned short) ('M' << 8) | 'B'))
@@ -47,12 +47,12 @@ SmartPtr<NativeImage> BMPDecoder::DoDecode(DisplayContext *theContext)
 		else
 			lpDIBBits = (LPVOID)(bmInfo.bmiColors + nColors);
 
-		HBITMAP hBmp = CreateDIBitmap( theContext->mDC,		// handle to device context 
-					&bmiHeader,	// pointer to bitmap size and format data 
-					CBM_INIT,	// initialization flag 
-					lpDIBBits,	// pointer to initialization data 
-					&bmInfo,	// pointer to bitmap color-format data 
-					DIB_RGB_COLORS);		// color-data usage 
+		HBITMAP hBmp = CreateDIBitmap( theContext->mDC,		// handle to device context
+					&bmiHeader,	// pointer to bitmap size and format data
+					CBM_INIT,	// initialization flag
+					lpDIBBits,	// pointer to initialization data
+					&bmInfo,	// pointer to bitmap color-format data
+					DIB_RGB_COLORS);		// color-data usage
 
 		SmartPtr<MSNativeImage> anImage = new MSNativeImage(theContext, hBmp);	
 //		if(mTransparentColor>=0)

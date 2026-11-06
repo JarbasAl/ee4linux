@@ -31,16 +31,16 @@ void WONInputBox::Paint(Graphics& graphics)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00719580
 // (public: __thiscall WONAPI::WONInputBox::WONInputBox(void)    [??0WONInputBox@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007195e0
 // (public: virtual void * __thiscall WONAPI::WONInputBox::`scalar deleting destructor'(unsigned int)    [??_GWONInputBox@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00719600
 // (public: virtual __thiscall WONAPI::WONInputBox::~WONInputBox(void)    [??1WONInputBox@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071c300
 // (public: void __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::pop_back(void)    [?pop_back@?$deque@VGUIS)

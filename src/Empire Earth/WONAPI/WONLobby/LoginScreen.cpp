@@ -12,7 +12,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
-// Constructor/default destruction support is zero primary quota.
+
 LoginScreen::LoginScreen() {}
 // Original3c0060..3c0123,195B; genericComponent5 +actualScreenContainer lookup last.
 // FUNCTION: WON 0x007c0060
@@ -51,15 +51,15 @@ void LoginScreen::ShowLostPasswordCtrl() { mRightPanel->ShowScreen(mLostPassword
 void LoginScreen::ShowLostUsernameCtrl() { mRightPanel->ShowScreen(mLostUserNameCtrl.get(),true); }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bff30
 // (public: virtual __thiscall WONAPI::LoginScreen::~LoginScreen(void)    [??1LoginScreen@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x007ce1d0
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bff10
 // (public: virtual void * __thiscall WONAPI::LoginScreen::`scalar deleting destructor'(unsigned int)    [??_GLoginScreen@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bfed0
 // (public: __thiscall WONAPI::LoginScreen::LoginScreen(void)    [??0LoginScreen@WONAPI@@QAE@XZ])

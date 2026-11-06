@@ -1,6 +1,6 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyTimeouts.cpp (file and every name PROVISIONAL: no
 // __FILE__, no RTTI). The last GameCode unit before WONAPI proper: one global settings object (0x9659d8; no code
-// references it) with its init chain, out-of-line dtor and ctor: 0x29cfda..0x29d080 (r12-misc-h2, round 12).
+// references it) with its init chain, out-of-line dtor and ctor: 0x29cfda..0x29d080.
 #include <windows.h>
 #include <mbstring.h>
 #include <string>

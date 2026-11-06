@@ -79,12 +79,12 @@ ByteBufferPtr ReadBuffer::ReadBuf(unsigned char fieldSize)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a3b20
 // (public: virtual void * __thiscall WONAPI::ReadBufferException::`scalar deleting destructor'(unsigned int)    [??_GReadBufferException@WONAPI@@UAEPAXI@)
 // TEMPLATE: WON 0x006a40c0
 // (_wmemcpy    [_wmemcpy])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a3bb0
 // (public: __thiscall WONAPI::ReadBufferException::ReadBufferException(class WONAPI::ReadBufferException const &)    [??0ReadBufferException@WONAPI@@QAE@)

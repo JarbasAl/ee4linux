@@ -166,7 +166,7 @@ void LobbyFn35B5B0(AsyncOp* inOp,unsigned long inTimeout)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0075b630
 // (class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const & __cdecl WONAPI::LobbyFn35B630(void)    [?LobbyFn35B630)
 // TEMPLATE: WON 0x0075b650

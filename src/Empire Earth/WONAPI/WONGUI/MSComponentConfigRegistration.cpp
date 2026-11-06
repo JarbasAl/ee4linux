@@ -1,4 +1,4 @@
-// Native MS control registration table; support only, no primary quota.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -138,7 +138,7 @@ Component* MSTabButtonConfig::CompFactory() { return new MSTabButton; }
 Component* MSButtonConfig::LabelFactory() { return new MSLabel; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078e8b0
 // (public: static class WONAPI::Component * __cdecl WONAPI::MSCloseButtonConfig::CompFactory(void)    [?CompFactory@MSCloseButtonConfig@WONAPI@@SAPAVComp)
 // TEMPLATE: WON 0x0078ecc0
@@ -148,7 +148,7 @@ Component* MSButtonConfig::LabelFactory() { return new MSLabel; }
 // TEMPLATE: WON 0x0078f0a0
 // (public: static class WONAPI::ComponentConfig * __cdecl WONAPI::MSTabCtrlConfig::CfgFactory(void)    [?CfgFactory@MSTabCtrlConfig@WONAPI@@SAPAVComponen)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078ea40
 // (public: static class WONAPI::ComponentConfig * __cdecl WONAPI::MSTabButtonConfig::CfgFactory(void)    [?CfgFactory@MSTabButtonConfig@WONAPI@@SAPAVComp)
 // TEMPLATE: WON 0x0078eb80

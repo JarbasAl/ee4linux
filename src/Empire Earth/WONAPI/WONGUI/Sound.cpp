@@ -1,4 +1,4 @@
-// Original sound value construction and state transition; constructors/helpers have zero primary quota.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -63,30 +63,30 @@ bool WONAPI::Sound::GetMuted()
 
 namespace WONAPI {
 
-// SOURCE_ONLY_NO_NATIVE_ID: literal SDK explicit support body, not an algorithm quota.
+
 SoundDescriptor::SoundDescriptor(const char *thePath) : mPath(thePath)
 {
 	mL00 = 0;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: literal SDK explicit support body, not an algorithm quota.
+
 void Sound::Rewind()
 {
 	RewindHook();
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00729810
 // (public: __thiscall WONAPI::SoundDescriptor::SoundDescriptor(void)    [??0SoundDescriptor@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x00729b60
 // (public: virtual __thiscall WONAPI::Sound::~Sound(void)    [??1Sound@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00729b40
 // (public: virtual void * __thiscall WONAPI::Sound::`scalar deleting destructor'(unsigned int)    [??_GSound@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00729830
 // (public: __thiscall WONAPI::SoundDescriptor::SoundDescriptor(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > co)
 // TEMPLATE: WON 0x007299c0

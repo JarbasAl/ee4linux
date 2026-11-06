@@ -3,7 +3,7 @@
 // font once the player answered; it ends by itself when all have (End) or with its cancel button:
 // 0x2909a1..0x290e89 (the two SafeGetComponent COMDATs close it; EELobbyFileDialog.cpp's ctor follows). The list
 // line class lives in the file's anonymous namespace (RTTI ConnectListItem@?%<file><hash>@@). Module flags
-// (r12-misc-h7, round 12).
+//.
 #include <windows.h>
 #include <string>
 #include <list>
@@ -48,11 +48,11 @@ EELobbyConnectDialog::~EELobbyConnectDialog()
 
 // The original's InitComponent asks for its two components on lines 61 and 62 (__LINE__); the lines below keep
 // them there.
-//
-//
-//
-//
-//
+
+
+
+
+
 // FUNCTION: EXE 0x690a41
 void EELobbyConnectDialog::InitComponent(ComponentInit& inInit)
 {

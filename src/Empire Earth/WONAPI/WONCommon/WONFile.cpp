@@ -1,6 +1,6 @@
 // C:\EEX\Empire Earth\WONAPI\WONCommon\WONFile.cpp (RECONSTRUCTION).
 // Original WONFile family2a7610..2a8106; exact filename/TU boundaries provisional.
-// Full target70B storage; no new implicit destructor/helper quota or runtime authority.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -58,7 +58,7 @@ bool WONFile::SetReadOnly(bool inReadOnly)
 {
     return _chmod(mPath.c_str(), inReadOnly ? 0x100 : 0x180) == 0;
 }
-// Zero quota: simple field accessor original2a79e0,3B.
+
 // FUNCTION: WON 0x006a79e0
 const std::string& WONFile::GetFilePath() { return mPath; }
 // FUNCTION: WON 0x006a79f0

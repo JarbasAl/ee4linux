@@ -1,6 +1,6 @@
 // Reviewed original-backed controls; source-only, near code/support remain carved.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Whole Chat source candidate, including actual source-local Config handler; normal admission pending.
+
 // Blocker: canonical rich-text/TextArea reference contracts, event declarations,
 // typed model/parser contracts and independent per-family flags calibration.
 #include <windows.h>
@@ -692,7 +692,7 @@ ComponentConfig* ChatCtrlConfig::CfgFactory()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007b6ca0
 // (public: virtual __thiscall WONAPI::ChatCtrl::~ChatCtrl(void)    [??1ChatCtrl@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x007b7190
@@ -702,12 +702,12 @@ ComponentConfig* ChatCtrlConfig::CfgFactory()
 // TEMPLATE: WON 0x007cd8a0
 // TEMPLATE: WON 0x007cda20
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007b6c80
 // (public: virtual void * __thiscall WONAPI::ChatCtrl::`scalar deleting destructor'(unsigned int)    [??_GChatCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007b9ba0
 // (public: virtual void * __thiscall WONAPI::JumpToRoomEvent::`scalar deleting destructor'(unsigned int)    [??_GJumpToRoomEvent@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007b7170
 // (public: virtual void * __thiscall ChatLink::`scalar deleting destructor'(unsigned int)    [??_GChatLink@@UAEPAXI@Z])

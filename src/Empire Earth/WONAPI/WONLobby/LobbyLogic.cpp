@@ -1,5 +1,5 @@
 // Original-backed LobbyLogic family; source filename has no embedded target anchor.
-// Root-admitted source. Ordinary full-TU calibration and executable admission remain pending.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -25,7 +25,7 @@ LobbyLogic::LobbyLogic() { mKilled = false; }
 // FUNCTION: WON 0x007e5a40
 LobbyLogic::~LobbyLogic() {}
 
-// Actual empty defaults: six-slot original vtable; generated/ICF support, zero quota.
+
 void LobbyLogic::KillHook() {}
 void LobbyLogic::InitComponent(ComponentConfig*) {}
 void LobbyLogic::Reset() {}
@@ -70,6 +70,6 @@ bool LobbyLogic::Fn3E5C00(AsyncOp* inOp)
 // until ordinary full LanLogic emission establishes the natural source shape.
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007e5a20
 // (public: virtual void * __thiscall WONAPI::LobbyLogic::`scalar deleting destructor'(unsigned int)    [??_GLobbyLogic@WONAPI@@UAEPAXI@Z])

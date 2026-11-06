@@ -186,7 +186,7 @@ static SmartPtr<ImageType> DoFilter(ImageType *theImage, StretchImageFilter *the
 			RawStretch<ImageType,PixelType>(src,dst,left+mLeftWidth,right,top+mTopHeight,bottom,imageLeft+mLeftWidth,imageTop+mTopHeight,imageCenterWidth,imageCenterHeight);
 		else if(mTileHorz && mTileVert) // just tile
 			RawTileHorzVert<ImageType,PixelType>(src,dst,left+mLeftWidth,right,top+mTopHeight,bottom,imageLeft+mLeftWidth,imageTop+mTopHeight,imageCenterWidth,imageCenterHeight);
-		else if(mTileVert) // stretch horz, tile vert 
+		else if(mTileVert) // stretch horz, tile vert
 		{
 			RawStretch<ImageType,PixelType>(src,dst,left+mLeftWidth,right,top+mTopHeight,top+mTopHeight+minCenterHeight,imageLeft+mLeftWidth,imageTop+mTopHeight,imageCenterWidth,imageCenterHeight);
 			RawTileVert<ImageType,PixelType>(dst,dst,top+mTopHeight+imageCenterHeight,bottom,left+mLeftWidth,left+mLeftWidth,top+mTopHeight,centerWidth,imageCenterHeight);

@@ -77,7 +77,7 @@ class CreditsDialog : public Dialog {
 protected:
     void UpdateCredits(); //native SDK identity; actual Init calls shared empty4142a0, call-only0
 public:
-    CreditsDialog(); //external3f7490, no definition or quota
+    CreditsDialog();
     virtual void InitComponent(ComponentInit&);
     virtual void HandleComponentEvent(ComponentEvent*); //external actual shared3fa1f0
     void StartScrolling();

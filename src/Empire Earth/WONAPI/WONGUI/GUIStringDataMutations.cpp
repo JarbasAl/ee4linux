@@ -123,7 +123,7 @@ int GUIStringData::setAt(int thePos, int theChar)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007277e0
 // (public: __thiscall WONAPI::GUIStringData::GUIStringData(char const *)    [??0GUIStringData@WONAPI@@QAE@PBD@Z])
 // TEMPLATE: WON 0x00727840
@@ -133,7 +133,7 @@ int GUIStringData::setAt(int thePos, int theChar)
 // TEMPLATE: WON 0x00727910
 // (public: __thiscall WONAPI::GUIStringData::GUIStringData(class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allo)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00727600
 // (public: __thiscall WONAPI::GUIStringData::GUIStringData(class WONAPI::GUIStringData const &)    [??0GUIStringData@WONAPI@@QAE@ABV01@@Z])
 // TEMPLATE: WON 0x007276f0

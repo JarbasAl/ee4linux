@@ -34,10 +34,10 @@ MSComboBox::MSComboBox()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ffde0
 // (public: virtual __thiscall WONAPI::MSComboBox::~MSComboBox(void)    [??1MSComboBox@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ffdc0
 // (public: virtual void * __thiscall WONAPI::MSComboBox::`scalar deleting destructor'(unsigned int)    [??_GMSComboBox@WONAPI@@UAEPAXI@Z])

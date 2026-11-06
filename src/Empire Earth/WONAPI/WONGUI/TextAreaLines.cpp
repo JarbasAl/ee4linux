@@ -38,6 +38,6 @@ TextLine* TextArea::AddLine(int height,int baseline)
     return line.get();
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00711710
 // (public: virtual void * __thiscall WONAPI::TextLine::`scalar deleting destructor'(unsigned int)    [??_GTextLine@WONAPI@@UAEPAXI@Z])

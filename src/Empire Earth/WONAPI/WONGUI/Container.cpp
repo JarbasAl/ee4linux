@@ -100,7 +100,7 @@ void Container::Virtual2C(int x,int y,int button)
     if(aChild!=NULL) aChild->Virtual2C(x-aChild->Left(),y-aChild->Top(),button);
 }
 
-// SUPPORT ONLY: EXE 0x006f6810; coordinate-adapting direct dispatch37, zero quota
+
 // FUNCTION: WON 0x006f6810
 void Container::Virtual38(int x,int y)
 {
@@ -138,7 +138,7 @@ std::list<SmartPtr<Component> >::iterator Container::FindTop(std::list<SmartPtr<
     return i;
 }
 
-// SUPPORT ONLY: EXE 0x006f6a40; forwarding overload27, zero quota
+
 std::list<SmartPtr<Component> >::iterator Container::FindTop()
 {
     return FindTop(mChildList.end());
@@ -239,11 +239,11 @@ void Container::Virtual28()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071c2a0
 // (public: void __thiscall std::list<class WONAPI::Component *,class std::allocator<class WONAPI::Component *> >::_Insert(class std::list<class WONAPI::C)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071ca10
 // (public: class std::list<class WONAPI::Component *,class std::allocator<class WONAPI::Component *> >::iterator __thiscall std::list<class WONAPI::Compo)
 // TEMPLATE: WON 0x0071ebb0

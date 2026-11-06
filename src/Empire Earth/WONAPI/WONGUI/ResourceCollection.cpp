@@ -1,4 +1,4 @@
-// R11 same-SDK ResourceCollection reader implementation.
+// same-SDK ResourceCollection reader implementation.
 // Original family profile proposed for this missing unit; no Native ID/primary/physical claim.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>

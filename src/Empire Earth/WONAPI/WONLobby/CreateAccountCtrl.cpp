@@ -112,24 +112,24 @@ void CreateAccountCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 // Event normal/deleting destructors3bac50/3bac30 are this producer's support.
 // Adjacent3bad40 is an unrelated ServerDetailsItem factory, excluded here.
 // Implicit source form requires full normal COFF proof;
-// no handwritten quota. No empty explicit destructor or raw payload view added.
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bac10
 // (public: __thiscall WONAPI::LobbyEvent::LobbyEvent(int)    [??0LobbyEvent@WONAPI@@QAE@H@Z])
 // TEMPLATE: WON 0x007bac50
 // (public: virtual __thiscall WONAPI::CreateAccountEvent::~CreateAccountEvent(void)    [??1CreateAccountEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ba300
 // (public: virtual void * __thiscall WONAPI::CreateAccountCtrl::`scalar deleting destructor'(unsigned int)    [??_GCreateAccountCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007bac30
 // (public: virtual void * __thiscall WONAPI::CreateAccountEvent::`scalar deleting destructor'(unsigned int)    [??_GCreateAccountEvent@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ba320
 // (public: virtual __thiscall WONAPI::CreateAccountCtrl::~CreateAccountCtrl(void)    [??1CreateAccountCtrl@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ba290
 // (public: __thiscall WONAPI::CreateAccountCtrl::CreateAccountCtrl(void)    [??0CreateAccountCtrl@WONAPI@@QAE@XZ])

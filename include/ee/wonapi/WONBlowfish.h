@@ -1,6 +1,6 @@
 // Complete original-backed cipher storage contract; nominal header evidence independently reviewed.
 // Target constructor3d5e20, SetKey3d5e90, P/S geometry and byte-COW helpers independently read.
-// Declaration admission grants no new cipher implementation or full-object allocation authority.
+
 #ifndef EE_WONAPI_WONBLOWFISH_H
 #define EE_WONAPI_WONBLOWFISH_H
 #include <string>

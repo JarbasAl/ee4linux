@@ -15,11 +15,11 @@ namespace WONAPI {
 RoomDialog::RoomDialog() {}
 // FUNCTION: WON 0x7f9110
 RoomDialog::~RoomDialog() {}
-// Empty Init shares physical2fa500 ret4; zero-credit support, no alias admission inferred.
+
 void RoomDialog::InitComponent(ComponentInit&) {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f90d0
 // (public: __thiscall WONAPI::RoomDialog::RoomDialog(void)    [??0RoomDialog@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007f90f0

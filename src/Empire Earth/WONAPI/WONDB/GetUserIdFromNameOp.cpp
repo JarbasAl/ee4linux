@@ -40,6 +40,6 @@ WONStatus GetUserIdFromNameOp::Virtual14()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cd4b0
 // (protected: virtual void * __thiscall WONAPI::GetUserIdFromNameOp::`scalar deleting destructor'(unsigned int)    [??_GGetUserIdFromNameOp@WONAPI@@MAEPA)

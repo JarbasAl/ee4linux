@@ -42,7 +42,7 @@ namespace WONAPI {
 TextLine::~TextLine() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070d7f0
 // (public: __thiscall WONAPI::TableElement::TableElement(void)    [??0TableElement@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x00710c40
@@ -54,13 +54,13 @@ TextLine::~TextLine() {}
 // TEMPLATE: WON 0x0071b6f0
 // (public: __thiscall std::vector<struct WONAPI::TableElement::ColumnInfo,class std::allocator<struct WONAPI::TableElement::ColumnInfo> >::~vector<struct)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070d8c0
 // (public: virtual void * __thiscall WONAPI::TableElement::`scalar deleting destructor'(unsigned int)    [??_GTableElement@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00710cc0
 // (public: virtual void * __thiscall WONAPI::TextSegment::`scalar deleting destructor'(unsigned int)    [??_GTextSegment@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070d8a0
 // (public: virtual int __thiscall WONAPI::TableElement::GetWidth(void)    [?GetWidth@TableElement@WONAPI@@UAEHXZ])
 // TEMPLATE: WON 0x0070d8b0

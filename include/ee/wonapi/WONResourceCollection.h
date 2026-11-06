@@ -1,4 +1,4 @@
-// R11 complete genuine SDK ResourceCollection/ResourceEntry/Writer owners.
+// complete genuine SDK ResourceCollection/ResourceEntry/Writer owners.
 // SOURCE_ONLY_NO_NATIVE_ID: no target layout/allocation/Native-byte identity claim.
 #ifndef EE_WONAPI_WONRESOURCECOLLECTION_H
 #define EE_WONAPI_WONRESOURCECOLLECTION_H

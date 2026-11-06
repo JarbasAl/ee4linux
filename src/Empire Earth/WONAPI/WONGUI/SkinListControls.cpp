@@ -85,7 +85,7 @@ void WONListCtrl::SetColumnHeader(int theCol, Component *theHeader, int theWidth
 	static_cast<MultiListArea*>(mScrollArea.get())->SetColumnWidth(theCol,theWidth,false);
 }
 
-// Support0 small geometry forwarding override31a580/48, no primary quota.
+
 // FUNCTION: WON 0x0071a580
 void WONListCtrl::Virtual08()
 {
@@ -115,7 +115,7 @@ void WONHeaderControl::SetColumn(int column,const GUIString& title,int* desiredH
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071a100
 // (public: virtual void * __thiscall WONAPI::WONHeaderControl::`scalar deleting destructor'(unsigned int)    [??_GWONHeaderControl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0071a120

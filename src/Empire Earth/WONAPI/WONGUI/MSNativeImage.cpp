@@ -95,7 +95,7 @@ void MSNativeImage::Init(DisplayContext *theContext, HBITMAP theBitmap, MSNative
 	
 	size.x = bm.bmWidth;            // Get width of bitmap
 	size.y = bm.bmHeight;           // Get height of bitmap
-	DPtoLP(mDC, &size, 1);			// Convert from 
+	DPtoLP(mDC, &size, 1);			// Convert from
 	mWidth = size.x;
 	mHeight = size.y;
 }
@@ -196,7 +196,7 @@ SmartPtr<Cursor> MSNativeImage::GetCursor(int hotX,int hotY) {
     return new MSCursor((HCURSOR)CreateIconIndirect(&info),true);
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007cf9d0
 // (public: virtual void * __thiscall WONAPI::MSNativeMask::`scalar deleting destructor'(unsigned int)    [??_GMSNativeMask@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007cfbd0

@@ -24,7 +24,7 @@ ImageFilterConfig::ImageFilterConfig()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078b2e0
 // (public: virtual void * __thiscall WONAPI::ImageConfig::`scalar deleting destructor'(unsigned int)    [??_GImageConfig@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0078c290

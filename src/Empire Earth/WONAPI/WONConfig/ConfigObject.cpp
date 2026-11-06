@@ -247,7 +247,7 @@ bool ConfigObject::IncludeGroup(ConfigParser& parser,const std::string& name,boo
     if(!parser.mAbortReason.empty()) parser.SetError("IncludeGroup Error",true);
     return result;
 }
-// Both original IF branches duplicate this user-authored control flow; helper has no independent quota.
+
 static bool ConfigConditional(ConfigObject* object,ConfigParser& parser,bool inverted)
 {
     std::string name,expected;
@@ -387,7 +387,7 @@ void ConfigObject::RegisterKeyGroup(const char* theKey, ConfigObject* theGroup)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007aeb80
 // (public: virtual void * __thiscall WONAPI::ConfigObject::`scalar deleting destructor'(unsigned int)    [??_GConfigObject@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007afa50
@@ -395,6 +395,6 @@ void ConfigObject::RegisterKeyGroup(const char* theKey, ConfigObject* theGroup)
 // TEMPLATE: WON 0x007b0660
 // (public: __thiscall WONAPI::ConfigParserState::~ConfigParserState(void)    [??1ConfigParserState@WONAPI@@QAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007aeba0
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct WONAPI::ConfigObjectEntry,s)

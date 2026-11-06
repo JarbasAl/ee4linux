@@ -30,12 +30,12 @@ WONListCtrl* WONListCtrl::Duplicate()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071a270
 // (public: __thiscall WONAPI::WONListCtrl::WONListCtrl(void)    [??0WONListCtrl@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x0071a290
 // (public: virtual void * __thiscall WONAPI::WONListCtrl::`scalar deleting destructor'(unsigned int)    [??_GWONListCtrl@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071a2b0
 // (public: virtual __thiscall WONAPI::WONListCtrl::~WONListCtrl(void)    [??1WONListCtrl@WONAPI@@UAE@XZ])

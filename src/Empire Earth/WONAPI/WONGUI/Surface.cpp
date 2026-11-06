@@ -521,23 +521,23 @@ void Surface<PixelType>::DrawVertLine(int x, int y1, int y2)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Midpoint line algorithm
-//
+
 // Line defined by y = (dy/dx)x + b, dx = (x1-x0), dy = (y1-y0)
 // Let F(x,y) = dy*x - dx*y + c, c = dx*b
 // Points on the line satisfy F(x,y) = 0.
-//
+
 // For each point x, y on the line we must determine whether the next point is (x+1, y) or (x+1,y+1)
 // (for a line with a slope between 0 and 1.)  To decide, we evaluate
 // F(x+1,y+1/2) and see whether it's above the line or below the line, i.e. positive or negative.
-//
-// Notice that 
+
+// Notice that
 // F(x+1,y) = F(x,y) + dy  and
 // F(x+1,y+1) = F(x,y) + dy - dx.
 // So the next decision variable can be computed in terms of the previous decision variable
-//
+
 // Note then that F(x0,y0) = 0 since (x0,y0) is a point on the line.
 // So F(x0,y0+1/2) = F(x0,y0) - dx/2 = -dx/2.
-//
+
 // For all values to be integers make the decision variable 2*F(x+1,y+1/2).
 // Note that I don't use the midpoint line algorithm
 ///////////////////////////////////////////////////////////////////////////////
@@ -695,27 +695,27 @@ void Surface<PixelType>::DrawLineClip(int x1, int y1, int x2, int y2)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Midpoint circle algorithm
-//
+
 // Consider the circle of radius r at the origin defined by
 // x^2 + y^2 = r^2
 // Let F(x,y) = x^2 + y^2 - r^2.
 // So F(x,y) = 0 if (x,y) is on the circle.
 // F(x,y)>0 is outside the circle, and F(x,y)<0 is inside the circle.
-//
+
 // To draw the circle from 0 to 45 degrees, do the following.
 // Given a point (x,y) on the circle the next point is either (x,y+1) or (x-1,y+1).
 // To decide which consider F(x-1/2,y+1) to see which is closer.  If this is negative,
 // then (x,y+1) is closer, if positive then (x-1,y+1) is closer.
-//
+
 // Notice that F(x,y+1) = x^2 + y^2 + 2y + 1 - r^2 = F(x,y) + 2y + 1.
 // and F(x-1,y+1) = x^2 - 2x + 1 + y^2 + 2y + 1 - r^2 = F(x,y) + (2y - 2x) + 2.
-//
+
 // Start out F(x,y) as F(r,0) = 0.
-// Then F(r-1/2, 1) = r^2 - r + 1/4 + 1 - r^2 
+// Then F(r-1/2, 1) = r^2 - r + 1/4 + 1 - r^2
 // 5/4 - r
 // So use D(x,y) = 4*F(x,y) as the decision variable to avoid fractions.
 // -> D(r-1/2,1) = 5 - 4r.
-//
+
 // Notice that  D(x,y+1) = 4*F(x,y+1) = 4*F(x,y) + 8y + 4 = D(x,y) + 8y + 4
 // and D(x+1,y+1) = 4*F(x+1,y+1) = 4*F(x,y) + (8y - 8x) + 8
 
@@ -783,31 +783,31 @@ void Surface<PixelType>::FillCircle(int x, int y, int r)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Midpoint ellipse algorithm
-//
+
 // Consider the ellipse with horizontal radius, a, and vertical radius, b, at the origin defined by
 // (x/a)^2 + (y/b)^2 = 1 --> (bx)^2 + (ay)^2 = (ab)^2
 // Let F(x,y) = (bx)^2 + (ay)^2 - (ab)^2
 // So F(x,y) = 0 if (x,y) is on the ellipse.
 // F(x,y)>0 is outside the ellipse, and F(x,y)<0 is inside the ellipse.
-//
+
 // To draw the ellipse with slope<-1, do the following.
 // Given a point (x,y) on the circle the next point is either (x,y+1) or (x-1,y+1).
 // To decide which consider F(x-1/2,y+1) to see which is closer.  If this is negative,
 // then (x,y+1) is closer, if positive then (x-1,y+1) is closer.
-//
+
 // Notice that F(x,y+1) = (bx)^2 + a^2(y^2 + 2y + 1) - (ab)^2 = F(x,y) + 2(a^2)y + a^2
-// and F(x-1,y+1) = b^2(x^2 - 2x + 1) + a^2(y^2 + 2y + 1) - (ab)^2 = F(x,y) + 2((a^2)y - (b^2)x) + a^2 + b^2 
+// and F(x-1,y+1) = b^2(x^2 - 2x + 1) + a^2(y^2 + 2y + 1) - (ab)^2 = F(x,y) + 2((a^2)y - (b^2)x) + a^2 + b^2
 // and F(x-1,y) = b^2(x^2 - 2x + 1) + (ay)^2 - (ab^2) = F(x,y) - 2(b^2)x + b^2
-//
+
 // Start out F(x,y) as F(a,0) = 0.
 // Then F(a-1/2, 1) = b^2(a^2 - a + 1/4) + a^2 - (ab)^2 = a^2 - (b^2)a + (b^2)*1/4
-// 
+
 // Again use D(x,y) = 4*F(x,y) as the decision variable.
 // -> D(a-1/2,1) = 4a^2 - 4(b^2)a + b^2.
-//
-// Need to calculate point where slope is greater than -1. 
+
+// Need to calculate point where slope is greater than -1.
 // -> gradiant of F(x,y) has i and j components equal.
-// grad(F(x,y)) = df/dx i + df/dy j = 2(b^2)x i + 2(b^2)y j 
+// grad(F(x,y)) = df/dx i + df/dy j = 2(b^2)x i + 2(b^2)y j
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -848,8 +848,8 @@ void Surface<PixelType>::DrawEllipse(int x, int y, int width, int height)
 		}
 	}
 
-	// Know D(x-1/2,y+1)  
-	// Want D(x-1,y+1/2) 
+	// Know D(x-1/2,y+1)
+	// Want D(x-1,y+1/2)
 
 	d = d + 4*(-a2*y1 - b2*x1 - a2 + b2) + a2 - b2;
 	while(x1>=0)

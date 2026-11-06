@@ -35,6 +35,6 @@ const GUIString& TextSegmentPiece::GetLinkParam() { return mSeg->GetLinkParam();
 TextSegmentBase* TextSegmentPiece::GetActual() { return mSeg; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007113f0
 // (public: __thiscall WONAPI::TextSegmentPiece::TextSegmentPiece(class WONAPI::TextSegment *,int,int,int)    [??0TextSegmentPiece@WONAPI@@QAE@PAVTextSegm)

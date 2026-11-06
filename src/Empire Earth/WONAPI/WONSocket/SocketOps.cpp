@@ -315,7 +315,7 @@ ByteBufferPtr RecvBytesFromOp::GetBytes() const
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b5380
 // (public: virtual void * __thiscall WONAPI::RecvChunkOp::`scalar deleting destructor'(unsigned int)    [??_GRecvChunkOp@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006b53a0
@@ -323,18 +323,18 @@ ByteBufferPtr RecvBytesFromOp::GetBytes() const
 // TEMPLATE: WON 0x006b56d0
 // (public: virtual void * __thiscall WONAPI::RecvBytesFromOp::`scalar deleting destructor'(unsigned int)    [??_GRecvBytesFromOp@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b5370
 // (public: virtual void __thiscall WONAPI::RecvChunkOp::Virtual04(void)    [?Virtual04@RecvChunkOp@WONAPI@@UAEXXZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ab450
 // (public: virtual void * __thiscall WONAPI::RecvMsgOp::`scalar deleting destructor'(unsigned int)    [??_GRecvMsgOp@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b4f70
 // (public: virtual void * __thiscall WONAPI::RecvBytesOp::`scalar deleting destructor'(unsigned int)    [??_GRecvBytesOp@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b4b70
 // (public: virtual void * __thiscall WONAPI::SocketOp::`scalar deleting destructor'(unsigned int)    [??_GSocketOp@WONAPI@@UAEPAXI@Z])

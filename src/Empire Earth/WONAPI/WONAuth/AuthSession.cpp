@@ -124,6 +124,6 @@ WONStatus AuthSession::Decrypt(ByteBufferPtr &theMsg)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e2a60
 // (protected: virtual void * __thiscall WONAPI::AuthSession::`scalar deleting destructor'(unsigned int)    [??_GAuthSession@WONAPI@@MAEPAXI@Z])

@@ -137,10 +137,10 @@ void WONControlsConfig_Init(ResourceConfigTable *theTable)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00796af0
 // (public: static class WONAPI::ComponentConfig * __cdecl WONAPI::WONTabCtrlConfig::CfgFactory(void)    [?CfgFactory@WONTabCtrlConfig@WONAPI@@SAPAVCompon)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00796c80
 // (public: virtual void __thiscall WONAPI::WONScrollContainerConfig::Virtual34(class WONAPI::Component *)    [?Virtual34@WONScrollContainerConfig@WONAPI@)

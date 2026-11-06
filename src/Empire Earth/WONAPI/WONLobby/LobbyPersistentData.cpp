@@ -1,11 +1,11 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\LobbyPersistentData.cpp (RECONSTRUCTION).
 // Original filename PROVISIONAL: no filename assertion found. RTTI identifies LobbyPersistentData;
 // ctor35bcb0, dtor35c2c0, vtable451c28 and allocation1164 establish its original family.
-// R5 complete typed persistence behavior; constructor follows native member/key/default initialization.
+// complete typed persistence behavior; constructor follows native member/key/default initialization.
 // Other unimplemented bodies remain original-carved. The real1164B constructor and implicit
 // member cleanup are typed; no external allocation sites or runtime substitution are granted.
 // Original body ranges and typed-EH helpers are retained in
-// build/wonlobby_r1/persist/leaf-original-hashes.json; helpers do not count as additional bodies.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -86,7 +86,7 @@ namespace WONAPI {
 extern const char gLobbyGlobalPrefsFileName[]; //4d9d14
 extern const long gLobbyGlobalPrefsVersion; //4d9550
 
-// Proposed original family prefix additions; include in existing LobbyPersistentData.cpp after admission.
+
 // Original35baa0 uses key-sensitive ordered set with insertion-order list; no invented container behavior.
 // FUNCTION: WON 0x0075baa0
 void LobbyOptionSet::Add(const GUIString& inValue)
@@ -112,11 +112,11 @@ bool LobbyOptionSet::Erase(const GUIString& inValue)
     }
     return false;
 }
-// SUPPORT: EXE 0x0075dd20 (zero quota)
+
 LobbyOptionSet::LobbyOptionSet() {}
 // FUNCTION: WON 0x0075ddb0
 LobbyOptionSet::~LobbyOptionSet() {}
-// SUPPORT: EXE 0x0075c900 (zero quota)
+
 LobbyPersistentData* GetLobbyPersistentData()
 {
     return gLobbyData.get() != NULL ? gLobbyData->mPersistentData.get() : NULL;
@@ -246,7 +246,7 @@ void LobbyPersistentData::Fn35C720()
 // Existing natural Add/Erase candidates require no object copying.
 
 // Scratch only. Requires admitted true WONFile70 and persistence prefix8c.
-// Complete original35c910882B; class constructors/destructors, tables/EH excluded from quota.
+
 // FUNCTION: WON 0x0075c910
 LobbyUserInfo* LobbyFn35C910(const GUIString& inUserName, const GUIString& inPassword, bool inExistingOnly)
 {
@@ -783,7 +783,7 @@ LobbyPersistentData::LobbyPersistentData()
 }
 }
 
-// R11 SOURCE_ONLY_NO_NATIVE_ID: exact same-SDK ServerListFilterSet::clear,
+// SOURCE_ONLY_NO_NATIVE_ID: exact same-SDK ServerListFilterSet::clear,
 // using the established canonical LobbyOptionSet owner/member names.
 namespace WONAPI {
 void LobbyOptionSet::clear()
@@ -793,7 +793,7 @@ void LobbyOptionSet::clear()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0075c140
 // (public: __thiscall std::map<unsigned long,class WONAPI::SmartPtr<class WONAPI::LobbyFriend>,struct std::less<unsigned long>,class std::allocator<struc)
 // TEMPLATE: WON 0x0075c900
@@ -805,17 +805,17 @@ void LobbyOptionSet::clear()
 // TEMPLATE: WON 0x0075dd20
 // (public: __thiscall WONAPI::LobbyOptionSet::LobbyOptionSet(void)    [??0LobbyOptionSet@WONAPI@@QAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0075bfb0
 // (public: virtual void * __thiscall WONAPI::LobbyPersistentData::`scalar deleting destructor'(unsigned int)    [??_GLobbyPersistentData@WONAPI@@UAEPAXI@)
 // TEMPLATE: WON 0x0075c2c0
 // (public: virtual __thiscall WONAPI::LobbyPersistentData::~LobbyPersistentData(void)    [??1LobbyPersistentData@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0075c200
 // (public: __thiscall std::map<class WONAPI::GUIString,class WONAPI::LobbyOptionSet,struct WONAPI::GUIStringLessNoCase,class std::allocator<struct std::p)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0075bfd0
 // (public: __thiscall std::set<class WONAPI::GUIString,struct WONAPI::GUIStringLessNoCase,class std::allocator<class WONAPI::GUIString> >::~set<class WON)
 // TEMPLATE: WON 0x0075e990
@@ -825,6 +825,6 @@ void LobbyOptionSet::clear()
 // TEMPLATE: WON 0x00760610
 // (public: class std::map<class WONAPI::GUIString,class WONAPI::LobbyOptionSet,struct WONAPI::GUIStringLessNoCase,class std::allocator<struct std::pair<c)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0075bf00
 // (public: __thiscall std::set<long,struct std::less<long>,class std::allocator<long> >::~set<long,struct std::less<long>,class std::allocator<long> >(vo)

@@ -40,7 +40,7 @@ Scrollbar::~Scrollbar() {}
 ScreenContainer::ScreenContainer() { mCurScreen=NULL; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00705540
 // (public: __thiscall WONAPI::Scroller::Scroller(void)    [??0Scroller@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x00705560

@@ -103,7 +103,7 @@ int BadUserItem::Virtual10(const ListItem* inOther,ListArea* inList) const
     }
 }
 namespace WONAPI {
-// Simple false-state/default ownership initializer support, zero breadth quota.
+
 BadUserDialog::BadUserDialog() : mIsSimple(false) {}
 // Ordinary destructor implicit: zero credit, preserve original no own-vptr store.
 // FUNCTION: WON 0x7f5a90
@@ -144,18 +144,18 @@ void BadUserDialog::GetIds(IdList& outIds)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f5710
 // (public: virtual __thiscall BadUserItem::~BadUserItem(void)    [??1BadUserItem@@UAE@XZ])
 // TEMPLATE: WON 0x007fa4a0
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f5960
 // (public: virtual void * __thiscall WONAPI::BadUserDialog::`scalar deleting destructor'(unsigned int)    [??_GBadUserDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f5980
 // (public: virtual __thiscall WONAPI::BadUserDialog::~BadUserDialog(void)    [??1BadUserDialog@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f56f0
 // (public: virtual void * __thiscall BadUserItem::`scalar deleting destructor'(unsigned int)    [??_GBadUserItem@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f5920

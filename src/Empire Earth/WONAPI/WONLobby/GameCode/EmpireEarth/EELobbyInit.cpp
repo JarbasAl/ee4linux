@@ -2,7 +2,7 @@
 // getters of lines 328/329). The game's set-up of the WON lobby: its factories, the server list's column handlers, the
 // component types of the resource file, and the accessors of the lobby's dialogs: 0x294d62..0x296aaa (its two
 // SmartPtr chains first; EELobbyGameOptionsCtrl.cpp ends at 0x294d62). Unit flags: the exe's module set
-// (r12-misc-h2, round 12).
+//.
 #include <windows.h>
 #include <stdio.h>
 #include <string>
@@ -300,7 +300,7 @@ static GUIString EELobbyGetMapTypeText(EELobbyGame* inGame)
 }
 
 // FUNCTION: EXE 0x695ad1
-// a case-insensitive compare (0x328030; r28: was the Find 0x328340)
+// a case-insensitive compare
 static int EELobbyMapTypeCompare(const ServerDetailsItem* inA, const ServerDetailsItem* inB, ServerListCtrl*)
 {
     GUIString theA = EELobbyGetMapTypeText(static_cast<EELobbyGame*>(inA->mGame.get()));
@@ -448,8 +448,8 @@ bool EELobbyFn295D52()
 // (SafeGetComponent<EELobbyFileDialog>)
 // TEMPLATE: EXE 0x6969c8
 // (SafeGetComponent<EELobbyConnectDialog>)
-// The implicit dtors of EELobbyConfig (LobbyConfig's, ICF) and ConfigObject (r24 ui P1 layouts), then the map/list
-// COMDATs they instantiate (r24-lobby-player-gfx):
+// The implicit dtors of EELobbyConfig (LobbyConfig's, ICF) and ConfigObject, then the map/list
+// COMDATs they instantiate:
 // TEMPLATE: EXE 0x694e04
 // TEMPLATE: EXE 0x694e83
 // TEMPLATE: EXE 0x695d65

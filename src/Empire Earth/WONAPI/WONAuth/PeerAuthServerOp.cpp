@@ -125,17 +125,17 @@ void PeerAuthServerOp::Success()
     Fn29F220(0);
 }
 
-// SUPPORT: EXE 0x006e7cb0 (5B genuine shared base cleanup forwarder, zero primary quota)
+
 void PeerAuthServerOp::Virtual08()
 {
     AsyncOpWithTracker::Virtual08();
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e8a40
 // (protected: virtual void * __thiscall WONAPI::PeerAuthServerOp::`scalar deleting destructor'(unsigned int)    [??_GPeerAuthServerOp@WONAPI@@MAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e8a60
 // (public: __thiscall WONAPI::PeerAuthServer::~PeerAuthServer(void)    [??1PeerAuthServer@WONAPI@@QAE@XZ])

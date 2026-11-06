@@ -2,7 +2,7 @@
 // sorts after EELobbyPlayerOptionsCtrl.cpp and before the sound classes). The lobby's text resources, in the shape of
 // WONAPI's generated resource units: 73 GUIString globals (init chains 0x29a43d..0x29b1ed, definition order = table
 // order), the loader registration, the section loader and the reset: 0x29a43d..0x29ce06 (GUIString::operator='s
-// COMDAT closes it). Every name PROVISIONAL (r12-misc-h2, round 12).
+// COMDAT closes it). Every name PROVISIONAL.
 #include <windows.h>
 #include <string>
 #include <list>
@@ -188,7 +188,7 @@ GUIString& EELobbyResource_GetString(int inID)
 
 // FUNCTION: EXE 0x69b278
 // GUIString::operator='s inner SmartPtr::operator=(const SmartPtr&) (IL 44, ee/EEWonNet.h) is refused at the first 48
-// sites (call 0x29cdf2) and expanded from site 49 on (inline shares 43 / 44; r34-core P4)
+// sites (call 0x29cdf2) and expanded from site 49 on
 static void EELobbyResource_Load(ResourceConfigTable* inTable)
 {
     ResourceConfig* aTable;

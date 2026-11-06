@@ -1,7 +1,7 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyFileDialog.cpp (__FILE__ 0x8d0540, InitComponent's
 // lines 37..40). The game room's saved-game dialog: the files of a directory with one extension, loaded or deleted
 // with its buttons: 0x290e89..0x291463 (GUIString's size helpers follow their first user; WONFile's implicit dtor
-// closes it; the SendFileOp unit follows). Module flags (r12-misc-h7, round 12).
+// closes it; the SendFileOp unit follows). Module flags.
 #include <windows.h>
 #include <string>
 #include <list>

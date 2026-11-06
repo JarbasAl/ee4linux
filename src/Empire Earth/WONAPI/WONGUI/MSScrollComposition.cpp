@@ -72,13 +72,13 @@ SmartPtr<Button> DefaultMSArrowButtonFactory(Direction direction)
 {
     return new MSArrowButton(direction);
 }
-// Genuine original mutable SDK factory cells; data only, no code-byte quota.
+
 MSArrowButtonFactory MSScrollbar::ArrowButtonFactory=DefaultMSArrowButtonFactory;
 MSScrollbar::ThumbFactoryFunc MSScrollbar::ThumbFactory=MSScrollbar::DefaultThumbFactory;
 MSArrowButtonFactory MSComboBox::ArrowButtonFactory=DefaultMSArrowButtonFactory;
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fccb0
 // (public: static class WONAPI::SmartPtr<class WONAPI::Component> __cdecl WONAPI::MSScrollbar::DefaultThumbFactory(bool)    [?DefaultThumbFactory@MSScrol)
 // TEMPLATE: WON 0x006fdc40
@@ -88,16 +88,16 @@ MSArrowButtonFactory MSComboBox::ArrowButtonFactory=DefaultMSArrowButtonFactory;
 // TEMPLATE: WON 0x007001e0
 // (public: virtual __thiscall WONAPI::Scroller::~Scroller(void)    [??1Scroller@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00700040
 // (public: virtual void * __thiscall WONAPI::MSScrollContainer::`scalar deleting destructor'(unsigned int)    [??_GMSScrollContainer@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00700060
 // (public: virtual __thiscall WONAPI::ScrollbarScroller::~ScrollbarScroller(void)    [??1ScrollbarScroller@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x00719560
 // (public: virtual void * __thiscall WONAPI::MSScrollbar::`scalar deleting destructor'(unsigned int)    [??_GMSScrollbar@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00700120
 // (public: virtual __thiscall WONAPI::MSScrollContainer::~MSScrollContainer(void)    [??1MSScrollContainer@WONAPI@@UAE@XZ])

@@ -81,10 +81,10 @@ bool AnimationComponent::Virtual44(int delta)
     return true;
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00706ed0
 // (public: virtual __thiscall WONAPI::AnimationComponent::~AnimationComponent(void)    [??1AnimationComponent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00706eb0
 // (public: virtual void * __thiscall WONAPI::AnimationComponent::`scalar deleting destructor'(unsigned int)    [??_GAnimationComponent@WONAPI@@UAEPAXI@Z])

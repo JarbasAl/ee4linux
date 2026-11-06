@@ -503,7 +503,7 @@ WONStatus AsyncSocket::StopWinsock()
 }
 
 namespace WONAPI {
-// Genuine SDK API. Native2b1350/13; zero primary quota.
+
 // FUNCTION: WON 0x006b1350
 void AsyncSocket::WaitForAccept(unsigned long timeout)
 {
@@ -568,6 +568,6 @@ WONStatus AsyncSocket::SetNagling(bool on)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b0480
 // (public: virtual void * __thiscall WONAPI::AsyncSocket::`scalar deleting destructor'(unsigned int)    [??_GAsyncSocket@WONAPI@@UAEPAXI@Z])

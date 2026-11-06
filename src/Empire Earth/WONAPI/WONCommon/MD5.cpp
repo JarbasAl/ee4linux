@@ -76,7 +76,7 @@ void MD5::Update(const void *theBuf, unsigned long len)
 
 
 //----------------------------------------------------------------------------
-// Final wrapup - pad to 64-byte boundary with the bit pattern 
+// Final wrapup - pad to 64-byte boundary with the bit pattern
 // 1 0* (64-bit count of bits processed, MSB-first).
 //----------------------------------------------------------------------------
 // FUNCTION: WON 0x006a27d0
@@ -231,6 +231,6 @@ void MD5::Transform(uint32 buf[4], uint32 in[16])
 	buf[3] += d;
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a26b0
 // (public: __thiscall WONAPI::MD5::MD5(void)    [??0MD5@WONAPI@@QAE@XZ])

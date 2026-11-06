@@ -1,4 +1,4 @@
-// Complete native-backed missing lobby support. No primary quota.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -22,6 +22,6 @@ SyncGameListEvent::SyncGameListEvent(LobbyGameList* games)
 SyncGameListEvent::~SyncGameListEvent() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0075b140
 // (public: virtual void * __thiscall WONAPI::SyncGameListEvent::`scalar deleting destructor'(unsigned int)    [??_GSyncGameListEvent@WONAPI@@UAEPAXI@Z])

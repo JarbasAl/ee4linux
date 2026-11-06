@@ -25,7 +25,7 @@ bool TextLineSegment::FindStr(ElementFindInfo &theInfo)
 	if(theInfo.mEndSelSegment==mStartSelIndex)
 		anEndPos = theInfo.mEndSelSegmentPos;
 
-	if(theInfo.mFoundStartSegment>=0) // 
+	if(theInfo.mFoundStartSegment>=0)
 	{
 		if(FindPartial(theInfo,aStartPos,anEndPos))
 			return theInfo.mCurFoundLength == theInfo.mFindText.length();

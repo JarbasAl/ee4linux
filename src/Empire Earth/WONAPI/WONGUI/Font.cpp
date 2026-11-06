@@ -40,6 +40,6 @@ Font::Font(DisplayContext*,const FontDescriptor& descriptor)
 // FUNCTION: WON 0x00726a60
 Font::~Font() {}
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00726a40
 // (public: virtual void * __thiscall WONAPI::Font::`scalar deleting destructor'(unsigned int)    [??_GFont@WONAPI@@UAEPAXI@Z])

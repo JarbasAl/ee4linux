@@ -144,15 +144,15 @@ bool ContainerConfig::HandleSizeAtLeastLayout()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00789200
 // (public: virtual __thiscall WONAPI::CenterLayout::~CenterLayout(void)    [??1CenterLayout@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007891e0
 // (public: virtual void * __thiscall WONAPI::CenterLayout::`scalar deleting destructor'(unsigned int)    [??_GCenterLayout@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00789410
 // (public: virtual void * __thiscall WONAPI::SpaceEvenlyLayout::`scalar deleting destructor'(unsigned int)    [??_GSpaceEvenlyLayout@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007897c0
@@ -160,7 +160,7 @@ bool ContainerConfig::HandleSizeAtLeastLayout()
 // TEMPLATE: WON 0x007899d0
 // (public: virtual void * __thiscall WONAPI::SizeAtLeastLayout::`scalar deleting destructor'(unsigned int)    [??_GSizeAtLeastLayout@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00789430
 // (public: virtual __thiscall WONAPI::SpaceEvenlyLayout::~SpaceEvenlyLayout(void)    [??1SpaceEvenlyLayout@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x007897e0
@@ -168,6 +168,6 @@ bool ContainerConfig::HandleSizeAtLeastLayout()
 // TEMPLATE: WON 0x007899f0
 // (public: virtual __thiscall WONAPI::SizeAtLeastLayout::~SizeAtLeastLayout(void)    [??1SizeAtLeastLayout@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a2cc0
 // (void __cdecl std::_Construct(class WONAPI::Component * *,class WONAPI::Component * const &)    [?_Construct@std@@YAXPAPAVComponent@WONAPI@@ABQAV23@@Z])

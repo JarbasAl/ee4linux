@@ -36,7 +36,7 @@ WONTabCtrl::WONTabCtrl(WONSkin* skin)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007191a0
 // (public: __thiscall WONAPI::WONHeaderButton::WONHeaderButton(void)    [??0WONHeaderButton@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x00719540
@@ -44,7 +44,7 @@ WONTabCtrl::WONTabCtrl(WONSkin* skin)
 // TEMPLATE: WON 0x0071a830
 // (public: __thiscall WONAPI::WONTabCtrl::WONTabCtrl(class WONAPI::WONSkin *)    [??0WONTabCtrl@WONAPI@@QAE@PAVWONSkin@1@@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00719220
 // (public: virtual void * __thiscall WONAPI::WONHeaderButton::`scalar deleting destructor'(unsigned int)    [??_GWONHeaderButton@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0071a8f0

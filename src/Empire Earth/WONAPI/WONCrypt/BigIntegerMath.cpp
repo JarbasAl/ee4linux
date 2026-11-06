@@ -462,14 +462,14 @@ void BigInteger::st_div(BigInteger &dv, const BigInteger &m, const BigInteger &d
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d4310
 // (public: virtual __thiscall WONAPI::ArithmeticException::~ArithmeticException(void)    [??1ArithmeticException@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d42f0
 // (public: virtual void * __thiscall WONAPI::ArithmeticException::`scalar deleting destructor'(unsigned int)    [??_GArithmeticException@WONAPI@@UAEPAXI@)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d4380
 // (public: __thiscall WONAPI::ArithmeticException::ArithmeticException(class WONAPI::ArithmeticException const &)    [??0ArithmeticException@WONAPI@@QAE@)

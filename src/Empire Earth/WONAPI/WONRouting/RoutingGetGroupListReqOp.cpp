@@ -44,7 +44,7 @@ WONStatus RoutingGetGroupListReqOp::Virtual14()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c60c0
 // (public: virtual void * __thiscall WONAPI::RoutingGetGroupListReqOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingGetGroupListReqOp@WONAPI)
 // TEMPLATE: WON 0x006c60e0

@@ -301,12 +301,12 @@ void QueueSocket::QueueOpFast(SocketOp *theOp, DWORD theTimeout)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b3a40
 // (public: virtual void * __thiscall WONAPI::QueueSocket::`scalar deleting destructor'(unsigned int)    [??_GQueueSocket@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006b4b90
 // (public: virtual __thiscall WONAPI::SocketOp::~SocketOp(void)    [??1SocketOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b3a60
 // (public: virtual __thiscall WONAPI::QueueSocket::~QueueSocket(void)    [??1QueueSocket@WONAPI@@UAE@XZ])

@@ -71,7 +71,7 @@ void Component::Fn2F4BC0(int width, int height)
         Fn2F4B90(width,height);
 }
 
-// SUPPORT ONLY: EXE 0x006f4bf0; sequential wrapper, zero quota
+
 // FUNCTION: WON 0x006f4bf0
 void Component::Fn2F4BF0(int x, int y, int width, int height)
 {
@@ -177,6 +177,6 @@ bool Component::Intersects(Component* component)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f4a50
 // (public: virtual void * __thiscall WONAPI::Component::`scalar deleting destructor'(unsigned int)    [??_GComponent@WONAPI@@UAEPAXI@Z])

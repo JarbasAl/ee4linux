@@ -63,7 +63,7 @@ protected:
     HTMLAlign GetCurAlign(); //338ba0
     void GenerateTableData(HTMLDisplayGen&,MultiLineElement*,bool,HTMLAlign); //33c250
     int HandleBeginGlueWord(const GUIString&); //339290/687
-    inline void HandlePreSpace(int,GUIString&); //genuineSDKinline, no separate quota
+    inline void HandlePreSpace(int,GUIString&);
     void HandleTextTag(HTMLTextTag*); //3398c0/951
     TextLineSegment* GetTextLineSegment(const GUIString&,int,Font*); //339540 externalrawproviderRET0c
     HTMLTextTag* GetNextTextTag(); //339d20 externalboundedlookahead

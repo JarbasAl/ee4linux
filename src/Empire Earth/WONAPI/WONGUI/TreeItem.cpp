@@ -462,13 +462,13 @@ void TreeItem::Sort(TreeArea *theTreeArea, bool recursive)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00714d30
 // (void __cdecl WONAPI::DrawHorzDottedLine(class WONAPI::Graphics &,int,int,int)    [?DrawHorzDottedLine@WONAPI@@YAXAAVGraphics@1@HHH@Z])
 // TEMPLATE: WON 0x00714d80
 // (void __cdecl WONAPI::DrawVertDottedLine(class WONAPI::Graphics &,int,int,int)    [?DrawVertDottedLine@WONAPI@@YAXAAVGraphics@1@HHH@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00714a40
 // (public: virtual void * __thiscall WONAPI::TreeItemOpenedEvent::`scalar deleting destructor'(unsigned int)    [??_GTreeItemOpenedEvent@WONAPI@@UAEPAXI@)
 // TEMPLATE: WON 0x00714a60

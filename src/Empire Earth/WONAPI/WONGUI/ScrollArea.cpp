@@ -207,6 +207,6 @@ void ScrollArea::VirtualD0()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00704f80
 // (public: virtual void * __thiscall WONAPI::ScrollArea::`scalar deleting destructor'(unsigned int)    [??_GScrollArea@WONAPI@@UAEPAXI@Z])

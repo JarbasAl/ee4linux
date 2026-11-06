@@ -1,4 +1,4 @@
-// Login status display; constructor/destructor support excluded from primary quota.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <string>
 #include <list>
@@ -54,8 +54,8 @@ pending source-kind COFF evidence. Earlier comment-only text is retained verbati
 // (literal RVA 0x4dfff0). Namespace WONAPI and class names have RTTI evidence;
 // method/member descriptive spellings and unobserved original declarations
 // remain provisional. The exact surrounding source/header arrangement is unknown.
-//
-// ADMISSION BLOCKERS
+
+
 // Canonical Container currently omits its inherited virtual overrides. The real
 // Container-derived LoginStatusCtrl vtable has 51 slots (0x00..0xc8), with only
 // deleting destructor 0x00, InitComponent 0x1c, and event handler 0x7c changed.
@@ -68,7 +68,7 @@ pending source-kind COFF evidence. Earlier comment-only text is retained verbati
 // no payload. The existing canonical event classes cannot implement this draft
 // correctly until all affected game adapters and event producers are reconciled.
 // Do not use this commented contract as an executable replacement or shadow.
-//
+
 // ORIGINAL CONTRACT REQUEST (all source below remains comments)
 // namespace WONAPI {
 // // Actual single inheritance: LoginStatusCtrl > Container > Component > RefCount.
@@ -81,7 +81,7 @@ pending source-kind COFF evidence. Earlier comment-only text is retained verbati
 //     virtual void HandleComponentEvent(ComponentEvent* inEvent); // slot 0x7c
 //     SmartPtr<Label> mStatusLabel;                              // +0x84
 // };
-//
+
 // // Actual event chain: LoginInitStatusEvent > LobbyEvent > ComponentEvent >
 // // WindowEventBase > RefCount. Both ComponentEvent and LobbyEvent end at +0x20.
 // // ComponentEvent fields already proven: owning pointer +0x10, type +0x14,
@@ -97,14 +97,14 @@ pending source-kind COFF evidence. Earlier comment-only text is retained verbati
 //     bool mAllowIgnore;       // +0x28; descriptive spelling provisional
 //     int mKind;               // +0x2c; descriptive spelling provisional
 // };
-//
+
 // DEFERRED ORIGINAL VA 0x007c0200, 28 bytes: complete constructor draft.
 // LoginStatusCtrl::LoginStatusCtrl()
 // {
 // }
 // // Implicit Container construction calls RVA 0x2f5b70, default SmartPtr<Label>
 // // zeroes +0x84, then the compiler installs LoginStatusCtrl vtable 0x453898.
-//
+
 // DEFERRED ORIGINAL VA 0x007c0220, 30 bytes: compiler-generated deleting destructor.
 // // This is synthesized from the real virtual destructor below, not a source
 // // helper to hand-implement. Complete original generated behavior:
@@ -113,7 +113,7 @@ pending source-kind COFF evidence. Earlier comment-only text is retained verbati
 // //   if ((deletionFlags & 1) != 0), call operator delete(originalObject);
 // //   return originalObject and pop the one 32-bit deletionFlags argument.
 // // Both flag branches and the original receiver are retained by this account.
-//
+
 // DEFERRED ORIGINAL VA 0x007c0240, 106 bytes: complete ordinary destructor draft.
 // LoginStatusCtrl::~LoginStatusCtrl()
 // {
@@ -122,7 +122,7 @@ pending source-kind COFF evidence. Earlier comment-only text is retained verbati
 // // atomically, delete through pointee slot 0 with flag 1 when result <= 0.
 // // Then destroy Container via RVA 0x2f5e80. Original /GX unwind state 0 ensures
 // // Container cleanup if member destruction unwinds; no cleanup is omitted.
-//
+
 // DEFERRED ORIGINAL VA 0x007c02b0, 56 bytes: inventory-missed complete Init body.
 // void LoginStatusCtrl::InitComponent(ComponentInit& inInit)
 // {
@@ -135,7 +135,7 @@ pending source-kind COFF evidence. Earlier comment-only text is retained verbati
 // // Existing Label specialization RVA 0x294be5 receives exactly five arguments;
 // // config comes from ComponentConfigInit +4. No base InitComponent call occurs.
 // // Preserve logical __FILE__/line through staging, never source path remapping.
-//
+
 // DEFERRED ORIGINAL VA 0x007c02f0, 42 bytes: inventory-missed complete event body.
 // void LoginStatusCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 // {
@@ -149,21 +149,21 @@ pending source-kind COFF evidence. Earlier comment-only text is retained verbati
 // // SetText receiver is the label at this+0x84; fallback receiver is this itself
 // // through Component::HandleComponentEvent RVA 0x2f5550, not a GUI substitute.
 // } // namespace WONAPI
-//
+
 // Original body total: 28 + 30 + 106 + 56 + 42 = 262 bytes, zero admitted credit.
-// Supporting original-only evidence: build/wonlobby_r1/controls/phase0_packet.txt,
+
 // loginstatus_identity.txt, event_identity.txt, and commented rejected scratch.
-// Dialogs lane independently reviewed all five extents, Init arguments/branches,
+
 // event sender layout and fallback receiver. No normal COFF exists for this draft.
 
 */
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c0220
 // (public: virtual void * __thiscall WONAPI::LoginStatusCtrl::`scalar deleting destructor'(unsigned int)    [??_GLoginStatusCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007c0240
 // (public: virtual __thiscall WONAPI::LoginStatusCtrl::~LoginStatusCtrl(void)    [??1LoginStatusCtrl@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c0200
 // (public: __thiscall WONAPI::LoginStatusCtrl::LoginStatusCtrl(void)    [??0LoginStatusCtrl@WONAPI@@QAE@XZ])

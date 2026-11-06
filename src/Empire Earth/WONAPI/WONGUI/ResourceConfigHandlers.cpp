@@ -96,7 +96,7 @@ bool ResourceConfig::HandleBackground(StringParser& value)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007932d0
 // (public: __thiscall WONAPI::Background::Background(class WONAPI::Background const &)    [??0Background@WONAPI@@QAE@ABV01@@Z])
 // TEMPLATE: WON 0x007a3200
@@ -104,17 +104,17 @@ bool ResourceConfig::HandleBackground(StringParser& value)
 // TEMPLATE: WON 0x007a4c50
 // (public: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std:)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a36a0
 // (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)
 // TEMPLATE: WON 0x007a4600
 // (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a21e0
 // (bool __cdecl WONAPI::ResourceConfig_AddToMap(char const *,class WONAPI::StringParser &,class WONAPI::ResourceConfig::ResMap<unsigned long> &,int,unsig)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a2f40
 // (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<class WON)
 // TEMPLATE: WON 0x007a2fd0
@@ -126,6 +126,6 @@ bool ResourceConfig::HandleBackground(StringParser& value)
 // TEMPLATE: WON 0x007a4300
 // (protected: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<class std::basic_)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a33a0
 // (public: struct std::pair<class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::pair<cla)

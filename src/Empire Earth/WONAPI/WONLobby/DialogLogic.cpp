@@ -217,7 +217,7 @@ SmartPtr<Window> DialogLogic::GetDialogWindow(bool inReuse)
 void DialogLogic::Reset() { ClearDialogs(); }
 }
 
-// R5 complete observable status update. Native also default-constructs/destroys an empty
+// complete observable status update. Native also default-constructs/destroys an empty
 // std::wstring with no use in this body; its unexplained source lifetime is recorded debt,
 // not fabricated as an unused local. No helper/EH byte-shape claim.
 namespace WONAPI {
@@ -251,29 +251,29 @@ void DialogLogic::UpdateStatus(WONStatus inStatus)
 }
 // TEMPLATE: WON 0x007f47c0
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007dc460
 // (public: virtual void * __thiscall WONAPI::DialogLogic::`scalar deleting destructor'(unsigned int)    [??_GDialogLogic@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f4750
 // (void __cdecl std::_Construct(struct WONAPI::DialogLogic::DialogInfo *,struct WONAPI::DialogLogic::DialogInfo const &)    [?_Construct@std@@YAXPAUDialo)
 // TEMPLATE: WON 0x007f33d0
 // TEMPLATE: WON 0x007f3550
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f1300
 // (public: virtual void __thiscall WONAPI::LogicCompletion<class WONAPI::DialogLogic>::Run(class WONAPI::AsyncOp *)    [?Run@?$LogicCompletion@VDialogLog)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007dcbf0
 // (public: __thiscall WONAPI::DialogLogic::DialogInfo::~DialogInfo(void)    [??1DialogInfo@DialogLogic@WONAPI@@QAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f12a0
 // (public: __thiscall std::list<struct WONAPI::DialogLogic::DialogInfo,class std::allocator<struct WONAPI::DialogLogic::DialogInfo> >::~list<struct WONAP)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f1410
 // (public: virtual void * __thiscall WONAPI::LogicCompletion<class WONAPI::DialogLogic>::`scalar deleting destructor'(unsigned int)    [??_G?$LogicComple)
 // TEMPLATE: WON 0x007f14b0

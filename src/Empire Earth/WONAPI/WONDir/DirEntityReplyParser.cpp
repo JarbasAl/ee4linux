@@ -11,7 +11,7 @@
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONBuffer.h"
 namespace WONAPI {
-// Native12-byte flag helpers, zero primary quota.
+
 // FUNCTION: WON 0x006f04f0
 bool DirEntityReplyParser::OnlyDirs(DWORD inFlags)
 {

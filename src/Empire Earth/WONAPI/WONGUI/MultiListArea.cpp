@@ -296,7 +296,7 @@ MultiListItem* MultiListArea::InsertRow(int theRow)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00706a40
 // (public: virtual void * __thiscall WONAPI::ScrollAreaViewport::`scalar deleting destructor'(unsigned int)    [??_GScrollAreaViewport@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00706a60
@@ -310,14 +310,14 @@ MultiListItem* MultiListArea::InsertRow(int theRow)
 // TEMPLATE: WON 0x00724f10
 // (void __cdecl std::_Construct(struct WONAPI::MultiListArea::ColumnInfo *,struct WONAPI::MultiListArea::ColumnInfo const &)    [?_Construct@std@@YAXPAUC)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00703d60
 // (public: virtual bool __thiscall WONAPI::ListItem::Virtual1C(int,int)    [?Virtual1C@ListItem@WONAPI@@UAE_NHH@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00703d90
 // (public: virtual void * __thiscall WONAPI::MultiListItem::`scalar deleting destructor'(unsigned int)    [??_GMultiListItem@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00724ad0
 // (protected: struct WONAPI::MultiListArea::ColumnInfo * __thiscall std::vector<struct WONAPI::MultiListArea::ColumnInfo,class std::allocator<struct WONA)

@@ -13,7 +13,7 @@
 namespace WONAPI {
 // FUNCTION: WON 0x7f91b0
 StatusDialog::StatusDialog() { mStartTick = GetTickCount(); }
-// Original ordinary destructor is implicit; generated cleanup has zero body quota.
+
 // FUNCTION: WON 0x7f9370
 void StatusDialog::InitComponent(ComponentInit& inInit)
 {
@@ -102,7 +102,7 @@ void StatusDialog::SetText(const GUIString& inTitle, const GUIString& inStatus, 
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f9200
 // (public: virtual void * __thiscall WONAPI::StatusDialog::`scalar deleting destructor'(unsigned int)    [??_GStatusDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f9220

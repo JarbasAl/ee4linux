@@ -32,7 +32,7 @@ public:
 typedef SmartPtr<ConfigValueBase> ConfigValueBasePtr;
 
 // a configuration object (0x54 bytes: LobbyConfig's members start at +0x54). Layout from its implicit dtor 0x294e83
-// (r24-prep-ui); member names PROVISIONAL.
+//; member names PROVISIONAL.
 class ConfigObject : public RefCount {
 public:
     typedef std::list<SmartPtr<ConfigObject> > ChildList;

@@ -12,7 +12,7 @@
 #include "ee/wonapi/WONBuffer.h"
 namespace WONAPI {
 // Default protocol initialization is native-inline in AddPath/CheckResponse.
-// No unique constructor RVA/body quota; owned members construct before flags store.
+
 GetEntityRequest::GetEntityRequest()
 {
     mFlags=0x06020837;
@@ -106,7 +106,7 @@ const DirEntityMap& GetEntityRequest::GetDirEntityMap()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f0ed0
 // (protected: virtual void * __thiscall WONAPI::GetEntityRequest::`scalar deleting destructor'(unsigned int)    [??_GGetEntityRequest@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x006f0ef0

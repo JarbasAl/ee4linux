@@ -120,7 +120,7 @@ void AccountLogic::HandleLostUsername(ComponentEvent* inEvent)
 
 */
 
-// R3 small-operation cohort; canonical admitted8 prefix preserved exactly.
+// small-operation cohort; canonical admitted8 prefix preserved exactly.
 #include "ee/wonapi/WONLobbyEvents.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007db830
@@ -176,7 +176,7 @@ void AccountLogic::HandleUpdateAccount(ComponentEvent* inEvent)
 
 } //WONAPI
 
-// R5 complete actual CreateAccountOp1398 consumer; other deferred bodies remain original-owned.
+// complete actual CreateAccountOp1398 consumer; other deferred bodies remain original-owned.
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/EELobbyGameCode.h" //genuine LobbyMessageBox call declaration
 namespace WONAPI {
@@ -215,7 +215,7 @@ void AccountLogic::HandleCreateAccount(ComponentEvent* inBaseEvent)
 }
 }
 
-// R5 complete login workflow using actual external-owned GetCertOp11fc.
+// complete login workflow using actual external-owned GetCertOp11fc.
 namespace WONAPI {
 // FUNCTION: WON 0x007dba10
 void AccountLogic::HandleLogin(ComponentEvent* inBaseEvent)
@@ -274,11 +274,11 @@ void AccountLogic::HandleLogin(ComponentEvent* inBaseEvent)
 // TEMPLATE: WON 0x007f30d0
 // TEMPLATE: WON 0x007f3250
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007db1b0
 // (public: virtual void * __thiscall WONAPI::AccountLogic::`scalar deleting destructor'(unsigned int)    [??_GAccountLogic@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007db760
 // (public: virtual void * __thiscall WONAPI::SetLoginFieldsEvent::`scalar deleting destructor'(unsigned int)    [??_GSetLoginFieldsEvent@WONAPI@@UAEPAXI@)
 // TEMPLATE: WON 0x007db780

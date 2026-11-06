@@ -110,6 +110,6 @@ MSButtonBase::MSButtonBase() {
 // FUNCTION: WON 0x006fe910
 MSButtonBase::~MSButtonBase() {}
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fe860
 // (public: virtual void * __thiscall WONAPI::MSButtonBase::`scalar deleting destructor'(unsigned int)    [??_GMSButtonBase@WONAPI@@UAEPAXI@Z])

@@ -15,7 +15,7 @@
 #include "ee/wonapi/EELobbySound.h"
 namespace WONAPI {
 
-// Native391680 shared small ordinary helper, zero independent quota.
+
 static int GetHexDigit(char inChar)
 {
     if(inChar>='0' && inChar<='9') return inChar-'0';
@@ -215,7 +215,7 @@ Background ResourceConfig::SafeReadBackground(StringParser& parser)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00791680
 // (int __cdecl WONAPI::GetHexDigit(char)    [?GetHexDigit@WONAPI@@YAHD@Z])
 // TEMPLATE: WON 0x00791e60

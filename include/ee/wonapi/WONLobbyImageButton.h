@@ -16,7 +16,7 @@ public:
     virtual void Virtual0C(int&,int&); //2f7e80, GetDesiredSize
     virtual void Paint(Graphics&); //2f7ed0
 };
-// Borrowed config prefix7c. No config allocation/constructor admission here.
+
 class ImageButtonConfig : public ComponentConfig {
 public:
     static ComponentConfig* CfgFactory(); //39ad10 genuine SDK static API, original external provider only

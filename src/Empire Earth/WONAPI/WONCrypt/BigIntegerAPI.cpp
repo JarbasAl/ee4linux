@@ -1,5 +1,5 @@
 // Genuine used BigInteger lifetime/API bodies and bounded random-bit generation.
-// All initialization/getter/forwarding/lifetime helpers receive zero primary quota.
+
 // ZERO/ONE remain external original-owned objects: no definitions or startup code here.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
@@ -20,7 +20,7 @@ RawBuffer BigInteger::st_randomBits(int numBits, Random &rndSrc)
 	int numBytes = (numBits+7)/8;
 	RawBuffer randomBits(numBytes,(unsigned char)0);
 
-	// Generate random bytes and mask out any excess bits 
+	// Generate random bytes and mask out any excess bits
 	if (numBytes > 0) 
 	{
 		rndSrc.nextBytes(randomBits);
@@ -450,6 +450,6 @@ bool BigInteger::operator<(const BigInteger &a) const
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d32f0
 // (public: virtual void * __thiscall WONAPI::BigInteger::`scalar deleting destructor'(unsigned int)    [??_GBigInteger@WONAPI@@UAEPAXI@Z])

@@ -62,6 +62,6 @@ bool AuthBase::Verify(const ElGamal& key) const
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006dcdb0
 // (protected: virtual void * __thiscall WONAPI::AuthBase::`scalar deleting destructor'(unsigned int)    [??_GAuthBase@WONAPI@@MAEPAXI@Z])

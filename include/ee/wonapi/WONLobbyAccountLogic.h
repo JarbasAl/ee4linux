@@ -1,6 +1,6 @@
 // AccountLogic and InitLogic: complete original member layouts (5c and90).
 // Requires the canonical GUI declarations. Partial operation types remain reference-only;
-// their constructor, allocation and by-value use require separate admission.
+
 #ifndef EE_WONAPI_WONLOBBYACCOUNTLOGIC_H
 #define EE_WONAPI_WONLOBBYACCOUNTLOGIC_H
 #include "ee/wonapi/WONLobbyLogic.h"

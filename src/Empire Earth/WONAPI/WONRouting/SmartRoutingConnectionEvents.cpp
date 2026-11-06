@@ -103,7 +103,7 @@ void SmartRoutingConnection::HandleSetClientFlags(RoutingSetClientFlagsOp *theOp
 // FUNCTION: WON 0x6c1400
 void SmartRoutingConnection::HandleReadDataObject(RoutingReadDataObjectOp *theOp)
 {
-	// return if not parsing client CDKey ID's 
+	// return if not parsing client CDKey ID's
 	if (theOp->mDataType != "_KeyId")
 		return;
 
@@ -339,6 +339,6 @@ void SmartRoutingConnection::HandleDataObjectDeleted(RoutingDataObjectDeletedOp	
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c1550
 // (public: unsigned short __thiscall WONAPI::RoutingDataObjectCreatedOp::GetLinkId(void)const     [?GetLinkId@RoutingDataObjectCreatedOp@WONAPI@@QBEGXZ])

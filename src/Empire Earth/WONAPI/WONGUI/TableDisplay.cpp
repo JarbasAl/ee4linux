@@ -134,7 +134,7 @@ bool Table::GotoAnchor(const GUIString &theName)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071b680
 // (public: int __thiscall WONAPI::GUIString::CompareNoCase(class WONAPI::GUIString const &)const     [?CompareNoCase@GUIString@WONAPI@@QBEHABV12@@Z])
 // TEMPLATE: WON 0x007206f0

@@ -1,7 +1,7 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyFileTransfer.cpp (name PROVISIONAL: no __FILE__; the
 // class EELobbyFileTransfer (RTTI, vtable 0x84c440) and its WON send/receive operations; it sorts between
 // EELobbyFileDialog.cpp and EELobbyGame.cpp). A saved game's transfer between the host and the clients:
-// 0x291463..0x29222b. Module flags. r23-ai-planner: the transfer object's own members; the SendFileOp/receive
+// 0x291463..0x29222b. Module flags.: the transfer object's own members; the SendFileOp/receive
 // operation classes 0x291463..0x2916b3 and 0x291870..0x291b06, Download and the LobbyCompletion/set COMDATs after
 // 0x291d59 are not written yet.
 #include <windows.h>
@@ -23,7 +23,7 @@
 using namespace WONAPI;
 
 // the host's side of a saved game's transfer: the file in 0x2000-byte chunks over one client's socket (RTTI
-// SendFileOp > SocketOp, vtable 0x84c408; 0x207c bytes; r23)
+// SendFileOp > SocketOp, vtable 0x84c408; 0x207c bytes)
 class SendFileOp : public SocketOp {
 public:
     SendFileOp(const std::string& inPath, AsyncSocket* inSocket);
@@ -170,7 +170,7 @@ bool EELobbyFileTransfer::IsFileHere()
 }
 
 // FUNCTION: EXE 0x691870
-// a client's socket closed: it leaves the set (r23)
+// a client's socket closed: it leaves the set
 void EELobbyFileTransfer::OnClientClosed(AsyncOp* inOp)
 {
     SmartPtr<AsyncSocket> theSocket = ((SocketOp*)inOp)->mSocket;
@@ -178,7 +178,7 @@ void EELobbyFileTransfer::OnClientClosed(AsyncOp* inOp)
 }
 
 // FUNCTION: EXE 0x6918b2
-// a client connected: keep its socket, send it the saved game, then close it (r23)
+// a client connected: keep its socket, send it the saved game, then close it
 void EELobbyFileTransfer::OnClientAccepted(AsyncOp* inOp)
 {
     if (!inOp->Succeeded())
@@ -219,7 +219,7 @@ void EELobbyFileTransfer::OnFileReceived(AsyncOp* inOp)
 }
 
 // FUNCTION: EXE 0x691a09
-// serves the saved game on inPort: a listening socket whose accepts start OnClientAccepted (r23)
+// serves the saved game on inPort: a listening socket whose accepts start OnClientAccepted
 WONStatus EELobbyFileTransfer::Serve(unsigned short inPort)
 {
     Stop();
@@ -265,7 +265,7 @@ void EELobbyFileTransfer::CloseClients()
 
 // FUNCTION: EXE 0x691b79
 // fetches the host's saved game: a socket that connects to the host and receives the file into mPath, reporting
-// progress (OnProgress) and the end (OnFileReceived); the socket joins the clients (r24)
+// progress (OnProgress) and the end (OnFileReceived); the socket joins the clients
 void EELobbyFileTransfer::Download()
 {
     if (mPath.empty() || !mHost.IsValid())

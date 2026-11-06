@@ -6,16 +6,16 @@ namespace WONAPI {
 typedef std::list<SmartPtr<VersionData> > VersionDataList;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // ActivatePatch - StatusReply
 // Used to Activate (make public) or De-Activate a patch
-// ·	ProductName - string 
+// ·	ProductName - string
 // ·	ConfigName - string (optional)
 // ·	FromVersion - string
 // ·	ToVersion - string
 // ·	NetAddress - string
 // ·	IsActive - Boolean (optional -default = false)
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class ActivatePatchOp: public DBProxyOp
 {
@@ -75,12 +75,12 @@ typedef SmartPtr<ActivatePatchOp> ActivatePatchOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // AddPatch - StatusReply
 // Request to add a patch to the database, will be added as valid.  Its active status is based on the specified parameter
-// ·	ProductName - string 
+// ·	ProductName - string
 // .	PatchData	- see PatchTypes.h
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class AddPatchOp: public DBProxyOp
 {
@@ -157,15 +157,15 @@ typedef SmartPtr<AddPatchOp> AddPatchOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // AddVersion - StatusReply
 // Request to add a version to the database, will be added with state of Inactive.
-// ·	ProductName - string 
+// ·	ProductName - string
 // ·	ConfigName - string (optional)
 // ·	Version - string
 // ·	VersionType - list of strings (optional)
 // ·	DescriptionURL - string (optional)
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class AddVersionOp: public DBProxyOp
 {
@@ -217,14 +217,14 @@ typedef SmartPtr<AddVersionOp> AddVersionOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // GetVersionList - GetVersionListReply
 // Request a list of valid versions using various filter methods
-// ·	ProductName - string 
+// ·	ProductName - string
 // ·	ConfigName	- string	(optional)
 // ·	State		- byte		(Invalid, Inactive, Active) (optional)
 // .    VersionData - see PatchTypes.h
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class GetVersionListOp: public DBProxyOp
 {
@@ -275,7 +275,7 @@ typedef SmartPtr<GetVersionListOp> GetVersionListOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // PatchCleanupOp - StatusReply
 // Request to do automatic patch pruning.
 ///////////////////////////////////////////////////////////////////////////////
@@ -314,15 +314,15 @@ typedef SmartPtr<PatchCleanupOp> PatchCleanupOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // RemovePatch - StatusReply
 // Request to remove a patch.
-// ·	ProductName - string 
+// ·	ProductName - string
 // ·	ConfigName - string (optional)
 // ·	FromVersion - string
 // ·	ToVersion - string
 // ·	NetAddress - string
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class RemovePatchOp: public DBProxyOp
 {
@@ -378,15 +378,15 @@ typedef SmartPtr<RemovePatchOp> RemovePatchOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // RemoveVersion - StatusReply
 // Request to add a version to the database, will be added with state of Inactive.
-// ·	ProductName - string 
+// ·	ProductName - string
 // ·	ConfigName - string (optional)
 // ·	Version - string
 // ·	VersionType - list of strings (optional)
 // ·	DescriptionURL - string (optional)
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class RemoveVersionOp: public DBProxyOp
 {
@@ -435,14 +435,14 @@ typedef SmartPtr<RemoveVersionOp> RemoveVersionOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // SetVersionState - StatusReply
 // Request to change the state of an existing version.
-// ·	ProductName - string 
+// ·	ProductName - string
 // ·	ConfigName - string (optional)
 // ·	Version - string
 // ·	State - byte (Invalid / Inactive / Active)
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class UpdateVersionOp: public DBProxyOp
 {
@@ -496,21 +496,21 @@ typedef SmartPtr<UpdateVersionOp> UpdateVersionOpPtr;		// Smart Ptr Template
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// 
+
 // GetPatchServerModuleListOp - GetPatchServerModuleListOp
 // Request a list of available modules
 // Reply:
 //		unsigned short - Num Modules
 //		{
-//			unsigned long moduleID; 
+//			unsigned long moduleID;
 //		}
-//
+
 ///////////////////////////////////////////////////////////////////////////////
 class GetPatchServerModuleListOp: public DBProxyOp
 {
 	// Attributes
 protected:
-	std::list<unsigned long>  mModuleList;	//HIWORD(aMsgType) LOWORD(aMsgSubType)	
+	std::list<unsigned long>  mModuleList;	//HIWORD(aMsgType) LOWORD(aMsgSubType)
 
 
 	const unsigned short mMsgType;				// DO NOT MODIFY (MUST MATCH SERVER)

@@ -1,5 +1,5 @@
 // New native ProfileData family; original source filename/grouping provisional.
-// Source-only reconstruction; actual normal/support gates and Root admission remain required.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -141,13 +141,13 @@ unsigned long ProfileData::GetBirthDate()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cd810
 // (protected: virtual void * __thiscall WONAPI::ProfileData::`scalar deleting destructor'(unsigned int)    [??_GProfileData@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x006cd930
 // (public: __thiscall std::map<unsigned short,bool,struct std::less<unsigned short>,class std::allocator<struct std::pair<unsigned short const ,bool> > >)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ceda0
 // (public: class std::_Tree<unsigned short,struct std::pair<unsigned short const ,bool>,struct std::_Mapk<unsigned short,bool,struct std::less<unsigned s)
 // TEMPLATE: WON 0x006cf250

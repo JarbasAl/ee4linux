@@ -74,7 +74,7 @@ void LanPortDialog::HandleComponentEvent(ComponentEvent* inEvent)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f8580
 // (public: __thiscall WONAPI::LanPortDialog::LanPortDialog(void)    [??0LanPortDialog@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007f85b0

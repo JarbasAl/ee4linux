@@ -12,7 +12,7 @@
 #include "ee/wonapi/WONBlowfish.h"
 // Canonical original-backed WONLobby persistence storage and caller contracts.
 // Complete typed1164B owner; constructor35bcb0 source admitted with real typed member cleanup.
-// New external allocation sites remain outside this declaration admission.
+
 namespace WONAPI {
 // Complete IO classes: original extent, field and lifetime contracts proved.
 // FileReader exactsizeof20B(0x14): embedded ConfigParser field18 throughnextstring2c, ctor3b1d20.
@@ -115,7 +115,7 @@ GUIString LobbyFn35CEC0(const GUIString& inUserName);
 LobbyUserInfo* LobbyFn35CF20(const GUIString& inUserName);
 LobbyUserInfo* LobbyFn35C910(const GUIString& inUserName, const GUIString& inPassword, bool inExistingOnly);
 // Original-backed call-only contracts; implementations remain original-carved until admitted.
-// All are namespace WONAPI cdecl; no source definitions/no admission by this file.
+
 // Complete getter/setter bytes: persistence_options.txt. Proposed spellings provisional.
 const GUIString& LobbyFn35E2D0(); // persistentTabString58 or gEmptyGUIString fallback
 bool LobbyFn35E2F0(); // bool54; fallbackfalse
@@ -194,7 +194,7 @@ public:
 };
 
 // Complete actual1164 storage contract; all declared data fields original-backed.
-// Constructor35bcb0 is original-backed. Destructor stays implicit, zero authored quota.
+
 // This declaration grants no new external allocation-site authority.
 struct LobbyReconnectInfo {
     long mLastUseTime;

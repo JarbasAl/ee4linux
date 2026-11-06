@@ -89,10 +89,10 @@ void TimerThread::ThreadFunc()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a0380
 // (public: virtual void * __thiscall WONAPI::TimerThread::`scalar deleting destructor'(unsigned int)    [??_GTimerThread@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a03a0
 // (public: __thiscall std::multimap<unsigned long,class WONAPI::SmartPtr<class WONAPI::AsyncOp>,struct std::less<unsigned long>,class std::allocator<stru)

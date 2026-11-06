@@ -1,7 +1,7 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbySound.cpp (file name PROVISIONAL: no __FILE__; the
 // classes are WONAPI::EELobbyMusic / EELobbySound / EELobbySoundDecoder). The lobby's sounds, played through the
 // engine's sound manager: 0x29ce06..0x29cfda (after EELobbyResource.cpp's GUIString COMDAT; the next unit's init
-// chain starts at 0x29cfda). Unit flags: the exe's module set (r12-misc-h2, round 12).
+// chain starts at 0x29cfda). Unit flags: the exe's module set.
 #include <windows.h>
 #include <mbstring.h>
 #include <string>

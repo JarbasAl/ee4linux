@@ -302,7 +302,7 @@ WONLobbyPrv::WONLobbyPrv()
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00763080
 // (public: virtual void * __thiscall WONAPI::WONLobbyPrv::`scalar deleting destructor'(unsigned int)    [??_GWONLobbyPrv@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00765180
@@ -316,7 +316,7 @@ WONLobbyPrv::WONLobbyPrv()
 // TEMPLATE: WON 0x00765a00
 // (public: static class WONAPI::Component * __cdecl WONAPI::UserListCtrlConfig::CompFactory(void)    [?CompFactory@UserListCtrlConfig@WONAPI@@SAPAVCompon)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00765260
 // (public: static class WONAPI::ComponentConfig * __cdecl WONAPI::CreditsDialogConfig::CfgFactory(void)    [?CfgFactory@CreditsDialogConfig@WONAPI@@SAPAV)
 // TEMPLATE: WON 0x00765380

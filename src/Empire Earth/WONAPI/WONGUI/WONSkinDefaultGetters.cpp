@@ -64,6 +64,6 @@ namespace WONAPI {
 WONSkin::~WONSkin() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007154d0
 // (public: virtual void * __thiscall WONAPI::WONSkin::`scalar deleting destructor'(unsigned int)    [??_GWONSkin@WONAPI@@UAEPAXI@Z])

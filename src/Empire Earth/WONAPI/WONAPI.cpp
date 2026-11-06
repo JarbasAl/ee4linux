@@ -142,7 +142,7 @@ void WONAPICoreEx::Fn2F2F90(bool value)
 {
     if(!mIsStarted) mDoPumpThread=value;
 }
-// SUPPORT: EXE 0x006f2fb0 (31B worker-pump wrapper loop, quota0)
+
 void WONAPICore::PumpThread::ThreadFunc()
 {
     WONAPICore* api=WONAPICore::GetInstance();

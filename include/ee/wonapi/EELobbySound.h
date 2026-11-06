@@ -1,4 +1,4 @@
-// The lobby's sounds (RECONSTRUCTION; r12-misc-h2, round 12): WONAPI's Sound / SoundDecoder bases (RTTI
+// The lobby's sounds: WONAPI's Sound / SoundDecoder bases (RTTI
 // WONAPI::Sound vtable 0x4510fc, WONAPI::SoundDecoder vtable 0x451a88) and the game's implementations, which play
 // through the engine's sound manager (EELobbyMusic vtable 0x44c7e8, EELobbySound 0x44c800, EELobbySoundDecoder
 // 0x44c6dc). Names PROVISIONAL (by behaviour) unless RTTI gives them. Requires <string>, lle/LowLevelEngine.h,
@@ -13,7 +13,7 @@ struct SoundDescriptor {
     SoundDescriptor(); //329810 actual default, native flags0 and empty path
     SoundDescriptor(const char*);
     void SetSoundFlags(int,bool); //329990 actual native bit update
-    SoundDescriptor(const std::string& inPath, long inType);    // 0x329830 (WONAPI; r12-misc-h5)
+    SoundDescriptor(const std::string& inPath, long inType);    // 0x329830
 
     long mL00;                              // +0x00
     std::string mPath;                      // +0x04
@@ -44,7 +44,7 @@ typedef SmartPtr<Sound> SoundPtr;
 
 class SoundDecoder : public RefCount {
 public:
-    SoundDecoder();                         // 0x34a530 (EELobbySoundDecoder's inline ctor calls it; r24pre-won)
+    SoundDecoder();                         // 0x34a530
     virtual ~SoundDecoder();                // 0x328590 (ICF: ~LobbyPlayer; ??_GEELobbySoundDecoder 0x297dc5 calls it)
     virtual SoundPtr Decode(const SoundDescriptor& inDescriptor) = 0;   // +0x04
 };

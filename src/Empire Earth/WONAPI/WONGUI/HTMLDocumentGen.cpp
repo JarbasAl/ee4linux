@@ -69,7 +69,7 @@ void HTMLDocumentGen::printf(const GUIString &theText)
 		AddDoc(theText.substr(aStartPos),HTMLDocGenFlag_IsHTML);
 }
 
-// Support0 original20B forwarding helpers, no independent quota.
+
 // FUNCTION: WON 0x0073f1f0
 bool HTMLDocumentGen::AddDoc(const GUIString &theText, int theFlags)
 {

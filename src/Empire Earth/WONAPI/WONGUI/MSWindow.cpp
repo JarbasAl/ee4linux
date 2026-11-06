@@ -481,7 +481,7 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_RBUTTONDBLCLK:	PostMouseEvent(InputEvent_MouseDoubleClick,	2, lParam); break;
 		case WM_RBUTTONUP:		PostMouseEvent(InputEvent_MouseUp,		2, lParam); break;
 
-		case 0x020A: // WM_MOUSEWHEEL; actual target message, gated out by VC6 WINVER.	
+		case 0x020A: // WM_MOUSEWHEEL; actual target message, gated out by VC6 WINVER.
 		{
 			
 			WONRectangle aRect;
@@ -671,7 +671,7 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 // Native3d14d0 support0: actual caller already selected a nativeCursor.
 void MSWindow::Virtual18(Cursor* cursor) { ::SetCursor(((MSCursor*)cursor)->mNativeCursor); }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d0dc0
 // (public: virtual void * __thiscall WONAPI::MSWindow::`scalar deleting destructor'(unsigned int)    [??_GMSWindow@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007d2120

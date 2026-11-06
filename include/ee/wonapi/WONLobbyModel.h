@@ -5,7 +5,7 @@
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Narrow packet; insert into canonical header only via steward.
+
 // sizeof0x50, only virtual slot destructor. No unknown gaps.
 class LobbyFriend : public RefCount {
 public:

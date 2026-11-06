@@ -17,7 +17,7 @@ NativeIcon::NativeIcon(DisplayContext* context) : mContext(context) {}
 NativeIcon::~NativeIcon() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00728990
 // (public: __thiscall WONAPI::NativeIcon::NativeIcon(class WONAPI::DisplayContext *)    [??0NativeIcon@WONAPI@@QAE@PAVDisplayContext@1@@Z])
 // TEMPLATE: WON 0x007289e0

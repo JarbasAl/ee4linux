@@ -14,7 +14,7 @@
 #include "ee/wonapi/WONLobbyTableElement.h"
 namespace WONAPI {
 
-// Support0 genuine SDK helper; no separate authored quota.
+
 // FUNCTION: WON 0x0070dec0
 // FUNCTION: WON 0x0070df10
 TableElement::CellInfo* TableElement::GetCellInfoAt(RowInfo &theInfo, int theCol)
@@ -25,7 +25,7 @@ TableElement::CellInfo* TableElement::GetCellInfoAt(RowInfo &theInfo, int theCol
 	return &(theInfo.mRow[theCol]);
 }
 
-// Support0 genuine SDK helper; no separate authored quota.
+
 TableElement::CellInfo* TableElement::GetCellInfoAt(int theRow, int theCol)
 {
 	if(theRow<0 || theRow>=mRowVector.size() || theCol<0 || theCol>=mColumnVector.size())
@@ -38,7 +38,7 @@ TableElement::CellInfo* TableElement::GetCellInfoAt(int theRow, int theCol)
 	return &(anInfo.mRow[theCol]);
 }
 
-// Support0 genuine SDK helper; no separate authored quota.
+
 // FUNCTION: WON 0x0070dfc0
 MultiLineElement* TableElement::GetCellAt(int theRow, int theCol)
 {
@@ -49,7 +49,7 @@ MultiLineElement* TableElement::GetCellAt(int theRow, int theCol)
 	return anInfo->mContents.get();
 }
 
-// Support0 genuine SDK helper; no separate authored quota.
+
 MultiLineElement* TableElement::GetCellAt(RowInfo &theInfo, int theCol)
 {
 	CellInfo *anInfo = GetCellInfoAt(theInfo,theCol);
@@ -59,7 +59,7 @@ MultiLineElement* TableElement::GetCellAt(RowInfo &theInfo, int theCol)
 		return anInfo->mContents.get();
 }
 
-// Support0 genuine SDK helper; no separate authored quota.
+
 // FUNCTION: WON 0x0070e320
 int TableElement::FindRowAt(int theYPos)
 {
@@ -74,7 +74,7 @@ int TableElement::FindRowAt(int theYPos)
 	return anItr - mRowVector.begin();
 }
 
-// Support0 genuine SDK helper; no separate authored quota.
+
 // FUNCTION: WON 0x0070eca0
 int TableElement::GetMinWidth() 
 { 
@@ -87,7 +87,7 @@ int TableElement::GetMinWidth()
 		return mMinWidth; 
 }
 
-// Support0 genuine SDK helper; no separate authored quota.
+
 // FUNCTION: WON 0x0070ecc0
 int TableElement::GetMaxWidth() 
 { 
@@ -100,7 +100,7 @@ int TableElement::GetMaxWidth()
 		return mMaxWidth; 
 }
 
-// Support0 genuine SDK helper; no separate authored quota.
+
 static void DrawShadedRect(Graphics &g, int x, int y, int width, int height, int size, bool up)
 {
 	g.Translate(x,y);
@@ -876,18 +876,18 @@ void TableElement::AddSegment(LineSegment *theSegment, unsigned short theFlags)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070e670
 // (void __cdecl WONAPI::DrawShadedRect(class WONAPI::Graphics &,int,int,int,int,int,bool)    [?DrawShadedRect@WONAPI@@YAXAAVGraphics@1@HHHHH_N@Z])
 // TEMPLATE: WON 0x00725f70
 // (void __cdecl std::_Distance(class std::_Ptrit<struct WONAPI::TableElement::RowInfo,int,struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElem)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00725510
 // (class std::_Ptrit<struct WONAPI::TableElement::RowInfo,int,struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElement::RowInfo &,struct WONAPI)
 // TEMPLATE: WON 0x00725e20
 // (void __cdecl std::_Distance(class std::_Ptrit<struct WONAPI::TableElement::RowInfo,int,struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElem)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00723c60
 // (class std::_Ptrit<struct WONAPI::TableElement::RowInfo,int,struct WONAPI::TableElement::RowInfo *,struct WONAPI::TableElement::RowInfo &,struct WONAPI)

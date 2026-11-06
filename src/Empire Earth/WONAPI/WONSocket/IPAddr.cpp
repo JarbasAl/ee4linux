@@ -17,7 +17,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // SCRATCH IPAddr setters; complete28 target record, headers remain Model-owned.
-// No canonical publication/compiler/source quota yet. All six-byte adapters use ordinary memcpy.
+
 // FUNCTION: WON 0x006b2660
 bool IPAddr::Fn2B2660(const std::string& inHost,unsigned short inPort)
 {
@@ -307,6 +307,6 @@ namespace WONAPI {
 long IPAddr::mLocalHost = INADDR_ANY;
 }
 
-// Compiler-generated for this unit (names in analysis/exe/names.txt):
+// Compiler-generated for this unit:
 // SYNTHETIC: WON 0x006b3790
 // (_$E72: atexit destructor of IPAddr_PlatformGetNetworkAdapterList's static anUnload)

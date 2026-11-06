@@ -471,7 +471,7 @@ Splitter::Splitter()
 Splitter::~Splitter() {}
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007071c0
 // (protected: virtual void * __thiscall WONAPI::Splitter::`scalar deleting destructor'(unsigned int)    [??_GSplitter@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x00707640
@@ -483,6 +483,6 @@ Splitter::~Splitter() {}
 // TEMPLATE: WON 0x00724cd0
 // (void __cdecl std::_Construct(struct WONAPI::Splitter::SplitterParam *,struct WONAPI::Splitter::SplitterParam const &)    [?_Construct@std@@YAXPAUSplit)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00722070
 // (protected: void __thiscall std::list<struct WONAPI::Splitter::Quadrant,class std::allocator<struct WONAPI::Splitter::Quadrant> >::_Incsize(unsigned in)

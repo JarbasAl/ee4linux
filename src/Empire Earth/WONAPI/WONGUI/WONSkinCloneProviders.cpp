@@ -27,13 +27,13 @@ WONHeaderButton* WONHeaderButton::Duplicate()
     button->CopyAttributes(this);
     return button;
 }
-// SUPPORT-ONLY: EXE 0x0071a740 (101B actual constructor; zero primary quota)
+
 WONFrameComponent::WONFrameComponent(const WONFrame& frame)
 {
     mFrame.Copy(frame);
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071a740
 // (public: __thiscall WONAPI::WONFrameComponent::WONFrameComponent(class WONAPI::WONFrame const &)    [??0WONFrameComponent@WONAPI@@QAE@ABVWONFrame@1@@Z])

@@ -11,7 +11,7 @@
 #include "ee/wonapi/WONLobbyModel.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
 namespace WONAPI {
-// Empty constructor source intent; automatic owning-member initialization, zero quota.
+
 AdminActionDialog::AdminActionDialog() {}
 // FUNCTION: WON 0x7f4ad0
 AdminActionDialog::~AdminActionDialog() {}
@@ -113,10 +113,10 @@ void AdminActionDialog::Reset(int inAction, LobbyClient* inTarget)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f4ab0
 // (public: virtual void * __thiscall WONAPI::AdminActionDialog::`scalar deleting destructor'(unsigned int)    [??_GAdminActionDialog@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f4a60
 // (public: __thiscall WONAPI::AdminActionDialog::AdminActionDialog(void)    [??0AdminActionDialog@WONAPI@@QAE@XZ])

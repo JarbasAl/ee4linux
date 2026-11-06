@@ -86,7 +86,7 @@ public:
 	bool EraseKeyValue(GameSpyQueryType theType, const std::string &theKey);
 	void EraseAllKeyValues(GameSpyQueryType theType);
 
-	// Lock the KeyValues while doing multiple updates in order to 
+	// Lock the KeyValues while doing multiple updates in order to
 	// ensure consistent data is being sent in query replies.
 	// Unlock when done modifying.
 	void LockKeyValues();

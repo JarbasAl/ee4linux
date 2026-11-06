@@ -49,7 +49,7 @@ void MSTabCtrl::AddStandardTab(const GUIString& text,Container* container)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006fd3e0
 // (public: virtual void * __thiscall WONAPI::MSDlgBack::`scalar deleting destructor'(unsigned int)    [??_GMSDlgBack@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00701320

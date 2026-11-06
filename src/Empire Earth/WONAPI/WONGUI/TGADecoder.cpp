@@ -241,7 +241,7 @@ static bool TGA_DecodeCompressedImage(FileReader &theReader, RawImage32 *theImag
 				{
 					unsigned char rleHeader = theReader.ReadByte();
 					numPixels = (rleHeader&0x7f)+1;
-					if(rleHeader&0x80) // 
+					if(rleHeader&0x80)
 					{
 						DWORD aColor = thePalette[theReader.ReadByte()];
 						for(k=numPixels-1; k>=0; k--)
@@ -271,7 +271,7 @@ static bool TGA_DecodeCompressedImage(FileReader &theReader, RawImage32 *theImag
 				{
 					unsigned char rleHeader = theReader.ReadByte();
 					numPixels = (rleHeader&0x7f)+1;
-					if(rleHeader&0x80) // 
+					if(rleHeader&0x80)
 					{
 						unsigned short aPixel = theReader.ReadShort();
 						DWORD aColor = TGA_16_TO_32(aPixel);
@@ -301,7 +301,7 @@ static bool TGA_DecodeCompressedImage(FileReader &theReader, RawImage32 *theImag
 			{
 				unsigned char rleHeader = theReader.ReadByte();
 				numPixels = (rleHeader&0x7f)+1;
-				if(rleHeader&0x80) // 
+				if(rleHeader&0x80)
 				{
 					int b = theReader.ReadByte();
 					int g = theReader.ReadByte();
@@ -335,7 +335,7 @@ static bool TGA_DecodeCompressedImage(FileReader &theReader, RawImage32 *theImag
 				{
 					unsigned char rleHeader = theReader.ReadByte();
 					numPixels = (rleHeader&0x7f)+1;
-					if(rleHeader&0x80) // 
+					if(rleHeader&0x80)
 					{
 						DWORD aColor = theReader.ReadLong();
 						for(k=numPixels-1; k>=0; k--)

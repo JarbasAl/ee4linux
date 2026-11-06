@@ -114,7 +114,7 @@ int MSMessageBox::DoDialog(Window* parent)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00700630
 // (public: virtual __thiscall WONAPI::MSDialog::~MSDialog(void)    [??1MSDialog@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x00701d20
@@ -126,12 +126,12 @@ int MSMessageBox::DoDialog(Window* parent)
 // TEMPLATE: WON 0x0071b310
 // (public: void __thiscall std::list<class WONAPI::Component *,class std::allocator<class WONAPI::Component *> >::push_back(class WONAPI::Component * con)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00701d40
 // (public: virtual void * __thiscall WONAPI::CenterLayout::`scalar deleting destructor'(unsigned int)    [??_GCenterLayout@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00701de0
 // (public: virtual void * __thiscall WONAPI::SameSizeLayout::`scalar deleting destructor'(unsigned int)    [??_GSameSizeLayout@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00701e80
 // (public: virtual void * __thiscall WONAPI::MSMessageBox::`scalar deleting destructor'(unsigned int)    [??_GMSMessageBox@WONAPI@@UAEPAXI@Z])

@@ -14,7 +14,7 @@ namespace WONAPI {
 // Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
 PasswordDialog::PasswordDialog() {}
 
-// Original ordinary destructor is implicit; review generated cleanup separately, zero body quota.
+
 
 // FUNCTION: WON 0x7f9050
 void PasswordDialog::InitComponent(ComponentInit& inInit)
@@ -44,12 +44,12 @@ void PasswordDialog::Reset()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f8f50
 // (public: virtual void * __thiscall WONAPI::PasswordDialog::`scalar deleting destructor'(unsigned int)    [??_GPasswordDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f8f70
 // (public: virtual __thiscall WONAPI::PasswordDialog::~PasswordDialog(void)    [??1PasswordDialog@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f8f20
 // (public: __thiscall WONAPI::PasswordDialog::PasswordDialog(void)    [??0PasswordDialog@WONAPI@@QAE@XZ])

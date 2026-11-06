@@ -1,5 +1,5 @@
 // WONAPI GUI/resource classes used by the game's lobby glue (C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\)
-// (RECONSTRUCTION; r12-misc-h2, round 12). WONAPI proper (0x29deb0..) is not decompiled yet: only what the GameCode
+//. WONAPI proper (0x29deb0..) is not decompiled yet: only what the GameCode
 // units' codegen proves is declared here; every class and member name is PROVISIONAL (by behaviour), layouts are
 // undecoded unless a member is listed. Requires <string>, ee/EEWonNet.h (RefCount, SmartPtr).
 #ifndef EE_WONAPI_WONLOBBYRESOURCE_H
@@ -33,9 +33,9 @@ public:
     GUIStringData(const char* inText);     // 0x3277e0 (WONAPI)
     GUIStringData(const char*,unsigned short); //genuine SDK bounded ctor; SOURCE_ONLY_NO_NATIVE_ID
     GUIStringData(const wchar_t*,unsigned short); //genuine SDK bounded ctor; SOURCE_ONLY_NO_NATIVE_ID
-    GUIStringData(const std::string& inText);      // 0x3278a0 (WONAPI; r12-misc-h5)
-    GUIStringData(const std::wstring& inText);     // 0x327910 (WONAPI; r12-misc-h5)
-    GUIStringData(const GUIStringData& theCopy);   // 0x327600 (WONAPI; GUIString::CopyOnWrite; r12-misc-h5)
+    GUIStringData(const std::string& inText);      // 0x3278a0
+    GUIStringData(const std::wstring& inText);     // 0x327910
+    GUIStringData(const GUIStringData& theCopy);   // 0x327600
     GUIStringData(const GUIStringData* inOther, unsigned short inStart, unsigned short inLength); // 0x3276f0
     void Init(); //3274b0 actual14B helper
     void AssignStr(const char*,int); //327a20 unsigned-byte widening
@@ -55,9 +55,9 @@ public:
     int setAt(int,int);
     void toUpper();                        // 0x3279d0
     void toLowerCase(); //genuine SDK Latin-byte case algorithm; SOURCE_ONLY_NO_NATIVE_ID
-    int Compare(const GUIStringData* inOther) const;    // 0x327fa0 (WONAPI; GUIString's operator<; r12-misc-h5)
+    int Compare(const GUIStringData* inOther) const;    // 0x327fa0
     int compare(const char* theStr, int theOffset) const; //genuine SDK narrowcase-sensitive API, native3280f0..32814c/92
-    // 0x292419 (a COMDAT of the lobby glue: its first user is in 0x290f66..0x2942c8; r12-misc-h5)
+    // 0x292419
     void append(int inChar) { resize(mLength + 1, true); mText[mLength - 1] = (wchar_t)inChar; } //genuine SDK explicit inline data API; native3022d0/157 context, support0
 #ifdef EE_DINKUM_SXL233 // the WON library objects inline it (ChatCommandParser::AddHelpEntry 0x757800); the exe's lobby
     // glue calls an out-of-line copy of an older revision (0x292419: Reserve + mLength + terminator)
@@ -67,14 +67,14 @@ public:
     void append(const GUIStringData* inText, unsigned short inStart, unsigned short inLength);
 #endif
     int Compare(const GUIStringData* inOther, bool inCaseSensitive) const;     // 0x328340 (WONAPI)
-    int CompareNoCase(const GUIStringData* inOther) const;  // 0x328030 (WONAPI; towupper compare; r28 C4)
+    int CompareNoCase(const GUIStringData* inOther) const;  // 0x328030
     int CompareNoCase(const char* inText, int inOffset) const; // 0x328150
     std::string GetString() const;          // 0x327d90 (WONAPI, /GX): narrowed
-    std::wstring GetWString() const;        // 0x327f30 (WONAPI; r12-misc-h5)
+    std::wstring GetWString() const;        // 0x327f30
 
-    wchar_t* mText;                         // +0x08 (r12-misc-h5: 0x292419)
+    wchar_t* mText;                         // +0x08
     unsigned short mLength;                 // +0x0c
-    unsigned short mCapacity;               // +0x0e (r12-misc-h7: Reserve 0x2911c9)
+    unsigned short mCapacity;               // +0x0e
     // 0x2911c9 (a COMDAT of EELobbyFileDialog.cpp): room for inLength characters and the terminator (doubled when
     // inGrow), the text kept
 #ifdef EE_DINKUM_SXL233
@@ -123,10 +123,10 @@ public:
     GUIString(const std::string& inText) : mData(new GUIStringData(inText)) {}
     GUIString(const std::wstring& inText) : mData(new GUIStringData(inText)) {}
 #else
-    GUIString(const std::string& inText);  // 0x29848e (likewise; r12-misc-h5)
-    GUIString(const std::wstring& inText); // 0x29258f (likewise; r12-misc-h5)
+    GUIString(const std::string& inText);  // 0x29848e
+    GUIString(const std::wstring& inText); // 0x29258f
 #endif
-    // r23 (EELobbyGame 0x292e9f: GetEmptyGUIStringData() into the SmartPtr ctor COMDAT 0x293cd4)
+    // (EELobbyGame 0x292e9f: GetEmptyGUIStringData() into the SmartPtr ctor COMDAT 0x293cd4)
     GUIString(GUIStringData* inData) : mData(inData) {}
     GUIString& operator=(const GUIString& theCopy) { mData = theCopy.mData; return *this; }
     GUIString& operator=(GUIStringData* theData) { mData = theData; return *this; }
@@ -137,7 +137,7 @@ public:
     int compare(const char* theStr, int theOffset=0) const { return mData->compare(theStr,theOffset); } //genuine SDK inline read-only forwarder
     int CompareNoCase(const GUIString& inOther) const { return mData->CompareNoCase(inOther.mData.get()); }
     int CompareNoCase(const char* inText, int inOffset = 0) const { return mData->CompareNoCase(inText, inOffset); }
-    // r12-misc-h5: the lobby's saved-games directory 0x2988e9 expands append(const GUIString&) (the length is read
+    //: the lobby's saved-games directory 0x2988e9 expands append(const GUIString&) (the length is read
     // before the copy-on-write call) and calls CopyOnWrite 0x29121b / GUIStringData::append 0x292419 out of line
 #ifdef EE_DINKUM_SXL233 // WON library view: expanded inline (AddHelpEntry 0x757800: cmp [data+4],1; new 0x10)
     void CopyOnWrite() { if (mData->GetRefCount() > 1) mData = new GUIStringData(*mData.mPtr); }
@@ -148,7 +148,7 @@ public:
 #ifdef EE_DINKUM_SXL233
     void resize(int inLength) { CopyOnWrite(); GUIStringData* theData = mData.mPtr; theData->Reserve(inLength,false); theData->mLength = inLength; theData->mText[theData->mLength] = 0; }
 #else
-    void resize(int inLength);              // 0x29119a (r12-misc-h7: EELobbyFileDialog cuts the extension off)
+    void resize(int inLength);              // 0x29119a
 #endif
     unsigned short length() const { return mData->mLength; }
     bool empty() const { return mData->mLength==0; }
@@ -173,14 +173,14 @@ public:
         CopyOnWrite();
         mData->append(inText.mData.mPtr, inStart, inLength);
     }
-    // a std::set<GUIString> key (0x298c87: `key.mData->Compare(node.mData) < 0`; r12-misc-h5)
+    // a std::set<GUIString> key (0x298c87: `key.mData->Compare(node.mData) < 0`)
     bool operator<(const GUIString& inOther) const { return mData->Compare(inOther.mData.get()) < 0; }
-    // r23 (EELobbyGame 0x292e9f: the version and saved-player name checks, Compare 0x327fa0 against 0)
+    // (EELobbyGame 0x292e9f: the version and saved-player name checks, Compare 0x327fa0 against 0)
     bool operator==(const GUIString& inOther) const { return mData->Compare(inOther.mData.get()) == 0; }
     bool operator!=(const GUIString& inOther) const { return mData->Compare(inOther.mData.get()) != 0; }
     // the narrowed text (EELobbyGameOptionsCtrl 0x2948f5 passes one to a std::string parameter; PROVISIONAL shape)
     operator std::string() const { return mData->GetString(); }
-    // r12-misc-h5: 0x296c32 narrows a GUIString through a std::wstring temporary
+    //: 0x296c32 narrows a GUIString through a std::wstring temporary
     operator std::wstring() const { return mData->GetWString(); }
 
     SmartPtr<GUIStringData> mData;
@@ -300,16 +300,16 @@ protected:
 };
 typedef SmartPtr<ResourceConfigTable> ResourceConfigTablePtr; //actualSDK type, no legacycompat alias
 
-// CriticalSection: ee/EEWonNet.h (r25pre-won-2: ServerContext has one)
+// CriticalSection: ee/EEWonNet.h
 
 // 0x2a6590 (WONAPI string utilities, /GX): widens a string (inCodePage < 0: the default code page 0x2a6570)
 std::wstring StringToWString(const std::string& inString, int inCodePage);
-// 0x2a6410 (WONAPI string utilities, /GX): narrows a wide string (inCodePage < 0: the default; r12-misc-h5)
+// 0x2a6410 (WONAPI string utilities, /GX): narrows a wide string
 std::string WStringToString(const std::wstring& inString, int inCodePage);
 
 // a file name split into its parts (0x70 bytes: EELobbyFileDialog 0x29136a has it at [ebp-0x80] below a string
-// temporary at [ebp-0x10] (r12-misc-h7; was 0x84); six strings, then the file's details read on demand; class name and
-// members PROVISIONAL, r12-misc-h5). Its implicit dtor is out of line (0x29141e, a COMDAT of the lobby glue).
+// temporary at [ebp-0x10]; six strings, then the file's details read on demand; class name and
+// members PROVISIONAL). Its implicit dtor is out of line (0x29141e, a COMDAT of the lobby glue).
 class WONFile {
 public:
     WONFile(const std::string& inPath);     // 0x2a7610 (WONAPI, /GX)
@@ -335,7 +335,7 @@ public:
     const std::string& GetFileName();       // 0x2a7ff0 (+0x20, parsed on first use)
     long GetModifyTime();                   // 0x2a8070
     unsigned long GetSize();                // 0x2a8050 (+0x60, read on first use; PROVISIONAL)
-    bool Delete(bool inFlag);               // 0x2a7960 (r12-misc-h7: the file dialog's delete button; PROVISIONAL)
+    bool Delete(bool inFlag);               // 0x2a7960
 
     std::string mPath;                      // +0x00
     std::string mS10;                       // +0x10

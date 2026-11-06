@@ -1,4 +1,4 @@
-// Actual dynamic Internet connection probe and genuine function-local DLL owner.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>
 #include <windows.h>
@@ -42,6 +42,6 @@ bool AsyncSocket::HasInternetConnection()
 }
 }
 
-// Compiler-generated for this unit (names in analysis/exe/names.txt):
+// Compiler-generated for this unit:
 // SYNTHETIC: WON 0x006b0a30
 // (_$E45: atexit destructor of HasInternetConnection's static anUnload)

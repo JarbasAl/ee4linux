@@ -48,27 +48,27 @@ time_t AuthPeerData::GetExpireDelta() const
 
 namespace WONAPI {
 
-// SOURCE_ONLY_NO_NATIVE_ID: literal SDK explicit support body, not an algorithm quota.
+
 bool AuthPeerData::IsValid2() const
 {
 	return (mKeyBlock->IsValid() && mCertificate2->IsValid() && mPrivateKey.IsPrivate());
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e1ea0
 // (protected: virtual void * __thiscall WONAPI::AuthPubKeyBlock::`scalar deleting destructor'(unsigned int)    [??_GAuthPubKeyBlock@WONAPI@@MAEPAXI@Z])
 // TEMPLATE: WON 0x006e1ec0
 // (protected: virtual void * __thiscall WONAPI::AuthPeerData::`scalar deleting destructor'(unsigned int)    [??_GAuthPeerData@WONAPI@@MAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e1df0
 // (public: __thiscall std::map<unsigned long,unsigned long,struct std::less<unsigned long>,class std::allocator<struct std::pair<unsigned long const ,uns)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e1dd0
 // (public: virtual void * __thiscall WONAPI::AuthCertificateBase::`scalar deleting destructor'(unsigned int)    [??_GAuthCertificateBase@WONAPI@@UAEPAXI@)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e9850
 // (public: __thiscall std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::~list<class WONAPI::ElGamal,class std::allocator<cla)

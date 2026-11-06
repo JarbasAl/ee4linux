@@ -8,7 +8,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
-// NEW original-backed RoutingJoinGroupOp family; scratch only, no compile/admission.
+
 namespace WONAPI {
 // FUNCTION: WON 0x006c7140
 RoutingJoinGroupOp::RoutingJoinGroupOp(RoutingConnection* inConnection)
@@ -55,14 +55,14 @@ WONStatus RoutingJoinGroupOp::Virtual10(unsigned char inMsgType, ReadBuffer& inM
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c7250
 // (public: virtual __thiscall WONAPI::RoutingJoinGroupOp::~RoutingJoinGroupOp(void)    [??1RoutingJoinGroupOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c7220
 // (public: virtual long __thiscall WONAPI::RoutingJoinGroupOp::GetType(void)const     [?GetType@RoutingJoinGroupOp@WONAPI@@UBEJXZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c7230
 // (public: virtual void * __thiscall WONAPI::RoutingJoinGroupOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingJoinGroupOp@WONAPI@@UAEPAXI@Z])

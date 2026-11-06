@@ -1,6 +1,6 @@
 // Reviewed original-backed controls; source-only, near code/support remain carved.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Whole Options source candidate; common contracts closed, normal capture/admission pending.
+
 #include <windows.h>
 #include <stdio.h>
 #include <string>
@@ -157,7 +157,7 @@ void LobbyOptionsCtrl::SyncOptions()
     if(!LobbyFn361170() && LobbyFn361150()==mIsLan) RefreshOptions();
 }
 //3be980 HandleButton and3bef90 RefreshPublicAddress pending actual Sound/Image
-// pointer contracts/static payload provenance. No stand-in definitions or credit.
+
 }
 // DEFERRED COMPLETE BODY 3be980,715B +48B table, zero admitted credit.
 // Root G closes Sound globals/Image/widget types and Component::Fn2F52D0;
@@ -209,7 +209,7 @@ bool LobbyOptionsCtrl::HandleButton(Component* inComponent)
     }
     return false;
 }
-//
+
 // DEFERRED COMPLETE BODY 3bef90..3bf18d,509B, zero admitted credit.
 // Root G closes actual ImageComponent::VirtualB0(Image*) and both Image globals.
 // Remaining blockers: own source gate and full normal allocation/EH/data review.
@@ -248,14 +248,14 @@ empty body above is the corrected natural candidate. Full normal COFF must
 confirm all actual actions/hot writes; no destructor marker or quota is added.
 */
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ce1a0
 // (void __cdecl WONAPI::SafeGetComponent(class WONAPI::ComponentConfig *,class WONAPI::SmartPtr<class WONAPI::Button> &,char const *,int,char const *,int)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007be050
 // (public: virtual void * __thiscall WONAPI::LobbyOptionsCtrl::`scalar deleting destructor'(unsigned int)    [??_GLobbyOptionsCtrl@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007be070
 // (public: virtual __thiscall WONAPI::LobbyOptionsCtrl::~LobbyOptionsCtrl(void)    [??1LobbyOptionsCtrl@WONAPI@@UAE@XZ])

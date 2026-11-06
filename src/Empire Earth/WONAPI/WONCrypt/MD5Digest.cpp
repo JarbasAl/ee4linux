@@ -287,10 +287,10 @@ void MD5Digest::byte2int(const unsigned char src[], int srcOffset,int dst[], int
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007dac40
 // (public: class std::basic_string<unsigned char,struct std::char_traits<unsigned char>,class std::allocator<unsigned char> > & __thiscall std::basic_str)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007db030
 // (public: static unsigned char * __cdecl std::char_traits<unsigned char>::assign(unsigned char *,unsigned int,unsigned char)    [?assign@?$char_traits@E)

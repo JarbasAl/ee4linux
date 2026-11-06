@@ -14,7 +14,7 @@
 #include "ee/wonapi/WONLobbyRoomServer.h"
 // Own LoginScreen9c declaration will be canonical before any source promotion/compile.
 namespace WONAPI {
-// Native default constructor38 performs only member/base setup, zero primary quota.
+
 LobbyContainer::LobbyContainer() {}
 // Original3bdd60..3bde1e,190B. Own-vptr3bdd7f precedes three owned releases.
 // FUNCTION: WON 0x007bdd60
@@ -69,7 +69,7 @@ int LobbyContainer::GetGameScreenType()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007bdd10
 // (public: __thiscall WONAPI::LobbyContainer::LobbyContainer(void)    [??0LobbyContainer@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007bdd40

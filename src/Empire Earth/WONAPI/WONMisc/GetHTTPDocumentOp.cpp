@@ -16,7 +16,7 @@
 namespace WONAPI {
 // Original coherent HTTP document class; exact source filename/grouping remains provisional.
 // Normal profile hypothesis -O2 -MD -GR -GX -DEE_DINKUM_SXL233; no runtime claim.
-// Markers identify original owners; source-only admission and runtime authority remain separate.
+
 // FUNCTION: WON 0x006d0170
 GetHTTPDocumentOp::GetHTTPDocumentOp(const std::string& inProduct, HTTPDocType inType)
 {
@@ -118,7 +118,7 @@ ByteBufferPtr GetHTTPDocumentOp::GetDocument(HTTPDocOwner inOwner) const
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006cfe30
 // (public: virtual void * __thiscall WONAPI::AsyncOpWithTracker::`scalar deleting destructor'(unsigned int)    [??_GAsyncOpWithTracker@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006d0320

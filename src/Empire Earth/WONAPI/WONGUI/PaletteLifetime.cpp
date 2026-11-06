@@ -15,6 +15,6 @@ namespace WONAPI {
 Palette::~Palette() { delete mColors; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00709880
 // (public: virtual __thiscall WONAPI::Palette::~Palette(void)    [??1Palette@WONAPI@@UAE@XZ])

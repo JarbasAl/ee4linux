@@ -65,7 +65,7 @@ WONStatus FindEntityOp::Virtual10()
 	aMsg.AppendLong(mGetFlags);				
 	aMsg.AppendByte(mMatchMode);
 	aMsg.AppendByte(mFindFlags);
-	aMsg.AppendShort(0);					// MaxEntitiesPerReply 
+	aMsg.AppendShort(0);					// MaxEntitiesPerReply
 	aMsg.AppendWString(mPath,2);				// Directory path
 	aMsg.AppendWString(mName,2);				// Match name
 

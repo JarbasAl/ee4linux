@@ -1,7 +1,7 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyPlayer.cpp (name PROVISIONAL: no __FILE__; its classes
 // EELobbyPlayerSlot and EELobbyPlayer from RTTI). A lobby game's player slots and the game's lobby player:
 // 0x299838..0x299b17 (the string/map COMDATs at 0x29976f..0x299838 close the unit before; EELobbyPlayerOptionsCtrl.cpp
-// follows). Module flags (r12-misc-h4, round 12).
+// follows). Module flags.
 #include <windows.h>
 #include <string>
 #include <list>

@@ -85,7 +85,7 @@ void SocketThreadSimple::ThreadFunc()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b6100
 // (public: virtual void * __thiscall WONAPI::SocketThread::`scalar deleting destructor'(unsigned int)    [??_GSocketThread@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006b62a0

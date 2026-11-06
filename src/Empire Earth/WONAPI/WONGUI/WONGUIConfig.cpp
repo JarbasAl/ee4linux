@@ -254,10 +254,10 @@ Component* TreeAreaConfig::CompFactory()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0079b470
 // (public: static class WONAPI::Component * __cdecl WONAPI::TextAreaConfig::CompFactory(void)    [?CompFactory@TextAreaConfig@WONAPI@@SAPAVComponent@2@XZ)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0079afb0
 // (public: virtual void __thiscall WONAPI::MultiListHeaderConfig::Virtual34(class WONAPI::Component *)    [?Virtual34@MultiListHeaderConfig@WONAPI@@UAEXP)

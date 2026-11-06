@@ -97,7 +97,7 @@ WONStatus BlockingSocket::RecvBytes(ByteBufferPtr &theBytes, DWORD theNumBytes, 
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006aa960
 // (public: virtual void * __thiscall WONAPI::SendBytesToOp::`scalar deleting destructor'(unsigned int)    [??_GSendBytesToOp@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006aa980
@@ -117,7 +117,7 @@ WONStatus BlockingSocket::RecvBytes(ByteBufferPtr &theBytes, DWORD theNumBytes, 
 // TEMPLATE: WON 0x006b2280
 // (public: virtual __thiscall WONAPI::RecvCRMsgOp::~RecvCRMsgOp(void)    [??1RecvCRMsgOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b1bf0
 // (public: virtual void * __thiscall WONAPI::BlockingSocket::`scalar deleting destructor'(unsigned int)    [??_GBlockingSocket@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006b2260

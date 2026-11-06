@@ -1,4 +1,4 @@
-// Actual raw duplicate providers; explicit SDK copy policy, zero primary quota.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>

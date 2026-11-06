@@ -8,7 +8,7 @@
 
 #include <time.h>
 #include <set>
-#include <map>                              // r13-breadth-core-h7: EEWonNet::mGames/mRooms
+#include <map>                              //: EEWonNet::mGames/mRooms
 
 class EEUICWonNetRoomsBox;
 class TSCriticalSection;
@@ -57,9 +57,9 @@ public:
     void Fn2B2C20(long,unsigned short); //2b2c20, host-order numeric setter
     std::string GetHostAndPortString(bool inUseOriginal=true) const; //2b3070
     int StringCompare(const IPAddr&) const; //2b3260, numeric host then host-order port
-    IPAddr();                               // WONAPI (r12-misc-h5: a LobbyGame member)
+    IPAddr();                               // WONAPI
     IPAddr(const std::string& inHostAndPort); //target2b2440, complete85B native ctor + pinned SDK
-    std::string GetHostString(bool inFlag) const;   // 0x2b2fc0 (WONAPI; EEGetLocalAddress; r12-misc-h5, PROVISIONAL)
+    std::string GetHostString(bool inFlag) const;   // 0x2b2fc0
     unsigned short GetPort() const; //2b31c0, host byte order
     long Fn2B2FB0() const; //2b2fb0, ntohl host IPv4, nominal GetHost
     bool SetWithDefaultPort(const std::string&,unsigned short); //2b2d50, DNS default-port dispatch
@@ -70,8 +70,8 @@ public:
     static bool SetLocalHost(long, bool); //2b37a0, cdecl host +validation flag
     bool operator==(const IPAddr&) const; //2b3220, six network-byte equality
     bool operator!=(const IPAddr&) const; //2b3240
-    void SetPort(unsigned short inPort);    // 0x2b2f90 (WONAPI; r12-misc-h7, PROVISIONAL)
-    bool IsValid() const;                   // 0x2b31d0 (WONAPI, out of line: return mB24; r24 R1, name PROVISIONAL)
+    void SetPort(unsigned short inPort);    // 0x2b2f90
+    bool IsValid() const;                   // 0x2b31d0
     const char* GetSixByte() const;         // 0x2b29c0: address of sockaddr port/IP bytes at +0x16
     void SetSixByte(const void* inAddress); // 0x2b29d0: consumes six bytes, clears host and sets validity
     bool operator<(const IPAddr& inOther) const; // 0x2b31f0: six network-order port/IP bytes at +0x16
@@ -92,7 +92,7 @@ public:
     void AddRef() { InterlockedIncrement(&mRefCount); }
     const RefCount* CreateRef() const { InterlockedIncrement(&mRefCount); return this; } //actual SDK const retain API, same native+4
     void Release() { if (InterlockedDecrement(&mRefCount) <= 0) delete this; }
-    // r12-misc-h7: GUIString::CopyOnWrite 0x29121b compares the count unsigned (`jbe`)
+    //: GUIString::CopyOnWrite 0x29121b compares the count unsigned (`jbe`)
     unsigned long GetRefCount() const { return mRefCount; }
 
     mutable long mRefCount;                         // +0x04
@@ -150,7 +150,7 @@ public:
         return *this;
     }
     T* operator->() const { return mPtr; }
-    T* get() const { return mPtr; }         // r12-misc-h4 (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
+    T* get() const { return mPtr; }         // (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
     // Target set bounds compare raw addresses unsigned. Existing SmartPtr ordering is retained;
     // the genuine SDK borrowed raw-pointer conversion is declared above.
     bool operator<(const SmartPtr<T>& inOther) const { return mPtr < inOther.mPtr; }
@@ -183,7 +183,7 @@ public:
     }
     ~SmartPtr() { if (mPtr != NULL) mPtr->Release(); }
     T* operator->() const { return mPtr; }
-    T* get() const { return mPtr; }         // r12-misc-h4 (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
+    T* get() const { return mPtr; }         // (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
     // Target set bounds compare raw addresses unsigned. Existing SmartPtr ordering is retained;
     // the genuine SDK borrowed raw-pointer conversion is declared above.
     bool operator<(const SmartPtr<T>& inOther) const { return mPtr < inOther.mPtr; }
@@ -358,7 +358,7 @@ class AuthPeerData;
 class WriteBuffer;
 class AuthLoginCommunityData; //actual full3c value defined above with existing CDKey
 class AuthSession; //actual borrowed session API identity
-class ElGamal; //actual external static verifier owner
+class ElGamal;
 class ServerContext; //actual complete3c owner in Routing
 class AuthContext : public RefCount {
     static ElGamal mVerifierKey; //actual PRIVATE SDK static owner566018..5661c0, external only
@@ -514,7 +514,7 @@ class GetAccountOp;
 
 class EEWonNet {
 public:
-    // the completion callbacks (r13-breadth-core-h7): WONAPI completions that call a member of gWonNet
+    // the completion callbacks: WONAPI completions that call a member of gWonNet
     typedef void (EEWonNet::*Callback)(WONAPI::AsyncOp* inOp);
 
     void ConnectToLobby();                 // 0xcd7d2 (the room screen's open; provisional name)
@@ -594,7 +594,7 @@ public:
     EEWonNet();
     // the main screen deletes gWonNet through vtable slot 0 (0x1e212d): a virtual dtor, no RTTI
     virtual ~EEWonNet();
-    // r25pre-won-2: dead in AoC (DEAD-IN-AOC bodies in EEWonNet.cpp; names PROVISIONAL, from the base game)
+    //: dead in AoC (DEAD-IN-AOC bodies in EEWonNet.cpp; names PROVISIONAL, from the base game)
     bool Initialize();                      // base 0x4c9e16 (reads SierraCom.cfg into mDirectoryServers)
     void GetTitanServerList();              // base 0x4c9883
     void GetTitanServerListCompletion(WONAPI::AsyncOp* inOp);   // base 0x4c9ad9
@@ -606,7 +606,7 @@ public:
     TSCriticalSection* mLock;               // +0x004
     TSCriticalSection* mLock8;              // +0x008 (OnDataObjectChanged enters and leaves it)
     WONAPI::SmartPtr<WONAPI::SmartRoutingConnection> mRouting;    // +0x00c
-    // +0x010: the directory servers (base game: Initialize fills it from mDirectoryServers; r25pre-won-2)
+    // +0x010: the directory servers
     WONAPI::SmartPtr<WONAPI::ServerContext> mDirServers;
     char _gap014[4];
     WONAPI::ServerContext* mAuthServers;    // +0x018 (the account ops get it)

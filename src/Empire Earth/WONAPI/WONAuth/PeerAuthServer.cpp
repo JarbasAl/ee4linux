@@ -160,7 +160,7 @@ WONStatus PeerAuthServer::HandleRecvMsg(const void* data,unsigned long len,ByteB
     return status;
 }
 
-// SUPPORT: EXE 0x006e7cc0 (106B genuine SDK constructor, zero primary quota)
+
 PeerAuthServer::PeerAuthServer()
 {
     mState=STATE_NOT_STARTED;
@@ -169,7 +169,7 @@ PeerAuthServer::PeerAuthServer()
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e7cc0
 // (public: __thiscall WONAPI::PeerAuthServer::PeerAuthServer(void)    [??0PeerAuthServer@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x006e8060

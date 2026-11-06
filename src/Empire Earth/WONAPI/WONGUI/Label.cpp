@@ -103,6 +103,6 @@ void Label::Paint(Graphics& g) {
     mWrappedText->Paint(g,x,y);
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f9f00
 // (public: virtual void * __thiscall WONAPI::Label::`scalar deleting destructor'(unsigned int)    [??_GLabel@WONAPI@@UAEPAXI@Z])

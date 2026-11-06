@@ -52,7 +52,7 @@ bool ComponentCursor::IsNative() { return false; }
 // FUNCTION: WON 0x007d0320
 MSCursor::~MSCursor() { if(mDoDestroy) DestroyCursor(mNativeCursor); }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00726690
 // (public: virtual void * __thiscall WONAPI::CursorRef::`scalar deleting destructor'(unsigned int)    [??_GCursorRef@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007266b0
@@ -62,10 +62,10 @@ MSCursor::~MSCursor() { if(mDoDestroy) DestroyCursor(mNativeCursor); }
 // TEMPLATE: WON 0x007286b0
 // (protected: virtual void * __thiscall WONAPI::Cursor::`scalar deleting destructor'(unsigned int)    [??_GCursor@WONAPI@@MAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00726750
 // (public: virtual void * __thiscall WONAPI::ComponentCursor::`scalar deleting destructor'(unsigned int)    [??_GComponentCursor@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00726770
 // (public: virtual __thiscall WONAPI::ComponentCursor::~ComponentCursor(void)    [??1ComponentCursor@WONAPI@@UAE@XZ])

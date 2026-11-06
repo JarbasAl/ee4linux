@@ -58,7 +58,7 @@ OffsetByteBuffer::~OffsetByteBuffer()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a0a00
 // (public: virtual void * __thiscall WONAPI::ByteBuffer::`scalar deleting destructor'(unsigned int)    [??_GByteBuffer@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006a0bc0

@@ -1,4 +1,4 @@
-// New R3 source-only QuickPlay family; actual normal/EH/data admission pending.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,7 +15,7 @@
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
 // Semantically empty constructor56 and implicit normalcleanup335 are zero
-// proposed primary quota. Emitted support/data/lifetimes still require audit.
+
 QuickPlayCtrl::QuickPlayCtrl() {}
 // Original3c1690..3c174e,190B; actual typed resource names and lines29..34.
 // FUNCTION: WON 0x007c1690
@@ -65,7 +65,7 @@ void QuickPlayCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c1520
 // (public: virtual void * __thiscall WONAPI::QuickPlayCtrl::`scalar deleting destructor'(unsigned int)    [??_GQuickPlayCtrl@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007c1540
@@ -75,6 +75,6 @@ void QuickPlayCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 // TEMPLATE: WON 0x007c1940
 // (public: virtual __thiscall WONAPI::QuickPlayEvent::~QuickPlayEvent(void)    [??1QuickPlayEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c14e0
 // (public: __thiscall WONAPI::QuickPlayCtrl::QuickPlayCtrl(void)    [??0QuickPlayCtrl@WONAPI@@QAE@XZ])

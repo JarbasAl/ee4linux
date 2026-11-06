@@ -117,6 +117,6 @@ void MSTabButtonConfig::Virtual34(Component* component)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078f3a0
 // (public: __thiscall WONAPI::MSButtonConfig::MSButtonConfig(void)    [??0MSButtonConfig@WONAPI@@QAE@XZ])

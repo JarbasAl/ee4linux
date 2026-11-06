@@ -3,7 +3,7 @@
 #ifndef EE_WONAPI_WONPERFTIMER_H
 #define EE_WONAPI_WONPERFTIMER_H
 #include <string>
-// R11 promotes the former static-only view to the complete genuine SDK value owner.
+// promotes the former static-only view to the complete genuine SDK value owner.
 // Historical restriction above described the old view; new instance methods/fields are
 // SOURCE_ONLY_NO_NATIVE_ID, not a Native instance size/allocation or ABI identity claim.
 namespace WONAPI {

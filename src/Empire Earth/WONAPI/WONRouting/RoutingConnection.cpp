@@ -20,7 +20,7 @@ RoutingConnection::RoutingConnection()
 
 // Original2ba4b0..2ba62e has ownRoutingVT write and complete natural member/base
 // destruction. Substantive normal destruction kind is separate from ordinary
-// methods; implicit/scalar/tree/array/EH support contributes zero primary quota.
+
 // FUNCTION: WON 0x006ba4b0
 RoutingConnection::~RoutingConnection() {}
 
@@ -681,7 +681,7 @@ void RoutingConnection::GetBadUserList(RoutingBadUserListType theListType, unsig
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ba3f0
 // (public: virtual __thiscall WONAPI::RoutingGroupInfo::~RoutingGroupInfo(void)    [??1RoutingGroupInfo@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x006ba490
@@ -691,7 +691,7 @@ void RoutingConnection::GetBadUserList(RoutingBadUserListType theListType, unsig
 // TEMPLATE: WON 0x006bd320
 // (public: virtual __thiscall WONAPI::RoutingGetMembersOfGroupOp::~RoutingGetMembersOfGroupOp(void)    [??1RoutingGetMembersOfGroupOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006bce50
 // (public: virtual long __thiscall WONAPI::RoutingGetClientListOp::GetType(void)const     [?GetType@RoutingGetClientListOp@WONAPI@@UBEJXZ])
 // TEMPLATE: WON 0x006bd0a0
@@ -701,7 +701,7 @@ void RoutingConnection::GetBadUserList(RoutingBadUserListType theListType, unsig
 // TEMPLATE: WON 0x006bfa10
 // (public: virtual long __thiscall WONAPI::RoutingGetBadUserListOp::GetType(void)const     [?GetType@RoutingGetBadUserListOp@WONAPI@@UBEJXZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ba280
 // (public: virtual void * __thiscall WONAPI::RoutingMemberInfo::`scalar deleting destructor'(unsigned int)    [??_GRoutingMemberInfo@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006ba2a0
@@ -739,7 +739,7 @@ void RoutingConnection::GetBadUserList(RoutingBadUserListType theListType, unsig
 // TEMPLATE: WON 0x006bf510
 // (public: virtual __thiscall WONAPI::RoutingBecomeModeratorOp::~RoutingBecomeModeratorOp(void)    [??1RoutingBecomeModeratorOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006bb0e0
 // (public: virtual void * __thiscall WONAPI::RoutingClientFlagsChangedOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingClientFlagsChangedOp@)
 // TEMPLATE: WON 0x006bb100
@@ -843,7 +843,7 @@ void RoutingConnection::GetBadUserList(RoutingBadUserListType theListType, unsig
 // TEMPLATE: WON 0x006bc610
 // (public: virtual __thiscall WONAPI::RoutingYouWereMutedOp::~RoutingYouWereMutedOp(void)    [??1RoutingYouWereMutedOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006bce60
 // (public: virtual void * __thiscall WONAPI::RoutingGetClientListOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingGetClientListOp@WONAPI@@UA)
 // TEMPLATE: WON 0x006bce80
@@ -871,7 +871,7 @@ void RoutingConnection::GetBadUserList(RoutingBadUserListType theListType, unsig
 // TEMPLATE: WON 0x006bfa40
 // (public: virtual __thiscall WONAPI::RoutingGetBadUserListOp::~RoutingGetBadUserListOp(void)    [??1RoutingGetBadUserListOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ba1a0
 // (public: virtual void * __thiscall WONAPI::RoutingClientInfo::`scalar deleting destructor'(unsigned int)    [??_GRoutingClientInfo@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006ba1c0

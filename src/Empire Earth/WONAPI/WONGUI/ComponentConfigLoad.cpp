@@ -105,6 +105,6 @@ ComponentConfigInit::ComponentConfigInit(ComponentConfig* theConfig)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078aa40
 // (public: __thiscall WONAPI::ComponentConfigInit::ComponentConfigInit(class WONAPI::ComponentConfig *)    [??0ComponentConfigInit@WONAPI@@QAE@PAVCompone)

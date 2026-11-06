@@ -98,12 +98,12 @@ struct LobbyUserInfo;
 LobbyUserInfo* LobbyFn35CDE0(); //borrowed current user record; null when no matching file ID
 GUIString LobbyFn34A170(const GUIString& inFormat, const GUIString& inFirst,
     const GUIString& inSecond, const GUIString& inThird); //cdecl hidden GUIString result plus four references
-// Borrowed current Routing fields; native19B wrappers, no retain/new/body quota.
+
 class LobbyServerList;
 class LobbyGroup;
 LobbyServerList* LobbyFn35B6B0(); //35b6b0: Routing.mServerList54
 LobbyGroup* LobbyFn35B6D0(); //35b6d0: Routing.mChatGroup6c
-// R3 actual caller/callee contracts; no wrapper implementations.
+// actual caller/callee contracts; no wrapper implementations.
 GUIString LobbyFn34A130(const GUIString& inFormat, const GUIString& inFirst, const GUIString& inSecond);
 void LobbyFn361440();
 void LobbyFn3615E0(const IPAddr& inAddress);

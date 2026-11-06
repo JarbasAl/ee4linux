@@ -51,7 +51,7 @@ RequestPasswordEmailOp::RequestPasswordEmailOp(ServerContext* inContext)
 // FUNCTION: WON 0x006ce520
 RequestPasswordEmailOp::~RequestPasswordEmailOp() {}
 // Shared actual physical44B response at2ce280. This second definition has zero
-// additional quota; native two real class tables point to that same body.
+
 WONStatus RequestPasswordEmailOp::Virtual14()
 {
     WONStatus status=DBProxyOp::Virtual14();
@@ -78,7 +78,7 @@ void RequestPasswordEmailOp::Init()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006ce110
 // (protected: virtual void * __thiscall WONAPI::RequestAccountInfoEmailOp::`scalar deleting destructor'(unsigned int)    [??_GRequestAccountInfoEmailOp@W)
 // TEMPLATE: WON 0x006ce500

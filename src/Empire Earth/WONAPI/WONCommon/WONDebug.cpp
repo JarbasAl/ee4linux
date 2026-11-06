@@ -403,12 +403,12 @@ int WONDebug::DumpStackToFile(void *theInfo)
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a75a0
 // (public: virtual __thiscall CTraceClipboardData::~CTraceClipboardData(void)    [??1CTraceClipboardData@@UAE@XZ])
 // TEMPLATE: WON 0x006a75d0
 // (public: virtual void * __thiscall CTraceClipboardData::`scalar deleting destructor'(unsigned int)    [??_GCTraceClipboardData@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a7190
 // (bool __cdecl LoadWinDebugFunctions(void)    [?LoadWinDebugFunctions@@YA_NXZ])

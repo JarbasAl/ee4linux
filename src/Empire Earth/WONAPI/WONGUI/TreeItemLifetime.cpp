@@ -23,12 +23,12 @@ TreeItem::TreeItem()
 // Genuine SDK implicit destructor supplied by actual complete class/real constructor; no authored body.
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007140f0
 // (public: __thiscall WONAPI::TreeItem::TreeItem(void)    [??0TreeItem@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x00714150
 // (public: virtual void * __thiscall WONAPI::TreeItem::`scalar deleting destructor'(unsigned int)    [??_GTreeItem@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00714170
 // (public: virtual __thiscall WONAPI::TreeItem::~TreeItem(void)    [??1TreeItem@WONAPI@@UAE@XZ])

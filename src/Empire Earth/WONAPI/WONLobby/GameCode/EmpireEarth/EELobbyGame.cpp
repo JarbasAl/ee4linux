@@ -1,7 +1,7 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyGame.cpp (name PROVISIONAL: no __FILE__; the class
 // EELobbyGame's ctor opens the range, and it sorts between EELobbyFileTransfer and EELobbyGameOptionsCtrl). The lobby
 // game: the sixteen game options and their wire types, the eight player slots, the saved game's file transfer, the
-// players' sync events: 0x29222b..0x2942c8 (its template COMDATs close it). Module flags (r12-misc-h7, round 12).
+// players' sync events: 0x29222b..0x2942c8 (its template COMDATs close it). Module flags.
 #include <windows.h>
 #include <string.h>
 #include <string>
@@ -363,7 +363,7 @@ static void EELobbyInitOptionTypes()
 }
 
 // FUNCTION: EXE 0x692a23
-// a new game hosted by inClient: the file transfer, the default options, the preferences' last options (r23)
+// a new game hosted by inClient: the file transfer, the default options, the preferences' last options
 void EELobbyGame::Virtual30(LobbyClient* inClient)
 {
     mFileTransfer = new EELobbyFileTransfer;
@@ -454,7 +454,7 @@ void EELobbyGame::Virtual54(WriteBuffer& outBuffer)
 }
 
 // FUNCTION: EXE 0x692c7e
-// the details: every option, then the players' names (by client id when mL2C is 2) into mFiles (r23)
+// the details: every option, then the players' names (by client id when mL2C is 2) into mFiles
 bool EELobbyGame::Virtual5C(ReadBuffer& inBuffer)
 {
     mFiles.clear();
@@ -534,7 +534,7 @@ void EELobbyGame::Virtual34(WriteBuffer& outBuffer)
 
 // FUNCTION: EXE 0x692e9f
 // a join request: the same version and checksum, then a free slot (a saved game: the slot of the same name);
-// 10001 / 10002 / 10000 / 2 refuse it (Virtual64's texts; r23)
+// 10001 / 10002 / 10000 / 2 refuse it
 short EELobbyGame::Virtual38(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
     GUIString theVersion(GetEmptyGUIStringData());
@@ -593,7 +593,7 @@ int EELobbyGame::SeatClient(LobbyClient* inClient)
 }
 
 // FUNCTION: EXE 0x6930b5
-// a joined game's state: a new file transfer, every option and slot, the room's clients into their slots (r23)
+// a joined game's state: a new file transfer, every option and slot, the room's clients into their slots
 void EELobbyGame::Virtual44(ReadBuffer& inBuffer)
 {
     mFileTransfer = new EELobbyFileTransfer;
@@ -651,7 +651,7 @@ void EELobbyGame::Virtual48(LobbyClient* inClient, LobbyPlayer* inPlayer)
 }
 
 // FUNCTION: EXE 0x6932d9
-// a game message from inFrom (r23)
+// a game message from inFrom
 void EELobbyGame::Virtual60(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom)
 {
     switch (inType) {
@@ -680,7 +680,7 @@ void EELobbyGame::Virtual60(unsigned char inType, ReadBuffer& inBuffer, LobbyCli
 }
 
 // FUNCTION: EXE 0x69334d
-// message 0x6a (r23)
+// message 0x6a
 void EELobbyGame::Fn29334D(ReadBuffer& inBuffer, LobbyClient* inFrom)
 {
     if (inFrom->Fn3A54E0(1))
@@ -688,7 +688,7 @@ void EELobbyGame::Fn29334D(ReadBuffer& inBuffer, LobbyClient* inFrom)
 }
 
 // FUNCTION: EXE 0x693364
-// messages 0x68 / 0x69: a slot's flag, from its own client (the host passes it on) or from the captain (r23)
+// messages 0x68 / 0x69: a slot's flag, from its own client (the host passes it on) or from the captain
 void EELobbyGame::Fn293364(ReadBuffer& inBuffer, LobbyClient* inFrom, bool inFromClient)
 {
     unsigned char theSlot = inBuffer.ReadByte();
@@ -703,7 +703,7 @@ void EELobbyGame::Fn293364(ReadBuffer& inBuffer, LobbyClient* inFrom, bool inFro
 }
 
 // FUNCTION: EXE 0x6933ce
-// message 0x69 to the lobby: a slot and a flag (r23)
+// message 0x69 to the lobby: a slot and a flag
 void EELobbyGame::Fn2933CE(unsigned char inSlot, bool inFlag)
 {
     if (!EELobbyFn295D52())
@@ -716,7 +716,7 @@ void EELobbyGame::Fn2933CE(unsigned char inSlot, bool inFlag)
 }
 
 // FUNCTION: EXE 0x693437
-// message 0x68 to the lobby: the local player's slot and inFlag (r23)
+// message 0x68 to the lobby: the local player's slot and inFlag
 void EELobbyGame::Fn293437(bool inFlag)
 {
     WriteBuffer theBuffer(0, true);
@@ -727,7 +727,7 @@ void EELobbyGame::Fn293437(bool inFlag)
 }
 
 // FUNCTION: EXE 0x6934a0
-// message 0x6a to the lobby (r23)
+// message 0x6a to the lobby
 void EELobbyGame::Fn2934A0()
 {
     WriteBuffer theBuffer(0, true);
@@ -736,7 +736,7 @@ void EELobbyGame::Fn2934A0()
 }
 
 // FUNCTION: EXE 0x6934e8
-// message 0x66 (the host): a client's own player option; accepted ones go to everyone, a refused one back to it (r23)
+// message 0x66 (the host): a client's own player option; accepted ones go to everyone, a refused one back to it
 void EELobbyGame::HandlePlayerOptionRequest(ReadBuffer& inBuffer, LobbyClient* inFrom)
 {
     if (!mIsHost)
@@ -775,7 +775,7 @@ void EELobbyGame::HandlePlayerOptionRequest(ReadBuffer& inBuffer, LobbyClient* i
 }
 
 // FUNCTION: EXE 0x693623
-// message 0x65 (from the captain): a slot's option; a team change involving the local player's team is announced (r23)
+// message 0x65 (from the captain): a slot's option; a team change involving the local player's team is announced
 void EELobbyGame::HandlePlayerOptionChange(ReadBuffer& inBuffer, LobbyClient* inFrom)
 {
     if (!inFrom->Fn3A54E0(1))
@@ -810,7 +810,7 @@ void EELobbyGame::HandlePlayerOptionChange(ReadBuffer& inBuffer, LobbyClient* in
 }
 
 // FUNCTION: EXE 0x69379c
-// message 0x64 (from the captain): one option (r23)
+// message 0x64 (from the captain): one option
 void EELobbyGame::HandleOptionChange(ReadBuffer& inBuffer, LobbyClient* inFrom)
 {
     if (!inFrom->Fn3A54E0(1))
@@ -825,7 +825,7 @@ void EELobbyGame::HandleOptionChange(ReadBuffer& inBuffer, LobbyClient* inFrom)
 // (EELobbySyncOptionEvent's scalar deleting destructor; ICF: EELobbySyncPlayerEvent's)
 
 // FUNCTION: EXE 0x69382d
-// message 0x64 to the lobby: one option and its value (r23)
+// message 0x64 to the lobby: one option and its value
 void EELobbyGame::SendOption(int inOption)
 {
     WriteBuffer theBuffer(0, true);
@@ -844,7 +844,7 @@ void EELobbyGame::SetOption(int inOption, unsigned long inValue)
 
 // FUNCTION: EXE 0x6938b8
 // an option set from the lobby: below its limit and changed (inFlag: SendOption reports it); the starting epoch never
-// passes the ending one (unless the end is 15); an out-of-range value makes the controls resync the option (r23)
+// passes the ending one (unless the end is 15); an out-of-range value makes the controls resync the option
 void EELobbyGame::ChangeOption(int inOption, unsigned long inValue, bool inFlag)
 {
     if (inOption < 0 || inOption >= 16)
@@ -890,7 +890,7 @@ int EELobbyGame::GetMyTeam()
 }
 
 // FUNCTION: EXE 0x6939be
-// message 0x67 (from the captain): the whole game, every option and slot (r23)
+// message 0x67 (from the captain): the whole game, every option and slot
 void EELobbyGame::HandleGameState(ReadBuffer& inBuffer, LobbyClient* inFrom)
 {
     if (!inFrom->Fn3A54E0(1))
@@ -922,7 +922,7 @@ void EELobbyGame::HandleGameState(ReadBuffer& inBuffer, LobbyClient* inFrom)
 }
 
 // FUNCTION: EXE 0x693a8b
-// message 0x67 to the lobby: every option, every slot (a client slot with its client's id), the saved game (r23)
+// message 0x67 to the lobby: every option, every slot (a client slot with its client's id), the saved game
 void EELobbyGame::SendGameState()
 {
     WriteBuffer theBuffer(0, true);
@@ -942,7 +942,7 @@ void EELobbyGame::SendGameState()
 
 // FUNCTION: EXE 0x693b36
 // a player option changed in the lobby's controls: the host (mB15) or the slot's own player sends it on (0x65 / 0x66);
-// a refused change makes the controls resync the slot (r23)
+// a refused change makes the controls resync the slot
 void EELobbyGame::ChangePlayerOption(int inSlot, int inWhat, unsigned char inValue)
 {
     EELobbyPlayerSlot* theSlot = GetPlayerSlot(inSlot);

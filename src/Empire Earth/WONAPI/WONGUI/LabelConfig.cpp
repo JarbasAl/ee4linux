@@ -36,6 +36,6 @@ LabelConfig::LabelConfig()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078ef70
 // (public: virtual __thiscall WONAPI::LabelConfig::~LabelConfig(void)    [??1LabelConfig@WONAPI@@UAE@XZ])

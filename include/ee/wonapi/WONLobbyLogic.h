@@ -29,7 +29,7 @@ public:
 // Complete actual0c nonpolymorphic LobbyLogicMgr, single owning logic list.
 class LobbyLogicMgr {
 public:
-    LobbyLogicMgr(); //original list-only provider remains external; no source quota
+    LobbyLogicMgr();
     void AddLogic(LobbyLogic*); //3e5c10 actual listpushback adapter, support0
     void Init(ComponentConfig*); //3e5d40
     void Kill(); //3e5d80

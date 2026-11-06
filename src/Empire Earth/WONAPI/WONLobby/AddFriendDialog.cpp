@@ -14,7 +14,7 @@ namespace WONAPI {
 // Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
 AddFriendDialog::AddFriendDialog() {}
 
-// Original ordinary destructor is implicit; review generated cleanup separately, zero body quota.
+
 
 // FUNCTION: WON 0x7f4980
 void AddFriendDialog::InitComponent(ComponentInit& inInit)
@@ -51,12 +51,12 @@ void AddFriendDialog::HandleComponentEvent(ComponentEvent* inEvent)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f4880
 // (public: virtual void * __thiscall WONAPI::AddFriendDialog::`scalar deleting destructor'(unsigned int)    [??_GAddFriendDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f48a0
 // (public: virtual __thiscall WONAPI::AddFriendDialog::~AddFriendDialog(void)    [??1AddFriendDialog@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f4850
 // (public: __thiscall WONAPI::AddFriendDialog::AddFriendDialog(void)    [??0AddFriendDialog@WONAPI@@QAE@XZ])

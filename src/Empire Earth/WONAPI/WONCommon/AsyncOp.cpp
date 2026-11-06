@@ -26,7 +26,7 @@ AsyncOp::AsyncOp()
 }
 // FUNCTION: WON 0x0069f000
 AsyncOp::~AsyncOp() {}
-// Native AsyncOp slots04/08 both use true empty326b60, zero breadth quota.
+
 void AsyncOp::Virtual04() {}
 void AsyncOp::Virtual08() {}
 // FUNCTION: WON 0x0069f080
@@ -44,7 +44,7 @@ void AsyncOp::RemoveFromTimerMap(bool erase)
         mTimeoutMap=NULL;
     }
 }
-// Simple setters/dispatch support have zero breadth quota.
+
 // FUNCTION: WON 0x0069f1b0
 void AsyncOp::Fn29F1B0(unsigned long timeout)
 { if(mStatus!=100000) mTimeout=timeout; }
@@ -170,7 +170,7 @@ DWORD AsyncOp::RealTimeLeft()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0069efe0
 // (public: virtual void * __thiscall WONAPI::AsyncOp::`scalar deleting destructor'(unsigned int)    [??_GAsyncOp@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x0069f070

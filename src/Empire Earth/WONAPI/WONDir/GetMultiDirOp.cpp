@@ -11,7 +11,7 @@
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONBuffer.h"
 namespace WONAPI {
-// Native2f1520/18 protocol initializer helper, zero separate quota.
+
 // FUNCTION: WON 0x006f1520
 void GetMultiDirOp::Init()
 {
@@ -24,7 +24,7 @@ GetMultiDirOp::GetMultiDirOp(ServerContext* inContext)
 {
     Init();
 }
-// Native implicit GetMulti destructor2f1630/350 remains automatic support, zero quota.
+
 // FUNCTION: WON 0x6f1790
 void GetMultiDirOp::Virtual18()
 {
@@ -93,7 +93,7 @@ WONStatus GetMultiDirOp::Virtual14()
 }
 } // WONAPI
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f1610
 // (public: virtual void * __thiscall WONAPI::GetMultiDirOp::`scalar deleting destructor'(unsigned int)    [??_GGetMultiDirOp@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006f1630

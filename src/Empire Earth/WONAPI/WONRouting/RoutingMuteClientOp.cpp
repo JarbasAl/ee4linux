@@ -45,7 +45,7 @@ WONStatus RoutingMuteClientOp::Virtual10(unsigned char inMsgType, ReadBuffer& in
 RoutingOpType RoutingMuteClientOp::GetType() const { return 38; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c7940
 // (public: virtual void * __thiscall WONAPI::RoutingMuteClientOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingMuteClientOp@WONAPI@@UAEPAXI@)
 // TEMPLATE: WON 0x006c7960

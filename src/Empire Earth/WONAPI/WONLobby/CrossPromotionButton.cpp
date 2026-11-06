@@ -106,7 +106,7 @@ bool ImageTextButtonConfig::Virtual24(const std::string& key) {
         return ImageButtonConfig::Virtual24(key);
     return true;
 }
-// Actual physical ICF365980 shared with CrossPromotionButtonConfig setter; no duplicate quota.
+
 void ImageTextButtonConfig::Virtual34(Component* component) {
     ImageButtonConfig::Virtual34(component);
     mImageTextButton=static_cast<ImageTextButton*>(component);
@@ -190,7 +190,7 @@ Component* MaxSplitterButtonConfig::CompFactory()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c91d0
 // (public: virtual __thiscall WONAPI::ImageTextButton::~ImageTextButton(void)    [??1ImageTextButton@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x007c9610
@@ -198,11 +198,11 @@ Component* MaxSplitterButtonConfig::CompFactory()
 // TEMPLATE: WON 0x007c97b0
 // (public: virtual __thiscall WONAPI::CrossPromotionButton::~CrossPromotionButton(void)    [??1CrossPromotionButton@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c95f0
 // (public: virtual void * __thiscall WONAPI::MaxSplitterButton::`scalar deleting destructor'(unsigned int)    [??_GMaxSplitterButton@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c91b0
 // (public: virtual void * __thiscall WONAPI::ImageTextButton::`scalar deleting destructor'(unsigned int)    [??_GImageTextButton@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007c9790

@@ -48,6 +48,6 @@ void ImageButton::Paint(Graphics& g) {
     g.DrawImage(image,0,0);
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f7e00
 // (protected: virtual void * __thiscall WONAPI::ImageButton::`scalar deleting destructor'(unsigned int)    [??_GImageButton@WONAPI@@MAEPAXI@Z])

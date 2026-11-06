@@ -269,7 +269,7 @@ bool ComponentConfig::Virtual30(const std::string& inName,const std::vector<int>
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a1540
 // (public: class std::_Ptrit<int,int,int *,int &,int *,int &> __thiscall std::_Ptrit<int,int,int *,int &,int *,int &>::operator+(int)const     [??H?$_Ptr)
 // TEMPLATE: WON 0x007a1bc0

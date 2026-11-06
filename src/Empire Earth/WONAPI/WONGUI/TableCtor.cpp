@@ -19,12 +19,12 @@ Table::Table(LineSegment* contents)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070f9d0
 // (public: __thiscall WONAPI::Table::Table(class WONAPI::LineSegment *)    [??0Table@WONAPI@@QAE@PAVLineSegment@1@@Z])
 // TEMPLATE: WON 0x0070fbb0
 // (public: virtual __thiscall WONAPI::Table::~Table(void)    [??1Table@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0070fad0
 // (public: virtual void * __thiscall WONAPI::Table::`scalar deleting destructor'(unsigned int)    [??_GTable@WONAPI@@UAEPAXI@Z])

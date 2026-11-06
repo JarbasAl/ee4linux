@@ -103,7 +103,7 @@ void UDPManager::CleanOps()
 }
 // Round3 additional original operation behavior; source-only.
 
-// SUPPORT-ONLY: native verifier setter2b6bf0 and dispatch2b6c10, zero quota.
+
 // FUNCTION: WON 0x006b6bf0
 void UDPManagerRecvOp::Fn2B6BF0(MessageVerifier inVerifier, void* inContext)
 {
@@ -122,7 +122,7 @@ void UDPManagerRecvOp::Fn2B6D70(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
         return;
     static_cast<UDPManagerRecvOp*>(inParam.get())->Fn2B6E60(static_cast<RecvBytesFromOp*>(inOp.get()));
 }
-// SUPPORT-ONLY: actual verifier adapter2b7250 and owning-value completion2b7550.
+
 // FUNCTION: WON 0x006b7250
 WONStatus UDPManagerSendRecvOp::Fn2B7250(ReadBuffer& inMessage, void* inParam)
 {
@@ -377,7 +377,7 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
 
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b6930
 // (public: virtual __thiscall WONAPI::UDPManagerRecvOp::~UDPManagerRecvOp(void)    [??1UDPManagerRecvOp@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x006b7140
@@ -387,12 +387,12 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
 // TEMPLATE: WON 0x006b7e30
 // (public: __thiscall std::pair<class WONAPI::IPAddr const ,class WONAPI::SmartPtr<class WONAPI::UDPManagerRecvOp> >::~pair<class WONAPI::IPAddr const ,c)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b6910
 // (public: virtual void * __thiscall WONAPI::UDPManagerRecvOp::`scalar deleting destructor'(unsigned int)    [??_GUDPManagerRecvOp@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006b7120
 // (public: virtual void * __thiscall WONAPI::UDPManagerSendRecvOp::`scalar deleting destructor'(unsigned int)    [??_GUDPManagerSendRecvOp@WONAPI@@UAEPAX)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006b77b0
 // (public: virtual __thiscall WONAPI::UDPManager::~UDPManager(void)    [??1UDPManager@WONAPI@@UAE@XZ])

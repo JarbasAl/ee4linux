@@ -1387,7 +1387,7 @@ void RoutingLogic::JoinFriendsRoom(JoinFriendsRoomEvent* inEvent)
 
 }
 
-// R3 Root-leased ordinary methods, pending actual capture/admission.
+
 // New FUNCTION markers intentionally inactive; separate candidate ledger only.
 namespace WONAPI {
 // FUNCTION: WON 0x007ed670
@@ -1451,7 +1451,7 @@ bool RoutingLogic::JoinGroup(LobbyServer* inServer, int inGroupId)
 }
 }
 
-// R3 additional original-backed source cohort; markers remain inactive pending Root admission.
+
 namespace WONAPI {
 // FUNCTION: WON 0x007edd70
 bool RoutingLogic::ConnectToServer(LobbyServer* inServer, bool inFlag)
@@ -1540,7 +1540,7 @@ void RoutingLogic::Fn3EA490(LobbyClient* inClient,int inRoomSpec)
 // virtual payload, ctor and typed normal/EH lifetime approval from root/model.
 // Member names below match pinned nominal header and original target offsets.
 // Full target: next_ready_original.txt3ed670..3ed8a1 (561B).
-//
+
 // bool RoutingLogic::CreateGroup(LobbyServer* inServer,
 //     const GUIString& inName, const GUIString& inPassword,
 //     int inRoomFlags, unsigned short& outGroupId)
@@ -1570,7 +1570,7 @@ void RoutingLogic::Fn3EA490(LobbyClient* inClient,int inRoomSpec)
 // getter2b08d0 and CancelJoinGroup completion-pointer correction. Address getter
 // spelling Fn2B08D0 is a pending owner contract, not a parallel local declaration.
 // 358ed0 void(title,WONStatus) independently proved by Dialogs owner.
-//
+
 // bool RoutingLogic::JoinGroup(LobbyServer* inServer, int inGroupId)
 // {
 //     if (inServer == NULL) return false;
@@ -2067,7 +2067,7 @@ void RoutingLogic::Virtual4C()
 
 namespace WONAPI {
 // Genuine SDK ShowFriendOptions; typed popup owner and original modal API.
-// SUPPORT: EXE 0x007ea570 (zero primary quota)
+
 // FUNCTION: WON 0x007ea570
 void RoutingLogic::Fn3EA570(LobbyFriend* friendInfo,int roomSpecFlags)
 {
@@ -2077,7 +2077,7 @@ void RoutingLogic::Fn3EA570(LobbyFriend* friendInfo,int roomSpecFlags)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007e7050
 // (public: virtual void * __thiscall WONAPI::RoutingLogic::`scalar deleting destructor'(unsigned int)    [??_GRoutingLogic@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007e79f0
@@ -2087,7 +2087,7 @@ void RoutingLogic::Fn3EA570(LobbyFriend* friendInfo,int roomSpecFlags)
 // TEMPLATE: WON 0x007ee8a0
 // (public: virtual void __thiscall RoutingOpCompletion::Run(class WONAPI::AsyncOp *)    [?Run@RoutingOpCompletion@@UAEXPAVAsyncOp@WONAPI@@@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f1330
 // (public: __thiscall std::list<struct WONAPI::RoutingBadUser,class std::allocator<struct WONAPI::RoutingBadUser> >::list<struct WONAPI::RoutingBadUser,c)
 // TEMPLATE: WON 0x007f1bb0
@@ -2100,13 +2100,13 @@ void RoutingLogic::Fn3EA570(LobbyFriend* friendInfo,int roomSpecFlags)
 // TEMPLATE: WON 0x007f42d0
 // TEMPLATE: WON 0x007f4450
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007e73e0
 // (public: virtual void * __thiscall WONAPI::LeftRoomEvent::`scalar deleting destructor'(unsigned int)    [??_GLeftRoomEvent@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007e7400
 // (public: virtual __thiscall WONAPI::LeftRoomEvent::~LeftRoomEvent(void)    [??1LeftRoomEvent@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ee8d0
 // (public: virtual void * __thiscall RoutingOpCompletion::`scalar deleting destructor'(unsigned int)    [??_GRoutingOpCompletion@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007ee8f0

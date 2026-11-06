@@ -13,9 +13,9 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
 namespace WONAPI {
-// Simple false-state/default-owning initialization support, zero breadth quota.
+
 TOUDialog::TOUDialog() : mNeedGenHTML(false) {}
-// Actual ordinary destructor implicit: owned widgets followed by Dialog cleanup, zero quota.
+
 // Shared13B delegating Paint support, zero substantive credit.
 void TOUDialog::Paint(Graphics& inGraphics) { Container::Paint(inGraphics); }
 // FUNCTION: WON 0x7f9910
@@ -67,12 +67,12 @@ void TOUDialog::HandleComponentEvent(ComponentEvent* inEvent)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f97e0
 // (public: virtual void * __thiscall WONAPI::TOUDialog::`scalar deleting destructor'(unsigned int)    [??_GTOUDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007f9800
 // (public: virtual __thiscall WONAPI::TOUDialog::~TOUDialog(void)    [??1TOUDialog@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f97a0
 // (public: __thiscall WONAPI::TOUDialog::TOUDialog(void)    [??0TOUDialog@WONAPI@@QAE@XZ])

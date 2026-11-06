@@ -45,7 +45,7 @@ const GUIString& LanNameDialog::GetName()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f83b0
 // (public: __thiscall WONAPI::LanNameDialog::LanNameDialog(void)    [??0LanNameDialog@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x007f83e0

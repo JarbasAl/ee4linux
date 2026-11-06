@@ -31,7 +31,7 @@ public:
 
 	std::wstring   mCommunityName;	// [in]
 	std::string    mProductName;    // [in]
-	unsigned short mSequenceNumber;	// [in]	
+	unsigned short mSequenceNumber;	// [in]
 	bool           mIsBeta;			// [in]
 	time_t         mActivateTime;	// [in]
 	time_t         mDeactivateTime;	// [in]
@@ -63,7 +63,7 @@ public:
 
 	std::wstring   mCommunityName;	// [in]
 	std::string    mProductName;    // [in]
-	unsigned short mSequenceNumber;	// [in]	
+	unsigned short mSequenceNumber;	// [in]
 	bool           mIsBeta;			// [in]
 	time_t         mActivateTime;	// [in]
 	time_t         mDeactivateTime;	// [in]
@@ -93,7 +93,7 @@ public:
 
 	std::wstring   mCommunityName;	// [in]
 	std::string    mProductName;    // [in]
-	unsigned short mSequenceNumber;	// [in]	
+	unsigned short mSequenceNumber;	// [in]
 
 	// Overrides
 protected:
@@ -131,7 +131,7 @@ public:
 
 	typedef std::list<MasterKey>			MASTER_KEY_LIST;
 	typedef MASTER_KEY_LIST::const_iterator MASTER_KEY_LIST_CITR;
-	MASTER_KEY_LIST mMasterKeyList;	// [out]	
+	MASTER_KEY_LIST mMasterKeyList;	// [out]
 
 	// Overrides
 protected:
@@ -161,11 +161,11 @@ public:
 
 	typedef std::list<std::string>	 KEY_LIST;
 	typedef KEY_LIST::const_iterator KEY_LIST_CITR;
-	KEY_LIST mKeyList;      	    // [in]	
+	KEY_LIST mKeyList;      	    // [in]
 
 	typedef std::list<short>		        KEY_STATUS_LIST;
 	typedef KEY_STATUS_LIST::const_iterator KEY_STATUS_LIST_CITR;
-	KEY_STATUS_LIST mKeyStatusList; // [out]	
+	KEY_STATUS_LIST mKeyStatusList; // [out]
 
 	// Overrides
 protected:

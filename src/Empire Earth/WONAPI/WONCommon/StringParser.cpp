@@ -316,11 +316,11 @@ void StringParser::SkipNonWhitespace()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a4d70
 // (int __cdecl WONAPI::ScannerHexValue(char)    [?ScannerHexValue@WONAPI@@YAHD@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006a4f30
 // (void __cdecl WONAPI::ScannerAppend(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > &,char)    [?ScannerAppend@)
 // TEMPLATE: WON 0x006a5310

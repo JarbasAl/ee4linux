@@ -107,12 +107,12 @@ FontConfig::FontConfig()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078a080
 // (void __cdecl WONAPI::FontConfig_Init(class WONAPI::ResourceConfigTable *)    [?FontConfig_Init@WONAPI@@YAXPAVResourceConfigTable@1@@Z])
 // TEMPLATE: WON 0x0078a250
 // (public: virtual __thiscall WONAPI::FontConfig::~FontConfig(void)    [??1FontConfig@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0078a230
 // (public: virtual void * __thiscall WONAPI::FontConfig::`scalar deleting destructor'(unsigned int)    [??_GFontConfig@WONAPI@@UAEPAXI@Z])

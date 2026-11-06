@@ -2,7 +2,7 @@
 // Reference/token/file subset of original ConfigParser family; exact filename/TU boundary provisional.
 // Full target storage0x88=136B; native ctor/dtor now proved and implemented below.
 // Only independently proved nested32 define-map construction is admitted for the additional define behaviors.
-// Source-only; near/support remain original-carved. Helpers, pure accessors and forwarding wrappers have zero quota.
+
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,7 +15,7 @@
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/WONLobbyConfig.h"
 namespace WONAPI {
-// Original data566b54; actual increments/decrements in GetChar/UngetChar. Root data admission separate.
+
 int ConfigParser::mLineCount = 0;
 // FUNCTION: WON 0x007b1f90
 // Original3b1f90/32, inherits only flags when parent is nonnull.
@@ -201,7 +201,7 @@ void ConfigParser::CloseFile()
     mFileReader.Close();
 }
 // FUNCTION: WON 0x007b3620
-// Original3b3620/513; preserve path-separator preference and four-byte BOM probe.
+
 bool ConfigParser::OpenFile(const std::string& inPath)
 {
     CloseFile();
@@ -232,7 +232,7 @@ bool ConfigParser::OpenFile(const std::string& inPath)
 }
 // Additional original ConfigParser define family; complete nested32 type independently reviewed.
 // Target differs from archived SDK: narrow map values are std::string, not DefineStruct.
-// Nested32 definition now lives in canonical WONLobbyConfig.h; its implicit support has zero quota.
+
 // FUNCTION: WON 0x007b2510
 // Original3b2510/158, actual null SmartPtr temporary and vector insertion.
 void ConfigParser::PushDefineStack()
@@ -361,7 +361,7 @@ void ConfigParser::UngetStr(const std::wstring &theStr)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007b1df0
 // (public: virtual void * __thiscall WONAPI::ConfigParser::`scalar deleting destructor'(unsigned int)    [??_GConfigParser@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007b30d0
@@ -371,7 +371,7 @@ void ConfigParser::UngetStr(const std::wstring &theStr)
 // TEMPLATE: WON 0x007b3de0
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct WONAPI::ConfigParserState,s)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007b29d0
 // (public: virtual void * __thiscall WONAPI::ConfigParser::DefineMapContainer::`scalar deleting destructor'(unsigned int)    [??_GDefineMapContainer@Conf)
 // TEMPLATE: WON 0x007b29f0

@@ -43,10 +43,10 @@ bool AuthPubKeyBlock::IsValidAndVerified(const ElGamal& verifier) const
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006e2350
 // (protected: virtual __thiscall WONAPI::AuthPubKeyBlock::~AuthPubKeyBlock(void)    [??1AuthPubKeyBlock@WONAPI@@MAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006eb150
 // (protected: struct std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::_Node * __thiscall std::list<class WONAPI::ElGamal,cl)

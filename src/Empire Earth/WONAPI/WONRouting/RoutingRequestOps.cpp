@@ -19,7 +19,7 @@ void RoutingCancelJoinGroupOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingCancelJoinGroupOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -38,7 +38,7 @@ void RoutingLeaveGroupOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingLeaveGroupOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -61,7 +61,7 @@ void RoutingSetGroupFlagsOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingSetGroupFlagsOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -88,7 +88,7 @@ void RoutingSendServerAlertOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingSendServerAlertOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -108,7 +108,7 @@ void RoutingStartServerShutdownOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingStartServerShutdownOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -118,7 +118,7 @@ WONStatus RoutingStartServerShutdownOp::Virtual10(unsigned char inMsgType, ReadB
 // FUNCTION: WON 0x006be120
 RoutingOpType RoutingStartServerShutdownOp::GetType() const { return 56; }
 
-// Tiny no-field request support2c4170, zero primary quota.
+
 // FUNCTION: WON 0x006c4170
 void RoutingAbortServerShutdownOp::Virtual0C()
 {
@@ -127,7 +127,7 @@ void RoutingAbortServerShutdownOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingAbortServerShutdownOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -148,7 +148,7 @@ void RoutingSetClientFlagsOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingSetClientFlagsOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -171,7 +171,7 @@ void RoutingSendChatOp::Virtual0C()
     if (mFlags & 1) AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingSendChatOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -194,7 +194,7 @@ void RoutingSendDataOp::Virtual0C()
     if (mFlags & 1) AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingSendDataOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -213,7 +213,7 @@ void RoutingBecomeModeratorOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingBecomeModeratorOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -235,7 +235,7 @@ void RoutingAcceptClientOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingAcceptClientOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -258,7 +258,7 @@ void RoutingCreateDataObjectOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingCreateDataObjectOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -279,7 +279,7 @@ void RoutingDeleteDataObjectOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingDeleteDataObjectOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -301,7 +301,7 @@ void RoutingInviteClientOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingInviteClientOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -325,7 +325,7 @@ void RoutingModifyDataObjectOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingModifyDataObjectOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -362,7 +362,7 @@ void RoutingUnsubscribeDataObjectOp::Virtual0C()
     AddOp();
 }
 
-// Shared physical reply2c8e90, zero duplicate primary quota.
+
 WONStatus RoutingUnsubscribeDataObjectOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType != 66) return (WONStatus)100104;
@@ -422,13 +422,13 @@ RoutingUnsubscribeDataObjectOp::RoutingUnsubscribeDataObjectOp(RoutingConnection
     :RoutingOp(connection) { mLinkId=0; mFlags=0; }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c8390
 // (public: virtual __thiscall WONAPI::RoutingDataObject::~RoutingDataObject(void)    [??1RoutingDataObject@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x006c8d90
 // (public: virtual __thiscall WONAPI::RoutingUnsubscribeDataObjectOp::~RoutingUnsubscribeDataObjectOp(void)    [??1RoutingUnsubscribeDataObjectOp@WONAPI@)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c4200
 // (public: virtual void * __thiscall WONAPI::RoutingAcceptClientOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingAcceptClientOp@WONAPI@@UAEP)
 // TEMPLATE: WON 0x006c4220
@@ -438,7 +438,7 @@ RoutingUnsubscribeDataObjectOp::RoutingUnsubscribeDataObjectOp(RoutingConnection
 // TEMPLATE: WON 0x006c7040
 // (public: virtual __thiscall WONAPI::RoutingInviteClientOp::~RoutingInviteClientOp(void)    [??1RoutingInviteClientOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c48f0
 // (public: virtual void * __thiscall WONAPI::RoutingCreateDataObjectOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingCreateDataObjectOp@WONA)
 // TEMPLATE: WON 0x006c4910
@@ -458,6 +458,6 @@ RoutingUnsubscribeDataObjectOp::RoutingUnsubscribeDataObjectOp(RoutingConnection
 // TEMPLATE: WON 0x006c8d70
 // (public: virtual void * __thiscall WONAPI::RoutingUnsubscribeDataObjectOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingUnsubscribeDataObj)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c8370
 // (public: virtual void * __thiscall WONAPI::RoutingDataObject::`scalar deleting destructor'(unsigned int)    [??_GRoutingDataObject@WONAPI@@UAEPAXI@Z])

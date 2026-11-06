@@ -25,7 +25,7 @@ ColorSchemeConfig::ColorSchemeConfig()
 }
 // FontConfig construction remains deferred: the real FontDescriptor default
 // constructor zeroing mStyle/mSize is absent from the shared declaration.
-// Raw unselected source/object evidence is retained in this lane build directory.
+
 
 /* DEFERRED / ZERO CREDIT: FontConfig::FontConfig, native38a1c0/107B.
    This full unselected draft is retained for later models at owner request.
@@ -43,6 +43,6 @@ FontConfig::FontConfig()
 }
 */
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00788340
 // (public: virtual __thiscall ColorSchemeConfig::~ColorSchemeConfig(void)    [??1ColorSchemeConfig@@UAE@XZ])

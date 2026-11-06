@@ -13,7 +13,7 @@
 namespace WONAPI {
 // FUNCTION: WON 0x7f8050
 GameOptionsPopup::~GameOptionsPopup() {}
-// Native3f80f0/28 wrapper, zero quota.
+
 // FUNCTION: WON 0x007f80f0
 void GameOptionsPopup::AddItem(const GUIString& inText,int inAction)
 {
@@ -72,6 +72,6 @@ GameOptionsPopup::GameOptionsPopup()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007f8030
 // (protected: virtual void * __thiscall WONAPI::GameOptionsPopup::`scalar deleting destructor'(unsigned int)    [??_GGameOptionsPopup@WONAPI@@MAEPAXI@Z])

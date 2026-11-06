@@ -60,7 +60,7 @@ void AsyncOpContainer::Pump(unsigned long waitTime,int maxOps)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0069f7c0
 // (public: virtual __thiscall WONAPI::Event::~Event(void)    [??1Event@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x0069f7e0

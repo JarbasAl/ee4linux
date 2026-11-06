@@ -1,6 +1,6 @@
 // C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyPlayerOptionsCtrl.cpp (__FILE__ 0x8d0e70, InitComponent's
 // lines 50..70). The game room's player rows: 0x299b17..0x29a43d (EELobbyPlayer.cpp's slot and player classes end at
-// 0x299b17). Module flags (r12-misc-h4, round 12).
+// 0x299b17). Module flags.
 #include <windows.h>
 #include <stdio.h>
 #include <string>
@@ -257,5 +257,5 @@ void EELobbyPlayerOptionsCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 // TEMPLATE: EXE 0x69a3bd
 // (SafeGetComponent<EELobbyColorButton>)
 
-// r24-lobby-player-gfx: the ICF-shared copy LINK kept in this unit's range
+//: the ICF-shared copy LINK kept in this unit's range
 // SYNTHETIC: EXE 0x699dcd

@@ -50,7 +50,7 @@ void InputBox::AdjustTextRect()
 	mTextRect.height = Height() - aTopPad-aBottomPad;
 }
 
-// Native 2f8450 small support; zero quota.
+
 // FUNCTION: WON 0x006f8450
 void InputBox::SetIcon(Image *theIcon)
 {
@@ -60,7 +60,7 @@ void InputBox::SetIcon(Image *theIcon)
 	Invalidate();
 }
 
-// Native 2f8510 small support; zero quota.
+
 // FUNCTION: WON 0x006f8510
 void InputBox::Virtual08()
 {
@@ -68,7 +68,7 @@ void InputBox::Virtual08()
 	AdjustTextRect();
 }
 
-// Native 2f8530 small support; zero quota.
+
 // FUNCTION: WON 0x006f8530
 void InputBox::Virtual0C(int &width, int &height)
 {
@@ -76,7 +76,7 @@ void InputBox::Virtual0C(int &width, int &height)
 	height = mFont->GetHeight() + 6;
 }
 
-// Native 2f8560 small support; zero quota.
+
 // FUNCTION: WON 0x006f8560
 void InputBox::SetCharWidth(int theEm)
 {
@@ -181,7 +181,7 @@ void InputBox::Virtual2C(int x, int y, int theButton)
 	}
 }
 
-// Native 2f8790 small support; zero quota.
+
 // FUNCTION: WON 0x006f8790
 void InputBox::Virtual30(int x, int y, int theButton)
 {
@@ -190,7 +190,7 @@ void InputBox::Virtual30(int x, int y, int theButton)
 		mSelecting = false;
 }
 
-// Native 2f87a0 small support; zero quota.
+
 // FUNCTION: WON 0x006f87a0
 void InputBox::Virtual28()
 {
@@ -198,14 +198,14 @@ void InputBox::Virtual28()
 	mSelecting = false;
 }
 
-// Native 2f87b0 small support; zero quota.
+
 // FUNCTION: WON 0x006f87b0
 void InputBox::Virtual38(int x, int y)
 {
 	CheckSel(x,y,false);
 }
 
-// Native 2f87d0 small support; zero quota.
+
 // FUNCTION: WON 0x006f87d0
 void InputBox::SetCursorBlinkRate(int theOnTime, int theOffTime) 
 {
@@ -596,7 +596,7 @@ bool InputBox::Virtual54(int theKey)
 	return true;
 }
 
-// Native 2f9960 small support; zero quota.
+
 // FUNCTION: WON 0x006f9960
 const GUIString& InputBox::GetText() const
 {
@@ -606,7 +606,7 @@ const GUIString& InputBox::GetText() const
 		return mPasswordText;
 }
 
-// Native 2f9970 small support; zero quota.
+
 // FUNCTION: WON 0x006f9970
 void InputBox::SetPasswordChar(char theChar)
 {
@@ -614,7 +614,7 @@ void InputBox::SetPasswordChar(char theChar)
 	SetText(mText,false);
 }
 
-// Native 2f9990 small support; zero quota.
+
 // FUNCTION: WON 0x006f9990
 void InputBox::SetText(const GUIString &theText, bool sendEvent)
 {
@@ -624,7 +624,7 @@ void InputBox::SetText(const GUIString &theText, bool sendEvent)
 	Invalidate();
 }
 
-// Native 2f99c0 small support; zero quota.
+
 // FUNCTION: WON 0x006f99c0
 void InputBox::Clear(bool sendEvent)
 {
@@ -792,7 +792,7 @@ InputBox::InputBox()
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f81d0
 // (public: virtual void * __thiscall WONAPI::InputBox::`scalar deleting destructor'(unsigned int)    [??_GInputBox@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x006f81f0
@@ -802,7 +802,7 @@ InputBox::InputBox()
 // TEMPLATE: WON 0x0071ee40
 // (protected: void __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::_Tidy(void)    [?_Tidy@?$deque@VGUIStri)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f8270
 // (public: virtual __thiscall WONAPI::InputBox::~InputBox(void)    [??1InputBox@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x0071c350

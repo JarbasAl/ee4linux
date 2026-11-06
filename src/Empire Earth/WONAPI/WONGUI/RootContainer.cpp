@@ -280,7 +280,7 @@ void RootContainer::Virtual78(Cursor *theCursor)
 
 // Native complete destructor3043c0: actual map,set,listener members then external Container base.
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00704230
 // (public: virtual void * __thiscall WONAPI::RootContainer::`scalar deleting destructor'(unsigned int)    [??_GRootContainer@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00704300
@@ -304,7 +304,7 @@ void RootContainer::Virtual78(Cursor *theCursor)
 // TEMPLATE: WON 0x00724d10
 // (void __cdecl std::_Construct(struct std::pair<int const ,struct WONAPI::RootContainer::BGStruct> *,struct std::pair<int const ,struct WONAPI::RootCont)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071e340
 // (protected: void __thiscall std::_Tree<class WONAPI::Component *,class WONAPI::Component *,struct std::_Setk<class WONAPI::Component *,struct std::less)
 // TEMPLATE: WON 0x00724fe0

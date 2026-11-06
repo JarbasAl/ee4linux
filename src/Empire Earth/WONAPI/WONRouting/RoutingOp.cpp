@@ -37,7 +37,7 @@ RoutingOp::RoutingOp(RoutingConnection* connection)
 {
     mIsDerivedServerOp=false;
 }
-// Native22B actual tail-dispatch support, zero quota. Stops at2c7d36 beforepad/PeerChat.
+
 // FUNCTION: WON 0x006c7d20
 void RoutingOp::Virtual04()
 {
@@ -47,7 +47,7 @@ void RoutingOp::Virtual04()
     }
     Virtual0C();
 }
-// Native actual empty/default/accessor/forwarding support, zero quota.
+
 void RoutingOp::Virtual0C() {}
 WONStatus RoutingOp::Virtual10(unsigned char,ReadBuffer&) { return (WONStatus)100104; }
 // FUNCTION: WON 0x006c7b10
@@ -66,6 +66,6 @@ namespace WONAPI {
 RoutingGroupInfoPtr RoutingOp::GetNewGroupInfo() { return mConnection->Virtual24(); }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c7b20
 // (public: virtual void * __thiscall WONAPI::RoutingOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingOp@WONAPI@@UAEPAXI@Z])

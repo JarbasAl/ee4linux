@@ -48,6 +48,6 @@ WONStatus RoutingGetBadUserListOp::Virtual10(unsigned char inMsgType,ReadBuffer&
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c5600
 // (public: __thiscall WONAPI::RoutingBadUser::~RoutingBadUser(void)    [??1RoutingBadUser@WONAPI@@QAE@XZ])

@@ -111,7 +111,7 @@ const BigInteger BigInteger::ZERO = BigInteger(0);
 const BigInteger BigInteger::ONE = BigInteger(1);
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d56c0
 // (_$E36    [_$E36])
 // TEMPLATE: WON 0x007d56d0
@@ -129,11 +129,11 @@ const BigInteger BigInteger::ONE = BigInteger(1);
 // TEMPLATE: WON 0x007d5740
 // (_$E39    [_$E39])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007daf40
 // (public: class std::basic_string<unsigned char,struct std::char_traits<unsigned char>,class std::allocator<unsigned char> > & __thiscall std::basic_str)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007daea0
 // (public: class std::_Ptrit<unsigned char,int,unsigned char *,unsigned char &,unsigned char *,unsigned char &> __thiscall std::basic_string<unsigned cha)
 // TEMPLATE: WON 0x007daee0

@@ -279,17 +279,17 @@ SmartPtr<NativeImage> RawImage8::GetNative(DisplayContext* context) {
     return native;
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00728790
 // (public: __thiscall WONAPI::ProgramImage::ProgramImage(int,int,void (__cdecl*)(class WONAPI::Graphics &,int,int))    [??0ProgramImage@WONAPI@@QAE@HHP6A)
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00728900
 // (public: virtual void * __thiscall WONAPI::NativeMask::`scalar deleting destructor'(unsigned int)    [??_GNativeMask@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00728b00
 // (public: virtual void * __thiscall WONAPI::NativeImage::`scalar deleting destructor'(unsigned int)    [??_GNativeImage@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00728d80
 // (public: virtual void * __thiscall WONAPI::RawImage32::`scalar deleting destructor'(unsigned int)    [??_GRawImage32@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00729260

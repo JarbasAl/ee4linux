@@ -23,7 +23,7 @@ bool VersionBaseOp::IsFiltered(const std::string &theVersion, const std::string&
 {
 	FilterStringSet aFilterSet;
 
-	// Is the data empty? 
+	// Is the data empty?
 	if (theVersionData.empty())
 		return false;
 	
@@ -59,7 +59,7 @@ bool VersionBaseOp::IsFiltered(const std::string &theVersion, const std::string&
 		{
 			aKeyValue = versionDescription.substr(aSpacePos+1, aLineStart-(aSpacePos+1));
 
-			// Depending upon how the info was entered, we might have '\n' or '\r\n' line breaks, 
+			// Depending upon how the info was entered, we might have '\n' or '\r\n' line breaks,
 			// so assume the worst and remove both as needed.
 			unsigned int aRemove = aKeyValue.find('\n');
 			if (aRemove != std::string::npos)

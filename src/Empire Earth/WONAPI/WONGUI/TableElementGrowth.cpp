@@ -39,7 +39,7 @@ void TableElement::EnsureNumRows(int numRows)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071b490
 // (public: unsigned int __thiscall std::vector<struct WONAPI::TableElement::CellInfo,class std::allocator<struct WONAPI::TableElement::CellInfo> >::size()
 // TEMPLATE: WON 0x007206b0

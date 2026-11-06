@@ -8,8 +8,8 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
-// NEW original-backed RoutingCreateGroupOp family; scratch only, no compile/admission.
-// Original normal destructors/getters/deleting support carry zero new quota.
+
+
 namespace WONAPI {
 
 // FUNCTION: WON 0x006c4a80
@@ -80,14 +80,14 @@ void RoutingCreateGroupOp::CheckLeaveGroup(short inStatus)
 }
 }
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c4b40
 // (public: virtual __thiscall WONAPI::RoutingCreateGroupOp::~RoutingCreateGroupOp(void)    [??1RoutingCreateGroupOp@WONAPI@@UAE@XZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c4b10
 // (public: virtual long __thiscall WONAPI::RoutingCreateGroupOp::GetType(void)const     [?GetType@RoutingCreateGroupOp@WONAPI@@UBEJXZ])
 
-// Compiler-generated and header-inline functions this unit emits (names in analysis/exe/names.txt):
+// Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006c4b20
 // (public: virtual void * __thiscall WONAPI::RoutingCreateGroupOp::`scalar deleting destructor'(unsigned int)    [??_GRoutingCreateGroupOp@WONAPI@@UAEPAX)
