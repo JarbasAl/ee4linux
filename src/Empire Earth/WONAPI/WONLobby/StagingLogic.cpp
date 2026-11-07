@@ -633,8 +633,6 @@ void StagingLogic::Fn3F1200()
                 mLastReadyTime = aTime;
                 if (LobbyFn35E340()) {
                     LobbyFn35B9A0(::LobbyGlobal_AllReady_Sound.get());
-                    mLastAllReady = isReady;
-                    return;
                 }
             }
         }

@@ -184,7 +184,9 @@ bool EEUCTransport::CanLoad(EEComplexUnit* inTransport, EEComplexUnit* inUnit)
         if (theUnitTile.GetX() != -10000) {
             float theDistance = inUnit->DistanceSquaredToTile(theUnitTile);
             if (theDistance < theRange) {
-                if (inTransport->DistanceSquaredToTile(theUnitTile) + theDistance < theRange) {
+                if (!(inTransport->DistanceSquaredToTile(theUnitTile) + theDistance < theRange)) {
+                    theResult = false;
+                } else {
                     if (EEGetPathLengthTo(inUnit, theUnitTile, 0x10, false) != kTransportNoPath) {
                         theResult = true;
                     } else if (inTransport->DistanceSquaredTo(inUnit) < theRange) {
@@ -195,8 +197,6 @@ bool EEUCTransport::CanLoad(EEComplexUnit* inTransport, EEComplexUnit* inUnit)
                     } else {
                         theResult = false;
                     }
-                } else {
-                    theResult = false;
                 }
             }
         }

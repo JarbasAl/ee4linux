@@ -238,15 +238,17 @@ float EECPASGUProphetCalamityAnalyzerVolcano::ApplyChokePointBonus(float inScore
 EEComplexUnit* EECPASGUProphetCalamityAnalyzerVolcano::PickTarget()
 {
     std::vector<EECPASTargetUnit*> theTargets;
+    EETileCoordinate theTile;
     EEComplexUnit* theResult = NULL;
     this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenOnlyBuildings(this->mProphet, this, true));
-    if (!theTargets.empty())
+    if (theTargets.size() > 0)
         Fn4EEF9(theTargets, UMFloatToLong(gPhysics->mRandom.GenerateUnit()));
     while (!theTargets.empty()) {
-        EETileCoordinate theTile(theTargets.back()->mUnit->mTileX, theTargets.back()->mUnit->mTileY);
+        theTile = theTargets.back()->mUnit->GetTile();
+        EEComplexUnit* theCast = theTargets.back()->mUnit;
         GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
         if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation,
-                                   theTile.GetX(), theTile.GetY(), true, theTargets.back()->mUnit) == 0) {
+                                   theTile.GetX(), theTile.GetY(), true, theCast) == 0) {
             this->mTile.mX = theTile.GetX();
             this->mTile.mY = theTile.GetY();
             this->SetUnit(theTargets.back()->mUnit);
@@ -361,11 +363,7 @@ float EECPASGUProphetCalamityAnalyzerEarthquake::ApplyLargestTownBonus(float inS
 }
 
 // FUNCTION: EXE 0x4098f0
-// Returns the number of the player's towns
-unsigned long EEPlayer::GetNumTowns() const
-{
-    return this->mTowns.size();
-}
+// EEPlayer::GetNumTowns (ee/EEPlayer.h inline; its COMDAT is emitted here, after its first out-of-line user above)
 
 // FUNCTION: EXE 0x409909
 // Picks a castable target: a wonder first (sorted nearest first, tried from the farthest), else the building on
@@ -374,22 +372,25 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerEarthquake::PickTarget()
 {
     std::vector<EETileCoordinate> theTiles;
     std::vector<EECPASTargetUnit*> theTargets;
+    EETileCoordinate theTile;
     EEComplexUnit* theResult = NULL;
     if (this->mProphet->mSubGroup->mCounts.mNumWonders > 0) {
         this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenOnlyWonders(this->mProphet, this, true));
         if (theTargets.size() > 0) {
             std::sort(theTargets.begin(), theTargets.end(), EECPAITargetNearest(this->mProphet->GetUnit()->GetTile()));
-            while (theTargets.size() > 0) {
-                EETileCoordinate theTile(theTargets.back()->mUnit->mTileX, theTargets.back()->mUnit->mTileY);
+            while (!theTargets.empty()) {
+                theTile = theTargets.back()->mUnit->GetTile();
+                EEComplexUnit* theCast = theTargets.back()->mUnit;
                 GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
-                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theTargets.back()->mUnit) == 0) {
+                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theCast) != 0)
+                    theTargets.pop_back();
+                else {
                     this->mTile.mX = theTile.GetX();
                     this->mTile.mY = theTile.GetY();
                     this->SetUnit(theTargets.back()->mUnit);
                     theResult = this->mUnit;
                     break;
                 }
-                theTargets.pop_back();
             }
         }
     }
@@ -400,33 +401,35 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerEarthquake::PickTarget()
             theTiles.resize(theTargets.size());
             for (long i = theTargets.size() - 1; i >= 0; i--)
                 theTiles[i] = theTargets[i]->mUnit->GetTile();
-            U2DPoint<long> theTile = U2DComputeCenterPoint(theTiles, true);
+            theTile = U2DComputeCenterPoint(theTiles, true);
             for (i = theTargets.size() - 1; i >= 0; i--) {
                 EETileCoordinate theUnitTile = theTargets[i]->mUnit->GetTile();
-                if (theUnitTile.mX != theTile.mX || theUnitTile.GetY() != theTile.GetY())
-                    continue;
-                EEComplexUnit* theUnit = theTargets[i]->mUnit;
-                if (theUnit != NULL) {
-                    GE3DPoint theLocation(theTile.mX + 0.5f, theTile.GetY() + 0.5f, 0.0f);
-                    if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.mX, theTile.GetY(), true, theUnit) == 0) {
-                        this->SetUnit(theUnit);
-                        this->mTile.mX = theTile.mX;
-                        this->mTile.mY = theTile.GetY();
-                        theResult = this->mUnit;
+                if (theUnitTile == theTile) {
+                    EEComplexUnit* theUnit = theTargets[i]->mUnit;
+                    if (theUnit != NULL) {
+                        GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
+                        if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theUnit) == 0) {
+                            this->SetUnit(theUnit);
+                            this->mTile.SetXY(theTile.GetX(), theTile.GetY());
+                            theResult = this->mUnit;
+                        }
                     }
+                    break;
                 }
-                break;
             }
-            while (theTargets.size() > 0 && theResult == NULL) {
-                EETileCoordinate theTile(theTargets.back()->mUnit->mTileX, theTargets.back()->mUnit->mTileY);
+            while (!theTargets.empty() && theResult == NULL) {
+                theTile = theTargets.back()->mUnit->GetTile();
+                EEComplexUnit* theCast = theTargets.back()->mUnit;
                 GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
-                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theTargets.back()->mUnit) == 0) {
+                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theCast) != 0)
+                    theTargets.pop_back();
+                else {
                     this->mTile.mX = theTile.GetX();
                     this->mTile.mY = theTile.GetY();
                     this->SetUnit(theTargets.back()->mUnit);
                     theResult = this->mUnit;
-                } else
-                    theTargets.pop_back();
+                    break;
+                }
             }
         }
     }
@@ -473,14 +476,15 @@ float EECPASGUProphetCalamityAnalyzerEarthquake::Evaluate()
 EEComplexUnit* EECPASGUProphetCalamityAnalyzerFire::PickTarget()
 {
     std::vector<EECPASTargetUnit*> theTargets;
+    EETileCoordinate theTile;
     EEComplexUnit* theResult = NULL;
     this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenOnlySplashUnits(this->mProphet, this, true));
     if (theTargets.size() > 0) {
         std::sort(theTargets.begin(), theTargets.end(), EECPAITargetPriority(this->mProphet->GetUnit()->GetTile()));
-        while (theTargets.size() != 0) {
-            EETileCoordinate theTile(theTargets.back()->mUnit->mTileX, theTargets.back()->mUnit->mTileY);
-            GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
-            if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theTargets.back()->mUnit) == 0) {
+        while (!theTargets.empty()) {
+            theTile = theTargets.back()->mUnit->GetTile();
+            EEComplexUnit* theCast = theTargets.back()->mUnit;
+            if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), GE3DPoint(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f), theTile.GetX(), theTile.GetY(), true, theCast) == 0) {
                 this->mTile.mX = theTile.GetX();
                 this->mTile.mY = theTile.GetY();
                 this->SetUnit(theTargets.back()->mUnit);
@@ -496,12 +500,13 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerFire::PickTarget()
         if (theTargets.size() > 0) {
             std::sort(theTargets.begin(), theTargets.end(), EECPAITargetPriority(this->mProphet->GetUnit()->GetTile()));
             while (!theTargets.empty()) {
-                long theX = theTargets.back()->mUnit->mTileX;
-                long theY = theTargets.back()->mUnit->GetTileY();
-                GE3DPoint theLocation(theX + 0.5f, theY + 0.5f, 0.0f);
-                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theX, theY, true, theTargets.back()->mUnit) == 0) {
-                    this->mTile.mX = theX;
-                    this->mTile.mY = theY;
+                theTile = theTargets.back()->mUnit->GetTile();
+                EEComplexUnit* theCast = theTargets.back()->mUnit;
+                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), GE3DPoint(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f), theTile.GetX(), theTile.GetY(), true, theCast) == 0) {
+                    // LOST-DEBUG: none: exact only (second sort: the functor's op= refused, 0x09e07..)
+                    EE_LOST_DEBUG(11);
+                    this->mTile.mX = theTile.GetX();
+                    this->mTile.mY = theTile.GetY();
                     this->SetUnit(theTargets.back()->mUnit);
                     theResult = this->mUnit;
                     break;
@@ -552,21 +557,26 @@ float EECPASGUProphetCalamityAnalyzerFire::ApplySplashBonus(float inScore)
 EEComplexUnit* EECPASGUProphetCalamityAnalyzerPlague::PickTarget()
 {
     std::vector<EECPASTargetUnit*> theTargets;
+    EETileCoordinate theTile;
     EEComplexUnit* theResult = NULL;
     this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenOnlySplashUnits(this->mProphet, this, true));
     if (theTargets.size() > 0) {
         std::sort(theTargets.begin(), theTargets.end(), EECPAITargetPriority(this->mProphet->GetUnit()->GetTile()));
-        while (theTargets.size() != 0) {
-            EETileCoordinate theTile(theTargets.back()->mUnit->mTileX, theTargets.back()->mUnit->mTileY);
+        while (!theTargets.empty()) {
+            theTile = theTargets.back()->mUnit->GetTile();
+            EEComplexUnit* theCast = theTargets.back()->mUnit;
             GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
-            if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theTargets.back()->mUnit) == 0) {
+            if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theCast) != 0) {
+                theTargets.pop_back();
+            } else {
+                // LOST-DEBUG: none: a discarded back() call survives (0xa318)
+                EE_LOST_TRACE(theTargets.back());
                 this->mTile.mX = theTile.GetX();
                 this->mTile.mY = theTile.GetY();
                 this->SetUnit(theTargets.back()->mUnit);
                 theResult = this->mUnit;
                 break;
             }
-            theTargets.pop_back();
         }
     }
     if (theResult == NULL) {
@@ -575,17 +585,22 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerPlague::PickTarget()
         if (theTargets.size() > 0) {
             std::sort(theTargets.begin(), theTargets.end(), EECPAITargetPriority(this->mProphet->GetUnit()->GetTile()));
             while (!theTargets.empty()) {
-                long theX = theTargets.back()->mUnit->mTileX;
-                long theY = theTargets.back()->mUnit->GetTileY();
-                GE3DPoint theLocation(theX + 0.5f, theY + 0.5f, 0.0f);
-                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theX, theY, true, theTargets.back()->mUnit) == 0) {
-                    this->mTile.mX = theX;
-                    this->mTile.mY = theY;
+                theTile = theTargets.back()->mUnit->GetTile();
+                EEComplexUnit* theCast = theTargets.back()->mUnit;
+                GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
+                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theCast) != 0) {
+                    theTargets.pop_back();
+                } else {
+                    // LOST-DEBUG: none: a discarded back() call survives (0xa318)
+                    EE_LOST_TRACE(theTargets.back());
+                    // LOST-DEBUG: none: exact only (second sort: the functor's op= refused)
+                    EE_LOST_DEBUG(8);
+                    this->mTile.mX = theTile.GetX();
+                    this->mTile.mY = theTile.GetY();
                     this->SetUnit(theTargets.back()->mUnit);
                     theResult = this->mUnit;
                     break;
                 }
-                theTargets.pop_back();
             }
         }
     }
@@ -677,14 +692,16 @@ float EECPASGUProphetCalamityAnalyzerPlague::ApplySplashBonus(float inScore)
 EEComplexUnit* EECPASGUProphetCalamityAnalyzerFamine::PickTarget()
 {
     std::vector<EECPASTargetUnit*> theTargets;
+    EETileCoordinate theTile;
     EEComplexUnit* theResult = NULL;
     this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenOnlySplashUnits(this->mProphet, this, true));
     if (theTargets.size() > 0) {
         std::sort(theTargets.begin(), theTargets.end(), EECPAITargetPriority(this->mProphet->GetUnit()->GetTile()));
-        while (theTargets.size() != 0) {
-            EETileCoordinate theTile(theTargets.back()->mUnit->mTileX, theTargets.back()->mUnit->mTileY);
+        while (!theTargets.empty()) {
+            theTile = theTargets.back()->mUnit->GetTile();
+            EEComplexUnit* theCast = theTargets.back()->mUnit;
             GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
-            if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theTargets.back()->mUnit) == 0) {
+            if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theCast) == 0) {
                 this->mTile.mX = theTile.GetX();
                 this->mTile.mY = theTile.GetY();
                 this->SetUnit(theTargets.back()->mUnit);
@@ -700,12 +717,14 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerFamine::PickTarget()
         if (theTargets.size() > 0) {
             std::sort(theTargets.begin(), theTargets.end(), EECPAITargetPriority(this->mProphet->GetUnit()->GetTile()));
             while (!theTargets.empty()) {
-                long theX = theTargets.back()->mUnit->mTileX;
-                long theY = theTargets.back()->mUnit->GetTileY();
-                GE3DPoint theLocation(theX + 0.5f, theY + 0.5f, 0.0f);
-                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theX, theY, true, theTargets.back()->mUnit) == 0) {
-                    this->mTile.mX = theX;
-                    this->mTile.mY = theY;
+                theTile = theTargets.back()->mUnit->GetTile();
+                EEComplexUnit* theCast = theTargets.back()->mUnit;
+                GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
+                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theCast) == 0) {
+                    // LOST-DEBUG: none: exact only (second sort: the functor's op= refused, 0x0a74c..)
+                    EE_LOST_DEBUG(8);
+                    this->mTile.mX = theTile.GetX();
+                    this->mTile.mY = theTile.GetY();
                     this->SetUnit(theTargets.back()->mUnit);
                     theResult = this->mUnit;
                     break;
@@ -798,39 +817,42 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerHurricane::PickTarget()
 {
     std::vector<EETileCoordinate> theTiles;
     std::vector<EECPASTargetUnit*> theTargets;
+    EETileCoordinate theTile;
     EEComplexUnit* theResult = NULL;
     this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenBase(this->mProphet, this, true));
     if (theTargets.size() > 0) {
         theTiles.resize(theTargets.size());
         for (long i = theTargets.size() - 1; i >= 0; i--)
             theTiles[i] = theTargets[i]->mUnit->GetTile();
-        U2DPoint<long> theTile = U2DComputeCenterPoint(theTiles, true);
+        theTile = U2DComputeCenterPoint(theTiles, true);
         for (i = theTargets.size() - 1; i >= 0; i--) {
             EETileCoordinate theUnitTile = theTargets[i]->mUnit->GetTile();
-            if (theUnitTile.GetX() != theTile.GetX() || theUnitTile.GetY() != theTile.GetY())
-                continue;
-            EEComplexUnit* theUnit = theTargets[i]->mUnit;
-            if (theUnit != NULL) {
-                GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
-                if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theUnit) == 0) {
-                    this->SetUnit(theUnit);
-                    this->mTile.mX = theTile.GetX();
-                    this->mTile.mY = theTile.GetY();
-                    theResult = this->mUnit;
+            if (theUnitTile == theTile) {
+                EEComplexUnit* theUnit = theTargets[i]->mUnit;
+                if (theUnit != NULL) {
+                    GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
+                    if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theUnit) == 0) {
+                        this->SetUnit(theUnit);
+                        this->mTile.SetXY(theTile.GetX(), theTile.GetY());
+                        theResult = this->mUnit;
+                    }
                 }
+                break;
             }
-            break;
         }
-        while (theTargets.size() > 0 && theResult == NULL) {
-            EETileCoordinate theTile(theTargets.back()->mUnit->mTileX, theTargets.back()->mUnit->mTileY);
+        while (!theTargets.empty() && theResult == NULL) {
+            theTile = theTargets.back()->mUnit->GetTile();
+            EEComplexUnit* theCast = theTargets.back()->mUnit;
             GE3DPoint theLocation(theTile.GetX() + 0.5f, theTile.GetY() + 0.5f, 0.0f);
-            if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theTargets.back()->mUnit) == 0) {
+            if (this->mCalamityClass->CanCastAt(this->mProphet->GetUnit(), theLocation, theTile.GetX(), theTile.GetY(), true, theCast) != 0)
+                theTargets.pop_back();
+            else {
                 this->mTile.mX = theTile.GetX();
                 this->mTile.mY = theTile.GetY();
                 this->SetUnit(theTargets.back()->mUnit);
                 theResult = this->mUnit;
-            } else
-                theTargets.pop_back();
+                break;
+            }
         }
     }
     return theResult;

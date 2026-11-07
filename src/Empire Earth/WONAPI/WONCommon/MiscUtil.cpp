@@ -72,10 +72,9 @@ bool GetBrowserCommandLineFromRegistry(std::string& browser)
         browser=command;
         std::string::size_type last=browser.length();
         while(last>0) {
-            last--;
-            if(browser[last]!=' ' && browser[last]!='\t' && browser[last]!='\n')
+            if(browser[last-1]!=' ' && browser[last-1]!='\t' && browser[last-1]!='\n')
                 break;
-            browser.erase(last);
+            browser.erase(last-1);
             last=browser.length();
         }
     }

@@ -1265,7 +1265,7 @@ void EERenderObject::FillUnit(EEUnit* inUnit, EERenderUnit* outUnit, EERenderUni
                     outUnit->mHealthBars.resize(theComplex->GetNumCargoUnits() + 1, 0.0f);
                     for (unsigned long j = 0; j < theComplex->GetNumCargoUnits(); j++)
                         outUnit->mHealthBars[j + 1] = (float)theComplex->mCargo[j]->mHitPoints
-                                               / theComplex->mCargo[j]->mStats->mMaxHitPoints;
+                                               / theComplex->mCargo[j]->GetStats()->mMaxHitPoints;
                 }
                 outUnit->mHealthBars[0] = (float)inUnit->GetHitPoints() / inUnit->mStats->mMaxHitPoints;
                 outUnit->mHealth = inUnit->mStats->mPower == 0 ? -1.0f
@@ -1278,8 +1278,8 @@ void EERenderObject::FillUnit(EEUnit* inUnit, EERenderUnit* outUnit, EERenderUni
                 && (theComplex->GetPlayer() == theCurrent || theComplex->GetPlayer()->mEnemies[theCurrent->GetPlayerID()] == 0)) {
                 outUnit->mHealthBars.resize(theComplex->GetNumCargoUnits() + 1, 0.0f);
                 for (unsigned long j = 0; j < theComplex->GetNumCargoUnits(); j++)
-                    outUnit->mHealthBars[j + 1] = (float)theComplex->mCargo[j]->mHitPoints
-                                           / theComplex->mCargo[j]->mStats->mMaxHitPoints;
+                    outUnit->mHealthBars[j + 1] = (float)theComplex->mCargo[j]->GetHitPoints()
+                                           / theComplex->mCargo[j]->GetStats()->GetMaxHitPoints();
             }
             outUnit->mHealthBars[0] = (float)inUnit->GetHitPoints() / inUnit->mStats->mMaxHitPoints;
             outUnit->mHealth = inUnit->mStats->mPower == 0 ? -1.0f : (float)theComplex->mPower / theStats->mPower;

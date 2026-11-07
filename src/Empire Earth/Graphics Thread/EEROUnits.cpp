@@ -52,6 +52,7 @@
 #include "ee/EEUIFMainGame.h"
 #include "ee/EEUIFScenarioEditor.h"
 #include "ee/EEROUnits.h"
+#include "LostDebug.h"
 
 extern bool gShowCollisionSpheres;          // 0x5318dc (the units' collision spheres are drawn; provisional name)
 extern bool gInCinematic;                   // 0x5318e0 (no rings, bars or labels; provisional name)
@@ -360,6 +361,8 @@ void EEROUnits::DrawPlacement(EERenderUnitRecord& inRecord)
     long theX = inRecord.mTileX;
     long theY = inRecord.mTileY;
     unsigned long theLineCount = 0;
+    float theLineX;
+    float theLineY;
     bool theRows[12][12];
     bool theColumns[12][12];
     memset(theRows, 0, sizeof(theRows));
@@ -408,23 +411,20 @@ void EEROUnits::DrawPlacement(EERenderUnitRecord& inRecord)
     float theLeft = (float)theX - theHalf;
     float theTop = (float)theY - theHalf;
     theEnd.SetU(gU4E9330 + 3.0f);
-    long i;
     long j;
-    for (i = 0; i <= theSize; i++) {
+    for (theX = 0; theX <= theSize; theX++) {
         for (j = 0; j <= theSize; j++) {
-            float theLineX;
-            float theLineY;
-            if ((i == 0 || i == theSize) && j != theSize) {
+            if ((theX == 0 || theX == theSize) && j != theSize) {
                 sLines[theLineCount].SetTextureCoordinates(theStart, theEnd);
                 sLines[theLineCount].SetColor(gBarColor);
                 thePoint.SetX(theLineX = j + theLeft);
-                thePoint.SetY(theLineY = i + theTop);
-                thePoint.SetZ(inRecord.mHeights[j][i]);
+                thePoint.SetY(theLineY = theX + theTop);
+                thePoint.SetZ(inRecord.mHeights[j][theX]);
                 Fn118676(thePoint, theScreenPoint);
                 sLines[theLineCount].SetStartPoint(theScreenPoint);
                 thePoint.SetX(theLineX + 1.0f);
                 thePoint.SetY(theLineY);
-                thePoint.SetZ(inRecord.mHeights[j + 1][i]);
+                thePoint.SetZ(inRecord.mHeights[j + 1][theX]);
                 Fn118676(thePoint, theScreenPoint);
                 sLines[theLineCount].SetEndPoint(theScreenPoint);
                 if (++theLineCount == 0x40) {
@@ -432,18 +432,18 @@ void EEROUnits::DrawPlacement(EERenderUnitRecord& inRecord)
                     theLineCount = 0;
                 }
             }
-            if ((j != 0 && j != theSize) || i == theSize)
+            if ((j != 0 && j != theSize) || theX == theSize)
                 continue;
             sLines[theLineCount].SetTextureCoordinates(theStart, theEnd);
             sLines[theLineCount].SetColor(gBarColor);
             thePoint.SetX(theLineX = j + theLeft);
-            thePoint.SetY(theLineY = i + theTop);
-            thePoint.SetZ(inRecord.mHeights[j][i]);
+            thePoint.SetY(theLineY = theX + theTop);
+            thePoint.SetZ(inRecord.mHeights[j][theX]);
             Fn118676(thePoint, theScreenPoint);
             sLines[theLineCount].SetStartPoint(theScreenPoint);
             thePoint.SetX(theLineX);
             thePoint.SetY(theLineY + 1.0f);
-            thePoint.SetZ(inRecord.mHeights[j][i + 1]);
+            thePoint.SetZ(inRecord.mHeights[j][theX + 1]);
             Fn118676(thePoint, theScreenPoint);
             sLines[theLineCount].SetEndPoint(theScreenPoint);
             if (++theLineCount == 0x40) {
@@ -452,31 +452,29 @@ void EEROUnits::DrawPlacement(EERenderUnitRecord& inRecord)
             }
         }
     }
-    for (i = 0; i < theSize; i++) {
+    for (theX = 0; theX < theSize; theX++) {
         for (j = 0; j < theSize; j++) {
-            if (inRecord.mCells[j][i])
+            if (inRecord.mCells[j][theX])
                 continue;
-            theRows[j][i] ^= 1;
-            theRows[j][i + 1] ^= 1;
-            theColumns[j][i] ^= 1;
-            theColumns[j + 1][i] ^= 1;
+            theRows[j][theX] ^= 1;
+            theRows[j][theX + 1] ^= 1;
+            theColumns[j][theX] ^= 1;
+            theColumns[j + 1][theX] ^= 1;
         }
     }
-    for (i = 0; i <= theSize; i++) {
+    for (theX = 0; theX <= theSize; theX++) {
         for (j = 0; j <= theSize; j++) {
-            float theLineX;
-            float theLineY;
-            if (theRows[j][i] && j != theSize) {
+            if (theRows[j][theX] && j != theSize) {
                 sLines[theLineCount].SetTextureCoordinates(theStart, theEnd);
                 sLines[theLineCount].SetColor(gBarBackColor);
                 thePoint.SetX(theLineX = j + theLeft);
-                thePoint.SetY(theLineY = i + theTop);
-                thePoint.SetZ(inRecord.mHeights[j][i]);
+                thePoint.SetY(theLineY = theX + theTop);
+                thePoint.SetZ(inRecord.mHeights[j][theX]);
                 Fn118676(thePoint, theScreenPoint);
                 sLines[theLineCount].SetStartPoint(theScreenPoint);
                 thePoint.SetX(theLineX + 1.0f);
                 thePoint.SetY(theLineY);
-                thePoint.SetZ(inRecord.mHeights[j + 1][i]);
+                thePoint.SetZ(inRecord.mHeights[j + 1][theX]);
                 Fn118676(thePoint, theScreenPoint);
                 sLines[theLineCount].SetEndPoint(theScreenPoint);
                 if (++theLineCount == 0x40) {
@@ -484,18 +482,18 @@ void EEROUnits::DrawPlacement(EERenderUnitRecord& inRecord)
                     theLineCount = 0;
                 }
             }
-            if (!theColumns[j][i] || i == theSize)
+            if (!theColumns[j][theX] || theX == theSize)
                 continue;
             sLines[theLineCount].SetTextureCoordinates(theStart, theEnd);
             sLines[theLineCount].SetColor(gBarBackColor);
             thePoint.SetX(theLineX = j + theLeft);
-            thePoint.SetY(theLineY = i + theTop);
-            thePoint.SetZ(inRecord.mHeights[j][i]);
+            thePoint.SetY(theLineY = theX + theTop);
+            thePoint.SetZ(inRecord.mHeights[j][theX]);
             Fn118676(thePoint, theScreenPoint);
             sLines[theLineCount].SetStartPoint(theScreenPoint);
             thePoint.SetX(theLineX);
             thePoint.SetY(theLineY + 1.0f);
-            thePoint.SetZ(inRecord.mHeights[j][i + 1]);
+            thePoint.SetZ(inRecord.mHeights[j][theX + 1]);
             Fn118676(thePoint, theScreenPoint);
             sLines[theLineCount].SetEndPoint(theScreenPoint);
             if (++theLineCount == 0x40) {
@@ -545,9 +543,10 @@ void EEROUnits::DrawSelection()
     for (theIterator = EERenderLists::sInstance.mUnits0.begin();
          theIterator != EERenderLists::sInstance.mUnits0.end(); theIterator++) {
         EERenderUnit* theUnit = theIterator->second;
-        float theSize;
-        if (theUnit->mCategory == kUnitCategoryAmbient || theUnit->mCategory == kUnitCategoryResource || theUnit->mAnimation == 5 || theUnit->mAnimation == 4 ||
-            !((theSize = theUnit->mInfo->mInnerCollisionSphere) > 0.0f))
+        if (theUnit->mCategory == kUnitCategoryAmbient || theUnit->mCategory == kUnitCategoryResource || theUnit->mAnimation == 5 || theUnit->mAnimation == 4)
+            continue;
+        float theSize = theUnit->mInfo->GetInnerCollisionSphere();
+        if (!(theSize > 0.0f))
             continue;
         sSelectionModels[0]->SetGraphicsPostModelTransform(theUnit->mTransformation);
         sSelectionModels[0]->SetGraphicsScale(theSize);
@@ -966,12 +965,20 @@ void EEROUnits::LoadMedia()
 {
     GETransformation theTransformation;
     GE3DPoint theStart;
-    GETextureDescription theDescription = { 1, 0, 16, 0, false, false, true, true };
+    GETextureDescription theDescription;
+    theDescription.mNumMipLevelsToDrop = 0;
+    theDescription.mFrameFormat = 0;
+    theDescription.mIs3DRenderable = false;
+    theDescription.mIsTransparencyEnabled = false;
+    theDescription.mPixelDepth = 16;
+    theDescription.mSurfaceVolatility = 1;
+    theDescription.mHasAlpha = true;
+    theDescription.mCreateMIPMaps = true;
     GE3DPoint thePoint;
     GE3DPoint theInner;
     GE3DPoint theOuter;
-    GETextureCoordinate theLineEnd(3.0f, 0.0f);
     GETextureCoordinate theLineStart;
+    GETextureCoordinate theLineEnd(3.0f, 0.0f);
     UString theName;
     unsigned long theSegments;
     float theAngle;
@@ -1176,24 +1183,23 @@ void EEROUnits::LoadMedia()
             theVertex++;
         }
         unsigned long thePolygon = 0;
-        unsigned long theFirst = 0;
-        unsigned long theNext = 2;
-        unsigned long theLast = theSegments * 2 - 2;
-        for (; thePolygon < theLast; theFirst += 2, theNext += 2) {
-            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex1(thePolygon, theFirst);
-            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex2(thePolygon, theNext);
-            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex3(thePolygon, theNext - 1);
+        theVertex = 0;
+        unsigned long theCount = theSegments * 2;
+        for (; thePolygon < theCount - 2; theVertex += 2) {
+            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex1(thePolygon, theVertex);
+            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex2(thePolygon, theVertex + 2);
+            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex3(thePolygon, theVertex + 1);
             thePolygon++;
-            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex1(thePolygon, theNext - 1);
-            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex2(thePolygon, theNext);
-            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex3(thePolygon, theNext + 1);
+            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex1(thePolygon, theVertex + 1);
+            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex2(thePolygon, theVertex + 2);
+            sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex3(thePolygon, theVertex + 3);
             thePolygon++;
         }
-        sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex1(thePolygon, theFirst);
+        sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex1(thePolygon, theVertex);
         sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex2(thePolygon, 0);
-        sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex3(thePolygon, theFirst + 1);
+        sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex3(thePolygon, theVertex + 1);
         thePolygon++;
-        sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex1(thePolygon, theFirst + 1);
+        sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex1(thePolygon, theVertex + 1);
         sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex2(thePolygon, 0);
         sSelectionModels[k]->GetPolygonArray(0)->SetVertexIndex3(thePolygon, 1);
         if (gModelDetail == 0) {
@@ -1374,6 +1380,8 @@ void Fn118676(const GE3DPoint& inPoint, GE2DPoint& outPoint)
     GE3DPoint theCameraPoint(0.0f, 0.0f, 0.0f);
     GE3DPoint theNormalPoint(0.0f, 0.0f, 0.0f);
     float theW;
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     gU4E8F08.GetCameraInverse().Apply(inPoint, theCameraPoint);
     if (!gOrthographicView)
         gU4E8F08.NormalizePerspectiveCameraPoint(theCameraPoint, theNormalPoint, theW);
@@ -1385,8 +1393,7 @@ void Fn118676(const GE3DPoint& inPoint, GE2DPoint& outPoint)
         theW = 1.0f / theW;
     else
         theW = 1.0f;
-    outPoint.SetX(gU4E8F08.GetHalfWidth() * theNormalPoint.GetX() * theW +
-                  (gU4E8F08.GetXCenter() - gU4E8F08.GetViewRectangle().GetLeft()));
+    outPoint.SetX(theW * (gU4E8F08.GetHalfWidth() * theNormalPoint.GetX()) + (gU4E8F08.GetXCenter() - gU4E8F08.GetViewRectangle().GetLeft()));
     outPoint.SetY(gU4E8F08.GetYCenter() - gU4E8F08.GetViewRectangle().GetTop() -
                   theNormalPoint.GetY() * gU4E8F08.GetHalfWidth() * theW);
 }

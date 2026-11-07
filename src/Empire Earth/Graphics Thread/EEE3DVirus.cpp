@@ -43,12 +43,15 @@
 #include "ee/EEEffect3D.h"
 #include "ee/EEE3DVirus.h"
 #include "ee/EEEffectKindIDs.h"
+#include "LostDebug.h"
 
 // SYNTHETIC: EXE 0x4fdbab
 // SYNTHETIC: EXE 0x4fdbb5
 // SYNTHETIC: EXE 0x4fdbc6
 // SYNTHETIC: EXE 0x4fdbd2
 const UString EEE3DVirus::sData("EEE3DVirus-Data");
+
+#include "ee/EEGamePreferences.h"
 
 // FUNCTION: EXE 0x4fdbee
 // Creates a virus effect on a unit, with no sound or graphic object yet
@@ -114,7 +117,6 @@ long EEE3DVirus::DrawPass6()
 
 // FUNCTION: EXE 0x4fdd68
 // Snapshots the effect's frame, age, scroll, location and orbital angles for drawing and queues it in render queue 3
-// NEAR: the original calls mOrbitals[i]'s _Ptrit::operator+ out of line (inline budget, as EEE3DDisease)
 long EEE3DVirus::Queue(EEEffectQueue* inQueues)
 {
     long i;
@@ -128,9 +130,12 @@ long EEE3DVirus::Queue(EEEffectQueue* inQueues)
         theLocation.SetY(this->mTransformation.GetY());
         theLocation.SetZ(this->mTransformation.GetZ());
         for (i = 0; i < this->mOrbitalCount; i++)
-            this->mAngles[i] = this->mOrbitals[i]->mAngle;
+            this->mAngles[i] = this->mOrbitals[i]->GetAngle();
         GETexture* theTexture;
-        theTexture = this->mGraphicEffect->mGraphicObject ? this->mGraphicEffect->mGraphicObject->mTextures[gScreenIndex] : NULL;
+        if (this->GetGraphicEffect()->GetGraphicObject())
+            theTexture = this->GetGraphicEffect()->GetGraphicObject()->GetTexture(gGamePreferences.mSettings.GetScreenID());
+        else
+            theTexture = NULL;
         inQueues[3][theTexture].push_back(this);
     }
     return theResult;

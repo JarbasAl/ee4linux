@@ -103,6 +103,12 @@ EEE3DSnow::~EEE3DSnow()
 {
 }
 
+// (a tile accessor one level down: the arm order and the 0 register follow the bool)
+static inline bool IsWaterTile(EEMapTile* inTile)
+{
+    return inTile->mTerrainType == kTerrainDeepWater || inTile->mTerrainType == kTerrainShallowWater;
+}
+
 // FUNCTION: EXE 0x4f9caf
 // Adds a snowflake at a random point of a random storm tile at spawn height, falling to the ground (0 over water)
 long EEE3DSnow::AddFlake()
@@ -112,13 +118,14 @@ long EEE3DSnow::AddFlake()
     float theRandom = Fn102F3D(0.0f, 1.0f);
     float theX = theTile.GetX() + theRandom;
     theRandom = Fn102F3D(0.0f, 1.0f);
+    long theTileY = theTile.GetY();
     thePosition.mX = theX;
-    thePosition.mY = theTile.GetY() + theRandom;
-    thePosition.mZ = this->mSpawnHeight;
+    thePosition.mY = theTileY + theRandom;
+    thePosition.SetZ(this->mSpawnHeight);
     EEMapTile* theMapTile = gWorld.GetMap()->GetTile(theTile.GetX(), theTile.GetY());
-    float theGround = theMapTile->mTerrainType == kTerrainDeepWater || theMapTile->mTerrainType == kTerrainShallowWater
-                          ? 0.0f : gWorld.GetMap()->mTerrainMesh.GetZ(theTile.GetX(), theTile.GetY());
-    this->mFlakes.push_back(EEE3DSnowFlake(thePosition, theGround, theRandom * 6.2831855f));
+    float theGround = IsWaterTile(theMapTile) ? 0.0f : gWorld.GetMap()->mTerrainMesh.GetZ(theTile.GetX(), theTile.GetY());
+    float theAngle = theRandom * 6.2831855f;
+    this->mFlakes.push_back(EEE3DSnowFlake(thePosition, theGround, theAngle));
     return 0;
 }
 

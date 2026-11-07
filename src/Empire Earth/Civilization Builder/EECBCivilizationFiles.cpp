@@ -300,7 +300,9 @@ void Fn2802EF(UIForm* inClose)
     unsigned long theWritten = 0;
     unsigned long theLength = 0;
     long theResult;
-    if (gU565518.Close() == 0) {
+    if (gU565518.Close() != 0) {
+        gU565518.Delete();
+    } else {
         gU565518.Delete();
         theResult = gU565518.Create();
         if (theResult == 0) {
@@ -354,8 +356,6 @@ void Fn2802EF(UIForm* inClose)
                 }
             }
         }
-    } else {
-        gU565518.Delete();
     }
     gU565518.Close();
     if (theMessage.GetLength() == 0) {

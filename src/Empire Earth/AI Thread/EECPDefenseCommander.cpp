@@ -106,6 +106,8 @@ public:
 // RTTI EECPUGatherNavalUnitsCount (vtable 0x43c130): the ships (class flag 4) that are not transports or citizens
 class EECPUGatherNavalUnitsCount : public EECPUMGatherUnitsScreenBase {
 public:
+    long GetUnits() const { return this->mUnits; }
+    long GetRequested() const { return this->mRequested; }
     EECPUGatherNavalUnitsCount(EEComputerPlayer* inPlayer) : EECPUMGatherUnitsScreenBase(true, true, false)
     {
         this->mPlayer = inPlayer;
@@ -130,6 +132,8 @@ public:
 // RTTI EECPUGatherSpaceUnitsCount (vtable 0x43c174): the space units (class flag 8)
 class EECPUGatherSpaceUnitsCount : public EECPUMGatherUnitsScreenBase {
 public:
+    long GetUnits() const { return this->mUnits; }
+    long GetRequested() const { return this->mRequested; }
     EECPUGatherSpaceUnitsCount(EEComputerPlayer* inPlayer) : EECPUMGatherUnitsScreenBase(true, true, false)
     {
         this->mPlayer = inPlayer;
@@ -145,9 +149,11 @@ public:
 // 0x30d)
 class EECPUGatherCarrierFightersCount : public EECPUMGatherUnitsScreenBase {
 public:
-    EECPUGatherCarrierFightersCount(EEComputerPlayer* inPlayer) : EECPUMGatherUnitsScreenBase(true, true, false)
+    long GetUnits() const { return this->mUnits; }
+    long GetRequested() const { return this->mRequested; }
+    // the extra parameter: CheckNaval 0x47b502 keeps this ctor and its base inline where the naval one is called (/Os post-check limit grows with argc)
+    EECPUGatherCarrierFightersCount(EEComputerPlayer* inPlayer, long inUnused = 0) : EECPUMGatherUnitsScreenBase(true, true, false), mPlayer(inPlayer)
     {
-        this->mPlayer = inPlayer;
     }
     virtual bool CountRequest(EEUnitClass* inClass, EECPUMRequest* inRequest);   // +0x04 0x7b7fc
     virtual bool CountUnit(EEComplexUnit* inUnit);   // +0x08 0x7b828
@@ -209,6 +215,8 @@ public:
         return inUnit->mHitPoints > 0 && inUnit->mUnitClass->mUnitType == kUnitType14AntiMissileBattery && inUnit->mContainer == NULL;
     }
     virtual long GetKillScore(EEComplexUnit* inUnit);  // +0x14 0x7c04f
+    // +0x14: CheckSpecials 0x47bc5b's frame has the object 0x18 bytes wide (siblings' mPlayer); this one never sets it
+    EEComputerPlayer* mPlayer;
 };
 
 // GetWorstThreats's sort orders (inline in the sort COMDATs) and ComputeTownThreat's (by the summed army values).
@@ -363,56 +371,60 @@ bool EEAIFOGatherAllDeathMatchDefenseBuildUpUnits::Screen(EEUnitClass* inClass)
 {
     bool theResult = false;
     EETechTree* theTree = this->mPlayer->GetTechTree();
-    if (inClass->mEpoch > theTree->mCurrentEpoch)
-        return theResult;
-    if (inClass->mMaxVelocity == 0.0f)
-        return theResult;
-    if (inClass->mIsDefenseUnit == false)
-        return theResult;
-    EETechTreeNode* theNode = theTree->Get(inClass->GetTechnology());
-    if (theNode == NULL || theNode->GetIsObsolete() || theNode->mScenEditorObsoleted != false)
-        return theResult;
-    EEUnitClass* theClass = gUnitClassTable[theNode->GetUnitClass(0)];
-    if (theClass == NULL)
-        return theResult;
-    EETechTreeNode* theOther = this->mPlayer->GetTechTree()->Get(theClass->GetTechnology());
-    if (theOther == NULL)
-        return theResult;
-    if (theOther->GetIsObsolete() || theNode->mScenEditorObsoleted != false) {
-        EECPUnitManager* theManager = this->mPlayer->mCivilizationManager->mUnitManager;
-        std::deque<EEComplexUnit*>* theUnits = theManager->GetUnits(theNode->GetUnitClass(0));
-        if (theUnits == NULL || !(theUnits->size() > 0))
-            return false;
-    }
-    if (inClass->mCategory != kUnitCategoryLand || inClass->mFamily == kUnitFamilyMines || inClass->mHasCalamityPowers != false || inClass->IsPriest() ||
-        inClass->mIsProjectile != false || inClass->mCategory == kUnitCategoryLandCitizen || inClass->mCategory == kUnitCategoryNavalCitizen || inClass->mIsMedic != false ||
-        inClass->FindAction(kActionInitialAttackState) == NULL)
-        return false;
-    switch (inClass->mAIKind) {
-    case kAIKindSpecial:
-    case kAIKindFieldWeapon:
-    case kAIKindAntiAir:
-    case kAIKindArtillery:
-    case kAIKindSiege:
-    case kAIKindAntiSubmarineHelicopter:
-    case kAIKindMechZeus:
-        return false;
-    }
-    switch (this->mPlayer->mDifficulty) {
-    case kDifficultyEasy:
-        theResult = this->mPlayer->mMinMilitaryBuildingsEasyDM != 0;
-        break;
-    case kDifficultyMedium:
-        theResult = this->mPlayer->mMinMilitaryBuildingsMediumDM != 0;
-        break;
-    case kDifficultyHard:
-        theResult = this->mPlayer->mMinMilitaryBuildingsHardDM != 0;
-        break;
-    default:
-        return false;
+    if (inClass->mEpoch <= theTree->mCurrentEpoch && inClass->mMaxVelocity != 0.0f && inClass->mIsDefenseUnit != false) {
+        EETechTreeNode* theNode = theTree->Get(inClass->GetTechnology());
+        if (theNode != NULL && !theNode->GetIsObsolete() && theNode->mScenEditorObsoleted == false) {
+            EEUnitClass* theClass = gUnitClassTable[theNode->GetUnitClass(0)];
+            if (theClass != NULL) {
+                EETechTreeNode* theOther = this->mPlayer->GetTechTree()->Get(theClass->GetTechnology());
+                if (theOther != NULL) {
+                    theResult = true;
+                    if (theOther->GetIsObsolete() || theNode->mScenEditorObsoleted != false) {
+                        EECPUnitManager* theManager = this->mPlayer->mCivilizationManager->mUnitManager;
+                        std::deque<EEComplexUnit*>* theUnits = theManager->GetUnits(theNode->GetUnitClass(0));
+                        if (theUnits == NULL || !(theUnits->size() > 0))
+                            theResult = false;
+                    }
+                    if (theResult) {
+                        if (inClass->mCategory != kUnitCategoryLand || inClass->mFamily == kUnitFamilyMines || inClass->mHasCalamityPowers != false || inClass->IsPriest() ||
+                            inClass->mIsProjectile != false || inClass->mCategory == kUnitCategoryLandCitizen || inClass->mCategory == kUnitCategoryNavalCitizen || inClass->mIsMedic != false ||
+                            inClass->FindAction(kActionInitialAttackState) == NULL)
+                            theResult = false;
+                    }
+                    if (theResult) {
+                        switch (inClass->mAIKind) {
+                        case kAIKindSpecial:
+                        case kAIKindFieldWeapon:
+                        case kAIKindAntiAir:
+                        case kAIKindArtillery:
+                        case kAIKindSiege:
+                        case kAIKindAntiSubmarineHelicopter:
+                        case kAIKindMechZeus:
+                            theResult = false;
+                            break;
+                        }
+                    }
+                    if (theResult) {
+                        long theDifficulty = this->mPlayer->mDifficulty;
+                        if (theDifficulty == kDifficultyEasy)
+                            theResult = this->mPlayer->mMinMilitaryBuildingsEasyDM != 0;
+                        else if (theDifficulty == kDifficultyMedium)
+                            theResult = this->mPlayer->mMinMilitaryBuildingsMediumDM != 0;
+                        else if (theDifficulty == kDifficultyHard)
+                            theResult = this->mPlayer->mMinMilitaryBuildingsHardDM != 0;
+                        else
+                            theResult = false;
+                    }
+                }
+            } else {
+                // LOST-DEBUG: none: a discarded trace argument survives (call 0x2a995 before the exit, 0x477ad3)
+                EE_LOST_TRACE(theNode->GetUnitClass(0));
+            }
+        }
     }
     return theResult;
 }
+
 
 // FUNCTION: EXE 0x477ae5
 // Adds a pending request's count if it is for a space combat unit (no transports, citizens, space buildings)
@@ -588,10 +600,10 @@ bool EECPDefenseCommander::SendBestSubGroup(std::vector<EECPAttackSubGroup*>& in
     long theBestDistance = 0;
     long theNet = 0;
     bool theResult = false;
-    if (inGroups.size() <= 0 || inPackage->mTarget == NULL)
-        return theResult;
+    if (inGroups.size() > 0 && inPackage->mTarget != NULL) {
     theTown = inPackage->mTarget->GetTownByID(inPackage->mTownID);
     if (theTown != NULL) {
+        EE_LOST_DEBUG(2);   // LOST-DEBUG: none: exact only
         this->GetWorstThreats(inPackage->mTarget, inPackage->mTownID, theThreats, theList);
         for (it = theThreats.begin(); it != theThreats.end(); ++it)
             theNet = it->second.mEnemy - it->second.mOwn;
@@ -602,10 +614,14 @@ bool EECPDefenseCommander::SendBestSubGroup(std::vector<EECPAttackSubGroup*>& in
             if (theNet > 0) {
                 if (theBest == NULL) {
                     theBest = theUnit;
-                    theBestDelta = UMAbs(theNet - theUnit->mStats.mTotalInfluence);
-                } else if (UMAbs(theNet - theUnit->mStats.mTotalInfluence) < theBestDelta) {
-                    theBest = theUnit;
-                    theBestDelta = UMAbs(theNet - theUnit->mStats.mTotalInfluence);
+                    theDistance = UMAbs(theNet - theUnit->mStats.mTotalInfluence);
+                    theBestDelta = theDistance;
+                } else {
+                    theDistance = UMAbs(theNet - theUnit->mStats.mTotalInfluence);
+                    if (theDistance < theBestDelta) {
+                        theBest = theUnit;
+                        theBestDelta = theDistance;
+                    }
                 }
             } else {
                 theUnit->FindPosition(theTile, true, false);
@@ -624,8 +640,8 @@ bool EECPDefenseCommander::SendBestSubGroup(std::vector<EECPAttackSubGroup*>& in
         if (theBest != NULL) {
             theLocation.mSerial = theTown->mSerial;
             theLocation.mType = kAIAreaTown;
-            theLocation.mPlayer = theTown->mPlayer->GetPlayerID();
             theResult = true;
+            theLocation.mPlayer = theTown->mPlayer->GetPlayerID();
             theLocation.ResetToArea();
             if (theLocation.IsOnMap()) {
                 theTask.mLocation = theLocation;
@@ -633,10 +649,11 @@ bool EECPDefenseCommander::SendBestSubGroup(std::vector<EECPAttackSubGroup*>& in
                 theTask.mMode = kAGModeCombat;
                 theTask.mIsActive = true;
             }
-            theBest->mMission = 3;
+            theBest->SetMission(3);
             theID = theBest->mID;
             inPackage->mSubGroupIDs.push_back(theID);
         }
+    }
     }
     return theResult;
 }
@@ -728,19 +745,21 @@ void EECPDefenseCommander::AidAllies()
     std::vector<EEPlayer*> theAllies(this->mPlayer->mAllies);
     EECPMilitaryAidPackage thePackage(this->mPlayer);
     Fn4EEF9(theAllies, UMFloatToLong(gPhysics->mRandom.GenerateUnit()));
+    long theTownID;
     for (long i = theAllies.size() - 1; i >= 0; i--) {
         if (theAllies[i] == this->mPlayer)
             continue;
         EEPlayer* theAlly = theAllies[i];
-        long theTownID = this->FindThreatenedTown(theAlly, &thePackage, 0);
+        theTownID = this->FindThreatenedTown(theAlly, &thePackage, 0);
         if (theTownID == 0) {
-            for (long j = theAlly->mTowns.size() - 1; j >= 0; j--) {
+            EE_LOST_TRACE(theAlly->GetPlayerID());   // LOST-DEBUG: none: exact only (a second inline site before the town loop)
+            for (long j = theAlly->GetTownList().size() - 1; j >= 0; j--) {
                 if (theAlly->mTowns[j] == NULL || !((theAlly->mTowns[j])->mTiles.Size() > 2))
                     continue;
-                long theID = (theAlly->mTowns[j])->mTownID;
+                long theID = (theAlly->mTowns[j])->GetTownID();
                 std::map<long, EECPMilitaryAidPackage*>::iterator theFound = this->mPackages.find(theID);
                 if (theFound == this->mPackages.end()) {
-                    theTownID = (theAlly->mTowns[j])->mTownID;
+                    theTownID = (theAlly->mTowns[j])->GetTownID();
                     break;
                 }
             }
@@ -750,7 +769,7 @@ void EECPDefenseCommander::AidAllies()
         std::map<long, EECPMilitaryAidPackage*>::iterator theIt = this->mPackages.find(theTownID);
         if (theIt != this->mPackages.end())
             continue;
-        if ((!(this->mPlayer->mAidThreatThreshold < thePackage.mThreat || theAlly != this->mPlayer && this->mPlayer->mEnemies[theAlly->mPlayerID] == 0)) ||
+        if ((!(thePackage.GetThreat() > this->mPlayer->GetAidThreatThreshold() || theAlly != this->mPlayer && this->mPlayer->GetEnemy(theAlly->GetPlayerID()) == 0)) ||
             !(this->GetUnitAllowance() > 0))
             continue;
         EECPMilitaryAidPackage* theNew = new EECPMilitaryAidPackage(this->mPlayer);
@@ -759,7 +778,7 @@ void EECPDefenseCommander::AidAllies()
         if (this->AssignSubGroups(theNew, false)) {
             if (theAlly->mHumanPlayer != NULL)
                 theNew->mNextSendTime = 0;
-            this->mPackages.insert(std::map<long, EECPMilitaryAidPackage*>::value_type(theNew->mTownID, theNew));
+            this->mPackages.insert(std::map<long, EECPMilitaryAidPackage*>::value_type(theNew->GetTownID(), theNew));
         } else
             delete theNew;
         break;
@@ -837,7 +856,9 @@ bool EECPDefenseCommander::CounterAttack(EECPMilitaryAidPackage* inPackage)
     EETileLocation theArea;
     if (inPackage->mPlayerID != 0) {
         theTask.mPlayer = gWorld.mPlayers[inPackage->mPlayerID];
-        EETown* theTown = inPackage->mTarget->GetTownByID(inPackage->mTownID);
+        long theTownID = inPackage->mTownID;
+        EEPlayer* theOwner = inPackage->mTarget;
+        EETown* theTown = theOwner->GetTownByID(theTownID);
         if (theTown != NULL) {
             if (theTown->mPlayer != this->mPlayer)
                 theTarget = this->mPlayer->GetNearestTown(theTown->mHull.GetCenter(), theArea);
@@ -866,7 +887,8 @@ bool EECPDefenseCommander::CounterAttack(EECPMilitaryAidPackage* inPackage)
                         theStrategy.mTownID = theTarget->mTownID;
                     else
                         theStrategy.mContinentID = theTown->mContinent;
-                    EECPAttackGroup* theGroup = this->mAttackCommander->CreateGroupFromStrategy(theTask, theStrategy, theUnitIDs);
+                    EECPAttackCommander* theCommander = this->mAttackCommander;
+                    EECPAttackGroup* theGroup = theCommander->CreateGroupFromStrategy(theTask, theStrategy, theUnitIDs);
                     if (theGroup != NULL) {
                         theResult = true;
                         for (long i = theGroup->GetNumSubGroups() - 1; i >= 0; i--) {
@@ -879,6 +901,7 @@ bool EECPDefenseCommander::CounterAttack(EECPMilitaryAidPackage* inPackage)
             }
         }
     }
+    EE_LOST_DEBUG(24);   // LOST-DEBUG: none: exact only (plateau 24..26)
     return theResult;
 }
 
@@ -1115,16 +1138,13 @@ long EECPDefenseCommander::GetUnitAllowance()
     float theShare = this->mPlayer->mDefensiveUnitCap;
     long theTotal = this->mPlayer->mCombatManager->GetUnitLimit();
     long theUsed = 0;
-    long theKind = 0;
-    theFilter.mKinds.insert(theKind);
-    theKind = 2;
-    theFilter.mKinds.insert(theKind);
-    theKind = 5;
-    theFilter.mKinds.insert(theKind);
-    theKind = 1;
-    theFilter.mKinds.insert(theKind);
-    theKind = 6;
-    theFilter.mKinds.insert(theKind);
+    // LOST-DEBUG: none: exact only (IL for 2*IL budget: the four begin() of theGroups[i] expand)
+    EE_LOST_TRACE(theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare+theShare);
+    theFilter.mKinds.insert(0);
+    theFilter.mKinds.insert(2);
+    theFilter.mKinds.insert(5);
+    theFilter.mKinds.insert(1);
+    theFilter.mKinds.insert(6);
     this->mAttackCommander->CollectFiltered(theGroups, theFilter);
     for (long i = theGroups.size() - 1; i >= 0; i--) {
         if ((theGroups[i])->mRequest == NULL) {
@@ -1528,11 +1548,14 @@ unsigned long EECPDefenseCommander::CheckNaval(unsigned long inTime)
                 theLimit = this->mPlayer->IsDeathmatch() ? this->mPlayer->mShipsToMaintainDMHard : this->mPlayer->mShipsToMaintainHard;
                 break;
             }
-            if (theNaval.mUnits + theNaval.mRequested < theLimit) {
+            if (theNaval.GetUnits() + theNaval.GetRequested() < theLimit) {
                 EECPCombatStrategy theStrategy;
                 EECPAGTask theTask;
                 EECPUnitRequirement theRequirement;
-                theLimit = theLimit - theNaval.mUnits - theNaval.mRequested;
+                long theHave = theNaval.GetUnits();
+                theLimit -= theHave;
+                theHave = theNaval.GetRequested();
+                theLimit -= theHave;
                 long theAvailable = this->mPlayer->mCombatManager->GetUnitsAvailable();
                 if (theAvailable < theLimit) {
                     EEAIFOUnitsToKillForNavalMaintenance theScorer(this->mPlayer, theLimit - theAvailable);
@@ -1548,9 +1571,13 @@ unsigned long EECPDefenseCommander::CheckNaval(unsigned long inTime)
                 theRequirement.Clear();
                 theRequirement.mKind = kRequirementCounter;
                 theStrategy.mRequirements.push_back(theRequirement);
-                std::vector<long> theUnitIDs;
-                this->mAttackCommander->CreateGroupFromStrategy(theTask, theStrategy, theUnitIDs);
+                {
+                    std::vector<long> theUnitIDs;
+                    this->mAttackCommander->CreateGroupFromStrategy(theTask, theStrategy, theUnitIDs);
+                }
             }
+            // LOST-DEBUG: none: exact only (the original refuses the base ctors at the first two sites, 0x478937 and 0x47b7e4)
+            EE_LOST_DEBUG(24);
             long theEpoch = this->mPlayer->mTechnologies->mCurrentEpoch;
             if (theEpoch >= kTechEpochAtomicWW2) {
                 EECPUGatherCarrierFightersCount theFighters(this->mPlayer);
@@ -1567,7 +1594,10 @@ unsigned long EECPDefenseCommander::CheckNaval(unsigned long inTime)
                     theWanted = this->mPlayer->IsDeathmatch() ? (long)gCPBehaviors[kCPBehaviorCarrierFightersToMaintainDM].mFloatValue : (long)gCPBehaviors[kCPBehaviorCarrierFightersToMaintain].mFloatValue;
                     break;
                 }
-                theWanted = theWanted - theFighters.mRequested - theFighters.mUnits;
+                long theHave = theFighters.GetRequested();
+                theWanted -= theHave;
+                theHave = theFighters.GetUnits();
+                theWanted -= theHave;
                 if (theWanted > 0) {
                     long theType;
                     switch (theEpoch) {
@@ -1664,11 +1694,14 @@ unsigned long EECPDefenseCommander::CheckSpace(unsigned long inTime)
                 theLimit = this->mPlayer->IsDeathmatch() ? this->mPlayer->mShipsToMaintainDMHard : this->mPlayer->mShipsToMaintainHard;
                 break;
             }
-            if (theSpace.mUnits + theSpace.mRequested < theLimit) {
+            if (theSpace.GetUnits() + theSpace.GetRequested() < theLimit) {
                 EECPCombatStrategy theStrategy;
                 EECPAGTask theTask;
                 EECPUnitRequirement theRequirement;
-                theLimit = theLimit - theSpace.mUnits - theSpace.mRequested;
+                long theHave = theSpace.GetUnits();
+                theLimit -= theHave;
+                theHave = theSpace.GetRequested();
+                theLimit -= theHave;
                 long theAvailable = this->mPlayer->mCombatManager->GetUnitsAvailable();
                 if (theAvailable < theLimit) {
                     EEAIFOUnitsToKillForSpaceMaintenance theScorer(this->mPlayer, theLimit - theAvailable);
@@ -1684,15 +1717,20 @@ unsigned long EECPDefenseCommander::CheckSpace(unsigned long inTime)
                 theRequirement.Clear();
                 theRequirement.mKind = kRequirementCounter;
                 theStrategy.mRequirements.push_back(theRequirement);
-                std::vector<long> theUnitIDs;
-                this->mAttackCommander->CreateGroupFromStrategy(theTask, theStrategy, theUnitIDs);
+                {
+                    std::vector<long> theUnitIDs;
+                    this->mAttackCommander->CreateGroupFromStrategy(theTask, theStrategy, theUnitIDs);
+                }
             }
+            // LOST-DEBUG: none: exact only (as CheckNaval: base ctors refused at the first two sites)
+            EE_LOST_DEBUG(16);
             EECPUGatherSpecialUnitsCount theCarriers(this->mPlayer, 0x2f3, 0);
             this->mPlayer->mCivilizationManager->mUnitManager->GatherUnits(theCarriers);
             std::vector<EEUnit*> theUnits;
             EEGetPlayerUnitsOfType(kUnitTypeSpaceDock, this->mPlayer->mPlayerID, theUnits);
+            unsigned long theSize = theUnits.size();
             unsigned long theCount = theCarriers.mUnits + theCarriers.mRequested;
-            if (theCount < theUnits.size() && theCount < 4)
+            if (theCount < theSize && theCount < 4)
                 this->mPlayer->mCivilizationManager->mUnitManager->RequestUnits(0x2f3, 1, 0, 0);
         }
         this->mNextSpaceTime = this->mPlayer->mShipMaintenanceTimer * 60000 + inTime;
@@ -1723,13 +1761,13 @@ unsigned long EECPDefenseCommander::CheckSpecials(unsigned long inTime)
         EEGetPlayerUnitsOfType(kUnitTypeCapitol, this->mPlayer->mPlayerID, theUnits);
         EECPUGatherSpecialUnitsCount theAMBs(this->mPlayer, 0x2e5, 0);
         this->mPlayer->mCivilizationManager->mUnitManager->GatherUnits(theAMBs);
-        unsigned long theCount = theAMBs.mUnits + theAMBs.mRequested;
+        unsigned long theCount = theAMBs.GetTotal();
         if (theCount >= 1) {
             if (theCount > 10) {
                 EEAIFOAMBToKill theScorer;
-                theScorer.mCount = theAMBs.mUnits + theAMBs.mRequested - 10;
+                theScorer.mCount = theAMBs.GetTotal() - 10;
                 this->mPlayer->ChooseUnitsToKill(theScorer, 0);
-            } else if (theCount < theUnits.size() && theCount + 1 < 10)
+            } else if ((unsigned long)theAMBs.GetTotal() < theUnits.size() && theCount + 1 < 10)
                 this->mPlayer->mCivilizationManager->GetUnitManager()->RequestUnits(0x2e5, 1, 0, 0);
         } else
             this->mPlayer->mCivilizationManager->GetUnitManager()->RequestUnits(0x2e5, 1, 0, 0);

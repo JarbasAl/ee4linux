@@ -35,11 +35,13 @@ WONStatus PeerAuthClient::HandleChallenge1(ReadBuffer &theChallenge, ByteBufferP
 		return 100025 /* WS_PeerAuthClient_Challenge1DecryptFailure */;
 		
 	unsigned short aSecretLen = aSecretBuf->data()[0] | (aSecretBuf->data()[1]<<8);
-	if(aSecretLen>aSecretBuf->length()-2)
+	unsigned long aMaxLen = aSecretBuf->length()-2;
+	if(aSecretLen>aMaxLen)
 		return 100026 /* WS_PeerAuthClient_Challenge1InvalidSecretLen */;
 		
 	mSecretA.Create(mClientKeySize);		
-	if(!mSecretB.SetKey(aSecretBuf->data()+2, aSecretLen))
+	const void* aKey = aSecretBuf->data()+2;
+	if(!mSecretB.SetKey(aKey, aSecretLen))
 		return 100027 /* WS_PeerAuthClient_Challenge1InvalidSecretKey */;
 
 	unsigned short aCertLen = theChallenge.ReadShort();

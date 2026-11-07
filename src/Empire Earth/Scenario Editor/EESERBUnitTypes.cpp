@@ -162,10 +162,9 @@ EESERBUnitTypes::EESERBUnitTypes(unsigned long inID, const UWideString& inText, 
 void EESERBUnitTypes::Check()
 {
     UIRadioButton::Check();
-    static_cast<EESEPlayerScreen*>(gUIManager->mScenarioEditorForm->mTabGroups[kEditorTabPlayers])->FillTechLists();
+    gUIManager->mScenarioEditorForm->GetPlayerScreen()->FillTechLists();
 }
 
-// NEAR: the original loads the player screen (mTabGroups[5]) before adding 2 to the selection
 // FUNCTION: EXE 0x5732d7
 // Applies a new max-players choice: sets the player tab's player count to the selection + 2, then selects it
 void EESECBMaxPlayer::ChangeSelection()
@@ -173,7 +172,7 @@ void EESECBMaxPlayer::ChangeSelection()
     unsigned long theSelection;
     EEUIFScenarioEditor* theEditor = static_cast<EEUIFScenarioEditor*>(this->GetForm());
     this->mListBox->GetCurrentSelection(theSelection);
-    static_cast<EESEPlayerScreen*>(theEditor->mTabGroups[kEditorTabPlayers])->SetPlayerCount(theSelection + 2);
+    theEditor->GetPlayerScreen()->SetPlayerCount(theSelection + 2);
     UIComboBox::ChangeSelection();
 }
 
@@ -1357,6 +1356,7 @@ EESEGamePage::EESEGamePage(unsigned long& ioIndex, unsigned long& ioID, UIForm* 
     theGEText->SetIsTransparent(true);
     inForm->AddControl(this->mUseCarbonCheckBox, 8);
     ++ioIndex;
+    theLocation.SetXY(this->mUseCarbonCheckBox->GetRectangle().GetLeft(), this->mUseCarbonCheckBox->GetRectangle().GetBottom() + 5.0f);
 }
 
 // FUNCTION: EXE 0x577b83

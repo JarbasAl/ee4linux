@@ -36,6 +36,7 @@ std::vector<EEMedia*> gMediaTable;          // 0x4e8448 (EEMedia::Get/GetCount r
 #include "ee/EEWheel.h"
 #include "ee/EESoundObject.h"
 #include "ee/EEGlobalConstants.h"
+#include "LostDebug.h"
 
 extern unsigned long gTexturePixelDepth;     // 0x5308b4
 extern unsigned long gTextureMipLevelsToDrop; // 0x530894 (provisional name)
@@ -800,9 +801,7 @@ long EEGraphicObject::LoadMedia()
                 theResult = 9;
         }
         theDescription.mCreateMIPMaps = this->mCreateMipMaps;
-        theDescription.mNumMipLevelsToDrop = this->mNumMipLevelsToDrop + gTextureMipLevelsToDrop;
-        if (theDescription.mNumMipLevelsToDrop >= this->mMaxMipLevelsToDrop)
-            theDescription.mNumMipLevelsToDrop = this->mMaxMipLevelsToDrop;
+        theDescription.mNumMipLevelsToDrop = (this->mNumMipLevelsToDrop + gTextureMipLevelsToDrop < this->mMaxMipLevelsToDrop) ? this->mNumMipLevelsToDrop + gTextureMipLevelsToDrop : this->mMaxMipLevelsToDrop;
         theShadowDescription.mNumMipLevelsToDrop = 0;
         theShadowDescription.mCreateMIPMaps = true;
         if (this->mTextureName != NULL)
@@ -853,6 +852,8 @@ long EEGraphicObject::LoadMedia()
         sDatabaseLock.mLock->Enter();
     }
     sDatabaseLock.mLock->Leave();
+    // LOST-DEBUG: none: exact only (5..6 plateau)
+    EE_LOST_DEBUG(5);
     return theResult;
 }
 

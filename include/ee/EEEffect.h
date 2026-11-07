@@ -119,6 +119,8 @@ public:
     // 0x102759: the unit's location (its complex unit's position, else its tile centre and +0x14's +0x10 height, else
     // 0), in a function-local static (guard 0x4e8da4; EEEffect2D::CreateParts) (provisional name)
     const GE3DPoint& GetUnitLocation();
+    EEUnit* GetUnit() const { return this->mUnit; }  // inline: EEEDamagedEffect::Step 0x50225c
+    EEGraphicEffect* GetGraphicEffect() const { return this->mGraphicEffect; }  // inline: the effects' Queue tail (0x4ebfd0)
     EEGraphicObject* GetGraphicObject();    // 0x102f96: mGraphicEffect's object (0 without one) (provisional name)
     void Init();                            // 0x102ffa (the ctor's: pointers 0, tile -1/-1, mHandle = none, mIsSaved = true)
     // 0x102fa6 / 0x102fe7: Init(), then the ctors' argument stores (and the media load); EEEffect3D's 0x105441/0x10545e

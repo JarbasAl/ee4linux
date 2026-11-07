@@ -292,9 +292,11 @@ public:
     std::map<long, long> mU08;              // +0x08 (node 0x18: an 8-byte value, no element dtor; _Init 0x617b6)
     std::map<long, long> mU14;              // +0x14
     std::vector<long> mCommonMoveFlags;     // +0x20 (slot +0x19c clears it, then push_back 4 / 3)
+    EECPASTargetUnit* GetTargetsAt(unsigned long inIndex) const { return this->mTargets[inIndex]; }
     std::vector<EECPASTargetUnit*> mTargets;        // +0x30 (slot +0x38 gives each back to the pool: 0x5d0b3)
     std::vector<EECPASTargetUnit*> mSiegeTargets;   // +0x40 (the same)
     // +0x50: the units (Load: 0x5661e makes each by its saved kind, then its Load; Save writes their mType first)
+    EECPAttackSubGroupUnit* GetUnitsAt(unsigned long inIndex) const { return this->mUnits[inIndex]; }
     std::vector<EECPAttackSubGroupUnit*> mUnits;
     std::deque<EECPASGPathPoint> mPath;     // +0x60 (dtor 0x2003a4; slot +0x194 refills it; saved: count, points)
     // +0x74: U2DRectangle<long>-shaped (the ctor's +0xc/+4/+0/+8 zero stores; Load 0x12e72 = U2DRectangle<long>::
@@ -309,12 +311,15 @@ public:
     EECPASGUnitCounts mCounts;              // +0x130
     EECPASGFlags mFlags;                    // +0x164 (slot +0x50 Ands the units' flags into it)
     EETileLocation mPosition;               // +0x17c (zeroed before the vptr: an inline member ctor)
+    EEComputerPlayer* GetPlayer() const { return this->mPlayer; }
     EEComputerPlayer* mPlayer;              // +0x184 (the commander's +0x18; its +0x9cc is EEPlayer::mTechnologies)
     EECPAttackFormation* mFormation;        // +0x188 (new 0x1c bytes, 0x529e7(this); deleted through its vptr)
     // +0x18c (referenced; saved as its id +0x3c, restored through the commander's +0x1c manager 0x5f82b, released
     // through 0x86e3c; the type is inferred: EECPPersonnelRequest > UReferenceCounter, sizeof 0x40)
+    EECPPersonnelRequest* GetRequest() const { return this->mRequest; }
     EECPPersonnelRequest* mRequest;
     EECPAttackGroup* mGroup;                // +0x190 (the ctor's first argument)
+    EEComputerPlayer* GetPlayer2() const { return this->mPlayer2; }
     EEComputerPlayer* mPlayer2;             // +0x194 (the commander's +0x18 again; slot +0x5c copies it)
     // +0x198 (referenced; gPathManager 0xa896b releases it unless its +0x4c flag is set; the type is inferred:
     // EEAutoPathRequest > UReferenceCounter, sizeof 0x50)
@@ -337,7 +342,10 @@ public:
     long mNumSplits;                        // +0x1cc (saved)
     long mSplitKind;                        // +0x1d0 (saved; slot +0x94 tests 4)
     unsigned long mState;                   // +0x1d4 (saved; 1001, 3004, ...; Restore: into each unit's mUnit +0x330)
+    long GetKind() const { return this->mKind; }   // by value: EEAIFOSubGroupFilter 0x42a66d copies it to a temp ([ebp+8]) before set::find's const long&
     long mKind;                             // +0x1d8 (the ctor's second argument; saved)
+    void SetMission(long inMission) { this->mMission = inMission; }
+    long GetMission() const { return this->mMission; }
     long mMission;                          // +0x1dc (saved)
     bool mB1E0;                             // +0x1e0 (saved)
     bool mB1E1;                             // +0x1e1 (saved; slot +0x5c copies +0x1e1..+0x1e3)

@@ -52,7 +52,8 @@ void ChooseNetworkAdapterDialog::Reset()
     if(WONAPI::IPAddr::GetLocalHost()==0) mAdapterList->SetSelItem(0,false);
     std::list<LobbyNetAddress> anAddresses;
     LobbyGetNetAddresses(anAddresses,true);
-    for(std::list<LobbyNetAddress>::const_iterator anItr=anAddresses.begin();anItr!=anAddresses.end();++anItr) {
+    const std::list<LobbyNetAddress>& aList=anAddresses;
+    for(std::list<LobbyNetAddress>::const_iterator anItr=aList.begin();anItr!=aList.end();++anItr) {
         const LobbyNetAddress& aNet=*anItr;
         IPAddr anAddress(aNet.mHandle,0);
         GUIString aName(aNet.mName);

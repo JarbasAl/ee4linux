@@ -582,10 +582,12 @@ void LobbyPersistentData::Fn360770()
         {
             Fn35F3D0(writer, o->first);
             // Observed wire quirk: empty option index omits even the zero count; iteration still uses the list.
-            if (!o->second.mIndex.empty())
+            const LobbyOptionSet& aSet = o->second;
+            unsigned long aCount = aSet.mIndex.size();
+            if (aCount != 0)
             {
-                writer.WriteShort((unsigned short)o->second.mIndex.size());
-                for (LobbyOptionSet::StringList::const_iterator v = o->second.mValues.begin(); v != o->second.mValues.end(); ++v)
+                writer.WriteShort((unsigned short)aCount);
+                for (LobbyOptionSet::StringList::const_iterator v = aSet.mValues.begin(); v != aSet.mValues.end(); ++v)
                     Fn35F4E0(writer, *v);
             }
         }

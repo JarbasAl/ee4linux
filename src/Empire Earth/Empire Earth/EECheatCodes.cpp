@@ -75,6 +75,7 @@
 #include "ee/EECommunications.h"
 #include "ee/EECheatCodes.h"
 #include "ee/EEStringIDs.h"
+#include "LostDebug.h"
 extern char gU4E5B98[];                     // 0x4e5b98 (pooled "")
 
 // FUNCTION: EXE 0x52a54a
@@ -397,8 +398,8 @@ void EECheatCodes::ParseCheatCode(const UWideString& inText, long& outCode, long
             thePoint.SetY((float)atof(theTokens[2]));
             if (gWorld.mMap != NULL && gWorld.mMap->GetClosestTile(&thePoint, &theX, &theY) != NULL) {
                 gWorld.mCameraControl.GetLocation(gWorld.mCameraControl.mFraction, theLocation);
-                theLocation.SetX((float)theX);
-                theLocation.SetY((float)theY);
+                theLocation.mX = (float)theX;
+                theLocation.mY = (float)theY;
                 gWorld.mCameraControl.SetLocation(theLocation, true, true);
             }
         }
@@ -438,6 +439,8 @@ void EECheatCodes::ParseCheatCode(const UWideString& inText, long& outCode, long
         _mbslwr((unsigned char*)(const char*)theText);
         outCode = this->LookUp(theText);
     }
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(16);
 }
 
 // FUNCTION: EXE 0x52b8cc

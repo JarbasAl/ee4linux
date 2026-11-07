@@ -43,6 +43,8 @@
 #include "ee/EEEffect2D.h"
 #include "ee/EEEffect3D.h"
 #include "ee/EEE3DIcon.h"
+#include "LostDebug.h"
+#include "ee/EEGamePreferences.h"
 
 // FUNCTION: EXE 0x4f2046
 // Creates a 3D icon that follows a unit, or stays at a location when one is given
@@ -100,8 +102,6 @@ long EEE3DIcon::DrawPass5()
 // FUNCTION: EXE 0x4f21e5
 // Queues the icon in render queue 4 with its transform, orbital angles, frame, opacity (faded in over the
 // effect's tenth parameter) and scroll; returns 10 for an unbuilt market
-// NEAR: the original calls the vectors' _Ptrit::operator+ out of line (inline budget) and keeps the opacity on the
-// FP stack
 long EEE3DIcon::Queue(EEEffectQueue* inQueues)
 {
     long i;
@@ -118,19 +118,22 @@ long EEE3DIcon::Queue(EEEffectQueue* inQueues)
     else {
         this->mDrawTransformation = this->mTransformation;
         for (i = 0; i < this->mOrbitalCount; i++)
-            this->mAngles[i] = this->mOrbitals[i]->mAngle;
+            this->mAngles[i] = this->mOrbitals[i]->GetAngle();
         this->mDrawFrame = this->mFrame;
         float theOpacity = theEffect->GetParam8();
         this->mOpacity = theOpacity;
         if (theEffect->mParam10 > 0.0f && theEffect->mParam10 > this->mAge)
-            this->mOpacity = (theOpacity - theEffect->GetParam9()) * (this->mAge / theEffect->mParam10) + theEffect->GetParam9();
+            this->mOpacity = (theOpacity - theEffect->GetParam9()) * (this->mAge / theEffect->GetParam10()) + theEffect->GetParam9();
         this->mDrawScroll = this->mScroll;
         if (this->mFrameCount > 0 && this->mFrameTime != 0)
             this->mFraction = this->mTime / this->mFrameTime;
         else
             this->mFraction = 0.0f;
         GETexture* theTexture;
-        theTexture = theEffect->mGraphicObject ? theEffect->mGraphicObject->mTextures[gScreenIndex] : NULL;
+        if (theEffect->GetGraphicObject())
+            theTexture = theEffect->GetGraphicObject()->GetTexture(gGamePreferences.mSettings.GetScreenID());
+        else
+            theTexture = NULL;
         inQueues[4][theTexture].push_back(this);
     }
     return theResult;
@@ -238,7 +241,7 @@ long EEE3DIcon::DrawPass6()
     GETransformation theTransformation(this->mDrawTransformation);
     GETransformation theOrientation;
     EEGraphicEffect* theEffect = this->mGraphicEffect;
-    GEModel* theModel = this->GetGraphicObject()->mModels[theEffect->mIntParam1];
+    GEModel* theModel = this->GetGraphicObject()->mModels[theEffect->GetIntParam1()];
     GEMaterial* theMaterial = theModel->GetMaterial(0);
     unsigned long theScreen = gScreenIndex;
     bool theAdditive = theEffect->mFlag1;

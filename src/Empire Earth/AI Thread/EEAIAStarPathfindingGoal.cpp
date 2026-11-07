@@ -49,6 +49,7 @@
 #include "ee/EEAIAStarPathfindingGoal.h"
 #include "ee/EEAIAStarMachine.h"
 #include "ee/EEUnitUtilities.h"
+#include "LostDebug.h"   // synthetic, NOT original source
 
 // 0x248e06 (cdecl): the tile inDistance steps from (inX, inY) in direction inDirection (0..7) (provisional name)
 
@@ -256,39 +257,41 @@ long EEAIAStarPathfindingGoal::GetDefaultCost(long inFromX, long inFromY, long i
     if (!(this->mUnit->GetUnitClass()->mInnerCollisionSphere >= kEEPFGFull))
         return theCost;
     theRange = this->mUnit->mFormationRank;
-    if (!theRange || ((this->mUnit->mStats->mTerrainMask >> 14) & 1) != 0)
+    if (!theRange || (bool)((this->mUnit->mStats->mTerrainMask >> 14) & 1))
         return theCost;
     theMap = gWorld.mMap;
     theX = 0;
     theY = 0;
     EEGetTileInDirection(inX, inY, &theX, &theY, 4, theRange);
     theNeighbor = theMap->GetTile(theX, theY);
-    if (theNeighbor && (theNeighbor->mAIValue || !this->mUnit->GetUnitClass()->CanMoveOnTerrain(this->mUnit, theNeighbor->mTerrainType)
+    if (theNeighbor && (theNeighbor->mAIValue || !this->mUnit->GetUnitClass()->CanMoveOnTerrain(this->mUnit, theNeighbor->GetTerrainType())
                         || this->mContinentID != gContinentManager.GetContinentID(inX, inY)))
         theCost *= 2;
     else {
         EEGetTileInDirection(inX, inY, &theX, &theY, 3, theRange);
         theNeighbor = theMap->GetTile(theX, theY);
-        if (theNeighbor && (theNeighbor->mAIValue || !this->mUnit->GetUnitClass()->CanMoveOnTerrain(this->mUnit, theNeighbor->mTerrainType)
+        if (theNeighbor && (theNeighbor->mAIValue || !this->mUnit->GetUnitClass()->CanMoveOnTerrain(this->mUnit, theNeighbor->GetTerrainType())
                             || this->mContinentID != gContinentManager.GetContinentID(inX, inY)))
             theCost *= 2;
         else {
             EEGetTileInDirection(inX, inY, &theX, &theY, 1, theRange);
             theNeighbor = theMap->GetTile(theX, theY);
             if (theNeighbor && (theNeighbor->mAIValue
-                                || !this->mUnit->GetUnitClass()->CanMoveOnTerrain(this->mUnit, theNeighbor->mTerrainType)
+                                || !this->mUnit->GetUnitClass()->CanMoveOnTerrain(this->mUnit, theNeighbor->GetTerrainType())
                                 || this->mContinentID != gContinentManager.GetContinentID(inX, inY)))
                 theCost *= 2;
             else {
                 EEGetTileInDirection(inX, inY, &theX, &theY, 6, theRange);
                 theNeighbor = theMap->GetTile(theX, theY);
                 if (theNeighbor && (theNeighbor->mAIValue
-                                    || !this->mUnit->GetUnitClass()->CanMoveOnTerrain(this->mUnit, theNeighbor->mTerrainType)
+                                    || !this->mUnit->GetUnitClass()->CanMoveOnTerrain(this->mUnit, theNeighbor->GetTerrainType())
                                     || this->mContinentID != gContinentManager.GetContinentID(inX, inY)))
                     theCost *= 2;
             }
         }
     }
+    // LOST-DEBUG: none: exact only (the first GetTile's RTSMap::GetTile refused: 12 sites after it)
+    EE_LOST_DEBUG(12);
     return theCost;
 }
 

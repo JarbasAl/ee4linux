@@ -180,10 +180,10 @@ bool EEAIAStarPathAreaGoal::ClassifyTile(EETile* inTile, EEMap* inMap, long inX,
                 *ioKind = 3;
                 break;
             case kTerrainShallowWater:
-                if (this->mMode == kAIPathNonSpace)
-                    *ioKind = 1;
-                else
+                if (this->mMode != kAIPathNonSpace)
                     *ioKind = inShallowsAreWater ? 2 : 1;
+                else
+                    *ioKind = 1;
                 break;
             case kTerrainSpace:
                 *ioKind = 4;
@@ -282,29 +282,29 @@ void EEAIAStarPathAreaGoal::AssignKindIDs()
 {
     std::set<unsigned long> theAreas;
     for (long i = this->mTiles.size() - 1; i >= 0; i--) {
-        EEAIPathArea* theArea = this->GetArea((*(this->mTiles.begin() + i)).mX, (*(this->mTiles.begin() + i)).mY);
+        EEAIPathArea* theArea = this->GetArea((*(this->mTiles.begin() + i)).GetX(), (*(this->mTiles.begin() + i)).GetY());
         theAreas.insert(reinterpret_cast<unsigned long>(theArea));
         if (this->mMode == kAIPathWaterBody)
-            theArea->mWaterBodyID = this->mNextKindID;
+            theArea->mWaterBodyID = this->GetNextKindID();
         else if (this->mMode == kAIPathSpaceRegion)
-            theArea->mSpaceRegionID = this->mNextKindID;
+            theArea->mSpaceRegionID = this->GetNextKindID();
         else if (this->mMode == kAIPathLandMass)
-            theArea->mLandMassID = this->mNextKindID;
+            theArea->mLandMassID = this->GetNextKindID();
         else
-            theArea->mSurfaceRegionID = this->mNextKindID;
+            theArea->mSurfaceRegionID = this->GetNextKindID();
     }
     for (std::set<unsigned long>::iterator theIt = theAreas.begin(); theIt != theAreas.end(); theIt++) {
-        EEAIContinent* theContinent = gContinentManager.mContinents[((EEAIPathArea*)*theIt)->mContinentID];
+        EEAIContinent* theContinent = gContinentManager.GetContinentFromID(((EEAIPathArea*)*theIt)->GetContinentID());
         if (!theContinent)
             continue;
         if (this->mMode == kAIPathWaterBody)
-            theContinent->AddIDBC(this->mNextKindID);
+            theContinent->AddIDBC(this->GetNextKindID());
         else if (this->mMode == kAIPathSpaceRegion)
-            theContinent->AddIDDC(this->mNextKindID);
+            theContinent->AddIDDC(this->GetNextKindID());
         else if (this->mMode == kAIPathLandMass)
-            theContinent->AddIDCC(this->mNextKindID);
+            theContinent->AddIDCC(this->GetNextKindID());
         else
-            theContinent->AddIDEC(this->mNextKindID);
+            theContinent->AddIDEC(this->GetNextKindID());
     }
 }
 

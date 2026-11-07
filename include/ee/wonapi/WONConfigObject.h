@@ -92,6 +92,7 @@ public:
     ChildList::iterator mL14;                              // +0x14
     std::string mS18;                       // +0x18
     std::string mS28;                       // +0x28
+    ConfigObject* GetParentObject() { return mL38; }
     ConfigObject* mL38;                              // +0x38
     KeyValMap mKeyMap;     // +0x3c (KeyAdd 0x3b18e0 inserts at +0x3c; node value 0x14)
     KeyGroupMap mM48;         // +0x48 (node value 0x1c: SmartPtr at value +0x18)

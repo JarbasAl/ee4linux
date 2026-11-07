@@ -123,7 +123,8 @@ void Component::Virtual40(unsigned long elapsed)
     if(mExtraStuff==NULL || mExtraStuff->mToolTip.get()==NULL) return;
     if(elapsed>=gComponentToolTipStartTime && !mExtraStuff->mDontDoTip) {
         Window* window=GetRoot();
-        window->OpenPopup(PopupParams(mExtraStuff->mToolTip.get(),PopupFlag_StandardTip,this,window->mMouseX+15,window->mMouseY+15));
+        int x=window->mMouseX+15; int y=window->mMouseY+15;
+        window->OpenPopup(PopupParams(mExtraStuff->mToolTip.get(),PopupFlag_StandardTip,this,x,y));
         mExtraStuff->mDontDoTip=true;
     } else if(elapsed>=gComponentToolTipStartTime+gComponentToolTipEndTime)
         GetRoot()->ClosePopup(mExtraStuff->mToolTip.get());

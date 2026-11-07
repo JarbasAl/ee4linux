@@ -798,7 +798,8 @@ void EELobbyGame::HandlePlayerOptionChange(ReadBuffer& inBuffer, LobbyClient* in
             }
         }
         if (theWhat == 4 && theValue == 0) {
-            theSlot->mOptions[2] = GetFreeColor(theSlot->mIndex, theSlot->mOptions[2]);
+            unsigned char theColor = theSlot->mOptions[2];
+            theSlot->mOptions[2] = GetFreeColor(theSlot->GetIndex(), theColor);
         }
         theSlot->SetOption(theWhat, theValue);
         if (theWhat == 0 || theWhat == 4)

@@ -33,7 +33,7 @@ public:
     virtual void HandleComponentEvent(ComponentEvent* inEvent);
     void CheckInput();
     void Reset();
-    const GUIString& GetName() { return mNameInput->GetText(); }
+    const GUIString& GetName();
     SmartPtr<InputBox> mNameInput; //98, raw mText is used by CheckInput
     SmartPtr<Button> mOkButton; //9c
     SmartPtr<Button> mCancelButton; //a0

@@ -125,7 +125,7 @@ void EEUCBasicPriest::ConvertTarget(EEComplexUnit* inUnit, EEComplexUnit* inTarg
         theLocation.SetX(theConvertedLocation.GetX());
         theLocation.SetY(theConvertedLocation.GetY());
         theLocation.SetZ(theConvertedLocation.GetZ());
-        EEGetUnitsNear(theLocation, gWorldTable.mEntries[0x23].mFloatValue, theUnits);
+        EEGetUnitsNear(theLocation, gWorldTable.GetFloatValue(0x23), theUnits);
         for (long i = theUnits.size() - 1; i >= 0; i--) {
             EEUnit* theUnit = theUnits[i];
             if (theUnit->GetComplexUnit() != NULL && ((EEMapTile*)theUnit->mTile)->IsSeenBy(inUnit->GetPlayer()) == true) {
@@ -134,7 +134,7 @@ void EEUCBasicPriest::ConvertTarget(EEComplexUnit* inUnit, EEComplexUnit* inTarg
             }
         }
     }
-    inUnit->SetPower(inUnit->GetPower() - EEGetConversionCost(inUnit));
+    inUnit->SetPower(inUnit->mPower - EEGetConversionCost(inUnit));
     if (inUnit->mConversionStartTime != 0)
         inUnit->mConversionStartTime = 0;
     EESoundObject* theSound = theStats->mCreationSound;

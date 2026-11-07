@@ -221,10 +221,10 @@ EEUnit* EEUCBasicCitizen::FindResourceOfKind(EEComplexUnit* inUnit, EEUnit* inCe
                         if (UMFloor(theLocation.GetX()) == theUnitX && UMFloor(theLocation.GetY()) == theUnitY)
                             continue;
                         long theDistance;
-                        if (theUnit->mTileNode == NULL)
-                            theDistance = UMFloor(theUnit->GetTileDistanceSquared(inCenter));
+                        if (theUnit->mTileNode != NULL)
+                            theDistance = UMFloor(theUnit->mComplexUnit->DistanceSquared2D(theCenter));
                         else
-                            theDistance = UMFloor(theUnit->GetComplexUnit()->DistanceSquared2D(theCenter));
+                            theDistance = UMFloor(theUnit->GetTileDistanceSquared(inCenter));
                         EETileLocation theFrom(inUnit->GetTileX(), inUnit->GetTileY());
                         EETileLocation theTo(UMFloor(theLocation.GetX()), UMFloor(theLocation.GetY()));
                         // area ids, not pointers (the original: GetPathAreaIDAt call at 0x60c403, inline id at 0x60c458, cmp bx, ax)
@@ -250,7 +250,7 @@ EEUnit* EEUCBasicCitizen::FindResourceOfKind(EEComplexUnit* inUnit, EEUnit* inCe
                         if (theUnit->mTileNode == NULL)
                             theDistance = UMFloor(theUnit->GetTileDistanceSquared(inCenter));
                         else
-                            theDistance = UMFloor(theUnit->GetComplexUnit()->DistanceSquared2D(theCenter));
+                            theDistance = UMFloor(theUnit->mComplexUnit->DistanceSquared2D(theCenter));
                         if (theDistance < theBest) {
                             theResult = theUnit;
                             theBest = theDistance;
@@ -420,11 +420,7 @@ void EEUCBasicCitizen::FindGatherPoint(EEComplexUnit* inUnit, unsigned long inX,
                 ++it;
         }
     }
-    if (theTiles.size() == 0) {
-        outLocation.SetX((float)(long)inX);
-        outLocation.SetY((float)(long)inY);
-        outLocation.SetZ(gWorld.mMap->GetTile(inX, inY)->GetHeight());
-    } else {
+    if (theTiles.size() != 0) {
         std::vector<U2DPoint<long> >::iterator theNearest = theTiles.begin();
         long theBest = (theUnitX - theNearest->GetX()) * (theUnitX - theNearest->GetX())
                        + (theUnitY - theNearest->GetY()) * (theUnitY - theNearest->GetY());
@@ -439,6 +435,10 @@ void EEUCBasicCitizen::FindGatherPoint(EEComplexUnit* inUnit, unsigned long inX,
         outLocation.SetX((float)theNearest->GetX() + 0.5f);
         outLocation.SetY((float)theNearest->GetY() + 0.5f);
         outLocation.SetZ(gWorld.mMap->GetTile(theNearest->GetX(), theNearest->GetY())->GetHeight());
+    } else {
+        outLocation.SetX((float)(long)inX);
+        outLocation.SetY((float)(long)inY);
+        outLocation.SetZ(gWorld.mMap->GetTile(inX, inY)->GetHeight());
     }
 }
 
@@ -644,24 +644,23 @@ void EEUCBasicCitizen::UpdateCitizen(EEComplexUnit* inUnit)
         if (theStep == 0)
             theStep = 1;
         theStep = theTimer - theStep;
-        if (theStep < 1)
-            inUnit->SetWorkTimer(0);
-        else
+        if (theStep > 0)
             inUnit->SetWorkTimer(theStep);
+        else
+            inUnit->SetWorkTimer(0);
     }
     if (inUnit->mWorkTimer == 0) {
         long theAction = inUnit->mCommand ? inUnit->mCommand->mType : 0;
-        if (theAction == kActionRepairBuilding || theAction == kActionGatherResource) {
+        switch (theAction) {
+        case kActionRepairBuilding:
+        case kActionGatherResource:
             if (inUnit->mGoalState != NULL)
                 inUnit->mGoalState->Work(inUnit);
             theTimer = inUnit->mWorkTimer;
             if (theTimer > 0) {
-                if (-theStep < theTimer)
-                    theStep = theTimer + theStep;
-                else
-                    theStep = 1;
-                inUnit->SetWorkTimer(theStep);
+                inUnit->SetWorkTimer(inUnit->mWorkTimer > -theStep ? inUnit->mWorkTimer + theStep : 1);
             }
+            break;
         }
     }
     inUnit->Fn1FA98C();

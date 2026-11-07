@@ -92,16 +92,12 @@ void MultiListItem::Virtual04(Graphics& inGraphics,ListArea* inList)
     ListItem* anItem=mItems[aColumn].get();
     if(anItem==NULL) return;
     anItem->mHeight=mHeight;
-    anItem->mB08=mB08 && (anArea->ListFlagSet(0x10) || aColumn==0);
+    if(mB08 && (anArea->ListFlagSet(0x10) || aColumn==0)) anItem->mB08=mB08; else anItem->mB08=false;
     unsigned char anAlign=anArea->mColumnInfoVector[aColumn].mHAlign;
     int anOffset=0;
-    if(anAlign==1) {
-        anOffset=(anArea->mL12C-anItem->mL10)/2;
-        if(anOffset<0) anOffset=0;
-    } else if(anAlign==2) {
-        anOffset=anArea->mL12C-anItem->mL10;
-        if(anOffset<0) anOffset=0;
-    }
+    if(anAlign==1) anOffset=(anArea->mL12C-anItem->mL10)/2;
+    else if(anAlign==2) anOffset=anArea->mL12C-anItem->mL10;
+    if(anOffset<0) anOffset=0;
     inGraphics.Translate(anOffset,0);
     anItem->Virtual04(inGraphics,inList);
     inGraphics.Translate(-anOffset,0);
@@ -110,9 +106,10 @@ void MultiListItem::Virtual04(Graphics& inGraphics,ListArea* inList)
 void MultiListItem::Virtual0C(ListArea* inList,Container* inViewport)
 {
     unsigned int aColumn=0;
-    for(ItemVector::iterator anItr=mItems.begin();anItr!=mItems.end();++anItr,++aColumn) {
-        if(anItr->get()!=NULL && aColumn<static_cast<MultiListArea*>(inList)->mColumnInfoVector.size()) {
-            Container* aViewport=inViewport==NULL ? NULL : static_cast<MultiListArea*>(inList)->mColumnInfoVector[aColumn].mContainer.get();
+    for(ItemVector::iterator anItr=mItems.begin();anItr!=mItems.end();aColumn++,++anItr) {
+        std::vector<MultiListArea::ColumnInfo>& aVec=static_cast<MultiListArea*>(inList)->mColumnInfoVector;
+        if(anItr->get()!=NULL && aColumn<aVec.size()) {
+            Container* aViewport=inViewport==NULL ? NULL : aVec[aColumn].mContainer.get();
             (*anItr)->Virtual0C(inList,aViewport);
         }
     }

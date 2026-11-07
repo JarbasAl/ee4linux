@@ -101,6 +101,7 @@
 #include "lle/UIESliderChange.h"
 #include "ee/EEStringIDs.h"
 #include "ee/EEScenarioIDs.h"
+#include "LostDebug.h"
 // FUNCTION: EXE 0x589904
 // Creates the player effect page with its twelve player action types (victory ... mini-map flare) and its combo event
 EESETSETPlayer::EESETSETPlayer()
@@ -1153,6 +1154,8 @@ void EESETSETSetAIAttribute::Store(EESMEffect* inEffect, EESETSEffectControls* i
     unsigned long theSelection;
     inControls->mComboBoxes[1]->GetCurrentSelection(theSelection);
     EECPBehavior theBehavior = gCPBehaviors[this->mAttributes[theSelection]];
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(5);
     inEffect->mAIAttribute = this->mAttributes[theSelection];
     inEffect->mIntValue1 = inControls->mLabels[6]->GetTextAsInt(0);
     inEffect->mIntValue2 = inControls->mLabels[9]->GetTextAsInt(0);

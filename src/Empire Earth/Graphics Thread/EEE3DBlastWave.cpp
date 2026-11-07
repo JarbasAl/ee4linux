@@ -108,7 +108,6 @@ long EEE3DBlastWave::DrawPass5()
 
 // FUNCTION: EXE 0x4e904a
 // Moves the wave to the unit's first tag point of type 0x12 (keeping the unit's orientation), else to the unit
-// NEAR: scheduling only (mFirstFrame2 goes through eax; the first tag point is loaded before the pushes)
 // (EEE3DShield's identical copy is ICF-folded into this one)
 void EEE3DBlastWave::FollowUnit()
 {
@@ -119,7 +118,8 @@ void EEE3DBlastWave::FollowUnit()
     EETagPointList* theList = this->mUnit->mComplexUnit->GetModel()->GetTagPoints(this->mUnit->mComplexUnit->GetAnimation(), 0x12);
     if (theList != NULL && !theList->mPoints.empty()) {
         theList->Scale(theLocation, theScale);
-        theList->mPoints.front()->GetPoint(theFrame, theLocation, thePoint);
+        const std::vector<EETagPoint*>& thePoints = theList->mPoints;
+        thePoints.front()->GetPoint(theFrame, theLocation, thePoint);
         GETransformation theTransformation(false);
         theTransformation = theLocation;
         theTransformation.SetPosition(thePoint.GetX(), thePoint.GetY(), thePoint.GetZ());

@@ -149,8 +149,9 @@ public:
 	typedef _Imp::const_reverse_iterator const_reverse_iterator;
 	typedef pair<iterator, iterator> _Pairii;
 	typedef pair<const_iterator, const_iterator> _Paircc;
-	explicit multimap(const _Pr& _Pred = _Pr(),
-		const _A& _Al = _A())
+	multimap()	// no-argument ctor: ServerOp ctor 0x6acc10 calls a no-argument ??0multimap
+		: _Imp(_Pr(), _A()) {}
+	explicit multimap(const _Pr& _Pred, const _A& _Al = _A())
 		: _Imp(_Pred, _Al) {}
 	typedef const value_type *_It;
 	multimap(_It _F, _It _L, const _Pr& _Pred = _Pr(),

@@ -3886,7 +3886,7 @@ void EEMKillUnit::Execute()
             EEComplexUnit* theUnit = dynamic_cast<EEComplexUnit*>(theGroup->GetFirstUnit());
             if (theUnit && (theUnit->mUnitClass->mUnitType == kUnitTypePathPoint || theUnit->mHitPoints > 0) && theUnit->CanDelete()) {
                 if (IsRefundable(theUnit)) {
-                    EETechnology* theTechnology = theUnit->GetPlayer()->mTechnologies->Get(theUnit->GetUnitClass()->mTechnology);
+                    EETechnology* theTechnology = theUnit->GetPlayer()->GetTechTree()->Get(theUnit->GetUnitClass()->GetTechnology());
                     if (theTechnology)
                         theUnit->mPlayer->RefundTechnology(theTechnology, 0x20, gWorldTable.GetFloatValue(45));
                 }
@@ -3899,13 +3899,15 @@ void EEMKillUnit::Execute()
                 if (theUnit && (theUnit->GetUnitClass()->mUnitType == kUnitTypePathPoint || theUnit->GetHitPoints() > 0)
                     && theUnit->CanDelete()) {
                     if (IsRefundable(theUnit)) {
-                        EETechnology* theTechnology = theUnit->GetPlayer()->mTechnologies->Get(theUnit->GetUnitClass()->mTechnology);
+                        EETechnology* theTechnology = theUnit->GetPlayer()->GetTechTree()->Get(theUnit->GetUnitClass()->GetTechnology());
                         if (theTechnology)
                             theUnit->mPlayer->RefundTechnology(theTechnology, 0x20, gWorldTable.GetFloatValue(45));
                     }
                     theUnit->Kill(1, 0, 0);
                 }
             }
+            // LOST-DEBUG: none: exact only (free sites refuse the first GetFloatValue begin, as the original)
+            EE_LOST_DEBUG(2);
         }
     }
 }
@@ -7876,7 +7878,8 @@ void EEMSmartFarmers::Execute()
     EEPlayer* thePlayer = gWorld.GetPlayerBySlot(this->GetOriginatingSlot());
     EESelectedGroup* theSelection = thePlayer->mActiveGroup;
     EEComplexUnit* theFirstUnit = theSelection->GetFirstUnit();
-    EEComplexUnit* theTarget = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(this->mTargetID));
+    long theTargetID = this->mTargetID;
+    EEComplexUnit* theTarget = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(theTargetID));
     long theIndex = 1;
     if (theFirstUnit == NULL || theTarget == NULL)
         return;
@@ -7894,12 +7897,13 @@ void EEMSmartFarmers::Execute()
         for (long i = 0; i < theCount; i++) {
             EEComplexUnit* theUnit = theGroup->GetUnit(i);
             EEUGGather* theGather = dynamic_cast<EEUGGather*>(theUnit->GetLoadGoal());
-            if (theGather != NULL && theGather->mResource != NULL && theGather->mResource->mUnitClass->mUnitType == kUnitTypeFarm) {
+            if (theGather == NULL || theGather->mResource == NULL || theGather->mResource->mUnitClass->mUnitType != kUnitTypeFarm)
+                theFarm = NULL;
+            else {
                 theFarm = theGather->mResource->mComplexUnit;
                 theOccupants.clear();
                 if (EEGetFarmDropSites(theFarm, theOccupants)) {
-                    EEUnit* theTargetUnit = theTarget;
-                    if (std::find(theOccupants.begin(), theOccupants.end(), theTargetUnit) != theOccupants.end()
+                    if (std::find(theOccupants.begin(), theOccupants.end(), theTarget) != theOccupants.end()
                         && theTarget->CanTake(theUnit, theUnit->mResourceType)) {
                         theUnit->SetGatheredResource(NULL);
                         theUnit->StartAction(kActionMoveToStorage);
@@ -7908,8 +7912,7 @@ void EEMSmartFarmers::Execute()
                     }
                 } else
                     theFarm = NULL;
-            } else
-                theFarm = NULL;
+            }
             if (theFarm == NULL && theFarms.size() > 0) {
                 std::sort(theFarms.begin(), theFarms.end(), EEFarmDistanceGreater(theUnit->GetTile()));
                 theFarm = theFarms.back();
@@ -7923,15 +7926,15 @@ void EEMSmartFarmers::Execute()
                 theUnit->SetGoal(new EEUGGather(NULL, theTarget, true), 0, 0);
                 theUnit->StartAction(kActionMoveToStorage);
             } else {
-                theUnit->SetGoal(new EEUGLocation(GE2DPoint((float)theTarget->mTileX, (float)theTarget->mTileY), true,
+                theUnit->SetGoal(new EEUGLocation(GE2DPoint((float)theTarget->GetTileX(), (float)theTarget->GetTileY()), true,
                                                   true, false, 0.0f, false, 0), 0, 0);
                 theUnit->StartAction(kActionPrepareToMove);
             }
             theUnit->mUnitClass->ActionChanged(theUnit);
         }
+        if (theGroup->GetNumUnits() > 0)
+            thePlayer->PlayAcknowledgement(theGroup->GetUnit(gPhysics->GetRandom(0L, (long)theGroup->GetNumUnits() - 1)));
     }
-    if (theGroup->GetNumUnits() > 0)
-        thePlayer->PlayAcknowledgement(theGroup->GetUnit(gPhysics->GetRandom(0L, (long)theGroup->GetNumUnits() - 1)));
     if (theGroup != NULL) {
         thePlayer->mPendingGroups.push_back(theGroup);
         theGroup->Finish();

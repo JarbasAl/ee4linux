@@ -198,7 +198,11 @@ public:
 	const_reference operator[](size_type _N) const
 		{return (begin()[_N]); }
 	reference operator[](size_type _N)
+#ifdef LLE_EXE_HEADERS	// exe: the original refuses iterator::operator+ and operator* where begin()[_N] would refuse operator[] (0x5fbc3b)
+		{return (*(begin() + _N)); }
+#else
 		{return (begin()[_N]); }
+#endif
 	reference front()
 		{return (*begin()); }
 	reference back()	// exe 0x16eee4 (deque<EEUnitGoal*>, EECPASGUSpaceCarrier::Virtual14)
@@ -378,8 +382,12 @@ protected:
 		if (_Count < _Inc && _Mapsize <= max_size() / _DEQUESIZ - _Inc)
 			_Count = _Inc;
 		size_type _Myboff = _Myoff / _DEQUESIZ;
+#ifdef EE_DINKUM_SXL233
+		_Mapptr _Newmap = (_Mapptr)allocator._Charalloc((_Mapsize + _Count) * sizeof (_Tptr));	// 0x71c350, 0x71d3b0: mapsize stays in eax, _Inc in ecx
+#else
 		_Mapptr _Newmap = _Allocate((_PDFT)(_Mapsize + _Count), (_Tptr *)0);	// through _Allocate: the inline
 				// parameter fixes the add's destination register (UIBackground 0x5b6af/0x5c1cb 97 -> exact)
+#endif
 		_Mapptr _Myptr = _Newmap + _Myboff;
 		_Myptr = _Ucopy(_Map + _Myboff, _Map + _Mapsize, _Myptr);
 		if (_Myboff <= _Count)

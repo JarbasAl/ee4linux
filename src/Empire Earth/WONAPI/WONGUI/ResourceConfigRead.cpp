@@ -38,6 +38,7 @@ void ResourceConfig::EnsureCloseParen(StringParser& inParser)
         throw ConfigObjectException("Expecting ')'");
 }
 
+inline int MakeStdColor(int inIndex) { return inIndex|0x80000000; }
 // FUNCTION: WON 0x007911a0
 int ResourceConfig::SafeReadColor(StringParser& inParser)
 {
@@ -54,23 +55,23 @@ int ResourceConfig::SafeReadColor(StringParser& inParser)
             std::string name;
             inParser.ReadString(name,false);
             const char* aName=name.c_str();
-            if(_stricmp(aName,"3DDarkShadow")==0) color=0x80000000;
-            else if(_stricmp(aName,"3DFace")==0) color=0x80000001;
-            else if(_stricmp(aName,"3DHilight")==0) color=0x80000002;
-            else if(_stricmp(aName,"3DShadow")==0) color=0x80000003;
-            else if(_stricmp(aName,"Scrollbar")==0) color=0x80000004;
-            else if(_stricmp(aName,"ButtonText")==0) color=0x80000005;
-            else if(_stricmp(aName,"GrayText")==0) color=0x80000006;
-            else if(_stricmp(aName,"Hilight")==0) color=0x80000007;
-            else if(_stricmp(aName,"HilightText")==0) color=0x80000008;
-            else if(_stricmp(aName,"ToolTipBack")==0) color=0x80000009;
-            else if(_stricmp(aName,"ToolTipText")==0) color=0x8000000a;
-            else if(_stricmp(aName,"MenuBack")==0) color=0x8000000b;
-            else if(_stricmp(aName,"MenuText")==0) color=0x8000000c;
-            else if(_stricmp(aName,"Back")==0) color=0x8000000d;
-            else if(_stricmp(aName,"Text")==0) color=0x8000000e;
-            else if(_stricmp(aName,"Link")==0) color=0x8000000f;
-            else if(_stricmp(aName,"LinkDown")==0) color=0x80000010;
+            if(_stricmp(aName,"3DDarkShadow")==0) color=MakeStdColor(0);
+            else if(_stricmp(aName,"3DFace")==0) color=MakeStdColor(1);
+            else if(_stricmp(aName,"3DHilight")==0) color=MakeStdColor(2);
+            else if(_stricmp(aName,"3DShadow")==0) color=MakeStdColor(3);
+            else if(_stricmp(aName,"Scrollbar")==0) color=MakeStdColor(4);
+            else if(_stricmp(aName,"ButtonText")==0) color=MakeStdColor(5);
+            else if(_stricmp(aName,"GrayText")==0) color=MakeStdColor(6);
+            else if(_stricmp(aName,"Hilight")==0) color=MakeStdColor(7);
+            else if(_stricmp(aName,"HilightText")==0) color=MakeStdColor(8);
+            else if(_stricmp(aName,"ToolTipBack")==0) color=MakeStdColor(9);
+            else if(_stricmp(aName,"ToolTipText")==0) color=MakeStdColor(10);
+            else if(_stricmp(aName,"MenuBack")==0) color=MakeStdColor(11);
+            else if(_stricmp(aName,"MenuText")==0) color=MakeStdColor(12);
+            else if(_stricmp(aName,"Back")==0) color=MakeStdColor(13);
+            else if(_stricmp(aName,"Text")==0) color=MakeStdColor(14);
+            else if(_stricmp(aName,"Link")==0) color=MakeStdColor(15);
+            else if(_stricmp(aName,"LinkDown")==0) color=MakeStdColor(16);
             else throw ConfigObjectException("Invalid standard color: "+type);
         }
         else if(_stricmp(type.c_str(),"DEC")==0)
@@ -93,8 +94,8 @@ int ResourceConfig::SafeReadColor(StringParser& inParser)
         color<<=4;
         int digit=GetHexDigit(inParser.GetChar(0));
         if(digit<0) throw ConfigObjectException("Invalid color specification.");
-        inParser.IncrementPos(1);
         color|=digit;
+        inParser.IncrementPos(1);
     }
     return color;
 }

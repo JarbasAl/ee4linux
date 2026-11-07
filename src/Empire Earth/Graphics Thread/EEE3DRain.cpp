@@ -74,7 +74,8 @@ EEE3DRain::EEE3DRain(const std::vector<EETileCoordinate>& inTiles, EEGraphicEffe
     this->mSound = NULL;
     this->mRumble = NULL;
     this->mDropCount = 0;
-    this->mRumbleDelay = Fn102F3D(0.0f, 0.25f) * kRainRumbleDelay;
+    float theDelay = Fn102F3D(0.0f, 0.25f) * kRainRumbleDelay;
+    this->mRumbleDelay = theDelay;
 }
 
 // SYNTHETIC: EXE 0x4f7421

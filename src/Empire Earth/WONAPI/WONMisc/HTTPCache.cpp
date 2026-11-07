@@ -15,7 +15,7 @@ namespace WONAPI {
 // FUNCTION: WON 0x006d1260
 HTTPCacheEntry::HTTPCacheEntry()
 {
-    SetValid(false);
+    mIsValid=false;
     mId=0;
     mExpirationTime=0;
     mLastAccessTime=0;

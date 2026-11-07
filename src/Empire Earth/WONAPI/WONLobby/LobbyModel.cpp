@@ -192,7 +192,7 @@ void LobbyClientList::Fn3A5820(const RoutingClientMap& inMap)
     while (anInfo != inMap.end()) {
         SmartPtr<LobbyClient> aNewClient = new LobbyClient;
         aNewClient->Fn3A5350(anInfo->second.get());
-        anInsert = mClients.insert(anInsert, LobbyClientMap::value_type(aNewClient->mClientId, aNewClient));
+        anInsert = mClients.insert(anInsert, LobbyClientMap::value_type(aNewClient->GetClientId(), aNewClient));
         ++anInfo;
     }
 }
@@ -346,7 +346,7 @@ LobbyFriend::LobbyFriend(const GUIString& inName, unsigned long inUserId)
 // CONTRIBUTOR: social/LobbyFriend.cpp.draft
 // FUNCTION: WON 0x7a6440
 void LobbyFriend::Fn3A6440(const IPAddr& inAddress, const GUIString& inLocation,
-                          unsigned char inFlags)
+                          int inFlags)
 {
     mAddress = inAddress;
     mLocation = inLocation;
@@ -877,7 +877,7 @@ void LobbyServer::Fn3A9BE0(const RoutingGroupMap& inGroups, bool inUpdateClients
             ++infoIt;
         }
     }
-    mGroups.erase(groupIt, mGroups.end());
+    while (groupIt != mGroups.end()) mGroups.erase(groupIt++);
     while (infoIt != inGroups.end()) {
         SmartPtr<LobbyGroup> group = new LobbyGroup;
         group->Fn3A8C30(infoIt->second.get(), clients);
@@ -1115,12 +1115,15 @@ short LobbyGame::Fn3A7570(ReadBuffer& inBuffer,LobbyClient* inClient,WriteBuffer
     LobbyConfig* config=GetLobbyConfig();
     if (config!=NULL && !config->mAllowDuplicateNames) {
         for (LobbyClientMap::iterator it=mClients->mClients.begin(); it!=mClients->mClients.end(); ++it)
-            if (it->second->mName==inClient->mName && it->second.get()!=inClient) return 8;
+            if (it->second->GetName()==inClient->GetName() && it->second.get()!=inClient) return 8;
     }
+    // LOST-DEBUG: none: exact only (one more free site refuses the second early return ~SmartPtr)
+    EE_LOST_TRACE(inClient->GetName());
     player=LobbyPlayer::CreatePlayer();
     inClient->Fn3A5520(player.get());
     try {
-        player->mPlayerId=inBuffer.ReadShort();
+        short anId=inBuffer.ReadShort();
+        player->mPlayerId=anId;
         short result=Virtual38(inBuffer,inClient);
         if (result!=0) { inClient->Fn3A5520(NULL); return result; }
     } catch (ReadBufferException&) {

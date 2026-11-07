@@ -3,6 +3,7 @@
 // vector<EEMedia*> push_back and _Xlen COMDATs, EEMedia::Get. EEAIUnitTargetingTable.cpp ends at 0xd490f,
 // EEButtonObject.cpp's chains start at 0xd5405. Unit flags: the exe's module set.
 #include <windows.h>
+#include "LostDebug.h"
 #include <vector>
 
 #include "lle/LowLevelEngine.h"
@@ -128,6 +129,8 @@ long EEAnimal::Load(FSFileSpec* inFile)
     if (theResult == kErrorOK) {
         EEAnimal::sTable.resize(theCount, NULL);
         for (unsigned long i = 0; i < theCount; i++) {
+            // LOST-DEBUG: none: exact only (0x4d4a5d: window 7 at the loop head; begin() expands only at the first sTable[i])
+            EE_LOST_DEBUG(7);
             theResult = inFile->Read(reinterpret_cast<unsigned char*>(&theRecord), sizeof(theRecord), theRead);
             EEAnimal::sTable[i] = new EEAnimal;
             EEAnimal::sTable[i]->mF28 = theRecord.mF9C;

@@ -219,7 +219,7 @@ void AccountLogic::HandleLogin(ComponentEvent* inBaseEvent)
     AuthContext* auth=GetLobbyAuthContext();
     Window* window=LobbyFn361230();
     if(!auth || !window) return;
-    int keyMod=window->mKeyMod;
+    int keyMod=window->GetKeyMod();
     if((keyMod&7)==7) { ShowCredits();return; }
     LoginEvent* event=static_cast<LoginEvent*>(inBaseEvent);
     if(event->mUserName.empty() || !CheckLoginStatus()) return;

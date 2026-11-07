@@ -27,7 +27,7 @@ MSScrollbar::MSScrollbar(bool vertical) : Scrollbar(vertical)
         mUpArrow->Fn2F4BC0(15,15);
     if(mDownArrow->Width()==0 || mDownArrow->Height()==0)
         mDownArrow->Fn2F4BC0(15,15);
-    mThumb=ThumbFactory(mVertical);
+    mThumb=ThumbFactory(ThumbType(mVertical));
     mScrollRect=new Button;
     Fn2F4B90(mUpArrow->Width(),mUpArrow->Height());
 }

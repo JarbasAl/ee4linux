@@ -53,7 +53,7 @@ void StatusDialog::SetText(const GUIString& inTitle, const GUIString& inStatus, 
     mStatusLabel->Fn2F4B90(0, 0);
     Fn2F4B90(0, 0);
     Fn2F4BC0(mTitleLabel->Width() + mCloseButton->Width() +
-              mBack->VirtualC8() + mBack->VirtualD0() + 5, 0);
+              mBack->VirtualD0() + mBack->VirtualC8() + 5, 0);
     mDialogComponent->Fn2F4B90(0, 0);
     mDialogComponent->Fn2F4E90(0, 0);
     Fn2F4E90(20, 20);

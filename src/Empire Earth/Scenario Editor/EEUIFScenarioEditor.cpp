@@ -144,7 +144,7 @@ long EEUIENewPlayer::ProcessEvent(UIForm* inForm, UIEntity* inEntity)
 {
     EEUIFScenarioEditor* theEditor = static_cast<EEUIFScenarioEditor*>(inForm);
     theEditor->GetUnitScreen()->ReselectUnitType();
-    static_cast<EESEPlayerScreen*>(theEditor->mTabGroups[kEditorTabPlayers])->FillTechLists();
+    theEditor->GetPlayerScreen()->FillTechLists();
     return kErrorOK;
 }
 

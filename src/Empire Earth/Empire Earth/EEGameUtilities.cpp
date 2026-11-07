@@ -210,10 +210,10 @@ SESMInstanceNode* Fn1487A3(const GE3DPoint& inLocation, EEGraphicObject* inGraph
         EESoundObject* theSound;
         if (inFrame == inGraphicObject->mSound1Frames[inAnimation])
             theSound = inGraphicObject->mSounds1[inAnimation];
-        else if (inFrame == inGraphicObject->mSound2Frames[inAnimation])
-            theSound = inGraphicObject->mSounds2[inAnimation];
-        else
+        else if (inFrame != inGraphicObject->mSound2Frames[inAnimation])
             return theResult;
+        else
+            theSound = inGraphicObject->mSounds2[inAnimation];
         if (theSound == NULL)
             return theResult;
         if (theSound->GetSampleID() == gSoundManager->GetSampleID(inSound)) {

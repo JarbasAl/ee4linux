@@ -91,6 +91,7 @@
 #include "ee/EEUIFMGStatusBar.h"
 #include "ee/EEUIFMGStatusBox.h"
 #include "ee/EEStringIDs.h"
+#include "LostDebug.h"
 long EEGetTradePrice(EEPlayer* inPlayer, long inResource, unsigned char inBuy);  // 0x23cc42 (EEMessage.cpp's)
 extern bool gUsingCarbon;  // Existing EERandomMapClass global; selected-unit resource icon variant
 extern unsigned long gTexturePixelDepth;    // 0x5308b4
@@ -613,7 +614,7 @@ void EEUIFMGStatusBox::Fill(EEUnit* inUnit)
                 theBar->mBar->SetStatusBarColor(kStatusColor1);
                 theBar->mBar->SetRange(0, theStats->mPower);
                 theBar->mBar->SetCurrentRangeValue(theUnit->mPower);
-                theBar->mAttribute = kImprovementFlightTimeOrPower;
+                theBar->SetAttribute(kImprovementFlightTimeOrPower);
                 theBar->SetDisplayMode(kDisplayModeShown);
                 theBar->mEnabled = true;
                 theBar->SetStringTableID(IDS_IMPROVEMENT_GARRISON);
@@ -888,8 +889,8 @@ void EEUIFMGStatusBox::Refresh(EEUnit* inUnit)
 {
     UWideString theText;
     UWideString theSuffix;
-    EEUnitClassUpgrade* theStats = inUnit->GetStats();
     EEUnitClass* theClass = inUnit->GetUnitClass();
+    EEUnitClassUpgrade* theStats = inUnit->GetStats();
     if (theStats->mName == "")
         gResource->GetString(theClass->mNameStringID, theText);
     else
@@ -909,6 +910,8 @@ void EEUIFMGStatusBox::Refresh(EEUnit* inUnit)
             static_cast<UITextLabel*>(this->mC94)->SetText(theText);
     }
     this->UpdateArmorTexts(inUnit);
+    // LOST-DEBUG: none: exact only; refuses vector::begin in the first two GetText sites as the original does (inline_sim: share 113 -> < 87)
+    EE_LOST_DEBUG(30);
     if (theClass->mHitPoints > 0) {
         sprintf(theText, "%d/%d", (long)((float)inUnit->GetHitPoints() + 0.5f),
                 (long)((float)theStats->mMaxHitPoints + 0.5f));
@@ -934,8 +937,8 @@ void EEUIFMGStatusBox::Refresh(EEUnit* inUnit)
     }
     if ((theIndex = this->mAttributes[1]) != -1) {
         float theAdjustment = theStats->GetRange() < theClass->GetRange() ? -0.0001f : 0.0001f;
-        float theValue = (theStats->mRange - theStats->GetUnitClass()->mRange) + theAdjustment;
-        this->GetAttributeText(theClass->mRange, theValue, theText);
+        float theValue = (theStats->mRange - theStats->mUnitClass->GetRange()) + theAdjustment;
+        this->GetAttributeText(theClass->GetRange(), theValue, theText);
         static_cast<EEUIBUpgrade*>(this->mIcons[theIndex])->UpdateCost(theText);
     }
     if ((theIndex = this->mAttributes[2]) != -1) {

@@ -11,7 +11,7 @@ class LobbyFriend : public RefCount {
 public:
     LobbyFriend(const GUIString&, unsigned long);
     // Implicit destructor: original3a6380 has no own-vptr store.
-    void Fn3A6440(const IPAddr&, const GUIString&, unsigned char);
+    void Fn3A6440(const IPAddr&, const GUIString&, int);
     void Fn3A65B0();
     void Fn3A66B0(LobbyClient*);
     void Fn3A66F0(bool);

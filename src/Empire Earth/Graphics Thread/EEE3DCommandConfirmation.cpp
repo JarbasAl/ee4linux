@@ -349,7 +349,7 @@ long EEE3DCommandConfirmation::Step()
                 theLocation.SetX((theID % 3 - 1) * theSize * 0.125f + theSize * 0.5f + this->mUnit->mTileX);
                 theLocation.SetY((theID / 3 % 3 - 1) * theSize * 0.125f + this->mUnit->mUnitClass->mTileSize * 0.5f
                                  + this->mUnit->mTileY);
-                theLocation.SetZ(gWorld.mMap->mTerrainMesh.GetMeshZ(theLocation.GetX(), theLocation.GetY()));
+                theLocation.SetZ(gWorld.GetMap()->mTerrainMesh.GetMeshZ(theLocation.GetX(), theLocation.GetY()));
             } else if (this->mUnit->mHitPoints <= 0 && this->mUnit->mComplexUnit && this->mUnit->GetModel()->mModel) {
                 theOffset = this->mUnit->GetModel()->mTopPoint;
                 float theScale = this->mUnit->mComplexUnit->mPhysicalModel.GetScale();

@@ -11,6 +11,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyParser.h"
+#include "LostDebug.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x00782db0
@@ -75,6 +76,17 @@ int ComponentConfig::ParseExpression(int inLevel)
             return value;
         }
     }
+    // LOST-DEBUG: none: exact only (caller IL size: a larger budget, so the basic_string helpers expand as in the original)
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0); EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0);
 }
 
 // FUNCTION: WON 0x007837e0

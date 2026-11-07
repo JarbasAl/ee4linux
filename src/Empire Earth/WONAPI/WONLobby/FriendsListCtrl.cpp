@@ -199,13 +199,11 @@ void FriendsListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
         if(inEvent->mComponent==mRemoveButton.get()) {
             LobbyFriend* aFriend=GetSelectedFriend();
             if(aFriend!=NULL) Fn2F53F0(new FriendActionEvent(3,aFriend,0),false);
-            return;
         } else if(inEvent->mComponent==mLocateButton.get()) {
             LobbyFriend* aFriend=GetSelectedFriend();
             if(aFriend!=NULL) Fn2F53F0(new FriendActionEvent(1,aFriend,0),false);
-            return;
-        }
-        break;
+        } else break;
+        return;
     case 22:UpdateButtons();return;
     case 23: {
         FriendsListItem* item=static_cast<FriendsListItem*>(mFriendsList->mSelItem);

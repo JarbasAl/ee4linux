@@ -15,9 +15,13 @@
 #include "LostDebug.h"
 namespace WONAPI {
 // Resource map insert with the per-parse duplicate check (the DWORD instance stays out of line: TEMPLATE below).
+// LOST-DEBUG: none: exact only. Owner-approved per-instance cost (2026-11-07): the plain macro would charge every instance.
+inline void RCMCost(DWORD*) { EE_LOST_DEBUG(1); }
+template <class T> inline void RCMCost(T*) { }
 template <class Type,class Map>
 bool ResourceConfig_AddToMap(const char* typeName,StringParser& value,Map& values,int generation,Type*& output)
 {
+    RCMCost(output);
     std::string key;
     value.ReadString(key,true);
     if(key.empty()) throw ConfigObjectException("Invalid resource key.");

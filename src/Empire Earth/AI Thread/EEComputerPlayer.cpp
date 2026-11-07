@@ -190,11 +190,11 @@ EEComputerPlayer::~EEComputerPlayer()
             this->mUnitsToKill[i]->Dereference();
     }
     this->mUnitsToKill.clear();
-    delete this->mExplorationManager;
-    delete this->mDiplomacyManager;
-    delete this->mCombatManager;
-    delete this->mCivilizationManager;
-    delete this->mInteractionManager;
+    delete this->GetExplorationManager();
+    delete this->GetDiplomacyManager();
+    delete this->GetCombatManager();
+    delete this->GetCivilizationManager();
+    delete this->GetInteractionManager();
     DeleteVectorContents(this->mResourceCenters);
 }
 
@@ -221,13 +221,13 @@ void EEComputerPlayer::WorkOutPopulation()
         for (unsigned long i = 0; i < gWorld.GetNumTeams(); i++) {
             if (theFound)
                 break;
-            if (gWorld.mTeams[i].mVictoryCondition->HasEnoughWonders() && !gWorld.mTeams[i].ContainsPlayer(this->mPlayerID))
+            if (gWorld.mTeams[i].mVictoryCondition->HasEnoughWonders() && !gWorld.mTeams[i].ContainsPlayer(this->GetPlayerID()))
                 theFound = true;
             else
                 theFound = false;
         }
         if (!theFound && !theFlag) {
-            for (unsigned long j = 1; j < gWorld.mNumPlayers; j++) {
+            for (unsigned long j = 1; j < gWorld.GetNumPlayers(); j++) {
                 EEPlayer* thePlayer = gWorld.mPlayers[j];
                 if (thePlayer->IsHuman()) {
                     long theCount = thePlayer->GetTotalPopulation(true, true);
@@ -4912,7 +4912,7 @@ void EEComputerPlayer::SetNextIslandExpansionTime()
 // FUNCTION: EXE 0x43d677
 // Writes the base player, the managers, the resource centers and every tuning value to the saved game; returns
 // the first write error (resource center errors are ignored; clears mIsEnableTimeSet before writing it)
-// NEAR (99.3): the second save loop keeps i in a register where the original reloads it from [ebp+0x10] per use
+
 long EEComputerPlayer::Save(unsigned long inMajorVersion, unsigned long inMinorVersion, FSFile& outFile)
 {
     unsigned long theCount;
@@ -4940,8 +4940,8 @@ long EEComputerPlayer::Save(unsigned long inMajorVersion, unsigned long inMinorV
     if (theResult == kErrorOK)
         theResult = outFile.Write(this->mIsStarted);
     if (theResult == kErrorOK) {
-        i = this->mNextAttackTime - gPhysics->mGameTime;  // the counter variable doubles as the time (one [ebp+0x10] slot)
-        theResult = outFile.Write(i);
+        unsigned long theTime = this->mNextAttackTime - gPhysics->mGameTime;
+        theResult = outFile.Write(theTime);
     }
     if (theResult == kErrorOK)
         theResult = outFile.Write(this->mActive);
@@ -5258,7 +5258,7 @@ long EEComputerPlayer::Save(unsigned long inMajorVersion, unsigned long inMinorV
         theResult = outFile.Write(theCount);
         for (i = 0; i < theCount; i++) {
             if (theResult == kErrorOK)
-                theResult = outFile.Write(this->mFavoriteTypeHistory[i].first);
+                theResult = outFile.Write((this->mFavoriteTypeHistory.begin() + i)->first);
             if (theResult == kErrorOK)
                 theResult = outFile.Write(this->mFavoriteTypeHistory[i].second);
         }
@@ -5517,23 +5517,23 @@ void EEComputerPlayer::UnitTaken(RTSUnit* inUnit, bool inSwapped)
 void EEComputerPlayer::UnitGoalDone(EEComplexUnit* inUnit)
 {
     unsigned long theGoals = inUnit->mGoalQueues[0].mGoals.size();
-    if (inUnit->mUnitClass->IsTransport()) {
-        this->mCivilizationManager->mResourceManager->TransportIdle(inUnit);
+    if (inUnit->GetClass()->IsTransport()) {
+        this->GetCivilizationManager()->GetResourceManager()->TransportIdle(inUnit);
         if (theGoals == 1 && inUnit->IsRepairable() && inUnit->GetNumCargoUnits() == 0)
             this->SendToNearestBase(inUnit);
-        if (inUnit->mGoalState != NULL && inUnit->mGoalState->mKind == kGoalLoadTransport && inUnit->GetNumCargoUnits() == 0)
+        if (inUnit->GetGoalState() != NULL && inUnit->GetGoalState()->GetKind() == kGoalLoadTransport && inUnit->GetNumCargoUnits() == 0)
             inUnit->ClearGoalQueue(0);
     }
     theGoals = inUnit->mGoalQueues[0].mGoals.size();
-    if (inUnit->mIsDetachedFromAI && theGoals <= 1) {
+    if (inUnit->GetIsDetachedFromAI() && theGoals <= 1) {
         inUnit->mIsDetachedFromAI = false;
-        this->mCombatManager->UnitAdded(inUnit);
+        this->GetCombatManager()->UnitAdded(inUnit);
     }
-    long theCategory = inUnit->mUnitClass->mCategory;
+    long theCategory = inUnit->GetClass()->GetCategory();
     if (theCategory == kUnitCategoryLandCitizen || theCategory == kUnitCategoryNavalCitizen)
-        this->mCivilizationManager->mResourceManager->AddIdleGatherer(inUnit);
-    if (theGoals <= 1 && inUnit->mActiveGroup != NULL)
-        inUnit->mActiveGroup->RemoveUnit(inUnit);
+        this->GetCivilizationManager()->GetResourceManager()->AddIdleGatherer(inUnit);
+    if (theGoals <= 1 && inUnit->GetActiveGroup() != NULL)
+        inUnit->GetActiveGroup()->RemoveUnit(inUnit);
 }
 
 

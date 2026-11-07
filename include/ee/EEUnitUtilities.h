@@ -62,7 +62,7 @@ bool EEFindPlacement(GE3DPoint* inPoint, EEUnitClass* inClass, unsigned long inX
                      long inRings, bool inCorners, bool inFacePoint, bool inArg11, GETransformation* outTransformation,
                      EEComplexUnit* inTarget);
 // 0x24bb36: the tiles of ring inRing around the inSize square at (inX, inY)
-void EEGetRingTiles(unsigned long inX, unsigned long inY, long inSize, long inRing, long inCorners,
+void EEGetRingTiles(long inX, long inY, long inSize, long inRing, long inCorners,
                 std::vector<U2DPoint<long> >& outTiles);
 float Fn246EA2(EEComplexUnit* inUnit, long inX, long inY, long* outX, long* outY);   // 0x246ea2 (names.txt binds it)
 char EEGetTileUnitStanding(EEUnit* inUnit, EEPlayer* inPlayer, long inUnitType, bool inIgnoreOwner);

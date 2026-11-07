@@ -12,6 +12,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyHTMLTag.h"
+#include "LostDebug.h"
 
 
 
@@ -228,9 +229,11 @@ void HTMLImageTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 	theAttributes.GetIntParam("HEIGHT",mHeight);
 	
 	aParam  = theAttributes.GetAttribute("USEMAP");
-	if(aParam!=NULL && aParam->length()>1 && (*aParam)[0]=='#')
+	if(aParam!=NULL && aParam->mData.mPtr->mLength>1 && aParam->mData.mPtr->mText[0]==0x23)
 		mUseMap = aParam->substr(1);
 
+	// LOST-DEBUG: none: exact only (the USEMAP temp's dtor expands, BORDER's stays a call)
+	EE_LOST_DEBUG(1);
 	theAttributes.GetIntParam("BORDER",mBorder);
 }
 

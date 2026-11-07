@@ -17,14 +17,14 @@ TextArea::TextArea()
     mTextFlags=TextFlag_WordWrap|TextFlag_AllowSelection|TextFlag_ShowPartialLines|TextFlag_ScrollOnBottom;
     mHasBeenVisible=false;
     mTextColor=0x8000000e;
-    mFont=GetNamedFont("TextArea");
+    SetFont(GetNamedFont("TextArea"));
     mLinkColor=0x0000ff;
-    mLinkFont=GetNamedFont("TextAreaLink");
-    if(mLinkFont.get()==GetRoot()->mManager->GetDefaultFont())
+    SetLinkFont(GetNamedFont("TextAreaLink"));
+    if(mLinkFont.get()==GetRoot()->GetWindowManager()->GetDefaultFont())
     {
-        FontDescriptor descriptor=mFont->mDescriptor;
+        FontDescriptor descriptor=mFont->GetDescriptor();
         descriptor.mStyle|=FontStyle_Underline;
-        mLinkFont=GetFont(descriptor);
+        SetLinkFont(GetFont(descriptor));
     }
     SetComponentFlags(8,true);
     mMaxChars=80*2000;

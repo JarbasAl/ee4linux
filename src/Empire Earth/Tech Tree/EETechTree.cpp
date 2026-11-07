@@ -291,19 +291,18 @@ void EETechTree::GetChecksum(ESChecksum& ioChecksum)
     bool theCurrentNodeIsResearched = false;
     bool theScenEditorObsoleted = false;
     this->GetNodeIDs(theIDs);
-    long theWeight = 15;
     for (long i = 0; i < 15; i++) {
         long theID = this->mEpochs[i].mData->mID;
         theIDs.push_back(theID);
     }
-    for (std::vector<long>::iterator theIterator = theIDs.begin(); theIterator != theIDs.end(); theIterator++, theWeight++) {
+    for (std::vector<long>::iterator theIterator = theIDs.begin(); theIterator != theIDs.end(); theIterator++, i++) {
         ESVERIFY_AT(this->GetTechIDState(*theIterator, theCurrentNodeIsResearched, theCurrentNodeIsObsolete, theScenEditorObsoleted), 512);
         long theState = 0;
         if (theCurrentNodeIsResearched)
             theState = 1;
         if (theCurrentNodeIsObsolete)
             theState += 2;
-        theChecksum += *theIterator * theState * theWeight;
+        theChecksum += *theIterator * theState * i;
     }
     ioChecksum.AddChecksum("EETechTree", theChecksum);
 }

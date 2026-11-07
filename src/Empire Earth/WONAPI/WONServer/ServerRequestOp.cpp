@@ -296,25 +296,22 @@ bool ServerRequestOp::CallbackHook(AsyncOp* op,int param)
         break;
     case 1: {
         RecvMsgOp* receive=dynamic_cast<RecvMsgOp*>(op);
-        if(receive==NULL) break;
-        mResponse=receive->GetMsg();
-        if(CheckExpiredSession()) {
-            TryNextServer();
-            break;
-        }
-        try {
-            WONStatus status=Virtual14();
-            switch(status) {
-            case 100057: TryNextServer(); return true;
-            case 100058: Send(); return true;
-            case 100059: QueueSocketOp(new RecvMsgOp,RecvTime()); return true;
-            case 100060: return true;
+        if(receive!=NULL) {
+            mResponse=receive->GetMsg();
+            if(CheckExpiredSession()) {
+                TryNextServer();
+                return true;
             }
-            FinishSaveSession(status);
-            return true;
-        } catch(ReadBufferException&) {
-            SetLastServerError(100064);
-            TryNextServer();
+            try {
+                WONStatus status=Virtual14();
+                if(status==100057) TryNextServer();
+                else if(status==100058) Send();
+                else if(status==100059) QueueSocketOp(new RecvMsgOp,RecvTime());
+                else if(status!=100060) FinishSaveSession(status);
+            } catch(ReadBufferException&) {
+                SetLastServerError(100064);
+                TryNextServer();
+            }
         }
         break;
     }

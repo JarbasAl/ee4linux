@@ -41,6 +41,7 @@
 #include "ee/EEEffect2D.h"
 #include "ee/EEE2DShockwave.h"
 #include "ee/EEEffectKindIDs.h"
+#include "LostDebug.h"
 
 // SYNTHETIC: EXE 0x4e614f
 // SYNTHETIC: EXE 0x4e6159
@@ -136,6 +137,8 @@ long EEE2DShockwave::SetUp()
         }
         this->SetPosition(thePosition);
     }
+    // LOST-DEBUG: none: exact only (inline_sim: +3 free calls after the op[] site refuse _Ptrit::operator+)
+    EE_LOST_DEBUG(3);
     this->SetBoundingRadius(this->mGraphicEffect->GetSize());
     this->mGraphicObject = this->GetGraphicObject();
     return this->mGraphicObject->LoadMedia();

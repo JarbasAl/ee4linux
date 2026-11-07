@@ -276,11 +276,11 @@ void EEWonNet::ConnectToLobby()
 {
     RoutingGroupMap::const_iterator theGroup;
     RoutingMemberMap::const_iterator theMember;
+    theGroup = NULL;
+    theMember = NULL;
     char theName[1024];
     UWideString theString;
 
-    theGroup = NULL;
-    theMember = NULL;
     if (this->mRouting.get() == NULL)
         return;
     this->mL16C = 0;
@@ -288,10 +288,13 @@ void EEWonNet::ConnectToLobby()
     for (theGroup = this->mRouting->GetGroupMap().begin(); theGroup != this->mRouting->GetGroupMap().end(); theGroup++) {
         memset(theName, 0, 1024);
         wcstombs(theName, theGroup->second->mName.c_str(), 1024);
-        for (theMember = theGroup->second->mMembers.begin(); theMember != theGroup->second->mMembers.end();
-             theMember++) {
+        theMember = theGroup->second->mMembers.begin();
+        while (true) {
+            if (theMember == theGroup->second->mMembers.end())
+                break;
             memset(theName, 0, 1024);
             wcstombs(theName, theMember->second->mClientInfo->mName.c_str(), 1024);
+            theMember++;
         }
     }
 }
@@ -713,6 +716,7 @@ void EEWonNet::JoinGroupCallback(AsyncOp* inOp)
     if (static_cast<RoutingJoinGroupOp*>(inOp)->GetGroupId() != this->mJoinGroupId) {
         if (inOp->GetStatus() == 0)
             this->mRouting->LeaveGroup(static_cast<RoutingJoinGroupOp*>(inOp)->GetGroupId(), NULL);
+        return;
     } else {
         this->mJoinGroupId = 0xffff;
         if (inOp->GetStatus() != 0) {
@@ -1276,7 +1280,7 @@ void EEWonNet::OnChat(AsyncOp* inOp)
 
     if (theClient.get() != NULL && !static_cast<RoutingPeerChatOp*>(inOp)->mRecipients.empty()) {
         theFrom = UWideString(this->ToString(theClient->mName).c_str());
-        if ((static_cast<RoutingPeerChatOp*>(inOp)->mFlags & 4)
+        if (static_cast<RoutingPeerChatOp*>(inOp)->IsWhisper()
             && theClient->mClientId != this->mRouting->mClientId)
             this->mReplyClientId = static_cast<RoutingPeerChatOp*>(inOp)->mClientId;
         theText = UWideString(this->ToString(static_cast<RoutingPeerChatOp*>(inOp)->mText).c_str());

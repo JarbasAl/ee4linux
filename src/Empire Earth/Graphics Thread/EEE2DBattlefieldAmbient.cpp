@@ -300,10 +300,13 @@ long EEE2DBattlefieldAmbient::Queue(EEEffectQueue* inQueues)
     long theResult = EEEffect2D::Queue(inQueues);
     if (theResult == 0) {
         this->mDrawAge = this->mAge;
-        float theAge = this->mAge;
-        if (this->mGraphicEffect->mFlag2 && theAge < 0.1f)
-            this->mDrawSize = (theAge * 10.0f) * this->mSize;
-        else
+        if (this->mGraphicEffect->mFlag2) {
+            float theAge = this->mAge;
+            if (theAge < 0.1f)
+                this->mDrawSize = (theAge * 10.0f) * this->mSize;
+            else
+                this->mDrawSize = this->mSize;
+        } else
             this->mDrawSize = this->mSize;
         GETexture* theTexture;
         theTexture = this->mGraphicEffect->mGraphicObject ? this->mGraphicEffect->mGraphicObject->mTextures[gScreenIndex] : NULL;

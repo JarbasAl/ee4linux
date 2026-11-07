@@ -142,10 +142,8 @@ void MSGraphics::FillRectHook(int x, int y, int width, int height)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace
-{
 typedef BOOL(WINAPI *AlphaBlendFunc)(HDC,int,int,int,int,HDC,int,int,int,int,BLENDFUNCTION);
-AlphaBlendFunc gAlphaBlendFunc;
+static AlphaBlendFunc gAlphaBlendFunc;
 struct AutoUnloadLibrary
 {
 	HMODULE mModule;
@@ -154,8 +152,6 @@ struct AutoUnloadLibrary
 	~AutoUnloadLibrary() { if(mModule!=NULL) FreeLibrary(mModule); }
 
 };
-
-} // namespace
 
 // FUNCTION: WON 0x007cf460
 bool MSGraphics::BlendSupported()

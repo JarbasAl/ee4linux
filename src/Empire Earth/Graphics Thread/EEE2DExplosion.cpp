@@ -44,6 +44,8 @@
 #include "ee/EEGameSound.h"
 #include "ee/EEE2DExplosion.h"
 #include "ee/EEEffectKindIDs.h"
+#include "LostDebug.h"
+#include "ee/EEGamePreferences.h"
 
 // unit-local .rdata before the vtable (0x43fb24), loaded from memory: a named const
 const float kExplosionHeightOffset = 0.4f;
@@ -115,9 +117,12 @@ long EEE2DExplosion::Queue(EEEffectQueue* inQueues)
     long theResult = EEEffect2D::Queue(inQueues);
     if (theResult == 0) {
         for (unsigned long i = 0; i < theCount; i++)
-            this->mParts[i].mDrawFrame = this->mParts[i].mFrame;
+            this->mParts[i].SetDrawFrame((this->mParts.begin() + i)->mFrame);
         GETexture* theTexture;
-        theTexture = this->mGraphicEffect->mGraphicObject ? this->mGraphicEffect->mGraphicObject->mTextures[gScreenIndex] : NULL;
+        if (this->GetGraphicEffect()->GetGraphicObject())
+            theTexture = this->GetGraphicEffect()->GetGraphicObject()->GetTexture(gGamePreferences.mSettings.GetScreenID());
+        else
+            theTexture = NULL;
         inQueues[4][theTexture].push_back(this);
     }
     return theResult;
@@ -148,7 +153,7 @@ long EEE2DExplosion::DrawPass6()
     GEModel* theModel = this->mModel;
     GEMaterial* theMaterial = theModel->GetMaterial(0);
     long theResult = 0;
-    unsigned long theScreen = gScreenIndex;
+    unsigned long theScreen = gGamePreferences.mSettings.GetScreenID();
     float theScale = this->mGraphicEffect->mSize;
     unsigned long theCount = this->mParts.size();
     if (this->mGraphicEffect->mGraphicObject)

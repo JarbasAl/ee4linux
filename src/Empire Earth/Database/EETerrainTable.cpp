@@ -375,7 +375,6 @@ EECliffTerrainTable::EECliffTerrainTable()
 // returns the last read status
 long EECliffTerrainTable::Load(FSFileSpec* inFile)
 {
-    EECliffTerrainTable* theCliff = NULL;
     unsigned long theCount = 0;
     unsigned long theRead = 0;
     EECliffTerrainRecord theRecord;
@@ -386,6 +385,7 @@ long EECliffTerrainTable::Load(FSFileSpec* inFile)
         EETerrainTable::sCliffTable.resize(theCount, NULL);
         for (unsigned long i = 0; i < theCount; i++) {
             theResult = inFile->Read(reinterpret_cast<unsigned char*>(&theRecord), sizeof(theRecord), theRead);
+            EECliffTerrainTable* theCliff;
             if (theRecord.mIndex >= 0) {
                 theCliff = new EECliffTerrainTable;
                 theCliff->mName = theRecord.mName;
@@ -397,9 +397,10 @@ long EECliffTerrainTable::Load(FSFileSpec* inFile)
                     gFirstCliffTerrain = i;
                     theFound = true;
                 }
+            } else {
+                theCliff = NULL;
             }
             EETerrainTable::sCliffTable[i] = theCliff;
-            theCliff = NULL;
         }
     }
     inFile->Close();

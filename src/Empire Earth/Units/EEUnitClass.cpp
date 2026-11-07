@@ -125,6 +125,7 @@
 #include "ee/EEUIManager.h"
 #include "ee/EEUIFMainGame.h"
 #include "ee/EEUIFMGMainGroup.h"
+#include "LostDebug.h"
 
 void EEComputeSoundParameters(float inVolume, const GE3DPoint& inLocation, float& outVolume, float& outPan,
                               float& outPitch, float inFactor);
@@ -187,8 +188,9 @@ std::vector<unsigned long> EEUnitClass::sUnitTypes;
 // domains and kind flags (terrain slot 5 copies slot 0's record byte; the animal id is looked up twice)
 EEUnitClass::EEUnitClass(long inIsComplex, EEUnitClassRecord* inRecord, long inArg3)
 {
-    this->mResearchTechnologies.resize(inRecord->mNumAttributes, inArg3);
     this->mPhysicsModel = reinterpret_cast<EEPhysicsModel*>(inArg3);
+    long theFill;   // never set: the original pushes the uninitialised slot it shares with inArg3's home
+    this->mResearchTechnologies.resize(inRecord->mNumAttributes, theFill);
     for (unsigned long i = 0; i < inRecord->mNumAttributes; i++)
         this->mResearchTechnologies[i] = inRecord->mAttributes[i];
     for (unsigned long theIndex = 0; theIndex < 7; theIndex++)
@@ -948,7 +950,7 @@ void EEUnitClass::ApplyHit(EEComplexUnit* inUnit, EEUnit* inTarget)
         long theTargetPlayer = inTarget->mPlayer->GetPlayerID();
         long theUnitPlayer = inUnit->mPlayer->GetPlayerID();
         float theFactor = gWeaponToHitFactors[inTarget->mUnitClass->mWeapon][theClass->mWeapon];
-        theHit = gToHitTable.GetAttackFactor(theClass->mAmmoType, inTarget->GetUnitClass(), theUnitPlayer, theTargetPlayer)
+        theHit = gToHitTable.GetAttackFactor(theClass->mAmmoType, inTarget->mUnitClass, theUnitPlayer, theTargetPlayer)
                  * theFactor;
     } else {
         theHit = 0.0f;
@@ -1052,9 +1054,7 @@ void EEUnitClass::FireShot(EEComplexUnit* inUnit)
                 this->LaunchShot(inUnit, theTarget, thePoint, NULL);
             else
                 this->LaunchFromTurret(inUnit, theTarget, thePoint);
-        } else if (!inUnit->mIsSpecialAttack) {
-            this->ApplyHit(inUnit, theTarget);
-        } else {
+        } else if (inUnit->mIsSpecialAttack) {
             if (theType == kUnitTypeSp15CapitalShip || theType == kUnitTypeCapitalShipYamato) {
                 unsigned long thePart = inUnit->GetAnimation();
                 unsigned long theLast = inUnit->GetModel()->mTagPoints[thePart]->mPoints.size() - 1;
@@ -1068,6 +1068,8 @@ void EEUnitClass::FireShot(EEComplexUnit* inUnit)
                 this->LaunchShot(inUnit, theTarget, thePoint, NULL);
             }
             theDone = true;
+        } else {
+            this->ApplyHit(inUnit, theTarget);
         }
     }
     if (theCount != 0) {
@@ -1252,9 +1254,7 @@ bool EEUnitClass::ProduceUnit(EEComplexUnit* inUnit, EEUnitClass* inClass, bool 
     theLimit += thePlayer->GetPopulationLimit(0);
     long theNeeded = thePlayer->GetTotalPopulation(true, false);
     theNeeded += inClass->GetPopulationCost();
-    if (theNeeded > theLimit) {
-        theSuccess = false;
-    } else {
+    if (!(theNeeded > theLimit)) {
         if ((inUnit->GetUnitClass()->GetUnitType() == kUnitTypeCpMissileBase && inClass->GetCategory() == kUnitCategoryMissile) ||
             inClass->IsAircraft() || inClass->GetCategory() == kUnitCategoryProjectile) {
             EEAirTrafficControl* theTraffic = inClass->mAirTrafficType != 0 ? thePlayer->mAirTraffic[inClass->mAirTrafficType - 1] : 0;
@@ -1421,6 +1421,8 @@ bool EEUnitClass::ProduceUnit(EEComplexUnit* inUnit, EEUnitClass* inClass, bool 
             if (inArg)
                 inUnit->PlayEffect(100000);
         }
+    } else {
+        theSuccess = false;
     }
     return theSuccess;
 }
@@ -1868,7 +1870,7 @@ EEUnit* EEUnitClass::FindImpactUnit(EEComplexUnit* inUnit)
     GE3DPoint thePosition;
     GE3DLine theLine;
     GEVector theDirection;
-    EEUGAttackUnit* theAttack = dynamic_cast<EEUGAttackUnit*>(inUnit->GetGoal());
+    EEUGAttackUnit* theAttack = dynamic_cast<EEUGAttackUnit*>(inUnit->mGoalState);
     EEComplexUnit* theResult = NULL;
     const GETransformation& theLocation = inUnit->mPhysicalModel.GetLocation();
     thePosition.SetX(theLocation.GetX());
@@ -1891,11 +1893,7 @@ EEUnit* EEUnitClass::FindImpactUnit(EEComplexUnit* inUnit)
                 (inUnit->GetStats()->GetScale() + theTarget->GetStats()->GetScale()) *
                 (inUnit->GetStats()->GetScale() + theTarget->GetStats()->GetScale())) {
                 unsigned long theLOD = theTarget->GetStats()->GetScale() < kLargeUnitScale ? 1 : 2;
-                if (theTarget->mIsBuilt) {
-                    if (inUnit->mPhysicalModel.Intersects(&theTarget->mPhysicalModel, theLine,
-                        theSegment, theLOD, 1.0f, 1.0f, 1.0f))
-                        theResult = theTarget;
-                } else {
+                if (!(theTarget->mIsBuilt)) {
                     float theHealth = (float)theTarget->GetHitPoints() / (float)theTarget->GetStats()->mMaxHitPoints;
                     if (theHealth != 0.0f) {
                         if (theHealth < kMinConstructionScale)
@@ -1904,13 +1902,17 @@ EEUnit* EEUnitClass::FindImpactUnit(EEComplexUnit* inUnit)
                             theSegment, theLOD, 1.0f, 1.0f, theHealth))
                             theResult = theTarget;
                     }
+                } else {
+                    if (inUnit->mPhysicalModel.Intersects(&theTarget->mPhysicalModel, theLine,
+                        theSegment, theLOD, 1.0f, 1.0f, 1.0f))
+                        theResult = theTarget;
                 }
             }
         }
     }
     if (theResult == NULL) {
-        if (inUnit->GetUnitClass()->GetUnitType() == kUnitTypeFlamingArrow || inUnit->GetUnitClass()->GetUnitType() == kUnitTypePilum ||
-            inUnit->GetUnitClass()->GetUnitType() == kUnitTypeCpICBM)
+        if (inUnit->mUnitClass->GetUnitType() == kUnitTypeFlamingArrow || inUnit->mUnitClass->GetUnitType() == kUnitTypePilum ||
+            inUnit->mUnitClass->GetUnitType() == kUnitTypeCpICBM)
             return theResult;
         RTSRegionTable<EEComplexUnit*>* theTable = ::gWorld.mMap->mUnitRegions;
         long theRegionX = inUnit->GetTileX() / theTable->mRegionSize;
@@ -1921,10 +1923,10 @@ EEUnit* EEUnitClass::FindImpactUnit(EEComplexUnit* inUnit)
         unsigned long theCount = theRegion->size();
         for (unsigned long i = 0; i < theCount && theResult == NULL; ++i) {
             EEComplexUnit* theCandidate = (*theRegion)[i];
-            if (!EEUUGetIsUnitClassTargetable(NULL, theCandidate->GetUnitClass()) || theCandidate == inUnit->mOwner)
+            if (!EEUUGetIsUnitClassTargetable(NULL, theCandidate->mUnitClass) || theCandidate == inUnit->mOwner)
                 continue;
-            EEUnitClass* theClass = theCandidate->GetUnitClass();
-            if ((theClass->mIsParatrooperBomber && inUnit->mOwner->GetUnitClass()->mIsParatrooperBomber) ||
+            EEUnitClass* theClass = theCandidate->mUnitClass;
+            if ((theClass->mIsParatrooperBomber && inUnit->mOwner->mUnitClass->mIsParatrooperBomber) ||
                 theCandidate->mPhysicalModel.GetModel() == NULL)
                 continue;
             unsigned long theLOD = 1;
@@ -1965,7 +1967,7 @@ EEUnit* EEUnitClass::FindImpactUnit(EEComplexUnit* inUnit)
                     theCandidate->GetHitPoints() <= 0 || theClass->mIsProjectile)
                     continue;
                 unsigned long theCategory = theClass->GetCategory();
-                if ((inUnit->GetUnitClass()->GetCategory() != kUnitCategoryBomb && inUnit->GetUnitClass()->GetUnitType() != kUnitTypeMeteor &&
+                if ((inUnit->mUnitClass->GetCategory() != kUnitCategoryBomb && inUnit->mUnitClass->GetUnitType() != kUnitTypeMeteor &&
                     (theCategory == kUnitCategoryBuilding || theCategory == kUnitCategoryBuilding19 || theCategory == kUnitCategoryMiningBuilding || theCategory == kUnitCategoryFortress)) ||
                     theClass->GetUnitType() == kUnitTypeResFish)
                     continue;
@@ -1987,7 +1989,7 @@ EEUnit* EEUnitClass::FindImpactUnit(EEComplexUnit* inUnit)
         }
     }
     if (theResult != NULL && theAttack != NULL && inUnit->mOwner != NULL && theResult != theAttack->mTarget &&
-        gUnitSetManager.Contains(theResult->GetUnitClass()->GetUnitType(), 0x2a) && inUnit->mOwner->mIsFiringHigh != true)
+        gUnitSetManager.Contains(theResult->mUnitClass->GetUnitType(), 0x2a) && inUnit->mOwner->mIsFiringHigh != true)
         inUnit->mOwner->mIsFiringHigh = true;
     return theResult;
 }
@@ -2199,17 +2201,17 @@ void EEUnitClass::LaunchShot(EEComplexUnit* inUnit, EEUnit* inTarget, GE3DPoint&
     }
     long theX = UMFloor(theTransform.GetX());
     long theY = UMFloor(theTransform.GetY());
-    if (::gWorld.mMap->RTSMap::GetTile(theX, theY) == NULL) {
+    if (::gWorld.mMap->GetTile(theX, theY) == NULL) {
         thePosition.SetX(theTransform.GetX());
         thePosition.SetY(theTransform.GetY());
         thePosition.SetZ(theTransform.GetZ());
         ::gWorld.mMap->GetClosestTile(&thePosition, &theX, &theY);
     }
     if (inUnit->mIsSpecialAttack) {
-        if (this->mHasSpecialAttack && inUnit->mUnitClass->GetUnitType() != kUnitTypeX04RomanLegionnaire && inUnit->mUnitClass->GetUnitType() != kUnitTypeSp15CapitalShip &&
-            inUnit->mUnitClass->GetUnitType() != kUnitTypeCapitalShipYamato) {
+        if (this->mHasSpecialAttack && inUnit->GetUnitClass()->GetUnitType() != kUnitTypeX04RomanLegionnaire && inUnit->GetUnitClass()->GetUnitType() != kUnitTypeSp15CapitalShip &&
+            inUnit->GetUnitClass()->GetUnitType() != kUnitTypeCapitalShipYamato) {
             theClass = gUnitClassTable[gCivPowersManager.GetPowerRecord(kCivPowerFlamingArrows)->mUnitType];
-            theCreated = theClass->CreateUnit(theX, theY, inUnit->mPlayer->GetPlayerID(), false, inUnit);
+            theCreated = theClass->CreateUnit(theX, theY, inUnit->GetPlayer()->GetPlayerID(), false, inUnit);
         }
         if (!inUnit->CanAttackClass(inTarget->GetUnitClass()))
             inUnit->StartAction(kActionIdle);
@@ -2217,28 +2219,30 @@ void EEUnitClass::LaunchShot(EEComplexUnit* inUnit, EEUnit* inTarget, GE3DPoint&
     }
     if (inCargo != NULL) {
         theCreated = inCargo;
-        theClass = inCargo->mUnitClass;
+        theClass = inCargo->GetUnitClass();
         inCargo->MoveTo(theX, theY, true);
     }
     if (theCreated == NULL) {
-        theCreated = this->mProjectileClass->CreateUnit(theX, theY, inUnit->mPlayer->GetPlayerID(), false, inUnit);
+        theCreated = this->mProjectileClass->CreateUnit(theX, theY, inUnit->GetPlayer()->GetPlayerID(), false, inUnit);
         theClass = this->mProjectileClass;
     }
-    if (inUnit->mUnitClass->mIsParatrooperBomber)
+    if (inUnit->GetUnitClass()->mIsParatrooperBomber)
         EEMovePassengers(theCreated->GetComplexUnit(), inUnit, false);
     theCreated->GetComplexUnit()->mPhysicalModel.SetLocation(theTransform);
     if (this->mCreationEffect != NULL)
-        gEffectManager->CreateUnitEffect(theCreated, this->mCreationEffect, NULL, false, 0, 0);
+        ::gWorld.GetEffectManager()->CreateUnitEffect(theCreated, this->mCreationEffect, NULL, false, 0, 0);
     theCreated->GetComplexUnit()->SetLauncherClass(this);
     theCreated->GetComplexUnit()->SetOwner(inUnit);
     EEUnitGoal* theGoal;
     if (inTarget != NULL) theGoal = new EEUGAttackUnit(theCreated->GetComplexUnit(), inTarget, false, false);
     else theGoal = new EEUGAttackGround(inLocation, false);
     theCreated->GetComplexUnit()->SetGoal(theGoal, false, false);
-    theCreated->GetComplexUnit()->SetVelocity(inUnit->mVelocity);
+    theCreated->GetComplexUnit()->SetVelocity(inUnit->GetVelocity());
     theCreated->GetComplexUnit()->SetHeight(inUnit->mPhysicalModel.GetLocation().GetZ());
     theClass->LaunchProjectile(theCreated->GetComplexUnit(), inLocation);
-    if (inUnit->mUnitClass->mCategory == 0x16e)
+    // LOST-DEBUG: none: exact only; the wrapper refuses RTSMap::GetTile (inline_sim +k calls after the site, 11 natural getters so far)
+    EE_LOST_DEBUG(1);
+    if (inUnit->GetUnitClass()->GetCategory() == 0x16e)
         inUnit->StartAction(kActionIdle);
 }
 
@@ -2574,7 +2578,7 @@ void EEUnitClass::Heal(EEComplexUnit* inUnit)
     case 0x21:
     case 0x26:
     case 0x40:
-        if (gEffectManager->CreateEffectBetweenUnits(inUnit, theGoal->GetTarget(), theEffect, &theHandle) != 0)
+        if (::gWorld.GetEffectManager()->CreateEffectBetweenUnits(inUnit, theGoal->GetTarget(), theEffect, &theHandle) != 0)
             return;
         break;
     case 2:
@@ -2601,7 +2605,7 @@ void EEUnitClass::Heal(EEComplexUnit* inUnit)
     case 0x2c:
     case 0x3a:
     case 0x3b:
-        if (gEffectManager->CreateUnitEffect(theGoal->GetTarget(), theEffect, &theHandle, false, 0, 0) != 0)
+        if (::gWorld.GetEffectManager()->CreateUnitEffect(theGoal->GetTarget(), theEffect, &theHandle, false, 0, 0) != 0)
             return;
         break;
     }
@@ -2703,10 +2707,10 @@ bool EEUnitClass::HasArrived(EEComplexUnit* inUnit, float inValue)
             } else
                 theResult = false;
         } else if (theCount == 1) {
-            if (inValue < 0.05f)
-                theResult = true;
-            else
+            if (!(inValue < 0.05f))
                 theResult = false;
+            else
+                theResult = true;
         }
     }
     return theResult;
@@ -3271,12 +3275,12 @@ void EEUnitClass::MoveToTileCentre(EEComplexUnit* inUnit)
     if (inUnit->mGoalState == NULL) {
         inUnit->SetCurrentPhysicsAction(0);
         inUnit->DropPath();
-        theLocation.SetX(inUnit->GetTileX() + 0.5f);
+        theLocation.SetX(inUnit->mTileX + 0.5f);
         theLocation.SetY(inUnit->GetTileY() + 0.5f);
         theLocation.SetZ(inUnit->mUnitClass->mCanFly == true ? inUnit->mHeight : inUnit->mTile->mHeight);
         inUnit->SetGoal(new EEUGLocation(&theLocation, false, true, false, 0.0f, false, false), 0, 0);
     } else {
-        GE3DPoint theTarget(inUnit->GetTileX() + 0.5f, inUnit->GetTileY() + 0.5f,
+        GE3DPoint theTarget(inUnit->mTileX + 0.5f, inUnit->GetTileY() + 0.5f,
                             inUnit->mPhysicalModel.GetLocation().GetZ());
         const GETransformation& theCurrent = inUnit->mPhysicalModel.GetLocation();
         theLocation.SetX(theCurrent.GetX());
@@ -3728,8 +3732,8 @@ void EEUnitClass::Attacked(EEComplexUnit* inUnit)
 {
     GE3DPoint thePosition;
     std::vector<EEUnit*> theUnits;
-    EEComplexUnit* theTarget = inUnit->mLastAttacker;
     U2DPoint<long> theTile;
+    EEComplexUnit* theTarget = inUnit->mLastAttacker;
     EEUnitGoal* theGoal;
     if (!EEIsSeenByOwnerOf(theTarget, inUnit) && inUnit->GetStats()->mMaxVelocity != 0.0f) {
         theGoal = new EEUGLocation(theTarget->mPhysicalModel.GetLocation().GetX(),
@@ -3757,19 +3761,18 @@ void EEUnitClass::Attacked(EEComplexUnit* inUnit)
             if (theCurrent != NULL) {
                 if (theCurrent->GetB1C() || theCurrent->mKind != kGoalAttackUnit)
                     continue;
-                EEUnit* theOldTarget = static_cast<EEUGAttackUnit*>(theCurrent)->mTarget;
-                if (!theOldTarget->GetUnitClass()->IsLandBuilding() || theOldTarget->GetStats()->mAttack != 0.0f)
+                if (!static_cast<EEUGAttackUnit*>(theCurrent)->mTarget->GetUnitClass()->IsLandBuilding() || static_cast<EEUGAttackUnit*>(theUnit->mGoalState)->mTarget->GetStats()->mAttack != 0.0f)
                     continue;
             }
-            if (!EEIsAttackReachable(theUnit, theTarget, &theTile)) {
-                theUnit->IgnoreTarget(theTarget);
-            } else {
+            if (!(!EEIsAttackReachable(theUnit, theTarget, &theTile))) {
                 EEUnitGoal* theCopy = theGoal->Clone();
                 if (theUnit->GetClass()->FindAction(theCopy->GetStartAction()) != NULL) {
                     theUnit->SetGoal(theCopy, 1, 0);
                     theUnit->StartAction(theCopy->GetStartAction());
                     theUnit->GetUnitClass()->ActionChanged(theUnit);
                 }
+            } else {
+                theUnit->IgnoreTarget(theTarget);
             }
         }
         theUnits.clear();
@@ -3906,9 +3909,9 @@ void EEUnitClass::LaunchFromTurret(EEComplexUnit* inUnit, EEUnit* inTarget, GE3D
         theOrientation.SetOrientationYPR(inUnit->mTurretAngles[thePart], 0.0f, 0.0f);
         unsigned long theFrame = inUnit->mPhysicalModel.GetFrame();
         theList->GetTagPoint(theIndex)->GetOffset(theFrame, theOrientation, thePoint);
-        thePoint.mX = theStats->GetScale() * thePoint.mX;
-        thePoint.mY = theStats->GetScale() * thePoint.GetY();
-        thePoint.mZ = theStats->GetScale() * thePoint.mZ;
+        thePoint.mX = theStats->mScale * thePoint.mX;
+        thePoint.mY = theStats->mScale * thePoint.GetY();
+        thePoint.mZ = theStats->mScale * thePoint.mZ;
         theLocation.Apply(thePoint, theWorld);
         GETransformation theLaunch(false);
         (theList->mPoints[theIndex])->GetTransformation(inUnit->mPhysicalModel.GetFrame(), theLocation,
@@ -4348,11 +4351,11 @@ long EEUnitClass::Animate(EEComplexUnit* inUnit)
                 theNext = theLoop ? theStart : theFrame;
             } else {
                 theNext = theFrame + 1;
-                if (theNext == theLast) {
+                if (theNext != theLast) {
+                    theNext = theFrame + 2;
+                } else {
                     if (theEven && theLoop)
                         theNext = theStart;
-                } else {
-                    theNext = theFrame + 2;
                 }
             }
             if (theFrame != theLast || theEven)

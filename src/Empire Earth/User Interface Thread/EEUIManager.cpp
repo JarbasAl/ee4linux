@@ -273,6 +273,9 @@ EEUIManager::~EEUIManager()
 UIEvent* EECreateGameSettingsEvent(UIForm* inForm, unsigned long inID)
 {
     UIEvent* theEvent = NULL;
+    // LOST-DEBUG: none: exact only; caller IL for the budget (2 x size): the original expands UIEvent() at its 6th and 7th sites
+    EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);
+    EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);
     if (inID >= kControlEventGameSettingsOK && inID < 0xfc) {
         switch (inID) {
         case kControlEventGameSettingsCancel:
@@ -386,8 +389,12 @@ UIEvent* EECreateGameSettingsEvent(UIForm* inForm, unsigned long inID)
 // Creates the event a form fires when it opens, closes or activates; NULL for other ids
 UIEvent* EECreateFormEvent(UIManager* inManager, unsigned long inID)
 {
-    UIEvent* theEvent;
+    UIEvent* theEvent = NULL;
+    // LOST-DEBUG: none: exact only; caller IL for the budget (2 x size): the original expands UIEvent() at more sites, which also makes edi the zero register
+    EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);
     switch (inID) {
+    case kFormEventGameSettingsOpen:
+        break;
     case kFormEventMainScreenOpen:
         theEvent = new EEUIEMSEOpen;
         break;
@@ -440,9 +447,6 @@ UIEvent* EECreateFormEvent(UIManager* inManager, unsigned long inID)
     case kFormEventChatLogMLBPressed:
     case kFormEventChatLogMRBPressed:
         theEvent = new EEUIECLEMousePressed;
-        break;
-    default:
-        theEvent = NULL;
         break;
     }
     return theEvent;
@@ -792,6 +796,8 @@ UIEvent* EECreateCivilizationBuilderEvent(UIForm* inForm, unsigned long inID)
 UIEvent* EECreateMainGameEvent(UIForm* inForm, unsigned long inID)
 {
     UIEvent* theEvent = NULL;
+    // LOST-DEBUG: none: exact only; caller IL for the budget (2 x size), with the two early-case sites expanded as the original does
+    EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);EE_LOST_TRACE(inID);
     switch (inID) {
     case kControlEventSRMMainGameStatistics:
         theEvent = new EEUIEMGDisplayStatistics;
@@ -804,6 +810,14 @@ UIEvent* EECreateMainGameEvent(UIForm* inForm, unsigned long inID)
         break;
     case kControlEventSRMMainGameOptions:
         theEvent = new EEUIEMGDisplayOptions;
+        break;
+    case kControlEventSRMLargeCivBuilderAlert:
+    case kControlEventSRMMainGameCivBuilder:
+        theEvent = new EEUIEMGDisplayCivBuilder;
+        break;
+    case kControlEventSRMLargeScenBriefingAlert:
+    case kControlEventSRMGameInfoScenarioIntroduction:
+        theEvent = new EEUIEMGDisplayScenarioIntro;
         break;
     case kControlEventSRMTempBoxLoadUnit:
         theEvent = new EEUIELoadUnit;
@@ -834,14 +848,6 @@ UIEvent* EECreateMainGameEvent(UIForm* inForm, unsigned long inID)
         break;
     case kControlEventSRMSetScoutBehavior:
         theEvent = new EEUIEMGUnitBehavior(0);
-        break;
-    case kControlEventSRMLargeCivBuilderAlert:
-    case kControlEventSRMMainGameCivBuilder:
-        theEvent = new EEUIEMGDisplayCivBuilder;
-        break;
-    case kControlEventSRMLargeScenBriefingAlert:
-    case kControlEventSRMGameInfoScenarioIntroduction:
-        theEvent = new EEUIEMGDisplayScenarioIntro;
         break;
     case kControlEventSRMSetStandGroundBehavior:
         theEvent = new EEUIEMGUnitBehavior(1);
@@ -1533,7 +1539,7 @@ void EEUIManager::StartScenarioEditor()
     UWideString theComputerName;
     EEGameOptionsPlayer theHuman;
     EEGameOptionsPlayer theComputer;
-    gWorld.GetLobbyOptions().mLock->WriteLock();
+    gWorld.GetLobbyOptions().GetLock()->WriteLock();
     this->mInScenarioEditor = true;
     gGameStateIsMultiplayer = false;
     if (gCommunications != NULL)
@@ -1568,7 +1574,7 @@ void EEUIManager::StartScenarioEditor()
     static_cast<EEServer*>(gCommunications)->StopPing();
     static_cast<EEServer*>(gCommunications)->mLoadState = 1;
     gCommunications->ProcessLocalUserInput(new EEMStartLoading(1, TMGetTime()), kSlotNone);
-    gWorld.GetLobbyOptions().mLock->WriteUnlock();
+    gWorld.GetLobbyOptions().GetLock()->WriteUnlock();
 }
 
 // FUNCTION: EXE 0x6750a9

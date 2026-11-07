@@ -24,32 +24,28 @@ bool StretchImageConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="SRC") {
         mStretchImage->SetImage(ReadRawImage().get());
-        return true;
     }
-    if(instruction=="TILE") {
+    else if(instruction=="TILE") {
         bool horz=Fn3837F0();EnsureComma();
         bool vert=Fn3837F0();
         mStretchImage->SetTile(horz,vert);
-        return true;
     }
-    if(instruction=="BORDERS") {
+    else if(instruction=="BORDERS") {
         int left=ReadInt();EnsureComma();
         int top=ReadInt();EnsureComma();
         int right=ReadInt();EnsureComma();
         mStretchImage->SetBorders(left,top,right,ReadInt());
-        if(EndOfString())
-            return true;
-        EnsureComma();
-        bool horz=Fn3837F0();EnsureComma();
-        bool vert=Fn3837F0();
-        mStretchImage->SetTile(horz,vert);
-        return true;
+        if(!EndOfString()) {
+            EnsureComma();
+            bool horz=Fn3837F0();EnsureComma();
+            bool vert=Fn3837F0();
+            mStretchImage->SetTile(horz,vert);
+        }
     }
-    if(instruction=="SKIPCENTER") {
+    else if(instruction=="SKIPCENTER") {
         mStretchImage->SetSkipCenter(Fn3837F0());
-        return true;
     }
-    if(instruction=="MULTIEXPORT") {
+    else if(instruction=="MULTIEXPORT") {
         int count=ReadInt();EnsureComma();
         std::string imagePrefix=ReadRawString(false);EnsureComma();
         std::string configPrefix=ReadRawString(false);
@@ -58,47 +54,47 @@ bool StretchImageConfig::Virtual24(const std::string& instruction)
             EnsureComma();
             offset=ReadInt()-1;
         }
-        for(int i=1;i<=count;++i) {
+        for(int i=0;i<count;++i) {
             char imageName[512],configName[512];
-            sprintf(imageName,"%s%d",imagePrefix.c_str(),i+offset);
-            sprintf(configName,"%s%d",configPrefix.c_str(),i);
+            sprintf(imageName,"%s%d",imagePrefix.c_str(),i+1+offset);
+            sprintf(configName,"%s%d",configPrefix.c_str(),i+1);
             SmartPtr<RawImage> image=GetRawImageFromStr(imageName);
             SmartPtr<StretchImageConfig> child=new StretchImageConfig;
             child->mStretchImage->CopyAttributes(mStretchImage);
             child->mStretchImage->SetImage(image.get());
-            static_cast<ComponentConfig*>(mL38)->AddChildToConfigMap(configName,child.get());
+            ComponentConfig* parent=static_cast<ComponentConfig*>(GetParentObject());
+            parent->AddChildToConfigMap(configName,child.get());
         }
-        return true;
     }
-    if(instruction=="MULTICROPEXPORT") {
+    else if(instruction=="MULTICROPEXPORT") {
         int count=ReadInt();EnsureComma();
         SmartPtr<RawImage> image=ReadRawImage();EnsureComma();
         std::string configPrefix=ReadRawString(false);
-        int width=image->mWidth/count;
+        int width=image->GetWidth()/count;
         SmartPtr<CropImageFilter> crop=new CropImageFilter;
-        crop->SetSize(width,image->mHeight);
-        int x=0;
-        for(int i=0;i<count;x+=width) {
-            crop->SetPos(x,0);
+        crop->SetSize(width,image->GetHeight());
+        for(int i=0;i<count;i++) {
+            crop->SetPos(i*width,0);
             char configName[512];
-            sprintf(configName,"%s%d",configPrefix.c_str(),++i);
+            sprintf(configName,"%s%d",configPrefix.c_str(),i+1);
             SmartPtr<RawImage> cropped=crop->Filter(image.get());
             SmartPtr<StretchImageConfig> child=new StretchImageConfig;
             child->mStretchImage->CopyAttributes(mStretchImage);
             child->mStretchImage->SetImage(cropped.get());
-            static_cast<ComponentConfig*>(mL38)->AddChildToConfigMap(configName,child.get());
+            ComponentConfig* parent=static_cast<ComponentConfig*>(GetParentObject());
+            parent->AddChildToConfigMap(configName,child.get());
         }
-        return true;
     }
-    if(instruction=="EXPORT") {
+    else if(instruction=="EXPORT") {
         GUIString name=Fn3842F0(false);EnsureComma();
         SmartPtr<StretchImageConfig> child=new StretchImageConfig;
         child->mStretchImage->CopyAttributes(mStretchImage);
         child->mStretchImage->SetImage(ReadRawImage().get());
-        static_cast<ComponentConfig*>(mL38)->AddChildToConfigMap(name,child.get());
-        return true;
+        ComponentConfig* parent=static_cast<ComponentConfig*>(GetParentObject());
+        parent->AddChildToConfigMap(name,child.get());
     }
-    return ImageConfig::Virtual24(instruction);
+    else return ImageConfig::Virtual24(instruction);
+    return true;
 }
 
 // FUNCTION: WON 0x0078bf90

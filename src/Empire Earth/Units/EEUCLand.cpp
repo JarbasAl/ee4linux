@@ -37,6 +37,7 @@
 #include "ee/EEUnitGoal.h"
 #include "ee/EEUGUnloadTransport.h"
 #include "ee/EEUCLand.h"
+#include "LostDebug.h"
 
 // 0x20b6ff (EEUCAirplane.cpp): the plane's flight for inPlayer (provisional name)
 void EECreateCarrierAircraft(EEComplexUnit* inUnit, long inPlayer);
@@ -102,6 +103,8 @@ void EEUCLand::CallParatroopPlane(EEComplexUnit* inUnit)
     thePlane->mUnitClass->PathToward(thePlane, theStart, theTarget, true);
     thePlane->StartAction(kActionFly);
     thePlane->mUnitClass->ActionChanged(thePlane);
+    // LOST-DEBUG: none: exact only; refuses RTSMap::GetTile under the wrapper (inline_sim asks for more calls after that site)
+    EE_LOST_DEBUG(4);
 }
 
 // FUNCTION: EXE 0x613a94

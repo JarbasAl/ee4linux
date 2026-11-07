@@ -339,9 +339,9 @@ bool EECPAttackSubGroup::IsRequestFilled()
 bool EECPAttackSubGroup::HasGathered()
 {
     long theCount = 0;
-    EEAIPathSector* theSector = gContinentManager.GetPathSector(this->mRallyPoint.mTile);
+    EEAIPathSector* theSector = gContinentManager.GetPathSector(this->mRallyPoint.GetTile());
     for (long i = this->mUnits.size() - 1; i >= 0; i--) {
-        EEComplexUnit* theUnit = this->mUnits[i]->GetUnit();
+        EEComplexUnit* theUnit = this->GetUnitsAt(i)->GetUnit();
         if (theSector == gContinentManager.GetPathSector(theUnit) || theUnit->GetCommandType() == kActionIdle ||
             (long)theUnit->mWaypoints.size() < 11)
             theCount++;
@@ -613,14 +613,14 @@ float EECPAttackSubGroup::GetGateWeight()
     float theCount = 0.0f;
     if (this->mUnits.size() > 0) {
         for (long i = this->mUnits.size() - 1; i >= 0; i--) {
-            EEComplexUnit* theUnit = this->mUnits[i]->GetUnit();
-            if (theUnit->mUnitClass->mDomains & kMovementAir) {
+            EEComplexUnit* theUnit = this->GetUnitsAt(i)->GetUnit();
+            if (theUnit->GetClass()->GetDomains() & kMovementAir) {
                 theCount += 1.0f;
             } else {
-                if ((!theSet61->IsEmpty() && theSet61->Contains(theUnit->mUnitClass->mUnitType))
-                    || theSet60->Contains(theUnit->mUnitClass->mUnitType))
+                if ((!theSet61->IsEmpty() && theSet61->Contains(theUnit->GetClass()->GetUnitType()))
+                    || theSet60->Contains(theUnit->GetClass()->GetUnitType()))
                     theCount += 1.0f;
-                if (theSet62->Contains(theUnit->mUnitClass->mUnitType)) {
+                if (theSet62->Contains(theUnit->GetClass()->GetUnitType())) {
                     theCount = (float)this->mUnits.size();
                     break;
                 }
@@ -763,14 +763,14 @@ void EECPAttackSubGroup::RankUnits()
     std::sort(this->mUnits.begin(), this->mUnits.end(), EECPASGUnitValueGreater());
     if (this->mUnits.size() > 0) {
         this->mCanAttackShore = false;
-        unsigned long theCount = UMCeil(this->mUnits.size() * 0.25f);
+        unsigned long theCount = (unsigned long)(float)UMCeil(this->mUnits.size() * 0.25f);
         if (theCount < this->mUnits.size() && theCount > 0) {
             for (unsigned long i = 0; i < theCount; i++)
                 (this->mUnits[i])->mIsImportant = true;
         }
         for (long j = this->mUnits.size() - 1; j >= 0 && !this->mCanAttackShore; j--) {
             if (this->mUnits[j] && this->mUnits[j]->GetUnit())
-                this->mCanAttackShore = gU4E8708[0x2c][(*(this->mUnits.begin() + j))->GetUnit()->mUnitClass->mAmmoType] != 0.0f;
+                this->mCanAttackShore = gU4E8708[0x2c][(*(this->mUnits.begin() + j))->GetUnit()->GetClass()->mAmmoType] != 0.0f;
         }
     }
     this->mStats.Compute(this->mUnits);
@@ -1124,18 +1124,18 @@ long EECPAttackSubGroup::GroupUnitsByContinent(std::map<unsigned short, std::vec
             if ((this->mUnits[i])->GetUnit()->mContainer != 0 && inSkipCarried)
                 continue;
             unsigned short theID;
-            if ((this->mUnits[i])->GetUnit()->mContainer == 0)
+            if ((this->mUnits[i])->GetUnit()->GetContainer() == 0)
                 theID = gContinentManager.GetContinentID((this->mUnits[i])->GetUnit());
             else
                 theID = gContinentManager.GetContinentID((this->mUnits[i])->GetUnit()->mContainer);
             std::map<unsigned short, std::vector<EECPAttackSubGroupUnit*>*>::iterator theIt = outUnits.find(theID);
-            if (theIt == outUnits.end()) {
+            if (theIt != outUnits.end()) {
+                (*theIt).second->push_back(this->mUnits[i]);
+            } else {
                 std::vector<EECPAttackSubGroupUnit*>* theUnits = new std::vector<EECPAttackSubGroupUnit*>;
                 theUnits->push_back(this->mUnits[i]);
                 outUnits.insert(std::map<unsigned short, std::vector<EECPAttackSubGroupUnit*>*>::value_type(theID,
                                                                                                             theUnits));
-            } else {
-                (*theIt).second->push_back(this->mUnits[i]);
             }
         }
     }
@@ -1151,18 +1151,18 @@ long EECPAttackSubGroup::GroupUnitsByWaterArea(std::map<unsigned short, std::vec
             if ((this->mUnits[i])->GetUnit()->mContainer != 0 && inSkipCarried)
                 continue;
             unsigned short theID;
-            if ((this->mUnits[i])->GetUnit()->mContainer == 0)
+            if ((this->mUnits[i])->GetUnit()->GetContainer() == 0)
                 theID = (this->mUnits[i])->GetUnit()->GetFootprintContinent(inKind);
             else
-                theID = (this->mUnits[i])->GetUnit()->mContainer->GetFootprintContinent(inKind);
+                theID = (this->mUnits[i])->GetUnit()->GetContainer()->GetFootprintContinent(inKind);
             std::map<unsigned short, std::vector<EECPAttackSubGroupUnit*>*>::iterator theIt = outUnits.find(theID);
-            if (theIt == outUnits.end()) {
+            if (theIt != outUnits.end()) {
+                (*theIt).second->push_back(this->mUnits[i]);
+            } else {
                 std::vector<EECPAttackSubGroupUnit*>* theUnits = new std::vector<EECPAttackSubGroupUnit*>;
                 theUnits->push_back(this->mUnits[i]);
                 outUnits.insert(std::map<unsigned short, std::vector<EECPAttackSubGroupUnit*>*>::value_type(theID,
                                                                                                             theUnits));
-            } else {
-                (*theIt).second->push_back(this->mUnits[i]);
             }
         }
     }
@@ -1644,7 +1644,7 @@ void EECPAttackSubGroup::PickByUpgrade(std::vector<EECPAttackSubGroupUnit*>& out
     if (inFraction > 0.0f && this->mUnits.size() > 0) {
         for (long i = this->mUnits.size() - 1; i >= 0; i--) {
             if (this->mUnits[i]->GetUnit()) {  // mUnits[i] x3: owner-approved trade (2026-11-01): VirtualE0 58.33 -> 90.68, COMDAT 0x461393 (_Tree::rend) no longer emitted
-                float theValue = this->mUnits[i]->GetUnit()->mStats->mMaxVelocity;
+                float theValue = this->mUnits[i]->GetUnit()->mStats->GetMaxVelocity();
                 theUnits.insert(std::make_pair(theValue,
                     this->mUnits[i]));
             }
@@ -1713,11 +1713,11 @@ bool EECPAttackSubGroup::DecideSplit()
     if (this->mNumSplits == 0 && this->mUnits.size() > 2 && this->mSplitKind != 10 && this->mGroup->mContinentID == 0) {
         theUnits.reserve(this->mUnits.size());
         for (long i = this->mUnits.size() - 1; i >= 0; i--)
-            theUnits.push_back((this->mUnits[i])->GetUnit());
+            theUnits.push_back((this->GetUnitsAt(i))->GetUnit());
         EEGroup::MakeClusters(theUnits, theClusters, 0, false);
         if (theClusters.size() > 0) {
             float theChance = 0.35f;
-            if (this->mPlayer->mDifficulty != kDifficultyEasy)
+            if (this->GetPlayer()->GetDifficulty() != kDifficultyEasy)
                 theChance = 0.65f;
             if (gPhysics->GetRandom() <= theChance) {
                 theResult = true;
@@ -1725,7 +1725,7 @@ bool EECPAttackSubGroup::DecideSplit()
             }
         } else {
             float theChance = 0.1f;
-            if (this->mPlayer->mDifficulty != kDifficultyEasy)
+            if (this->GetPlayer()->GetDifficulty() != kDifficultyEasy)
                 theChance = 0.35f;
             if (gPhysics->GetRandom() <= theChance) {
                 theResult = true;
@@ -2315,24 +2315,24 @@ bool EECPAttackSubGroup::IsAwayFromTowns()
     EETileLocation theTile;
     EETileLocation theTownTile;
     bool theResult = false;
-    if (!this->mPlayer->mAttackStarted && !this->mTargets.empty() && this->mPlayer->mDifficulty != kDifficultyHard && !this->mPlayer->IsDeathmatch() && !this->mPlayer->mIgnoreOthers
+    if (!this->GetPlayer()->GetAttackStarted() && !this->mTargets.empty() && this->GetPlayer()->GetDifficulty() != kDifficultyHard && !this->GetPlayer()->IsDeathmatch() && !this->GetPlayer()->mIgnoreOthers
         && (!this->mTask.mIsActive || (this->mTask.mMode != kAGModeWonder && this->mTask.mType != kAGTaskDefendWonder && this->mTask.mType != kAGTaskAttackLocation && this->mTask.mType != kAGTaskAttackWonder))) {
         this->FindPosition(theTile, true, false);
-        EETown* theTown = this->mPlayer->GetNearestTown(theTile, theTownTile);
+        EETown* theTown = this->GetPlayer()->GetNearestTown(theTile, theTownTile);
         if (theTown == NULL || (!theTown->Contains(theTile) && theTile.DistanceToSquared(theTownTile) > 0x24)) {
             theResult = true;
-            for (long i = this->mPlayer->mAllies.size() - 1; i >= 0 && theResult; i--) {
-                if (this->mPlayer->mAllies[i] == NULL || *(this->mPlayer->mAllies.begin() + i) == this->mPlayer)
+            for (long i = this->GetPlayer()->mAllies.size() - 1; i >= 0 && theResult; i--) {
+                if (this->GetPlayer()->mAllies[i] == NULL || *(this->GetPlayer()->mAllies.begin() + i) == this->GetPlayer())
                     continue;
                 theTownTile.mX = 0;
                 theTownTile.mY = 0;
-                theTown = this->mPlayer->mAllies[i]->GetNearestTown(theTile, theTownTile);
+                theTown = this->GetPlayer()->mAllies[i]->GetNearestTown(theTile, theTownTile);
                 if (!theTown)
                     continue;
-                if (theTown->Contains(theTile))
-                    theResult = false;
-                else
+                if (!(theTown->Contains(theTile)))
                     theResult = theTile.DistanceToSquared(theTownTile) > 0x24;
+                else
+                    theResult = false;
             }
         }
     }
@@ -2548,9 +2548,9 @@ void EECPAttackSubGroup::CountTargetNeighbors()
         return;
     for (unsigned long i = 0; i < this->mTargets.size() - 1; i++) {
         for (unsigned long j = i + 1; j < this->mTargets.size(); j++) {
-            if (this->mTargets[i]->mUnit->DistanceSquaredTo(this->mTargets[j]->mUnit) <= kASGNear) {
-                this->mTargets[i]->mNumNearbyTargets++;
-                this->mTargets[j]->mNumNearbyTargets++;
+            if (this->GetTargetsAt(i)->GetUnit()->DistanceSquaredTo(this->GetTargetsAt(j)->GetUnit()) <= kASGNear) {
+                this->GetTargetsAt(i)->mNumNearbyTargets++;
+                this->GetTargetsAt(j)->mNumNearbyTargets++;
             }
         }
     }

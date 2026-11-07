@@ -289,7 +289,8 @@ void EEUIBGenericBackground::DrawEdge(const GERectangle& inDestination, const GE
 {
     GETextureCoordinate theTopLeft;
     GETextureCoordinate theTopRight;
-    GERectangle theDestination = inDestination;
+    GERectangle theDestination;
+    theDestination = inDestination;
     GETextureCoordinate theBottomRight;
     GETextureCoordinate theBottomLeft;
     GERectangle theTexture = inTexture;

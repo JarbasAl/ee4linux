@@ -27,6 +27,11 @@ void AddFriendDialog::InitComponent(ComponentInit& inInit)
     }
 }
 
+const GUIString& AddFriendDialog::GetName()
+{
+    return mNameInput->GetText();
+}
+
 // FUNCTION: WON 0x7f49f0
 void AddFriendDialog::CheckInput()
 {

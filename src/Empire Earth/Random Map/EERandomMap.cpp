@@ -1045,16 +1045,19 @@ void EERandomMap::CreateGrids()
         }
     }
     float theExtent = UMAbs(this->mData.mFlatArea.GetLeft());
-    if (UMAbs(this->mData.mFlatArea.GetRight()) > theExtent)
-        theExtent = UMAbs(this->mData.mFlatArea.GetRight());
-    if (UMAbs(this->mData.mFlatArea.GetBottom()) > theExtent)
-        theExtent = UMAbs(this->mData.mFlatArea.GetBottom());
-    if (UMAbs(this->mData.mFlatArea.GetTop()) > theExtent)
-        theExtent = UMAbs(this->mData.mFlatArea.GetTop());
-    float theRadius = ((float)this->mMap->mSize - theExtent) * kRMRingScale;
-    this->mData.mHalfMapSize = (float)this->mMap->mSize * 0.5f;
-    float theCenter = 0.5f * (float)this->mMap->mSize;
-    this->mData.mRing.mCenter = GE2DPoint(theCenter, theCenter);
+    float theValue = UMAbs(this->mData.mFlatArea.GetRight());
+    if (theValue > theExtent)
+        theExtent = theValue;
+    theValue = UMAbs(this->mData.mFlatArea.GetBottom());
+    if (theValue > theExtent)
+        theExtent = theValue;
+    theValue = UMAbs(this->mData.mFlatArea.GetTop());
+    if (theValue > theExtent)
+        theExtent = theValue;
+    theValue = (float)this->mMap->mSize;
+    float theRadius = (theValue - theExtent) * kRMRingScale;
+    this->mData.mHalfMapSize = theValue * 0.5f;
+    this->mData.mRing.mCenter = GE2DPoint(0.5f * (float)this->mMap->mSize, 0.5f * (float)this->mMap->mSize);
     this->mData.mRing.mMinRadius = theRadius * this->mData.mPlayerInnerRadius;
     this->mData.mRing.mMaxRadius = theRadius * this->mData.mPlayerOuterRadius;
     this->mData.mNeutralRing.mCenter = this->mData.mRing.mCenter;
@@ -1062,6 +1065,8 @@ void EERandomMap::CreateGrids()
     this->mData.mNeutralRing.mMaxRadius = theRadius * this->mData.mNeutralOuterRadius;
     this->mData.mMoonRing.mCenter = this->mData.mRing.mCenter;
     this->mData.mMoonRing.mMaxRadius = this->mData.mHalfMapSize;
+    // LOST-DEBUG: none: exact only (budget count at the mid-function resize sites)
+    EE_LOST_DEBUG(5);
     this->mData.mMoonRing.mMinRadius = (this->mData.mHalfMapSize - this->mData.mRing.mMaxRadius) * 0.5f + this->mData.mRing.mMaxRadius;
 }
 

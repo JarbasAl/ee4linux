@@ -822,10 +822,10 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
         this->mPatrolGroup = NULL;
     else {
         this->mPatrolGroup = this->GetPlayer()->GetPatrolGroup(reinterpret_cast<unsigned long>(this->mPatrolGroup));
-        if (this->mPatrolGroup == NULL)
-            theResult = 3;
-        else
+        if (this->mPatrolGroup != NULL)
             this->mPatrolGroup->Reference();
+        else
+            theResult = 3;
     }
     this->mPreviousPart = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mPreviousPart)));
     if (this->mPreviousPart != NULL)
@@ -880,10 +880,10 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
         this->mOwner = NULL;
     else {
         this->mOwner = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mOwner)));
-        if (this->mOwner == NULL)
-            theLostContainer = true;
-        else
+        if (this->mOwner != NULL)
             this->mOwner->Reference();
+        else
+            theLostContainer = true;
     }
     if (this->mMine == (EEUnit*)-1 || this->GetUnitClass() == NULL)
         this->mMine = NULL;
@@ -915,10 +915,10 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
     this->mHerd = NULL;
     for (long linked = this->mHeldUnits.size() - 1; linked >= 0; linked--) {
         this->mHeldUnits[linked] = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mHeldUnits[linked])));
-        if (this->mHeldUnits[linked] == NULL)
-            this->mHeldUnits.erase(this->mHeldUnits.begin() + linked);
-        else
+        if (this->mHeldUnits[linked] != NULL)
             this->mHeldUnits[linked]->Reference();
+        else
+            this->mHeldUnits.erase(this->mHeldUnits.begin() + linked);
     }
     if (this->mHolder == (EEComplexUnit*)-1)
         this->mHolder = NULL;

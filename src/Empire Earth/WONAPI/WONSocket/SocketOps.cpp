@@ -136,7 +136,8 @@ WONStatus RecvBytesOp::Fn2B50C0()
             if (mBytesSinceProgress > mProgressInterval) {
                 SmartPtr<RecvChunkOp> anOp = new RecvChunkOp(this);
                 anOp->mCompletion = mProgressCompletion;
-                anOp->Fn29F500(mRunMode, 0);
+                long aMode = mRunMode;
+                anOp->Fn29F500(aMode, 0);
                 mBytesSinceProgress %= mProgressInterval;
             }
         }
@@ -194,19 +195,23 @@ WONStatus RecvMsgOp::Fn2B5B50()
             mLength = 4;
             mState = 1;
             WONStatus aStatus = Fn2B5000();
-            if (aStatus == 0)
+            if (aStatus != 0)
+                return aStatus;
+            else
                 return Fn2B5B50();
-            return aStatus;
         }
         mState = 2;
         mLength = aLength - aMessage.length();
         WONStatus aStatus = Fn2B5000();
-        if (aStatus != 0)
+        if (aStatus == 0)
+            return Fn2B5D20();
+        else
             return aStatus;
-        return Fn2B5D20();
     }
+    else {
 aBadLength:
-    return 100024;
+        return 100024;
+    }
 }
 
 // FUNCTION: WON 0x006b5d20

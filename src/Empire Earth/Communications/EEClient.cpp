@@ -320,9 +320,7 @@ unsigned char EEClient::GetClientSlot()
 // FUNCTION: EXE 0x4b79b1
 // Handles a server message: connection responses (lobby or an error box), reconnection, communications ticks whose
 // player inputs go to the physics queue (or the lobby before the game); load/save and lag messages execute at once
-// NEAR: the dead reads of mNumberOfCTsProcessedInPhysics are kept through dead locals (as EEServer 0x4cbc77);
-// case 0x43 keeps its compare in the original (EE_LOST_CASE does not make it exact, so it is not applied); the
-// mNoPop store is sunk into the shared tail in the original
+// NEAR: the dead reads of mNumberOfCTsProcessedInPhysics are kept through dead locals (as EEServer 0x4cbc77)
 void EEClient::HandleMessage(NEMessage* inMessage)
 {
     UWideString theText;
@@ -468,7 +466,8 @@ void EEClient::HandleMessage(NEMessage* inMessage)
         }
         break;
     }
-    case kMessageNewEdictEnacted:
+    case kMessageNewEdictEnacted:  // LOST-DEBUG: the compare chain keeps `cmp eax, 0x43; jg; je <exit>` (0xb79e0), same as EEServer 0x4cbc77
+        EE_LOST_CASE(theCount);
         break;
     case kMessageLoadOrSaveGame:
     case kMessageLagStatus:

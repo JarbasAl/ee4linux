@@ -41,12 +41,15 @@
 #include "ee/EEEffect2D.h"
 #include "ee/EEE2DExhaustTrail.h"
 #include "ee/EEEffectKindIDs.h"
+#include "LostDebug.h"
 
 // SYNTHETIC: EXE 0x4df68d
 // SYNTHETIC: EXE 0x4df697
 // SYNTHETIC: EXE 0x4df6a8
 // SYNTHETIC: EXE 0x4df6b4
 const UString EEE2DExhaustTrail::sData("EEE2DExhaustTrail-Data");
+
+#include "ee/EEGamePreferences.h"
 // the trail sprite grows to seven times the effect height over the animation (0x43fb18, loaded through memory; Virtual14)
 static const float kExhaustTrailGrowth = 6.0f;
 
@@ -100,9 +103,12 @@ long EEE2DExhaustTrail::Queue(EEEffectQueue* inQueues)
     if (theResult == 0) {
         this->mDrawAngle = this->mAngle;
         for (unsigned long i = 0; i < theCount; i++)
-            this->mParts[i].mDrawFrame = this->mParts[i].mFrame;
+            this->mParts[i].SetDrawFrame((this->mParts.begin() + i)->mFrame);
         GETexture* theTexture;
-        theTexture = this->mGraphicEffect->mGraphicObject ? this->mGraphicEffect->mGraphicObject->mTextures[gScreenIndex] : NULL;
+        if (this->GetGraphicEffect()->GetGraphicObject())
+            theTexture = this->GetGraphicEffect()->GetGraphicObject()->GetTexture(gGamePreferences.mSettings.GetScreenID());
+        else
+            theTexture = NULL;
         inQueues[3][theTexture].push_back(this);
     }
     return theResult;

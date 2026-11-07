@@ -103,37 +103,40 @@ void EETerrainTypeTable::Unload()
 // FUNCTION: EXE 0x4dbe44
 // Returns the damage factor of an attack kind against a unit class (its family row), 0 when it cannot be attacked or a
 // player is missing; the base table unless exactly one player (player 0 aside) is human, then a twin by difficulty
+// NEAR: table-choice block layout (the original places the 0x8e8708 arm between the two bool tests and shares the
+// gDamageTableScaled2 tail); 36 if/else nestings tried, best 90.67, none exact
 float EEToHitTable::GetAttackFactor(long inKind, EEUnitClass* inClass, unsigned long inPlayer, unsigned long inTargetPlayer)
 {
-    float theResult = 0.0f;
     long theRow = inClass->mFamily;
-    if (!inClass->CanBeAttacked())
-        return theResult;
-    EEPlayer* thePlayer = gWorld.mPlayers[inPlayer];
-    EEPlayer* theTarget = gWorld.mPlayers[inTargetPlayer];
-    if (thePlayer == NULL || theTarget == NULL)
-        return 0.0f;
-    unsigned long theDifficulty = gWorld.mGameOptions.mDifficulty;
-    bool theComputer = thePlayer->IsHuman() && inPlayer != 0;
-    bool theTargetComputer = theTarget->IsHuman() && inTargetPlayer != 0;
-    float** theTable;
-    if (theDifficulty == 1)
-        theTable = gU4E8708;
-    else if (!theComputer) {
-        if (!theTargetComputer)
+    float theResult = 0.0f;
+    if (inClass->CanBeAttacked()) {
+        EEPlayer* thePlayer = gWorld.mPlayers[inPlayer];
+        EEPlayer* theTarget = gWorld.mPlayers[inTargetPlayer];
+        if (thePlayer == NULL || theTarget == NULL)
+            return 0.0f;
+        unsigned long theDifficulty = gWorld.mGameOptions.mDifficulty;
+        bool theComputer = thePlayer->IsHuman() && inPlayer != 0;
+        bool theTargetComputer = theTarget->IsHuman() && inTargetPlayer != 0;
+        float** theTable;
+        if (theDifficulty == 1)
             theTable = gU4E8708;
-        else {
+        else if (!theComputer) {
+            if (!theTargetComputer)
+                theTable = gU4E8708;
+            else {
+                theTable = gU4E870C;
+                if (theDifficulty != 0)
+                    theTable = gDamageTableScaled2;
+            }
+        } else if (theTargetComputer)
+            theTable = gU4E8708;
+        else if (theDifficulty != 0)
             theTable = gU4E870C;
-            if (theDifficulty != 0)
-                theTable = gDamageTableScaled2;
-        }
-    } else if (theTargetComputer)
-        theTable = gU4E8708;
-    else if (theDifficulty != 0)
-        theTable = gU4E870C;
-    else
-        theTable = gDamageTableScaled2;
-    return theTable[theRow][inKind];
+        else
+            theTable = gDamageTableScaled2;
+        theResult = theTable[theRow][inKind];
+    }
+    return theResult;
 }
 
 

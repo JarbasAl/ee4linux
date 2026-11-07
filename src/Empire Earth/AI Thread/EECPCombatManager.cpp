@@ -116,25 +116,30 @@ public:
     {
         // single exit: theResult = false covers the nuclear-target case (the original: xor bl, bl inside the chain, mov bl, 1
         // before the switch). NEAR: the original zeroes bl after loading mUnit and does not CSE 1 into ebx
-        bool theResult = false;
-        EETechTreeNode* theNode;
-        if (!inGroup->mTask.mIsActive || inGroup->mTask.mMode != kAGModeWonder || !inGroup->mTask.mUnit
-            || (theNode = inGroup->mTask.mUnit->GetTechTreeNode()) == NULL || theNode->mData->mKind != 4) {
-            theResult = true;
-            switch (inGroup->mKind) {
-            case kASGKindSea:
-                theResult = this->mNearWater;
-                break;
-            case kASGKindSeaTransport:
-            case kASGKindAirTransport:
-            case kASGKindSpaceTransport:
-                theResult = false;
-                break;
-            case kASGKindSpaceship:
-                theResult = this->mNearMapEdge;
-                break;
+        bool theResult;
+        if (inGroup->mTask.mIsActive && inGroup->mTask.mMode == kAGModeWonder) {
+            theResult = false;
+            if (inGroup->mTask.mUnit) {
+                EETechTreeNode* theNode = inGroup->mTask.mUnit->GetTechTreeNode();
+                if (theNode != NULL && theNode->mData->mKind == 4)
+                    goto theEnd;
             }
         }
+        theResult = true;
+        switch (inGroup->mKind) {
+        case kASGKindSea:
+            theResult = this->mNearWater;
+            break;
+        case kASGKindSeaTransport:
+        case kASGKindAirTransport:
+        case kASGKindSpaceTransport:
+            theResult = false;
+            break;
+        case kASGKindSpaceship:
+            theResult = this->mNearMapEdge;
+            break;
+        }
+    theEnd:
         return theResult;
     }
 
@@ -797,7 +802,7 @@ void EECPCombatManager::ForgetTarget(unsigned long inSerial)
         for (long i = this->mAttackCommander->mGroups.size() - 1; i >= 0; i--) {
             EECPAttackGroup* theGroup = this->mAttackCommander->GetGroup(i);
             if (theGroup) {
-                EE_LOST_DEBUG(9);   // LOST-DEBUG: none: exact only (the original keeps GetGroup inline, its operator[] out of line)
+                EE_LOST_DEBUG(6);   // LOST-DEBUG: none: exact only (the original keeps GetGroup inline, its operator[] out of line)
                 for (long j = theGroup->GetNumSubGroups() - 1; j >= 0; j--) {
                     EECPAttackSubGroup* theSubGroup = theGroup->mSubGroups[j];
                     if (theSubGroup && theSubGroup->mTask.mLocation.mSerial == inSerial)
@@ -818,7 +823,7 @@ void EECPCombatManager::ForgetTargetUnit(unsigned long inUnitID)
             if (theGroup) {
                 for (long j = theGroup->GetNumSubGroups() - 1; j >= 0; j--) {
                     EECPAttackSubGroup* theSubGroup = theGroup->GetSubGroupAt(j);
-                    EE_LOST_DEBUG(9);   // LOST-DEBUG: none: exact only (the original calls begin() + j operator+ out of line)
+                    EE_LOST_DEBUG(8);   // LOST-DEBUG: none: exact only (the original calls begin() + j operator+ out of line)
                     if (theSubGroup && theSubGroup->mTask.mUnit && theSubGroup->mTask.mUnit->mUnitID == inUnitID)
                         theSubGroup->mTask.mIsActive = false;
                 }
@@ -1659,7 +1664,7 @@ void EECPCombatManager::AttackUnit(EEComplexUnit* inTarget)
     UWideString theString;
     std::vector<EECPAttackSubGroup*> theGroups;
     std::vector<EECPAttackSubGroup*> theSelected;
-    EETeam& theTeam = gWorld.mTeams[inTarget->mPlayer->GetTeamIndex()];
+    EETeam& theTeam = gWorld.mTeams[inTarget->GetPlayer()->GetTeamIndex()];
     bool theAll = false;
     long theCount = 0;
     long theStrength = 0;
@@ -1668,20 +1673,20 @@ void EECPCombatManager::AttackUnit(EEComplexUnit* inTarget)
     theTask.mMode = kAGModeWonder;
     theTask.mType = kAGTaskAttackWonder;
     theTask.SetUnit(inTarget);
-    theTask.mLocation = EECPILocation(EETileLocation(inTarget->mTileX, inTarget->mTileY));
+    theTask.mLocation = EECPILocation(EETileLocation(inTarget->GetTileX(), inTarget->GetTileY()));
     theTask.mIsActive = true;
     EETown* theTown = inTarget->FindNearestTown();
     if (theTown) {
         theFilter.mNearWater = theTown->mNearWater;
         theFilter.mNearMapEdge = theTown->mNearMapEdge;
     }
-    this->mAttackCommander->CollectAll(theGroups, theFilter);
+    this->GetAttackCommander()->CollectAll(theGroups, theFilter);
     for (long i = theTeam.mPlayers.size() - 1; i >= 0; i--)
         theStrength += gWorld.mPlayers[theTeam.mPlayers[i]]->GetNumWonderUnits();
-    if (inTarget->mPlayer->mTechnologies->Get(inTarget->mUnitClass->mTechnology)
+    if (inTarget->GetPlayer()->GetTechnologies()->Get(inTarget->GetUnitClass()->GetTechnology())
         && inTarget->mPlayer->mTechnologies->Get(inTarget->mUnitClass->mTechnology)->mData->mKind != 4)
         theAttack = false;
-    if (theStrength < gWorld.mNumberOfWondersToWin && theAttack) {
+    if (theStrength < gWorld.GetNumberOfWondersToWin() && theAttack) {
         if (theTown && theGroups.size() > 3) {
             switch (this->mPlayer->mDifficulty) {
             case kDifficultyEasy:
@@ -1709,8 +1714,8 @@ void EECPCombatManager::AttackUnit(EEComplexUnit* inTarget)
         theSelected[k]->SetTask(theTask);
     long theTimes = (theAttack && theAll) ? 5 : 1;
     for (long n = 0; n < theTimes; n++)
-        this->mAttackCommander->CreateGroup(theTask, 0);
-    if (theAttack && this->mWonderAttackTimes.empty() && !gWorld.mGameOptions.mIsScenarioGame
+        this->GetAttackCommander()->CreateGroup(theTask, 0);
+    if (theAttack && this->mWonderAttackTimes.empty() && !gWorld.GetGameOptions().GetIsScenarioGame()
         && (inTarget->mPlayer == gWorld.mPlayers[gWorld.mCurrentPlayer]
             || gWorld.mPlayers[gWorld.mCurrentPlayer]->mEnemies[inTarget->mPlayer->mPlayerID] == 0)
         && (this->mIsWonderRace || gWorld.mPlayers[gWorld.mCurrentPlayer] == inTarget->mPlayer))
@@ -1728,7 +1733,7 @@ void EECPCombatManager::DefendUnit(EEComplexUnit* inTarget)
     EECPAGTask theTask;
     std::vector<EECPAttackSubGroup*> theGroups;
     std::vector<EECPAttackSubGroup*> theSelected;
-    EETeam& theTeam = gWorld.mTeams[inTarget->mPlayer->GetTeamIndex()];
+    EETeam& theTeam = gWorld.mTeams[inTarget->GetPlayer()->GetTeamIndex()];
     long theCount = 0;
     long theStrength = 0;
     bool theDefend = true;
@@ -1736,7 +1741,7 @@ void EECPCombatManager::DefendUnit(EEComplexUnit* inTarget)
     theTask.mMode = kAGModeCombat;
     theTask.mType = kAGTaskDefendWonder;
     theTask.SetUnit(inTarget);
-    theTask.mLocation = EECPILocation(EETileLocation(inTarget->mTileX, inTarget->mTileY));
+    theTask.mLocation = EECPILocation(EETileLocation(inTarget->GetTileX(), inTarget->GetTileY()));
     theTask.mIsActive = true;
     EETown* theTown = inTarget->FindNearestTown();
     if (theTown) {
@@ -1746,7 +1751,7 @@ void EECPCombatManager::DefendUnit(EEComplexUnit* inTarget)
     this->mAttackCommander->CollectAll(theGroups, theFilter);
     for (long i = theTeam.mPlayers.size() - 1; i >= 0; i--)
         theStrength += gWorld.mPlayers[theTeam.mPlayers[i]]->GetNumWonderUnits();
-    if (inTarget->mPlayer->GetTechTree()->Get(inTarget->GetUnitClass()->GetTechnology())
+    if (inTarget->GetPlayer()->GetTechTree()->Get(inTarget->GetUnitClass()->GetTechnology())
         && inTarget->mPlayer->GetTechTree()->Get(inTarget->GetUnitClass()->GetTechnology())->mData->mKind != 4)
         theDefend = false;
     if (theDefend && theStrength < gWorld.mNumberOfWondersToWin) {
@@ -1774,7 +1779,7 @@ void EECPCombatManager::DefendUnit(EEComplexUnit* inTarget)
     for (long k = theSelected.size() - 1; k >= 0; k--)
         theSelected[k]->SetTask(theTask);
     this->mAttackCommander->CreateGroup(theTask, 1);
-    if (theDefend && gWorld.mPlayers[gWorld.mCurrentPlayer] == inTarget->mPlayer && !gWorld.mGameOptions.mIsScenarioGame)
+    if (theDefend && gWorld.mPlayers[gWorld.mCurrentPlayer] == inTarget->GetPlayer() && !gWorld.GetGameOptions().GetIsScenarioGame())
         this->mPlayer->mInteractionManager->SendChat(IDS_CHAT_WE_WILL_HELP_YOU_PROTECT, 15000);
 }
 

@@ -317,14 +317,12 @@ void TabCtrl::AdjustTabBarScroll(int inAmount)
 void TabCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     if(inEvent->mType==15) {
-        if(inEvent->mComponent==mTabBarLeft.get()) {
+        int d=0;
+        if(inEvent->mComponent==mTabBarLeft.get()) d=10;
+        else if(inEvent->mComponent==mTabBarRight.get()) d=-10;
+        if(d!=0) {
             mUserHasInteracted=true;
-            AdjustTabBarScroll(10);
-            return;
-        }
-        if(inEvent->mComponent==mTabBarRight.get()) {
-            mUserHasInteracted=true;
-            AdjustTabBarScroll(-10);
+            AdjustTabBarScroll(d);
             return;
         }
     }

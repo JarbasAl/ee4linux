@@ -166,7 +166,7 @@ void RoutingSendChatOp::Virtual0C()
     mSendMsg.AppendShort(mFlags);
     mSendMsg.AppendWString(mText, 2);
     mSendMsg.AppendShort((short)mRecipients.size());
-    for (std::list<unsigned short>::const_iterator i = mRecipients.begin(); i != mRecipients.end(); ++i)
+    for (std::list<unsigned short>::iterator i = mRecipients.begin(); i != mRecipients.end(); ++i)
         mSendMsg.AppendShort(*i);
     SendMsg();
     if (mFlags & 1) AddOp();
@@ -189,7 +189,7 @@ void RoutingSendDataOp::Virtual0C()
     mSendMsg.AppendByte(mFlags);
     mSendMsg.AppendBuffer(mData.get(), 2);
     mSendMsg.AppendShort((short)mRecipients.size());
-    for (std::list<unsigned short>::const_iterator i = mRecipients.begin(); i != mRecipients.end(); ++i)
+    for (std::list<unsigned short>::iterator i = mRecipients.begin(); i != mRecipients.end(); ++i)
         mSendMsg.AppendShort(*i);
     SendMsg();
     if (mFlags & 1) AddOp();

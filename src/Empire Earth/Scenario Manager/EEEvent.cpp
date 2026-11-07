@@ -21,6 +21,7 @@
 #include "ee/EEGameVariant.h"
 #include "lle/UResourceFile.h"
 #include "ee/EEUnitSetManager.h"
+#include "LostDebug.h"
 
 class EEUnitSetFunctorModifyPathfindingBehavior : public EEUnitSetFunctor {
 public:
@@ -335,10 +336,12 @@ long Fn1CAAED(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* 
     inPlayer->SetClassModel(theClass->GetUnitType(), theModel);
     for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL;
          theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
-        if (theUnit->mComplexUnit != NULL && theUnit->mComplexUnit->mUnitClass == theClass &&
+        if (theUnit->GetComplexUnit() != NULL && theUnit->GetComplexUnit()->GetUnitClass() == theClass &&
             theUpgrade->GetMediaCount() > 0)
-            theUnit->mComplexUnit->SwapGraphic(theOldModel, theModel);
+            theUnit->GetComplexUnit()->SwapGraphic(theOldModel, theModel);
     }
+    // LOST-DEBUG: none: exact only (with the GetComplexUnit getters; the original refuses _Ptrit::operator+ under mUnitClassUpgrades[])
+    EE_LOST_DEBUG(3);
     return 0;
     return 9;
 }
@@ -499,7 +502,7 @@ long Fn1CAEA4(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
                 theUpgrade->mAreaEffect = EEApplyEventEffect(theClass->mAreaEffect, theUpgrade->mAreaEffect, inEffect);
                 break;
             case 6: {
-                long theOldMaximum = theUpgrade->mMaxHitPoints;
+                unsigned long theOldMaximum = theUpgrade->mMaxHitPoints;
                 long theBaseMaximum = (long)((gGameVariants[gWorld.mGameOptions.GetVariant()]->GetFactor(
                     theUpgrade->mUnitClass->mUnitType) + 1.0f) * theClass->mHitPoints);
                 long theMaximum = EEApplyEventEffect(theBaseMaximum, theOldMaximum, inEffect);
@@ -531,7 +534,7 @@ long Fn1CAEA4(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
                 theUpgrade->SetMaxVelocity(EEApplyEventEffect(theClass->mMaxVelocity, theUpgrade->mMaxVelocity, inEffect));
                 break;
             case 10: {
-                long theOldMaximum = theUpgrade->mFlightTime;
+                unsigned long theOldMaximum = theUpgrade->mFlightTime;
                 theUpgrade->mFlightTime = EEApplyEventEffect(theClass->mFlightTime, theUpgrade->mFlightTime, inEffect);
                 if (theOldMaximum != 0 && !gLoadingSavedGame) {
                     for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL;

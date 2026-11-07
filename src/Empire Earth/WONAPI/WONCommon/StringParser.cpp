@@ -3,9 +3,11 @@
 // Actual API names retained where canonical (ReadString); added method names primary-header correlated.
 // Source only; near/helper/table support remains original-carved, without runtime authority.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
+#include <set>
 #include <windows.h>
 #include <stdio.h>
 #include <string>
+#include <algorithm>
 #include <list>
 #include <vector>
 #include <ctype.h>

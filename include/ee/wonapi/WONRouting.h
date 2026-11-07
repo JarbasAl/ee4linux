@@ -12,6 +12,9 @@
 #include "ee/wonapi/WONStringCompare.h"
 #include <stdio.h> //actual FILE* receiver field
 #include <set> //actual SmartRoutingConnection IgnoreSet
+#ifndef EE_LOST_TRACE // as LostDebug.h; that header's struct here shifts identifier-count rows (0x7245f0)
+#define EE_LOST_TRACE(expr) ((void)(expr))
+#endif
 
 namespace WONAPI {
 
@@ -1741,6 +1744,8 @@ public:
     AsyncOpTrackerMaps(bool inFlag1, bool inFlag2) : mB18(inFlag1), mB19(inFlag2) {} // inline (LobbyLogic 0x7e5930 expands it; 0x6d9d20 is a refused copy)
     ~AsyncOpTrackerMaps()
     {
+        // LOST-DEBUG: none: exact only; budget grid of 0x6accf0, 0x6d3d50 (k=14..18 of these reads; they conflicted through every other form)
+        EE_LOST_TRACE(mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18+mB18);
         for (EntryMap::iterator anItr=mEntries.begin();anItr!=mEntries.end();++anItr)
             delete (*anItr).second;
     }
@@ -1754,7 +1759,8 @@ public:
     typedef AsyncOpTrackerMaps OpMap;
     int GetNumTrack() { return mMaps.size(); }
     const OpMap& GetOpMap() { return mMaps; }
-    AsyncOpTracker() : mMaps(true, false) {}
+    // LOST-DEBUG: budget census of two rows (0x6acc10, 0x6d0170): this ctor costs 28..66 IL more than its code
+    AsyncOpTracker() : mMaps(true, false) { EE_LOST_TRACE(mMaps.mB18); EE_LOST_TRACE(mMaps.mB18); EE_LOST_TRACE(mMaps.mB18); EE_LOST_TRACE(mMaps.mB18); }
     AsyncOp* AddOp(AsyncOp* inOp, unsigned long inId); // original29fc80
     bool RemoveOp(AsyncOp* inOp);             // original29fe50
     void KillAll();                          // original29ffa0
@@ -2615,6 +2621,8 @@ protected:
     virtual WONStatus Virtual14(); //2cd700, vtable-derived response
 public:
     GetUserIdFromNameOp(ServerContext*); //2cd3a0
+    void SetUserName(const std::wstring& v) { mUserName=v; }
+    unsigned long GetUserId() const { return mUserId; }
     std::wstring mUserName; //12c
     unsigned long mUserId; //13c, constructorzero
 };

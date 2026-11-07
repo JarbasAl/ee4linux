@@ -372,7 +372,7 @@ void EEAdjustNavalPath(EEComplexUnit* inUnit, std::vector<GE3DPoint>& ioPath, bo
                     theCurrent.mX = theStartX;
                     theCurrent.mY = theStartY;
                     long theLength = theLine.size();
-                    for (long j = 1; j < theLength; j++) {
+                    for (long j = 1; theLength > j; j++) {
                         if (theBlocked)
                             goto keep;
                         theTile.mX = theLine[j].mX;
@@ -587,37 +587,48 @@ void EEPreviewWall(std::vector<EETileCoordinate>& inTiles, long inTechnology, lo
 // pieces reshaped and joined
 // The wall of class inClass from inStart to inEnd for inPlayer: a new piece on every free tile of the line (paid for
 // and started as a foundation when inArg5), the existing pieces re-joined; the new pieces go to outPieces
-void EEPlanWall(GE2DPoint inStart, GE2DPoint inEnd, EEUnitClass* inClass, EEPlayer* inPlayer, bool inAsFoundation, long inSkipPlayerChecks,
+// The original calls RTSTile::GetVisibility out of line through a helper level (0x2035cf at both sites) (provisional name)
+inline unsigned long EEPieceVisibility(EEUnit* inUnit, EEPlayer* inPlayer) { return inUnit->mTile->GetVisibility(inPlayer->GetPlayerID()); }
+void EEPlanWall(GE2DPoint inStart, GE2DPoint inEnd, EEUnitClass* inClass, EEPlayer* inPlayer, bool inAsFoundation, bool inSkipPlayerChecks,
                 std::vector<EEUnit*>& outPieces)
 {
+    unsigned long i;
+    long theX;
+    long theY;
+    EEUnit* thePiece;
+    EEComplexUnit* theComplex;
+    long theRaised;
     std::vector<EETileCoordinate> theTiles;
     std::vector<EETileCoordinate> theLine;
     std::vector<long> theCorners;
     std::vector<EEComplexUnit*> theExisting;
     std::vector<EETileCoordinate> thePlaced;
     std::vector<long> theUnused;
+    // LOST-DEBUG: none: exact only (the two GetVisibility refusals need the share below 41)
+    EE_LOST_DEBUG(7);
     EEGetWallLineXY(inStart, inEnd, theLine);
+
     EEExtendWallLine(theLine, inPlayer, inClass, theTiles);
     EEPickWallPieces(theTiles, theCorners, ::gWorld.GetMap());
-    for (unsigned long i = 0; i < theTiles.size(); i++) {
-        long theX = theTiles[i].GetX();
-        long theY = theTiles[i].GetY();
+    for (i = 0; i < theTiles.size(); i++) {
+        theX = theTiles[i].GetX();
+        theY = theTiles[i].GetY();
         if ((!inAsFoundation || inPlayer->CanProduce(inClass->GetTechnology(), 0x20, 1, true, 3, NULL))
             && EECanPlaceOnTile(inPlayer, inClass->GetUnitType(), theX, theY, inSkipPlayerChecks, 0)) {
-            EEUnit* thePiece = inClass->CreateUnit(theX, theY, inPlayer->GetPlayerID(), inAsFoundation, NULL);
-            EEComplexUnit* theComplex = thePiece->GetComplexUnit();
+            thePiece = inClass->CreateUnit(theX, theY, inPlayer->GetPlayerID(), inAsFoundation, NULL);
+            theComplex = thePiece->GetComplexUnit();
             ::gWorld.GetMap()->GetTile(theX, theY);
             EETileCoordinate theTile;
             theTile.mX = theX;
             theTile.mY = theY;
             thePlaced.push_back(theTile);
-            long theRaised = ::gWorld.GetMap()->GetNumRaisedCorners(theX, theY);
+            theRaised = ::gWorld.GetMap()->GetNumRaisedCorners(theX, theY);
             EEShapeWall(theComplex, theCorners[i], theRaised);
             if (inAsFoundation) {
                 thePiece->SetHitPoints(1);
-                if (thePiece->mTile->GetVisibility(inPlayer->GetPlayerID()) > 0
-                    && thePiece->mTile->GetVisibility(inPlayer->GetPlayerID()) <= 1)
-                    gDoppelgangerManager.AddForUnseenUnit(theComplex);
+                if (EEPieceVisibility(thePiece, inPlayer) > 0
+                    && EEPieceVisibility(thePiece, inPlayer) <= 1)
+                    gDoppelgangerManager.AddForUnseenUnit(static_cast<EEComplexUnit*>(thePiece));
                 inPlayer->Pay(inPlayer->GetTechTree()->Get(inClass->GetTechnology()), 0x20, 1.0f);
                 if (theComplex->mUnitClass->mIsWall && !theComplex->mUnitClass->mIsTower)
                     theComplex->GetPlayer()->AddConstructionSite(theComplex);
@@ -631,10 +642,10 @@ void EEPlanWall(GE2DPoint inStart, GE2DPoint inEnd, EEUnitClass* inClass, EEPlay
                 theComplex->mIsPaidFor = true;
             outPieces.push_back(thePiece);
         } else if (::gWorld.GetMap()->GetTile(theX, theY) != NULL) {
-            long theRaised = ::gWorld.GetMap()->GetNumRaisedCorners(theX, theY);
-            EEUnit* thePiece = EEGetWallAt(theTiles[i], inPlayer, inClass->GetUnitType());
+            theRaised = ::gWorld.GetMap()->GetNumRaisedCorners(theX, theY);
+            thePiece = EEGetWallAt(theTiles[i], inPlayer, inClass->GetUnitType());
             if (thePiece != NULL) {
-                EEComplexUnit* theComplex = thePiece->GetComplexUnit();
+                theComplex = thePiece->GetComplexUnit();
                 EEShapeWall(theComplex, theCorners[i], theRaised);
                 if (thePiece->GetHitPoints() > 0 && thePiece->GetPlayer() == inPlayer && thePiece->mUnitClass->mIsWall
                     && thePiece->mUnitClass->GetCategory() != kUnitCategoryGate && theComplex != NULL && theComplex->GetAnimation() != 0xb)
@@ -758,7 +769,7 @@ bool EEHasPathToTarget(EEComplexUnit* inUnit, EEComplexUnit* inTarget, U2DPoint<
                     if (theResult)
                         theResult = theToSector->AreLinksBlocked(theSector, theFlags);
                 }
-                if (!theResult && !inUnit->mUnitClass->mIsMelee) {
+                if (!theResult && !inUnit->GetClass()->mIsMelee) {
                     float theRange = UMSquare(inUnit->mStats->mRange);
                     theResult = theTo.DistanceToSquaredF(theSector->mLocation) <= theRange;
                     if (inUseClosestTile) {
@@ -1173,7 +1184,7 @@ bool EEFindPlaceOnTile(EEComplexUnit* inUnit, EEUnitClass* inClass, long inX, lo
         inClass = inUnit->mUnitClass;
     float theSize = inClass->mInnerCollisionSphere;
     float theClamped = theSize;
-    if (theClamped > 1.0f)
+    if (1.0f < theClamped)
         theClamped = 1.0f;
     EEGetUnitsOnTile(inToX, inToY, theUnits);
     long theNumUnits = theUnits.size();
@@ -1181,7 +1192,7 @@ bool EEFindPlaceOnTile(EEComplexUnit* inUnit, EEUnitClass* inClass, long inX, lo
                &theStepY, &theCount);
     float theX = theStartX;
     float theY = theStartY;
-    for (long i = 0; i < theCount && !theFound; i++) {
+    for (long i = 0; theCount > i && !theFound; i++) {
         theFound = true;
         outLocation->SetX((float)(unsigned long)inToX + theX);
         outLocation->SetY((float)(unsigned long)inToY + theY);
@@ -1346,20 +1357,20 @@ bool EEPickTileNear(std::vector<EETileCoordinate>& inTiles, EEComplexUnit* inUni
     EEUnit* theArg5;
     long theX;
     long theY;
-    if (inContainer->mTileNode != NULL)
-        theContinent = inContainer->mUnitClass->GetContainerContinent(inContainer->mComplexUnit, inUnit->mComplexUnit);
+    if (inContainer->GetTileNode() != NULL)
+        theContinent = inContainer->GetClass()->GetContainerContinent(inContainer->GetComplexUnit(), inUnit->GetComplexUnit());
     for (std::vector<EETileCoordinate>::iterator it = inTiles.begin(); it != inTiles.end() && !theFound; it++) {
-        bool theStands = inUnit->mComplexUnit == NULL || EECanStandOn(*it, inUnit->mComplexUnit);
-        EEAIContinent* theTileContinent = gContinentManager.GetContinentAt(it->mX, it->mY);
+        bool theStands = inUnit->GetComplexUnit() == NULL || EECanStandOn(*it, inUnit->GetComplexUnit());
+        EEAIContinent* theTileContinent = gContinentManager.GetContinentAt(it->GetX(), it->GetY());
         if (theStands
             && (theTileContinent == NULL || theContinent == NULL || theContinent == theTileContinent
                 || gContinentManager.AreConnectedForUnit(inUnit, theTileContinent, theContinent)
-                || ((inUnit->mUnitClass->mDomains & kMovementSea)
+                || ((inUnit->mUnitClass->GetDomains() & kMovementSea)
                     && gContinentManager.mTileFlags[theTileContinent->mID * gContinentManager.mFlagsWidth
                                                     + theContinent->mID]))
-            && EEFindPlaceOnTile(inUnit->mComplexUnit, NULL, inContainer->GetTileX(), inContainer->GetTileY(),
-                          inContainer->mUnitClass->mTileSize, it->mX, it->mY, 0, &outLocation)
-            && (inIgnoreBlockedLine || !EEIsLineBlocked(it->mX, it->mY, inContainer->GetTileX(), inContainer->GetTileY(), &theArg5, &theX, &theY)))
+            && EEFindPlaceOnTile(inUnit->GetComplexUnit(), NULL, inContainer->GetTileX(), inContainer->GetTileY(),
+                          inContainer->GetClass()->GetTileSize(), it->GetX(), it->GetY(), 0, &outLocation)
+            && (inIgnoreBlockedLine || !EEIsLineBlocked(it->GetX(), it->GetY(), inContainer->GetTileX(), inContainer->GetTileY(), &theArg5, &theX, &theY)))
             theFound = true;
         else
             theFound = false;
@@ -1576,7 +1587,9 @@ void EEFindNewTargetNearOld(EEComplexUnit* inUnit, EEComplexUnit* inTarget)
             EEDebugTrace(">>> SHAWN %d could not find a target.\n", inTarget->GetUnitClass()->GetName());
     } else {
         theLink = inTarget->GetOutermostCarrier()->mNextPart;
-        while (theLink->mNextPart != NULL) {
+        while (true) {
+            if (!(theLink->mNextPart != NULL))
+                break;
             if (!theLink->mUnitClass->IsPartLeftOut(theLink) && !inUnit->IsTargetIgnored(theLink, false)) {
                 EERetargetAttack(inUnit, dynamic_cast<EEUGAttackUnit*>(inUnit->GetLoadGoal()), theLink);
                 return;
@@ -1707,7 +1720,7 @@ void EEGetDopplerPitch(EEUnit* inUnit, EESoundObject* inSound, float* outVolume,
     theToCamera.SetX(theCamera.GetX() - thePosition.GetX());
     theToCamera.SetY(theCamera.GetY() - thePosition.GetY());
     theToCamera.SetZ(theCamera.GetZ() - thePosition.GetZ());
-    if (theToCamera.GetX() >= -0.0001f && theToCamera.GetX() <= 0.0001f && theToCamera.GetY() >= -0.0001f &&
+    if (theToCamera.GetX() >= -0.0001f && 0.0001f >= theToCamera.GetX() && theToCamera.GetY() >= -0.0001f &&
         theToCamera.GetY() <= 0.0001f && theToCamera.GetZ() >= -0.0001f && theToCamera.GetZ() <= 0.0001f) {
         theToCamera.SetX(0.0f);
         theToCamera.SetY(0.0f);
@@ -1822,6 +1835,14 @@ bool EECanPriestConvert(EEComplexUnit* inUnit, EEComplexUnit* inTarget)
 bool EEIsAttackReachable(EEComplexUnit* inUnit, EEComplexUnit* inTarget, U2DPoint<long>* outTile)
 {
     bool theResult = false;
+    EEUnitClass* theClass;
+    float theRange;
+    long theX;
+    long theY;
+    long theRadius;
+    long theMargin;
+    long theLimit;
+    float theDistance;
     if (inTarget->GetTileX() == -10000 || inUnit->IsOnOtherContinentThan(inTarget)) {
         theResult = false;
     } else {
@@ -1829,13 +1850,13 @@ bool EEIsAttackReachable(EEComplexUnit* inUnit, EEComplexUnit* inTarget, U2DPoin
         U2DPoint<long> theFrom(inUnit->GetTileX(), inUnit->GetTileY());
         U2DPoint<long> theTo(inTarget->GetTileX(), inTarget->GetTileY());
         EEAIAStarBounds theBounds;
-        EEUnitClass* theClass = inUnit->mUnitClass;
-        float theRange = UMSquare(inUnit->mStats->mRange);
+        theClass = inUnit->mUnitClass;
+        theRange = UMSquare(inUnit->mStats->mRange);
         if (theClass->mUnitType == kUnitTypeX04RomanLegionnaire && inUnit->mIsSpecialAttack)
             theRange = UMSquare(theClass->mHealRange);
         if (inTarget->mUnitClass->mTileSize > 1) {
-            long theX = theTo.mX;
-            long theY = theTo.mY;
+            theX = theTo.mX;
+            theY = theTo.mY;
             inUnit->GetNearestFootprintTile(inTarget, &theX, &theY);
             theTo.mX = theX;
             theTo.mY = theY;
@@ -1849,13 +1870,10 @@ bool EEIsAttackReachable(EEComplexUnit* inUnit, EEComplexUnit* inTarget, U2DPoin
         } else if (inUnit->mContainer == NULL && inTarget->mContainer == NULL) {
             EEAIBPGModifierEnemyIsAttackableByUnit* theModifier =
                 new EEAIBPGModifierEnemyIsAttackableByUnit(inUnit, inTarget);
-            long theRadius;
-            long theMargin;
-            long theLimit;
             theBounds.Set(theFrom);
             theBounds.Extend(theTo);
             if (inUnit->GetLineOfSight() > theRange) {
-                float theDistance = inUnit->GetLineOfSight();
+                theDistance = inUnit->GetLineOfSight();
                 theRadius = UMCeil(theDistance);
             } else {
                 theRadius = UMCeil(theRange);
@@ -1993,11 +2011,10 @@ bool EEGetDockShipPlacement(GE3DPoint* inPoint, EEUnitClass* inClass, EEUnit* in
     }
     float theEnd = theYaw + 6.2831855f;
     unsigned short theContinent;
-    if (!inArg5)
-        theContinent = gContinentManager.GetContinent(U2DPoint<long>(UMFloor(theX), UMFloor(theY)), theKind);
-    else
-        theContinent = theUnit->GetFootprintContinent(theKind);
-    while ((float)theCount < kUUSearchTurns) {
+    theContinent = !inArg5 ? gContinentManager.GetContinent(U2DPoint<long>(UMFloor(theX), UMFloor(theY)), theKind) : theUnit->GetFootprintContinent(theKind);
+    while (true) {
+        if (!((float)theCount < kUUSearchTurns))
+            break;
         for (; theYaw < theEnd; theYaw += theStep * 2.0f) {
             float theCos = UMCos(theYaw);
             float theSin = UMSin(theYaw);
@@ -2023,10 +2040,10 @@ bool EEGetDockShipPlacement(GE3DPoint* inPoint, EEUnitClass* inClass, EEUnit* in
                 EEGetUnitsOnTile(UMFloor(outTransformation->GetX()), UMFloor(outTransformation->GetY()), theMore);
                 for (std::vector<EEUnit*>::iterator it = theMore.begin(); it != theMore.end(); it++)
                     theUnits.push_back(*it);
-                if (theMore.size() != 0 && theUnits.size() > 1)
+                if (theMore.size() > 0 && theUnits.size() > 1)
                     EESortUnique(theUnits, EEUUUnitIDGreater(), EEUUUnitIDSame());
-                GE3DPoint theFront;
                 GE3DPoint theBack;
+                GE3DPoint theFront;
                 GEVector theDirection;
                 GE3DLine theWidth;
                 GEVector theForward(0.0f, 1.0f, 0.0f);
@@ -2049,7 +2066,7 @@ bool EEGetDockShipPlacement(GE3DPoint* inPoint, EEUnitClass* inClass, EEUnit* in
                 EEGetUnitsOn(theLine, theMore);
                 for (it = theMore.begin(); it != theMore.end(); it++)
                     theUnits.push_back(*it);
-                if (theMore.size() != 0 && theUnits.size() > 1)
+                if (theMore.size() > 0 && theUnits.size() > 1)
                     EESortUnique(theUnits, EEUUUnitIDGreater(), EEUUUnitIDSame());
                 bool theBlocked = false;
                 for (it = theUnits.begin(); it != theUnits.end() && !theBlocked; it++) {
@@ -2113,8 +2130,8 @@ bool EEFindPlacement(GE3DPoint* inPoint, EEComplexUnit* inUnit, EEUnitClass* inC
     EEMap* theMap = ::gWorld.mMap;
     long theKind = 0;
     float theYaw = 3.1415927f;
-    long theToX = 0;
     long theToY = 0;
+    long theToX = 0;
     bool theSearching = true;
     float thePitch = 0.0f;
     float theRoll = 0.0f;
@@ -2155,11 +2172,11 @@ bool EEFindPlacement(GE3DPoint* inPoint, EEComplexUnit* inUnit, EEUnitClass* inC
                                                         + theContinent->mID * gContinentManager.mFlagsWidth])))
                 continue;
             if (!inCorners && inRings > 1) {
-                if (inTarget == NULL) {
+                if (inTarget != NULL) {
+                    Fn246EA2(inTarget, theX, theY, &theToX, &theToY);
+                } else {
                     theToX = inX;
                     theToY = inY;
-                } else {
-                    Fn246EA2(inTarget, theX, theY, &theToX, &theToY);
                 }
                 if (EEIsLineBlocked(theX, theY, theToX, theToY, &theA, &theB, &theC))
                     continue;
@@ -2680,6 +2697,8 @@ EEUnit* EESearchTargetAlongList(EEComplexUnit* inUnit, long inX, long inY, float
     float theReach = inUnit->GetLineOfSight();
     float theMaxVelocity = theStats->GetMaxVelocity();
     float theRange = theStats->GetRange();
+    EEComplexUnit* theTarget;
+    float theToHit;
     inScale = theRange * inScale;
     long theCategory = inUnit->GetUnitClass()->mAmmoType;
     float theScaledRangeSquared = UMSquare(inScale);
@@ -2725,7 +2744,7 @@ EEUnit* EESearchTargetAlongList(EEComplexUnit* inUnit, long inX, long inY, float
                 EEPlayer* theOwner = theForward->mPlayer;
                 EETechTreeNode* theNode = theOwner->mTechnologies->Get(theForward->GetUnitClass()->mTechnology);
                 long theKind = theNode != NULL ? theNode->mData->mKind : -1;
-                EEComplexUnit* theTarget = theForward->mComplexUnit;
+                theTarget = theForward->mComplexUnit;
                 if (theOwner != thePlayer && thePlayer->mEnemies[theOwner->GetPlayerID()] != 0
                     && (theOwner->GetPlayerID() != 0 || EEIsAttackedBy(inUnit, theForward)) && theKind != 6
                     && EECanTargetClass(inUnit, theForward->GetUnitClass()) && (theTarget == NULL || !theTarget->IsFoundation())
@@ -2739,7 +2758,7 @@ EEUnit* EESearchTargetAlongList(EEComplexUnit* inUnit, long inX, long inY, float
                         theDistance = EEGetHitDistanceSquared(inUnit, theForward, -10000.0f, -10000.0f);
                     else
                         theDistance = EEGetHitDistanceSquared(inUnit, theForward, (float)inX + 0.5f, (float)inY + 0.5f);
-                    float theToHit = gToHitTable.GetAttackFactor(theCategory, theForward->GetUnitClass(), thePlayerID,
+                    theToHit = gToHitTable.GetAttackFactor(theCategory, theForward->GetUnitClass(), thePlayerID,
                                                           theOwner->GetPlayerID());
                     if (theDistance <= theReachSquared
                         && (!theIsStationary || theMode != 1 || theDistance < theScaledRangeSquared)
@@ -2796,7 +2815,7 @@ EEUnit* EESearchTargetAlongList(EEComplexUnit* inUnit, long inX, long inY, float
             EEPlayer* theOwner = theBackward->mPlayer;
             EETechTreeNode* theNode = theOwner->mTechnologies->Get(theBackward->GetUnitClass()->mTechnology);
             long theKind = theNode != NULL ? theNode->mData->mKind : -1;
-            EEComplexUnit* theTarget = theBackward->mComplexUnit;
+            theTarget = theBackward->mComplexUnit;
             if (theOwner != thePlayer && thePlayer->mEnemies[theOwner->GetPlayerID()] != 0
                 && (theOwner->GetPlayerID() != 0 || EEIsAttackedBy(inUnit, theBackward)) && theKind != 6
                 && EECanTargetClass(inUnit, theBackward->GetUnitClass()) && (theTarget == NULL || !theTarget->IsFoundation())
@@ -2810,7 +2829,7 @@ EEUnit* EESearchTargetAlongList(EEComplexUnit* inUnit, long inX, long inY, float
                     theDistance = EEGetHitDistanceSquared(inUnit, theBackward, -10000.0f, -10000.0f);
                 else
                     theDistance = EEGetHitDistanceSquared(inUnit, theBackward, (float)inX + 0.5f, (float)inY + 0.5f);
-                float theToHit = gToHitTable.GetAttackFactor(theCategory, theBackward->GetUnitClass(), thePlayerID,
+                theToHit = gToHitTable.GetAttackFactor(theCategory, theBackward->GetUnitClass(), thePlayerID,
                                                       theBackward->mPlayer->GetPlayerID());
                 // (no mB2E5 test on this side, as in the original)
                 if (theDistance <= theReachSquared
@@ -3125,6 +3144,9 @@ void EEDepositLoad(EEComplexUnit* inUnit, EEComplexUnit* inContainer)
 {
     EEEffectHandle theHandle;
     float theBonus;
+    long theLevel;
+    long theFirst;
+    unsigned long theSecond;
     inContainer->CanTake(inUnit, inUnit->mResourceType);
     long theCarried = inUnit->mResourceAmount;
     unsigned long theKind = inUnit->mResourceType;
@@ -3133,18 +3155,18 @@ void EEDepositLoad(EEComplexUnit* inUnit, EEComplexUnit* inContainer)
     theBonus = 0.0f;
     if ((theKind == kResourceGold || theKind == kResourceIron || theKind == kResourceStone) && inUnit->mLastResource != NULL
         && inContainer->DistanceSquaredToUnit(static_cast<EEUnit*>(inUnit->mLastResource)) <= kUUDropDistance) {
-        long theLevel = inContainer->mGarrisonCount;
-        long theFirst = max(0, min(theLevel, gUnitClassTable[kUnitTypeSettlement]->mGarrisonCapacity));
-        unsigned long theSecond = min((unsigned long)(theLevel - theFirst), gUnitClassTable[kUnitTypeTownCenter]->mGarrisonCapacity - theFirst);
+        theLevel = inContainer->mGarrisonCount;
+        theFirst = max(0, min(theLevel, gUnitClassTable[kUnitTypeSettlement]->mGarrisonCapacity));
+        theSecond = min((unsigned long)(theLevel - theFirst), gUnitClassTable[kUnitTypeTownCenter]->mGarrisonCapacity - theFirst);
         theBonus = (theLevel - theSecond - theFirst) * gUnitClassTable[kUnitTypeCapitol]->mGarrisonBonus
                    + gUnitClassTable[kUnitTypeTownCenter]->mGarrisonBonus * (long)theSecond + gUnitClassTable[kUnitTypeSettlement]->mGarrisonBonus * theFirst;
         theNear = true;
     } else if (theKind == kResourceFood && inUnit->mLastResource != NULL && static_cast<EEUnit*>(inUnit->mLastResource)->mUnitClass->mUnitType == kUnitTypeFarm
                && (inContainer->mUnitClass->mUnitType == kUnitTypeGranaryImproved || inContainer->mUnitClass->mUnitType == kUnitTypeGranary)
                && inContainer->DistanceSquaredToUnit(static_cast<EEUnit*>(inUnit->mLastResource)) <= kUUDropDistance) {
-        long theLevel = inContainer->mGarrisonCount;
-        long theFirst = max(0, min(theLevel, gUnitClassTable[kUnitTypeGranary]->mGarrisonCapacity));
-        unsigned long theSecond = min((unsigned long)(theLevel - theFirst), gUnitClassTable[kUnitTypeGranaryImproved]->mGarrisonCapacity - theFirst);
+        theLevel = inContainer->mGarrisonCount;
+        theFirst = max(0, min(theLevel, gUnitClassTable[kUnitTypeGranary]->mGarrisonCapacity));
+        theSecond = min((unsigned long)(theLevel - theFirst), gUnitClassTable[kUnitTypeGranaryImproved]->mGarrisonCapacity - theFirst);
         theBonus = gUnitClassTable[kUnitTypeGranaryImproved]->mGarrisonBonus * (long)theSecond + gUnitClassTable[kUnitTypeGranary]->mGarrisonBonus * theFirst;
         theNear = true;
     }
@@ -3333,7 +3355,7 @@ EEComplexUnit* EEFindFreeFarm(EEComplexUnit* inUnit, bool inFreeOnly, long* ioRi
     bool theFound = false;
     long theSize;
     long theLast = EEGetTownCenterLastRing(&theSize);
-    std::pair<long, long> theCenter(inUnit->mTileX, inUnit->mTileY);
+    std::pair<long, long> theCenter(inUnit->GetTileX(), inUnit->GetTileY());
     theFrom.mX = theCenter.first;
     theFrom.mY = theCenter.second;
     do {
@@ -3345,12 +3367,12 @@ EEComplexUnit* EEFindFreeFarm(EEComplexUnit* inUnit, bool inFreeOnly, long* ioRi
         for (unsigned long i = 0; !theFound && theUnits.size() > 0 && i < theUnits.size(); i++) {
             if (theUnits[i]->mTileNode == NULL)
                 continue;
-            EEComplexUnit* theOther = theUnits[i]->mComplexUnit;
-            unsigned long theType = theOther->mUnitClass->mUnitType;
-            if ((theType != kUnitTypeFarm && theType != kUnitTypeRoboticFarm) || !(theOther->mHitPoints > 0) || theOther->mPlayer != inUnit->mPlayer)
+            EEComplexUnit* theOther = theUnits[i]->GetComplexUnit();
+            unsigned long theType = theOther->GetClass()->GetUnitType();
+            if ((theType != kUnitTypeFarm && theType != kUnitTypeRoboticFarm) || !(theOther->GetHitPoints() > 0) || theOther->GetPlayer() != inUnit->GetPlayer())
                 continue;
             if (!inFreeOnly || (theType == kUnitTypeFarm && theOther->mIsBuilt && ::gWorld.GetResourceUsers(theOther) == 0)
-                || (!theOther->mIsBuilt && theOther->mNumBuilders == 0)) {
+                || (!theOther->GetIsBuilt() && theOther->mNumBuilders == 0)) {
                 theFound = true;
                 theResult = theOther;
             }
@@ -3369,13 +3391,17 @@ EEComplexUnit* EEGetPursuerOf(EEComplexUnit* inUnit)
     long theBest = -1;
     long theX = inUnit->GetTileX();
     long theY = inUnit->GetTileY();
+    EEComplexUnit* theResult = NULL;
     EEUnit* theForward = static_cast<EEUnit*>(inUnit->mTileNode->mPrev);
     EEUnit* theBackward = static_cast<EEUnit*>(inUnit->mTileNode->mNext);
-    EEComplexUnit* theResult = NULL;
     bool theForwardDone;
     bool theBackwardDone;
     long theTileX;
     long theTileY;
+    EEComplexUnit* theUnit;
+    EEUGAttackUnit* theAttack;
+    EEUGGather* theGather;
+    long theDistance;
 
     if (dynamic_cast<RTSDummyUnit*>(theForward) != NULL || theForward == NULL)
         theForwardDone = true;
@@ -3384,15 +3410,15 @@ EEComplexUnit* EEGetPursuerOf(EEComplexUnit* inUnit)
     theBackwardDone = theBackward == NULL;
     while (!theForwardDone || !theBackwardDone) {
         if (!theForwardDone) {
-            EEComplexUnit* theUnit = theForward->mComplexUnit;
+            theUnit = theForward->mComplexUnit;
             if (theUnit != NULL && theUnit->mLauncherClass == NULL && theUnit->mGoalState != NULL) {
                 EEUnitGoal* theGoal = theUnit->mGoalState;
-                EEUGAttackUnit* theAttack = dynamic_cast<EEUGAttackUnit*>(theGoal);
-                EEUGGather* theGather = dynamic_cast<EEUGGather*>(theGoal);
+                theAttack = dynamic_cast<EEUGAttackUnit*>(theGoal);
+                theGather = dynamic_cast<EEUGGather*>(theGoal);
                 if ((theAttack != NULL && theAttack->mTarget->mComplexUnit == inUnit)
                     || (theGather != NULL && theGather->mResource == inUnit)) {
                     inUnit->GetNearestFootprintTile(theForward, &theTileX, &theTileY);
-                    long theDistance = (theY - theTileY) * (theY - theTileY) + (theX - theTileX) * (theX - theTileX);
+                    theDistance = (theY - theTileY) * (theY - theTileY) + (theX - theTileX) * (theX - theTileX);
                     if (theBest == -1 || theDistance < theBest) {
                         theResult = theUnit;
                         theBest = theDistance;
@@ -3407,15 +3433,15 @@ EEComplexUnit* EEGetPursuerOf(EEComplexUnit* inUnit)
         }
         if (theBackwardDone)
             continue;
-        EEComplexUnit* theUnit = theBackward->mComplexUnit;
+        theUnit = theBackward->mComplexUnit;
         if (theUnit != NULL && theUnit->mLauncherClass == NULL && theUnit->mGoalState != NULL) {
             EEUnitGoal* theGoal = theUnit->mGoalState;
-            EEUGAttackUnit* theAttack = dynamic_cast<EEUGAttackUnit*>(theGoal);
-            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theGoal);
+            theAttack = dynamic_cast<EEUGAttackUnit*>(theGoal);
+            theGather = dynamic_cast<EEUGGather*>(theGoal);
             if ((theAttack != NULL && theAttack->mTarget->mComplexUnit == inUnit)
                 || (theGather != NULL && theGather->mResource == inUnit)) {
                 inUnit->GetNearestFootprintTile(theBackward, &theTileX, &theTileY);
-                long theDistance = (theY - theTileY) * (theY - theTileY) + (theX - theTileX) * (theX - theTileX);
+                theDistance = (theY - theTileY) * (theY - theTileY) + (theX - theTileX) * (theX - theTileX);
                 if (theBest == -1 || theDistance < theBest) {
                     theResult = theUnit;
                     theBest = theDistance;
@@ -3835,10 +3861,11 @@ float Fn246EA2(EEComplexUnit* inUnit, long inX, long inY, long* outX, long* outY
 // Tells whether both tiles hold a wall piece
 bool EEIsCornerBlocked(unsigned long inX1, unsigned long inY1, unsigned long inX2, unsigned long inY2)
 {
+    EEMap* theMap = ::gWorld.mMap;
     bool theFirst = false;
     bool theSecond = false;
-    EETile* theTile = ::gWorld.mMap->GetTile(inX1, inY1);
-    EETile* theOther = ::gWorld.mMap->GetTile(inX2, inY2);
+    EETile* theTile = theMap->GetTile(inX1, inY1);
+    EETile* theOther = theMap->GetTile(inX2, inY2);
     if (theTile == NULL || theOther == NULL)
         return false;
     RTSTileUnitNode* theNode;
@@ -4077,20 +4104,19 @@ bool EECanBallisticHit(EEComplexUnit* inUnit, EEUnit* inTarget)
     GE3DPoint theDrop;
     GE3DPoint theTag;
     EEUnit* theTarget;
-    EEUnit* theA;
     long theB;
     long theC;
     float theAngle;
     bool theResult;
 
     EEApproachAttachPoint(inUnit, theTag);
-    theResult = false;
-    if (inUnit->IsOnOtherContinentThan(static_cast<EEComplexUnit*>(inTarget)))
-        return theResult;
-    EEFindDropLocation(inUnit, &theTarget, &theDrop, inTarget);
-    theResult = EEGetBallisticPitch(inUnit, inUnit->GetStats(), &theTag, &theDrop, &theAngle);
-    if (theResult && !inUnit->mUnitClass->mShootsHigh && !inUnit->GetStats()->mCanFireOverWalls)
-        theResult = !EEIsLineToUnitBlocked(inUnit, inTarget, &theA, &theB, &theC);
+    theResult = !inUnit->IsOnOtherContinentThan(static_cast<EEComplexUnit*>(inTarget));
+    if (theResult) {
+        EEFindDropLocation(inUnit, &theTarget, &theDrop, inTarget);
+        theResult = EEGetBallisticPitch(inUnit, inUnit->GetStats(), &theTag, &theDrop, &theAngle);
+        if (theResult && !inUnit->mUnitClass->mShootsHigh && !inUnit->GetStats()->mCanFireOverWalls)
+            theResult = !EEIsLineToUnitBlocked(inUnit, inTarget, &theTarget, &theB, &theC);
+    }
     return theResult;
 }
 
@@ -4848,6 +4874,11 @@ void EEGetHelicopterPriestDestination(EEComplexUnit* inUnit, GE3DPoint& outPoint
 void EEGetTileLine(long inX1, long inY1, long inX2, long inY2, std::vector<U2DPoint<long> >* outTiles, bool inEnds,
                 bool inThin)
 {
+    long theSwap;
+    long theIncrement1;
+    long theD;
+    long i;
+    long theHalf2;
     std::vector<U2DPoint<long> > theBack;
     std::vector<U2DPoint<long> > theFront;
     long theDX = inX1 - inX2;
@@ -4866,7 +4897,7 @@ void EEGetTileLine(long inX1, long inY1, long inX2, long inY2, std::vector<U2DPo
     long theStep = theSignX != theSignY ? -1 : 1;
     long theSteep;
     if (theLengthY > theLengthX) {
-        long theSwap = inX1;
+        theSwap = inX1;
         inX1 = inY1;
         inY1 = theSwap;
         theSwap = inX2;
@@ -4907,9 +4938,9 @@ void EEGetTileLine(long inX1, long inY1, long inX2, long inY2, std::vector<U2DPo
     long theIncrement2 = (theHalf - theLengthX) * 2;
     if (theLeft >= 0) {
         if (theIncrement2 < 0) {
-            long theIncrement1 = theLengthY * 4;
-            long theD = theIncrement1 - theLengthX;
-            for (long i = 0; i < theQuads; i++) {
+            theIncrement1 = theLengthY * 4;
+            theD = theIncrement1 - theLengthX;
+            for (i = 0; i < theQuads; i++) {
                 theX++;
                 theEndX--;
                 if (theD < 0) {
@@ -4974,9 +5005,9 @@ void EEGetTileLine(long inX1, long inY1, long inX2, long inY2, std::vector<U2DPo
                 }
             }
         } else {
-            long theHalf2 = (theLengthY - theLengthX) * 2;
-            long theD = theLengthX + (theLengthY - theLengthX) * 4;
-            for (long i = 0; i < theQuads; i++) {
+            theHalf2 = (theLengthY - theLengthX) * 2;
+            theD = theLengthX + (theLengthY - theLengthX) * 4;
+            for (i = 0; i < theQuads; i++) {
                 theX++;
                 theEndX--;
                 if (theD < 1) {
@@ -5073,10 +5104,10 @@ void EEGetTileLine(long inX1, long inY1, long inX2, long inY2, std::vector<U2DPo
     outTiles->reserve(theFront.size() + theBack.size());
     *outTiles = theForward ? theFront : theBack;
     if (theForward) {
-        for (long i = theBack.size() - 1; i >= 0; i--)
+        for (i = theBack.size() - 1; i >= 0; i--)
             outTiles->push_back(theBack[i]);
     } else {
-        for (long i = theFront.size() - 1; i >= 0; i--)
+        for (i = theFront.size() - 1; i >= 0; i--)
             outTiles->push_back(theFront[i]);
     }
 }
@@ -5291,7 +5322,7 @@ float EEGetPathLengthTo(EEComplexUnit* inUnit, EETileCoordinate& ioTile, unsigne
 {
     std::vector<U2DPoint<long> > thePath;
     U2DPoint<long> theFrom(inUnit->GetTileX(), inUnit->GetTileY());
-    U2DPoint<long> theTo(ioTile.mX, ioTile.mY);
+    U2DPoint<long> theTo(ioTile.GetX(), ioTile.GetY());
     EEAIAStarBounds theBounds;
     float theResult = kUUNoPath;
     EEAIBPGModifierWallsDoNotBlock* theModifier = NULL;
@@ -5318,11 +5349,11 @@ float EEGetPathLengthTo(EEComplexUnit* inUnit, EETileCoordinate& ioTile, unsigne
     if (inLimit > 0x32)
         inLimit = 0x32;
     gPathManager.FindPath(inUnit, ::gWorld.GetMap(), theFrom, theTo, theBounds, thePath, 0xb, inLimit, theModifier, NULL);
-    if (thePath.size() == 0 || thePath[0].mX != theTo.mX || thePath[0].mY != theTo.mY) {
+    if (thePath.size() == 0 || thePath[0].GetX() != theTo.GetX() || thePath[0].GetY() != theTo.GetY()) {
         ioTile.mX = -1;
         ioTile.mY = -1;
     } else {
-        ioTile.mX = thePath[0].mX;
+        ioTile.mX = thePath[0].GetX();
         ioTile.mY = thePath[0].mY;
         theResult = (float)ioTile.DistanceTo(theFrom);
     }
@@ -5363,13 +5394,15 @@ bool RTSMap::IsEdgeTile(const EETileLocation& inTile)
 
 // FUNCTION: EXE 0x64bb36
 // Collects the ring of tiles at an index around a square, sorted
-void EEGetRingTiles(unsigned long inX, unsigned long inY, long inSize, long inRing, long inCorners,
+void EEGetRingTiles(long inX, long inY, long inSize, long inRing, long inCorners,
                 std::vector<U2DPoint<long> >& outTiles)
 {
     std::vector<U2DPoint<long> > theSides;
     std::vector<U2DPoint<long> > theCorners;
     std::vector<U2DPoint<long> > theTiles;
     outTiles.clear();
+    // LOST-DEBUG: none: exact only (one op[] site past the budget; k 3..6 exact)
+    EE_LOST_DEBUG(3);
     if (inRing > 0) {
         long theSize = inSize + inRing * 2 - 2;
         EEGetSideTiles(inX - inRing + 1, inY - inRing + 1, theSize, theSides);
@@ -5528,10 +5561,11 @@ long EEGetUnitsInRadius(GE2DPoint inCenter, float inRadius, std::vector<EEUnit*>
 // Returns the living unit of a type on a tile, or NULL
 EEUnit* EEGetTileUnitOfType(const EETileCoordinate& inTile, unsigned long inUnitType)
 {
+    EEMap* theMap = ::gWorld.mMap;
     EEUnit* theUnit = NULL;
     bool theFound = false;
-    if (::gWorld.mMap != NULL) {
-        EETile* theTile = ::gWorld.mMap->RTSMap::GetTile(inTile.mX, inTile.mY);
+    if (theMap != NULL) {
+        EETile* theTile = theMap->RTSMap::GetTile(inTile.mX, inTile.mY);
         if (theTile != NULL) {
             for (RTSTileUnitNode* theNode = theTile->mUnits; theNode != NULL && !theFound; theNode = theNode->mNext) {
                 theUnit = theNode->mUnit;
@@ -5598,10 +5632,11 @@ long EEGetUnitsOn(std::vector<U2DPoint<long> >& inTiles, std::vector<EEUnit*>& o
 // Returns a player's living unit of a type on a tile, or NULL
 EEUnit* EEGetWallAt(const EETileCoordinate& inTile, EEPlayer* inPlayer, long inUnitType)
 {
+    EEMap* theMap = ::gWorld.mMap;
     EEUnit* theUnit = NULL;
     bool theFound = false;
-    if (::gWorld.mMap != NULL) {
-        EETile* theTile = ::gWorld.mMap->RTSMap::GetTile(inTile.mX, inTile.mY);
+    if (theMap != NULL) {
+        EETile* theTile = theMap->RTSMap::GetTile(inTile.mX, inTile.mY);
         if (theTile != NULL) {
             for (RTSTileUnitNode* theNode = theTile->mUnits; theNode != NULL && !theFound; theNode = theNode->mNext) {
                 theUnit = theNode->mUnit;
@@ -5623,14 +5658,19 @@ long EEGetUnitsOfTypeOnTiles(std::vector<EETileCoordinate>& inTiles, EEPlayer* i
 {
     EEMap* theMap = ::gWorld.mMap;
     long theCount = 0;
+    long theX;
+    long theY;
+    EEUnit* theUnit;
     if (theMap != NULL) {
         for (unsigned long i = 0; i < inTiles.size(); i++) {
-            EETile* theTile = theMap->GetTile(inTiles[i].mX, inTiles[i].mY);
+            theX = inTiles[i].GetX();
+            theY = inTiles[i].GetY();
+            EETile* theTile = theMap->GetTile(theX, theY);
             if (theTile == NULL)
                 continue;
-            for (RTSTileUnitNode* theNode = theTile->mUnits; theNode != NULL; theNode = theNode->mNext) {
-                EEUnit* theUnit = theNode->mUnit;
-                if (theUnit != NULL && theUnit->mUnitClass->mUnitType == inUnitType && theUnit->mPlayer == inPlayer) {
+            for (RTSTileUnitNode* theNode = theTile->GetUnits(); theNode != NULL; theNode = theNode->GetNext()) {
+                theUnit = theNode->GetUnit();
+                if (theUnit != NULL && theUnit->GetUnitClass()->GetUnitType() == inUnitType && theUnit->GetPlayer() == inPlayer) {
                     outUnits.push_back(theUnit);
                     theCount++;
                 }
@@ -5646,14 +5686,20 @@ long EEGetWallUnitsOfTypeOnTiles(std::vector<EETileCoordinate>& inTiles, long in
 {
     EEMap* theMap = ::gWorld.mMap;
     long theCount = 0;
+    long theX;
+    long theY;
+    EEUnit* theUnit;
     if (theMap != NULL) {
         for (unsigned long i = 0; i < inTiles.size(); i++) {
-            EETile* theTile = theMap->GetTile(inTiles[i].mX, inTiles[i].mY);
+            theX = inTiles[i].GetX();
+            theY = inTiles[i].GetY();
+            EETile* theTile = theMap->GetTile(theX, theY);
             if (theTile == NULL)
                 continue;
-            for (RTSTileUnitNode* theNode = theTile->mUnits; theNode != NULL; theNode = theNode->mNext) {
-                EEUnit* theUnit = theNode->mUnit;
-                if (theUnit != NULL && theUnit->mUnitClass->mUnitType == inUnitType) {
+            for (RTSTileUnitNode* theNode = theTile->GetUnits(); theNode != NULL; theNode = theNode->GetNext()) {
+                theUnit = theNode->GetUnit();
+                if (theUnit != NULL && theUnit->GetUnitClass()->GetUnitType() == inUnitType) {
+
                     outUnits.push_back(theUnit);
                     theCount++;
                 }
@@ -5680,9 +5726,7 @@ void EEGetResourceSpots(EEUnit* inUnit, std::vector<U2DPoint<long> >& outTiles)
         if (theTile == NULL)
             continue;
         RTSTileUnitNode* theNode = theTile->mUnits;
-        if (theNode == NULL) {
-            outTiles.push_back(theTiles[i]);
-        } else {
+        if (theNode != NULL) {
             bool theFree = true;
             do {
                 if (!theFree)
@@ -5695,6 +5739,8 @@ void EEGetResourceSpots(EEUnit* inUnit, std::vector<U2DPoint<long> >& outTiles)
             } while (theNode != NULL);
             if (theFree)
                 outTiles.push_back(theTiles[i]);
+        } else {
+            outTiles.push_back(theTiles[i]);
         }
     }
 }
@@ -5727,10 +5773,7 @@ void EEAddBuildingRegion(EEUnit* inUnit)
     } else {
         for (long x = theRegions.GetTopLeft().mX; x <= theRegions.GetBottomRight().mX; x++) {
             for (long y = theRegions.GetTopLeft().mY; y <= theRegions.GetBottomRight().mY; y++) {
-                EEComplexUnit* theUnit = inUnit->GetComplexUnit();
-                std::vector<EEComplexUnit*>* theRegion = theTable->GetRegion(x, y);
-                if (theRegion != NULL)
-                    theRegion->push_back(theUnit);
+                theTable->Add(x, y, inUnit->GetComplexUnit());
             }
         }
     }
@@ -5851,23 +5894,33 @@ void EEPickWallPieces(std::vector<EETileCoordinate>& inTiles, std::vector<long>&
     long theRun = 0;
     long thePrevX = 0;
     long thePrevY = 0;
+    unsigned long i;
+    long theX;
+    long theY;
+    long theDX;
+    long theXUp;
+    long theDY;
+    long theYUp;
+    EETile* theTile;
+    long theRaised;
+    float theHeight;
     outCorners.resize(theCount, 0);
     for (unsigned long j = 0; j < theCount; j++)
         outCorners[j] = 0;
-    for (unsigned long i = 1; i < theCount; i++) {
-        long theX = inTiles[i].mX;
-        long theY = inTiles[i].mY;
-        long theDX = inTiles[i - 1].mX - theX;
-        long theXUp = theDX >= 0;
+    for (i = 1; i < theCount; i++) {
+        theX = inTiles[i].mX;
+        theY = inTiles[i].mY;
+        theDX = inTiles[i - 1].mX - theX;
+        theXUp = theDX >= 0;
         if (!theXUp)
             theDX = -theDX;
-        long theDY = inTiles[i - 1].mY - theY;
-        long theYUp = theDY >= 0;
+        theDY = inTiles[i - 1].mY - theY;
+        theYUp = theDY >= 0;
         if (!theYUp)
             theDY = -theDY;
-        EETile* theTile = inMap->GetTile(theX, theY);
-        long theRaised = inMap->GetNumRaisedCorners(theX, theY);
-        float theHeight = theTile->mHeight;
+        theTile = inMap->GetTile(theX, theY);
+        theRaised = inMap->GetNumRaisedCorners(theX, theY);
+        theHeight = theTile->mHeight;
         GETerrainMesh& theMesh = inMap->mTerrainMesh;
         if (theDX == 0 && theDY == 1) {
             if (theRun == 2) {
@@ -6015,7 +6068,9 @@ void EERemoveBuildingRegion(EEUnit* inUnit)
         if (theRegion != NULL)
             theRegion->Remove(theUnit);
     } else {
-        for (long x = theRegions.GetTopLeft().mX; x <= theRegions.GetBottomRight().mX; x++) {
+        for (long x = theRegions.GetTopLeft().mX;; x++) {
+            if (!(x <= theRegions.GetBottomRight().mX))
+                break;
             for (long y = theRegions.GetTopLeft().mY; y <= theRegions.GetBottomRight().mY; y++) {
                 EEComplexUnit* theUnit = inUnit->GetComplexUnit();
                 RTSRegion<EEComplexUnit*>* theRegion = theTable->GetRegion(x, y);
@@ -6190,8 +6245,8 @@ bool EEIsLineBlocked(long inX1, long inY1, long inX2, long inY2, EEUnit** outArg
                 break;
             long theX = theLine[i].mX;
             long theY = theLine[i].mY;
-            long theDY = theY - theLastY;
             long theDX = theX - inX1;
+            long theDY = theY - theLastY;
             if (UMAbs(theDX) == 1 && UMAbs(theDY) == 1 && EEIsTileTopAbove(theX, theLastY, theHeight, outArg5, true)
                 && EEIsTileTopAbove(inX1, theY, theHeight, outArg5, true)) {
                 theBlocked = true;
@@ -6219,8 +6274,8 @@ bool EEIsLineToUnitBlocked(EEComplexUnit* inUnit, EEUnit* inTarget, EEUnit** out
 {
     std::vector<U2DPoint<long> > theTiles;
     GE3DPoint theStart;
-    bool theBlocked = false;
     long theFromX = inUnit->GetTileX();
+    bool theBlocked = false;
     long theFromY = inUnit->GetTileY();
     long theToX = inTarget->GetTileX();
     long theToY = inTarget->GetTileY();
@@ -6646,20 +6701,20 @@ void EEStepAsideFromSite(EEUnit* inUnit, EEUnitClass* inClass, EEPlayer* inPlaye
         }
     }
     for (i = 0; theTiles.size() > 0 && i < theTiles.size(); i++) {
-        EETile* theMapTile = ::gWorld.mMap->RTSMap::GetTile(theTiles[i].GetX(), theTiles[i].GetY());
+        EETile* theMapTile = ::gWorld.GetMap()->RTSMap::GetTile(theTiles[i].GetX(), theTiles[i].GetY());
         for (RTSTileUnitNode* theNode = theMapTile->mUnits; theNode != NULL; theNode = theNode->mNext) {
             EEUnit* theOther = theNode->mUnit;
             EEComplexUnit* theComplexUnit;
-            if (theOther == NULL || (theComplexUnit = theOther->mComplexUnit) == NULL || theComplexUnit->IsFoundation())
+            if (theOther == NULL || (theComplexUnit = theOther->GetComplexUnit()) == NULL || theComplexUnit->IsFoundation())
                 continue;
-            if ((theComplexUnit->mUnitClass->mFamily != kUnitFamilyAnimal || theComplexUnit->mStats->mAttack != 0.0f) && !inForce) {
-                if (theOther->mPlayer != inPlayer && inPlayer->mEnemies[theOther->mPlayer->GetPlayerID()] != 0)
+            if ((theComplexUnit->GetClass()->GetFamily() != kUnitFamilyAnimal || theComplexUnit->GetStats()->GetAttack() != 0.0f) && !inForce) {
+                if (theOther->GetPlayer() != inPlayer && inPlayer->mEnemies[theOther->mPlayer->GetPlayerID()] != 0)
                     continue;
                 long theCommand = theComplexUnit->mCommand != NULL ? theComplexUnit->mCommand->mType : 0;
                 if (theCommand != kActionIdle && theCommand != kActionWaitForOpenPosition && theCommand != kActionGatherResource)
                     continue;
             }
-            if (!theComplexUnit->mUnitClass->mCanFly
+            if (!theComplexUnit->GetClass()->mCanFly
                 || theComplexUnit->mPhysicalModel.GetLocation().GetZ() <= theComplexUnit->mTile->GetHeight())
                 theComplexUnit->StepAside(inPlayer, inClass, theTiles[i].GetX(),
                                          theTiles[i].GetY(), inForce);
@@ -6712,12 +6767,12 @@ public:
 void EEUpgradeHitPoints(EEUnitClassUpgrade* inUpgrade, long inType, float inFactor, EEPlayer* inPlayer)
 {
     long theBase = inUpgrade->mUnitClass->mHitPoints;
-    EEHitPointUpgrader theUpgrader(inType, (theBase * inFactor + inUpgrade->mMaxHitPoints) / inUpgrade->mMaxHitPoints);
+    EEHitPointUpgrader theUpgrader(inType, (theBase * inFactor + inUpgrade->GetMaxHitPoints()) / inUpgrade->GetMaxHitPoints());
     long theBonus = inUpgrade->mUnitClass->mHitPoints;
     if (theBonus <= 0)
         return;
     inFactor *= theBonus;
-    long theHitPoints = max(UMFloatToLong(inUpgrade->mMaxHitPoints + inFactor), 1);
+    long theHitPoints = max(UMFloatToLong(inUpgrade->GetMaxHitPoints() + inFactor), 1);
     inUpgrade->mMaxHitPoints = max(theHitPoints, 1);
     if (!gLoadingSavedGame)
         EEForEachUnitOf(inPlayer, &theUpgrader, true);
@@ -6760,8 +6815,8 @@ bool EECanPlaceUnitOnTile(EEPlayer* inPlayer, EEComplexUnit* inUnit, long inUnit
 {
     std::vector<EEUnit*> theUnits;
     EEMap* theMap = ::gWorld.mMap;
-    EEUnitClass* theClass = gUnitClassTable[inUnitType];
     EETile* theTile = theMap->GetTile(inX, inY);
+    EEUnitClass* theClass = gUnitClassTable[inUnitType];
     bool theResult = theTile != NULL;
     if (theTile == NULL)
         return theResult;

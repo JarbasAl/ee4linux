@@ -447,9 +447,11 @@ void EEUCBuilding::ActionChanged(EEComplexUnit* inUnit)
         inUnit->SetResourceAmount(0);
         break;
     case kActionPrepareToMove:
-        if (inUnit->mUnitClass->mAIKind != kAIKindAircraftCarrier && inUnit->mUnitClass->mUnitType != kUnitTypeSp15SpaceCarrier)
-            return;
-        break;
+        if (inUnit->mUnitClass->mAIKind == kAIKindAircraftCarrier)
+            break;
+        if (inUnit->mUnitClass->mUnitType == kUnitTypeSp15SpaceCarrier)
+            break;
+        return;
     case kActionAirportOpen:
         inUnit->SetExitingUnitID(-1);
         return;

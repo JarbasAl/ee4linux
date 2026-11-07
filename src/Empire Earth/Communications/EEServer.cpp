@@ -837,8 +837,6 @@ void EEServer::PlayWarningSound(long inSound)
 // FUNCTION: EXE 0x4cc34e
 // Handles a lobby message on the host: player info (and the WON game info), transfer status, the game start,
 // a joined player, a player's slot info; the rest execute
-// NEAR: frame layout (the "" temporary, the string slots), the mPing copy (the original loads it with fld),
-// register choice
 // player info falls through into the game options case (the WON game info follows the slots)
 void EEServer::HandleLobbyInput(NEMessage* inMessage)
 {
@@ -846,7 +844,7 @@ void EEServer::HandleLobbyInput(NEMessage* inMessage)
     EEGameOptionsPlayer thePlayer;
     EEWonNetGameInfo theInfo;
     UWideString theText;
-    UWideString theName;
+    UWideString theSender;
     UWideString theMessage;
     UWideString theFormat;
     NEProtocol* theProtocol = NULL;
@@ -859,7 +857,7 @@ void EEServer::HandleLobbyInput(NEMessage* inMessage)
             thePlayer.mType = theUpdate->mSlotType;
             thePlayer.mTeam = theUpdate->mTeam;
             thePlayer.mName = theUpdate->mName;
-            thePlayer.mPing = theUpdate->mPing;
+            float thePing = theUpdate->mPing;
             thePlayer.mStartingCitizens = theUpdate->mCitizenBonus;
             thePlayer.mLoadedType = theUpdate->mLoadedType;
             thePlayer.mIsReady = theUpdate->mIsReady;
@@ -867,6 +865,7 @@ void EEServer::HandleLobbyInput(NEMessage* inMessage)
             thePlayer.mB36 = theUpdate->mB42;
             thePlayer.mSlot = theUpdate->mSlot;
             thePlayer.mTransferID = gGameOptions.mPlayers[thePlayer.mSlot].mTransferID;
+            thePlayer.mPing = thePing;
             if (thePlayer.mSlot != 0 && this->GetSendToSlot(thePlayer.mSlot) != kSlotServer)
                 thePlayer.mIsLocal = false;
             else
@@ -896,7 +895,7 @@ void EEServer::HandleLobbyInput(NEMessage* inMessage)
         unsigned long theSlot = theStatus->GetClientSlot();
         if (inMessage->GetOriginatingSlot() != kSlotServer && theStatus->GetStatusID() == 3) {
             gGameOptions.mLock->WriteLock();
-            thePlayer = gWorld.GetLobbyOptions().mPlayers[theSlot];
+            thePlayer = gGameOptions.mPlayers[theSlot];
             unsigned long theXferID = theStatus->GetXferID();
             if (theXferID == 0xffff)
                 theXferID = thePlayer.mTransferID;
@@ -923,7 +922,7 @@ void EEServer::HandleLobbyInput(NEMessage* inMessage)
         }
         gWorld.GetNumTeams();
         NEProtocol::GetProtocol(0, theProtocol);
-        theProtocol->GetStatus("", 0xffff0000);
+        theProtocol->GetStatus(UWideString(""), 0xffff0000);
         gCommunications->SetIsMultiplayerSession(gCommunications->GetNumHumanPlayers() != 1);
         gGraphics->PostResume();
         while (gGraphics->mIsPaused)
@@ -947,8 +946,8 @@ void EEServer::HandleLobbyInput(NEMessage* inMessage)
                     continue;
                 gResource->GetString(IDS_PLAYER_HAS_DROPPED_OUT_OF_GAME, theFormat);
                 sprintf(theMessage, theFormat, (const char*)thePlayer->mName);
-                gResource->GetString(IDS_MSG_GAME, theName);
-                gUserInterface->AddChatLogEntry(theColor, theName, theMessage,
+                gResource->GetString(IDS_MSG_GAME, theSender);
+                gUserInterface->AddChatLogEntry(theColor, theSender, theMessage,
                                                 gWorldTable.GetLongValue(25) * 2, 0);
                 gWorld.RemoveDisconnectedPlayer(k);
             }

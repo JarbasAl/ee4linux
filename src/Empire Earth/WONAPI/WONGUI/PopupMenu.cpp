@@ -11,18 +11,21 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyMSPainters.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // Native2fd150/458, initialization-only support0; mLastX/Y intentionally untouched.
 PopupMenu::PopupMenu()
 {
     SetFont(GetNamedFont("Menu"));
     Fn2FB600(0x806,true);
-    SetBackground(Background(new MSPopup));
+    SetBackground(new MSPopup);
     mTextColor=0x8000000c;
     mMouseUpCount=0;
     mTimerAcc=0;
     mKeyboardMode=false;
     SetBorderPadding(4,4,4,4);
+    // LOST-DEBUG: none: exact only; 2 free sites after the string temp (assign and ~string refused)
+    EE_LOST_DEBUG(2);
 }
 }
 

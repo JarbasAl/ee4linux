@@ -171,7 +171,7 @@ void PingLogic::Fn3E68B0(AsyncOp* inOp)
         RunTrackedOp(anOp, new LogicCompletion<PingLogic>(&PingLogic::Fn3E68B0, this), aTimeout);
         return;
     }
-    aGame->mL64 = aPing;
+    aGame->SetPing(aPing);
     if (anOp->mReply.get() != NULL) {
         ReadBuffer aBuffer(anOp->mReply->data(), anOp->mReply->length());
         unsigned char aFlags = anOp->mReplyFlags;
@@ -193,7 +193,7 @@ void PingLogic::Fn3E68B0(AsyncOp* inOp)
             continue;
         if (aPendingGame->Fn3A6D90())
             continue;
-        aPendingGame->mL64 = 0xfffe;
+        aPendingGame->SetPing(0xfffe);
         Fn3E6B50(aPendingGame.get(), false, true);
     }
 }

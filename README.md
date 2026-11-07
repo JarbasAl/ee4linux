@@ -42,19 +42,19 @@ you build.
 <!-- status:begin -->
 | Module | Functions byte-identical | Code bytes byte-identical |
 |---|---:|---:|
-| EE-AOC.exe (game code) | 15,239 / 16,884 (90.3%) | 1,681,204 / 2,736,250 (61.4%) |
-| EE-AOC.exe (WON library) | 8,192 / 8,327 (98.4%) | 1,301,846 / 1,386,156 (93.9%) |
+| EE-AOC.exe (game code) | 15,420 / 16,884 (91.3%) | 1,820,263 / 2,736,250 (66.5%) |
+| EE-AOC.exe (WON library) | 8,245 / 8,329 (99.0%) | 1,331,195 / 1,386,583 (96.0%) |
 | TCP Protocol.dll | 124 / 125 (99.2%) | 13,417 / 13,649 (98.3%) |
 | Miles Sound System Mixer.dll | 106 / 106 (100.0%) | 5,021 / 5,021 (100.0%) |
 | Default.dll | 795 / 845 (94.1%) | 52,833 / 97,011 (54.5%) |
-| Low-Level Engine.dll | 5,881 / 6,030 (97.5%) | 444,690 / 538,055 (82.6%) |
+| Low-Level Engine.dll | 5,882 / 6,030 (97.5%) | 445,819 / 538,055 (82.9%) |
 | libjpeg in the engine | 295 / 295 (100.0%) | 64,136 / 64,136 (100.0%) |
 | DX7HRDisplay.dll | 553 / 584 (94.7%) | 28,576 / 60,561 (47.2%) |
 | DX7HRTnLDisplay.dll | 594 / 626 (94.9%) | 29,549 / 62,738 (47.1%) |
 | libpng/zlib/libjpeg in the exe | 318 / 318 (100.0%) | 98,476 / 98,476 (100.0%) |
 | Language.dll | resources only | identical to the original apart from the link time stamps and the debug record (PDB path) |
 
-Measured on 2026-11-07 at source revision bd6e515329a8: a function counts when its compiled code is identical to the original's, in the context of its own unit, with every reference resolving to the same symbol. Counts exclude CRT, SDK and import-thunk code.
+Measured on 2026-11-07 at source revision 698ba84314bf: a function counts when its compiled code is identical to the original's, in the context of its own unit, with every reference resolving to the same symbol. Counts exclude CRT, SDK and import-thunk code.
 <!-- status:end -->
 
 The images link from this source alone. Where a function is not byte-identical yet, the image carries this source's

@@ -213,6 +213,7 @@ public:
     virtual void Execute();
     virtual char* GetMessageLabel() const;
 
+    long GetUnitIDsAt(unsigned long inIndex) const { return this->mUnitIDs[inIndex]; }
     std::vector<long> mUnitIDs;             // +0x10
     GERectangle mRectangle;                 // +0x20
     long mL30;                              // +0x30
@@ -1657,6 +1658,7 @@ public:
     virtual void Execute();
     virtual char* GetMessageLabel() const;
 
+    long GetUnitIDsAt(unsigned long inIndex) const { return this->mUnitIDs[inIndex]; }
     std::vector<long> mUnitIDs;             // +0x10
 };
 

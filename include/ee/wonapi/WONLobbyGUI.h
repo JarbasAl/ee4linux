@@ -377,8 +377,8 @@ public:
     const WONRectangle& GetBounds() { return mBounds; }
     int Left() { return mBounds.x; }
     int Top() { return mBounds.y; }
-    int Width() { return mBounds.width; }
-    int Height() { return mBounds.height; }
+    int Width() { return mBounds.Width(); }
+    int Height() { return mBounds.Height(); }
     int Right() { return mBounds.Right(); }
     int Bottom() { return mBounds.Bottom(); }
     Container* GetParent() { return mParent; } //genuine SDK borrowed accessor, actual Component+08

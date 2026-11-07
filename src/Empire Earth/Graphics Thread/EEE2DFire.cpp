@@ -240,7 +240,7 @@ void EEE2DFire::UpdatePart(unsigned long inIndex)
 {
     GE3DPoint theOffset;
     GE3DPoint theLocation = this->mPosition;
-    EEComplexUnit* theUnit = this->mUnit->mComplexUnit;
+    EEComplexUnit* theUnit = this->mUnit->GetComplexUnit();
     float theHalf = this->mGraphicEffect->GetSize() * 0.5f;
     float theTime = this->mParts[inIndex].mTime;
     unsigned long theOldFrame = this->mParts[inIndex].mFrame;
@@ -260,7 +260,7 @@ void EEE2DFire::UpdatePart(unsigned long inIndex)
             unsigned long theModelFrame = theUnit->mPhysicalModel.GetFrame();
             theOffset = theModel->GetTagPoint(this->mParts[inIndex].mTag, theModelFrame);
         }
-        theUnit->mPhysicalModel.GetLocation().Apply(theOffset, this->mParts[inIndex].mPosition);
+        theUnit->GetPhysicalModel().GetLocation().Apply(theOffset, this->mParts[inIndex].mPosition);
         theHalf += this->mParts[inIndex].mPosition.GetZ();
         this->mParts[inIndex].mPosition.SetZ(theHalf);
     }

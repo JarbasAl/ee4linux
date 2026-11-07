@@ -19,6 +19,7 @@ public:
     virtual void Virtual4();                // +0x04 0x4464
     virtual void Virtual8();                // +0x08 (the shared empty slot 0x1720c6)
 
+    unsigned long GetPlayersAt(unsigned long inIndex) const { return this->mPlayers[inIndex]; }
     std::vector<unsigned long> mPlayers;    // +0x0c the players (indices into gWorld.mPlayers)
 };
 

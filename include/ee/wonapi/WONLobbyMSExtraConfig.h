@@ -33,8 +33,10 @@ class MSScrollbar : public Scrollbar {
 public:
     MSScrollbar(bool=true); //2ff820 actual composition constructor559B
     static MSArrowButtonFactory ArrowButtonFactory; //retained mutable original cell4d5e64, no definition
-    typedef SmartPtr<Component> (*ThumbFactoryFunc)(bool);
-    static SmartPtr<Component> DefaultThumbFactory(bool) { return new MSScrollThumb; } //genuine SDK inline allocation policy2fccb0
+    // one-byte class by value: the ctor 0x6ff820 byte copy into a temp + dword push, its inline ctor a site (name is ours)
+    struct ThumbType { bool mVertical; ThumbType(bool v) : mVertical(v) {} };
+    typedef SmartPtr<Component> (*ThumbFactoryFunc)(ThumbType);
+    static SmartPtr<Component> DefaultThumbFactory(ThumbType) { return new MSScrollThumb; } //genuine SDK inline allocation policy2fccb0
     static ThumbFactoryFunc ThumbFactory; //retained mutable original cell4d5e68, no definition
     void SetTransparent(bool); //2ffa60 actual original13B provider
     virtual void Paint(Graphics&); //2ffa70 actual18slot, onlynon-dtoroverride

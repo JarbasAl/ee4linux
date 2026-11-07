@@ -209,18 +209,15 @@ long EEE3DDamageVent::Save(unsigned long inMajorVersion, unsigned long inMinorVe
 long EEE3DDamageVent::Step()
 {
     EEUnit* theUnit = this->mUnit;
-    if (!theUnit)
-        return 7;
+    if (theUnit) {
     EEComplexUnit* theComplex = theUnit->mComplexUnit;
     EETagPointList* theFromList = theUnit->GetModel()->GetTagPoints(theComplex->GetAnimation(), 5);
     EETagPointList* theToList = theUnit->GetModel()->GetTagPoints(theComplex->GetAnimation(), 0x38);
     float theHealth = (float)this->mUnit->mHitPoints;
     theHealth /= this->mUnit->mStats->mMaxHitPoints;
     EEGraphicEffect* theEffect = this->mGraphicEffect;
-    if ((theComplex->mCommand ? theComplex->mCommand->mType : 0) == kActionDead)
-        return 7;
-    if (theHealth >= theEffect->GetParam2())
-        return 7;
+    if ((theComplex->mCommand ? theComplex->mCommand->mType : 0) != kActionDead)
+    if (theHealth < theEffect->GetParam2()) {
     GE3DPoint thePosition;
     theUnit->GetPosition(thePosition);
     GETransformation theTransformation;
@@ -245,8 +242,9 @@ long EEE3DDamageVent::Step()
                 this->mParts.pop_back();
         } else if (theParts < theWanted) {
             long theTag = Fn102F57(0, theCount - 1);
+            std::vector<EEE3DDamageVentPart>::iterator theEnd = this->mParts.end();
             std::vector<EEE3DDamageVentPart>::iterator theOther = this->mParts.begin();
-            while (theOther != this->mParts.end()) {
+            while (theOther != theEnd) {
                 if (theTag != theOther->mTag) {
                     theOther++;
                 } else {
@@ -308,7 +306,7 @@ long EEE3DDamageVent::Step()
             thePart->mTransformation = theLocation;
             GEModel* theModel = theComplex->GetModel()->mModels[0];
             GE3DPoint theOffset;
-            (*(theFromList->mPoints.begin() + thePart->mTag))->GetOffset(0, theOffset);
+            theFromList->mPoints[thePart->mTag]->GetOffset(0, theOffset);
             GE3DPoint theCenter = theModel->GetCenterPoint();
             GEVector theTranslation;
             theUnitTransformation.Apply(GEVector(theOffset.GetX() - theCenter.GetX(),
@@ -330,6 +328,8 @@ long EEE3DDamageVent::Step()
         }
     }
     return 0;
+    }
+    }
     return 7;
 }
 

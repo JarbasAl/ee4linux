@@ -113,21 +113,19 @@ bool ImageFilterConfig::Virtual24(const std::string& inInstruction)
         int count=ReadInt();
         EnsureComma();
         std::string prefix=Fn3842F0(false);
-        int width=mRawImage->mWidth/count;
+        int width=mRawImage->GetWidth()/count;
         SmartPtr<CropImageFilter> crop=new CropImageFilter;
-        crop->SetSize(width,mRawImage->mHeight);
-        int x=0;
+        crop->SetSize(width,mRawImage->GetHeight());
         for(int i=0;i<count;i++)
         {
-            crop->SetPos(x,0);
+            crop->SetPos(i*width,0);
             SmartPtr<RawImage> image=crop->Filter(mRawImage.get());
             char name[512];
             sprintf(name,"%s%d",prefix.c_str(),i+1);
             SmartPtr<ImageFilterConfig> config=new ImageFilterConfig;
             config->SetRawImage(image.get());
-            ComponentConfig* parent=static_cast<ComponentConfig*>(mL38);
+            ComponentConfig* parent=static_cast<ComponentConfig*>(GetParentObject());
             parent->AddChildToConfigMap(GUIString(name),config.get());
-            x+=width;
         }
     }
     else if(inInstruction=="EXPORT")
@@ -136,7 +134,7 @@ bool ImageFilterConfig::Virtual24(const std::string& inInstruction)
         EnsureComma();
         SmartPtr<ImageFilterConfig> config=new ImageFilterConfig;
         config->SetRawImage(HandleFilter().get());
-        ComponentConfig* parent=static_cast<ComponentConfig*>(mL38);
+        ComponentConfig* parent=static_cast<ComponentConfig*>(GetParentObject());
         parent->AddChildToConfigMap(name,config.get());
     }
     else return ImageConfig::Virtual24(inInstruction);

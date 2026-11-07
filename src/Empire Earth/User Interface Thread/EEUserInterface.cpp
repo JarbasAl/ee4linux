@@ -827,7 +827,7 @@ void EEUserInterface::ProcessActions()
         theLast = NULL;
     else
         theLast = this->PeekBack(this->mUndoQueue, this->mUndoLock);
-    while (this->GetQueueSize(this->mActionQueue, this->mActionLock) > 0) {
+    while (this->GetQueueSize(this->mActionQueue, this->GetActionLock()) > 0) {
         EEAction* theAction = this->PopFront(this->mActionQueue, this->mActionLock);
         theAction->Virtual4();
         if (!theAction->mIsUndoable)

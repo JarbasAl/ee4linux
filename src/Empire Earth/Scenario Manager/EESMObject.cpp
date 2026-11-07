@@ -38,6 +38,7 @@ EESMObject::EESMObject()
 {
     gResource->GetString(IDS_NONE, this->mName);
     this->mUnits.clear();
+    this->mIsSelectOnMap = true;
     this->mOwner = 7;
     this->mSelectedByPlayer = 7;
     this->mFamily = 0;
@@ -59,7 +60,6 @@ EESMObject::EESMObject()
     this->mState = kActionInvalid;
     this->mIsAttributePercent = false;
     this->mL64 = 0;
-    this->mIsSelectOnMap = true;
     this->mMinCount = 1;
     this->mMaxCount = 1;
     this->mIsDynamic = true;

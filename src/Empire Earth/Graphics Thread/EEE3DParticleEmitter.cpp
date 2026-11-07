@@ -328,7 +328,7 @@ long EEE3DParticleEmitter::Step()
                 thePosition.SetY((0.5f - EEEffect::GetRandom()) * theSpreadY + thePosition.mY);
                 if (!this->mGraphicEffect->mFlag4) {
                     float theSpreadZ = this->mGraphicEffect->mParam12;
-                    thePosition.SetZ((0.5f - EEEffect::GetRandom()) * theSpreadZ + thePosition.mZ);
+                    thePosition.SetZ((0.5f - EEEffect::GetRandom()) * theSpreadZ + thePosition.GetZ());
                 }
                 float thePitch = EEEffect::GetRandomSpread(this->mGraphicEffect->GetParam2(), this->mGraphicEffect->GetParam1());
                 float theYaw = EEEffect::GetRandomSpread(this->mGraphicEffect->GetParam4(), this->mGraphicEffect->GetParam3());

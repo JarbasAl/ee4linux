@@ -242,26 +242,8 @@ void RTSMouse::BeginFrame()
         GESurface* theOverlay = this->GetPointerSurface(this->mOverlay);
         float theWidth = (float)this->mCurrentSurface->GetWidth();
         float theHeight = (float)this->mCurrentSurface->GetHeight();
-        GERectangle theDestination;
-        GERectangle theSource;
-        theDestination.SetLeft(0.0f);
-        theDestination.SetTop(0.0f);
-        theDestination.SetRight(theWidth);
-        theDestination.SetBottom(theHeight);
-        theSource.SetLeft(0.0f);
-        theSource.SetTop(0.0f);
-        theSource.SetRight(theWidth);
-        theSource.SetBottom(theHeight);
-        if (thePointer->CopyTo(thePlus, theSource, theDestination, false) == kErrorOK) {
-            theSource.SetLeft(0.0f);
-            theSource.SetTop(0.0f);
-            theSource.SetRight(theWidth);
-            theSource.SetBottom(theHeight);
-            theDestination.SetLeft(0.0f);
-            theDestination.SetTop(0.0f);
-            theDestination.SetRight(theWidth);
-            theDestination.SetBottom(theHeight);
-            if (theOverlay->CopyTo(thePlus, theSource, theDestination, true) == kErrorOK) {
+        if (thePointer->CopyTo(thePlus, GERectangle(0.0f, 0.0f, theWidth, theHeight), GERectangle(0.0f, 0.0f, theWidth, theHeight), false) == kErrorOK) {
+            if (theOverlay->CopyTo(thePlus, GERectangle(0.0f, 0.0f, theWidth, theHeight), GERectangle(0.0f, 0.0f, theWidth, theHeight), true) == kErrorOK) {
                 this->mCurrentSurface->Dereference();
                 this->mCurrentSurface = thePlus;
                 thePlus->Reference();

@@ -154,7 +154,8 @@ long EEE3DNuclearExplosion::DrawPass6()
     GE3DPoint thePosition;
     GEModel* theFlashModel = gEffect2DModel;
     unsigned long theScreen = gScreenIndex;
-    float theOpacity = 1.0f - this->mDrawRise * this->mDrawRise;
+    float theOpacity = this->mDrawRise * this->mDrawRise;
+    theOpacity = 1.0f - theOpacity;
     GEModel* theCloud = this->mGraphicObject->mModels[11];
     GEModel* theStem = this->mGraphicObject->mModels[9];
     float theHeight = this->mGraphicEffect->GetStartSize();

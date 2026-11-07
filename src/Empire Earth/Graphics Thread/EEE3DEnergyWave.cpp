@@ -98,14 +98,13 @@ long EEE3DEnergyWave::DrawPass5()
 
 // FUNCTION: EXE 0x4ee287
 // Queues the wave in render queue 4, snapshotting its phase and each corner's height (0 over a space tile)
-// NEAR: frame layout only (the original's frame is 4 bytes larger with the position at its bottom)
 long EEE3DEnergyWave::Queue(EEEffectQueue* inQueues)
 {
     long i;
     long theResult = EEEffect3D::Queue(inQueues);
     if (theResult == 0) {
         this->mDrawPhase = this->mPhase;
-        GE2DPoint thePosition(this->mTransformation.GetX(), this->mTransformation.GetY());
+        GE3DPoint thePosition(this->mTransformation.GetX(), this->mTransformation.GetY(), this->mTransformation.GetZ());
         float* theHeight = this->mHeights;
         EEGraphicEffect* theEffect = this->mGraphicEffect;
         for (i = 0; i < 4; i++) {

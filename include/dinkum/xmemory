@@ -62,9 +62,17 @@ public:
 		{return (&_X); }
 	pointer allocate(size_type _N, const void *)
 		{return (_Allocate((difference_type)_N, (pointer)0)); }
+#ifdef EE_DINKUM_SXL233	// WON: one level above _Allocate: LobbyLogic 0x7e5930 is the only caller deep enough (depth 9) to refuse it, 0x6dca30
+	char _FARQ *_Charalloc(size_type _N, const void *)
+		{return (_Allocate((difference_type)_N,
+			(char _FARQ *)0)); }
+	char _FARQ *_Charalloc(size_type _N)
+		{return (_Charalloc(_N, 0)); }
+#else
 	char _FARQ *_Charalloc(size_type _N)
 		{return (_Allocate((difference_type)_N,
 			(char _FARQ *)0)); }
+#endif
 	void deallocate(void _FARQ *_P, size_type)
 		{operator delete(_P); }
 	void construct(pointer _P, const _Ty& _V)

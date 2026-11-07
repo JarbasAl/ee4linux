@@ -255,8 +255,9 @@ void SmartRoutingConnection::HandleReadDataObject(RoutingReadDataObjectOp *theOp
 	if (theOp->mDataType != "_KeyId")
 		return;
 
-	RoutingDataObjectList::const_iterator anItr = theOp->mDataObjects.begin();
-	for (; anItr != theOp->mDataObjects.end(); ++anItr)
+	const RoutingReadDataObjectOp* aOp = theOp;
+	RoutingDataObjectList::const_iterator anItr = aOp->mDataObjects.begin();
+	for (; anItr != aOp->mDataObjects.end(); ++anItr)
 		SetClientCDKeyIdFromDataObject((*anItr)->mLinkId, (*anItr)->mData);
 }
 // FUNCTION: WON 0x6c14e0

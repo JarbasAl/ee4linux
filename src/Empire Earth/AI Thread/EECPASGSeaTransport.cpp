@@ -287,17 +287,17 @@ bool EECPASGSeaTransport::IsLoadingBlocked()
     bool theResult = false;
     for (long i = this->mUnits.size() - 1; i >= 0 && !theResult; i--) {
         EEComplexUnit* theUnit = this->mUnits[i]->GetUnit();
-        if (this->mUnits[i]->IsDone() || theUnit->mIsDisabled || theUnit->mHitPoints <= 0 || theUnit->mWaypoints.size() != 0)
+        if (this->mUnits[i]->IsDone() || theUnit->GetIsDisabled() || theUnit->GetHitPoints() <= 0 || theUnit->mWaypoints.size() != 0)
             continue;
-        EEUnitGoal* theGoal = theUnit->mActiveGoal;
+        EEUnitGoal* theGoal = theUnit->GetLoadGoal();
         if (theGoal == NULL || theGoal->mKind != kGoalLoadTransport)
             continue;
         EEUGLoadContainer* theLoad = static_cast<EEUGLoadContainer*>(theGoal);
         for (long j = theLoad->mUnits.mItems.size() - 1; j >= 0 && !theResult; j--) {
             EEComplexUnit* theOther = theLoad->mUnits.mItems[j];
-            if (theOther == NULL || theOther->mTileX == -10000 || theOther->mIsDisabled || theOther->mHitPoints <= 0)
+            if (theOther == NULL || theOther->GetTileX() == -10000 || theOther->GetIsDisabled() || theOther->GetHitPoints() <= 0)
                 continue;
-            if (UMAbs(theUnit->mTileX - theOther->mTileX) > 1 || UMAbs(theUnit->mTileY - theOther->mTileY) > 1)
+            if (UMAbs(theUnit->GetTileX() - theOther->GetTileX()) > 1 || UMAbs(theUnit->GetTileY() - theOther->GetTileY()) > 1)
                 continue;
             long theDirection = EEGetDirectionTo(theUnit, theOther);
             EEGetNextTile(theUnit->GetTile(), theTile, EETurnDirection(theDirection, 1, true), 1);

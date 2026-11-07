@@ -940,7 +940,6 @@ e123d ?FnE123D@EEUIFMainGame@@QAEXXZ
 41976 ?RequestUnits@EECPASGAir@@UAEXAAV?$vector@JV?$allocator@J@std@@@std@@0JJ@Z
 1720c6 ?EEPhysicsTrace@@YAXPBDZZ
 41ef8 ?Launch@EECPASGAir@@UAEXK@Z
-4e9008 ?gRenderViewPlane@@3VGEQuaternion@@A
 423d4 ?RequestRemoval@EECPASGAir@@UAEXXZ
 4437e4 ??_7EESEECenterCameraOnArea@@6B@
 4437f8 ??_7EESEEAreaCheck@@6B@
@@ -2208,3 +2207,19 @@ ac9c8 ?Virtual38@Component@WONAPI@@UAEXHH@Z
 455a20 ??_7PingGameOp@@6B@
 456a88 ??_7NetworkAdapterListItem@@6B@
 452008 ??_7ColorSchemeConfig@@6B@
+5317f0 ?gCameraZoom@@3MA
+444564 ??_7EESETSAEditBox@@6B@
+444610 ??_7EESETSALasso@@6B@
+444624 ??_7EESETSAMouseClick@@6B@
+4456c0 ??_7EEARedo@@6B@
+445768 ??_7EEAUndo@@6B@
+43c188 ??_7EEAIFOAMBToKill@@6B@
+1720c6 ??1EERenderEnvironment@@QAE@XZ
+43c100 ??_7EECPUGatherCarrierFightersCount@@6B@
+43c114 ??_7EEAIFOUnitsToKillForNavalMaintenance@@6B@
+43c130 ??_7EECPUGatherNavalUnitsCount@@6B@
+43c158 ??_7EEAIFOUnitsToKillForSpaceMaintenance@@6B@
+43c174 ??_7EECPUGatherSpaceUnitsCount@@6B@
+53123c ?gGameResources@@3JA
+4394cc ??_7EECPASGUPCTargetIsUnitSetScreenOnlySplashUnits@@6B@
+439770 ??_7EECPASGUPCTargetIsUnitSetScreenRangedUnits@@6B@

@@ -3,6 +3,7 @@
 // then the functions). Unit flags: the exe's module set. Global names are provisional unless another unit already
 // bound them.
 #include <windows.h>
+#include "LostDebug.h"
 #include <vector>
 
 #include "lle/LowLevelEngine.h"
@@ -545,17 +546,20 @@ void EEAttackPlayers(long inPlayer, unsigned char inFlag)
     if (thePlayer != NULL) {
         for (unsigned long i = 1; i < gWorld.mNumPlayers; i++) {
             EEPlayer* theOther = gWorld.mPlayers[i];
-            if (theOther == NULL || theOther->mComputerPlayer == NULL || theOther->mObserverMode != false)
-                continue;
-            EEComputerPlayer* theComputer = theOther->mComputerPlayer;
-            if (theComputer == thePlayer || thePlayer->mEnemies[theComputer->mPlayerID] == 0)
-                theAllies.push_back(theComputer);
-            else
-                theEnemies.push_back(theComputer);
+            if (theOther != NULL && theOther->mComputerPlayer != NULL && theOther->mObserverMode == false) {
+                EEPlayer* theComputer = theOther->mComputerPlayer;
+                bool theIsEnemy = theComputer != thePlayer && thePlayer->mEnemies[theComputer->mPlayerID] != 0;
+                if (!theIsEnemy)
+                    theAllies.push_back(static_cast<EEComputerPlayer*>(theComputer));
+                else
+                    theEnemies.push_back(static_cast<EEComputerPlayer*>(theComputer));
+            }
         }
         long j;
         for (j = theEnemies.size() - 1; j >= 0; j--)
             theEnemies[j]->mCombatManager->AttackPlayer(thePlayer);
+        // LOST-DEBUG: none: exact only (0x53f5e9: `_Ptrit::operator+` refused only at the first op[]; inline_sim: +3 free calls after it)
+        EE_LOST_DEBUG(3);
         if (inFlag)
             for (j = theAllies.size() - 1; j >= 0; j--)
                 theAllies[j]->mCombatManager->DefendPlayer(thePlayer);
@@ -1906,68 +1910,71 @@ UResourceFile* gResource;
 // (the previous instance and show command arguments are unused)
 int WINAPI WinMain(HINSTANCE inInstance, HINSTANCE inPreviousInstance, LPSTR inCommandLine, int inShowCommand)
 {
-    EEStartScreen theStartScreen(inInstance);
-    FSFileSpec theLanguageFile;
-    FSFileSpec theRecordingFile;
+    long theResult;
+    bool theInitialized;
+    HRESULT theHResult;
+    EEStartScreen theSplashScreen(inInstance);
+    bool theShowMovies;
+    FSFileSpec theResourceFile;
+    FSFileSpec theLogFile;
     if (EECreateInstanceMutex()) {
         sCallWndProcHook = SetWindowsHookExA(WH_CALLWNDPROC, EECallWndProcHook, NULL, 0);
-        HRESULT theHResult = CoInitialize(NULL);
+        theHResult = CoInitialize(NULL);
 
         ESVERIFY_AT(theHResult == S_OK || theHResult == S_FALSE, 3600);
         UMSetFloatingPointPrecision(kFPPrecision53);
         UMFastMath::BuildSqrtTable();
-        bool theShowMovies;
         if (EEParseCommandLineFirstPass(inCommandLine, theShowMovies)) {
             gInstance = inInstance;
             ESInitialize(inInstance);
-            FSInitialize(UString(""));
-            theRecordingFile.SetVolume(gStartupVolume);
-            theRecordingFile.SetDirectory(gStartupDirectory);
-            ESBeginRecording(theRecordingFile);
-            theLanguageFile.SetVolume(gStartupVolume);
-            theLanguageFile.SetDirectory(gStartupDirectory);
-            theLanguageFile.SetFile(UString("Language.dll"));
-            gResource = new UResourceFile(theLanguageFile);
+            FSInitialize("");
+            theLogFile.SetVolume(gStartupVolume);
+            theLogFile.SetDirectory(gStartupDirectory);
+            ESBeginRecording(theLogFile);
+            theResourceFile.SetVolume(gStartupVolume);
+            theResourceFile.SetDirectory(gStartupDirectory);
+            theResourceFile.SetFile("Language.dll");
+            gResource = new UResourceFile(theResourceFile);
 
             ESVERIFY_AT(gResource, 3632);
             EEInitializeDefaultSettings();
-            long theResult = gGamePreferences.Load();
+            theResult = gGamePreferences.Load();
 
             ESVERIFY_AT(theResult == keseOK, 3637);
-            if (gGamePreferences.mSettings.mOriginalInstalledFromDirectory == "") {
-                UWideString theMessage;
+            const UString& theOriginal = gGamePreferences.mSettings.mOriginalInstalledFromDirectory;
+            if (theOriginal == "") {
+                UWideString theErrorMessage;
                 UWideString theTitle;
-                gResource->GetString(IDS_EMPIRE_EARTH_ART_OF_CONQUEST_REQUIRES_ORIGINAL, theMessage);
+                gResource->GetString(IDS_EMPIRE_EARTH_ART_OF_CONQUEST_REQUIRES_ORIGINAL, theErrorMessage);
                 gResource->GetString(IDS_ERROR_CANT_RUN, theTitle);
-                MessageBoxA(NULL, theMessage, theTitle, 0);
+                MessageBoxA(NULL, theErrorMessage, theTitle, 0);
                 CoUninitialize();
                 UnhookWindowsHookEx(sCallWndProcHook);
                 return 1;
             }
             EELoadNetworkSettings();
             EEShowSinglePlayerScreen();
-            theStartScreen.Start();
-            bool theInitialized = EEInitializePart1();
-            theStartScreen.Stop();
-            if (theInitialized) {
-                EEPlayIntroMovies(theShowMovies == false);
-                EEInitializePart2();
-                if (EEParseCommandLine(inCommandLine)) {
-                    long theResult;
-                    {
-                        UString theCommandLine(inCommandLine);
-                        theResult = gUserInterface->Run(&theCommandLine);
+            // the original tests the constant 1 here (push 1; pop eax; test eax,eax; je, no-/Og)
+            if (1) {
+                theSplashScreen.Start();
+                theInitialized = EEInitializePart1();
+                theSplashScreen.Stop();
+                if (theInitialized) {
+                    EEPlayIntroMovies(theShowMovies == false);
+                    EEInitializePart2();
+                    if (EEParseCommandLine(inCommandLine)) {
+                        theResult = gUserInterface->Run((void*)&(const UString&)inCommandLine);
+                        theInitialized = theResult == kErrorOK;
+                        EEClearGame();
+                        UShutdown(theInitialized, false);
+                        gDataPath->Dereference();
+                        gCivilizationDataPath->Dereference();
                     }
-                    theInitialized = theResult == kErrorOK;
-                    EEClearGame();
+                } else {
                     UShutdown(theInitialized, false);
                     gDataPath->Dereference();
                     gCivilizationDataPath->Dereference();
                 }
-            } else {
-                UShutdown(theInitialized, false);
-                gDataPath->Dereference();
-                gCivilizationDataPath->Dereference();
             }
         }
         CoUninitialize();
@@ -2250,8 +2257,7 @@ bool EEInitializeSounds()
     if (theResult != kErrorOK) ESVerify(__FILE__, 0x7a4, "theResult == keseOK");
     gSoundManager = new SESoundManager(gDataPath, gConductor, 50, 0);
     if (gSoundManager == NULL) ESVerify(__FILE__, 0x7a8, "gSoundManager");
-    float thePercentage = gGamePreferences.mSettings.mMaxNumberOfSounds;
-    float theChannels = (float)gSoundManager->GetMaxChannels() * thePercentage;
+    float theChannels = (float)gSoundManager->GetMaxChannels() * gGamePreferences.mSettings.GetMaxNumberOfSounds();
     unsigned long theMaximum = UMFloatToLong(theChannels);
     gSoundManager->SetMaxChannels(theMaximum < 8 ? 8 : theMaximum);
     gSoundManager->SetMasterVolume(gGamePreferences.mSettings.mSoundVolume);
@@ -2519,6 +2525,9 @@ void EEInitializeGameObjects()
     EECreateGameTimer();
     theResult = URegisterShutdown(EEDeleteGameObjects);
     if (theResult != kErrorOK) ESVerify(__FILE__, 0x51f, "theResult == keseOK");
+    // LOST-DEBUG: none: exact only (n=5 at the end; 1..4 82.2, 8 and 12 94.8; 10 at the top also exact; the original calls
+    // GERasterizer::GetScreen and GERectangle::operator= out of line and emits the EEArtificialIntelligence ctor 0x54260b)
+    EE_LOST_DEBUG(5);
 }
 
 // FUNCTION: EXE 0x543e04

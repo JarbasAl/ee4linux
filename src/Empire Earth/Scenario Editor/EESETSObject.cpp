@@ -122,6 +122,7 @@
 // 0x563678: the unit action ids by name (the object screen's action combo box) are EEUnitAction::sActionIDs
 #include "ee/EEUnitAction.h"
 #include "ee/EEStringIDs.h"
+#include "LostDebug.h"
 // The unit type combo box's sort (0x19330c, the std::sort instantiation 0x193077..0x19370e): type 0 first, then the
 // unit classes by name (provisional name)
 struct EESETSOUnitTypeNameLess {
@@ -295,11 +296,13 @@ EESETSObject::EESETSObject(GEFont* inFont, UIForm* inForm, unsigned long& ioInde
     for (i = 0; i < 0x75; i++)
         gResource->GetString(i + IDS_UNIT_FAMILY_FIRST, theNames[i]);
     gResource->GetString(IDS_SET, theFormat);
-    for (j = 0; j < gUnitSetManager.GetSize(); j++) {
+    j = 0;
+    i++;
+    for (; j < gUnitSetManager.GetSize(); j++) {
         if (gUnitSetManager.GetSet(j) == NULL || gUnitSetManager.GetSet(j)->mShowInEditor != true)
             continue;
         theNames.push_back(UWideString());
-        sprintf(theNames[i], theFormat, (const char*)gUnitSetManager.GetSet(j)->mName);
+        sprintf(theNames[i - 1], theFormat, (const char*)gUnitSetManager.GetSet(j)->GetName());
         this->mUnitSets.push_back(j);
         i++;
     }
@@ -638,6 +641,8 @@ EESETSObject::EESETSObject(GEFont* inFont, UIForm* inForm, unsigned long& ioInde
     thePosition.SetY(688.0f);
     this->mPlayerCC = new EESETSUICBPlayer(0x853, 1, std::vector<UWideString>(), gU531930, thePosition, 0x96, 400, inForm,
                                      ioIndex, 0, 2);
+    // LOST-DEBUG: none: exact only (the original stops inlining here: VC6's 35000 IL cap)
+    EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_TRACE(i); EE_LOST_DEBUG(9);
     this->mPlayerCC->SetTextBoxBgOpacity(0.4f);
     this->mPlayerCC->SetListBoxAlwaysDirty(true);
     theGEText = this->mPlayerCC->GetGEText();
@@ -874,18 +879,18 @@ void EESETSObject::Activate()
     unsigned long i;
     unsigned long thePlayer =
         static_cast<EEUIFScenarioEditor*>(this->mAreaCheck->GetForm())->GetPlayerScreen()->GetPlayerCount();
-    gUIManager->mScenarioEditorForm->GetTriggerScreen()->HideText();
-    gUIManager->mScenarioEditorForm->GetTriggerScreen()->ShowAlphaSort();
-    this->mPlayerBC->mPlayerCount = thePlayer;
-    this->mPlayerBC->SetFlags(0xc6);
-    this->mPlayerCC->mPlayerCount = thePlayer;
-    this->mPlayerCC->SetFlags(0x82);
-    this->mPlayer->mPlayerCount = thePlayer;
-    this->mPlayer->SetFlags(0xe7);
+    gUIManager->GetScenarioEditorForm()->GetTriggerScreen()->HideText();
+    gUIManager->GetScenarioEditorForm()->GetTriggerScreen()->ShowAlphaSort();
+    this->GetPlayerBC()->SetPlayerCount(thePlayer);
+    this->GetPlayerBC()->SetFlags(0xc6);
+    this->GetPlayerCC()->SetPlayerCount(thePlayer);
+    this->GetPlayerCC()->SetFlags(0x82);
+    this->GetPlayer()->SetPlayerCount(thePlayer);
+    this->GetPlayer()->SetFlags(0xe7);
     this->mAreaComboBox->DeleteAllEntries();
-    gWorld.mScenarioManager->GetAreaNames(theNames);
+    gWorld.GetScenarioManager()->GetAreaNames(theNames);
     for (i = 0; i < theNames.size(); i++)
-        this->mAreaComboBox->AppendLine(theNames[i]);
+        this->GetAreaComboBox()->AppendLine(theNames[i]);
     if (sFirstTime) {
         this->mTypeComboBox->DeleteAllEntries();
         this->mUnitTypes.push_back(0);

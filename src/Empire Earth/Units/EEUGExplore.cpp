@@ -111,7 +111,7 @@ bool EEUGExplore::FindNextTile(EEComplexUnit* inUnit)
     EECPASGFlags theFlags;
 
     std::vector<U2DPoint<long> > theTiles;
-    EEMap* theMap = gWorld.GetMap();
+    EEMap* theMap = gWorld.mMap;
     bool theFound = false;
     U2DPoint<long> theCenter;
     EEUnit* theTarget;

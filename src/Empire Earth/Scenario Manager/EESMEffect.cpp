@@ -3716,9 +3716,9 @@ void EESMEffect::TaskUnitsToArea()
                            && theComplex->mContainer != NULL)) {
                 theUnits[gWorld.GetPlayerIndex(theUnit->GetPlayer())].push_back(theUnit);
             } else {
-                unsigned long theSaved68 = theObject->mInAreaCheck;
-                unsigned long theSaved3C = theObject->mArea;
-                unsigned long theSaved6C = theObject->mNearCheck;
+                unsigned long theSaved68 = theObject->GetInAreaCheck();
+                unsigned long theSaved3C = theObject->GetArea();
+                unsigned long theSaved6C = theObject->GetNearCheck();
                 theObject->mInAreaCheck = 1;
                 theObject->mArea = this->mTaskArea;
                 theObject->mNearCheck = 0;

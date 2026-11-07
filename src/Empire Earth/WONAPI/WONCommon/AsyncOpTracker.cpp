@@ -34,7 +34,8 @@ static inline void InsertTrackedOp(AsyncOpTrackerMaps& maps,const unsigned long&
     if(!maps.mB19 && opItr!=maps.mOps.end()) return;
     opItr=maps.mOps.insert(AsyncOpTrackerMaps::OpMap::value_type(op,maps.mEntries.end()));
     AsyncOpTrackerEntry* entry=new AsyncOpTrackerEntry(op,opItr);
-    opItr->second=maps.mEntries.insert(idItr,AsyncOpTrackerMaps::EntryMap::value_type(id,entry));
+    AsyncOpTrackerMaps::EntryMap::iterator it=maps.mEntries.insert(idItr,AsyncOpTrackerMaps::EntryMap::value_type(id,entry));
+    opItr->second=it;
 }
 
 static inline bool EraseTrackedOp(AsyncOpTrackerMaps& maps,const AsyncOpPtr& op)

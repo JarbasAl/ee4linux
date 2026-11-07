@@ -276,7 +276,8 @@ void EEE2DImpact::UpdatePosition()
     GETransformation theTransformation(theUnit->mPhysicalModel.GetLocation());
     EETagPointList* theList = theUnit->GetModel()->GetTagPoints(theUnit->GetAnimation(), 6);
     theList->Scale(theTransformation, theScale);
-    theList->mPoints[this->mTagIndex]->GetPoint(theFrame, theTransformation, this->mStart);
+    const std::vector<EETagPoint*>& thePoints = theList->mPoints;
+    thePoints[this->mTagIndex]->GetPoint(theFrame, theTransformation, this->mStart);
     this->SetPosition(this->mStart);
 }
 

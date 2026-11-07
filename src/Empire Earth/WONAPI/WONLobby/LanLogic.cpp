@@ -272,7 +272,7 @@ void LanLogic::Fn3E0760(ReadBuffer& inBuffer, LobbyLanSocket* inSocket)
     for (LobbyClientMap::iterator anItr = mClients->mClients.begin();
          anItr != mClients->mClients.end(); ++anItr) {
         LobbyClient* aListedClient = anItr->second.get();
-        aReply.AppendShort(aListedClient->mClientId);
+        aReply.AppendShort(aListedClient->GetClientId());
         aReply.AppendWString(aListedClient->mName, 2);
     }
     Fn3E1840(aClient.get(), aReply.ToByteBuffer(true).get());

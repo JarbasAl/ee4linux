@@ -748,7 +748,7 @@ EESMObject* EEScenarioManager::DuplicateObject(unsigned long inIndex)
     this->mConditions.push_back(theCondition);
     UWideString theText;
     gResource->GetString(IDS_EXISTS, theText);
-    theCondition->mName = theObject->mName + " " + theText;
+    theCondition->SetName(theObject->mName + " " + theText);
     theCondition->mType = kSMConditionObject;
     theCondition->mObjectIndex = this->mObjects.size() - 1;
     theCondition->mID = ++this->mNextConditionID;
@@ -1097,10 +1097,10 @@ void EEScenarioManager::Prepare()
 {
     std::vector<long> thePlayers;
     unsigned long i;
-    if (this->mUnitClassMedia.size() != 0) {
+    if (this->mUnitClassMedia.size() > 0) {
         for (i = 0; i < this->mUnitClassMedia.size(); i++) {
             EEPlayer* thePlayer = gWorld.GetPlayer(this->mUnitClassMedia[i].mPlayer);
-            EEUnitClassUpgrade* theUpgrade = thePlayer->mUnitClassUpgrades[this->mUnitClassMedia[i].mUnitClass];
+            EEUnitClassUpgrade* theUpgrade = thePlayer->GetUpgrade(this->mUnitClassMedia[i].mUnitClass);
             theUpgrade->UnloadMedia(thePlayer);
             EEDebugTrace("Scenario:: Unloading Media for %S for player %d", theUpgrade->GetUnitClass()->GetName(),
                          this->mUnitClassMedia[i].mPlayer);
@@ -1111,15 +1111,15 @@ void EEScenarioManager::Prepare()
         EESMTrigger* theSMTrigger = this->mTriggers[theTrigger];
         for (unsigned long theWrapper = 0; theWrapper < theSMTrigger->mEffects.size(); theWrapper++) {
             EESMEffect* theEffect = this->mEffects[theSMTrigger->GetEffect(theWrapper)->mEffectIndex];
-            if (theEffect->mType != kSMEffectObject || theEffect->mObjectAction != kSMObjectActionCreate)
+            if (theEffect->GetType() != kSMEffectObject || theEffect->mObjectAction != kSMObjectActionCreate)
                 continue;
             EESMObject* theObject = this->mObjects[theEffect->mObject];
-            if (theObject->mIsSelectOnMap)
+            if (theObject->GetIsSelectOnMap())
                 continue;
-            this->ChoosePlayer(theObject->mOwner, &thePlayers, false);
+            this->ChoosePlayer(theObject->GetOwner(), &thePlayers, false);
             if (thePlayers.size() == 1) {
                 long thePlayerNumber = thePlayers[0];
-                long theUnitClass = theObject->mClass;
+                long theUnitClass = theObject->GetClass();
                 if (theUnitClass != 0 && gUnitClassTable[theUnitClass] != NULL) {
                     EEPlayer* thePlayer = gWorld.GetPlayer(thePlayerNumber);
                     thePlayer->mUnitClassUpgrades[theUnitClass]->LoadMedia(thePlayer, 0x7f);
@@ -1131,6 +1131,8 @@ void EEScenarioManager::Prepare()
             }
         }
     }
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(7);
 }
 
 // FUNCTION: EXE 0x5b2b78
@@ -1389,6 +1391,8 @@ void EEScenarioManager::GetAllConditionNames(std::vector<UWideString>& outNames)
         theName = (const char*)(theID + (const char*)this->mConditions[i]->GetName());
         outNames.push_back(theName);
     }
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
 }
 
 // FUNCTION: EXE 0x5b3656
@@ -1652,7 +1656,7 @@ long EEScenarioManager::Load(unsigned long inMajorVersion, unsigned long inMinor
             theResult = theTrigger->Load(inMajorVersion, inMinorVersion, inFile);
             if (theResult != kErrorOK) {
                 delete theTrigger;
-                break;
+                goto theEnd;
             }
             this->mTriggers.push_back(theTrigger);
         }
@@ -1664,7 +1668,7 @@ long EEScenarioManager::Load(unsigned long inMajorVersion, unsigned long inMinor
                 theResult = theCondition->Load(inMajorVersion, inMinorVersion, inFile);
                 if (theResult != kErrorOK) {
                     delete theCondition;
-                    break;
+                    goto theEnd;
                 }
                 if (theCondition->mType != kSMConditionObject || theCondition->mObjectIndex != 0)
                     this->mConditions.push_back(theCondition);
@@ -1678,7 +1682,7 @@ long EEScenarioManager::Load(unsigned long inMajorVersion, unsigned long inMinor
                 theResult = theSMEffect->Load(inMajorVersion, inMinorVersion, inFile);
                 if (theResult != kErrorOK) {
                     delete theSMEffect;
-                    break;
+                    goto theEnd;
                 }
                 this->mEffects.push_back(theSMEffect);
             }
@@ -1691,7 +1695,7 @@ long EEScenarioManager::Load(unsigned long inMajorVersion, unsigned long inMinor
                 theResult = theObject->Load(inMajorVersion, inMinorVersion, inFile);
                 if (theResult != kErrorOK) {
                     delete theObject;
-                    break;
+                    goto theEnd;
                 }
                 this->mObjects.push_back(theObject);
             }
@@ -1704,7 +1708,7 @@ long EEScenarioManager::Load(unsigned long inMajorVersion, unsigned long inMinor
                 theResult = theArea->Load(inMajorVersion, inMinorVersion, inFile);
                 if (theResult != kErrorOK) {
                     delete theArea;
-                    break;
+                    goto theEnd;
                 }
                 this->mAreas.push_back(theArea);
             }
@@ -1747,6 +1751,7 @@ long EEScenarioManager::Load(unsigned long inMajorVersion, unsigned long inMinor
         if (theResult == kErrorOK)
             theResult = inFile.Read(this->mNextTriggerID);
     }
+theEnd:
     if (theResult == kErrorOK)
         theResult = inFile.Read(this->mNextConditionID);
     if (theResult == kErrorOK)
@@ -1875,7 +1880,7 @@ void EEScenarioManager::ShowDialogMessage()
         } else
             theIndex = 0;
         if (theIndex != -1) {
-            if (this->mMessages[theIndex].mSound.GetLength() > 0)
+            if (this->GetDialogMessage(theIndex).mSound.GetLength() > 0)
                 gSoundManager->StopAllOneShotSounds();
             gUserInterface->PostDialogMessage(this->mMessages[theIndex]);
             EEUnit* theUnit = gWorld.GetUnit(this->mMessages[theIndex].mUnitID);

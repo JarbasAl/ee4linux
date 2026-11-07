@@ -234,10 +234,10 @@ long EEE3DParticle::Update()
             float theDrag = -this->mGraphicEffect->mParam11;
             GEVector theForce(this->mVelocity.mX * theDrag, this->mVelocity.mY * theDrag, this->mVelocity.mZ * theDrag);
             theFall += theForce.GetZ();
-            this->mVelocity.SetX(theForce.GetX() * theStep + this->mVelocity.mX);
+            this->mVelocity.SetX(theForce.GetX() * theStep + this->mVelocity.GetX());
             this->mVelocity.SetY(theForce.GetY() * theStep + this->mVelocity.mY);
             this->mVelocity.SetZ(theFall * theStep + this->mVelocity.mZ);
-            thePosition.SetX(this->mGraphicEffect->GetParam9() * theWind.GetX() * theStep + this->mVelocity.mX * theStep + thePosition.GetX());
+            thePosition.SetX(this->mGraphicEffect->GetParam9() * theWind.GetX() * theStep + this->mVelocity.GetX() * theStep + thePosition.GetX());
             thePosition.SetY(this->mGraphicEffect->GetParam9() * theWind.GetY() * theStep + this->mVelocity.mY * theStep + thePosition.GetY());
             thePosition.SetZ(this->mGraphicEffect->GetParam9() * theWind.GetZ() * theStep + this->mGraphicEffect->GetParam4() * theStep +
                              this->mVelocity.mZ * theStep + thePosition.GetZ());
@@ -254,9 +254,9 @@ long EEE3DParticle::Update()
                         thePosition.SetZ(theHeight);
                         float theBounce = theNormal.DotProduct(this->mVelocity) * (-1.0f - this->mGraphicEffect->GetParam10())
                                           / theNormal.DotProduct(theNormal);
-                        this->mVelocity.SetX(theNormal.mX * theBounce + this->mVelocity.mX);
-                        this->mVelocity.SetY(theNormal.mY * theBounce + this->mVelocity.mY);
-                        this->mVelocity.SetZ(theNormal.mZ * theBounce + this->mVelocity.mZ);
+                        this->mVelocity.SetX(theNormal.mX * theBounce + this->mVelocity.GetX());
+                        this->mVelocity.SetY(theNormal.mY * theBounce + this->mVelocity.GetY());
+                        this->mVelocity.SetZ(theNormal.mZ * theBounce + this->mVelocity.GetZ());
                     }
                 }
             }
