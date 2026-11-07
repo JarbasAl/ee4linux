@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 #include "ee/wonapi/WONLobbyMSPainters.h"
+#include "LostDebug.h"
 namespace WONAPI {
 extern SmartPtr<Dialog> gLobbyFailureDialog5662F4;
 extern GUIString gLobbyInitError5662FC;
@@ -49,6 +50,12 @@ Container* LobbyFn362250()
         dialog->Fn2F6A60(label.get());
         dialog->Fn2F6A60(button.get());
         gLobbyFailureDialog5662F4=dialog;
+        // LOST-DEBUG: none: exact only
+        EE_LOST_TRACE(dialog.get());
+        EE_LOST_TRACE(dialog.get());
+        EE_LOST_TRACE(dialog.get());
+        EE_LOST_TRACE(dialog.get());
+        EE_LOST_TRACE(dialog.get());
     }
     return gLobbyFailureDialog5662F4.get();
     }

@@ -1,6 +1,7 @@
 // Native owning child-timer registration/dispatch and cursor propagation support.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
+#include "LostDebug.h"
 #include <string>
 #include <list>
 #include <map>
@@ -16,6 +17,8 @@ void Container::VirtualB8(Component* child)
 {
     if(child->mTimerFlags!=0) {
         mChildTimerSet.insert(child);
+        // LOST-DEBUG: none: exact only (keeps the last pair ctor out of line inside _Tree::insert).
+        EE_LOST_DEBUG(1);
         bool requestParent=mTimerFlags==0;
         mTimerFlags|=1;
         if(requestParent && mParent!=NULL) mParent->VirtualB8(this);

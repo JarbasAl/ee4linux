@@ -12,9 +12,6 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyHTMLImageSegments.h"
 namespace WONAPI {
-// FUNCTION: WON 0x0073aa30
-ImageLineSegment::ImageLineSegment(Image* image)
-    :mImage(image),mHSpace(5),mVSpace(0),mBorder(0),mBorderColor(0),mAlign(0) {}
 // FUNCTION: WON 0x0073aa80
 int ImageLineSegment::GetWidth() { return mImage->mWidth+2*mHSpace+2*mBorder; }
 // FUNCTION: WON 0x0073aaa0
@@ -23,5 +20,3 @@ int ImageLineSegment::GetHeight() { return mImage->mHeight+2*mVSpace+2*mBorder; 
 char ImageLineSegment::GetVertAlign() { return mAlign; }
 }
 
-// FUNCTION: WON 0x0073aad0
-// (??_GImageLineSegment@WONAPI@@UAEPAXI@Z)

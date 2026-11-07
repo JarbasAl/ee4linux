@@ -34,10 +34,7 @@ bool ServerContext::AddAddress(const IPAddr& inAddress)
         std::pair<AddrMap::iterator,bool> inserted =
             mPingMap.insert(AddrMap::value_type(inAddress,mAddresses.end()));
         if (inserted.second) {
-            mAddresses.push_back(inAddress);
-            AddrList::iterator last = mAddresses.end();
-            --last;
-            inserted.first->second = last;
+            inserted.first->second = mAddresses.insert(mAddresses.end(),inAddress);
             return true;
         }
     }
@@ -51,10 +48,7 @@ void ServerContext::NotifyFailed(const IPAddr& inAddress)
     std::map<IPAddr,AddrList::iterator>::iterator it=mPingMap.find(inAddress);
     if (it==mPingMap.end()) return;
     mAddresses.erase(it->second);
-    mAddresses.push_back(it->first);
-    AddrList::iterator last=mAddresses.end();
-    --last;
-    it->second=last;
+    it->second=mAddresses.insert(mAddresses.end(),it->first);
 }
 
 // Next ServerContext directory source; uses only proven reference prefix, no new DirEntity.
@@ -86,15 +80,9 @@ void ServerContext::CopyAddresses(AddrList& inCopy)
         std::random_shuffle(anAddresses.begin(),anAddresses.end());
         mPingMap.clear();
         mAddresses.clear();
-        std::vector<IPAddr>::iterator aPos;
-        aPos=anAddresses.begin();
-        while(true) {
-            if(!(aPos!=anAddresses.end())) break;
-            mAddresses.push_back(*aPos);
-            AddrList::iterator aLast=mAddresses.end();
-            --aLast;
+        for (std::vector<IPAddr>::iterator aPos=anAddresses.begin();aPos!=anAddresses.end();++aPos) {
+            AddrList::iterator aLast=mAddresses.insert(mAddresses.end(),*aPos);
             mPingMap[*aPos]=aLast;
-            ++aPos;
         }
         mB09=true;
     }

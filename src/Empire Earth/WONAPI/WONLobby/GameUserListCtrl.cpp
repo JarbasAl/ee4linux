@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "ee/wonapi/WONLobbyModel.h"
 #include "ee/wonapi/WONLobbyScreens.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // Original3bcad0..3bcb0f,63B. Native new24 proved in both event/refresh loops.
 // FUNCTION: WON 0x007bcad0
@@ -22,20 +23,22 @@ GameUserListItem::GameUserListItem(LobbyClient* inClient) : mClient(inClient) {}
 // FUNCTION: WON 0x007bcbe0
 void GameUserListItem::UpdateIcon()
 {
-    if(mClient->mB22) mImage=::UserListCtrl_Ignored_Image;
-    else if(mClient->mB23) mImage=::UserListCtrl_Blocked_Image;
-    else if(mClient->Fn3A5480(true)) mImage=::UserListCtrl_Muted_Image;
-    else if(mClient->Fn3A54B0()) mImage=::UserListCtrl_Away_Image;
-    else if(mClient->Fn3A54C0()) mImage=::UserListCtrl_Admin_Image;
-    else if(mClient->Fn3A54D0()) mImage=::UserListCtrl_Moderator_Image;
-    else if(mClient->Fn3A54E0(1)) mImage=::UserListCtrl_Captain_Image;
-    else mImage=::UserListCtrl_Normal_Image;
+    if(mClient->GetB22()) { mImage=::UserListCtrl_Ignored_Image; return; }
+    if(mClient->GetB23()) { mImage=::UserListCtrl_Blocked_Image; return; }
+    if(mClient->Fn3A5480(true)) { mImage=::UserListCtrl_Muted_Image; return; }
+    if(mClient->Fn3A54B0()) { mImage=::UserListCtrl_Away_Image; return; }
+    if(mClient->Fn3A54C0()) { mImage=::UserListCtrl_Admin_Image; return; }
+    if(mClient->Fn3A54D0()) { mImage=::UserListCtrl_Moderator_Image; return; }
+    if(mClient->Fn3A54E0(1)) { mImage=::UserListCtrl_Captain_Image; return; }
+    mImage=::UserListCtrl_Normal_Image;
 }
 // Original3bcdb0..3bce07,87B. Font ownership changes before metric reads.
 // FUNCTION: WON 0x007bcdb0
 void GameUserListItem::Virtual08(ListArea* inArea)
 {
     mFont=inArea->mFont;
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(2);
     mHeight=mFont->GetHeight();
     if(mImage.get()!=NULL && mImage->mHeight>mHeight) mHeight=mImage->mHeight;
 }
@@ -222,7 +225,7 @@ void GameUserListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
         ListItemClickedEvent* clicked=static_cast<ListItemClickedEvent*>(inEvent);
         if(!clicked->IsSelectedItem()) return;
         if(clicked->mButton==2)
-            Fn2F53F0(new ClientActionEvent(18,int(mRoomSpecFlags),client),false);
+            Fn2F53F0(new ClientActionEvent(18,GetRoomSpecFlags(),client),false);
         else if(clicked->mButton==0 && clicked->mDoubleClick)
             LobbyFn359100(new SetChatInputEvent(2,client->mName,mRoomSpecFlags,false),true);
         return;

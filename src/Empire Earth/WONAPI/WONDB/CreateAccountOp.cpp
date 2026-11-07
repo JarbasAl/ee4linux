@@ -62,7 +62,7 @@ WONStatus CreateAccountOp::Virtual10()
         account.AppendWString(mPassword,2);
         account.AppendString(mEmail,2);
         mProfileData->PackRequestData(account,true);
-        ByteBufferPtr encrypted=mSymKey.Encrypt(account.mData,account.mLength);
+        ByteBufferPtr encrypted=mSymKey.Encrypt(account.data(),account.length());
         request.AppendBuffer(encrypted.get(),0);
         mRequest=request.ToByteBuffer(true);
         return 100059;

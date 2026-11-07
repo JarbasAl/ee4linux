@@ -1,6 +1,7 @@
 // Native-authoritative InputBox editing/selection/history; SDK semantic reference.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
+#include "LostDebug.h"
 #include <ctype.h>
 #include <string>
 #include <vector>
@@ -504,24 +505,24 @@ bool InputBox::Virtual54(int theKey)
 			GUIString left, right;
 			if(mSelStartChar!=mSelEndChar) 
 			{
-				left.append(aText,0,mSelStartChar);
-				right.append(aText,mSelEndChar,aText.length()-mSelEndChar);
+				left.assign(aText,0,mSelStartChar);
+				right.assign(aText,mSelEndChar);
 			}
 			else 
 			{
 				if(theKey==8) 
 				{
 					if(mSelStartChar>0)
-						left.append(aText,0,mSelStartChar-1);
+						left.assign(aText,0,mSelStartChar-1);
 
-					right.append(aText,mSelEndChar,aText.length()-mSelEndChar);
+					right.assign(aText,mSelEndChar);
 				}
 				else  
 				{
-					left.append(aText,0,mSelStartChar);
+					left.assign(aText,0,mSelStartChar);
 					
 					if(mSelEndChar<aText.length())
-						right.append(aText,mSelEndChar+1,aText.length()-(mSelEndChar+1));
+						right.assign(aText,mSelEndChar+1);
 				}
 			}	
 								
@@ -779,7 +780,7 @@ InputBox::InputBox()
     mCursorOn=false;
     mUnderlineCursor=false;
     mSelectOnFocus=false;
-    mCursorOnTime=mCursorOffTime=500;
+    mCursorOffTime=mCursorOnTime=500;
     mFont=GetNamedFont("InputBox");
     SetComponentFlags(0x4008,true);
     mTextColor=0x8000000e;
@@ -790,12 +791,14 @@ InputBox::InputBox()
     mAllowSelection=true;
     mMaxChars=0;
     SetDefaultCursor(Cursor::GetStandardCursor(StandardCursor_IBeam));
-    mLeftPad=mRightPad=4;
-    mTopPad=mBottomPad=3;
+    mRightPad=mLeftPad=4;
+    mBottomPad=mTopPad=3;
     mInputHistoryPos=0;
     mMaxInputHistory=100;
     mHaveTraversedHistory=false;
     mInputFilter=NULL;
+    // LOST-DEBUG: none: exact only (string and SmartPtr ctors stay out of line).
+    EE_LOST_DEBUG(4);
 }
 }
 
@@ -806,8 +809,6 @@ InputBox::InputBox()
 // (public: __thiscall WONAPI::Background::~Background(void)    [??1Background@WONAPI@@QAE@XZ])
 // TEMPLATE: WON 0x0071b780
 // (public: __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::~deque<class WONAPI::GUIString,class std::alloc)
-// TEMPLATE: WON 0x0071ee40
-// (protected: void __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::_Tidy(void)    [?_Tidy@?$deque@VGUIStri)
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f8270

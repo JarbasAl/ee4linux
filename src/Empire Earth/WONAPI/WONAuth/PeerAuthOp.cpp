@@ -115,7 +115,7 @@ void PeerAuthOp::AsyncRetry()
 // FUNCTION: WON 0x006e7240
 void PeerAuthOp::AsyncSend(const ByteBuffer *theMsg)
 {
-	mSocket->Fn2B4740((SocketOp*)Track(new SendMsgOp(const_cast<ByteBuffer*>(theMsg)),PeerAuth_Track_Socket), SendTime());
+	mSocket->Fn2B4740((SocketOp*)Track(new SendMsgOp(theMsg),PeerAuth_Track_Socket), SendTime());
 	mSocket->Fn2B4740((SocketOp*)Track(new RecvMsgOp,PeerAuth_Track_Socket), RecvTime());
 }
 

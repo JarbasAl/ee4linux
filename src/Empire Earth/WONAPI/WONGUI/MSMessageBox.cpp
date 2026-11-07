@@ -17,7 +17,7 @@ static RawBuffer gMessageBoxEmptyBuffer;
 MSMessageBox::MSMessageBox(const GUIString& title,const GUIString& message,
     const GUIString& button1,const GUIString& button2,const GUIString& button3)
 {
-    mTitle=title;
+    mTitle=title.mData.get();
     GUIString text=message;
     if(text.empty()) text=title;
     mLabel=new MSLabel(text);
@@ -73,7 +73,8 @@ MSMessageBox::MSMessageBox(const GUIString& title,const GUIString& message,
         center->Add(mButton3.get());
     }
     AddChildLayout(center.get());
-    Fn2F4B90(Width(),mButton1->Top()+mButton1->Height()+10);
+    int aHeight=mButton1->Height()+mButton1->Top()+10;
+    Fn2F4B90(Width(),aHeight);
     Fn2F6A60(mLabel.get());
     Fn2F6A60(mButton1.get());
     if(doButton2) Fn2F6A60(mButton2.get());
@@ -144,5 +145,3 @@ int MSMessageBox::DoDialog(Window* parent)
 // SYNTHETIC: WON 0x702250
 // SYNTHETIC: WON 0x702270
 // SYNTHETIC: WON 0x702280
-// TEMPLATE: WON 0x0074af60
-// (public: class WONAPI::SmartPtr<class WONAPI::GUIStringData> & __thiscall WONAPI::SmartPtr<class WONAPI::GUIStringData>::operator=(class WONAPI::SmartP)

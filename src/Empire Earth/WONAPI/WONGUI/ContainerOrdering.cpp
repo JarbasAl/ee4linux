@@ -10,6 +10,7 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f6030
 void Container::SetFocusToLastFocusChild()
@@ -45,6 +46,8 @@ void Container::EnsureOnTopOf(Component* bottom,Component* top)
     if(i!=mChildList.end()) return;
     SmartPtr<Component> keep=bottom;
     mChildList.erase(bottom->mChildListItr);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     bottom->mChildListItr=mChildList.insert(top->mChildListItr,bottom);
 }
 // FUNCTION: WON 0x006f6010

@@ -2204,3 +2204,7 @@ ac9c8 ?Virtual38@Component@WONAPI@@UAEXHH@Z
 44cbdc ??_7RoutingClientInfo@WONAPI@@6B@
 44d214 ??_7RoutingDataObject@WONAPI@@6B@
 44d0a4 ??_7SmartRoutingClientInfo@WONAPI@@6B@
+452df8 ??_7ChatLink@@6B@
+455a20 ??_7PingGameOp@@6B@
+456a88 ??_7NetworkAdapterListItem@@6B@
+452008 ??_7ColorSchemeConfig@@6B@

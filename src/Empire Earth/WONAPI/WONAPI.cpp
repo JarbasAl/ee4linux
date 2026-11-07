@@ -13,7 +13,7 @@
 namespace WONAPI {
 WONAPICore* WONAPICore::mInstance;
 bool WONAPICore::mHaveWrittenVersion;
-// SUPPORT: EXE 0x006f2750 (321B basic state/version initializer, quota0)
+// FUNCTION: WON 0x006f2750
 void WONAPICore::Init()
 {
     mVersionString="wonapi121401";
@@ -197,3 +197,7 @@ void WONAPICoreEx::SetDoSocketAndTimerThreads(bool doSocketAndTimerThreads)
 // (public: virtual __thiscall WONAPI::WONAPICoreEx::~WONAPICoreEx(void))
 // TEMPLATE: WON 0x006f2f60
 // (public: virtual void * __thiscall WONAPI::WONAPICoreEx::`scalar deleting destructor'(unsigned int))
+// TEMPLATE: WON 0x006f28a0
+// (public: virtual void * __thiscall WONAPI::WONAPICore::`scalar deleting destructor'(unsigned int))
+// TEMPLATE: WON 0x006f28d0
+// (protected: __thiscall WONAPI::WONAPICore::WONAPICore(char const *))

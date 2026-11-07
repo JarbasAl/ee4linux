@@ -5,17 +5,31 @@
 #include <list>
 #include <vector>
 #include <map>
+#include <set>
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyWONButtonConfig.h"
 #include "ee/wonapi/WONLobbyWONSkinConfig.h"
+#include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONLobbyMSExtraConfig.h"
+#include "ee/wonapi/WONLobbyWONListConfig.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00798f90
 bool WONSkinConfig::ReadVert()
 {
     GUIString text=Fn3842F0(false);
     return text.CompareNoCase("Vert")==0;
+}
+// FUNCTION: WON 0x00799010
+bool WONSkinConfig::Virtual0C(ConfigParser* parser)
+{
+    if(!ComponentConfig::Virtual0C(parser))
+        return false;
+    if(gSkin.get()==NULL)
+        gSkin=new WONMSSkin;
+    return true;
 }
 // FUNCTION: WON 0x007990e0
 void WONSkinConfig::HandleButtonClickSound()
@@ -117,26 +131,28 @@ bool WONSkinConfig::Virtual24(const std::string &theInstruction)
 		return false;
 
 	return true;
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
 }
 
-}
-
-// Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x007a2ef0
-// (void __cdecl std::_Construct(struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONButton> > *,struct std::pair<clas)
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007926a0
 // (public: __thiscall WONAPI::ConfigObjectException::ConfigObjectException(class std::basic_string<char,struct std::char_traits<char>,class std::allocato)
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x0079cae0
+// TEMPLATE: WON 0x0079c9e0
 // (public: struct std::pair<class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI:)
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x0079c9e0
+// TEMPLATE: WON 0x0079cae0
 // (public: struct std::pair<class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI:)
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007a1560
 // TEMPLATE: WON 0x007a1860
+// TEMPLATE: WON 0x007a2ef0
+// (void __cdecl std::_Construct(struct std::pair<class WONAPI::GUIString const ,class WONAPI::SmartPtr<class WONAPI::WONButton> > *,struct std::pair<clas)
+
+// Compiler-generated and header-inline functions this unit emits:
+}

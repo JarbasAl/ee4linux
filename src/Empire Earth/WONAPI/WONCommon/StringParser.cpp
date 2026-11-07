@@ -13,26 +13,27 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyParser.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006a48c0
 unsigned char StringParser::GetChar(int offset)
 {
     if(mWide) {
-        wchar_t ch=mText.mWide[mPos+offset];
+        wchar_t ch=mWideText[mPos+offset];
         return ch<256 ? (unsigned char)ch : (unsigned char)0xff;
     }
-    return (unsigned char)(mText.mNarrow+mPos)[offset];
+    return (unsigned char)(mNarrow+mPos)[offset];
 }
 // FUNCTION: WON 0x006a4910
 wchar_t StringParser::GetWChar(int offset)
-{ return mWide ? mText.mWide[mPos+offset] : (unsigned char)mText.mNarrow[mPos+offset]; }
+{ return mWide ? mWideText[mPos+offset] : (unsigned char)mNarrow[mPos+offset]; }
 // FUNCTION: WON 0x006a4900
 void StringParser::IncrementPos(int amount) { mPos+=amount; }
 // FUNCTION: WON 0x006a4940
 bool StringParser::EndOfString()
 {
-    if(mWide) return mText.mWide[mPos]==0;
-    return mText.mNarrow[mPos]==0;
+    if(mWide) return mWideText[mPos]==0;
+    return mNarrow[mPos]==0;
 }
 // FUNCTION: WON 0x006a4970
 void StringParser::SkipWhitespace()
@@ -53,6 +54,78 @@ bool StringParser::CheckNextChar(int ch)
     }
     return false;
 }
+static int ScannerHexValue(char ch);
+static void ScannerAppend(std::string& out,wchar_t ch);
+static void ScannerAppend(std::string& out,char ch);
+inline bool ScannerReadString(StringParser& p,std::string& out,bool stopAtWhitespace)
+{
+    out.erase();
+    p.SkipWhitespace();
+    bool quoted=false;
+    bool wideLiteral=false;
+    std::string::size_type keepLength=0;
+    while(!p.EndOfString()) {
+        unsigned char ch=p.GetChar(0);
+        wchar_t wideChar;
+        if(wideLiteral) wideChar=p.GetWChar(0);
+        p.IncrementPos(1);
+        if(stopAtWhitespace && isspace(ch) && !quoted) break;
+        if(ch=='\\' && quoted) {
+            unsigned char escaped=p.GetChar(0);
+            p.IncrementPos(1);
+            switch(escaped) {
+            case 't':wideChar='\t';break;
+            case 'n':wideChar='\n';break;
+            case 'r':wideChar='\r';break;
+            case '"':wideChar='"';break;
+            case '$':wideChar='$';break;
+            case '\\':wideChar='\\';break;
+            case 'x': {
+                int maxDigits=wideLiteral?4:2;
+                wideChar=0;
+                for(int digit=0;digit<maxDigits;++digit) {
+                    if(!isxdigit(p.GetChar(0))) break;
+                    int val=ScannerHexValue(p.GetChar(0));
+                    wideChar=wideChar<<4;
+                    wideChar=wideChar|val;
+                    p.IncrementPos(1);
+                }
+                break;
+            }
+            default:p.IncrementPos(-1);wideChar='\\';break;
+            }
+            if(wideLiteral) ScannerAppend(out,wideChar);
+            else ScannerAppend(out,(char)wideChar);
+            keepLength=out.length();
+        } else if(!quoted && ch=='L' && p.GetChar(0)=='"') {
+            p.IncrementPos(1);
+            wideLiteral=true;
+            quoted=true;
+        } else if(ch=='"') {
+            if(quoted) {
+                quoted=false;
+                if(p.GetChar(0)!='+') break;
+                p.IncrementPos(1);
+                p.SkipWhitespace();
+            } else {
+                wideLiteral=false;
+                quoted=true;
+            }
+        } else if(!quoted && (ch==',' || ch==')')) {
+            p.IncrementPos(-1);
+            break;
+        } else {
+            if(wideLiteral) ScannerAppend(out,wideChar);
+            else ScannerAppend(out,(char)ch);
+            if(quoted || !isspace(ch)) keepLength=out.length();
+        }
+    }
+    out.resize(keepLength);
+    return true;
+}
+// FUNCTION: WON 0x006a49f0
+bool StringParser::ReadString(std::string& out,bool stopAtWhitespace)
+{ return ScannerReadString(*this,out,stopAtWhitespace); }
 static int ScannerHexValue(char ch)
 { return isdigit(ch) ? ch-'0' : toupper(ch)-'A'+10; }
 // FUNCTION: WON 0x006a4da0
@@ -63,90 +136,23 @@ static void ScannerAppend(std::string& out,wchar_t ch)
     out.append(reinterpret_cast<const char*>(&c),2);
 }
 static void ScannerAppend(std::string& out,char ch) { out+=ch; }
-// FUNCTION: WON 0x006a49f0
-// Original2a49f0/769 hot bytes. External jump table/selector bytes separately owned, zeroquota.
-bool StringParser::ReadString(std::string& out,bool stopAtWhitespace)
+static void ScannerAppend(std::wstring& out,wchar_t ch);
+inline bool ScannerReadString(StringParser& p,std::wstring& out,bool stopAtWhitespace)
 {
     out.erase();
-    SkipWhitespace();
-    bool quoted=false;
-    bool wideLiteral=false;
-    std::string::size_type keepLength=0;
-    while(!EndOfString()) {
-        char ch=GetChar(0);
-        wchar_t wideChar;
-        if(wideLiteral) wideChar=GetWChar(0);
-        IncrementPos(1);
-        if(stopAtWhitespace && isspace((unsigned char)ch) && !quoted) break;
-        if(ch=='\\' && quoted) {
-            char escaped=GetChar(0);
-            IncrementPos(1);
-            switch(escaped) {
-            case 't':wideChar='\t';break;
-            case 'n':wideChar='\n';break;
-            case 'r':wideChar='\r';break;
-            case '"':wideChar='"';break;
-            case '$':wideChar='$';break;
-            case '\\':wideChar='\\';break;
-            case 'x': {
-                wideChar=0;
-                int maxDigits=wideLiteral?4:2;
-                for(int digit=0;digit<maxDigits;++digit) {
-                    if(!isxdigit(GetChar(0))) break;
-                    wideChar=(wideChar<<4)|ScannerHexValue(GetChar(0));
-                    IncrementPos(1);
-                }
-                break;
-            }
-            default:IncrementPos(-1);wideChar='\\';break;
-            }
-            if(wideLiteral) ScannerAppend(out,wideChar);
-            else ScannerAppend(out,(char)wideChar);
-            keepLength=out.length();
-        } else if(!quoted && ch=='L' && GetChar(0)=='"') {
-            IncrementPos(1);
-            wideLiteral=true;
-            quoted=true;
-        } else if(ch=='"') {
-            if(quoted) {
-                quoted=false;
-                if(GetChar(0)!='+') break;
-                IncrementPos(1);
-                SkipWhitespace();
-            } else {
-                wideLiteral=false;
-                quoted=true;
-            }
-        } else if(!quoted && (ch==',' || ch==')')) {
-            IncrementPos(-1);
-            break;
-        } else {
-            if(wideLiteral) ScannerAppend(out,wideChar);
-            else ScannerAppend(out,ch);
-            if(quoted || !isspace((unsigned char)ch)) keepLength=out.length();
-        }
-    }
-    out.resize(keepLength);
-    return true;
-}
-// Actual2a5310/189 wide-character append helper, support0.
-static void ScannerAppend(std::wstring& out,wchar_t ch) { out+=ch; }
-// FUNCTION: WON 0x006a4ff0
-// Original2a4ff0/672 hot bytes; independent wide-output implementation, quote prefixes share behavior.
-bool StringParser::ReadString(std::wstring& out,bool stopAtWhitespace)
-{
-    out.erase();
-    SkipWhitespace();
+    p.SkipWhitespace();
     bool quoted=false;
     std::wstring::size_type keepLength=0;
-    while(!EndOfString()) {
-        char ch=GetChar(0);
-        wchar_t wideChar=GetWChar(0);
-        IncrementPos(1);
-        if(stopAtWhitespace && isspace((unsigned char)ch) && !quoted) break;
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(2);
+    while(!p.EndOfString()) {
+        unsigned char ch=p.GetChar(0);
+        wchar_t wideChar=p.GetWChar(0);
+        p.IncrementPos(1);
+        if(stopAtWhitespace && isspace(ch) && !quoted) break;
         if(ch=='\\' && quoted) {
-            char escaped=GetChar(0);
-            IncrementPos(1);
+            unsigned char escaped=p.GetChar(0);
+            p.IncrementPos(1);
             wchar_t value;
             switch(escaped) {
             case 't':value='\t';break;
@@ -158,37 +164,43 @@ bool StringParser::ReadString(std::wstring& out,bool stopAtWhitespace)
             case 'x': {
                 value=0;
                 for(int digit=0;digit<4;++digit) {
-                    if(!isxdigit(GetChar(0))) break;
-                    value=(value<<4)|ScannerHexValue(GetChar(0));
-                    IncrementPos(1);
+                    if(!isxdigit(p.GetChar(0))) break;
+                    int val=ScannerHexValue(p.GetChar(0));
+                    value=value<<4;
+                    value=value|val;
+                    p.IncrementPos(1);
                 }
                 break;
             }
-            default:IncrementPos(-1);value='\\';break;
+            default:p.IncrementPos(-1);value='\\';break;
             }
             ScannerAppend(out,value);
             keepLength=out.length();
-        } else if(!quoted && ch=='L' && GetChar(0)=='"') {
-            IncrementPos(1);
+        } else if(!quoted && ch=='L' && p.GetChar(0)=='"') {
+            p.IncrementPos(1);
             quoted=true;
         } else if(ch=='"') {
             if(quoted) {
                 quoted=false;
-                if(GetChar(0)!='+') break;
-                IncrementPos(1);
-                SkipWhitespace();
+                if(p.GetChar(0)!='+') break;
+                p.IncrementPos(1);
+                p.SkipWhitespace();
             } else quoted=true;
         } else if(!quoted && (ch==',' || ch==')')) {
-            IncrementPos(-1);
+            p.IncrementPos(-1);
             break;
         } else {
             ScannerAppend(out,wideChar);
-            if(quoted || !isspace((unsigned char)ch)) keepLength=out.length();
+            if(quoted || !isspace(ch)) keepLength=out.length();
         }
     }
     out.resize(keepLength);
     return true;
 }
+// FUNCTION: WON 0x006a4ff0
+bool StringParser::ReadString(std::wstring& out,bool stopAtWhitespace)
+{ return ScannerReadString(*this,out,stopAtWhitespace); }
+static void ScannerAppend(std::wstring& out,wchar_t ch) { out+=ch; }
 // FUNCTION: WON 0x006a53d0
 // Original2a53d0/380; success means cursor moved, including '-' or '0x' without digits.
 bool StringParser::ReadValue(int& out)
@@ -270,7 +282,7 @@ void StringParser::ValueToString(const std::list<std::string>& values,std::strin
     std::list<std::string>::const_iterator i=values.begin();
     while(i!=values.end()) {
         ValueToString(*i,out);
-        ++i;
+        i++;
         if(i!=values.end()) out+=", ";
     }
 }

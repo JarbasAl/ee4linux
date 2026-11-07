@@ -128,6 +128,7 @@ void BrowserComponent::Stop()
 #include "ee/wonapi/WONLobbyGUICompletion.h"
 #include "ee/wonapi/WONLobbyHTMLDisplayGen.h"
 #include "ee/wonapi/WONLobbyImageButton.h"
+#include "LostDebug.h"
 
 // Actual standalone path comparison: case-sensitive code units, slash directions equivalent.
 // FUNCTION: WON 0x007fced0
@@ -186,6 +187,8 @@ void BrowserComponent::Go(const GUIString& location,bool force,bool backTraversa
         if(mPageVector.empty() || location!=mPageVector.back().mLocation)
         {
             mPageVector.push_back(PageLocation(location,0));
+            // LOST-DEBUG: none: exact only
+            EE_LOST_DEBUG(3);
             if(mPageVector.size()>100)
                 mPageVector.erase(mPageVector.begin(),mPageVector.begin()+mPageVector.size()-100);
         }
@@ -203,7 +206,7 @@ void BrowserComponent::Go(const GUIString& location,bool force,bool backTraversa
     if(path.length()==0) return;
     if(mLaunchBrowserOnLink)
     {
-        Browse(std::string(location));
+        Browse(location);
         return;
     }
     URL pathURL(path);
@@ -222,6 +225,8 @@ void BrowserComponent::Go(const GUIString& location,bool force,bool backTraversa
         ++mNumPendingOps;
         mHTMLView->SetContents(new MultiLineElement);
     }
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(3);
 }
 }
 
@@ -341,7 +346,7 @@ void BrowserComponent::SetTransparent(bool transparent)
     mHaveBackground=transparent;
     if(transparent) {
         Background background(-1,-1);
-        mHTMLView->mBackground=background;
+        mHTMLView->SetBackground(background);
     }
     mHTMLView->SetComponentFlags(0x100,mHaveBackground);
 }

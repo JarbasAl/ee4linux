@@ -60,9 +60,12 @@ void GUIStringData::Fill(int character,unsigned short offset,unsigned short leng
 // FUNCTION: WON 0x00727c10
 void GUIStringData::assign(const GUIStringData* text,unsigned short offset,unsigned short length)
 {
-    Reserve(length,false);
+    int aLen=length;
+    Reserve(aLen,false);
     resize(0,false);
-    append(text,offset,length);
+    int aLength=mLength;
+    resize(aLength+aLen,true);
+    memcpy(mText+aLength,text->mText+offset,aLen*sizeof(wchar_t));
 }
 }
 

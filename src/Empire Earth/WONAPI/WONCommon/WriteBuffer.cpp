@@ -156,7 +156,7 @@ void WriteBuffer::SetByte(unsigned long position,unsigned char value) { SetBytes
 void WriteBuffer::SetShort(unsigned long position,short value) { SetBytes(position,&value,2); }
 // Native2a8480/349, length-prefix construction and real typed allocation/ownership transfer.
 // FUNCTION: WON 0x006a8480
-SmartPtr<ByteBuffer> WriteBuffer::ToByteBuffer(bool release)
+ConstSmartPtr<ByteBuffer> WriteBuffer::ToByteBuffer(bool release)
 {
     unsigned long value=mLength;
     unsigned long length=mLength;
@@ -171,12 +171,12 @@ SmartPtr<ByteBuffer> WriteBuffer::ToByteBuffer(bool release)
     case 2:
         if(value<0xffff) {
             if(mLengthIncludesField) value+=2;
-            data-=2;
+            data=mData-2;
             length+=2;
             unsigned short word=static_cast<unsigned short>(value);
             memcpy(data,&word,2);
         } else {
-            data-=6;
+            data=mData-6;
             length+=6;
             unsigned short marker=0xffff;
             memcpy(data,&marker,2);
@@ -186,7 +186,7 @@ SmartPtr<ByteBuffer> WriteBuffer::ToByteBuffer(bool release)
         break;
     case 4:
         if(mLengthIncludesField) value+=4;
-        data-=4;
+        data=mData-4;
         length+=4;
         memcpy(data,&value,4);
         break;

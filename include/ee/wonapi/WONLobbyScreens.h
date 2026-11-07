@@ -33,6 +33,7 @@ public:
     void LeftRoom(LeftRoomEvent*); //3cb360
     void ClientChanged(ClientChangedEvent*); //3cb3a0
     bool mUpdating; //84
+    int GetRoomSpecFlags() const { return mModeFlags; }
     int mModeFlags; //88, ctor5; pinned nominal UserListCtrl.h room-spec flags
     SmartPtr<ListArea> mUserList; //8c
     SmartPtr<UserListItem> mFirstSeparator; //90
@@ -111,6 +112,7 @@ public:
     void HandleLeftGame();
     SmartPtr<MultiListArea> mUserList;
     SmartPtr<Button> mKickButton;
+    int GetRoomSpecFlags() const { return mRoomSpecFlags; }
     int mRoomSpecFlags;
     bool mInGame;
 };

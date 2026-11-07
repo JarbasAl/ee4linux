@@ -68,7 +68,8 @@ namespace WONAPI {
 // FUNCTION: WON 0x006f5a00
 SmartPtr<Font> Component::GetFont(const FontDescriptor& descriptor)
 {
-    return GetRoot()->GetFont(descriptor);
+    Window* root=GetRoot();
+    return root->GetFont(descriptor);
 }
 // FUNCTION: WON 0x006f5a30
 Font* Component::Fn2F5A30(Font* font,int style,int size)

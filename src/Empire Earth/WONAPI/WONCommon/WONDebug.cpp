@@ -15,6 +15,7 @@
 using namespace WONAPI;
 static std::string gStackFileName;
 
+// FUNCTION: WON 0x006a6dc0
 const std::string& WONDebug::GetStackFileName()
 {
 	return gStackFileName;
@@ -177,10 +178,10 @@ static BOOL ResolveSymbol(HANDLE hProcess, DWORD dwAddress,
 
 	siSymbol.dwAddress = dwAddress;
 
-	union {
-		CHAR rgchSymbol[sizeof(IMAGEHLP_SYMBOL) + 4095];
-		IMAGEHLP_SYMBOL  sym;
-	};
+	struct {
+		IMAGEHLP_SYMBOL sym;
+		CHAR rest[4095];
+	} aSym;
 
 	CHAR szUndec[4096];
 	CHAR szWithOffset[4096];
@@ -206,20 +207,20 @@ static BOOL ResolveSymbol(HANDLE hProcess, DWORD dwAddress,
 
 	__try
 	{
-		sym.SizeOfStruct = sizeof(IMAGEHLP_SYMBOL);
-		sym.Address = dwAddress;
-		sym.MaxNameLength = 4095;
+		aSym.sym.SizeOfStruct = sizeof(IMAGEHLP_SYMBOL);
+		aSym.sym.Address = dwAddress;
+		aSym.sym.MaxNameLength = 4095;
 
-		if (gSymGetSymFromAddrFunc(hProcess, dwAddress, &(siSymbol.dwOffset), &sym))
+		if (gSymGetSymFromAddrFunc(hProcess, dwAddress, &(siSymbol.dwOffset), &aSym.sym))
 		{
-			pszSymbol = sym.Name;
+			pszSymbol = aSym.sym.Name;
 
-			if (gUnDecorateSymbolNameFunc(sym.Name, szUndec, _countof(szUndec),
+			if (gUnDecorateSymbolNameFunc(aSym.sym.Name, szUndec, _countof(szUndec),
 				UNDNAME_NO_MS_KEYWORDS | UNDNAME_NO_ACCESS_SPECIFIERS))
 			{
 				pszSymbol = szUndec;
 			}
-			else if (gSymUnDNameFunc(&sym, szUndec, _countof(szUndec)))
+			else if (gSymUnDNameFunc(&aSym.sym, szUndec, _countof(szUndec)))
 			{
 				pszSymbol = szUndec;
 			}

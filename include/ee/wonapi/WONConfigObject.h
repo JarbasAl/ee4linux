@@ -27,6 +27,7 @@ public:
     virtual bool ReadValue(StringParser&)=0; //slot0c
     virtual void WriteValue(std::string&)=0; //slot10
     void CopyValue(ConfigValueBase* source) { if(CopyValueHook(source)) mIsDefault=source->mIsDefault; } //genuine SDK inline; preserves defaultflag only after successful typedcopy
+    ConfigValueBase():mIsDefault(false) {}
     bool mIsDefault; //08; native3aed47/3b1149/3af2de, natural09..0b padding
 };
 typedef SmartPtr<ConfigValueBase> ConfigValueBasePtr;

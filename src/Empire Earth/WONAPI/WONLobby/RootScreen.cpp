@@ -138,9 +138,6 @@ void RootScreen::HandleEnteredScreen()
     TabCtrl* aTabs=mTabCtrl.get();
     aTabs->Fn309370(LobbyFn35E2D0(),true);
 }
-// FUNCTION: WON 0x007c4620
-SetRoomSpecFlagsEvent::SetRoomSpecFlagsEvent(int inFlags)
-    :LobbyEvent(100054),mFlags(inFlags) {}
 
 // Original3c3f40..3c461a/1754B. Every widget owned member and temporary typed.
 // FUNCTION: WON 0x007c3f40
@@ -220,6 +217,8 @@ void RootScreen::HandleTabCtrlTabSelected(ComponentEvent* inEvent)
 // (public: virtual void * __thiscall WONAPI::RootScreen::`scalar deleting destructor'(unsigned int)    [??_GRootScreen@WONAPI@@UAEPAXI@Z])
 
 // Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x007c4620
+// (public: __thiscall WONAPI::SetRoomSpecFlagsEvent::SetRoomSpecFlagsEvent(int))
 // TEMPLATE: WON 0x007c4650
 // (public: virtual void * __thiscall WONAPI::SetRoomSpecFlagsEvent::`scalar deleting destructor'(unsigned int)    [??_GSetRoomSpecFlagsEvent@WONAPI@@UAEP)
 // TEMPLATE: WON 0x007c4670

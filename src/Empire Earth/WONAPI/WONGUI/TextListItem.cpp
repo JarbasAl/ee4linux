@@ -34,7 +34,8 @@ void TextListItem::Virtual04(Graphics& inGraphics,ListArea* inList)
     if(mB08) {
         const SelectionColor& aSelection=inList->GetSelColor();
         inGraphics.SetColor(aSelection.GetBackgroundColor(inGraphics));
-        int aWidth=inList->ListFlagSet(0x10) ? inList->mL12C : mL10;
+        int aWidth=inList->mL12C;
+        if(!inList->ListFlagSet(0x10)) aWidth=mL10;
         int aX=0;
         Image* anImage=mImage.get();
         if(anImage!=NULL && !inList->ListFlagSet(0x20)) {
@@ -55,8 +56,6 @@ void TextListItem::Virtual04(Graphics& inGraphics,ListArea* inList)
         inGraphics.DrawImage(anImage,2,anImageY);
         aTextX=mImage->mWidth+4;
     }
-    int aFontHeight=mFont->GetHeight(); //actual virtual callback2fa456 precedes current mHeight reload2fa459
-    int aTextY=(mHeight-aFontHeight)/2;
-    inGraphics.DrawString(mText,aTextX,aTextY);
+    inGraphics.DrawString(mText,aTextX,(mHeight-mFont->GetHeight())/2);
 }
 }

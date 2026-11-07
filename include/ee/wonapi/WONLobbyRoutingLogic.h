@@ -45,9 +45,9 @@ public:
     LobbyServer* GetDefaultServer();
     bool IsConnecting();
     virtual LobbyClient* Virtual20();
-    virtual void Virtual24(ByteBuffer* inData);
-    virtual void Virtual28(ByteBuffer* inData);
-    virtual void Virtual2C(LobbyClient* inClient, ByteBuffer* inData);
+    virtual void Virtual24(const ByteBuffer* inData);
+    virtual void Virtual28(const ByteBuffer* inData);
+    virtual void Virtual2C(LobbyClient* inClient, const ByteBuffer* inData);
     virtual void Virtual30(LobbyGame* inGame);
     virtual void Virtual34(LobbyGame*);
     virtual void Virtual38(LobbyClient* inClient, bool inBan);

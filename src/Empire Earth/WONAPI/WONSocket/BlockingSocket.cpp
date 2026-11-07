@@ -29,15 +29,15 @@ WONStatus BlockingSocket::RecvMsg(ByteBufferPtr& outMessage,unsigned long inTime
 WONStatus BlockingSocket::RecvCRMsg(ByteBufferPtr& outMessage,unsigned long inTimeout)
 {
     SmartPtr<RecvCRMsgOp> op=new RecvCRMsgOp(this);
-    if (op->RunBlock(inTimeout)) outMessage=op->GetMsg().get();
-    return op->GetStatus();
+    if (op->RunBlock(inTimeout)) outMessage=op->GetMsg();
+    return op->mStatus;
 }
 // Genuine SDK const payload APIs adapted only at existing legacy ctor boundary.
 // Native2b1d00/228, operation-run/status adapter, support0.
 // FUNCTION: WON 0x006b1d00
 WONStatus BlockingSocket::SendBytes(const ByteBuffer* bytes,unsigned long timeout)
 {
-    SmartPtr<SendBytesOp> op=new SendBytesOp(const_cast<ByteBuffer*>(bytes),this);
+    SmartPtr<SendBytesOp> op=new SendBytesOp(bytes,this);
     op->RunBlock(timeout);
     return op->GetStatus();
 }
@@ -46,7 +46,7 @@ WONStatus BlockingSocket::SendBytes(const ByteBuffer* bytes,unsigned long timeou
 // FUNCTION: WON 0x006b1e30
 WONStatus BlockingSocket::SendMsg(const ByteBuffer* message,unsigned long timeout)
 {
-    SmartPtr<SendMsgOp> op=new SendMsgOp(const_cast<ByteBuffer*>(message),this);
+    SmartPtr<SendMsgOp> op=new SendMsgOp(message,this);
     op->RunBlock(timeout);
     return op->GetStatus();
 }
@@ -67,7 +67,7 @@ AsyncSocket* BlockingSocket::Duplicate()
 namespace WONAPI {
 WONStatus BlockingSocket::SendBytesTo(const ByteBuffer *theBytes, const IPAddr &theAddr, DWORD theTimeout)
 {
-	SmartPtr<SendBytesToOp> anOp = new SendBytesToOp(const_cast<ByteBuffer*>(theBytes),theAddr,this);
+	SmartPtr<SendBytesToOp> anOp = new SendBytesToOp(theBytes,theAddr,this);
 	anOp->RunBlock(theTimeout);
 	return anOp->GetStatus();
 }

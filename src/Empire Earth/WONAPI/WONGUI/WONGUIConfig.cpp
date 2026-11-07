@@ -49,8 +49,6 @@ void WONGUIConfig_Init(ResourceConfigTable* table)
     WONControlsConfig_Init(table);
     table->RegisterControlId("Ok",ControlId_Ok);
     table->RegisterControlId("Cancel",ControlId_Cancel);
-    // LOST-DEBUG: none: exact only (makes the "Ok" temp's ~basic_string call _Tidy out of line, as the original)
-    EE_LOST_DEBUG(1);
 }
 }
 

@@ -9,12 +9,18 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONAuthPeerData.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006e1b60
 AuthPeerData::AuthPeerData(const AuthPubKeyBlock* keyBlock)
     :mCertificate(new AuthCertificate),mCertificate2(new Auth2Certificate),
      mKeyBlock(keyBlock),mAuthDelta(0)
 {
+    // LOST-DEBUG: none: exact only.
+    EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1);
+    EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1);
+    EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1);
+    EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1); EE_LOST_TRACE(mAuthDelta+1);
     if(mKeyBlock.get()==NULL) mKeyBlock=new AuthPubKeyBlock;
 }
 // FUNCTION: WON 0x006e1ee0
@@ -74,5 +80,3 @@ bool AuthPeerData::IsValid2() const
 // (public: __thiscall std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::~list<class WONAPI::ElGamal,class std::allocator<cla)
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x006eb150
-// (protected: struct std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::_Node * __thiscall std::list<class WONAPI::ElGamal,cl)

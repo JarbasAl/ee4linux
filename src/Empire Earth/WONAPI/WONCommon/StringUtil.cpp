@@ -14,9 +14,19 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyConfig.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // Actual565ef0 zero-filled cache, data0quota. No invalidation/thread policy invented.
 static int gStringUtilDefaultCodePage=0;
+std::string StringToUpperCase(const std::string& theStr)
+{
+	std::string aNewStr;
+	aNewStr.reserve(theStr.length());
+	for(int i=0; i<theStr.length(); i++)
+		aNewStr+=toupper(theStr[i]);
+
+	return aNewStr;
+}
 // FUNCTION: WON 0x006a63e0
 // the code page is the CRT LC_CTYPE locale's suffix (not GetACP/GetLocaleInfo)
 static int StringUtilLocaleCodePage()
@@ -66,7 +76,7 @@ std::wstring StringToWString(const std::string& in)
 // Original2a6280/287; fixed-size ACP conversion can fail/partially mutate, result code ignored as original.
 std::string WStringToString(const std::wstring& in)
 {
-    int length=in.length();
+    unsigned int length=in.length();
     if(length==0) return std::string();
     char* buffer=new char[length+1];
     StringUtilToNarrowBuffer(buffer,in.c_str(),length);
@@ -84,6 +94,8 @@ std::string WStringToString(const std::wstring& in,int codePage)
     std::string result;
     result.reserve(count+1);
     result.resize(count);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     WideCharToMultiByte(codePage,0,in.c_str(),in.length(),const_cast<char*>(result.data()),result.length(),NULL,NULL);
     return result;
 }
@@ -96,6 +108,8 @@ std::wstring StringToWString(const std::string& in,int codePage)
     std::wstring result;
     result.reserve(count+1);
     result.resize(count);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     MultiByteToWideChar(codePage,0,in.c_str(),in.length(),const_cast<wchar_t*>(result.data()),result.length());
     return result;
 }
@@ -186,15 +200,6 @@ const std::wstring& GetEmptyWStr()
 
 namespace WONAPI {
 // SOURCE_ONLY_NO_NATIVE_ID: genuine SDK case transformation loops; no Native identity claimed.
-std::string StringToUpperCase(const std::string& theStr)
-{
-	std::string aNewStr;
-	aNewStr.reserve(theStr.length());
-	for(int i=0; i<theStr.length(); i++)
-		aNewStr+=toupper(theStr[i]);
-
-	return aNewStr;
-}
 
 std::wstring WStringToLowerCase(const std::wstring& theStr)
 {

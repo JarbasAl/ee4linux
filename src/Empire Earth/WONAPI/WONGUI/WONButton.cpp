@@ -84,7 +84,7 @@ void WONButton::SetButtonState(int theState, Image *theImage, int theColor, Font
 
 	SmartPtr<Font> aFont;
 	if(mFontTextMap.empty() && theFont==NULL)
-		{ aFont = WONAPI::WindowManager::GetDefaultWindowManager()->GetDefaultFont(); theFont = aFont.get(); }
+		theFont = aFont = WONAPI::WindowManager::GetDefaultWindowManager()->GetDefaultFont();
 
 	if(theFont!=NULL)
 	{

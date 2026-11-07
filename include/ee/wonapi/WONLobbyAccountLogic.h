@@ -45,7 +45,7 @@ public:
     void DNSCompletion(AsyncOp* inOp); //3dd810
     void StartHTTPDocuments(); //3df0c0
     void HTTPDocumentCompletion(AsyncOp* inOp); //3de280
-    void ParseCrossPromotion(ByteBuffer* inDocument); //3ddc00, deferred HTTPGetOp allocation
+    void ParseCrossPromotion(const ByteBuffer* inDocument); //3ddc00, deferred HTTPGetOp allocation
     void CrossPromotionImageCompletion(AsyncOp* inOp); //3dda10
     void StartDirectoryQuery(); //3df410
     void DirectoryCompletion(AsyncOp* inOp); //3de4c0, actual template callback

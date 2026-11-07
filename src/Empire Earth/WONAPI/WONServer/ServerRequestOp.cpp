@@ -156,7 +156,7 @@ WONStatus ServerRequestOp::Send()
             }
         }
         if(aReqStatus==100059) {
-            if(mRunMode==1) {
+            if(IsAsync()) {
                 RecvMsgOp* aRecvOp=new RecvMsgOp;
                 QueueSocketOp(aRecvOp,RecvTime());
             }
@@ -202,7 +202,7 @@ WONStatus ServerRequestOp::Recv()
 // FUNCTION: WON 0x006ae390
 void ServerRequestOp::Virtual04()
 {
-    mGetCertStatus=mLastServerError=100004;
+    mLastServerError=mGetCertStatus=100004;
     mUseLastServerErrorForFinishStatus=false;
     mUsedSession=NULL;
     if(mServerContext.get()!=NULL) mServerContext->CopyAddresses(mAddrList);
@@ -217,7 +217,7 @@ void ServerRequestOp::Virtual04()
         Fn29F220(100056);
         return;
     }
-    if(mRunMode==1) {
+    if(IsAsync()) {
         TryNextServer();
         return;
     }
@@ -232,7 +232,7 @@ void ServerRequestOp::Virtual04()
             FinishSaveSession(aStatus);
             return;
         }
-        if(TimeLeft()==0) {
+        if(TimeLeft()<=0) {
             Fn29F220(100001);
             return;
         }
@@ -304,13 +304,14 @@ bool ServerRequestOp::CallbackHook(AsyncOp* op,int param)
         }
         try {
             WONStatus status=Virtual14();
-            if(status==100057) TryNextServer();
-            else if(status==100058) Send();
-            else if(status==100059) {
-                RecvMsgOp* nextReceive=new RecvMsgOp;
-                QueueSocketOp(nextReceive,RecvTime());
-            } else if(status==100060) return true;
-            else FinishSaveSession(status);
+            switch(status) {
+            case 100057: TryNextServer(); return true;
+            case 100058: Send(); return true;
+            case 100059: QueueSocketOp(new RecvMsgOp,RecvTime()); return true;
+            case 100060: return true;
+            }
+            FinishSaveSession(status);
+            return true;
         } catch(ReadBufferException&) {
             SetLastServerError(100064);
             TryNextServer();

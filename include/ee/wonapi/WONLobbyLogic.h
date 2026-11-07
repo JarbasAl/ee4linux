@@ -49,9 +49,9 @@ public:
     virtual bool Virtual18(LobbyGame* inGame) = 0;
     virtual bool Virtual1C(LobbyGame* inGame) = 0;
     virtual LobbyClient* Virtual20() = 0;
-    virtual void Virtual24(ByteBuffer* inBuffer) = 0;
-    virtual void Virtual28(ByteBuffer* inBuffer) = 0;
-    virtual void Virtual2C(LobbyClient* inClient, ByteBuffer* inBuffer) = 0;
+    virtual void Virtual24(const ByteBuffer* inBuffer) = 0;
+    virtual void Virtual28(const ByteBuffer* inBuffer) = 0;
+    virtual void Virtual2C(LobbyClient* inClient, const ByteBuffer* inBuffer) = 0;
     virtual void Virtual30(LobbyGame* inGame) = 0;
     virtual void Virtual34(LobbyGame* inGame) = 0;
     virtual void Virtual38(LobbyClient* inClient, bool inFlag) = 0;

@@ -78,9 +78,8 @@ WONStatus GetMultiDirOp::Virtual14()
         return request->ParseMultiEntityReply(mResponse->data(),mResponse->length());
     }
     (*mCurRequest)->ParseMultiEntityReply(mResponse->data(),mResponse->length());
-    GetEntityRequest* request=(*mCurRequest).get();
-    if(request->GetStatus()!=100059) {
-        if(request->GetStatus()!=0)
+    if((*mCurRequest)->GetStatus()!=100059) {
+        if((*mCurRequest)->GetStatus()!=0)
             ++mNumFailedRequests;
         ++mCurRequest;
     }
@@ -114,3 +113,5 @@ WONStatus GetMultiDirOp::Virtual14()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006f1db0
 // (public: __thiscall std::map<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,clas)
+// TEMPLATE: WON 0x006d9960
+// (public: __thiscall std::set<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct std::less<class std::basic_)

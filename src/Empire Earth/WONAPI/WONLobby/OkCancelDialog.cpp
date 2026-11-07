@@ -52,7 +52,8 @@ void OkCancelDialog::SetText(const GUIString& inTitle, const GUIString& inBody,
     int anOldHeight = Height();
     int anOldWidth = Width();
     int anOldBodyHeight = mBodyLabel->Height();
-    int aTextWidth = mBodyLabel->mWrappedText->mFont->GetStringWidth(inBody, 0, inBody.length());
+    Font* aFont = mBodyLabel->mWrappedText->mFont;
+    int aTextWidth = aFont->GetStringWidth(inBody, 0, inBody.length());
     int aBodyWidth;
     if (aTextWidth < 250)
         aBodyWidth = aTextWidth;

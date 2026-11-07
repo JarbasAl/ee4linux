@@ -33,7 +33,10 @@ void Component::Fn2F53F0(ComponentEvent* event, bool sendNow)
     {
         SmartPtr<ComponentEvent> eventRef = event;
         if(event->mBroadcast)
-            window->mManager->Fn32F680(event);
+        {
+            WindowManager* aManager = window->mManager;
+            aManager->Fn32F680(event);
+        }
         else
             Fn2F54E0(event);
     }

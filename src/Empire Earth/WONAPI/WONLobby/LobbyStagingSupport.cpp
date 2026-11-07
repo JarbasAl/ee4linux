@@ -88,7 +88,7 @@ void LobbyFn361420(unsigned short port) { if(gLobbyData.get()!=NULL) gLobbyData-
 // FUNCTION: WON 0x00761bc0
 void LobbyFn361BC0(LobbyClient* client,bool ban) { if(gLobbyData.get()!=NULL) gLobbyData->mStagingLogic->Fn3F10F0(client,ban); }
 // FUNCTION: WON 0x00761e10
-void LobbyFn361E10(ByteBuffer* data,LobbyClient* client) { if(gLobbyData.get()!=NULL) gLobbyData->mStagingLogic->Fn3EFD20(data,client); }
+void LobbyFn361E10(const ByteBuffer* data,LobbyClient* client) { if(gLobbyData.get()!=NULL) gLobbyData->mStagingLogic->Fn3EFD20(data,client); }
 // FUNCTION: WON 0x00761e30
 void LobbyFn361E30(ReadBuffer& data,LobbyClient* client) { if(gLobbyData.get()!=NULL) gLobbyData->mStagingLogic->Fn3EFB50(data,client); }
 // FUNCTION: WON 0x00761e50
@@ -137,17 +137,17 @@ void LobbyFn3613E0()
     if(gLobbyData.get()!=NULL) gLobbyData->mStagingLogic->Fn3F11F0();
 }
 // FUNCTION: WON 0x00761b60
-void LobbyFn361B60(ByteBuffer* message)
+void LobbyFn361B60(const ByteBuffer* message)
 {
     if(gLobbyData.get()!=NULL) gLobbyData->mStagingLogic->Fn3EFD60(message);
 }
 // FUNCTION: WON 0x00761b80
-void LobbyFn361B80(ByteBuffer* message)
+void LobbyFn361B80(const ByteBuffer* message)
 {
     if(gLobbyData.get()!=NULL) gLobbyData->mStagingLogic->Fn3EFDA0(message);
 }
 // FUNCTION: WON 0x00761ba0
-void LobbyFn361BA0(LobbyClient* client,ByteBuffer* message)
+void LobbyFn361BA0(LobbyClient* client,const ByteBuffer* message)
 {
     if(gLobbyData.get()!=NULL) gLobbyData->mStagingLogic->Fn3EFDE0(client,message);
 }
@@ -184,19 +184,19 @@ bool LobbyFn3613A0()
 }
 // Genuine SDK LobbyStagingPrv network dispatch cohort; all parameters borrowed, no new ownership.
 // FUNCTION: WON 0x00761cb0
-void LobbyFn361CB0(ByteBuffer* message)
+void LobbyFn361CB0(const ByteBuffer* message)
 {
     NetLogic* logic=LobbyFn361C10();
     if(logic!=NULL) logic->Virtual24(message);
 }
 // FUNCTION: WON 0x00761cd0
-void LobbyFn361CD0(ByteBuffer* message)
+void LobbyFn361CD0(const ByteBuffer* message)
 {
     NetLogic* logic=LobbyFn361C10();
     if(logic!=NULL) logic->Virtual28(message);
 }
 // FUNCTION: WON 0x00761cf0
-void LobbyFn361CF0(LobbyClient* client,ByteBuffer* message)
+void LobbyFn361CF0(LobbyClient* client,const ByteBuffer* message)
 {
     NetLogic* logic=LobbyFn361C10();
     if(logic!=NULL) logic->Virtual2C(client,message);

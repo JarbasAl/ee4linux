@@ -19,7 +19,8 @@ GetEntityRequest::~GetEntityRequest() {}
 void GetEntityRequest::Pack(WriteBuffer* message,PACKFLAG mode)
 {
     DWORD flags=mFlags;
-    if((flags&2)!=0 && (flags&5)!=0)
+    bool aNoDirs=(flags&2)==0;
+    if(!aNoDirs && (flags&5)!=0)
         flags|=0x10;
     message->AppendLong(flags);
     if(mode==Pack_GetDirOp)
@@ -125,3 +126,7 @@ const DirEntityMap& GetEntityRequest::GetDirEntityMap()
 // (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struct s)
 // TEMPLATE: WON 0x006db310
 // (protected: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<)
+// TEMPLATE: WON 0x006dada0
+// (public: class std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struct s)
+// TEMPLATE: WON 0x006dc960
+// (public: void __thiscall std::_Tree<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<cha)

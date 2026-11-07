@@ -9,6 +9,7 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // ListItem's out-of-line members precede ListArea in the original object: VC6 sees the ctor's body before
 // `new ListItem` in ListArea::ListArea and drops the delete-on-throw guard (0x6fa570).
@@ -64,11 +65,9 @@ void ListArea::FindTopLine()
 // FUNCTION: WON 0x006faf10
 bool ListArea::IsItemVisible(ListItem* item)
 {
-    int top=item->mTop;
-    int height=item->mHeight;
-    if(top+height<mVertOffset) return false;
-    int last=top;
-    if(!ListFlagSet(0x80)) last=top+height;
+    if(item->mTop+item->mHeight<mVertOffset) return false;
+    int last=item->mTop;
+    if(!ListFlagSet(0x80)) last+=item->mHeight;
     return last<=mVertOffset+mScrollArea.height;
 }
 // FUNCTION: WON 0x006faf60
@@ -361,6 +360,11 @@ ListItem* ListArea::InsertItem(ListItem* item,int position)
     }
     return item;
 }
+// FUNCTION: WON 0x006fcc30
+ListItem* ListArea::InsertString(const GUIString& text,int position)
+{
+    return InsertItem(new TextListItem(text),position);
+}
 // FUNCTION: WON 0x006fc730
 void ListArea::Fn2FC730(ListItem* item)
 {
@@ -379,21 +383,22 @@ void ListArea::Fn2FC730(ListItem* item)
             else if(next!=NULL && less(next,item)) sort=true;
             if(sort) {
                 SmartPtr<ListItem> hold=item;
-                mItems[position]=prev!=NULL ? prev : next;
+                if(prev!=NULL) mItems[position]=prev;
+                else mItems[position]=next;
                 int insert=FindInsertPos(item,0);
                 if(position<insert) --insert;
-                if(insert>=(int)mItems.size()) insert=mItems.size()-1;
+                if(insert>=mItems.size()) insert=mItems.size()-1;
                 if(insert<0) insert=0;
                 if(position>insert) {
-                    for(int i=position;i>insert;--i) mItems[i]=mItems[i-1];
-                } else {
-                    for(int i=position;i<insert;++i) mItems[i]=mItems[i+1];
+                    for(int i=position;i>insert;--i) { mItems[i]=mItems[i-1]; }
+                } else if(position<insert) {
+                    for(int i=position;i<insert;++i) { mItems[i]=mItems[i+1]; }
                 }
                 mItems[insert]=item;
             }
         }
         if(position>=0) {
-            if(!ListFlagSet(0x1000) && (mVertOffset>=item->mTop || OnBottom()) && mTotalHeight>mScrollArea.height)
+            if(!ListFlagSet(0x1000) && (mVertOffset>=item->mTop || OnBottom()) && mTotalHeight>mScrollArea.Height())
                 mVertOffset+=item->mHeight-oldHeight;
             EnforceInvariants();
         }
@@ -657,6 +662,8 @@ namespace WONAPI {
 // FUNCTION: WON 0x006fa570
 ListArea::ListArea()
 {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     mSearchLine=new ListItem;
     mTopLineVectorPos=0;
     mListFlags=0xb0;
@@ -773,3 +780,16 @@ void ListArea::ListSelChangedHook()
 // (class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<class WON)
 // TEMPLATE: WON 0x00725a40
 // (class std::_Ptrit<class WONAPI::SmartPtr<class WONAPI::ListItem>,int,class WONAPI::SmartPtr<class WONAPI::ListItem> *,class WONAPI::SmartPtr<class WON)
+
+#include "ee/wonapi/WONLobbyComponentListItem.h"
+#include "ee/wonapi/WONLobbyMSConfig.h"
+namespace WONAPI {
+// FUNCTION: WON 0x006fd8b0
+void PopupMenu::AddSeperator()
+{
+    InsertItem(new ComponentListItem(new MSSeperator(6),true,false));
+    SetSizeEqualToTotal(100,-1);
+}
+}
+// TEMPLATE: WON 0x006fda80
+// (protected: virtual void * __thiscall WONAPI::ComponentListItem::`scalar deleting destructor'(unsigned int)    [??_GComponentListItem@WONAPI@@MAEPAXI@Z)

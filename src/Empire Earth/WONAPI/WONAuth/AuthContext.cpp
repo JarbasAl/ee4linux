@@ -17,6 +17,7 @@
 #include "ee/wonapi/WONMD5.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "LostDebug.h"
 // SUPPORT: EXE 0x006ddda0 (50B lazy critical-section getter, quota0)
 // Genuine file-local SDK identity; generated atexit cleanup2ddde0/12 also quota0.
 static WONAPI::CriticalSection& GetVerifierCrit()
@@ -71,6 +72,19 @@ namespace WONAPI {
 ElGamal AuthContext::mVerifierKey(VerifierKeyBuf,sizeof(VerifierKeyBuf),false);
 bool AuthContext::mCheckedVerifierFile=false;
 
+// FUNCTION: WON 0x006ddb70
+void AuthContext::Init()
+{
+    mSessionCleanItr=mSessionMap.begin();
+    mPeerData=new AuthPeerData;
+    mLoginSecretFile=WONAPICore::GetDefaultFileDirectory()+"_wonlogin.ks";
+    mServerContext=new ServerContext;
+    mDoAutoRefresh=false;
+    mRefreshStatus=0x186a4;
+    AutoCrit lock(GetVerifierCrit());
+    if(mCheckedVerifierFile) return;
+    LoadVerifierKey(WONAPICore::GetDefaultFileDirectory()+"_wonkver.pub");
+}
 // FUNCTION: WON 0x006dddf0
 AuthContext::AuthContext()
 {
@@ -240,7 +254,7 @@ void AuthContext::AppendLoginSecrets(WriteBuffer& output)
 void AuthContext::AddSecret(const void* secret)
 {
     AutoCrit lock(mDataCrit);
-    mSecretList.push_front(SecretData(0,new ByteBuffer(secret,8,false)));
+    mSecretList.insert(mSecretList.begin(),SecretData(0,new ByteBuffer(secret,8,false)));
     SaveSecretList();
 }
 // FUNCTION: WON 0x006e1790
@@ -425,12 +439,12 @@ void AuthContext::GetCertCallback(GetCertOp* op)
     while(next!=mRefreshSet.end()) {
         LightGetCertOp* waiting=next->get();
         waiting->SetPeerData(peerData);
-        waiting->Fn29F220(op->mStatus);
+        waiting->Fn29F220(op->GetStatus());
         ++next;
     }
     mRefreshSet.clear();
     mGetCertOp=NULL;
-    mRefreshStatus=op->mStatus;
+    mRefreshStatus=op->GetStatus();
     StartAutoRefresh(true);
 }
 // FUNCTION: WON 0x006deba0
@@ -461,6 +475,30 @@ WONStatus AuthContext::RefreshBlock(DWORD timeout)
 
 
 // File hashing uses the real separate WONCommon MD558, never WONCrypt MD5Digest.
+// FUNCTION: WON 0x006e0380
+void AuthContext::SetCDKey(const std::wstring& community,const CDKey& key)
+{
+    AutoCrit lock(mDataCrit);
+    mCommunityMap[community].mCDKey=key;
+}
+// FUNCTION: WON 0x006e0510
+void AuthContext::ClearCDKeyCommunityJoins()
+{
+    AutoCrit lock(mDataCrit);
+    mCDKeyCommunityJoinMap.clear();
+}
+// FUNCTION: WON 0x006e05e0
+void AuthContext::ClearUserData()
+{
+    AutoCrit lock(mDataCrit);
+    mSetCommunityUserDataMap.clear();
+}
+// FUNCTION: WON 0x006e06b0
+void AuthContext::ClearOneTimeData()
+{
+    ClearUserData();
+    ClearCDKeyCommunityJoins();
+}
 // FUNCTION: WON 0x006e06d0
 bool AuthContext::SetHashFile(const std::wstring& community)
 {
@@ -472,6 +510,8 @@ bool AuthContext::SetHashFile(const std::wstring& community)
 // FUNCTION: WON 0x006e07f0
 bool AuthContext::SetHashFile(const std::wstring& community,const std::string& file)
 {
+    // LOST-DEBUG: none: exact only.
+    EE_LOST_DEBUG(3);
     return SetHashFileList(community,std::list<std::string>(1,file));
 }
 // FUNCTION: WON 0x006e08e0
@@ -531,6 +571,8 @@ void AuthContext::SetPassword(const std::wstring& password)
 void AuthContext::AddCommunity(const std::wstring& community)
 {
     AutoCrit lock(mDataCrit);
+    // LOST-DEBUG: none: exact only.
+    EE_LOST_DEBUG(1);
     mCommunityMap.insert(std::map<std::wstring,AuthLoginCommunityData>::value_type(community,AuthLoginCommunityData()));
 }
 // FUNCTION: WON 0x006dfcc0
@@ -573,19 +615,6 @@ bool AuthContext::LoadVerifierKey(const std::string& filename)
 }
 
 // Actual Init operates on the borrowed prefixc0; no AuthContext allocation/lifetime authority.
-// FUNCTION: WON 0x006ddb70
-void AuthContext::Init()
-{
-    mSessionCleanItr=mSessionMap.begin();
-    mPeerData=new AuthPeerData;
-    mLoginSecretFile=WONAPICore::GetDefaultFileDirectory()+"_wonlogin.ks";
-    mServerContext=new ServerContext;
-    mDoAutoRefresh=false;
-    mRefreshStatus=0x186a4;
-    AutoCrit lock(GetVerifierCrit());
-    if(mCheckedVerifierFile) return;
-    LoadVerifierKey(WONAPICore::GetDefaultFileDirectory()+"_wonkver.pub");
-}
 // FUNCTION: WON 0x006df330
 void AuthContext::SetServerContext(ServerContext* context)
 {
@@ -882,3 +911,5 @@ bool AuthContext::AddAddressesFromDir(const DirEntityMap &theDir, const std::wst
 // (void __cdecl std::_Construct(struct std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsi)
 // TEMPLATE: WON 0x006f0110
 // (public: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::AuthSession>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::AuthSess)
+// TEMPLATE: WON 0x006aaa50
+// (public: __thiscall std::map<class WONAPI::IPAddr,class std::list<class WONAPI::IPAddr,class std::allocator<class WONAPI::IPAddr> >::iterator,struct st)

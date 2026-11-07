@@ -17,25 +17,48 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "ee/wonapi/WONLobbyAccountLogic.h"
+#include "LostDebug.h"
 using namespace WONAPI;
-namespace WONAPI {
 // Timeout for the firewall detect and accept operations, in milliseconds.
-unsigned long gLobbyTimeout4E0EBC = 20000;
+unsigned long WONAPI::gLobbyTimeout4E0EBC = 20000;
 
 // The three controls the login screen disables while it initialises.
 struct LoginControlIds : public ControlIdSet {
-    LoginControlIds(int inA,int inB,int inC) { insert(inA); insert(inB); insert(inC); }
+    void Add(value_type inA,value_type inB,value_type inC) { insert(inA); insert(inB); insert(inC); }
 };
 
+namespace WONAPI {
+// FUNCTION: WON 0x7dd100
+InitLogic::InitLogic()
+{
+    mHTTPSession = new HTTPSession;
+}
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x7dd200
+InitLogic::~InitLogic() {}
+}
+
+namespace WONAPI {
 // FUNCTION: WON 0x7dd340
 void InitLogic::InitComponent(ComponentConfig* inConfig)
 {
     SafeGetComponent(inConfig, mNetworkAdapterDialog, "ChooseNetworkAdapterDialog", __FILE__, 49);
 }
+}
 
-// FUNCTION: WON 0x7dd200
-InitLogic::~InitLogic() {}
+namespace WONAPI {
+// FUNCTION: WON 0x7dd370
+void InitLogic::ChooseNetworkAdapter()
+{
+    mNetworkAdapterDialog->Reset();
+    if (LobbyDoDialog(mNetworkAdapterDialog.get()) == 100001)
+        LobbyFn35B9C0(mNetworkAdapterDialog->GetSelectedAddress());
+}
+}
 
+namespace WONAPI {
 // FUNCTION: WON 0x7dd3b0
 bool InitLogic::SetError(int inError, const GUIString& inDescription)
 {
@@ -47,184 +70,9 @@ bool InitLogic::SetError(int inError, const GUIString& inDescription)
     }
     return false;
 }
-
-// FUNCTION: WON 0x7dfa80
-void InitLogic::KillFirewallTest()
-{
-    if (mAcceptOp.get() != NULL) {
-        mAcceptOp->Kill(true);
-        if (mAcceptOp->mSocket.get() != NULL)
-            mAcceptOp->mSocket->Fn2B1AD0();
-        mAcceptOp = NULL;
-    }
-    mFirewallSocket = NULL;
 }
 
-// FUNCTION: WON 0x7dfb00
-void InitLogic::KillHook()
-{
-    mHTTPSession->KillAll();
-    KillFirewallTest();
-}
-
-// FUNCTION: WON 0x7dfb50
-void InitLogic::HandleComponentEvent(ComponentEvent* inEvent)
-{
-    if (inEvent->mType != 100045) {
-        if (inEvent->mType != 100025)
-            return;
-        mIgnoredErrors |= mErrors;
-    }
-    Start(true);
-}
-
-// FUNCTION: WON 0x7dd100
-InitLogic::InitLogic()
-{
-    mHTTPSession = new HTTPSession;
-}
-
-// Complete original-backed next candidates. Scratch only; canonical ABI gates pending.
-// 3def30: DNSTestOp and LogicCompletion allocation require their full class contracts.
-// FUNCTION: WON 0x7def30
-void InitLogic::StartDNSTest()
-{
-    LobbyConfig* config = GetLobbyConfig();
-    if (config == NULL || config->mL54.empty())
-        return;
-    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_InitStart_String, gEmptyGUIString, false, 1), true);
-    SmartPtr<DNSTestOp> op = new DNSTestOp(config->mL54.front());
-    RunTrackedOp(op.get(), new LogicCompletion<InitLogic>(&InitLogic::DNSCompletion, this), 0);
-}
-// 3dd810: all four accessors are nullable. This callback owns no returned context.
-// FUNCTION: WON 0x7dd810
-void InitLogic::DNSCompletion(AsyncOp* inOp)
-{
-    LobbyConfig* config = GetLobbyConfig();
-    ServerContext* dir = LobbyFn35B2B0();
-    ServerContext* roomDir = LobbyFn35B310();
-    ServerContext* auth = LobbyFn35B250();
-    if (config == NULL || dir == NULL || roomDir == NULL || auth == NULL)
-        return;
-    if (inOp->GetStatus() == 0) {
-        // Original constructs this address, sets byte0=true, and destroys its host
-        // after both asynchronous setup calls. It is distinct from loop temporaries.
-        IPAddr address;
-        address.mB00 = true;
-        dir->RemoveAllAddresses();
-        std::list<std::string>::iterator it;
-        for (it = config->mL54.begin(); it != config->mL54.end(); ++it)
-            dir->AddAddress(IPAddr(*it));
-        for (it = config->mL60.begin(); it != config->mL60.end(); ++it)
-            roomDir->AddAddress(IPAddr(*it));
-        for (it = config->mL6C.begin(); it != config->mL6C.end(); ++it)
-            auth->AddAddress(IPAddr(*it));
-        if (roomDir->GetNumAddresses() < 1)
-            LobbyFn35B430();
-        StartHTTPDocuments();
-        StartDirectoryQuery();
-    } else {
-        SetError(2, ::LobbyContainer_DNSLookupFailed_String);
-    }
-}
-// 3df0c0: all three op locals survive until return, preserving original ownership/EH.
-// FUNCTION: WON 0x7df0c0
-void InitLogic::StartHTTPDocuments()
-{
-    LobbyConfig* config = GetLobbyConfig();
-    if (config == NULL)
-        return;
-    SmartPtr<GetHTTPDocumentOp> motd = new GetHTTPDocumentOp(config->mS78, HTTPDocType_MOTD);
-    motd->mPath = config->mSB8;
-    motd->mSession = mHTTPSession.get();
-    RunTrackedOp(motd.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
-    SmartPtr<GetHTTPDocumentOp> tou = new GetHTTPDocumentOp(config->mS78, HTTPDocType_TOU);
-    tou->mPath = config->mSB8;
-    tou->mSession = mHTTPSession.get();
-    RunTrackedOp(tou.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
-    SmartPtr<GetHTTPDocumentOp> adv = new GetHTTPDocumentOp(config->mS78, HTTPDocType_ADV);
-    adv->mPath = config->mSB8;
-    adv->mSession = mHTTPSession.get();
-    RunTrackedOp(adv.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
-}
-// 3de090..3de272, one body with two FileWriterException& catch continuations.
-// FUNCTION: WON 0x7de090
-void InitLogic::HandleTOU(GetHTTPDocumentOp* inOp)
-{
-    long systemTime;
-    long gameTime;
-    LobbyFn35B600(systemTime, gameTime);
-    bool changed = false;
-    if (inOp->mDocumentStatus[0] == 0 && inOp->mLastModified[0] > systemTime) {
-        FileWriter writer;
-        try {
-            if (writer.Open(LobbyFn35B630().c_str(), true)) {
-                ByteBufferPtr document = inOp->GetDocument(HTTPDocOwner_Sys);
-                if (document.get() != NULL && document->length() > 1)
-                    writer.WriteBytes(document->data(), document->length() - 1);
-            }
-            // Original sets this even if Open returns false, but not on an exception.
-            changed = true;
-        } catch (FileWriterException&) {}
-    }
-    if (inOp->mDocumentStatus[1] == 0 && inOp->mLastModified[1] > gameTime) {
-        FileWriter writer;
-        try {
-            if (writer.Open(LobbyFn35B650().c_str(), true)) {
-                ByteBufferPtr document = inOp->GetDocument(HTTPDocOwner_Game);
-                if (document.get() != NULL && document->length() > 1)
-                    writer.WriteBytes(document->data(), document->length() - 1);
-            }
-            changed = true;
-        } catch (FileWriterException&) {}
-    }
-    if (changed)
-        LoadTOUTimes();
-}
-// 3ddef0: requires the reviewed complete WONFile70 scalar/bool tail.
-// FUNCTION: WON 0x7ddef0
-void InitLogic::LoadTOUTimes()
-{
-    WONFile file(LobbyFn35B630());
-    long systemTime = file.GetModifyTime();
-    file.SetFilePath(LobbyFn35B650());
-    long gameTime = file.GetModifyTime();
-    LobbyFn35B5D0(systemTime, gameTime);
-}
-// 3de280: original always broadcasts the document event before type dispatch.
-// FUNCTION: WON 0x7de280
-void InitLogic::HTTPDocumentCompletion(AsyncOp* inOp)
-{
-    GetHTTPDocumentOp* op = static_cast<GetHTTPDocumentOp*>(inOp);
-    LobbyFn359100(new GotHTTPDocumentEvent(op), true);
-    switch (op->mDocumentType) {
-    case 1:
-        HandleTOU(op);
-        break;
-    case 2:
-        {
-            ByteBufferPtr document = op->GetDocument(HTTPDocOwner_Game);
-            if (document.get() != NULL && document->length() > 1)
-                ParseCrossPromotion(document.get());
-            else
-                LobbyFn359100(new SetCrossPromotionEvent(NULL, std::string("")), true);
-        }
-        break;
-    }
-}
-
-} //WONAPI
-
-#include "ee/wonapi/EELobbySound.h"
-// Existing admitted13 code above preserved verbatim; final entry4/761 below SCRATCH only.
 namespace WONAPI {
-// FUNCTION: WON 0x7dd370
-void InitLogic::ChooseNetworkAdapter()
-{
-    mNetworkAdapterDialog->Reset();
-    if (LobbyDoDialog(mNetworkAdapterDialog.get()) == 100001)
-        LobbyFn35B9C0(mNetworkAdapterDialog->GetSelectedAddress());
-}
 // FUNCTION: WON 0x7dd570
 void InitLogic::Start(bool inRetry)
 {
@@ -247,15 +95,9 @@ void InitLogic::Start(bool inRetry)
     }
     StartDNSTest();
 }
-// FUNCTION: WON 0x7dfb20
-void InitLogic::HandleControlEvent(int inControlId)
-{
-    switch (inControlId) {
-    case 200006: LobbyFn3627F0(0); break;
-    case 200008: LobbyFn360F00(); break;
-    case 200023: ChooseNetworkAdapter(); break;
-    }
 }
+
+namespace WONAPI {
 // FUNCTION: WON 0x7dd630
 void InitLogic::Init()
 {
@@ -269,7 +111,8 @@ void InitLogic::Init()
     if(aRoot == NULL)
         return;
 
-    LoginControlIds anIds(200001,200002,200003);
+    LoginControlIds anIds;
+    anIds.Add(200001,200002,200003);
     aRoot->Virtual8C(anIds, false);
     ::LobbyGlobal_LobbyMusic_Sound->SetLooping(true);
     if(LobbyFn35E350())
@@ -278,31 +121,92 @@ void InitLogic::Init()
         ::LobbyGlobal_LobbyMusic_Sound->Stop();
     Start(false);
 }
-} //WONAPI
 
 // cross-promotion source candidate; preserves admitted17 above byte-for-byte.
+}
+
+namespace WONAPI {
+// 3dd810: all four accessors are nullable. This callback owns no returned context.
+// FUNCTION: WON 0x7dd810
+void InitLogic::DNSCompletion(AsyncOp* inOp)
+{
+    LobbyConfig* config = GetLobbyConfig();
+    ServerContext* dir = LobbyFn35B2B0();
+    ServerContext* roomDir = LobbyFn35B310();
+    ServerContext* auth = LobbyFn35B250();
+    if (config == NULL || dir == NULL || roomDir == NULL || auth == NULL)
+        return;
+    if (inOp->GetStatus() == 0) {
+        // Original constructs this address, sets byte0=true, and destroys its host
+        // after both asynchronous setup calls. It is distinct from loop temporaries.
+        IPAddr address;
+        address.mB00 = true;
+        dir->RemoveAllAddresses();
+        std::list<std::string>::iterator it = config->mL54.begin();
+        while (true) {
+            if (it == config->mL54.end())
+                break;
+            {
+                IPAddr anAddr(*it);
+                dir->AddAddress(anAddr);
+            }
+            ++it;
+        }
+        it = config->mL60.begin();
+        while (true) {
+            if (it == config->mL60.end())
+                break;
+            {
+                IPAddr anAddr(*it);
+                roomDir->AddAddress(anAddr);
+            }
+            ++it;
+        }
+        it = config->mL6C.begin();
+        while (true) {
+            if (it == config->mL6C.end())
+                break;
+            {
+                IPAddr anAddr(*it);
+                auth->AddAddress(anAddr);
+            }
+            ++it;
+        }
+        if (roomDir->GetNumAddresses() < 1)
+            LobbyFn35B430();
+        StartHTTPDocuments();
+        StartDirectoryQuery();
+    } else {
+        SetError(2, ::LobbyContainer_DNSLookupFailed_String);
+    }
+}
+}
+
 namespace WONAPI {
 // FUNCTION: WON 0x7dda10
 void InitLogic::CrossPromotionImageCompletion(AsyncOp* inOp)
 {
-    if (inOp->GetStatus() != 0)
+    if (inOp->mStatus != 0)
         return;
     HTTPGetOp* op = static_cast<HTTPGetOp*>(inOp);
     SmartPtr<Image> image = Window::GetDefaultWindow()->DecodeImage(op->GetLocalPath().c_str());
     LobbyFn359100(new SetCrossPromotionEvent(image.get(),mCrossPromotion),true);
 }
+}
 
+namespace WONAPI {
 // FUNCTION: WON 0x7ddc00
-void InitLogic::ParseCrossPromotion(ByteBuffer* inDocument)
+void InitLogic::ParseCrossPromotion(const ByteBuffer* inDocument)
 {
     WriteBuffer storage(0,true);
     storage.AppendBytes(inDocument != NULL ? inDocument->data() : NULL,
                         inDocument != NULL ? inDocument->length() : 0);
     storage.AppendByte(0);
+    char* token = storage.mData;
     char delimiters[] = " \t\n=";
     std::string imageURL("");
     mCrossPromotion = "";
-    char* token = strtok(storage.mData,delimiters);
+    token = strtok(token,delimiters);
     while (token != NULL) {
         if (_stricmp(token,"link") == 0) {
             token = strtok(NULL,"\n");
@@ -327,28 +231,90 @@ void InitLogic::ParseCrossPromotion(ByteBuffer* inDocument)
     }
 }
 
-} //WONAPI
 
 // directory cohort SCRATCH ONLY; whole typed operation gate still pending.
-namespace WONAPI {
-// FUNCTION: WON 0x007df410
-void InitLogic::StartDirectoryQuery()
-{
-    ServerContext* context = LobbyFn35B2B0();
-    if (context == NULL)
-        return;
-    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_QueryingServers_String, gEmptyGUIString, false, 0), true);
-    SmartPtr<GetMultiDirOp> op = new GetMultiDirOp(context);
-    op->SetFlags(0x04000002);
-    op->AddPath(L"/TitanServers/Auth");
-    op->AddPath(L"/TitanServers/DBProxy");
-    op->AddPath(L"/TitanServers/Firewall");
-    LobbyConfig* config = GetLobbyConfig();
-    if (config != NULL)
-        op->AddPath(config->mW88 + L"/Patch");
-    RunTrackedOp(op.get(), new LogicCompletion<InitLogic>(&InitLogic::DirectoryCompletion, this), 0);
 }
 
+namespace WONAPI {
+// 3ddef0: requires the reviewed complete WONFile70 scalar/bool tail.
+// FUNCTION: WON 0x7ddef0
+void InitLogic::LoadTOUTimes()
+{
+    WONFile file(LobbyFn35B630());
+    long systemTime = file.GetModifyTime();
+    file.SetFilePath(LobbyFn35B650());
+    long gameTime = file.GetModifyTime();
+    LobbyFn35B5D0(systemTime, gameTime);
+}
+}
+
+namespace WONAPI {
+// 3de090..3de272, one body with two FileWriterException& catch continuations.
+// FUNCTION: WON 0x7de090
+void InitLogic::HandleTOU(GetHTTPDocumentOp* inOp)
+{
+    long systemTime;
+    long gameTime;
+    LobbyFn35B600(systemTime, gameTime);
+    bool changed = false;
+    if (inOp->GetDocumentStatus(HTTPDocOwner_Sys) == 0 && inOp->GetModifiedTime(HTTPDocOwner_Sys) > systemTime) {
+        FileWriter writer;
+        try {
+            if (writer.Open(LobbyFn35B630().c_str(), true)) {
+                ByteBufferPtr document = inOp->GetDocument(HTTPDocOwner_Sys);
+                if (document.get() != NULL && document->length() > 1)
+                    writer.WriteBytes(document->data(), document->length() - 1);
+            }
+            // Original sets this even if Open returns false, but not on an exception.
+            changed = true;
+        } catch (FileWriterException&) {}
+    }
+    if (inOp->GetDocumentStatus(HTTPDocOwner_Game) == 0 && inOp->GetModifiedTime(HTTPDocOwner_Game) > gameTime) {
+        FileWriter writer;
+        try {
+            if (writer.Open(LobbyFn35B650().c_str(), true)) {
+                ByteBufferPtr document = inOp->GetDocument(HTTPDocOwner_Game);
+                if (document.get() != NULL && document->length() > 1)
+                    writer.WriteBytes(document->data(), document->length() - 1);
+            }
+            changed = true;
+        } catch (FileWriterException&) {}
+    }
+    if (changed)
+        LoadTOUTimes();
+}
+}
+
+namespace WONAPI {
+// 3de280: original always broadcasts the document event before type dispatch.
+// FUNCTION: WON 0x7de280
+void InitLogic::HTTPDocumentCompletion(AsyncOp* inOp)
+{
+    GetHTTPDocumentOp* op = static_cast<GetHTTPDocumentOp*>(inOp);
+    LobbyFn359100(new GotHTTPDocumentEvent(op), true);
+    switch (op->mDocumentType) {
+    case 1:
+        HandleTOU(op);
+        break;
+    case 2:
+        {
+            ByteBufferPtr document = op->GetDocument(HTTPDocOwner_Game);
+            if (document.get() != NULL && document->length() > 1) {
+                ParseCrossPromotion(document.get());
+                return;
+            }
+            LobbyFn359100(new SetCrossPromotionEvent(NULL, std::string("")), true);
+            return;
+        }
+    }
+}
+
+
+#include "ee/wonapi/EELobbySound.h"
+// Existing admitted13 code above preserved verbatim; final entry4/761 below SCRATCH only.
+}
+
+namespace WONAPI {
 // FUNCTION: WON 0x007de4c0
 void InitLogic::DirectoryCompletion(AsyncOp* inOp)
 {
@@ -362,13 +328,12 @@ void InitLogic::DirectoryCompletion(AsyncOp* inOp)
         firewall == NULL || directory == NULL)
         return;
     WONStatus status = inOp->GetStatus();
-    switch (status) {
-    case 0:
-    case -1223: {
+    if (status == 0 || status == -1223) {
     GetMultiDirOp* op = static_cast<GetMultiDirOp*>(inOp);
     const GetEntityRequestList& requests = op->GetRequestList();
+    GetEntityRequestList::const_iterator i = requests.begin();
     int index = 0;
-    for (GetEntityRequestList::const_iterator i = requests.begin(); i != requests.end(); ++i,++index) {
+    for (; i != requests.end(); ++i,++index) {
         GetEntityRequest* request = (*i).get();
         if (request->GetStatus() != 0)
             continue;
@@ -411,36 +376,22 @@ void InitLogic::DirectoryCompletion(AsyncOp* inOp)
         if (SetError(errors,description))
             return;
     }
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(2);
     StartVersionCheck();
     StartFirewallTest();
-        break;
     }
-    default: {
+    else {
         GUIString description = LobbyFormatString(::LobbyContainer_DirLookupFailure_String,LobbyFn366170(status));
         SetError(0x20,description);
-        break;
-    }
     }
 }
 
-}
 
 // remaining Version/Firewall cohort; original-backed source, normal capture pending.
-namespace WONAPI {
-// FUNCTION: WON 0x007df6c0
-void InitLogic::StartVersionCheck()
-{
-    ServerContext* versions = LobbyFn35B3D0();
-    LobbyConfig* config = GetLobbyConfig();
-    if (versions == NULL || config == NULL)
-        return;
-    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_CheckingVersion_String,gEmptyGUIString,false,0),true);
-    SmartPtr<CheckValidVersionOp> op = new CheckValidVersionOp(config->mS78,versions);
-    op->SetConfigName(config->mSB8);
-    op->SetVersion(config->mS98);
-    RunTrackedOp(op.get(),new LogicCompletion<InitLogic>(&InitLogic::VersionCompletion,this),0);
 }
 
+namespace WONAPI {
 // FUNCTION: WON 0x007de8f0
 void InitLogic::VersionCompletion(AsyncOp* inOp)
 {
@@ -459,31 +410,38 @@ void InitLogic::VersionCompletion(AsyncOp* inOp)
         SetError(0x40,description);
         return;
     }
-    LoginControlIds ids(200001,200002,200003);
+    LoginControlIds ids;
+    ids.Add(200001,200002,200003);
     root->Virtual8C(ids,true);
     LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_InitComplete_String,gEmptyGUIString,false,2),true);
 }
-
-// FUNCTION: WON 0x007df880
-void InitLogic::StartFirewallTest()
-{
-    ServerContext* firewall = LobbyFn35B370();
-    if (firewall == NULL)
-        return;
-    KillFirewallTest();
-    LobbyFn361440();
-    SmartPtr<DetectFirewallOp> op = new DetectFirewallOp(firewall);
-    op->SetListenPort(LobbyFn361400());
-    op->SetDoListen(false);
-    op->SetWaitForConnect(false);
-    RunTrackedOp(op.get(),new LogicCompletion<InitLogic>(&InitLogic::FirewallCompletion,this),0);
-    LobbyFn359120(100055,true);
-    mFirewallSocket = new AsyncSocket(0);
-    if (mFirewallSocket->Fn2B0D90(LobbyFn361400(),0) != 0 ||
-        mFirewallSocket->Fn2B0FC0(1000) != 0)
-        mFirewallSocket = NULL;
 }
 
+namespace WONAPI {
+// FUNCTION: WON 0x007deb50
+void InitLogic::AcceptCompletion(AsyncOp* inOp)
+{
+    AcceptOp* op = mAcceptOp.get();
+    if (inOp != op)
+        return;
+    mAcceptOp = NULL;
+    if (op->GetStatus() != 0) {
+        LobbyFn361770(true);
+        LobbyFn359120(100055,true);
+        return;
+    }
+    if (op->mAcceptedSocket->GetDestAddr().Fn2B2FB0() == mFirewallAddress.Fn2B2FB0()) {
+        LobbyFn361770(false);
+        LobbyFn359120(100055,true);
+        return;
+    }
+    mAcceptOp = new AcceptOp(op->mSocket.get());
+    RunOp(mAcceptOp.get(),new LogicCompletion<InitLogic>(&InitLogic::AcceptCompletion,this),
+          gLobbyTimeout4E0EBC);
+}
+}
+
+namespace WONAPI {
 // FUNCTION: WON 0x007ded20
 void InitLogic::FirewallCompletion(AsyncOp* inOp)
 {
@@ -502,30 +460,158 @@ void InitLogic::FirewallCompletion(AsyncOp* inOp)
     }
     LobbyFn359120(100055,true);
 }
+}
 
-// FUNCTION: WON 0x007deb50
-void InitLogic::AcceptCompletion(AsyncOp* inOp)
+namespace WONAPI {
+// Complete original-backed next candidates. Scratch only; canonical ABI gates pending.
+// 3def30: DNSTestOp and LogicCompletion allocation require their full class contracts.
+// FUNCTION: WON 0x7def30
+void InitLogic::StartDNSTest()
 {
-    if (inOp != mAcceptOp.get())
+    LobbyConfig* config = GetLobbyConfig();
+    if (config == NULL || config->mL54.empty())
         return;
-    AcceptOp* op = static_cast<AcceptOp*>(inOp);
-    mAcceptOp = NULL;
-    if (op->GetStatus() != 0) {
-        LobbyFn361770(true);
-        LobbyFn359120(100055,true);
-        return;
-    }
-    if (op->mAcceptedSocket->GetDestAddr().Fn2B2FB0() == mFirewallAddress.Fn2B2FB0()) {
-        LobbyFn361770(false);
-        LobbyFn359120(100055,true);
-        return;
-    }
-    mAcceptOp = new AcceptOp(op->mSocket.get());
-    RunOp(mAcceptOp.get(),new LogicCompletion<InitLogic>(&InitLogic::AcceptCompletion,this),
-          gLobbyTimeout4E0EBC);
+    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_InitStart_String, gEmptyGUIString, false, 1), true);
+    SmartPtr<DNSTestOp> op = new DNSTestOp(config->mL54.front());
+    RunTrackedOp(op.get(), new LogicCompletion<InitLogic>(&InitLogic::DNSCompletion, this), 0);
+}
 }
 
+namespace WONAPI {
+// 3df0c0: all three op locals survive until return, preserving original ownership/EH.
+// FUNCTION: WON 0x7df0c0
+void InitLogic::StartHTTPDocuments()
+{
+    LobbyConfig* config = GetLobbyConfig();
+    if (config == NULL)
+        return;
+    SmartPtr<GetHTTPDocumentOp> motd = new GetHTTPDocumentOp(config->mS78, HTTPDocType_MOTD);
+    motd->SetExtraConfig(config->mSB8);
+    motd->SetHTTPSession(mHTTPSession.get());
+    RunTrackedOp(motd.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
+    SmartPtr<GetHTTPDocumentOp> tou = new GetHTTPDocumentOp(config->mS78, HTTPDocType_TOU);
+    tou->mPath = config->mSB8;
+    tou->mSession = mHTTPSession.get();
+    RunTrackedOp(tou.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
+    SmartPtr<GetHTTPDocumentOp> adv = new GetHTTPDocumentOp(config->mS78, HTTPDocType_ADV);
+    adv->SetExtraConfig(config->mSB8);
+    adv->mSession = mHTTPSession.get();
+    RunTrackedOp(adv.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
 }
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x007df410
+void InitLogic::StartDirectoryQuery()
+{
+    ServerContext* context = LobbyFn35B2B0();
+    if (context == NULL)
+        return;
+    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_QueryingServers_String, gEmptyGUIString, false, 0), true);
+    SmartPtr<GetMultiDirOp> op = new GetMultiDirOp(context);
+    op->SetFlags(0x04000002);
+    op->AddPath(L"/TitanServers/Auth");
+    op->AddPath(L"/TitanServers/DBProxy");
+    op->AddPath(L"/TitanServers/Firewall");
+    LobbyConfig* config = GetLobbyConfig();
+    if (config != NULL)
+        op->AddPath(config->mW88 + L"/Patch");
+    RunTrackedOp(op.get(), new LogicCompletion<InitLogic>(&InitLogic::DirectoryCompletion, this), 0);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_TRACE(op.get());
+}
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x007df6c0
+void InitLogic::StartVersionCheck()
+{
+    ServerContext* versions = LobbyFn35B3D0();
+    LobbyConfig* config = GetLobbyConfig();
+    if (versions == NULL || config == NULL)
+        return;
+    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_CheckingVersion_String,gEmptyGUIString,false,0),true);
+    SmartPtr<CheckValidVersionOp> op = new CheckValidVersionOp(config->mS78,versions);
+    op->SetConfigName(config->mSB8);
+    op->SetVersion(config->mS98);
+    RunTrackedOp(op.get(),new LogicCompletion<InitLogic>(&InitLogic::VersionCompletion,this),0);
+}
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x007df880
+void InitLogic::StartFirewallTest()
+{
+    ServerContext* firewall = LobbyFn35B370();
+    if (firewall == NULL)
+        return;
+    KillFirewallTest();
+    LobbyFn361440();
+    SmartPtr<DetectFirewallOp> op = new DetectFirewallOp(firewall);
+    op->SetListenPort(LobbyFn361400());
+    op->SetDoListen(false);
+    op->SetWaitForConnect(false);
+    RunTrackedOp(op.get(),new LogicCompletion<InitLogic>(&InitLogic::FirewallCompletion,this),0);
+    LobbyFn359120(100055,true);
+    mFirewallSocket = new AsyncSocket(0);
+    WONStatus aStatus = mFirewallSocket->Fn2B0D90(LobbyFn361400(),0);
+    if (aStatus == 0) {
+        aStatus = mFirewallSocket->Fn2B0FC0(1000);
+        if (aStatus == 0)
+            return;
+    }
+    mFirewallSocket = NULL;
+}
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x7dfa80
+void InitLogic::KillFirewallTest()
+{
+    if (mAcceptOp.get() != NULL) {
+        mAcceptOp->Kill(true);
+        if (mAcceptOp->mSocket.get() != NULL)
+            mAcceptOp->mSocket->Fn2B1AD0();
+        mAcceptOp = NULL;
+    }
+    mFirewallSocket = NULL;
+}
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x7dfb00
+void InitLogic::KillHook()
+{
+    mHTTPSession->KillAll();
+    KillFirewallTest();
+}
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x7dfb20
+void InitLogic::HandleControlEvent(int inControlId)
+{
+    switch (inControlId) {
+    case 200006: LobbyFn3627F0(0); break;
+    case 200008: LobbyFn360F00(); break;
+    case 200023: ChooseNetworkAdapter(); break;
+    }
+}
+}
+
+namespace WONAPI {
+// FUNCTION: WON 0x7dfb50
+void InitLogic::HandleComponentEvent(ComponentEvent* inEvent)
+{
+    if (inEvent->mType != 100045) {
+        if (inEvent->mType != 100025)
+            return;
+        mIgnoredErrors |= mErrors;
+    }
+    Start(true);
+}
+}
+
 // TEMPLATE: WON 0x007f20a0
 
 // Compiler-generated and header-inline functions this unit emits:

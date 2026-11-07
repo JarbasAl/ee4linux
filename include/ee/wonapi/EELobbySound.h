@@ -35,8 +35,7 @@ public:
     void Fn329BF0(bool inMuted);            // 0x329bf0: toggles descriptor flag4; call-only provisional name
     bool GetMuted();                       //genuine SDK CPP, native329c20/9
 
-    long mL08;                              // +0x08
-    std::string mPath;                      // +0x0c
+    SoundDescriptor mDescriptor;            // +0x08
     bool mIsLooping;                        // +0x1c; natural padding through1f, actual ctor byte store
 };
 

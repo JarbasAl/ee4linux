@@ -37,8 +37,7 @@ bool ScrollbarScroller::EnableScrollbar(Scrollbar* scrollbar,ScrollbarCondition 
     case ScrollbarCondition_Disable:scrollbar->SetVisible(false);break;
     case ScrollbarCondition_Enable:scrollbar->SetVisible(true);break;
     case ScrollbarCondition_Conditional:
-        if(scrollbar->mVertical) scrollbar->SetVisible(mScrollArea->mTotalHeight>mScrollArea->mScrollArea.height);
-        else scrollbar->SetVisible(mScrollArea->mL0A4>mScrollArea->mScrollArea.width);
+        scrollbar->SetVisible(scrollbar->mVertical ? mScrollArea->mTotalHeight>mScrollArea->mScrollArea.height : mScrollArea->mL0A4>mScrollArea->mScrollArea.width);
         break;
     }
     return visible!=scrollbar->IsVisible();

@@ -36,7 +36,7 @@ public:
     OrderedListElement(int color,Font* font,const GUIString& text)
         :mFont(font),mColor(color),mText(text)
     {
-        mWidth=font->GetStringWidth(mText,0,mText.length()); //genuine SDK one-arg inline expansion
+        mWidth=font->GetStringWidth(mText);
     }
     virtual int GetWidth() { return 0; } //actualfolded2c7b10
     virtual int GetHeight() { return mFont->GetHeight(); } //33aef0

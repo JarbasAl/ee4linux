@@ -58,9 +58,9 @@ void ScrollArea::Virtual08()
     mScrollArea.y=mTopPad;
     mScrollArea.width=Width()-mRightPad-mLeftPad;
     mScrollArea.height=Height()-mBottomPad-mTopPad;
-    if(mScrollArea.width<0) mScrollArea.width=0;
-    if(mScrollArea.height<0) mScrollArea.height=0;
-    if(bottom) mVertOffset=mTotalHeight+mExtraHeight-mScrollArea.height;
+    if(mScrollArea.Width()<0) mScrollArea.width=0;
+    if(mScrollArea.Height()<0) mScrollArea.height=0;
+    if(bottom) mVertOffset=mTotalHeight+mExtraHeight-mScrollArea.Height();
     VirtualD0();
     VirtualCC(false);
 }

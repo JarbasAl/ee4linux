@@ -15,10 +15,11 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/EELobbySound.h"
+#include "LostDebug.h"
 namespace WONAPI {
-void LobbyFn361CB0(ByteBuffer*);
-void LobbyFn361CD0(ByteBuffer*);
-void LobbyFn361CF0(LobbyClient*, ByteBuffer*);
+void LobbyFn361CB0(const ByteBuffer*);
+void LobbyFn361CD0(const ByteBuffer*);
+void LobbyFn361CF0(LobbyClient*, const ByteBuffer*);
 void LobbyFn361D50(LobbyClient*, bool);
 void LobbyFn361D70(bool);
 void LobbyMessageBox(const GUIString&, const GUIString&);
@@ -30,7 +31,8 @@ void LobbyFn361D30(LobbyGame*);
 // Actual original scope cleanup3f06d0, bool storage only; generated support, zero primary credit.
 struct StagingLeaveOnError {
     bool mLeave;
-    ~StagingLeaveOnError();
+    StagingLeaveOnError() : mLeave(true) {}
+    ~StagingLeaveOnError() { if (mLeave) LobbyFn361310(false); }
 };
 
 // FUNCTION: WON 0x007ef160
@@ -53,7 +55,7 @@ void StagingLogic::InitComponent(ComponentConfig* inConfig)
 void StagingLogic::Fn3EF2B0(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
     if (inClient->Fn3A5580()) return;
-    SmartPtr<ByteBuffer> aReply = mGame->Fn3A7830(inBuffer, inClient);
+    ConstSmartPtr<ByteBuffer> aReply = mGame->Fn3A7830(inBuffer, inClient);
     if (aReply.get() == NULL) return;
     Fn3EFDE0(inClient, aReply.get());
     LobbyPlayer* aPlayer = inClient->mPlayer.get();
@@ -64,6 +66,7 @@ void StagingLogic::Fn3EF2B0(ReadBuffer& inBuffer, LobbyClient* inClient)
         aPlayer->WriteToBuffer(aBuffer);
         Fn3EFDA0(aBuffer.ToByteBuffer(true).get());
         LobbyFn361260();
+        return;
     }
 }
 
@@ -237,7 +240,7 @@ void StagingLogic::Fn3EFB50(ReadBuffer& inBuffer, LobbyClient* inClient)
 }
 
 // FUNCTION: WON 0x007efd20
-void StagingLogic::Fn3EFD20(ByteBuffer* inMessage, LobbyClient* inClient)
+void StagingLogic::Fn3EFD20(const ByteBuffer* inMessage, LobbyClient* inClient)
 {
     if (inMessage != NULL) {
         ReadBuffer aBuffer(inMessage->data(), inMessage->length());
@@ -246,7 +249,7 @@ void StagingLogic::Fn3EFD20(ByteBuffer* inMessage, LobbyClient* inClient)
 }
 
 // FUNCTION: WON 0x007efd60
-void StagingLogic::Fn3EFD60(ByteBuffer* inMessage)
+void StagingLogic::Fn3EFD60(const ByteBuffer* inMessage)
 {
     if (mGame.get() != NULL) {
         if (Fn3EFE10()) Fn3EFD20(inMessage, mMyClient.get());
@@ -255,7 +258,7 @@ void StagingLogic::Fn3EFD60(ByteBuffer* inMessage)
 }
 
 // FUNCTION: WON 0x007efda0
-void StagingLogic::Fn3EFDA0(ByteBuffer* inMessage)
+void StagingLogic::Fn3EFDA0(const ByteBuffer* inMessage)
 {
     if (mGame.get() != NULL && Fn3EFE10()) {
         Fn3EFD20(inMessage, mMyClient.get());
@@ -264,7 +267,7 @@ void StagingLogic::Fn3EFDA0(ByteBuffer* inMessage)
 }
 
 // FUNCTION: WON 0x007efde0
-void StagingLogic::Fn3EFDE0(LobbyClient* inClient, ByteBuffer* inMessage)
+void StagingLogic::Fn3EFDE0(LobbyClient* inClient, const ByteBuffer* inMessage)
 {
     if (mGame.get() != NULL && Fn3EFE10()) LobbyFn361CF0(inClient, inMessage);
 }
@@ -403,27 +406,25 @@ void StagingLogic::Fn3F0410()
     int aGameType = LobbyFn361190();
     if (aGameType == 0) return;
     if (aGameType != 1 && LobbyFn35E360()) {
-        if (!LobbyFn361B40()) {
-            if (LobbyFn358EF0(::GameStagingLogic_ConnectWarningTitle1_String, ::GameStagingLogic_ConnectWarningDetails1_String, true) != 0x186a1) return;
-        } else if (LobbyFn361B20()) {
-            if (LobbyFn358EF0(::GameStagingLogic_ConnectWarningTitle2_String, ::GameStagingLogic_ConnectWarningDetails2_String, true) != 0x186a1) return;
-        }
+        int aResult = 0x186a1;
+        if (!LobbyFn361B40()) aResult = LobbyFn358EF0(::GameStagingLogic_ConnectWarningTitle1_String, ::GameStagingLogic_ConnectWarningDetails1_String, true);
+        else if (LobbyFn361B20()) aResult = LobbyFn358EF0(::GameStagingLogic_ConnectWarningTitle2_String, ::GameStagingLogic_ConnectWarningDetails2_String, true);
+        if (aResult != 0x186a1) return;
     }
     mCreateGameDialog->SetGameType(aGameType);
     mCreateGameDialog->Reset(false);
     if (LobbyDoDialog(mCreateGameDialog.get()) != 0x186a1) return;
     SmartPtr<LobbyGame> aGame = mCreateGameDialog->GetGame();
-    aGame->mAddress = LobbyFn3617A0(aGameType);
+    aGame->SetAddress(LobbyFn3617A0(aGameType));
     mGame = aGame;
     mJoinStatus = 0;
     StagingLeaveOnError aCleanup;
-    aCleanup.mLeave = true;
     if (!aGame->Fn3A6DC0()) return;
     if (!LobbyFn361C30(aGame.get())) return;
     mMyClient = LobbyFn361C90();
     if (mMyClient.get() == NULL) return;
-    aGame->mIsHost = true;
-    aGame->mL60 = mMyClient->GetClientId();
+    aGame->SetIsHost(true);
+    aGame->SetCaptainId(mMyClient->GetClientId());
     mMyClient->Fn3A5500(true, true);
     if (!aGame->Fn3A6DD0()) return;
     aGame->mClients->Fn3A5CC0(mMyClient.get());
@@ -435,11 +436,6 @@ void StagingLogic::Fn3F0410()
     mLastReady = LobbyFn3613A0();
     LobbyFn361260();
     LobbyFn359120(0x186bd, true);
-}
-
-StagingLeaveOnError::~StagingLeaveOnError()
-{
-    if (mLeave) LobbyFn361310(false);
 }
 
 // FUNCTION: WON 0x007f06e0
@@ -488,8 +484,7 @@ void StagingLogic::Fn3F08B0(LobbyGame* inGame)
     }
     if (!Fn3F0C60(true)) return;
     StagingLeaveOnError aCleanup;
-    aCleanup.mLeave = true;
-    SmartPtr<LobbyGame> aGame = LobbyGame::CreateGame(static_cast<LobbyGameType>(inGame->mL2C));
+    SmartPtr<LobbyGame> aGame = LobbyGame::CreateGame(static_cast<LobbyGameType>(inGame->GetGameType()));
     aGame->CopyFrom(inGame);
     mGame = aGame;
     mJoinStatus = 1;
@@ -499,7 +494,7 @@ void StagingLogic::Fn3F08B0(LobbyGame* inGame)
     if (mMyClient.get() == NULL) return;
     if (!aGame->Fn3A6DB0()) return;
     mJoinOp = new AsyncOp;
-    SmartPtr<ByteBuffer> aMessage = mGame->Fn3A72C0();
+    ConstSmartPtr<ByteBuffer> aMessage = mGame->Fn3A72C0();
     Fn3EFD60(aMessage.get());
     LobbyFn358E70(mJoinOp.get(), ::GameStagingLogic_GettingGameInfoTitle_String, ::GameStagingLogic_GettingGameInfoDetails_String, 1, 0);
     mJoinOp = NULL;
@@ -512,6 +507,8 @@ void StagingLogic::Fn3F08B0(LobbyGame* inGame)
     mLastReadyTime = 0;
     mLastAllReady = aGame->Fn3A7400();
     mLastReady = LobbyFn3613A0();
+    // LOST-DEBUG: none: exact only
+    EE_LOST_TRACE(mGame.get());
     LobbyFn359120(0x186bd, true);
 }
 
@@ -565,11 +562,13 @@ void StagingLogic::Fn3F0DE0(bool inShowError)
 // FUNCTION: WON 0x007f0e10
 void StagingLogic::Fn3F0E10(LobbyClient* inClient, bool inFlag)
 {
-    if (inClient == NULL || mGame.get() == NULL) return;
+    LobbyGame* aGame = mGame.get();
+    if (inClient == NULL || aGame == NULL) return;
+    int aKind = !inFlag;
     bool isMe = inClient == mMyClient.get();
-    int aFlags = mGame->GetGameType() == 2 ? 6 : 10;
+    int aFlags = aGame->GetGameType() == 2 ? 6 : 10;
     LobbyFn359100(new ClientModeratedEvent(inClient, aFlags, mGame->mName,
-        !inFlag, 0, isMe, gEmptyGUIString), true);
+        aKind, 0, isMe, gEmptyGUIString), true);
     if (isMe) {
         Fn3F0C60(false);
         if (inFlag) LobbyMessageBox(::StagingLogic_BannedTitle_String, ::StagingLogic_BannedDetails_String);

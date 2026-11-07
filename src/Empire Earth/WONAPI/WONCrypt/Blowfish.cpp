@@ -10,6 +10,7 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONBlowfish.h"
 #include "ee/wonapi/WONRandom.h"
+#include "ee/wonapi/WONLittleEndian.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007d5e20
 Blowfish::Blowfish()
@@ -187,7 +188,7 @@ ByteBufferPtr Blowfish::Encrypt(const void *inOrig, int inLen) const
 
 	// Calc first 8 Bytes (includes length of encrypted block)
 	int j;
-	int littleEndianInLen = inLen;
+	int littleEndianInLen = LongToLittleEndian(inLen);
 	for(j=0; j<4; j++)
 		XOR_MASK[j] ^= ((unsigned char*)&littleEndianInLen)[j];
 
@@ -249,7 +250,7 @@ ByteBufferPtr Blowfish::Decrypt(const void *inOrig, int inLen) const
 		XOR_MASK[j] = in[j];
 	}			
 
-	int outLen = *(long*)aBuf;
+	int outLen = LongFromLittleEndian(*(long*)aBuf);
 	if(outLen<0)
 		return NULL;
 

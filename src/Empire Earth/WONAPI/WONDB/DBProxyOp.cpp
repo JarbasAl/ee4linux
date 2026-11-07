@@ -9,6 +9,18 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
+// Direct-address form of the constructor; nothing in this build calls it.
+DBProxyOp::DBProxyOp(const IPAddr& theAddr)
+	: ServerRequestOp(theAddr),
+	  mMessageType(0),
+	  mMessageReplyType(0),
+	  mSubMessageType(0),
+	  mSubMessageReplyType(0),
+      mReceivedData(0,true),
+	  mReplyErrorString("")
+{
+
+}
 // FUNCTION: WON 0x006cca10
 DBProxyOp::DBProxyOp(ServerContext* inContext)
     : ServerRequestOp(inContext), mMessageType(0), mMessageReplyType(0),
@@ -48,21 +60,6 @@ WONStatus DBProxyOp::Virtual14()
         return aStatus;
     }
     return 100059;
-}
-}
-
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK direct-address constructor prerequisite.
-namespace WONAPI {
-DBProxyOp::DBProxyOp(const IPAddr& theAddr)
-	: ServerRequestOp(theAddr),
-	  mMessageType(0),
-	  mMessageReplyType(0),
-	  mSubMessageType(0),
-	  mSubMessageReplyType(0),
-      mReceivedData(0,true),
-	  mReplyErrorString("")
-{
-
 }
 }
 

@@ -63,20 +63,18 @@ void HTTPCache::ReadCacheMap()
     mNextFreeId=1;
     FileReader reader;
     std::string path=mCachePath+"cachemap.dat";
-    if (reader.Open(path.c_str())) {
-        try {
-            if (reader.ReadLong()==gHTTPCacheVersion) {
-                int count=reader.ReadLong();
-                for (int i=0;i<count;++i) {
-                    SmartPtr<HTTPCacheEntry> entry=new HTTPCacheEntry;
-                    entry->ReadFromFile(reader);
-                    entry->mLocalPath=mCachePath+entry->mFileName;
-                    mCacheIdMap[entry->mId]=entry;
-                    mCacheLocationMap[entry->mRemoteLocation]=entry;
-                }
-            }
-        } catch (FileReaderException&) {
+    if (!reader.Open(path.c_str())) return;
+    try {
+        if (reader.ReadLong()!=gHTTPCacheVersion) return;
+        int count=reader.ReadLong();
+        for (int i=0;i<count;++i) {
+            SmartPtr<HTTPCacheEntry> entry=new HTTPCacheEntry;
+            entry->ReadFromFile(reader);
+            entry->mLocalPath=mCachePath+entry->mFileName;
+            mCacheIdMap[entry->mId]=entry;
+            mCacheLocationMap[entry->mRemoteLocation]=entry;
         }
+    } catch (FileReaderException&) {
     }
 }
 // FUNCTION: WON 0x006d1ca0
@@ -86,13 +84,15 @@ void HTTPCache::WriteCacheMap()
     std::string path=mCachePath+"cachemap.dat";
     if (!writer.Open(path.c_str(),false)) return;
     time_t now=time(NULL);
+    unsigned long position;
+    int count=0;
+    CacheIdMap::iterator i;
     try {
         writer.WriteLong(gHTTPCacheVersion);
         int size=mCacheIdMap.size();
-        unsigned long position=writer.pos();
+        position=writer.pos();
         writer.WriteLong(size);
-        int count=0;
-        CacheIdMap::iterator i=mCacheIdMap.begin();
+        i=mCacheIdMap.begin();
         while (i!=mCacheIdMap.end()) {
             HTTPCacheEntry* entry=i->second.get();
             if (entry->IsValid() && now-entry->mLastAccessTime<1209600) {

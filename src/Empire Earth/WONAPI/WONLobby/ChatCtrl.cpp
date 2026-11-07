@@ -22,6 +22,7 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/WONLobbyControls.h"
+#include "LostDebug.h"
 using namespace WONAPI;
 // Actual original RTTI is global namespace ChatLink, VT452df8, allocation8c.
 class ChatLink : public WONAPI::TextLink {
@@ -35,12 +36,12 @@ public:
         mEnabled=true;
         mPrevious=NULL;
     }
-    ChatLink(const WONAPI::GUIString& inText,unsigned short inId,WONAPI::Font* inFont,
-        int inColor,WONAPI::LobbyServer* inServer) : mKind(0)
+    ChatLink(const WONAPI::GUIString& inText,unsigned short inId,WONAPI::LobbyServer* inServer,
+        WONAPI::Font* inFont,int inColor) : mKind(0)
     {
         mText=inText;
-        mColor=inColor;
         mGroupId=inId;
+        mColor=inColor;
         mFont=inFont;
         mEnabled=true;
         mPrevious=NULL;
@@ -185,20 +186,21 @@ void ChatCtrl::Fn3B72E0(AnnounceClientLocationEvent* inEvent)
     LobbyServer* aServer=LobbyFn35B6F0();
     SmartPtr<ChatLink> aClientLink=Fn3B7030(inEvent->mClient.get());
     SmartPtr<ChatLink> aRoomLink=new ChatLink(inEvent->mRoom,initialClient->GetGroupId20(),
-        mChatOutput->mLinkFont.get(),mGroupColor,aServer);
-    SmartPtr<ChatLink> aServerLink=new ChatLink(inEvent->mServer,initialClient->mGroupId1E,
-        mChatOutput->mLinkFont.get(),mGroupColor,aServer);
-    TextSegmentBase* aLinks[3]={aRoomLink.get(),aServerLink.get(),aClientLink.get()};
+        aServer,mChatOutput->mLinkFont.get(),mGroupColor);
+    SmartPtr<ChatLink> aServerLink=new ChatLink(inEvent->mServer,initialClient->GetGroupId1E(),
+        aServer,mChatOutput->mLinkFont.get(),mGroupColor);
+    TextSegmentBase* aLinks[3]={aClientLink.get(),aRoomLink.get(),aServerLink.get()};
     GUIString aFormat(GetEmptyGUIStringData());
     bool hasRoom=inEvent->mRoom.length()!=0;
     bool hasServer=inEvent->mServer.length()!=0;
     if(initialClient->Fn3A5470()) aFormat=::ChatCtrl_ClientIsAnonymous_String;
-    else if(hasRoom) {
-        if(hasServer) aFormat=::ChatCtrl_ClientInGameAndChat_String;
-        else aFormat=::ChatCtrl_ClientInGame_String;
-    } else if(hasServer) aFormat=::ChatCtrl_ClientInChat_String;
+    else if(hasRoom && hasServer) aFormat=::ChatCtrl_ClientInGameAndChat_String;
+    else if(hasServer) aFormat=::ChatCtrl_ClientInChat_String;
+    else if(hasRoom) aFormat=::ChatCtrl_ClientInGame_String;
     else aFormat=::ChatCtrl_ClientNotOnServer_String;
     Fn3B6F10(aFormat,NULL,0,aLinks,3,true);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
 }
 
 //3b7660..3b7c5a,1530B; original31 cleanup states, independent branch allocation guards.
@@ -234,6 +236,8 @@ void ChatCtrl::Fn3B7660(AnnounceFriendEvent* inEvent)
     } else if((aFriend->mFlags&2)!=0) aFormat=::ChatCtrl_FriendIsPlaying_String;
     else aFormat=::ChatCtrl_FriendIsOn_String;
     Fn3B6F10(aFormat,NULL,0,aLinks,2,true);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(2);
 }
 
 //3b9910..3b9b7b,619B normal code; table24B starts3b9b7c, excluded credit.
@@ -294,8 +298,7 @@ void ChatCtrl::Fn3B85B0(RecvChatEvent* inEvent)
     TextSegmentBase* aLinks[2]={aSender.get(),NULL};
     int count=1;
     if(inEvent->mTarget.get()!=NULL) {
-        aTarget=Fn3B7030(inEvent->mTarget.get());
-        aLinks[1]=aTarget.get();
+        aLinks[1]=(aTarget=Fn3B7030(inEvent->mTarget.get())).get();
         count=2;
     }
     const GUIString* aText=&inEvent->mText;
@@ -303,11 +306,13 @@ void ChatCtrl::Fn3B85B0(RecvChatEvent* inEvent)
     if(inEvent->IsWhisper()) aFormat=crossRoom?::ChatCtrl_TeamEmote_String : ::ChatCtrl_Emote_String;
     else if(inEvent->IsEmote() && inEvent->mTarget.get()!=NULL) {
         if(inEvent->mSender->GetClientId()==mClientId)
-            aFormat=inEvent->mTarget->mClientId==mClientId?::ChatCtrl_YouWhisperToYourself_String : ::ChatCtrl_YouWhisper_String;
+            if(inEvent->mTarget->mClientId==mClientId) aFormat=::ChatCtrl_YouWhisperToYourself_String;
+            else aFormat=::ChatCtrl_YouWhisper_String;
         else aFormat=::ChatCtrl_SomeoneWhispersToYou_String;
     } else if(inEvent->IsWarning() && inEvent->mTarget.get()!=NULL) {
         if(inEvent->mSender->GetClientId()==mClientId)
-            aFormat=inEvent->mTarget->mClientId==mClientId?::ChatCtrl_YouWarnYourself_String : ::ChatCtrl_YouWarnSomeone_String;
+            if(inEvent->mTarget->mClientId==mClientId) aFormat=::ChatCtrl_YouWarnYourself_String;
+            else aFormat=::ChatCtrl_YouWarnSomeone_String;
         else if(inEvent->mTarget->mClientId==mClientId) aFormat=::ChatCtrl_SomeoneWarnsYou_String;
         else aFormat=::ChatCtrl_SomeoneWarnsSomeone_String;
     } else aFormat=crossRoom?::ChatCtrl_TeamChat_String : ::ChatCtrl_NormalChat_String;
@@ -381,21 +386,21 @@ unsigned char LobbyCtrlFn3B94F0(unsigned long inSeconds,bool inRoundUp,unsigned 
 // FUNCTION: WON 0x007b9680
 void ChatCtrl::Fn3B9680(AlertEvent* inEvent)
 {
-    if((mRoomSpecFlags&inEvent->mKind)!=inEvent->mKind) return;
-    GUIString aFormat(GetEmptyGUIStringData());
-    const GUIString* aText=&inEvent->mText;
-    switch(inEvent->mValue) {
+    if((mRoomSpecFlags&inEvent->GetKind())!=inEvent->GetKind()) return;
+    GUIString aFormat;
+    const GUIString& aTextRef=inEvent->GetText();
+    const GUIString* aText=&aTextRef;
+    switch(inEvent->GetValue()) {
     case 0:
         aFormat=::ChatCtrl_ServerAlert_String;
         break;
     case 1: {
         unsigned long value=0;
-        unsigned char unit=LobbyCtrlFn3B94F0(inEvent->mSeverity,false,&value);
-        aFormat=::LobbyResource_GetString((LobbyResourceId)(unit+0x86));
+        aFormat=::LobbyResource_GetString((LobbyResourceId)(LobbyCtrlFn3B94F0(inEvent->mSeverity,false,&value)+0x86));
         if(value!=0) {
             char text[20];
             sprintf(text,"%lu",value);
-            GUIString number(new GUIStringData(text));
+            GUIString number(text);
             const GUIString* arg=&number;
             Fn3B6F10(aFormat,&arg,1,NULL,0,true);
             aFormat=::ChatCtrl_AlertComment_String;
@@ -408,7 +413,7 @@ void ChatCtrl::Fn3B9680(AlertEvent* inEvent)
         aFormat=::ChatCtrl_AlertComment_String;
         break;
     }
-    if(aText->length()!=0) Fn3B6F10(aFormat,&aText,1,NULL,0,true);
+    if(!aTextRef.empty()) Fn3B6F10(aFormat,&aText,1,NULL,0,true);
 }
 
 //3b82f0,695B. The handled write precedes parser lookup and all later failures.
@@ -429,7 +434,7 @@ void ChatCtrl::Fn3B82F0(SetChatInputEvent* inEvent)
     mChatInput->SetText(input,false);
     mChatInput->SelectRange(-1,-1);
     if(mChatInput->GetText().find(input,0)!=-1) return;
-    if(mChatInput->GetText()[0]!=parser->mPrefix)
+    if(mChatInput->GetText()[0]!=parser->GetPrefix())
         input.append(mChatInput->GetText());
     mChatInput->SetText(input,false);
     mChatInput->SelectRange(-1,-1);
@@ -442,10 +447,10 @@ void ChatCtrl::Fn3B7C60(GroupInvitationEvent* inEvent)
     if((mRoomSpecFlags&inEvent->mKind)!=inEvent->mKind) return;
     SmartPtr<ChatLink> aClient=Fn3B7030(inEvent->mClient.get());
     SmartPtr<ChatLink> aRoom=new ChatLink(inEvent->mGameName,inEvent->mGameId,
-        mChatOutput->mLinkFont.get(),mGroupColor,LobbyFn35B6F0());
+        LobbyFn35B6F0(),mChatOutput->mLinkFont.get(),mGroupColor);
     TextSegmentBase* aLinks[2]={aClient.get(),aRoom.get()};
     const GUIString* aText[2]={&inEvent->mGameName,&inEvent->mComment};
-    int id=inEvent->mFlag?(inEvent->mInvite?0x8f:0x90):(inEvent->mInvite?0x8d:0x8e);
+    int id=!inEvent->mFlag?(inEvent->mInvite?0x8d:0x8e):(inEvent->mInvite?0x8f:0x90);
     if(inEvent->mComment.length()!=0) id+=4;
     GUIString aFormat(::LobbyResource_GetString((LobbyResourceId)(id)));
     Fn3B6F10(aFormat,aText,2,aLinks,2,true);
@@ -464,8 +469,10 @@ void ChatCtrl::Fn3B7EC0(GroupJoinAttemptEvent* inEvent)
     aDecline->mNext=aAccept.get();
     const GUIString* aText=&inEvent->mComment;
     TextSegmentBase* aLinks[3]={aClient.get(),aAccept.get(),aDecline.get()};
-    GUIString aFormat(inEvent->mComment.length()!=0?::ChatCtrl_SomeoneAsksToJoinExpl_String : ::ChatCtrl_SomeoneAsksToJoin_String);
+    GUIString aFormat(inEvent->mComment.length()==0?::ChatCtrl_SomeoneAsksToJoin_String : ::ChatCtrl_SomeoneAsksToJoinExpl_String);
     Fn3B6F10(aFormat,&aText,1,aLinks,3,true);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
 }
 
 //3b8a20,390B code; separate7-entry table3b8ba8..3b8bc4, excluded primary credit.
@@ -517,9 +524,10 @@ void ChatCtrl::Fn3B9240(ClientModeratedEvent* inEvent)
         const GUIString* args[2]={&inEvent->mRoomName,&number};
         Fn3B6F10(format,args,2,&link,1,true);
     }
-    if(inEvent->mComment.length()!=0) {
+    const GUIString& aComment=inEvent->mComment;
+    if(aComment.length()!=0) {
+        const GUIString* text=&aComment;
         format=::ChatCtrl_ModeratorComment_String;
-        const GUIString* text=&inEvent->mComment;
         Fn3B6F10(format,&text,1,NULL,0,true);
     }
 }
@@ -538,7 +546,7 @@ void ChatCtrl::Fn3B8BF0()
         Fn3B8A20(parser);
         return;
     }
-    switch(parser->mCommand) {
+    switch(parser->GetCommand()) {
     case 20:
         Fn3B6F10(parser->GetHelp(mClientId),NULL,0,NULL,0,true);
         return;
@@ -546,28 +554,28 @@ void ChatCtrl::Fn3B8BF0()
         mChatOutput->Reset(false);
         return;
     case 18:
-        if(parser->mText.length()!=0) break;
+        if(parser->GetText().length()!=0) break;
         {
-            GUIString command(GetEmptyGUIStringData());
+            GUIString command;
             command.append(parser->mPrefix);
             command.append(parser->GetCommandString(2));
             command.append(GUIString(" \""));
             command.append(parser->mTargetName);
-            command.append(GUIString(new GUIStringData("\" ")));
+            command.append(GUIString("\" "));
             mChatInput->SetText(command,false);
             mChatInput->SelectRange(-1,-1);
         }
         return;
     case 21: {
-        LobbyClientIterator iterator(parser->mClients.get());
+        LobbyClientIterator iterator(parser->GetClients());
         LobbyClient* me=LobbyFn361370();
         if(me!=NULL) {
-            GUIString names(GetEmptyGUIStringData());
+            GUIString names;
             while(iterator.HasMore()) {
                 LobbyClient* client=iterator.Next();
                 if(me->Fn3A55C0(client)) {
-                    if(names.length()!=0) names.append(GUIString(new GUIStringData(", ")));
-                    names.append(client->mName);
+                    if(names.length()!=0) names.append(GUIString(", "));
+                    names.append(client->GetName());
                 }
             }
             Fn3B6FD0(::ChatCtrl_TeamMembers_String,names,true);
@@ -577,9 +585,9 @@ void ChatCtrl::Fn3B8BF0()
     case 5:
         if(parser->mTargetName.length()!=0) break;
         {
-            GUIString names(GetEmptyGUIStringData());
+            GUIString names;
             for(LobbyIgnoredNameSet::const_iterator i=LobbyFn35CFC0().begin();i!=LobbyFn35CFC0().end();++i) {
-                if(names.length()!=0) names.append(GUIString(new GUIStringData(", ")));
+                if(names.length()!=0) names.append(GUIString(", "));
                 names.append(*i);
             }
             Fn3B6FD0(::ChatCtrl_IgnoreList_String,names,true);
@@ -649,20 +657,19 @@ bool ChatCtrlConfig::Virtual24(const std::string& inKey)
         return true;
     if(inKey=="GROUPTYPE") {
         GUIString group=Fn3842F0(false);
-        if(group.mData->CompareNoCase("CHAT",0)==0)
-            mChatCtrl->mRoomSpecFlags=1;
-        else if(group.mData->CompareNoCase("GAME",0)==0)
-            mChatCtrl->mRoomSpecFlags=2;
-        else if(group.mData->CompareNoCase("TEAM",0)==0)
-            mChatCtrl->mRoomSpecFlags=0x12;
+        if(group.CompareNoCase("CHAT")==0) {
+            ChatCtrl* aCtrl=mChatCtrl; aCtrl->mRoomSpecFlags=1; }
+        else if(group.CompareNoCase("GAME")==0) {
+            ChatCtrl* aCtrl=mChatCtrl; aCtrl->mRoomSpecFlags=2; }
+        else if(group.CompareNoCase("TEAM")==0) {
+            ChatCtrl* aCtrl=mChatCtrl; aCtrl->mRoomSpecFlags=0x12; }
         else {
             throw ConfigObjectException("Invalid Group Type: "+(std::string)group);
         }
-        return true;
     }
-    if(inKey=="CTRLLINKID")
-        return true;
-    if(inKey=="COLOR_DEFAULT") mChatCtrl->mDefaultColor=Fn385510();
+    else if(inKey=="CTRLLINKID")
+        ;
+    else if(inKey=="COLOR_DEFAULT") mChatCtrl->mDefaultColor=Fn385510();
     else if(inKey=="COLOR_ERROR") mChatCtrl->mErrorColor=Fn385510();
     else if(inKey=="COLOR_HELP") mChatCtrl->mHelpColor=Fn385510();
     else if(inKey=="COLOR_USER") mChatCtrl->mUserColor=Fn385510();

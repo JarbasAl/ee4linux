@@ -150,6 +150,7 @@ protected:
     SmartPtr<PopupMenu> mPopupMenu; //84
     SmartPtr<LobbyClient> mClient; //88
     int mRoomSpecFlags; //8c, constructor does not initialize this scalar
+    int GetRoomSpecFlags() const { return mRoomSpecFlags; }
     void AddItem(const GUIString&,int); //actual3f5ea0, forwarding support0; class-correct receiver
     virtual void HandleComponentEvent(ComponentEvent* inEvent); //3f6310, slot7c
     virtual ~ClientOptionsPopup(); //3f5e00, explicit original external

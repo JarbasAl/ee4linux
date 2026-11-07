@@ -33,6 +33,7 @@ public:
     WONAPI::GUIString mColumnName; //34
 };
 
+#include "LostDebug.h"
 namespace WONAPI {
 // Scratch complete ServerDetails method bodies; shared actual28/16-slot migration remains gated.
 // All callback third args are real cdecl controller context; unused where original ignores it.
@@ -46,8 +47,7 @@ void ServerDetailsItem::SetGame(LobbyGame* inGame)
     mGame=inGame;
     if(mGame->mL2C==3)
     {
-        const std::string& aAddress=mGame->mAddress.GetHostAndPortString(true);
-        mIPAddrStr=GUIString(new GUIStringData(aAddress));
+        mIPAddrStr=mGame->mAddress.GetHostAndPortString(true);
     }
 }
 // FUNCTION: WON 0x007c5800
@@ -70,8 +70,10 @@ int ServerDetailsItem::CompareIcon(const ServerDetailsItem* a,const ServerDetail
 // FUNCTION: WON 0x007c50a0
 int ServerDetailsItem::CompareSkill(const ServerDetailsItem* a,const ServerDetailsItem* b,ServerListCtrl*)
 { return a->mGame->mL30-b->mGame->mL30; }
+// FUNCTION: WON 0x007c50c0
 int ServerDetailsItem::CompareGameName(const ServerDetailsItem* a,const ServerDetailsItem* b,ServerListCtrl*)
 { return a->mGame->mName.CompareNoCase(b->mGame->mName); }
+// FUNCTION: WON 0x007c50e0
 int ServerDetailsItem::CompareAddress(const ServerDetailsItem* a,const ServerDetailsItem* b,ServerListCtrl*)
 { return a->mGame->mAddress.StringCompare(b->mGame->mAddress); }
 // FUNCTION: WON 0x007c5100
@@ -124,8 +126,8 @@ void ServerDetailsItem::FilterSkill(const GUIString& inFilter,ServerDetailsList&
     if(!ParseIntFilter(inFilter,aLower,aUpper)) return;
     for(ServerDetailsList::iterator it=ioList.begin();it!=ioList.end();)
     {
-        long aSkill=(*it)->mGame->mL30;
-        if(aSkill<aLower || aSkill>aUpper) ioList.erase(it++);
+        ServerDetailsItem* anItem=*it;
+        if(anItem->mGame->mL30<aLower || anItem->mGame->mL30>aUpper) ioList.erase(it++);
         else ++it;
     }
 }
@@ -215,11 +217,13 @@ void ServerDetailsItem::PaintSkill(Graphics& g,ServerDetailsItem* inItem,ServerL
     unsigned char aSkill=static_cast<unsigned char>(inItem->mGame->mL30);
     if(aSkill<5) DrawServerImage(g,::LobbyResource_GetImage((LobbyResourceId)(aSkill+0x177)),inItem,0);
 }
+// FUNCTION: WON 0x007c5920
 void ServerDetailsItem::PaintGameName(Graphics& g,ServerDetailsItem* inItem,ServerListCtrl* inCtrl)
 {
     g.SetFont(inCtrl->mBoldFont.get());
     g.DrawString(inItem->mGame->mName,5,0);
 }
+// FUNCTION: WON 0x007c5950
 void ServerDetailsItem::PaintAddress(Graphics& g,ServerDetailsItem* inItem,ServerListCtrl*)
 {
     g.DrawString(inItem->mIPAddrStr,0,0);
@@ -241,12 +245,12 @@ void ServerDetailsItem::FilterNumPlayers(const GUIString& inFilter,ServerDetails
     if(!ParseIntFilter(inFilter,aLower,aUpper) && !aFull && !aNotFull && !aOpen) return;
     for(ServerDetailsList::iterator it=ioList.begin();it!=ioList.end();)
     {
-        LobbyGame* aGame=(*it)->mGame.get();
-        int aCount=aGame->mL24;
-        int aMax=aGame->mNumOpenSlots;
+        ServerDetailsItem* anItem=*it;
+        int aCount=anItem->mGame->mL24;
+        int aMax=anItem->mGame->mNumOpenSlots;
         if(aMax==0) aMax=0x7ffffff;
         if(aCount<aLower || aCount>aUpper || (aFull && aCount<aMax) ||
-            (aNotFull && aCount>=aMax) || (aOpen && !aGame->Fn3A7A20())) ioList.erase(it++);
+            (aNotFull && aCount>=aMax) || (aOpen && !anItem->mGame->Fn3A7A20())) ioList.erase(it++);
         else ++it;
     }
 }
@@ -254,11 +258,11 @@ void ServerDetailsItem::FilterNumPlayers(const GUIString& inFilter,ServerDetails
 void ServerDetailsItem::PaintNumPlayers(Graphics& g,ServerDetailsItem* inItem,ServerListCtrl* inCtrl)
 {
     char aBuffer[50];
-    if(inItem->mGame->mNumOpenSlots>0) sprintf(aBuffer,"%d/%d",inItem->mGame->mL24,inItem->mGame->mNumOpenSlots);
-    else sprintf(aBuffer,"%d",inItem->mGame->mL24);
+    if(inItem->mGame->GetMaxPlayers()>0) sprintf(aBuffer,"%d/%d",inItem->mGame->GetNumPlayers(),inItem->mGame->GetMaxPlayers());
+    else sprintf(aBuffer,"%d",inItem->mGame->GetNumPlayers());
     GUIString aText(new GUIStringData(aBuffer));
     int aWidth=inCtrl->mList->mL12C;
-    int aTextWidth=g.mFont->GetStringWidth(aText,0,aText.length());
+    int aTextWidth=g.mFont->GetStringWidth(aText);
     g.DrawString(aText,(aWidth-aTextWidth)/2,0);
 }
 // FUNCTION: WON 0x007c5ac0
@@ -267,7 +271,7 @@ void ServerDetailsItem::Virtual04(Graphics& g,ListArea* inList)
     MultiListArea* aList=static_cast<MultiListArea*>(inList);
     int aColumn=aList->GetColumnPaintContext();
     ServerListCtrl* aCtrl=static_cast<ServerListCtrl*>(aList->mParent->mParent);
-    unsigned long aColor=g.Fn326D20(mGame->GetB13()?6:14);
+    unsigned long aColor; if(mGame->GetB13()) aColor=g.Fn326D20(6); else aColor=g.Fn326D20(14);
     if(mB08) aColor=aList->GetSelColor().GetForegroundColor(g,aColor);
     g.SetColor(aColor);
     g.SetFont(aList->mFont.get());
@@ -286,7 +290,8 @@ void ServerDetailsItem::Virtual04(Graphics& g,ListArea* inList)
         {
             g.SetFont(aList->mFont.get());
             g.SetSysColor(14);
-            g.DrawString(mGame->Fn3A6D90()?::ServerListCtrl_Querying_String : ::ServerListCtrl_QueryFailed_String,0,0);
+            if(mGame->Fn3A6D90()) g.DrawString(::ServerListCtrl_Querying_String,0,0);
+            else g.DrawString(::ServerListCtrl_QueryFailed_String,0,0);
         }
         g.Translate(-aWidth,-mSummaryHeight);
         return;
@@ -456,18 +461,17 @@ void ServerListCtrl::AddFilteredEntries(bool inPreserve,ServerDetailsList& ioLis
     std::list<std::pair<ListItem*,int> > aOldItems;
     if(inPreserve)
     {
-        int aOffset=mList->mVertOffset;
-        int aBottom=aOffset+mList->mScrollArea.height;
+        int aOffset=mList->GetVertOffset();
+        int aBottom=mList->GetVertOffset()+mList->mScrollArea.Height();
         int anIndex=mList->GetItemPosAtYPos(aOffset);
         ListItem* anItem=mList->GetItem(anIndex);
         if(anItem!=NULL && (anItem->mHeight+anItem->mTop)/2<aOffset) ++anIndex;
-        for(;;)
+        while(true)
         {
             ListItem* anOldItem=mList->GetItem(anIndex++);
             if(anOldItem==NULL) break;
-            int aTop=anOldItem->mTop;
-            if(aTop>aBottom) break;
-            aOldItems.push_back(std::pair<ListItem*,int>(anOldItem,aTop-aOffset));
+            if(anOldItem->mTop>aBottom) break;
+            aOldItems.push_back(std::pair<ListItem*,int>(anOldItem,anOldItem->mTop-aOffset));
         }
     }
     DoFilter(ioList);
@@ -559,7 +563,7 @@ void ServerListCtrl::HandleGameChanged(GameChangedEvent* inEvent)
 void ServerListCtrl::HandleSyncGameList(SyncGameListEvent* inEvent)
 {
     LobbyGameList* aGames=inEvent->mGames.get();
-    if(aGames->mType!=mGameType) return;
+    if(aGames->GetType()!=mGameType) return;
     aGames->Rewind();
     mServerDetailsMap.clear();
     while(aGames->HasMore())
@@ -581,17 +585,13 @@ void ServerListCtrl::UpdateSummaryLabel()
     if(LobbyFn35B940()>0)
     {
         sprintf(aShownCount,"%d",LobbyFn35B940());
-        mSummaryLabel->SetText(LobbyFormatString(::ServerListCtrl_ListPingSummary_String,GUIString(new GUIStringData(aShownCount))),true);
+        mSummaryLabel->SetText(LobbyFormatString(::ServerListCtrl_ListPingSummary_String,aShownCount),true);
         mRefreshButton->SetText(::ServerListCtrl_StopRefresh_String,true);
     }
     else
     {
         sprintf(aShownCount,"%d",mList->GetNumItems());
-        // Native total-count allocation precedes shown-count allocation.
-        {
-            GUIString aTotal(new GUIStringData(aTotalCount));
-            mSummaryLabel->SetText(LobbyFn34A130(::ServerListCtrl_ListSummary_String,GUIString(new GUIStringData(aShownCount)),aTotal),true);
-        }
+        mSummaryLabel->SetText(LobbyFn34A130(::ServerListCtrl_ListSummary_String,aShownCount,aTotalCount),true);
         mRefreshButton->SetText(::ServerListCtrl_RefreshList_String,true);
     }
 }
@@ -635,10 +635,12 @@ void ServerListCtrl::HandleComboTextChanged(Component* inComponent)
     int aPos;
     for(aPos=0;aPos<aCount;++aPos)
     {
-        TextListItem* anItem=static_cast<TextListItem*>(aCombo->mListArea->GetItem(aPos));
-        if(anItem->mText==aText) break;
+        if(static_cast<TextListItem*>(aCombo->mListArea->GetItem(aPos))->mText==aText)
+        {
+            if(aPos<=gServerFilterItemPos4DF4D4) return;
+            break;
+        }
     }
-    if(aPos<aCount && aPos<=gServerFilterItemPos4DF4D4) return;
     aFilter->mSelPos=aPos;
     aFilter->mIsAdd=aPos>=aCount;
     aFilter->mFilterText=aText;
@@ -649,6 +651,10 @@ void ServerListCtrl::HandleComboTextChanged(Component* inComponent)
     aLabel.append(GUIString(new GUIStringData("\")")));
     aFilter->mText=aLabel;
     aCombo->UpdateItem(aFilter);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_TRACE(aLabel.length());
+    EE_LOST_TRACE(aLabel.length());
+    EE_LOST_TRACE(aLabel.length());
 }
 // FUNCTION: WON 0x007c7dd0
 void ServerListCtrl::HandleComboSelChanged(ComboSelChangedEvent* inEvent)
@@ -663,27 +669,30 @@ void ServerListCtrl::HandleComboSelChanged(ComboSelChangedEvent* inEvent)
         return;
     }
     FilterListItem* aFilter=static_cast<FilterListItem*>(aCombo->mListArea->GetItem(gServerFilterItemPos4DF4D4));
-    if(!inEvent->mActiveSel)
+    if(inEvent->mActiveSel)
+    {
+        if(aFilter->mIsAdd)
+        {
+            if(aFilter->mFilterText.length()!=0)
+            {
+                ListItem* anItem=aCombo->AddString(aFilter->mFilterText,-1);
+                aCombo->SetSelItem(aCombo->mListArea->GetItemPos(anItem),true);
+                LobbyFn35DEA0(aFilter->mColumnName,aFilter->mFilterText);
+            }
+            else aCombo->SetText(GUIString(new GUIStringData("")),true);
+        }
+        else if(aFilter->mSelPos>gServerFilterItemPos4DF4D4)
+        {
+            aCombo->DeleteItem(aFilter->mSelPos);
+            aCombo->SetText(GUIString(new GUIStringData("")),true);
+            LobbyFn35DED0(aFilter->mColumnName,aFilter->mFilterText);
+        }
+    }
+    else
     {
         aCombo->SetText(aFilter->mFilterText,true);
         aCombo->mEdit->SelectRange(-1,0);
-        return;
     }
-    if(aFilter->mIsAdd)
-    {
-        if(aFilter->mFilterText.length()!=0)
-        {
-            ListItem* anItem=aCombo->AddString(aFilter->mFilterText,-1);
-            aCombo->SetSelItem(aCombo->mListArea->GetItemPos(anItem),true);
-            LobbyFn35DEA0(aFilter->mColumnName,aFilter->mFilterText);
-        }
-        else aCombo->SetText(GUIString(new GUIStringData("")),true);
-        return;
-    }
-    if(aFilter->mSelPos<=gServerFilterItemPos4DF4D4) return;
-    aCombo->DeleteItem(aFilter->mSelPos);
-    aCombo->SetText(GUIString(new GUIStringData("")),true);
-    LobbyFn35DED0(aFilter->mColumnName,aFilter->mFilterText);
 }
 // FUNCTION: WON 0x007c80f0
 void ServerListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
@@ -790,32 +799,33 @@ bool ServerListCtrlConfig::Virtual24(const std::string& inInstruction)
     if(inInstruction=="LISTID")
     {
         GUIString aType=Fn3842F0(false);
-        if(aType.CompareNoCase("net")==0) mServerList->mGameType=2;
-        else if(aType.CompareNoCase("lan")==0) mServerList->mGameType=1;
-        else if(aType.CompareNoCase("direct")==0) mServerList->mGameType=3;
+        if(aType.CompareNoCase("net")==0) mServerList->SetGameType(2);
+        else if(aType.CompareNoCase("lan")==0) mServerList->SetGameType(1);
+        else if(aType.CompareNoCase("direct")==0) mServerList->SetGameType(3);
         else throw ConfigObjectException("Invalid server list id: "+static_cast<std::string>(aType));
-        return true;
     }
-    if(inInstruction=="ADDCOLUMN") { HandleAddColumn();return true; }
-    if(inInstruction=="DEFAULTFILTER")
+    else if(inInstruction=="ADDCOLUMN") HandleAddColumn();
+    else if(inInstruction=="DEFAULTFILTER")
     {
         GUIString aColumn=Fn3842F0(false);
         EnsureComma();
         GUIString aFilters=Fn3842F0(false);
         ServerListCtrl::AddDefaultFilters(aColumn,aFilters,false);
-        return true;
     }
-    if(inInstruction=="NUMCOLUMNS") { mServerList->SetNumColumns(ReadInt());return true; }
-    if(inInstruction=="SETCOLUMNFILTERTYPE")
+    else if(inInstruction=="NUMCOLUMNS") mServerList->SetNumColumns(ReadInt());
+    else if(inInstruction=="SETCOLUMNFILTERTYPE")
     {
         ReadInt();
         EnsureComma();
         GUIString aType=Fn3842F0(false);
-        if(aType.CompareNoCase("int")!=0 && aType.CompareNoCase("string")!=0 && aType.CompareNoCase("player")!=0)
-            throw ConfigObjectException("Unknown filter type: "+static_cast<std::string>(aType));
-        return true;
+        // The filter type is only validated; ReadInt's column and the type are not kept.
+        if(aType.CompareNoCase("int")==0) {}
+        else if(aType.CompareNoCase("string")==0) {}
+        else if(aType.CompareNoCase("player")==0) {}
+        else throw ConfigObjectException("Unknown filter type: "+static_cast<std::string>(aType));
     }
-    return false;
+    else return false;
+    return true;
 }
 // FUNCTION: WON 0x007c8410
 void ServerListCtrlConfig::HandleAddColumn()
@@ -851,21 +861,21 @@ void ServerListCtrlConfig::HandleAddColumn()
     unsigned char aFlags=aInfo.mGameTypeFlags;
     switch(mServerList->mGameType)
     {
-    case 1:
-        if(!(aFlags&2)) return;
-        break;
-    case 2:
-        if(!(aFlags&1)) return;
-        break;
     case 3:
-        if(!(aFlags&4)) return;
-        break;
+        if(aFlags&4) break;
+        return;
+    case 2:
+        if(aFlags&1) break;
     default:
+        return;
+    case 1:
+        if(aFlags&2) break;
         return;
     }
     aList->SetNumColumns(++mNumColumns);
-    if(aWidth==0) aList->mDynamicSizeColumn=mNumColumns-1;
-    else aList->SetColumnWidth(mNumColumns-1,aWidth,false);
+    int aCol=mNumColumns;
+    if(aWidth==0) aList->mDynamicSizeColumn=--aCol;
+    else aList->SetColumnWidth(--aCol,aWidth,false);
     mHeader->SetColumnItem(mNumColumns-1,aComponent);
     mServerList->mColumnInfo.push_back(aInfo);
     mServerList->mColumnInfo.back().mFilterCombo=aCombo;
@@ -988,3 +998,7 @@ int gServerFilterItemPos4DF4D4 = 1;
 // TEMPLATE: WON 0x007c4ba0
 // TEMPLATE: WON 0x007cbf50
 // (public: __thiscall std::pair<class WONAPI::GUIString const ,struct WONAPI::ServerListCtrl::ColumnInfo>::~pair<class WONAPI::GUIString const ,struct WO)
+// TEMPLATE: WON 0x007c4bc0
+// (public: __thiscall std::map<class WONAPI::GUIString,struct WONAPI::ServerListCtrl::ColumnInfo,struct WONAPI::GUIStringLessNoCase,class std::allocator<)
+// TEMPLATE: WON 0x007cc350
+// (public: class std::_Tree<class WONAPI::SmartPtr<class WONAPI::LobbyGame>,struct std::pair<class WONAPI::SmartPtr<class WONAPI::LobbyGame> const ,class)

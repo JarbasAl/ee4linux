@@ -50,8 +50,7 @@ void RoomLabelCtrl::CalcLabel()
             aFormat.append(aSuffix);
         }
     }
-    GUIString aCountText(new GUIStringData(aCount));
-    mLabel->SetText(LobbyFn34A170(aFormat,mPrefix,mServer,aCountText),true);
+    mLabel->SetText(LobbyFn34A170(aFormat,mPrefix,mServer,aCount),true);
 }
 
 // FUNCTION: WON 0x007c3720
@@ -62,7 +61,7 @@ void RoomLabelCtrl::HandleComponentEvent(ComponentEvent* inEvent)
     case 100030:
         {
             JoinedRoomEvent* aEvent=static_cast<JoinedRoomEvent*>(inEvent);
-            if((mRoomSpecFlags&aEvent->mRoomSpec)!=aEvent->mRoomSpec) return;
+            if((mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
             mServer=aEvent->mServerName;
             mRoom=aEvent->mGroupName;
             if(mUserCt>=0) mUserCt=aEvent->mClients->mClients.size();
@@ -72,9 +71,9 @@ void RoomLabelCtrl::HandleComponentEvent(ComponentEvent* inEvent)
     case 100033:
         {
             LeftRoomEvent* aEvent=static_cast<LeftRoomEvent*>(inEvent);
-            if((mRoomSpecFlags&aEvent->mRoomSpec)!=aEvent->mRoomSpec) return;
-            mServer=GetEmptyGUIStringData();
-            mRoom=GetEmptyGUIStringData();
+            if((mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
+            mServer.erase();
+            mRoom.erase();
             if(mUserCt>0) mUserCt=0;
             CalcLabel();
         }
@@ -83,7 +82,7 @@ void RoomLabelCtrl::HandleComponentEvent(ComponentEvent* inEvent)
         {
             if(mUserCt<0) return;
             ClientChangedEvent* aEvent=static_cast<ClientChangedEvent*>(inEvent);
-            if((mRoomSpecFlags&aEvent->mRoomSpec)!=aEvent->mRoomSpec) return;
+            if((mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
             if(aEvent->IsAdd()) { ++mUserCt; CalcLabel(); return; }
             if(mUserCt>0 && aEvent->IsDelete()) --mUserCt;
             CalcLabel();
@@ -108,33 +107,25 @@ bool RoomLabelCtrlConfig::Virtual24(const std::string& inKey)
 {
     if(inKey=="PREFIX")
     {
-        GUIString aPrefix=Fn3842F0(false);
-        mRoomLabel->mPrefix=aPrefix;
-        return true;
+        mRoomLabel->SetPrefix(Fn3842F0(false));
     }
-    if(inKey=="GROUPTYPE")
+    else if(inKey=="GROUPTYPE")
     {
         GUIString aGroup=Fn3842F0(false);
-        if(aGroup.CompareNoCase("CHAT",0)==0) mRoomLabel->mRoomSpecFlags=1;
-        else if(aGroup.CompareNoCase("GAME",0)==0) mRoomLabel->mRoomSpecFlags=2;
+        if(aGroup.CompareNoCase("CHAT",0)==0) mRoomLabel->SetRoomSpecFlags(1);
+        else if(aGroup.CompareNoCase("GAME",0)==0) mRoomLabel->SetRoomSpecFlags(2);
         else throw ConfigObjectException("Invalid Group Type: "+(std::string)aGroup);
-        return true;
     }
-    if(inKey=="SHOWUSERCOUNT")
+    else if(inKey=="SHOWUSERCOUNT")
     {
-        bool aShow=Fn3837F0();
-        RoomLabelCtrl* aLabel=mRoomLabel;
-        if(!aShow) aLabel->mUserCt=-1;
-        else if(aLabel->mUserCt<0) aLabel->mUserCt=0;
-        return true;
+        mRoomLabel->SetShowUserCount(Fn3837F0());
     }
-    if(inKey=="SHOWSERVER")
+    else if(inKey=="SHOWSERVER")
     {
-        bool aShow=Fn3837F0();
-        mRoomLabel->mShowServer=aShow;
-        return true;
+        mRoomLabel->SetShowServer(Fn3837F0());
     }
-    return ContainerConfig::Virtual24(inKey);
+    else return ContainerConfig::Virtual24(inKey);
+    return true;
 }
 // 39afb0 support ICF; source-only reference body, zero primary bytes.
 void RoomLabelCtrlConfig::Virtual34(Component* inComponent)

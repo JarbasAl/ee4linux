@@ -137,9 +137,11 @@ bool Dialog::ActivateDefaultButton()
 // FUNCTION: WON 0x006f7d20
 void Dialog::HandleComponentEvent(ComponentEvent* event)
 {
-    if(event->mType==20) ActivateDefaultButton();
-    else if(event->mType==15 && (static_cast<Button*>(event->mComponent)->mButtonFlags&0x100))
+    if(event->mType==20) { ActivateDefaultButton(); return; }
+    if(event->mType==15 && ((static_cast<Button*>(event->mComponent)->mButtonFlags&0x100)?true:false)) {
         GetRoot()->Fn32B0A0(event->mComponent->mControlId,NULL);
-    else Container::HandleComponentEvent(event);
+        return;
+    }
+    Container::HandleComponentEvent(event);
 }
 }

@@ -10,9 +10,16 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyDelayLoadImage.h"
+#include "LostDebug.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x0072b660
 WindowManager::WindowManager() {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0);
+    EE_LOST_TRACE(0);
     mThreadId=GetCurrentThreadId();
     mIsFullScreen=false;
     mOriginalScreenWidth=mOriginalScreenHeight=0;
@@ -23,7 +30,7 @@ WindowManager::WindowManager() {
     mLastTimerTick=GetTickCount();
     mEndPopup=false;
     mDefaultWindow=NULL;mWindowCount=0;
-    mCurMsgLoopDepth=mTargetMsgLoopDepth=mDialogResult=0;
+    mCurMsgLoopDepth=0;mTargetMsgLoopDepth=0;mDialogResult=0;
     mLastInputTick=0;
     mModalWindow=NULL;mModalComponent=NULL;mPopupOwnerWindow=NULL;
     mFocusWindow=NULL;mMouseDownWindow=NULL;
@@ -214,7 +221,7 @@ SmartPtr<NativeImage> WindowManager::DecodeImage(DisplayContext *theContext, con
 
 	if(mCacheImageCount)
 	{
-		NativeImageMap::iterator anItr = mNativeImageMap.insert(NativeImageMap::value_type(theFilePath,SmartPtr<NativeImage>())).first;
+		NativeImageMap::iterator anItr = mNativeImageMap.insert(NativeImageMap::value_type(theFilePath,NULL)).first;
 		if(anItr->second.get()==NULL)
 			anItr->second = mImageDecoder.Decode(theContext,theFilePath);
 
@@ -242,7 +249,7 @@ SmartPtr<Image> WindowManager::DecodeDelayImage(const char *theFilePath)
 	if(mCacheImageCount)
 	{
 		std::pair<DelayImageMap::iterator,bool> aRet;
-		aRet = mDelayImageMap.insert(DelayImageMap::value_type(theFilePath,SmartPtr<Image>()));
+		aRet = mDelayImageMap.insert(DelayImageMap::value_type(theFilePath,NULL));
 
 		if(aRet.second)
 		{
@@ -483,7 +490,7 @@ void WindowManager::ProcessEvents()
 
 		mLastTimerTick = aTick;
 
-		if(mPopupIsUp && mFocusWindow!=mPopupOwnerWindow && (mPopupFlags&0x40)!=0)
+		if(mPopupIsUp && mFocusWindow!=mPopupOwnerWindow && ((bool)(((unsigned)mPopupFlags>>6)&1)))
 		{
 			if(mFocusWindow!=NULL && mFocusWindow->mIsPopup)
 			{
@@ -700,8 +707,8 @@ void WindowManager::AdjustPopupPosition(Window *theParent, Component *theCompone
 
 
 
-		aBoundingRect.x -= aWindowRect.x;
-		aBoundingRect.y -= aWindowRect.y;
+		aBoundingRect.x -= aWindowRect.Left();
+		aBoundingRect.y -= aWindowRect.Top();
 	}
 	else
 	{
@@ -711,34 +718,34 @@ void WindowManager::AdjustPopupPosition(Window *theParent, Component *theCompone
 	}
 
 	int dx = 0, dy = 0;
-	if((theComponent->Left()+theComponent->Width()) > (aBoundingRect.x+aBoundingRect.width))
+	if(theComponent->Right() > aBoundingRect.Right())
 	{
-		dx = (aBoundingRect.x+aBoundingRect.width) - (theComponent->Left()+theComponent->Width());
+		dx = aBoundingRect.Right() - theComponent->Right();
 		theComponent->Fn2F4B70(theComponent->Left() + dx, theComponent->Top());
-		if(anAvoidRect.width>0 && theComponent->Left()<=(theAvoidRect.x+theAvoidRect.width) && (theComponent->Left()+theComponent->Width())>=theAvoidRect.x)
-			theComponent->Fn2F4B70(anAvoidRect.x-theComponent->Width(),theComponent->Top());
+		if(anAvoidRect.Width()>0 && theComponent->Left()<=theAvoidRect.Right() && theComponent->Right()>=theAvoidRect.x)
+			theComponent->Fn2F4B70(anAvoidRect.Left()-theComponent->Width(),theComponent->Top());
 	}
 	else if(theComponent->Left() < aBoundingRect.x)
 	{
-		dx = aBoundingRect.x - theComponent->Left();
+		dx = aBoundingRect.Left() - theComponent->Left();
 		theComponent->Fn2F4B70(theComponent->Left() + dx,theComponent->Top());
-		if(anAvoidRect.width>0 && theComponent->Left()<=(theAvoidRect.x+theAvoidRect.width) && (theComponent->Left()+theComponent->Width())>=theAvoidRect.x)
-			theComponent->Fn2F4B70((anAvoidRect.x+anAvoidRect.width),theComponent->Top());
+		if(anAvoidRect.Width()>0 && theComponent->Left()<=theAvoidRect.Right() && theComponent->Right()>=theAvoidRect.x)
+			theComponent->Fn2F4B70(anAvoidRect.Right(),theComponent->Top());
 	}
 
-	if((theComponent->Top()+theComponent->Height()) > (aBoundingRect.y+aBoundingRect.height))
+	if(theComponent->Bottom() > aBoundingRect.Bottom())
 	{
-		dy = (aBoundingRect.y+aBoundingRect.height) - (theComponent->Top()+theComponent->Height());
+		dy = aBoundingRect.Bottom() - theComponent->Bottom();
 		theComponent->Fn2F4B70(theComponent->Left(), theComponent->Top() + dy);
-		if(anAvoidRect.height>0 && theComponent->Top()<=(theAvoidRect.y+theAvoidRect.height) && (theComponent->Top()+theComponent->Height())>=theAvoidRect.y)
-			theComponent->Fn2F4B70(theComponent->Left(), anAvoidRect.y-theComponent->Height());
+		if(anAvoidRect.Height()>0 && theComponent->Top()<=theAvoidRect.Bottom() && theComponent->Bottom()>=theAvoidRect.y)
+			theComponent->Fn2F4B70(theComponent->Left(), anAvoidRect.Top()-theComponent->Height());
 	}
 	else if(theComponent->Top() < aBoundingRect.y)
 	{
-		dy = aBoundingRect.y - theComponent->Top();
+		dy = aBoundingRect.Top() - theComponent->Top();
 		theComponent->Fn2F4B70(theComponent->Left(), theComponent->Top() + dy);
-		if(anAvoidRect.height>0 && theComponent->Top()<=(theAvoidRect.y+theAvoidRect.height) && (theComponent->Top()+theComponent->Height())>=theAvoidRect.y)
-			theComponent->Fn2F4B70(theComponent->Left(), (anAvoidRect.y+anAvoidRect.height));
+		if(anAvoidRect.Height()>0 && theComponent->Top()<=theAvoidRect.Bottom() && theComponent->Bottom()>=theAvoidRect.y)
+			theComponent->Fn2F4B70(theComponent->Left(), anAvoidRect.Bottom());
 	}
 }
 
@@ -820,6 +827,8 @@ void WindowManager::DoPopup(const PopupParams &theParams)
 		if(aPopupWindow.get()==NULL)
 		{
 			aPopupWindow = new MSWindow;
+		// LOST-DEBUG: none: exact only
+		EE_LOST_DEBUG(3);
 			aPopupWindow->mIsOneComponentWindow = true;
 			aPopupWindow->mStyle=0x20;
 			aPopupWindow->SetParent(aParent.get());

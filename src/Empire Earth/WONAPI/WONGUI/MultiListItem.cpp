@@ -109,13 +109,11 @@ void MultiListItem::Virtual04(Graphics& inGraphics,ListArea* inList)
 // FUNCTION: WON 0x702650
 void MultiListItem::Virtual0C(ListArea* inList,Container* inViewport)
 {
-    MultiListArea* anArea=static_cast<MultiListArea*>(inList);
     unsigned int aColumn=0;
     for(ItemVector::iterator anItr=mItems.begin();anItr!=mItems.end();++anItr,++aColumn) {
-        ListItem* anItem=anItr->get();
-        if(anItem!=NULL && aColumn<anArea->mColumnInfoVector.size()) {
-            Container* aViewport=inViewport==NULL ? NULL : anArea->mColumnInfoVector[aColumn].mContainer.get();
-            anItem->Virtual0C(inList,aViewport);
+        if(anItr->get()!=NULL && aColumn<static_cast<MultiListArea*>(inList)->mColumnInfoVector.size()) {
+            Container* aViewport=inViewport==NULL ? NULL : static_cast<MultiListArea*>(inList)->mColumnInfoVector[aColumn].mContainer.get();
+            (*anItr)->Virtual0C(inList,aViewport);
         }
     }
 }

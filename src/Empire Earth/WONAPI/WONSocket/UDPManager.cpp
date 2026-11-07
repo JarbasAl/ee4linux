@@ -72,7 +72,7 @@ void UDPManager::QueueOp(UDPManagerRecvOp* inOp, unsigned long inTimeout)
 }
 
 // FUNCTION: WON 0x006b7ec0
-void UDPManager::Send(ByteBuffer* inData, const IPAddr& inAddress)
+void UDPManager::Send(const ByteBuffer* inData, const IPAddr& inAddress)
 {
     mSocket->Fn2B4740(new SendBytesToOp(inData, inAddress), -1);
 }
@@ -216,12 +216,11 @@ void UDPManagerSendRecvOp::Fn2B7260()
     mRecvOp->Fn2B6BF0(Fn2B7250, this);
     if (mManager.get() != NULL) {
         mManager->Send(mOutgoing.get(), mAddress);
-        mRecvOp->mManager = mManager;
+        mRecvOp->SetUDPManager(mManager);
     }
     else {
         mSocket->Fn2B4740(new SendBytesToOp(mOutgoing.get(), mAddress, NULL), -1);
-        mRecvOp->mSocket = mSocket;
-        mRecvOp->mOwnSocket = false;
+        mRecvOp->SetSocket(mSocket);
     }
     mRecvOp->Run(mReceiveTimeout);
 }
@@ -287,10 +286,10 @@ WONStatus UDPManager::Fn2B79C0(int inPort, bool inBroadcast)
     if (inBroadcast)
         mSocket->Fn2B0A50(true);
     WONStatus aStatus = mSocket->Fn2B0D90(inPort, 0);
-    if (aStatus != 0)
-        return aStatus;
-    mSocket->Fn2B3BF0(new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(Fn2B8230, this));
-    mSocket->Fn2B4500(new RecvBytesFromOp(mMaxRecvBytes, NULL));
+    if (aStatus == 0) {
+        mSocket->Fn2B3BF0(new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(Fn2B8230, this));
+        mSocket->Fn2B4500(new RecvBytesFromOp(mMaxRecvBytes, NULL));
+    }
     return aStatus;
 }
 
@@ -316,11 +315,11 @@ void UDPManager::Erase(const OpMap::iterator& inItr)
 // FUNCTION: WON 0x006b8320
 void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
 {
-    ByteBuffer* aBuffer = inOp->GetBytes().get();
+    const ByteBuffer* aBuffer = inOp->GetBytes().get();
     ReadBuffer aMessage(aBuffer->data(), aBuffer->length());
     if (!mOpMap.empty()) {
         OpMap::iterator aMapItr = mOpMap.lower_bound(inOp->mFromAddress);
-        while (aMapItr != mOpMap.end() && aMapItr->first == inOp->mFromAddress) {
+        while (aMapItr != mOpMap.end() && !(aMapItr->first != inOp->mFromAddress)) {
             UDPManagerRecvOp* anOp = aMapItr->second.get();
             if (anOp->GetStatus() != 100000) {
                 Erase(aMapItr++);
@@ -332,7 +331,7 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
                 if (aStatus == 100059)
                     QueueOp(new UDPManagerRecvOp(anOp->mAddress), anOp->TimeLeft());
                 else if (aStatus != 100004) {
-                    anOp->mReceivedData = aBuffer;
+                    anOp->SetMsg(aBuffer);
                     anOp->Fn29F220(aStatus);
                     Erase(aMapItr);
                     return;
@@ -356,7 +355,7 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
                 WONStatus aStatus = anOp->Virtual0C(aMessage);
                 if (aStatus != 100004) {
                     anOp->mAddress = inOp->mFromAddress;
-                    anOp->mReceivedData = aBuffer;
+                    anOp->SetMsg(aBuffer);
                     anOp->Fn29F220(aStatus);
                     Erase(aListItr);
                     return;
@@ -368,7 +367,7 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
         }
     }
     if (mAutoRecvOp.get() != NULL) {
-        mAutoRecvOp->mReceivedData = aBuffer;
+        mAutoRecvOp->SetMsg(aBuffer);
         mAutoRecvOp->mAddress = inOp->GetAddr();
         mAutoRecvOp->SetCompletion(mDefaultCompletion);
         mAutoRecvOp->ForceFinish(0);

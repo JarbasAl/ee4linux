@@ -26,11 +26,11 @@ void FriendOptionsPopup::Init(LobbyFriend* inFriend,int inRoomSpec)
     mFriend=inFriend;
     mRoomSpecFlags=inRoomSpec;
     mPopupMenu->Fn2FAA50(false);
-    SmartPtr<Font> anOldFont=mPopupMenu->mFont;
+    SmartPtr<Font> anOldFont=mPopupMenu->mFont.get();
     SmartPtr<Font> aBoldFont=Fn2F5A30(anOldFont.get(),1,0);
-    mPopupMenu->mFont=aBoldFont;
+    mPopupMenu->SetFont(aBoldFont);
     mPopupMenu->AddItem(inFriend->mName,0)->mB09=false;
-    mPopupMenu->mFont=anOldFont;
+    mPopupMenu->SetFont(anOldFont);
     mPopupMenu->AddSeperator();
     AddItem(::FriendOptionsCtrl_Locate_String,1);
     AddItem(::FriendOptionsCtrl_RefreshList_String,2);

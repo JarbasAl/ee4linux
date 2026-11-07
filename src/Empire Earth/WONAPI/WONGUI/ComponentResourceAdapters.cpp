@@ -71,7 +71,8 @@ ColorScheme* Component::GetColorScheme()
     if(mExtraStuff!=NULL && mExtraStuff->mColorScheme.get()!=NULL)
         return mExtraStuff->mColorScheme.get();
     if(mParent!=NULL) return mParent->GetColorScheme();
-    return GetRoot()->GetWindowManager()->mColorScheme.get();
+    Window* w=GetRoot();
+    return w->GetWindowManager()->mColorScheme.get();
 }
 // Original2f59a0/89, existing external Extra allocation plus true owning setter support0.
 // FUNCTION: WON 0x006f59a0

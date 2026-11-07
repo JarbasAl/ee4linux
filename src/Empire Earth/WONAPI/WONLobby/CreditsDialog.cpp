@@ -13,15 +13,17 @@ namespace WONAPI {
 // FUNCTION: WON 0x7f7780
 bool CreditsDialogConfig::Virtual24(const std::string& inInstruction)
 {
-    if(inInstruction!="ADDLINE") return DialogConfig::Virtual24(inInstruction);
+    if(inInstruction=="ADDLINE") {
     GUIString aLine=Fn3842F0(false);
     DWORD aColor=-1;
     if(!EndOfString()) {
-        SkipComma();
+        EnsureComma();
         aColor=Fn385510();
     }
     mCredits->AddLine(aLine,Fn386860(std::string("DialogComponent")),aColor);
     return true;
+    }
+    return DialogConfig::Virtual24(inInstruction);
 }
 
 void CreditsDialogConfig::Virtual34(Component* inComponent)
@@ -80,7 +82,7 @@ bool ScrollingTextComponent::Virtual44(int delta)
         Invalidate();
         mTimeSinceLastScroll=0;
     }
-    return Component::Virtual44(delta);
+    return true;
 }
 // FUNCTION: WON 0x007f71b0
 void ScrollingTextComponent::Paint(Graphics& g)
@@ -105,7 +107,7 @@ void ScrollingTextComponent::Paint(Graphics& g)
         else g.SetColor(line.GetColor());
         if(g.mColor!=0xffffff && top>2 && top<Height()-height-2) {
             int width;
-            {GUIString text=line.GetLine();width=g.mFont->GetStringWidth(text,0,text.length());}
+            width=g.mFont->GetStringWidth(line.GetLine());
             g.DrawString(line.GetLine(),(Width()-width)/2,top);
         }
         top+=height;

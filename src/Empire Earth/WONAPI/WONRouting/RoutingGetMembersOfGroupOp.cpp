@@ -8,6 +8,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x6c6320
 void RoutingGetMembersOfGroupOp::Virtual0C()
@@ -22,6 +23,8 @@ void RoutingGetMembersOfGroupOp::Virtual0C()
 // FUNCTION: WON 0x6c63f0
 WONStatus RoutingGetMembersOfGroupOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
 {
+    // LOST-DEBUG: none: exact only.
+    EE_LOST_DEBUG(2);
     if (inMsgType != 29) return (WONStatus)100104;
     WONStatus status = inMsg.ReadShort();
     unsigned short groupId = inMsg.ReadShort();

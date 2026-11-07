@@ -40,15 +40,14 @@ int ConfigParser::GetChar()
     int ch;
     if (mBackStr.empty()) {
         if (mIsUnicode) {
-            int low = mFileReader.TryReadByte();
-            int high = mFileReader.TryReadByte();
-            ch = low | (high << 8);
+            ch = mFileReader.TryReadByte();
+            ch |= mFileReader.TryReadByte() << 8;
         } else {
             ch = mFileReader.TryReadByte();
         }
     } else {
         ch = mBackStr[mBackStr.length() - 1];
-        mBackStr.erase(mBackStr.length() - 1);
+        mBackStr.resize(mBackStr.length() - 1);
     }
     if (ch == '\r') {
         int next = GetChar();
@@ -214,7 +213,7 @@ bool ConfigParser::OpenFile(const std::string& inPath)
     if (sep == std::string::npos) mFilePath = "";
     else mFilePath = mFileNameAndPath.substr(0, sep + 1);
     mFileReader.OpenText(inPath.c_str());
-    if (mFileReader.mFile != NULL || mFileReader.mBuffer != NULL) {
+    if (mFileReader.IsOpen()) {
         int first = mFileReader.TryReadByte();
         int second = mFileReader.TryReadByte();
         mFileReader.TryReadByte();
@@ -228,7 +227,7 @@ bool ConfigParser::OpenFile(const std::string& inPath)
         }
     }
     mFileReader.ReadIntoMemory();
-    return mFileReader.mFile != NULL || mFileReader.mBuffer != NULL;
+    return mFileReader.IsOpen();
 }
 // Additional original ConfigParser define family; complete nested32 type independently reviewed.
 // Target differs from archived SDK: narrow map values are std::string, not DefineStruct.
@@ -251,17 +250,10 @@ void ConfigParser::PopDefineStack()
 }
 // FUNCTION: WON 0x007b2610
 // Original3b2610/947; literals retain original misspelling.
-static inline ConfigParser* RootParserOf(ConfigParser* parser,ConfigParser* parent)
-{
-    while(parent!=NULL) {
-        parser=parent;
-        parent=parser->mParent;
-    }
-    return parser;
-}
 bool ConfigParser::AddDefine(const std::string& name,const std::string& value,bool redefine)
 {
-    ConfigParser* root=RootParserOf(this,mParent);
+    ConfigParser* root=this;
+    while(root->mParent!=NULL) root=root->mParent;
     if(name.find(' ')!=std::string::npos) {
         root->AddWarning("Not allowed to have spaces in define names.");
         return true;
@@ -270,7 +262,7 @@ bool ConfigParser::AddDefine(const std::string& name,const std::string& value,bo
     if(root->mDefineStack.back().get()==NULL) root->mDefineStack.back()=new DefineMapContainer;
     DefineMapContainer::DefineMap& defines=root->mDefineStack.back()->mDefineMap;
     if(redefine) defines[name]=value;
-    else if(!defines.insert(std::make_pair(name,value)).second)
+    else if(!defines.insert(DefineMapContainer::DefineMap::value_type(name,value)).second)
         root->AddWarning("Redefintion of "+name);
     return true;
 }
@@ -313,8 +305,11 @@ bool ConfigParser::AddGroupDefine(const std::string& name,ConfigParserState* sta
     if(mParent!=NULL) return mParent->AddGroupDefine(name,state);
     if(mDefineStack.empty()) mDefineStack.push_back(new DefineMapContainer);
     if(mDefineStack.back().get()==NULL) mDefineStack.back()=new DefineMapContainer;
-    if(!mDefineStack.back()->mGroupDefineMap.insert(std::make_pair(name,*state)).second)
+    DefineMapContainer::GroupDefineMap& aMap=mDefineStack.back()->mGroupDefineMap;
+    if(!aMap.insert(DefineMapContainer::GroupDefineMap::value_type(name,*state)).second) {
         AddWarning("Redefintion of "+name);
+        return true;
+    }
     return true;
 }
 // FUNCTION: WON 0x007b31a0
@@ -378,7 +373,7 @@ void ConfigParser::UngetStr(const std::wstring &theStr)
 // TEMPLATE: WON 0x007b1df0
 // (public: virtual void * __thiscall WONAPI::ConfigParser::`scalar deleting destructor'(unsigned int)    [??_GConfigParser@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007b30d0
-// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,struct WONAPI::ConfigParserState>)
+// (std::pair<const string,ConfigParserState>::~pair)
 // TEMPLATE: WON 0x007b3d90
 // (public: __thiscall std::map<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,class std::basic_string<char,struc)
 // TEMPLATE: WON 0x007b3de0

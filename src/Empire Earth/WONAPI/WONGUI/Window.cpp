@@ -110,14 +110,14 @@ void Window::Center(bool inParent)
 
 	GetRect(aWindowRect,false);
 
-	int left = aScreenRect.x + (aScreenRect.width - aWindowRect.width)/2;
-	int top = aScreenRect.y + (aScreenRect.height - aWindowRect.height)/2;
+	int left = aScreenRect.Left() + (aScreenRect.Width() - aWindowRect.Width())/2;
+	int top = aScreenRect.Top() + (aScreenRect.Height() - aWindowRect.Height())/2;
 	if(left<0)
 		left = 0;
 	if(top<0)
 		top = 0;
 
-	SetPosSize(left,top,aWindowRect.width, aWindowRect.height);
+	SetPosSize(left,top,aWindowRect.Width(), aWindowRect.Height());
 }
 
 // FUNCTION: WON 0x0072af30
@@ -422,7 +422,7 @@ void Window::Create(const WONRectangle& theWindowRectR)
 	if(mParent!=NULL)
 		mParent->mChildWindowSet.insert(this);
 	
-	mRoot->Fn2F4B90(theWindowRectR.width, theWindowRectR.height);
+	mRoot->Fn2F4B90(theWindowRectR.Width(), theWindowRectR.Height());
 
 	mManager->AddWindow(this);
 }

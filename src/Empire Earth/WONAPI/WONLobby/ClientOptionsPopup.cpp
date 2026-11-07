@@ -31,10 +31,10 @@ void ClientOptionsPopup::Init(LobbyClient* inClient,LobbyClient* inMyClient,int 
     bool isGame=(inRoomSpec&4)!=0;
     bool isModerator=inMyClient->Fn3A54D0();
     bool isCaptain=inMyClient->Fn3A54E0(isLAN);
-    bool isSelf=inMyClient->mClientId==inClient->GetClientId();
+    bool isSelf=inMyClient->GetClientId()==inClient->GetClientId();
     SmartPtr<Font> anOldFont=mPopupMenu->mFont;
     SmartPtr<Font> aBoldFont=Fn2F5A30(anOldFont.get(),1,0);
-    mPopupMenu->mFont=aBoldFont;
+    mPopupMenu->SetFont(aBoldFont);
     mPopupMenu->AddItem(inClient->mName,0)->mB09=false;
     if(isModerator) {
         char aBuffer[256];
@@ -50,8 +50,7 @@ void ClientOptionsPopup::Init(LobbyClient* inClient,LobbyClient* inMyClient,int 
     }
     if(isGame) {
         if(!isSelf) AddItem(::FriendOptionsCtrl_Locate_String,17);
-        // Native shared physical getter2b31d0 reads receiver bool24; no call through unrelated IPAddr API.
-        if(!inClient->mB24) AddItem(::ClientOptionsCtrl_AddToFriends_String,1);
+        if(!inClient->IsFriend()) AddItem(::ClientOptionsCtrl_AddToFriends_String,1);
         else AddItem(::ClientOptionsCtrl_RemoveFromFriends_String,9);
         mPopupMenu->AddSeperator();
     }
@@ -93,7 +92,7 @@ void ClientOptionsPopup::HandleComponentEvent(ComponentEvent* inEvent)
     ListItemClickedEvent* anEvent=static_cast<ListItemClickedEvent*>(inEvent);
     if(anEvent->mItem.get()==NULL || anEvent->mButton!=0) return;
     int anAction=static_cast<MenuItem*>(anEvent->mItem.get())->mMenuId;
-    if(anAction!=0) Fn2F53F0(new ClientActionEvent(anAction,int(mRoomSpecFlags),mClient.get()),false);
+    if(anAction!=0) Fn2F53F0(new ClientActionEvent(anAction,GetRoomSpecFlags(),mClient.get()),false);
     GetRoot()->ClosePopup(this);
 }
 }

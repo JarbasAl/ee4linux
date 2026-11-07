@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyHTMLParser.h"
 #include "ee/wonapi/WONLobbyAnimation.h"
+#include "LostDebug.h"
 
 
 using namespace WONAPI;
@@ -226,7 +227,7 @@ static int GetWesternChar(int theChar)
 inline int HTMLParser::GetChar()
 {
 	int aChar = 0;
-	if((mBackStr.length()==0))
+	if(mBackStr.empty())
 	{
 		if(mFile!=NULL) aChar = fgetc(mFile); else aChar = EOF;
 
@@ -287,7 +288,7 @@ inline void HTMLParser::UngetString(const GUIString &theStr, int theStartPos)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00744200
-bool HTMLParser::SkipWhitespace()
+inline bool HTMLParser::SkipWhitespace()
 {
 	bool hadSpace = false;
 	while(!EndOfFile())
@@ -308,6 +309,7 @@ bool HTMLParser::SkipWhitespace()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00742c10
+// FUNCTION: WON 0x007431b0
 inline int HTMLParser::ReadEntity()
 {
 	GUIString anEntity;
@@ -597,7 +599,7 @@ inline int HTMLParser::ReadEntity()
 		{"hearts", 9829},
 		{"diams", 9830}
 	};
-	typedef std::map<GUIString,int,StringLessNoCase> EntityMap; 
+	typedef std::map<GUIString,long,StringLessNoCase> EntityMap; 
 	static EntityMap anEntityMap;
 	if(anEntityMap.empty())
 	{
@@ -674,6 +676,8 @@ bool HTMLParser::ReadWord(GUIString &theWord,  const char *theStopChars, bool st
 // FUNCTION: WON 0x007435e0
 void HTMLParser::SkipTag(const GUIString &theName)
 {
+	// LOST-DEBUG: none: exact only.
+	EE_LOST_DEBUG(2);
 	const int BUFFER_SIZE = 512;
 	GUIString aSearch = "</";
 	aSearch.append(theName);
@@ -870,8 +874,7 @@ bool HTMLParser::ParseFromText(const GUIString &theText)
 	CloseFile();
 
 	mBackStr.resize(0);
-	mBackStr.CopyOnWrite();
-	mBackStr.mData->Reserve(theText.length(),false);
+	mBackStr.reserve(theText.length());
 	for(int i = theText.length()-1; i>=0; i--)
 		mBackStr.append(theText[i]);
 

@@ -36,6 +36,9 @@ public:
     void AddWarning(const std::string&);
     void CopyWarnings(ConfigParser&);
     const std::string& GetAbortReason();
+    bool IsStopped() { return mStopped; }
+    void Stop() { mStopped=true; }
+    bool GetIgnorePathOnIncludeFile() { return mIgnorePathOnIncludeFile; }
     bool EndOfFile();
     int GetChar();
     int PeekChar();
@@ -108,7 +111,7 @@ public:
     bool OpenNewKey(int inRoot, const std::string& inPath, bool inCreate, bool inNonvolatile); //native2a4440, unresolved HKEY create implementation stays carved
     void CloseKey(); //native2a4370
     DWORD GetToBuf(const std::string& inName, unsigned long& outLength) const; //native2a4390
-    int QueryBinary(const std::string& inName, SmartPtr<ByteBuffer>& outValue); //native2a46e0
+    int QueryBinary(const std::string& inName, ConstSmartPtr<ByteBuffer>& outValue); //native2a46e0
     bool IsOpen() const { return mIsOpen; } //genuine SDK inline bool08; no HKEY validity inference
     const std::string& GetLeafName(void) const { return mPath; } //genuine SDK borrowed owned-string0c accessor
     HKEY mKey;                              // +0x04

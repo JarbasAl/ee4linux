@@ -10,6 +10,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyHTMLFromText.h"
+#include "LostDebug.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x0073F020
@@ -56,7 +57,7 @@ void HTMLDocumentGen::printf(const GUIString &theText)
 			anEndPos++;
 
 		GUIString aNumber = theText.substr(aStartPos,anEndPos-aStartPos);
-		int aParamNum = aNumber.mData->ToInt(0)-1;
+		int aParamNum = aNumber.ToInt()-1;
 		if(aParamNum>=0 && aParamNum<mDocumentVector.size())
 			mDocument->AddDocument(mDocumentVector[aParamNum].get());
 
@@ -67,6 +68,8 @@ void HTMLDocumentGen::printf(const GUIString &theText)
 
 	if(aStartPos<theText.length())
 		AddDoc(theText.substr(aStartPos),HTMLDocGenFlag_IsHTML);
+	// LOST-DEBUG: none: exact only
+	EE_LOST_DEBUG(4);
 }
 
 

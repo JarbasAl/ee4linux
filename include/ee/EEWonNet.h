@@ -228,7 +228,7 @@ public:
     bool InitEncrypted(const void*, unsigned long); //2e3880
     bool Init(const std::string&);
     std::string GetString() const;
-    SmartPtr<ByteBuffer> GetEncrypted() const;
+    ConstSmartPtr<ByteBuffer> GetEncrypted() const;
     bool InitRaw(const void*);
     bool SaveToFile(const std::string&);
     bool LoadFromFile(const std::string&);
@@ -243,7 +243,7 @@ protected:
     virtual bool GetUseNewEncryptMethod() const { return true; } //actual slot4/2f30d0
 public:
     std::string mProduct; //04..14; actual SDK mProduct
-    SmartPtr<ByteBuffer> mP14; //14..18; actual SDK mKey, real ByteBuffer owner
+    ConstSmartPtr<ByteBuffer> mP14; //14..18; actual SDK mKey, real ByteBuffer owner
     bool mValid; //18; actual SDK mIsValid; complete extent1c
 };
 
@@ -258,7 +258,7 @@ public:
 
 struct DirDataObject {
     std::string mDataType; //00..0f
-    SmartPtr<ByteBuffer> mData; //10, owning
+    ConstSmartPtr<ByteBuffer> mData; //10, owning
 };
 typedef std::list<DirDataObject> DirDataObjectList;
 struct DirACL {
@@ -288,7 +288,7 @@ public:
     unsigned long mTouchIP; //54
     unsigned long mTouchId; //58
     bool mReqUnique; //5c, naturalalignment5d..5f
-    SmartPtr<ByteBuffer> mNetAddr; //60
+    ConstSmartPtr<ByteBuffer> mNetAddr; //60
     DirDataObjectList mDataObjects; //64..6f
     DirACLList mACLs; //70..7b
 };
@@ -566,7 +566,7 @@ public:
     WONAPI::DirEntityList mServers;         // +0x02c (the server-select form lists them)
     // +0x038: the message-of-the-day request (base game: RequestMOTD)
     WONAPI::SmartPtr<WONAPI::GetMOTDOp> mMOTDOp;
-    WONAPI::SmartPtr<WONAPI::AsyncOp> mLoginOp;  // +0x03c (base game: Login)
+    WONAPI::SmartPtr<WONAPI::GetCertOp> mLoginOp;  // +0x03c (base game: Login)
     // +0x040: the directory query (base game: GetTitanServerList)
     WONAPI::SmartPtr<WONAPI::GetDirOp> mDirOp;
     char _gap044[0xc];

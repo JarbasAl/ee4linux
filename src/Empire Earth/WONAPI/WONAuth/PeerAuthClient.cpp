@@ -13,6 +13,19 @@
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONAuthPeerData.h"
 namespace WONAPI {
+// FUNCTION: WON 0x006e5c30
+PeerAuthClient::PeerAuthClient()
+{
+    Reset();
+    mUseAuth2=true;
+    mUseClientSecret=false;
+    mClientKeySize=8;
+}
+// FUNCTION: WON 0x006e5cb0
+void PeerAuthClient::Reset()
+{
+    mState=STATE_NOT_STARTED;
+}
 // FUNCTION: WON 0x6e5cc0
 WONStatus PeerAuthClient::HandleChallenge1(ReadBuffer &theChallenge, ByteBufferPtr &challenge2)
 {
@@ -32,17 +45,12 @@ WONStatus PeerAuthClient::HandleChallenge1(ReadBuffer &theChallenge, ByteBufferP
 	unsigned short aCertLen = theChallenge.ReadShort();
 
 	if(mUseAuth2)
-	{
 		mServerCertificate = new Auth2Certificate(theChallenge.ReadBytes(aCertLen),aCertLen);
-		if(!mServerCertificate->IsValid())
-			return 100028 /* WS_PeerAuthClient_Challenge1CertificateUnpackFailure */;
-	}
 	else
-	{
 		mServerCertificate = new AuthCertificate(theChallenge.ReadBytes(aCertLen),aCertLen);
-		if(!mServerCertificate->IsValid())
-			return 100028 /* WS_PeerAuthClient_Challenge1CertificateUnpackFailure */;
-	}
+
+	if(!mServerCertificate->IsValid())
+		return 100028 /* WS_PeerAuthClient_Challenge1CertificateUnpackFailure */;
 
 	if(!mPeerData->Verify(mServerCertificate.get()))
 		return 100029 /* WS_PeerAuthClient_Challenge1CertificateVerifyFailure */;

@@ -140,7 +140,11 @@ WONStatus RecvBytesOp::Fn2B50C0()
                 mBytesSinceProgress %= mProgressInterval;
             }
         }
-        if ((mLength == 0 && aStatus == 100020) || (mLength != 0 && mBytesRead == mLength))
+        if (mLength == 0) {
+            if (aStatus == 100020)
+                return Fn2B54A0(0);
+        }
+        else if (mBytesRead == mLength)
             return Fn2B54A0(0);
         if (aStatus == 100001) {
             if (TimeLeft() == 0)
@@ -315,7 +319,7 @@ ByteBufferPtr RecvMsgOp::GetMsg() const
     return mMessage;
 }
 // FUNCTION: WON 0x006aa920
-ByteBufferPtr RecvBytesFromOp::GetBytes() const
+SmartPtr<ByteBuffer> RecvBytesFromOp::GetBytes() const
 {
     return mReceivedData;
 }

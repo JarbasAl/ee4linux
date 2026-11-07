@@ -15,6 +15,7 @@
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/WONLobbyControls.h"
+#include "LostDebug.h"
 namespace WONAPI {
 //3bf190,50B. Dialog base is real, pointers zero by SmartPtr defaults.
 // FUNCTION: WON 0x007bf190
@@ -86,7 +87,7 @@ void LoginCtrl::SavePassword()
     GUIString password(GetEmptyGUIStringData());
     if (mRememberPasswordCheck->IsChecked())
         password=mPasswordInput->GetText();
-    if (userName.length()==0)
+    if (userName.empty())
         return;
     LobbyFn35C910(userName,password,true);
 }
@@ -117,6 +118,12 @@ void LoginCtrl::HandleLoginInitStatus(LoginInitStatusEvent* inEvent)
 // FUNCTION: WON 0x007bf810
 void LoginCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_TRACE(inEvent->mType+1);
+    EE_LOST_TRACE(inEvent->mType+1);
+    EE_LOST_TRACE(inEvent->mType+1);
+    EE_LOST_TRACE(inEvent->mType+1);
+    EE_LOST_TRACE(inEvent->mType+1);
     switch (inEvent->mType) {
     case 21:
         if (inEvent->mComponent==mUserNameCombo.get() &&
@@ -136,9 +143,9 @@ void LoginCtrl::HandleComponentEvent(ComponentEvent* inEvent)
         // Original event20 falls into the event15 source checks when enabled.
     case 15:
         if (inEvent->mComponent==mLoginButton.get()) {
-            Fn2F53F0(new LoginEvent(mUserNameCombo->mEdit->GetText(),
-                                  mPasswordInput->GetText(),
-                                  mRememberPasswordCheck->mChecked!=0),false);
+            Fn2F53F0(new LoginEvent(mPasswordInput->GetText(),
+                                  mRememberPasswordCheck->mChecked!=0,
+                                  mUserNameCombo->mEdit.mPtr->GetText()),false);
             return;
         } else if (inEvent->mComponent==mRememberPasswordCheck.get()) {
             SavePassword();

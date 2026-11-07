@@ -8,6 +8,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006c6630
 RoutingGetUserStatusOp::RoutingGetUserStatusOp(const IPAddr& inAddress, UDPManager* inManager)
@@ -30,10 +31,19 @@ void RoutingGetUserStatusOp::Virtual04()
     message.AppendByte(7);
     message.AppendByte(72);
     message.AppendByte((unsigned char)mFriendStatusMap.size());
-    for (FriendStatusMap::const_iterator i = mFriendStatusMap.begin(); i != GetFriendStatusMap().end(); ++i)
+    FriendStatusMap::const_iterator i = mFriendStatusMap.begin();
+    while (true) {
+        if (i == GetFriendStatusMap().end()) break;
         message.AppendLong(i->first);
+        ++i;
+    }
     mOutgoing = message.ToByteBuffer(true);
     UDPManagerSendRecvOp::Virtual04();
+    // LOST-DEBUG: none: exact only.
+    EE_LOST_TRACE(mOutgoing.get());
+    EE_LOST_TRACE(mOutgoing.get());
+    EE_LOST_TRACE(mOutgoing.get());
+    EE_LOST_TRACE(mOutgoing.get());
 }
 // FUNCTION: WON 0x006c6ab0
 WONStatus RoutingGetUserStatusOp::Virtual0C(ReadBuffer& inMessage)
@@ -45,7 +55,7 @@ WONStatus RoutingGetUserStatusOp::Virtual0C(ReadBuffer& inMessage)
         unsigned char count = inMessage.ReadByte();
         if (count != mFriendStatusMap.size()) return (WONStatus)100006;
         FriendStatusMap::iterator i = mFriendStatusMap.begin();
-        for (int j = 0; j < count; ++j, ++i)
+        for (int j = 0; j < count; ++i, ++j)
             i->second = inMessage.ReadByte();
         return (WONStatus)0;
     } catch (ReadBufferException&) {

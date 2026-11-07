@@ -26,7 +26,7 @@ void SoundDescriptor::SetSoundFlags(int flags,bool on)
 }
 // Native3299c0/378, direct complete descriptor-field copy and default state, support0.
 Sound::Sound(const SoundDescriptor& descriptor)
-    :mL08(descriptor.mL00),mPath(descriptor.mPath)
+    :mDescriptor(descriptor)
 {
     mIsLooping=false;
 }
@@ -39,9 +39,8 @@ void Sound::Fn329BD0()
 // FUNCTION: WON 0x00729bf0
 void Sound::Fn329BF0(bool muted)
 {
-    if(muted==((mL08&4)!=0)) return;
-    if(muted) mL08|=4;
-    else mL08&=~4;
+    if(muted==GetMuted()) return;
+    mDescriptor.SetSoundFlags(4,muted);
     if(muted) Stop();
 }
 }
@@ -60,7 +59,7 @@ void WONAPI::Sound::Resume()
 // FUNCTION: WON 0x00729c20
 bool WONAPI::Sound::GetMuted()
 {
-    return (mL08&4)?true:false;
+    return (mDescriptor.mL00&4)?true:false;
 }
 
 namespace WONAPI {

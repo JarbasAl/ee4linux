@@ -152,10 +152,15 @@ public:
 	deque(const _Myt& _X)
 		: _Deque_val<_Ty, _A>(_X.allocator), _Map(0), _Mapsize(0), _Myoff(0), _Mysize(0)
 		{insert(begin(), _X.begin(), _X.end()); }
+#ifdef EE_DINKUM_SXL233
+	~deque()
+		{clear(); }
+#else
 	~deque()
 		{while (!empty())
 			pop_back();
 		_Tidy(); }
+#endif
 	_Myt& operator=(const _Myt& _X)
 		{if (this == &_X)
 			;
@@ -397,7 +402,11 @@ protected:
 	void _Tidy()
 		{for (size_type _Count = _Mapsize; 0 < _Count; )
 			allocator.deallocate(_Map[--_Count], _DEQUESIZ);
+#ifdef EE_DINKUM_SXL233
+		allocator.deallocate(_Map, _Mapsize);
+#else
 		operator delete(_Map);
+#endif
 		_Mapsize = 0;
 		_Map = 0; }
 	void _Xlen() const

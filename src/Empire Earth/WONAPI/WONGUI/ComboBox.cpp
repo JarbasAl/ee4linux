@@ -278,22 +278,20 @@ bool ComboBox::Virtual54(int key)
         ShowList();
         return true;
     }
-    if(mListBoxVisible) {
-        if(key==40 || key==38 || key==33 || key==34) {
-            mListArea->Virtual54(key);
-            SetInputBoxToListSelection(false,true);
-            return true;
-        }
-        if(key==13) {
-            SetInputBoxToListSelection(true,true);
-            mButton->Fn2F3440();
-            return true;
-        }
-        if(key==27) {
-            mEdit->SetText(mUndoStr,true);
-            mButton->Fn2F3440();
-            return true;
-        }
+    if(mListBoxVisible && (key==40 || key==38 || key==33 || key==34)) {
+        mListArea->Virtual54(key);
+        SetInputBoxToListSelection(false,true);
+        return true;
+    }
+    if(mListBoxVisible && key==13) {
+        SetInputBoxToListSelection(true,true);
+        mButton->Fn2F3440();
+        return true;
+    }
+    if(key==27 && mListBoxVisible) {
+        mEdit->SetText(mUndoStr,true);
+        mButton->Fn2F3440();
+        return true;
     }
     return Container::Virtual54(key);
 }

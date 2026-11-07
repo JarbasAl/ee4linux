@@ -12,7 +12,7 @@
 #include "ee/wonapi/WONLobbyLayout.h"
 namespace WONAPI {
 // Native308160..3081cf111B. Base/vector setup and defaults, conservative support0.
-TabBar::TabBar(TabCtrl* inCtrl) : mCurTab(NULL),mTabCtrl(inCtrl),mOverlap(4) {}
+TabBar::TabBar(TabCtrl* inCtrl) : mCurTab(NULL),mTabCtrl(inCtrl) { mOverlap=4; }
 // Native308280..30829218B. Borrowed null-guarded getter, support0.
 // FUNCTION: WON 0x00708280
 int TabBar::Fn308280() { return mCurTab==NULL ? -1 : mCurTab->mControlId; }
@@ -93,7 +93,7 @@ bool TabBar::Disabled(int inId)
     {
         Button* tab=mTabVector[inId].get();
         if(tab!=NULL)
-            return tab->IsDisabled();
+            return tab->IsDisabled()?true:false;
     }
     return true;
 }
@@ -335,23 +335,32 @@ void TabCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 bool TabCtrl::Virtual88(bool inForward,bool inInit)
 {
     Button* button=mBottomTabBar->mCurTab;
-    Container* current=mCurTab;
-    if(button==NULL || current==NULL) return Container::Virtual88(inForward,inInit);
-    if(inInit) {
-        if(!inForward && current->Virtual88(false,true)) return true;
-        bool result=button->Virtual88(inForward,true);
-        if(result) mTopTabBar->SetHasUsedDialogKeys(true);
-        return result;
+    if(button!=NULL) {
+        Container* current=mCurTab;
+        if(current!=NULL) {
+            if(inInit) {
+                if(!inForward) {
+                    bool done=current->Virtual88(false,true);
+                    if(done) return done;
+                }
+                bool result=button->Virtual88(inForward,true);
+                if(result) mTopTabBar->SetHasUsedDialogKeys(true);
+                return result;
+            }
+            if(button->HasFocus()) {
+                if(inForward) return current->Virtual88(true,true);
+                return false;
+            }
+            if(current->Virtual88(inForward,false)) return true;
+            if(inForward) return false;
+            if(button->Virtual88(false,true)) {
+                mTopTabBar->SetHasUsedDialogKeys(true);
+                return true;
+            }
+            return false;
+        }
     }
-    if(button->HasFocus()) {
-        if(!inForward) return false;
-        return current->Virtual88(true,true);
-    }
-    if(current->Virtual88(inForward,false)) return true;
-    if(inForward) return false;
-    if(!button->Virtual88(false,true)) return false;
-    mTopTabBar->SetHasUsedDialogKeys(true);
-    return true;
+    return Container::Virtual88(inForward,inInit);
 }
 // Native309240..309347,263B. Disable predicate is evaluated BEFORE loop bounds.
 // FUNCTION: WON 0x00709240
@@ -428,7 +437,7 @@ TabCtrl::TabCtrl()
     mCurTab=NULL;
     mTabBarHeight=0;
     mTabBarOverlap=1;
-    mArrowsOnLeft=mTabBarOnRight=mTabBarOnBottom=false;
+    mTabBarOnBottom=mTabBarOnRight=mArrowsOnLeft=false;
     mBottomTabBarContainer=new Container;
     mTopTabBarContainer=new Container;
     mBottomTabBar=new TabBar(this);

@@ -160,32 +160,25 @@ static bool IPAddr_PlatformGetNetworkAdapterList(std::list<LobbyNetAddress>& out
     std::auto_ptr<char> aDelBuf(aBuf);
     PIP_ADAPTER_INFO anAdapter=(PIP_ADAPTER_INFO)aBuf;
     aGetAdaptersInfoFunc(anAdapter,&aBufSize);
-    while(anAdapter!=NULL) {
+    for(;anAdapter!=NULL;anAdapter=anAdapter->Next) {
         std::string aName=anAdapter->Description;
         long aHost=ntohl(inet_addr(anAdapter->IpAddressList.IpAddress.String));
         outAddresses.push_back(LobbyNetAddress(aName,aHost));
-        anAdapter=anAdapter->Next;
     }
     return true;
 }
 // FUNCTION: WON 0x006b32b0
 void LobbyGetNetAddresses(std::list<LobbyNetAddress>& outAddresses,bool inGetDetails)
 {
-    outAddresses.erase(outAddresses.begin(),outAddresses.end());
+    outAddresses.clear();
     if(inGetDetails && IPAddr_PlatformGetNetworkAdapterList(outAddresses) && !outAddresses.empty()) return;
     char aHostName[1024];
     if(gethostname(aHostName,sizeof(aHostName))!=0) return;
     hostent* anEntry=gethostbyname(aHostName);
     if(anEntry==NULL) return;
     for(int i=0;anEntry->h_addr_list[i]!=NULL;++i) {
-        unsigned long anAddress;
-        memcpy(&anAddress,anEntry->h_addr_list[i],sizeof(anAddress));
-        std::string aName="";
-        long aHost=ntohl(anAddress);
-        LobbyNetAddress anAddressEntry;
-        anAddressEntry.mName=aName;
-        anAddressEntry.mHandle=aHost;
-        outAddresses.push_back(anAddressEntry);
+        unsigned long anAddress=*(unsigned long*)anEntry->h_addr_list[i];
+        outAddresses.push_back(LobbyNetAddress("",ntohl(anAddress)));
     }
 }
 // Complete explicit native IPAddr ownership constructors; no fields/layout additions.

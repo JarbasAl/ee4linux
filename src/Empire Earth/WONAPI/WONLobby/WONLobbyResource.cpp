@@ -2391,8 +2391,6 @@ ResourceConfigTablePtr LobbyResource_Init(ResourceConfigTable* theTable)
     theTable->RegisterControlId("FilterDirtyWordsCheck",ID_FilterDirtyWordsCheck);
     theTable->RegisterControlId("AnonymousToFriendsCheck",ID_AnonymousToFriendsCheck);
     theTable->RegisterControlId("ChooseNetworkAdapter",ID_ChooseNetworkAdapter);
-    // LOST-DEBUG: none: exact only
-    EE_LOST_DEBUG(2);
     return aTable;
 }
 
@@ -2884,6 +2882,8 @@ int LobbyResource_GetInt(LobbyResourceId id) { return *(int*)gResources[id]; }
 void LobbyResource_SafeGlueResources(ResourceConfigTable* theTable)
 {
     ResourceConfig* aConfig;
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     aConfig=theTable->SafeGetConfig("LobbyGlobal");
     LobbyGlobal_Cancel_String=aConfig->SafeGetString("Cancel");
     LobbyGlobal_Lan_String=aConfig->SafeGetString("Lan");

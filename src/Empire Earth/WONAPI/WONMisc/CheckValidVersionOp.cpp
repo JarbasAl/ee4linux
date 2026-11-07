@@ -51,7 +51,8 @@ void CheckValidVersionOp::Virtual04()
     mMessageType=1004;
     mSubMessageType=mMsgType;
     WriteBuffer request(0,true);
-    request.AppendString(mProductName);
+    const std::string& aProductName=mProductName;
+    request.AppendString(aProductName);
     mVersionData->WriteToBuffer(request,0);
     request.AppendBool(mGetPatchList);
     mRequestData=request.ToByteBuffer(true);
@@ -73,3 +74,5 @@ void CheckValidVersionOp::Init()
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d8d70
 // (protected: virtual void * __thiscall WONAPI::CheckValidVersionOp::`scalar deleting destructor'(unsigned int)    [??_GCheckValidVersionOp@WONAPI@@MAEPA)
+// TEMPLATE: WON 0x006dc810
+// (protected: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::PatchData>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::PatchDa)

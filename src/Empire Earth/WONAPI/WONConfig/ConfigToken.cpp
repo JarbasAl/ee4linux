@@ -27,7 +27,7 @@ template<> bool ReadToken<wchar_t>(ConfigParser* parser, std::wstring& token,boo
         escaped=(ch=='\\' && !escaped);
         ch=parser->GetChar();
         if(ch==-1) break;
-        if((unsigned int)ch<256 && isspace(ch)) {
+        if(((unsigned int)ch<256 ? isspace(ch) : 0)) {
             if(!quoted) {
                 if(!toEndLine) {parser->UngetChar(ch);break;}
                 if(ch=='\n' && !escaped) {parser->UngetChar(ch);break;}
@@ -68,7 +68,7 @@ template<> bool ReadToken<wchar_t>(ConfigParser* parser, std::wstring& token,boo
                 std::wstring value;
                 while(!parser->EndOfFile()) {
                     int next=parser->GetChar();
-                    if((unsigned int)next<256 && isspace(next)) {
+                    if(((unsigned int)next<256 ? isspace(next) : 0)) {
                         parser->SetError("Expecting closing '$'",false);
                         return false;
                     }

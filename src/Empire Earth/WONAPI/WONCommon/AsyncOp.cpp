@@ -133,7 +133,8 @@ WONStatus AsyncOp::Fn29F500(long mode,unsigned long timeout)
 void AsyncOp::RunAsync(unsigned long timeout)
 {
     AutoCrit lock(mLock);
-    if(mStatus==100000 || mCompletionPending) return;
+    bool aRunning=mStatus==100000 || mCompletionPending;
+    if(aRunning) return;
     mStatus=100000;
     mB39=false;
     lock.Leave();

@@ -48,15 +48,14 @@ void DirectConnectCtrl::HandleComponentEvent(ComponentEvent* inEvent)
     case 15:
         if(inEvent->mComponent==mAddButton.get()) {
             Fn2F53F0(new ChangeDirectConnectEvent(0,NULL),false);
-            return;
         }
-        if(inEvent->mComponent==mRemoveButton.get()) {
+        else if(inEvent->mComponent==mRemoveButton.get()) {
             LobbyGame* game=mConnectionList->GetSelGame();
             if(game!=NULL)
                 Fn2F53F0(new ChangeDirectConnectEvent(1,game),false);
-            return;
         }
-        break;
+        else break;
+        return;
     }
     Component::HandleComponentEvent(inEvent);
 }

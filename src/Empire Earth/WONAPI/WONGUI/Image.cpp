@@ -237,7 +237,7 @@ unsigned char* RawImage1::StartRowTraversal(int row) {
 // FUNCTION: WON 0x00728f30
 SmartPtr<NativeImage> RawImage32::GetNative(DisplayContext* context) {
     if(mDoTransparency) {
-        int width=mWidth,height=mHeight;
+        int width=GetWidth(),height=GetHeight();
         SmartPtr<RawImage1> mask=new RawImage1(width,height);
         for(int y=0;y<height;++y) {
             mask->StartRowTraversal(y);
@@ -245,11 +245,10 @@ SmartPtr<NativeImage> RawImage32::GetNative(DisplayContext* context) {
             while(mRowPtr<mRowEnd) {
                 if((*mRowPtr&0xff000000)==0) {
                     *mRowPtr=0;
-                    *mask->mRowPtr|=mask->mRowMask;
-                } else *mask->mRowPtr&=~mask->mRowMask;
+                    mask->SetRowPixel(true);
+                } else mask->SetRowPixel(false);
                 ++mRowPtr;
-                mask->mRowMask>>=1;
-                if(mask->mRowMask==0) { ++mask->mRowPtr; mask->mRowMask=128; }
+                mask->NextRowPixel();
             }
         }
         SmartPtr<NativeImage> native=Fn3D0410(context);
@@ -268,11 +267,9 @@ SmartPtr<NativeImage> RawImage8::GetNative(DisplayContext* context) {
             StartRowTraversal(y);
             mask->StartRowTraversal(y);
             while(mRowPtr<mRowEnd) {
-                if(*mRowPtr==mTransparentColor) *mask->mRowPtr|=mask->mRowMask;
-                else *mask->mRowPtr&=~mask->mRowMask;
-                mask->mRowMask>>=1;
-                if(mask->mRowMask==0) { ++mask->mRowPtr; mask->mRowMask=128; }
-                ++mRowPtr;
+                mask->SetRowPixel(GetRowPixel()==mTransparentColor);
+                mask->NextRowPixel();
+                NextRowPixel();
             }
         }
         native->SetTransparentMask(mask->GetMask(context).get());

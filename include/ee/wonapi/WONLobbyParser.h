@@ -32,16 +32,16 @@ public:
     static void ValueToString(const std::list<std::list<int> >& theVal,std::string& theStr);
     static void ValueToString(const std::list<std::list<std::string> >& theVal,std::string& theStr);
     static void ValueToString(const std::list<std::list<std::wstring> >& theVal,std::string& theStr);
-    StringParser() : mPos(0), mWide(false) { mText.mNarrow=""; }
-    void Set(const char* theStr) { mText.mNarrow=theStr; mPos=0; mWide=false; }
-    void Set(const wchar_t* theStr) { mText.mWide=theStr; mPos=0; mWide=true; }
-    const char* GetStr() { return mText.mNarrow; }
-    const wchar_t* GetWStr() { return mText.mWide; }
+    StringParser() : mPos(0), mWide(false) { mNarrow=""; }
+    void Set(const char* theStr) { mNarrow=theStr; mPos=0; mWide=false; }
+    void Set(const wchar_t* theStr) { mWideText=theStr; mPos=0; mWide=true; }
+    const char* GetStr() { return mNarrow; }
+    const wchar_t* GetWStr() { return mWideText; }
     int GetPos() { return mPos; }
     void SetIsWString(bool isWString) { mWide=isWString; }
     bool GetIsWString() { return mWide; }
-    StringParser(const char* inText) : mPos(0), mWide(false) { mText.mNarrow = inText; }
-    StringParser(const wchar_t* inText) : mPos(0), mWide(true) { mText.mWide = inText; }
+    StringParser(const char* inText) { Set(inText); }
+    StringParser(const wchar_t* inText) { Set(inText); }
     unsigned char GetChar(int inOffset); //2a48c0, wide >=256 clamps0xff
     wchar_t GetWChar(int inOffset); //2a4910
     void IncrementPos(int inAmount); //2a4900
@@ -74,7 +74,7 @@ public:
     static void ValueToString(const std::string&,std::string&); //2a5c60
     static void ValueToString(const std::wstring&,std::string&); //2a5d70
     static void ValueToString(const std::list<std::string>&,std::string&); //2a5e70
-    union Text { const char* mNarrow; const wchar_t* mWide; } mText;
+    union { const char* mNarrow; const wchar_t* mWideText; };
     int mPos;
     bool mWide;
 };
@@ -96,6 +96,14 @@ public:
     void AddHelpEntry(int inId, const GUIString& inCommand, GUIString& outHelp);
     GUIString GetHelp(unsigned short inClientId);
 
+    int GetCommand() const { return mCommand; }
+    const GUIString& GetTargetName() const { return mTargetName; }
+    int GetPrefix() const { return mPrefix; }
+    LobbyClient* GetTarget() const { return mTarget.get(); }
+    const GUIString& GetText() const { return mText; }
+    unsigned long GetDuration() const { return mDuration; }
+    unsigned long GetRoomFlags() const { return mRoomFlags; }
+    LobbyClientList* GetClients() const { return mClients.get(); }
     SmartPtr<LobbyClientList> mClients;    // +0x08
     GUIString mInput;                     // +0x0c
     CommandMap mCommands;                 // +0x10

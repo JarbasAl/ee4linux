@@ -63,17 +63,23 @@ WONStatus PingGameOp::Virtual0C(ReadBuffer& inBuffer)
         return 0x186a4; // original response-not-for-this-op status
     if (inBuffer.ReadShort() != mRequestId)
         return 0x186a4; // signed ReadShort promoted against unsigned-short member
-    mPing = GetTickCount() - mStartTime;
+    unsigned long aStart = mStartTime;
+    mPing = GetTickCount() - aStart;
     mReplyFlags = 0;
-    if (inBuffer.mL08 - inBuffer.mL00 > 0) {
+    if (inBuffer.Available() > 0) {
         mReplyFlags = inBuffer.ReadByte();
-        unsigned long aLength = inBuffer.mL08 - inBuffer.mL00;
+        unsigned long aLength = inBuffer.Available();
         mReply = new ByteBuffer(inBuffer.ReadBytes(aLength), aLength, false);
     }
     return 0;
 }
 
 namespace WONAPI {
+// Canonical UDP contracts pending model placement. These are actual call-only APIs.
+UDPManager* LobbyFn35B8F0();
+unsigned short LobbyFn35E3A0(); // max simultaneous ping count, actual caller masks16
+void LobbyFn361EB0(LobbyGame*); // update game UI/status
+
 // FUNCTION: WON 0x007e6490
 PingLogic::PingLogic()
 {
@@ -83,26 +89,21 @@ PingLogic::PingLogic()
 // FUNCTION: WON 0x007e6520
 PingLogic::~PingLogic() {}
 
-// FUNCTION: WON 0x007e6b40
-int PingLogic::Fn3E6B40()
-{
-    return mPending.size() + mTracker.mMaps.mEntries.size();
-}
-}
-
-
-namespace WONAPI {
-// Canonical UDP contracts pending model placement. These are actual call-only APIs.
-UDPManager* LobbyFn35B8F0();
-unsigned short LobbyFn35E3A0(); // max simultaneous ping count, actual caller masks16
-void LobbyFn361EB0(LobbyGame*); // update game UI/status
-
 // FUNCTION: WON 0x007e65d0
 void PingLogic::InitComponent(ComponentConfig*)
 {
     UDPManager* aManager = LobbyFn35B8F0();
     if (aManager != NULL)
         aManager->mDefaultCompletion = new LogicCompletion<PingLogic>(&PingLogic::Fn3E6810, this);
+}
+
+// FUNCTION: WON 0x007e6680
+void PingLogic::HandleComponentEvent(ComponentEvent* inEvent)
+{
+    if (inEvent->mType == 0x186c5) {
+        PingGameEvent* anEvent = static_cast<PingGameEvent*>(inEvent);
+        Fn3E6B50(anEvent->mGame.get(), anEvent->mFlag, false);
+    }
 }
 
 // FUNCTION: WON 0x007e66a0
@@ -140,15 +141,67 @@ void PingLogic::Fn3E6810(AsyncOp* inOp)
     UDPManagerRecvOp* anOp = static_cast<UDPManagerRecvOp*>(inOp);
     if (anOp->GetStatus() != 0 || anOp->mB39)
         return;
-    ByteBuffer* aBuffer = anOp->mReceivedData.get();
+    const ByteBuffer* aBuffer = anOp->mReceivedData.get();
     ReadBuffer aReadBuffer(aBuffer != NULL ? aBuffer->data() : NULL,
                           aBuffer != NULL ? aBuffer->length() : 0);
+    const IPAddr& anAddr = anOp->mAddress;
     try {
-        switch ((char)aReadBuffer.ReadByte()) {
-        case 7: Fn3E66A0(aReadBuffer, anOp->mAddress); break;
+        int aType = (char)aReadBuffer.ReadByte();
+        switch (aType) {
+        case 7: Fn3E66A0(aReadBuffer, anAddr); break;
         }
     }
     catch (ReadBufferException&) {}
+}
+
+// FUNCTION: WON 0x007e68b0
+void PingLogic::Fn3E68B0(AsyncOp* inOp)
+{
+    PingGameOp* anOp = static_cast<PingGameOp*>(inOp);
+    if (anOp->mB39)
+        return;
+    unsigned short aPing = anOp->mPing;
+    LobbyGame* aGame = anOp->mGame.get();
+    if (aPing != 0xffff)
+        aGame->mB18 = true;
+    else if (anOp->mRetries < 3) {
+        ++anOp->mRetries;
+        LobbyConfig* aConfig = GetLobbyConfig();
+        unsigned long aTimeout = aConfig != NULL ? aConfig->mPingCeiling : 5000;
+        RunTrackedOp(anOp, new LogicCompletion<PingLogic>(&PingLogic::Fn3E68B0, this), aTimeout);
+        return;
+    }
+    aGame->mL64 = aPing;
+    if (anOp->mReply.get() != NULL) {
+        ReadBuffer aBuffer(anOp->mReply->data(), anOp->mReply->length());
+        unsigned char aFlags = anOp->mReplyFlags;
+        bool aReadOk = true;
+        if (aFlags & 1)
+            aReadOk = aGame->ReadSummary(aBuffer) != 0;
+        if ((aFlags & 2) && aReadOk)
+            aGame->ReadDetails(aBuffer);
+    }
+    LobbyFn359100(new GameChangedEvent(aGame, 2), true);
+    LobbyFn361EB0(aGame);
+    int aMaximum = LobbyFn35E3A0();
+    while (!mPending.empty()) {
+        if (static_cast<long>(mTracker.mMaps.mEntries.size()) >= aMaximum && aMaximum != 0)
+            break;
+        SmartPtr<LobbyGame> aPendingGame = mPending.front();
+        mPending.pop_front();
+        if (!aPendingGame->Fn3A6D70())
+            continue;
+        if (aPendingGame->Fn3A6D90())
+            continue;
+        aPendingGame->mL64 = 0xfffe;
+        Fn3E6B50(aPendingGame.get(), false, true);
+    }
+}
+
+// FUNCTION: WON 0x007e6b40
+int PingLogic::Fn3E6B40()
+{
+    return mPending.size() + mTracker.mMaps.mEntries.size();
 }
 
 // FUNCTION: WON 0x007e6b50
@@ -179,13 +232,15 @@ void PingLogic::Fn3E6B50(LobbyGame* inGame, bool inDetails, bool inForce)
     UDPManager* aManager = LobbyFn35B8F0();
     if (aManager == NULL)
         return;
-    inGame->mL64 = inDetails ? 0xfffc : 0xfffd;
+    inGame->SetPing(inDetails ? 0xfffc : 0xfffd);
     LobbyFn361EB0(inGame);
-    unsigned char aFlags = inGame->GetGameType() == 3 ? 1 : 0;
+    unsigned char aFlags = 0;
+    if (inGame->GetGameType() == 3)
+        aFlags = 1;
     if (inDetails)
         aFlags |= 2;
     SmartPtr<PingGameOp> anOp = new PingGameOp(inGame, mNextRequestId++, aFlags);
-    anOp->mManager = aManager;
+    anOp->SetUDPManager(aManager);
     LobbyConfig* aConfig = GetLobbyConfig();
     unsigned long aTimeout = aConfig != NULL ? aConfig->mPingCeiling : 5000;
     RunTrackedOp(anOp.get(), new LogicCompletion<PingLogic>(&PingLogic::Fn3E68B0, this), aTimeout);
@@ -195,70 +250,19 @@ void PingLogic::Fn3E6B50(LobbyGame* inGame, bool inDetails, bool inForce)
 void PingLogic::Fn3E6DB0(int)
 {
     std::list<SmartPtr<LobbyGame> >::iterator aGameItr = mPending.begin();
-    for (; aGameItr != mPending.end(); ++aGameItr)
-        (*aGameItr)->mL64 = 0xfffe;
-    AsyncOpTrackerMaps::EntryMap::iterator anItr = mTracker.mMaps.mEntries.begin();
-    for (; anItr != mTracker.mMaps.mEntries.end(); ++anItr) {
+    while (true) {
+        if (aGameItr == mPending.end()) break;
+        (*aGameItr)->SetPing(0xfffe);
+        ++aGameItr;
+    }
+    AsyncOpTrackerMaps::EntryMap::iterator anItr;
+    for (anItr = mTracker.mMaps.mEntries.begin(); anItr != mTracker.mMaps.mEntries.end(); ++anItr) {
         PingGameOp* anOp = dynamic_cast<PingGameOp*>((*anItr).second->mOp.get());
         if (anOp != NULL)
-            anOp->mGame->mL64 = 0xfffe;
+            anOp->mGame->SetPing(0xfffe);
     }
     mPending.clear();
     mTracker.KillAll();
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e6680
-void PingLogic::HandleComponentEvent(ComponentEvent* inEvent)
-{
-    if (inEvent->mType == 0x186c5) {
-        PingGameEvent* anEvent = static_cast<PingGameEvent*>(inEvent);
-        Fn3E6B50(anEvent->mGame.get(), anEvent->mFlag, false);
-    }
-}
-
-// FUNCTION: WON 0x007e68b0
-void PingLogic::Fn3E68B0(AsyncOp* inOp)
-{
-    PingGameOp* anOp = static_cast<PingGameOp*>(inOp);
-    if (anOp->mB39)
-        return;
-    LobbyGame* aGame = anOp->mGame.get();
-    if (anOp->mPing != 0xffff)
-        aGame->mB18 = true;
-    else if (anOp->mRetries < 3) {
-        ++anOp->mRetries;
-        LobbyConfig* aConfig = GetLobbyConfig();
-        unsigned long aTimeout = aConfig != NULL ? aConfig->mPingCeiling : 5000;
-        RunTrackedOp(anOp, new LogicCompletion<PingLogic>(&PingLogic::Fn3E68B0, this), aTimeout);
-        return;
-    }
-    aGame->mL64 = anOp->mPing;
-    if (anOp->mReply.get() != NULL) {
-        ReadBuffer aBuffer(anOp->mReply->data(), anOp->mReply->length());
-        unsigned char aFlags = anOp->mReplyFlags;
-        bool aReadOk = true;
-        if (aFlags & 1)
-            aReadOk = aGame->ReadSummary(aBuffer);
-        if ((aFlags & 2) && aReadOk)
-            aGame->ReadDetails(aBuffer);
-    }
-    LobbyFn359100(new GameChangedEvent(aGame, 2), true);
-    LobbyFn361EB0(aGame);
-    unsigned short aMaximum = LobbyFn35E3A0();
-    while (!mPending.empty()) {
-        if (static_cast<long>(mTracker.mMaps.mEntries.size()) >= aMaximum && aMaximum != 0)
-            break;
-        SmartPtr<LobbyGame> aPendingGame = mPending.front();
-        mPending.pop_front();
-        if (!aPendingGame->Fn3A6D70())
-            continue;
-        if (aPendingGame->Fn3A6D90())
-            continue;
-        aPendingGame->mL64 = 0xfffe;
-        Fn3E6B50(aPendingGame.get(), false, true);
-    }
 }
 }
 

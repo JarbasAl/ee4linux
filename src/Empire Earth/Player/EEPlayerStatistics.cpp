@@ -307,7 +307,7 @@ void EEStatisticsRecord::Clear()
     this->mMilitaryScore = 0;
     this->mTechScore = 0;
     this->mEndTime = 0;
-    this->mColorIndex = 0;
+    this->mTeam = 0;
     for (long i = 0; i < 7; i++)
         this->mResources[i] = 0;
     this->mStatistics.Clear();

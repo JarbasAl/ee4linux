@@ -1,6 +1,7 @@
 // WONGUI MSWindow native behavior; archived SDK corroborates source contract.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
+#include "LostDebug.h"
 #include <string>
 #include <list>
 #include <vector>
@@ -184,8 +185,9 @@ void MSWindow::Virtual0C(DWORD elapsed) {
         ScreenToClient(mLB8,&point);
         if(hwnd!=mLB8 || !mRoot->Contains(point.x,point.y)) {
             if(hwnd!=mLB8) {
-                MSWindow* popup=(MSWindow*)mManager->GetPopupWindow();
-                if(popup!=NULL && (mManager->mPopupFlags&0x4000)!=0 && popup->mLB8==hwnd) return;
+                WindowManager* manager=mManager;
+                MSWindow* popup=(MSWindow*)manager->GetPopupWindow();
+                if(popup!=NULL && ((manager->mPopupFlags&0x4000)?true:false) && popup->mLB8==hwnd) return;
             }
             Virtual48(new InputEvent(13));
         }
@@ -209,7 +211,7 @@ void MSWindow::Virtual50() {
         mRoot->Virtual14(mOffscreenImage->GetGraphics());
         mRoot->Paint(mOffscreenImage->GetGraphics());
     }
-    mOffscreenImage->Draw(mDisplayContext.get(),0,0,0,0,mOffscreenImage->mWidth,mOffscreenImage->mHeight);
+    mOffscreenImage->DrawEntire(mDisplayContext.get(),0,0);
     EndPaint(mLB8,&ps);
 }
 
@@ -285,8 +287,8 @@ void MSWindow::Create(const WONRectangle& theWindowRectR)
 		aStyle,
 		x,
 		y,
-		theWindowRectR.width,
-		theWindowRectR.height,
+		theWindowRectR.Width(),
+		theWindowRectR.Height(),
 		aParent,
 		NULL,
 		((MSWindowManager*)mManager)->mInstance,
@@ -304,17 +306,17 @@ void MSWindow::Create(const WONRectangle& theWindowRectR)
 		GetRect(aScreenRect,false);
 		GetRect(aClientRect,true);
 
-		int aWidthDelta = theWindowRectR.width - aClientRect.width;
-		int aHeightDelta = theWindowRectR.height - aClientRect.height;
+		int aWidthDelta = theWindowRectR.Width() - aClientRect.Width();
+		int aHeightDelta = theWindowRectR.Height() - aClientRect.Height();
 
 
 
 
 
-		int aTargetWidth = aScreenRect.width + aWidthDelta;
-		int aTargetHeight = aScreenRect.height + aHeightDelta;
+		int aTargetWidth = aScreenRect.Width() + aWidthDelta;
+		int aTargetHeight = aScreenRect.Height() + aHeightDelta;
 
-		SetPosSize(aScreenRect.x, aScreenRect.y, aTargetWidth, aTargetHeight);
+		SetPosSize(aScreenRect.Left(), aScreenRect.Top(), aTargetWidth, aTargetHeight);
 	}
 
 	if(mStyle&0x01)
@@ -443,7 +445,7 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_NCLBUTTONDBLCLK:
 		case WM_NCMBUTTONDBLCLK:
 		case WM_NCRBUTTONDBLCLK:
-			mManager->EndPopup(NULL);
+			ClosePopup(NULL);
 			if(mManager->NotModalWindow(this))
 				return 0;
 			else
@@ -486,10 +488,10 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			
 			WONRectangle aRect;
 			GetRect(aRect,true); 
-			short mx = LOWORD(lParam); 
+			short mx = LOWORD(lParam);
 			short my = HIWORD(lParam);
-			lParam = MAKELPARAM(mx - aRect.x, my - aRect.y);
-			PostMouseEvent(InputEvent_MouseWheel,	(short)HIWORD(wParam), lParam); 
+			lParam = MAKELPARAM(mx - aRect.Left(), my - aRect.Top());
+			PostMouseEvent(InputEvent_MouseWheel, (short)HIWORD(wParam), lParam);
 			break;
 		}
 
@@ -511,6 +513,8 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					DWORD dwSize = ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, NULL, 0);
 					std::wstring aStr;
 					aStr.resize(dwSize/2);
+					// LOST-DEBUG: none: exact only (keeps _Eos out of line in erase).
+					EE_LOST_DEBUG(2);
 					ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, (char*)aStr.data(),dwSize); 
 					for(int i=0; i<aStr.length(); i++)
 						Virtual48(new KeyEvent(InputEvent_KeyChar, aStr.at(i), mLBC)); 
@@ -523,7 +527,7 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	
 			break;
 
-		case WM_IME_CHAR:			
+		case WM_CHAR:			
 		{
 			wchar_t aChar = wParam;
 			MultiByteToWideChar(mCodePage,0,(const char*)&wParam,2,&aChar,1);
@@ -531,7 +535,7 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 		}
 
-		case WM_CHAR:			
+		case WM_IME_CHAR:			
 		{
 			wchar_t aChar = wParam;
 			MultiByteToWideChar(mCodePage,0,(const char*)&wParam,2,&aChar,1);

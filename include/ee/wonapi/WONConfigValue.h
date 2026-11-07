@@ -8,7 +8,7 @@ protected:
     T& mVal; //0c, borrowed target; completeConfigValue16
     virtual bool CopyValueHook(ConfigValueBase*);
 public:
-    ConfigValue(T& value):mVal(value) {mIsDefault=false;}
+    ConfigValue(T& value):mVal(value) {}
 };
 template<class T> class SimpleConfigValue : public ConfigValue<T> {
 protected:

@@ -42,8 +42,8 @@ enum ControlIdType
 		ControlId_UserMin5	= 600000
 	};
 
-// Original nominal int/long identity is provisional; all users share this signed32 ID set.
-typedef std::set<int> ControlIdSet;
+// Control id set; its members are the game's set<long> COMDATs (insert, _Erase, erase).
+typedef std::set<long> ControlIdSet;
 enum Direction { Direction_Left, Direction_Right, Direction_Up, Direction_Down };
 enum HorzAlign { HorzAlign_Left, HorzAlign_Center, HorzAlign_Right };
 enum VertAlign { VertAlign_Top, VertAlign_Center, VertAlign_Bottom };
@@ -195,7 +195,7 @@ enum { COLOR_INVALID = 0xffffffff };
 class ColorScheme : public RefCount {
 public:
     DWORD mColors[17];
-    ColorScheme() { for(int i=0;i<17;++i) mColors[i]=0; } //native32b973..86 actual17zero constructor
+    ColorScheme() { memset(mColors,0,sizeof(mColors)); } //native32b973..86 actual17zero constructor
     static DWORD GetColorRef(StandardColor theColor) { return 0x80000000 + theColor; } // genuine SDK inline
     DWORD GetStandardColor(int i) { return mColors[i]; }
     void SetStandardColor(int i,DWORD color) { mColors[i]=color; }
@@ -261,6 +261,10 @@ public:
     void DoIntersect(const WONRectangle&); //349330, native3271b1 call
     void DoUnion(const WONRectangle&); //3493b0 nativeRoot30498b external
     bool Intersects(const WONRectangle&) const; //349450 native complete69B predicate
+    int Left() const { return x; }
+    int Top() const { return y; }
+    int Width() const { return width; }
+    int Height() const { return height; }
     int Right() const { return x+width; }
     int Bottom() const { return y+height; }
 
@@ -358,6 +362,7 @@ public:
     void SetDesiredWidth(int=0); //2f4ee0 actual62B original external
     void SetTranslucentColor(int,int=4); //2f4fb0 actual51B, external
     void SetComponentFlags(int,bool); //2f5560 external40
+    void SetWantGrabBG(bool inGrab) { SetComponentFlags(0x100,inGrab); }
     void Fn2F5360(bool); //2f5360 actual Component::SubscribeToBroadcast, nonvirtual
     void Fn2F57D0(bool); //2f57d0 external timer request
     void Fn2F5890();                        // 0x2f5890
@@ -618,7 +623,7 @@ public:
     };
     // the flag tests read one bit through an inline bool getter (shr n; test 1: Button::Fn2F3370 0x2f3370)
     bool IsRepeat() { return (mButtonFlags & 0x02) != 0; }
-    bool IsChecked() { return (mButtonFlags & 0x04) != 0; }
+    bool IsChecked() { return (mButtonFlags & 0x04) ? true : false; }
     bool IsRadio() { return (mButtonFlags & 0x08) != 0; }
     bool IsPressed() { return (mButtonFlags & 0x20) != 0; }
     bool IsActivateOnPress() { return (mButtonFlags & 0x40) != 0; }
@@ -972,6 +977,7 @@ public:
 // Allocation through original ctor is proven; no new copy or lifetime implementation.
 class InputBox : public Component {
 public:
+    void SetFont(Font* f) { mFont=f; }
     typedef bool (*InputFilter)(InputBox*,GUIString&);
     static bool NumericFilter(InputBox*,GUIString&); //2f7f70 cdecl
     InputBox(); //external2f7fd0; no definition in this cohort
@@ -987,6 +993,8 @@ public:
     void SetIcon(Image*); //2f8450
     void SetCharWidth(int); //2f8560
     void CheckSel(int,int,bool); //2f8600
+    void SetBackground(const Background& b) { mBackground=b; }
+    void SetDisabledBackground(const Background& b) { mDisabledBackground=b; }
     void SetCursorBlinkRate(int,int=0); //2f87d0
     void AdjustPosition(); //2f8a20
     void CopySelection(); //external2f8b10 until Clipboard contract
@@ -1498,6 +1506,7 @@ public:
     bool mPublic;                           // +0xda
     unsigned short mLanBroadcastPort;      // +0xdc
     bool mUseLocalIP;                       // +0xde
+    bool GetNoPingInProgress() const { return mNoPingInProgress; }
     bool mNoPingInProgress;                 // +0xdf
     unsigned short mLobbyPort;             // +0xe0
     bool mCheckForInternet;                 // +0xe2
@@ -1684,7 +1693,7 @@ public:
     Graphics(); //326ad0
     virtual ~Graphics(); //326b90
     virtual void Attach(DisplayContext*); //326c70
-    virtual void Detach() {}
+    virtual void Detach();
     virtual bool BlendSupported() { return false; }
     void SetColor(DWORD); //326ce0
     DWORD Fn326D20(int); // preserve existing caller-facing identity
@@ -1729,13 +1738,13 @@ public:
     void Fn3A6C90();
     bool Fn3A6D00(LobbyGame* inOther);
     void Fn3A6E00(LobbyGroup* inGroup);
-    bool Fn3A7200(ByteBuffer* inBuffer);
-    SmartPtr<ByteBuffer> Fn3A72C0();
+    bool Fn3A7200(const ByteBuffer* inBuffer);
+    ConstSmartPtr<ByteBuffer> Fn3A72C0();
     void Fn3A7360(LobbyClient* inClient);
     bool Fn3A7400();
     bool Fn3A7490();
     short Fn3A7570(ReadBuffer& inBuffer, LobbyClient* inClient, WriteBuffer& outBuffer);
-    SmartPtr<ByteBuffer> Fn3A7830(ReadBuffer& inBuffer, LobbyClient* inClient);
+    ConstSmartPtr<ByteBuffer> Fn3A7830(ReadBuffer& inBuffer, LobbyClient* inClient);
     short Fn3A78E0(ReadBuffer& inBuffer);
     GUIString Fn3A7A90(short inStatus);
     LobbyGame();                            // 0x3a6790 (WONAPI)
@@ -1748,7 +1757,11 @@ public:
     virtual void Virtual18() {} //genuine SDK inline PostNetLeaveGameHook
     virtual void Virtual1C() {} //genuine SDK inline NotifyStartGameHook
     virtual bool Virtual20() { return true; } //genuine SDK inline TryStartGameHook               // (EELobbyGame 0x292719: can the game start)
+#ifdef EE_DINKUM_SXL233
+    virtual bool Virtual24() { return true; }
+#else
     virtual long Virtual24() { return 1; } // the derived EELobbyGame 0x2926f9 returns through eax (long, as main had it); the SDK default folds to a `mov al, 1` body 0x2f30d0: open
+#endif
     virtual bool Virtual28() { return true; } //genuine SDK inline CanReadyHook
     virtual short Virtual2C();
     // (EELobbyGame's overrides): +0x30 a new game hosted by inClient, +0x34 the game's version
@@ -1779,6 +1792,12 @@ public:
     void SetAskToJoin(bool inAsk) { mB12 = inAsk; }
     void SetInviteOnly(bool inInvite) { mB11 = inInvite; }
     void SetSkill(long inSkill) { mL30 = inSkill; }
+    void SetAddress(const IPAddr& inAddress) { mAddress = inAddress; }
+    void SetIsHost(bool inHost) { mIsHost = inHost; }
+    void SetCaptainId(unsigned short inId) { mL60 = inId; }
+    long GetSkill() const { return mL30; }
+    bool GetAskToJoin() const { return mB12; }
+    bool GetB10() const { return mB10; }
     LobbyClient* FindClient(unsigned short inId); // 0x3a6c70
     bool Fn3A6D40(long inFlags);
     bool Fn3A6D70();
@@ -1817,7 +1836,11 @@ public:
     bool mIsFiltered;                     // +0x20, actual filter writers; natural padding through23
     long mL24;                             // +0x24
     long mNumOpenSlots;                    // +0x28
+    bool IsInProgress() const { return mB13; }
+    bool GetShowDetails() const { return mB16; }
     long GetGameType() { return mL2C; }
+    long GetNumPlayers() { return mL24; }
+    long GetMaxPlayers() { return mNumOpenSlots; }
     long mL2C;                             // +0x2c
     long mL30;                             // +0x30
     SmartPtr<LobbyClientList> mClients;     // +0x34 (owned; constructor/destructor/copy evidence)
@@ -1825,6 +1848,7 @@ public:
     unsigned short mL60;
     unsigned short mL62;
     unsigned short GetPing() { return mL64; }
+    void SetPing(unsigned short inPing) { mL64=inPing; }
     unsigned short mL64;                   // base allocation 0x68 at 0x3a6730
 protected:
     typedef LobbyGame* (*LobbyGameFactory)();
@@ -1853,9 +1877,9 @@ class ByteBuffer;
 template <class T> class SmartPtr;
 
 // 0x361b60 / 0x361b80 (cdecl): a game message to the lobby
-void LobbyFn361B60(ByteBuffer* inMessage);
-void LobbyFn361B80(ByteBuffer* inMessage);
-void LobbyFn361BA0(LobbyClient* inClient, ByteBuffer* inMessage);  // 0x361ba0
+void LobbyFn361B60(const ByteBuffer* inMessage);
+void LobbyFn361B80(const ByteBuffer* inMessage);
+void LobbyFn361BA0(LobbyClient* inClient, const ByteBuffer* inMessage);  // 0x361ba0
 void LobbyFn361290();                       // 0x361290
 
 // a client of the lobby's room (its name at +0x08; class PROVISIONAL)
@@ -1905,9 +1929,13 @@ public:
     void SetIsFriend(bool inFriend) { mB24 = inFriend; }
     void SetB27(bool inValue) { mB27 = inValue; }
     unsigned long GetU14() const { return mU14; }
+    unsigned long GetU18() const { return mU18; }
     unsigned short GetGroupId1E() const { return mGroupId1E; }
     unsigned short GetGroupId20() const { return mGroupId20; }
+    void SetGroupId(unsigned short inId, bool inGame) { if (inGame) mGroupId20 = inId; else mGroupId1E = inId; }
+    void SetMemberFlags(unsigned char inFlags, bool inGame) { if (inGame) mFlags1D = inFlags; else mFlags1C = inFlags; }
     bool GetB22() const { return mB22; }
+    bool GetB23() const { return mB23; }
 public:
     const GUIString& GetName() const { return mName; }
 };
@@ -2415,6 +2443,8 @@ public:
       :ComponentEvent(component,up?ComponentEvent_ListItemUpClicked:ComponentEvent_ListItemClicked),
        mButton(button),mDoubleClick(dbl),mItem(item),mX(x),mY(y) {}
     bool IsSelectedItem(); //genuine SDK ListBox.cpp; native2fa550
+    int GetButton() const { return mButton; }
+    bool IsDoubleClick() const { return mDoubleClick; }
     int mButton;                            // +0x20
     bool mDoubleClick;                      // +0x24
     SmartPtr<ListItem> mItem;               // +0x28
@@ -2537,6 +2567,8 @@ public:
     virtual void SetSize(int, int);
     virtual SmartPtr<Image> Duplicate();
     virtual SmartPtr<NativeImage> GetNative(DisplayContext*);
+    unsigned short GetWidth() const { return mWidth; }
+    unsigned short GetHeight() const { return mHeight; }
     unsigned short mWidth;                  // +08
     unsigned short mHeight;                 // +0a
 };
@@ -2599,6 +2631,7 @@ class MSNativeMask : public NativeMask {
 public:
     MSNativeMask(DisplayContext* context,HBITMAP mask) : NativeMask(context),mMask(mask) {}
     virtual ~MSNativeMask(); //3cf9b0
+    HBITMAP GetMask() { return mMask; }
     HBITMAP mMask; //0c
 };
 // Target28B native bitmap owner. Later SDK mImageData28/useDibSection are absent.
@@ -2675,7 +2708,12 @@ public:
 
     void SetDoTransparency(bool value) { mDoTransparency=value; }
     void SetRowPixel(DWORD value) { *mRowPtr=value; }
+    bool HasMoreRows() { return mRowEnd<=mImageEnd; }
+    bool HasMoreRowPixels() { return mRowPtr<mRowEnd; }
+    DWORD* GetImageData() { return mImageData; }
+    DWORD GetRowPixel() { return *mRowPtr; }
     void NextRowPixel() { ++mRowPtr; }
+    void NextRowPixel(int theAmount) { mRowPtr+=theAmount; }
     void NextRow() { mRowPtr=mRowEnd; mRowEnd+=mWidth; }
     DWORD* mImageData; //10
     DWORD* mImageEnd; //14
@@ -2694,6 +2732,10 @@ public:
     SmartPtr<NativeImage> Fn3D0520(DisplayContext*);
     unsigned char GetPixel(int,int); //329420
     unsigned char* StartRowTraversal(int); //329440
+    unsigned char GetRowPixel() { return *mRowPtr; }
+    void SetRowPixel(unsigned char value) { *mRowPtr=value; }
+    void NextRowPixel() { ++mRowPtr; }
+    void NextRowPixel(int theAmount) { mRowPtr+=theAmount; }
     unsigned char* mImageData; //10
     unsigned char* mImageEnd; //14
     unsigned char* mRowPtr; //18
@@ -2711,6 +2753,7 @@ public:
     void Fn3D0690(); //real nonvirtual platform row initialization
     SmartPtr<NativeMask> GetMask(DisplayContext*); //3d06b0, nonvirtual
     unsigned char* StartRowTraversal(int); //3297e0
+    void NextRow() { mRowPtr=mRowEnd+mRowPad; mRowEnd+=mBytesPerRow; mRowMask=128; }
     int GetBytesPerRow() { return mBytesPerRow; }
     unsigned char* GetImageData() { return mImageData; }
     void NextRowPixel() { mRowMask>>=1; if(mRowMask==0) { mRowPtr++; mRowMask = 128; } }
@@ -2803,6 +2846,7 @@ public:
     void SetOffsets(int, int); //305150, horizontal then vertical
     SmartPtr<ScrollAreaViewport> mViewport; //84 original external lifetime
     WONRectangle mInvalidRect; //88..97
+    int GetVertOffset() { return mVertOffset; }
     int mVertOffset; //98
     int mHorzOffset; //9c
     int mTotalHeight; //a0

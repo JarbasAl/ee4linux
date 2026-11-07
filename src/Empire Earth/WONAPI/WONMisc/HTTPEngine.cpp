@@ -11,6 +11,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "LostDebug.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x006d28f0
@@ -20,7 +21,9 @@ void HTTPSession::AddOp(HTTPGetOp* inOp)
     ConnectionMap::iterator anItr = mConnectionMap.insert(ConnectionMap::value_type(inOp->mHost, HTTPConnectionPtr())).first;
     HTTPConnectionPtr& stored = anItr->second;
     if (stored.get() == NULL) stored = new HTTPConnection(NULL);
-    HTTPConnectionPtr connection = stored;
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
+    HTTPConnectionPtr connection = stored.get();
     connection->QueueOp(inOp);
 }
 
@@ -117,13 +120,13 @@ void HTTPConnection::RunOp(int inId)
     SmartPtr<HTTPGetOp> op=mOpQueue[inId].front();
     mOpQueue[inId].pop_front();
     mCurOp[inId]=op.get();
-    mCurOpCompletion[inId]=mCurOp[inId]->mCompletion;
+    mCurOpCompletion[inId]=mCurOp[inId]->GetCompletion();
     mCurOp[inId]->mCompletion=new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
         StaticOpCallback,SmartPtr<RefCount>(this));
     mCurOp[inId]->SetCloseConnection(false);
     mCurOp[inId]->SetDoRangeResume(false);
     mCurOp[inId]->SetSocket(mSocket.get());
-    mCurOp[inId]->Run(mCurOp[inId]->mTimeout);
+    mCurOp[inId]->Run(mCurOp[inId]->GetTimeout());
 }
 
 
@@ -141,14 +144,14 @@ void HTTPConnection::OpCallback(HTTPGetOp* inOp)
 {
     int anId;
     for (anId=0;anId<2;++anId)
-        if (mCurOp[anId]==inOp)
+        if (inOp==mCurOp[anId])
             break;
     if (anId>=2)
         return;
     mCurOp[anId]=NULL;
     OpCompletionBasePtr aCompletion=mCurOpCompletion[anId];
     mCurOpCompletion[anId]=NULL;
-    inOp->mCompletion=aCompletion;
+    inOp->SetCompletion(aCompletion);
 
     if (!mRetryMode) {
         mSocket=inOp->GetSocket();
@@ -168,7 +171,7 @@ void HTTPConnection::OpCallback(HTTPGetOp* inOp)
     }
 
     if (mRetryMode) {
-        if (anId!=0 && inOp->mStatus==0) {
+        if (anId!=0 && inOp->GetStatus()==0) {
             if (aCompletion.get()!=NULL)
                 aCompletion->Complete(AsyncOpPtr(inOp));
         }
@@ -182,18 +185,19 @@ void HTTPConnection::OpCallback(HTTPGetOp* inOp)
                 mDoPipeline=false;
                 aLastQueue=0;
             }
-            for (int i=1;i>=aLastQueue;--i) {
-                OpQueue aQueue=mOpQueue[i];
-                mOpQueue[i].clear();
+            for (anId=1;anId>=aLastQueue;--anId) {
+                OpQueue aQueue=mOpQueue[anId];
+                mOpQueue[anId].clear();
                 for (OpQueue::iterator anItr=aQueue.begin();anItr!=aQueue.end();++anItr)
                     QueueOp(anItr->get());
             }
             mRetryMode=false;
             RunOp(mDoPipeline?0:1);
         }
+        return;
     }
     else {
-        if (anId==0 && mSocket.get()!=NULL && inOp->mStatus==100097) {
+        if (anId==0 && mSocket.get()!=NULL && inOp->GetStatus()==100097) {
             inOp->SetOnlyRecv();
             QueueOp(inOp,1);
         }

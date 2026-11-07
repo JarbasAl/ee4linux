@@ -63,11 +63,13 @@ WONStatus AsyncSocket::Fn2B0730(ByteBufferPtr& inMessage)
 {
     AutoCrit aCrit(mDataCrit);
     std::list<MsgTransform*>::iterator anItr = mMsgTransformQueue.end();
-    while (anItr != mMsgTransformQueue.begin()) {
-        --anItr;
-        WONStatus aStatus = (*anItr)->Recv(inMessage);
-        if (aStatus != 0)
-            return aStatus;
+    if (anItr != mMsgTransformQueue.begin()) {
+        do {
+            --anItr;
+            WONStatus aStatus = (*anItr)->Recv(inMessage);
+            if (aStatus != 0)
+                return aStatus;
+        } while (anItr != mMsgTransformQueue.begin());
     }
     return 0;
 }

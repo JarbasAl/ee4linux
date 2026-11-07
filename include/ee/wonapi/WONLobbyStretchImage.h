@@ -15,7 +15,7 @@ public:
     StretchImageFilter(); //349540
     virtual SmartPtr<RawImage> Filter(RawImage*); //349570 external real pixel algorithm until authored cohort
     void SetSize(int w,int h) { mWidth=w; mHeight=h; }
-    void SetBorders(int l,int t,int r,int b) { mLeftWidth=l; mTopHeight=t; mRightWidth=r; mBottomHeight=b; }
+    void SetBorders(int l,int t,int r,int b) { mLeftWidth=l; mRightWidth=r; mTopHeight=t; mBottomHeight=b; }
     void SetTile(bool h,bool v) { mTileHorz=h; mTileVert=v; }
     void SetSkipCenter(bool b) { mSkipCenter=b; }
 };

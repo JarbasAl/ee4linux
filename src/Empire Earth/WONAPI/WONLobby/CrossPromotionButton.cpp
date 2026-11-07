@@ -11,6 +11,7 @@
 #include "ee/wonapi/EELobbySound.h"
 #include "ee/wonapi/WONLobbyImageButton.h"
 #include "ee/wonapi/WONLobbyEvents.h"
+#include "LostDebug.h"
 using namespace WONAPI;
 namespace WONAPI {
 // Actual native RTTI hierarchy; complete real owner fields68/70/80.
@@ -60,7 +61,9 @@ bool ImageTextButton::VirtualAC() {
 void CrossPromotionButton::Fn3C98B0(SetCrossPromotionEvent* event) {
     if(event->mImage) {
         mImages[ImageButtonType_Normal]=event->mImage;
-        mBrowse=GUIString(new GUIStringData(event->mLink));
+        // LOST-DEBUG: none: exact only
+        EE_LOST_DEBUG(1);
+        mBrowse=GUIString(event->mLink);
     } else {
         mImages[ImageButtonType_Normal]=mDefaultImage;
         mBrowse=mDefaultBrowse;
@@ -83,7 +86,7 @@ bool CrossPromotionButtonConfig::Virtual24(const std::string& key) {
     if(key=="DEFAULTIMAGE")
         mCrossPromotionButton->Fn3C9A30(ReadImage(false));
     else if(key=="DEFAULTBROWSE")
-        mCrossPromotionButton->mDefaultBrowse=Fn3842F0(false);
+        mCrossPromotionButton->SetDefaultBrowse(Fn3842F0(false));
     else
         return ImageButtonConfig::Virtual24(key);
     return true;

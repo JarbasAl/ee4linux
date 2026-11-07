@@ -1020,7 +1020,7 @@ void EEWonNet::Login(const char* inName, const char* inPassword)
     if (theKey.LoadFromRegistry() && theKey.mValid) {
         this->mLoginOp = new GetCertOp(this->mUser);
         this->mLoginOp->mCompletion = new EEWonNetCompletion(&EEWonNet::LoginCallback);
-        ((GetCertOp*)this->mLoginOp.get())->SetCreateAccount(false);
+        this->mLoginOp->SetCreateAccount(false);
         this->mLoginOp->Run(15000);
     }
 }

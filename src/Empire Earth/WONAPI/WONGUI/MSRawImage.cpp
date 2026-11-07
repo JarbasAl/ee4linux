@@ -17,8 +17,8 @@ SmartPtr<NativeImage> RawImage32::Fn3D0410(DisplayContext* context) {
     BITMAPINFO info;
     BITMAPINFOHEADER& header=info.bmiHeader;
     header.biSize=sizeof(BITMAPINFOHEADER);
-    header.biWidth=mWidth;
-    header.biHeight=-mHeight;
+    header.biWidth=GetWidth();
+    header.biHeight=-GetHeight();
     header.biPlanes=1;
     header.biBitCount=32;
     header.biCompression=BI_RGB;
@@ -34,7 +34,8 @@ void RawImage8::Fn3D04F0() {
 
 // FUNCTION: WON 0x007d0520
 SmartPtr<NativeImage> RawImage8::Fn3D0520(DisplayContext* context) {
-    char* buffer=new char[sizeof(BITMAPINFO)+mPalette->mNumColors*4];
+    int aNumColors=mPalette->mNumColors;
+    char* buffer=new char[sizeof(BITMAPINFO)+aNumColors*4];
     std::auto_ptr<char> releaseBuffer(buffer);
     BITMAPINFO* info=(BITMAPINFO*)buffer;
     BITMAPINFOHEADER& header=info->bmiHeader;
@@ -47,9 +48,9 @@ SmartPtr<NativeImage> RawImage8::Fn3D0520(DisplayContext* context) {
     header.biSizeImage=0;
     header.biXPelsPerMeter=0;
     header.biYPelsPerMeter=0;
-    header.biClrUsed=mPalette->mNumColors;
+    header.biClrUsed=mPalette->GetNumColors();
     header.biClrImportant=0;
-    for(int i=0;i<mPalette->mNumColors;++i) {
+    for(int i=0;i<mPalette->GetNumColors();++i) {
         DWORD rgb=mPalette->mColors[i];
         RGBQUAD color;
         color.rgbRed=(rgb>>16)&0xff;
@@ -98,5 +99,5 @@ SmartPtr<NativeMask> RawImage1::GetMask(DisplayContext* context) {
 
 // FUNCTION: WON 0x007d07e0
 SmartPtr<NativeImage> RawImage1::GetNative(DisplayContext* context) {
-    return new MSNativeImage(context,((MSNativeMask*)GetMask(context).get())->mMask);
+    return new MSNativeImage(context,static_cast<MSNativeMask*>(GetMask(context).get())->GetMask());
 }

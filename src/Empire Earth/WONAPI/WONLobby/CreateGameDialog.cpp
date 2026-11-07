@@ -72,8 +72,9 @@ SmartPtr<LobbyGame> CreateGameDialog::GetGame()
 void CreateGameDialog::CheckInput()
 {
     bool aEnable = true;
-    if (mNameInput->GetText().length() == 0 ||
-        ((mPasswordInput->mComponentBits & 1) == 0 && mPasswordInput->mText.length() == 0))
+    if (mNameInput->GetText().length() == 0)
+        aEnable = false;
+    else if (mPasswordInput->IsVisible() && mPasswordInput->mText.length() == 0)
         aEnable = false;
     mCreateButton->SetEnabled(aEnable);
 }

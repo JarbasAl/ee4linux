@@ -39,8 +39,8 @@ int BigInteger::byteLength() const
 // FUNCTION: WON 0x007d3160
 bool BigInteger::st_bit(const BigInteger &n, int i)
 {
-    int bit = i % BITS;
-    i /= BITS;
+    int bit = i % 32;
+    i /= 32;
 
     if (i >= n.len || ((n.n[i] & (1L << bit)) == 0))
         return false;
@@ -51,8 +51,8 @@ bool BigInteger::st_bit(const BigInteger &n, int i)
 // FUNCTION: WON 0x007d31b0
 void BigInteger::st_setBit(BigInteger &n, int i)
 {
-    int bit = i % BITS;
-    i /= BITS;
+    int bit = i % 32;
+    i /= 32;
 
 	
     if (i >= n.len)

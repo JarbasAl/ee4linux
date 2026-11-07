@@ -26,7 +26,6 @@
 #include "ee/wonapi/WONLobbyControls.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
 #include "ee/wonapi/WONLobbyControlConfig.h"
-#include "LostDebug.h"
 using namespace WONAPI;
 
 
@@ -153,8 +152,6 @@ static ResourceConfigTablePtr GetLobbyResourceConfigTable(ResourceConfigTable *t
 	aTable->AddAllocator("CrossPromotionButton",CrossPromotionButtonConfig::CfgFactory,CrossPromotionButtonConfig::CompFactory);
 	aTable->AddAllocator("ImageTextButton",ImageTextButtonConfig::CfgFactory,ImageTextButtonConfig::CompFactory);
 	aTable->AddAllocator("MaxSplitterButton",MaxSplitterButtonConfig::CfgFactory,MaxSplitterButtonConfig::CompFactory);
-	// LOST-DEBUG: none: exact only
-	EE_LOST_DEBUG(3);
 
 	aTable->AddAllocator("GameOptionsCtrl",ContainerConfig::CfgFactory,ContainerConfig::CompFactory);
 	aTable->AddAllocator("PlayerOptionsCtrl",ContainerConfig::CfgFactory,ContainerConfig::CompFactory);

@@ -89,8 +89,6 @@ void MSComponentConfig_Init(ResourceConfigTable *theTable)
 	theTable->AddAllocator("MSTabCtrl",MSTabCtrlConfig::CfgFactory,MSTabCtrlConfig::CompFactory);
 	theTable->AddAllocator("MSListCtrl",MSListCtrlConfig::CfgFactory,MSListCtrlConfig::CompFactory);
 	theTable->AddAllocator("MSHeaderControl",MSHeaderControlConfig::CfgFactory,MSHeaderControlConfig::CompFactory);
-	// LOST-DEBUG: none: exact only (one site after the last string temp, as WONGUIConfig_Init)
-	EE_LOST_DEBUG(1);
 }
 
 }

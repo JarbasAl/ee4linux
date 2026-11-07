@@ -11,6 +11,12 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyTextAreaConfig.h"
 namespace WONAPI {
+// FUNCTION: WON 0x0078f860
+void TextAreaConfig::Virtual34(Component* theComponent)
+{
+    ScrollAreaConfig::Virtual34(theComponent);
+    mTextArea = (TextArea*)theComponent;
+}
 // FUNCTION: WON 0x00795990
 bool TextAreaConfig::Virtual24(const std::string& key)
 {
@@ -40,7 +46,7 @@ bool TextAreaConfig::Virtual24(const std::string& key)
     } else if(key=="SELCOLOR") {
         mTextArea->mSelColor=ReadSelectionColor();
     } else if(key=="LINKFONT") {
-        mTextArea->mLinkFont=ReadFont();
+        mTextArea->SetLinkFont(ReadFont());
     } else if(key=="MAXCHARS") {
         mTextArea->SetMaxChars(ReadInt());
     } else if(key=="MAXLINES") {
@@ -51,14 +57,5 @@ bool TextAreaConfig::Virtual24(const std::string& key)
         mTextArea->SetLineAlignment(ReadHorzAlign());
     } else return ScrollAreaConfig::Virtual24(key);
     return true;
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x0078f860
-void TextAreaConfig::Virtual34(Component* theComponent)
-{
-    ScrollAreaConfig::Virtual34(theComponent);
-    mTextArea = (TextArea*)theComponent;
 }
 }

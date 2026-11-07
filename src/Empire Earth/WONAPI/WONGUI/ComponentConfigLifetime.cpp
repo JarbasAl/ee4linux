@@ -58,3 +58,4 @@ std::string ComponentConfig::mResourceFolder;
 // TEMPLATE: WON 0x00782520
 // TEMPLATE: WON 0x00782540
 // TEMPLATE: WON 0x00782550
+// TEMPLATE: WON 0x00782800

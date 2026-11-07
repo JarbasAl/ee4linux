@@ -26,8 +26,12 @@ void VersionData::WriteToBuffer(WriteBuffer& outBuffer,DWORD inFlags)
     outBuffer.AppendString(mVersion);
     outBuffer.AppendByte(mVersionTypeList.size());
     if (!mVersionTypeList.empty()) {
-        for (VersionTypeList::const_iterator i=mVersionTypeList.begin();i!=mVersionTypeList.end();++i)
+        VersionTypeList::const_iterator i=mVersionTypeList.begin();
+        while (true) {
+            if (i==mVersionTypeList.end()) break;
             outBuffer.AppendString(*i);
+            ++i;
+        }
     }
     if (inFlags&2) outBuffer.AppendString(mDescriptionURL);
     if (inFlags&1) outBuffer.AppendByte(mState);

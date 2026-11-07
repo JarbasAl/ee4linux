@@ -12,6 +12,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyParser.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // Resource map insert with the per-parse duplicate check (the DWORD instance stays out of line: TEMPLATE below).
 template <class Type,class Map>
@@ -87,6 +88,8 @@ bool ResourceConfig::HandleImage(StringParser& value)
 // FUNCTION: WON 0x00793020
 bool ResourceConfig::HandleBackground(StringParser& value)
 {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     Background* output;
     if(ResourceConfig_AddToMap("Background",value,mBackgroundMap,mParseCount,output)) {
         *output=SafeReadBackground(value);
@@ -142,3 +145,7 @@ bool ResourceConfig::HandleBackground(StringParser& value)
 // TEMPLATE: WON 0x007a50c0
 // TEMPLATE: WON 0x007a4e90
 // TEMPLATE: WON 0x007a5000
+// TEMPLATE: WON 0x007a37a0
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<class WON)
+// TEMPLATE: WON 0x007a3950
+// (public: __thiscall std::pair<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const ,struct std::pair<class WON)

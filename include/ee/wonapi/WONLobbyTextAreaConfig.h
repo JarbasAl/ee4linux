@@ -163,6 +163,7 @@ public:
     bool GotoAnchor(const GUIString&);
     void Clear() { Reset(); }
     void SetFont(Font* font) { mFont=font; }
+    void SetLinkFont(Font* font) { mLinkFont=font; }
     void SetWrapIndentSize(int size) { mWrapIndentSize=size; }
     int GetNumLines() { return mLineVector.size(); }
     void AddFormatedText(const GUIString&,bool=false); //313ec0 actual SDK spelling/ret8
@@ -190,7 +191,7 @@ public:
     SelectionColor mSelColor; //178..183 actual12-byte value
     int mWrapIndentSize; //184
     HorzAlign mLineAlign; //188
-    typedef std::map<GUIString,int> AnchorMap;
+    typedef std::map<GUIString,long> AnchorMap;
     AnchorMap mAnchorMap; //18c..197 originalowned actualmap12
 };
 class TextAreaConfig : public ScrollAreaConfig {

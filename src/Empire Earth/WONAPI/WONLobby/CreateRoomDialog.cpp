@@ -48,8 +48,9 @@ void CreateRoomDialog::UpdatePasswordVisibility()
 void CreateRoomDialog::CheckInput()
 {
     bool aEnable = true;
-    if (mNameInput->mText.length() == 0 ||
-        (mPasswordInput->IsVisible() && mPasswordInput->mText.length() == 0))
+    if (mNameInput->mText.length() == 0)
+        aEnable = false;
+    else if (mPasswordInput->IsVisible() && mPasswordInput->mText.length() == 0)
         aEnable = false;
     mCreateButton->SetEnabled(aEnable);
 }

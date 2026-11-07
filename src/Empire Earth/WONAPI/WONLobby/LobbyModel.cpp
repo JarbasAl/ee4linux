@@ -23,6 +23,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyModel.h"
 #include "ee/wonapi/WONLobbyParser.h"
+#include "LostDebug.h"
 namespace WONAPI {
 LobbyClientMap& GetEmptyClientMap();
 
@@ -657,11 +658,9 @@ void LobbyGroup::Fn3A8D50(const RoutingMemberMap& inMembers, LobbyClientList* in
         LobbyClient* client = inClients->FindClient(it->first);
         if (client != NULL) {
             RoutingMemberInfo* aMember = it->second;
-            if (Fn3A9060()) client->mFlags1D = aMember->mFlags;
-            else client->mFlags1C = aMember->mFlags;
-            client->Fn3A5500(client->mClientId == mCaptainId, Fn3A9060());
-            if (Fn3A9060()) client->mGroupId20 = mId;
-            else client->mGroupId1E = mId;
+            client->SetMemberFlags(aMember->mFlags, Fn3A9060());
+            client->Fn3A5500(client->GetClientId() == mCaptainId, Fn3A9060());
+            client->SetGroupId(mId, Fn3A9060());
             mClients->Fn3A5CC0(client);
         }
         ++it;
@@ -674,11 +673,9 @@ void LobbyGroup::Fn3A8D50(const RoutingMemberMap& inMembers, LobbyClientList* in
 void LobbyGroup::Fn3A8E40(LobbyClient* inClient, unsigned char inFlags)
 {
     mClients->Fn3A5CC0(inClient);
-    if (Fn3A9060()) inClient->mGroupId20 = mId;
-    else inClient->mGroupId1E = mId;
-    if (Fn3A9060()) inClient->mFlags1D = inFlags;
-    else inClient->mFlags1C = inFlags;
-    inClient->Fn3A5500(inClient->mClientId == mCaptainId, Fn3A9060());
+    inClient->SetGroupId(mId, Fn3A9060());
+    inClient->SetMemberFlags(inFlags, Fn3A9060());
+    inClient->Fn3A5500(inClient->GetClientId() == mCaptainId, Fn3A9060());
     mNumClients = mClients->mClients.size();
 }
 
@@ -968,7 +965,7 @@ LobbyClient* LobbyServer::Fn3AA390()
 
 // CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa3b0
-LobbyGroup* LobbyServer::Fn3AA3B0(unsigned short inId)
+LobbyGroup* LobbyServer::Fn3AA3B0(int inId)
 {
     LobbyGroupMap::iterator it = mGroups.find(inId);
     return it != mGroups.end() ? it->second.get() : NULL;
@@ -1005,9 +1002,9 @@ void LobbyServerList::Fn3AA670(const DirEntityList& inEntities)
     for (DirEntityList::const_iterator it = inEntities.begin(); it != inEntities.end(); ++it) {
         DirEntity* entity = it->get();
         LobbyServerMap::iterator serverIt = mServers.insert(LobbyServerMap::value_type(entity->GetNetAddrAsIP(), NULL)).first;
-        SmartPtr<LobbyServer>& server = serverIt->second;
-        if (server.get() == NULL) server = new LobbyServer;
-        if (!server->Fn3AA430()) server->Fn3A9700(entity);
+        if (serverIt->second.get() == NULL) serverIt->second = new LobbyServer;
+        LobbyServer* aServer = serverIt->second.get();
+        if (!aServer->Fn3AA430()) aServer->Fn3A9700(entity);
     }
 }
 
@@ -1070,14 +1067,14 @@ void LobbyGame::Fn3A6E00(LobbyGroup* inGroup)
     mClients = inGroup->mClients;
 }
 // FUNCTION: WON 0x7a7200
-bool LobbyGame::Fn3A7200(ByteBuffer* inData)
+bool LobbyGame::Fn3A7200(const ByteBuffer* inData)
 {
     if (inData == NULL) return false;
     ReadBuffer buffer(inData->data(),inData->length());
     return ReadSummary(buffer);
 }
 // FUNCTION: WON 0x7a72c0
-SmartPtr<ByteBuffer> LobbyGame::Fn3A72C0()
+ConstSmartPtr<ByteBuffer> LobbyGame::Fn3A72C0()
 {
     WriteBuffer buffer(0,true);
     buffer.AppendByte(1);
@@ -1144,7 +1141,7 @@ short LobbyGame::Fn3A7570(ReadBuffer& inBuffer,LobbyClient* inClient,WriteBuffer
     return 0;
 }
 // FUNCTION: WON 0x7a7830
-SmartPtr<ByteBuffer> LobbyGame::Fn3A7830(ReadBuffer& inBuffer,LobbyClient* inClient)
+ConstSmartPtr<ByteBuffer> LobbyGame::Fn3A7830(ReadBuffer& inBuffer,LobbyClient* inClient)
 {
     WriteBuffer buffer(0,true);
     buffer.AppendByte(2);
@@ -1191,6 +1188,8 @@ void LobbyGameList::AddGame(LobbyGame* inGame)
 // FUNCTION: WON 0x7a80f0
 LobbyGame* LobbyGameList::GetOrCreateGame(unsigned short inId,bool* outExisted)
 {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(5);
     LobbyIdGameMap::iterator it=mIdGames.insert(LobbyIdGameMap::value_type(inId,NULL)).first;
     SmartPtr<LobbyGame>& game=it->second;
     if (game.get()==NULL) {
@@ -1300,18 +1299,19 @@ void LobbyServer::Fn3A9700(DirEntity* inEntity)
 {
     mName = GUIString(inEntity->mDisplayName);
     mAddress = inEntity->GetNetAddrAsIP();
-    for (DirDataObjectList::iterator anItr = inEntity->mDataObjects.begin();
-         anItr != inEntity->mDataObjects.end(); ++anItr) {
-        if (anItr->mDataType == "_C" && anItr->mData.get() != NULL &&
-            anItr->mData->length() == 2) {
+    const DirDataObjectList& aList = inEntity->mDataObjects;
+    if (!aList.empty())
+    for (DirDataObjectList::const_iterator anItr = aList.begin(); anItr != aList.end(); ++anItr) {
+        const DirDataObject& anObject = *anItr;
+        if (anObject.mDataType == "_C" && anObject.mData.get() != NULL &&
+            anObject.mData->length() == 2) {
             unsigned short aCount;
-            memcpy(&aCount,anItr->mData->data(),2);
+            memcpy(&aCount,anObject.mData->data(),2);
             mNumClients = ShortFromLittleEndian(aCount);
-        } else if (anItr->mDataType == "_L") {
+        } else if (anObject.mDataType == "_L") {
             mAddresses.clear();
-            ByteBuffer* aData = anItr->mData.get();
-            std::string aText(aData != NULL ? aData->data() : NULL,
-                              aData != NULL ? aData->length() : 0);
+            const ByteBuffer* aData = anObject.mData.get();
+            std::string aText(anObject.mData->data(),anObject.mData->length());
             StringParser aParser(aText.c_str());
             std::list<std::string> aNames;
             aParser.ReadValue(aNames);

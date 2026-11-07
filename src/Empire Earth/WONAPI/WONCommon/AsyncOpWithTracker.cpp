@@ -35,6 +35,7 @@ void AsyncOpWithTracker::Virtual08() {mTracker.KillAll();}
 }
 namespace WONAPI {
 
+// FUNCTION: WON 0x006accc0
 bool AsyncOpWithTracker::CallbackHook(AsyncOp*,int) { return false; }
 }
 

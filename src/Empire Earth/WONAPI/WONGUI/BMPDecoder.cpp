@@ -11,6 +11,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/WONLobbyImageDecoder.h"
+#include "LostDebug.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007366e0
 static bool BMPReadFileHeader(FileReader &theReader)
@@ -142,6 +143,8 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 		}
 		if(biBitCount==8)
 		{
+			// LOST-DEBUG: none: exact only
+			EE_LOST_DEBUG(6);
 			int anExtra = biWidth%4;
 			if(anExtra!=0)
 				anExtra = 4 - anExtra;

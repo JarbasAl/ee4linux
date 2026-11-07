@@ -1,6 +1,7 @@
 // Native container child lifetime, modal and focus transitions.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
+#include "LostDebug.h"
 #include <string>
 #include <list>
 #include <map>
@@ -31,14 +32,16 @@ void Container::LeaveModal()
 void Container::VirtualC4(Component* child)
 {
     if(child->mParent!=this) return;
-    SmartPtr<Component> keep;
+    SmartPtr<Component> holder; // never assigned: its frame slot and EH state 0 are in the function
     if(!mRemovingAllChildren && child->ComponentFlagSet(0x100)) {
         child->Invalidate();
         RootContainer* root=Fn2F58F0();
         if(root!=NULL) root->AddBG(child->GetGrabBG());
     } else Invalidate();
-    keep=SmartPtr<Component>(child);
+    SmartPtr<Component> keep=child;
     mChildList.erase(child->mChildListItr);
+    // LOST-DEBUG: none: exact only (keeps ~SmartPtr out of line inside erase).
+    EE_LOST_DEBUG(1);
     if(!mRemovingAllChildren) mChildLayout.RemoveComponent(child);
     if(child==mFocusChild) SetFocusToLastFocusChild();
     if(child==mMouseChild) MouseAt();
@@ -67,6 +70,8 @@ void Container::BringToTop(Component* child)
         needInvalidate=false;
     }
     mChildList.erase(child->mChildListItr);
+    // LOST-DEBUG: none: exact only (keeps the node dtor out of line inside erase).
+    EE_LOST_DEBUG(1);
     child->mChildListItr=mChildList.insert(FindTop(),SmartPtr<Component>(child));
     if(needInvalidate) Invalidate();
 }

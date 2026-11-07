@@ -20,12 +20,9 @@ MSComboBox::MSComboBox()
     if(mButton->Width()==0) mButton->Fn2F4B90(16,mButton->Height());
     mEdit=new InputBox;
     mListArea=new ListArea;
-    // The native captures each font recipient before the external font lookup.
-    ListArea* fontList=mListArea.get();
-    fontList->mFont=GetNamedFont("MSButton");
+    mListArea->SetFont(GetNamedFont("MSButton"));
     mListArea->Fn2FB600(2,true);
-    InputBox* fontEdit=mEdit.get();
-    fontEdit->mFont=GetNamedFont("MSButton");
+    mEdit->SetFont(GetNamedFont("MSButton"));
     SmartPtr<MSScrollContainer> listBox=new MSScrollContainer(mListArea.get());
     listBox->SetScrollbarConditions(ScrollbarCondition_Disable,ScrollbarCondition_Conditional);
     listBox->SetDraw3DFrame(false);

@@ -222,6 +222,49 @@ GUIString LobbyFn366170(WONStatus status)
         return ::WONStatus_NotAllowed_String;
     case 0:
         return ::WONStatus_Success_String;
+    case 10004:
+    case 10009:
+    case 10013:
+    case 10014:
+    case 10022:
+    case 10024:
+    case 10035:
+    case 10036:
+    case 10037:
+    case 10038:
+    case 10039:
+    case 10040:
+    case 10041:
+    case 10042:
+    case 10043:
+    case 10044:
+    case 10045:
+    case 10046:
+    case 10047:
+    case 10048:
+    case 10049:
+    case 10050:
+    case 10051:
+    case 10052:
+    case 10053:
+    case 10054:
+    case 10055:
+    case 10056:
+    case 10057:
+    case 10058:
+    case 10059:
+    case 10060:
+    case 10062:
+    case 10063:
+    case 10064:
+    case 10065:
+    case 10066:
+    case 10067:
+    case 10068:
+    case 10069:
+    case 10070:
+    case 10071:
+        return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
     case 10061:
         return ::WONStatus_ConnRefused_String;
     case 100001:

@@ -50,17 +50,19 @@ bool PercentLayoutConfig::Virtual24(const std::string& instruction)
 bool ColorSchemeConfig::Virtual0C(ConfigParser*)
 {
     ComponentConfig* parent=static_cast<ComponentConfig*>(mL38);
-    ColorScheme* scheme=NULL;
     while(parent!=NULL) {
         Component* component=parent->mComponent.get();
         if(component!=NULL) {
-            scheme=component->GetOwnColorScheme();
-            if(scheme!=NULL) break;
+            ColorScheme* scheme=component->GetOwnColorScheme();
+            if(scheme!=NULL) {
+                memcpy(mColorScheme->mColors,scheme->mColors,sizeof(mColorScheme->mColors));
+                return true;
+            }
         }
         parent=static_cast<ComponentConfig*>(parent->mL38);
     }
-    if(scheme==NULL) scheme=WONAPI::WindowManager::GetDefaultWindowManager()->mColorScheme.get();
-    for(int i=0;i<17;++i) mColorScheme->mColors[i]=scheme->mColors[i];
+    ColorScheme* scheme=WONAPI::WindowManager::GetDefaultWindowManager()->mColorScheme.get();
+    memcpy(mColorScheme->mColors,scheme->mColors,sizeof(mColorScheme->mColors));
     return true;
 }
 // FUNCTION: WON 0x00788410

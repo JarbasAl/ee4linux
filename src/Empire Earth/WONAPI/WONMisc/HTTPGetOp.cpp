@@ -11,86 +11,14 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONLobbyResource.h"
-namespace WONAPI {
-// FUNCTION: WON 0x006d7770
-void HTTPGetOp::Virtual08()
-{
-    AsyncOpWithTracker::Virtual08();
-    if (mSocket.get()!=NULL) {
-        if ((mDoClose && !mOnlySend) || mSocket->mStatus!=100004) {
-            mSocket->Fn2B1AD0();
-            mSocket=NULL;
-        }
-    }
-    if (!mOnlySend && mHTTPCache.get()!=NULL && mHTTPCacheEntry.get()!=NULL)
-        mHTTPCache->UpdateEntry(mHTTPCacheEntry.get());
-}
-// FUNCTION: WON 0x006d4370
-void HTTPGetOp::DoFinish()
-{
-    if (mHTTPStatus>304) Fn29F220(100093);
-    else Fn29F220(0);
-}
-// FUNCTION: WON 0x006d4550
-bool HTTPGetOp::CheckStatus(WONStatus inStatus)
-{
-    if (inStatus==0) return true;
-    Fn29F220(inStatus);
-    return false;
-}
-// FUNCTION: WON 0x006d4570
-bool HTTPGetOp::ExtractStatus(const char* inStatusLine)
-{
-    char protocol[50]; //native local52-byte aligned region; nominal buffer size reconstructed.
-    if (sscanf(inStatusLine,"%s%d",protocol,&mHTTPStatus)!=2) {
-        Fn29F220(100092);
-        return false;
-    }
-    if (mHTTPStatus>304 && mCloseConnection) {
-        Fn29F220(100093);
-        return false;
-    }
-    return true;
-}
-// FUNCTION: WON 0x006d45f0
-bool HTTPGetOp::ExtractRedirect(const char* inLocation)
-{
-    const char* host=strstr(inLocation,"://");
-    if (host==NULL) {
-        Fn29F220(100094);
-        return false;
-    }
-    host+=3;
-    const char* path=strchr(host,'/');
-    if (path==NULL) {
-        mRedirectHost=host;
-        mRedirectPath='/';
-    } else {
-        mRedirectHost.assign(host,path-host);
-        mRedirectPath=path;
-    }
-    return true;
-}
-// FUNCTION: WON 0x006d7870
- time_t HTTPGetOp::GetLastModifiedTime()
-{
-    if (mLastModified==0) {
-        if (mLocalPath.empty()) return 0;
-        WONFile file(mLocalPath);
-        return mLastModified=file.GetModifyTime();
-    }
-    return mLastModified;
-}
-
-}
-
-// New complete native HTTP parser/date/request cohort. Existing baseline prefix retained.
 #include <time.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include "LostDebug.h"
 using std::string;
+#include "ee/wonapi/WONLobbyGUI.h"
+using WONAPI::CriticalSection;
 static const char* monthTable[] = {	"Jan", "Feb", "Mar",
 									"Apr", "May", "Jun",
 									"Jul", "Aug", "Sep",
@@ -453,6 +381,140 @@ static time_t ParseInternetDateTime(const char* str)
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace WONAPI {
+std::string HTTPGetOp::mStaticProxyHost;
+}
+static string& GetProxyHostFileName()
+{
+	static string mProxyHostFileName = "_wonwebproxy.txt";
+	return mProxyHostFileName;
+}
+static CriticalSection& GetStaticCrit()
+{
+	static CriticalSection aCrit;
+	return aCrit;
+}
+namespace WONAPI {
+// FUNCTION: WON 0x006d3830
+void HTTPGetOp::ReadProxyHostFile(bool force)
+{
+	static bool checked = false;
+	AutoCrit aCrit(GetStaticCrit());
+	if(checked && !force)
+		return;
+
+	checked = true;
+
+	FILE *aFile = fopen(GetProxyHostFileName().c_str(),"r");
+	if(aFile==NULL)
+		return;
+
+	char aProxyBuf[512];
+	aProxyBuf[0] = '\0';
+	fgets(aProxyBuf,500,aFile);
+	fclose(aFile);
+
+	char *aPtr = strchr(aProxyBuf,'\n');
+	if(aPtr!=NULL)
+		*aPtr = '\0';
+
+	mStaticProxyHost = aProxyBuf;
+}
+inline void HTTPGetOp::Init()
+{
+    mBinaryFile=true;
+    mCloseConnection=true;
+    mDoRangeResume=true;
+    mAutoRedirect=true;
+    mOnlyRecv=false;
+    mOnlySend=false;
+}
+// FUNCTION: WON 0x006d3b10
+HTTPGetOp::HTTPGetOp(const std::string& inHost,const std::string& inRemotePath)
+    : mHost(inHost),mRemotePath(inRemotePath),mContentAccumulator(0,true),
+      mNumRedirects(0)
+{
+    Init();
+    GetProxyHostFileName()=WONAPICore::GetDefaultFileDirectory()+GetProxyHostFileName();
+    ReadProxyHostFile(false);
+}
+// FUNCTION: WON 0x006d3f90
+HTTPGetOp::HTTPGetOp(const std::string& inURL)
+    : mContentAccumulator(0,true),mNumRedirects(0)
+{
+    Init();
+    GetProxyHostFileName()=WONAPICore::GetDefaultFileDirectory()+GetProxyHostFileName();
+    ReadProxyHostFile(false);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_TRACE(mHost.length());
+    EE_LOST_TRACE(mHost.length());
+    std::string aURL(inURL);
+    std::string::size_type aScheme=aURL.find("://");
+    if (aScheme!=std::string::npos)
+        aURL=aURL.substr(aScheme+3);
+    std::string::size_type aSlash=aURL.find('/');
+    mHost=aURL.substr(0,aSlash);
+    if (aSlash!=std::string::npos)
+        mRemotePath=aURL.substr(aSlash);
+    else
+        mRemotePath="/";
+}
+// FUNCTION: WON 0x006d4370
+void HTTPGetOp::DoFinish()
+{
+    if (mHTTPStatus>304) Fn29F220(100093);
+    else Fn29F220(0);
+}
+// FUNCTION: WON 0x006d4390
+void HTTPGetOp::SetProxy(const std::string& hostAndPort)
+{
+    mProxyHost=hostAndPort;
+}
+// FUNCTION: WON 0x006d44e0
+void HTTPGetOp::SetRecvChunkCompletion(CompletionBase<AsyncOpPtr>* completion,DWORD chunkSize)
+{
+    mRecvChunkCompletion=completion;
+    mRecvChunkSize=chunkSize;
+}
+// FUNCTION: WON 0x006d4550
+bool HTTPGetOp::CheckStatus(WONStatus inStatus)
+{
+    if (inStatus==0) return true;
+    Fn29F220(inStatus);
+    return false;
+}
+// FUNCTION: WON 0x006d4570
+bool HTTPGetOp::ExtractStatus(const char* inStatusLine)
+{
+    char protocol[50]; //native local52-byte aligned region; nominal buffer size reconstructed.
+    if (sscanf(inStatusLine,"%s%d",protocol,&mHTTPStatus)!=2) {
+        Fn29F220(100092);
+        return false;
+    }
+    if (mHTTPStatus>304 && mCloseConnection) {
+        Fn29F220(100093);
+        return false;
+    }
+    return true;
+}
+// FUNCTION: WON 0x006d45f0
+bool HTTPGetOp::ExtractRedirect(const char* inLocation)
+{
+    const char* host=strstr(inLocation,"://");
+    if (host==NULL) {
+        Fn29F220(100094);
+        return false;
+    }
+    host+=3;
+    const char* path=strchr(host,'/');
+    if (path==NULL) {
+        mRedirectHost=host;
+        mRedirectPath='/';
+    } else {
+        mRedirectHost.assign(host,path-host);
+        mRedirectPath=path;
+    }
+    return true;
+}
 // FUNCTION: WON 0x006d47e0
 bool HTTPGetOp::ExtractHeaderLine(const char *theHeaderLine)
 {
@@ -543,14 +605,33 @@ bool HTTPGetOp::ExtractHeaderLine(const char *theHeaderLine)
 
 	return true;
 }
-
+// FUNCTION: WON 0x006d5090
+bool HTTPGetOp::DoConnect()
+{
+    if (mSocket->Fn2B08D0())
+        return true;
+    IPAddr anAddress;
+    if (!mProxyHost.empty())
+        anAddress.SetWithDefaultPort(mProxyHost,80);
+    else
+        anAddress.SetWithDefaultPort(mHost,80);
+    if (mRunMode==1) {
+        mSocket->Fn2B4740(static_cast<SocketOp*>(Track(
+            new ConnectOp(anAddress),HTTP_Track_Connect)),-1);
+        return false;
+    }
+    else
+        return CheckStatus(mSocket->Connect(anAddress,TimeLeft()));
+}
 // FUNCTION: WON 0x006d5270
 bool HTTPGetOp::SendRequest()
 {
     WriteBuffer aRequest(0,true);
+    EE_LOST_TRACE(mHost.length());
+    EE_LOST_TRACE(mHost.length());
     char aRangeOffset[20];
     aRequest.AppendString("GET ",0);
-    if (!mProxyHost.empty())
+    if (mProxyHost.length()!=0)
         aRequest.AppendString("http://"+mHost,0);
     aRequest.AppendString(mRemotePath+" HTTP/1.1\r\n",0);
     aRequest.AppendString("Host: "+mHost+"\r\n",0);
@@ -583,75 +664,55 @@ bool HTTPGetOp::SendRequest()
         }
     }
     aRequest.AppendString("\r\n",0);
-    if (mRunMode==1) {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_TRACE(mHost.length());
+    if (IsAsync()) {
+
         mSocket->Fn2B4740(static_cast<SocketOp*>(Track(
             new SendBytesOp(aRequest.ToByteBuffer(true).get()),HTTP_Track_SendRequest)),-1);
-        if (!mOnlySend)
+        if (!GetOnlySend())
             AsyncRecvCRMsg(HTTP_Track_RecvStatus);
         return false;
     }
     else {
-        ByteBufferPtr aBytes=aRequest.ToByteBuffer(true);
-        mSocket->SendBytes(aBytes.get(),TimeLeft());
+        mSocket->SendBytes(aRequest.ToByteBuffer(true).get(),TimeLeft());
     }
     return true;
 }
-
 // FUNCTION: WON 0x006d6170
 void HTTPGetOp::AsyncRecvCRMsg(TrackType inType)
 {
     mSocket->Fn2B4740(static_cast<SocketOp*>(Track(new RecvCRMsgOp,inType)),-1);
 }
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x006d5090
-bool HTTPGetOp::DoConnect()
-{
-    if (mSocket->Fn2B08D0())
-        return true;
-    IPAddr anAddress;
-    if (!mProxyHost.empty())
-        anAddress.SetWithDefaultPort(mProxyHost,80);
-    else
-        anAddress.SetWithDefaultPort(mHost,80);
-    if (mRunMode==1) {
-        mSocket->Fn2B4740(static_cast<SocketOp*>(Track(
-            new ConnectOp(anAddress),HTTP_Track_Connect)),-1);
-        return false;
-    }
-    return CheckStatus(mSocket->Connect(anAddress,TimeLeft()));
-}
-
 // FUNCTION: WON 0x006d6240
 bool HTTPGetOp::ExtractChunkLength(const char* inLine)
 {
-    if (sscanf(inLine,"%x",&mChunkLength)!=1) {
-        Fn29F220(100092);
-        return false;
-    }
-    mContentLength+=mChunkLength;
-    if (mChunkLength!=0)
-        return true;
-    if (mHTTPCacheEntry.get()!=NULL)
-        mHTTPCacheEntry->SetValid(true);
-    if (mLocalPath.empty())
-        mContent=mContentAccumulator.ToByteBuffer(true);
-    if (mRunMode==1) {
-        AsyncRecvCRMsg(HTTP_Track_RecvFooter);
-        return false;
-    }
-    for (;;) {
-        ByteBufferPtr aFooter;
-        if (!CheckStatus(mSocket->RecvCRMsg(aFooter,TimeLeft())))
+    if (sscanf(inLine,"%x",&mChunkLength)==1) {
+        mContentLength+=mChunkLength;
+        if (mChunkLength==0) {
+            if (mHTTPCacheEntry.get()!=NULL)
+                mHTTPCacheEntry->SetValid(true);
+            if (mLocalPath.empty())
+                mContent=mContentAccumulator.ToByteBuffer(true);
+            if (mRunMode==1) {
+                AsyncRecvCRMsg(HTTP_Track_RecvFooter);
+                return false;
+            }
+            while (true) {
+                ByteBufferPtr aFooter;
+                if (!CheckStatus(mSocket->RecvCRMsg(aFooter,TimeLeft())))
+                    return false;
+                if (aFooter.get()!=NULL && aFooter->length()==1)
+                    break;
+            }
+            DoFinish();
             return false;
-        if (aFooter->length()==1)
-            break;
+        }
+        return true;
     }
-    DoFinish();
+    Fn29F220(100092);
     return false;
 }
-
 // FUNCTION: WON 0x006d6430
 bool HTTPGetOp::RecvChunkLength()
 {
@@ -672,7 +733,6 @@ bool HTTPGetOp::RecvChunkLength()
         return false;
     return ExtractChunkLength(aLine->data());
 }
-
 // FUNCTION: WON 0x006d65c0
 bool HTTPGetOp::DoneRecvContent(RecvBytesOp* inOp)
 {
@@ -694,80 +754,6 @@ bool HTTPGetOp::DoneRecvContent(RecvBytesOp* inOp)
     DoFinish();
     return false;
 }
-
-// FUNCTION: WON 0x006d6d90
-void HTTPGetOp::FinishRedirect(HTTPGetOp* inOp)
-{
-    mLastModified=inOp->mLastModified;
-    mContentType=inOp->mContentType;
-    mContentLength=inOp->mContentLength;
-    mContent=inOp->mContent;
-    mLocalPath=inOp->mLocalPath;
-    if (!inOp->mRedirectHost.empty()) {
-        mRedirectHost=inOp->mRedirectHost;
-        mRedirectPath=inOp->mRedirectPath;
-    }
-    mHTTPStatus=inOp->mHTTPStatus;
-    mContentIsNew=inOp->mContentIsNew;
-    mNumRedirects=inOp->mNumRedirects;
-    Fn29F220(inOp->GetStatus());
-}
-
-// FUNCTION: WON 0x006d6f80
-void HTTPGetOp::FollowRedirect()
-{
-    mTracker.KillAll();
-    if (mSocket.get()!=NULL) {
-        mSocket->Close();
-        mSocket=NULL;
-    }
-    if (mNumRedirects>5) {
-        Fn29F220(100095);
-        return;
-    }
-    if (!mAutoRedirect) {
-        Fn29F220(100096);
-        return;
-    }
-    SmartPtr<HTTPGetOp> anOp=new HTTPGetOp(mRedirectHost,mRedirectPath);
-    anOp->SetBinaryFile(mBinaryFile);
-    anOp->SetLocalPath(mLocalPath);
-    anOp->SetHTTPCache(mHTTPCache);
-    // LOST-DEBUG: none: exact only
-    EE_LOST_DEBUG(1);
-    anOp->mNumRedirects=mNumRedirects+1;
-    if (mRecvChunkCompletion.get()!=NULL)
-        anOp->SetRecvChunkCompletion(mRecvChunkCompletion.get(),mRecvChunkSize);
-    if (mRunMode==1) {
-        Track(anOp.get(),HTTP_Track_Redirect);
-        anOp->Run(-1);
-        return;
-    }
-    anOp->RunBlock(TimeLeft());
-    FinishRedirect(anOp.get());
-}
-
-// FUNCTION: WON 0x006d7140
-void HTTPGetOp::DoneRecvHeader()
-{
-    if (mHTTPStatus==301 || mHTTPStatus==302) {
-        FollowRedirect();
-        return;
-    }
-    HTTPCacheEntry* anEntry=mHTTPCacheEntry.get();
-    if (anEntry!=NULL) {
-        if (mServerTime>0 && mExpireTime>0 && mExpireTime>mServerTime)
-            anEntry->SetExpirationTime(time(NULL)+mExpireTime-mServerTime);
-        if (!mEntityTag.empty())
-            mHTTPCacheEntry->SetEntityTag(mEntityTag);
-    }
-    if (mContentIsChunked && !RecvChunkLength())
-        return;
-    RecvContent();
-}
-
-}
-namespace WONAPI {
 // FUNCTION: WON 0x006d6730
 void HTTPGetOp::RecvContent()
 {
@@ -881,95 +867,78 @@ bool HTTPGetOp::CallbackHook(AsyncOp* inOp,int inParam)
     }
     return true;
 }
-}
-
-
-#include "ee/wonapi/WONLobbyGUI.h"
-using WONAPI::CriticalSection;
-static string& GetProxyHostFileName()
+// FUNCTION: WON 0x006d6d90
+void HTTPGetOp::FinishRedirect(HTTPGetOp* inOp)
 {
-	static string mProxyHostFileName = "_wonwebproxy.txt";
-	return mProxyHostFileName;
+    mLastModified=inOp->mLastModified;
+    mContentType=inOp->mContentType;
+    mContentLength=inOp->mContentLength;
+    mContent=inOp->mContent;
+    mLocalPath=inOp->mLocalPath;
+    if (!inOp->mRedirectHost.empty()) {
+        mRedirectHost=inOp->mRedirectHost;
+        mRedirectPath=inOp->mRedirectPath;
+    }
+    mHTTPStatus=inOp->mHTTPStatus;
+    mContentIsNew=inOp->mContentIsNew;
+    mNumRedirects=inOp->mNumRedirects;
+    Fn29F220(inOp->GetStatus());
 }
-static CriticalSection& GetStaticCrit()
+// FUNCTION: WON 0x006d6f80
+void HTTPGetOp::FollowRedirect()
 {
-	static CriticalSection aCrit;
-	return aCrit;
+    mTracker.KillAll();
+    if (mSocket.get()!=NULL) {
+        mSocket->Close();
+        mSocket=NULL;
+    }
+    if (mNumRedirects>5) {
+        Fn29F220(100095);
+        return;
+    }
+    if (!mAutoRedirect) {
+        Fn29F220(100096);
+        return;
+    }
+    SmartPtr<HTTPGetOp> anOp=new HTTPGetOp(mRedirectHost,mRedirectPath);
+    anOp->SetBinaryFile(mBinaryFile);
+    anOp->SetLocalPath(mLocalPath);
+    anOp->SetHTTPCache(mHTTPCache);
+    anOp->mNumRedirects=mNumRedirects+1;
+    if (mRecvChunkCompletion.get()!=NULL)
+        anOp->SetRecvChunkCompletion(mRecvChunkCompletion.get(),mRecvChunkSize);
+    if (mRunMode==1) {
+        Track(anOp.get(),HTTP_Track_Redirect);
+        anOp->Run(-1);
+        return;
+    }
+    anOp->RunBlock(TimeLeft());
+    FinishRedirect(anOp.get());
 }
-
-namespace WONAPI {
-std::string HTTPGetOp::mStaticProxyHost;
-// FUNCTION: WON 0x006d3830
-void HTTPGetOp::ReadProxyHostFile(bool force)
+// FUNCTION: WON 0x006d7140
+void HTTPGetOp::DoneRecvHeader()
 {
-	static bool checked = false;
-	AutoCrit aCrit(GetStaticCrit());
-	if(checked && !force)
-		return;
-
-	checked = true;
-
-	FILE *aFile = fopen(GetProxyHostFileName().c_str(),"r");
-	if(aFile==NULL)
-		return;
-
-	char aProxyBuf[512];
-	aProxyBuf[0] = '\0';
-	fgets(aProxyBuf,500,aFile);
-	fclose(aFile);
-
-	char *aPtr = strchr(aProxyBuf,'\n');
-	if(aPtr!=NULL)
-		*aPtr = '\0';
-
-	mStaticProxyHost = aProxyBuf;
+    if (mHTTPStatus==301 || mHTTPStatus==302) {
+        FollowRedirect();
+        return;
+    }
+    HTTPCacheEntry* anEntry=mHTTPCacheEntry.get();
+    if (anEntry!=NULL) {
+        if (mServerTime>0 && mExpireTime>0 && mExpireTime>mServerTime)
+            anEntry->SetExpirationTime(time(NULL)+mExpireTime-mServerTime);
+        if (!mEntityTag.empty())
+            mHTTPCacheEntry->SetEntityTag(mEntityTag);
+    }
+    if (mContentIsChunked && !RecvChunkLength())
+        return;
+    RecvContent();
 }
-
-// FUNCTION: WON 0x006d3b10
-HTTPGetOp::HTTPGetOp(const std::string& inHost,const std::string& inRemotePath)
-    : mHost(inHost),mRemotePath(inRemotePath),mContentAccumulator(0,true),
-      mNumRedirects(0)
-{
-    mBinaryFile=true;
-    mCloseConnection=true;
-    mDoRangeResume=true;
-    mAutoRedirect=true;
-    mOnlyRecv=false;
-    mOnlySend=false;
-    GetProxyHostFileName()=WONAPICore::GetDefaultFileDirectory()+GetProxyHostFileName();
-    ReadProxyHostFile(false);
-}
-
-// FUNCTION: WON 0x006d3f90
-HTTPGetOp::HTTPGetOp(const std::string& inURL)
-    : mContentAccumulator(0,true),mNumRedirects(0)
-{
-    mBinaryFile=true;
-    mCloseConnection=true;
-    mDoRangeResume=true;
-    mAutoRedirect=true;
-    mOnlyRecv=false;
-    mOnlySend=false;
-    GetProxyHostFileName()=WONAPICore::GetDefaultFileDirectory()+GetProxyHostFileName();
-    ReadProxyHostFile(false);
-    std::string aURL(inURL);
-    std::string::size_type aScheme=aURL.find("://");
-    if (aScheme!=std::string::npos)
-        aURL=aURL.substr(aScheme+3);
-    std::string::size_type aSlash=aURL.find("/");
-    mHost=aURL.substr(0,aSlash);
-    if (aSlash!=std::string::npos)
-        mRemotePath=aURL.substr(aSlash);
-    else
-        mRemotePath="/";
-}
-
 // FUNCTION: WON 0x006d7330
 void HTTPGetOp::Virtual04()
 {
     if (!mOnlyRecv) {
         if (!mStaticProxyHost.empty())
-            mProxyHost=mStaticProxyHost;
+            SetProxy(mStaticProxyHost);
         mLastModified=0;
         mServerTime=0;
         mExpireTime=0;
@@ -1022,7 +991,7 @@ void HTTPGetOp::Virtual04()
         return;
     if (!ExtractStatus(aLine->data()))
         return;
-    for (;;) {
+    while (true) {
         if (!CheckStatus(mSocket->RecvCRMsg(aLine,TimeLeft())))
             return;
         if (aLine->length()==1)
@@ -1032,15 +1001,18 @@ void HTTPGetOp::Virtual04()
     }
     DoneRecvHeader();
 }
-
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x006d44e0
-void HTTPGetOp::SetRecvChunkCompletion(CompletionBase<AsyncOpPtr>* completion,DWORD chunkSize)
+// FUNCTION: WON 0x006d7770
+void HTTPGetOp::Virtual08()
 {
-    mRecvChunkCompletion=completion;
-    mRecvChunkSize=chunkSize;
+    AsyncOpWithTracker::Virtual08();
+    if (mSocket.get()!=NULL) {
+        if ((mDoClose && !mOnlySend) || mSocket->mStatus!=100004) {
+            mSocket->Fn2B1AD0();
+            mSocket=NULL;
+        }
+    }
+    if (!mOnlySend && mHTTPCache.get()!=NULL && mHTTPCacheEntry.get()!=NULL)
+        mHTTPCache->UpdateEntry(mHTTPCacheEntry.get());
 }
 // FUNCTION: WON 0x006d77f0
 void HTTPGetOp::SetSocket(BlockingSocket* socket) { mSocket=socket; }
@@ -1051,13 +1023,15 @@ BlockingSocket* HTTPGetOp::GetSocket()
     if(!mSocket->Fn2B08D0()) return NULL;
     return mSocket.get();
 }
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x006d4390
-void HTTPGetOp::SetProxy(const std::string& hostAndPort)
+// FUNCTION: WON 0x006d7870
+ time_t HTTPGetOp::GetLastModifiedTime()
 {
-    mProxyHost=hostAndPort;
+    if (mLastModified==0) {
+        if (mLocalPath.empty()) return 0;
+        WONFile file(mLocalPath);
+        return mLastModified=file.GetModifyTime();
+    }
+    return mLastModified;
 }
 }
 
@@ -1102,9 +1076,9 @@ void HTTPGetOp::SetProxy(const std::string &theHost, unsigned short thePort)
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x006d3a70
-// (_$E72    [_$E72])
+// (_$E77)
 // TEMPLATE: WON 0x006d3b00
-// (_$E74    [_$E74])
+// (_$E79)
 
 // TEMPLATE: WON 0x006d3d30
 // (HTTPGetOp scalar deleting destructor)
@@ -1124,10 +1098,10 @@ void HTTPGetOp::SetProxy(const std::string &theHost, unsigned short thePort)
 // TEMPLATE: WON 0x006d9c70
 // (public: void * __thiscall WONAPI::AsyncOpTrackerEntry::`scalar deleting destructor'(unsigned int))
 // TEMPLATE: WON 0x006d3790
-// (_$E79)
-// TEMPLATE: WON 0x006d37a0
 // (_$E75)
+// TEMPLATE: WON 0x006d37a0
+// (_$E71)
 // TEMPLATE: WON 0x006d37c0
-// (_$E78)
+// (_$E74)
 // TEMPLATE: WON 0x006d37d0
-// (_$E76)
+// (_$E72)

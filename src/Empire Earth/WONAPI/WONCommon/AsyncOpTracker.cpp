@@ -26,7 +26,7 @@ AsyncOpTrackerMaps::erase_val(OpMap::iterator itr)
     return itr;
 }
 
-static inline void InsertTrackedOp(AsyncOpTrackerMaps& maps,unsigned long id,const AsyncOpPtr& op)
+static inline void InsertTrackedOp(AsyncOpTrackerMaps& maps,const unsigned long& id,const AsyncOpPtr& op)
 {
     AsyncOpTrackerMaps::EntryMap::iterator idItr=maps.mEntries.find(id);
     if(!maps.mB18 && idItr!=maps.mEntries.end()) return;
@@ -39,24 +39,17 @@ static inline void InsertTrackedOp(AsyncOpTrackerMaps& maps,unsigned long id,con
 
 static inline bool EraseTrackedOp(AsyncOpTrackerMaps& maps,const AsyncOpPtr& op)
 {
-    bool erased;
     if(!maps.mB19) {
         AsyncOpTrackerMaps::OpMap::iterator opItr=maps.mOps.find(op);
-        if(opItr==maps.mOps.end()) erased=false;
-        else {
-            maps.erase(opItr->second);
-            erased=true;
-        }
+        if(opItr==maps.mOps.end()) return false;
+        maps.erase(opItr->second);
     } else {
-        std::pair<AsyncOpTrackerMaps::OpMap::iterator,AsyncOpTrackerMaps::OpMap::iterator>
-            range=maps.mOps.equal_range(op);
-        if(range.first==range.second) erased=false;
-        else {
-            maps.erase_val(range.first,range.second);
-            erased=true;
-        }
+        AsyncOpTrackerMaps::OpMap::iterator first=maps.mOps.lower_bound(op);
+        AsyncOpTrackerMaps::OpMap::iterator last=maps.mOps.upper_bound(op);
+        if(first==last) return false;
+        maps.erase_val(first,last);
     }
-    return erased;
+    return true;
 }
 
 // FUNCTION: WON 0x0069fc80

@@ -83,17 +83,19 @@ void Label::Virtual0C(int& width,int& height) {
 // FUNCTION: WON 0x006fa1a0
 void Label::Paint(Graphics& g) {
     Component::Paint(g);
+    int x=0,y=0;
     mBackground.Paint(g,0,0,Width(),Height());
     int textWidth=mWrappedText->GetWidth();
     int textHeight=mWrappedText->GetHeight();
-    int width=Width()-mLeftPad-mRightPad;
-    int height=Height()-mTopPad-mBottomPad;
-    int x=0,y=0;
+    int width=Width()-mRightPad-mLeftPad;
+    int height=Height()-mBottomPad-mTopPad;
     switch(mAlign38) {
+    case HorzAlign_Left:x=0;break;
     case HorzAlign_Center:x=(width-textWidth)/2;break;
     case HorzAlign_Right:x=width-textWidth;break;
     }
     switch(mAlign3C) {
+    case VertAlign_Top:y=0;break;
     case VertAlign_Center:y=(height-textHeight)/2;break;
     case VertAlign_Bottom:y=height-textHeight;break;
     }

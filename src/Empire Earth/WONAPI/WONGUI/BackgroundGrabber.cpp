@@ -89,7 +89,7 @@ void BackgroundGrabber::Paint(Component *theComponent, Graphics &g)
 		mImageOrder = mImageOrderCounter++;
 		int aWidth = theComponent->Width();
 		int aHeight = theComponent->Height();
-		if(mBGImage.get()==NULL || aWidth!=mBGImage->mWidth || aHeight!=mBGImage->mHeight)
+		if(mBGImage.get()==NULL || aWidth!=mBGImage->GetWidth() || aHeight!=mBGImage->GetHeight())
 		{
 			Window *aWindow = theComponent->GetRoot();
 			mBGImage = aWindow->CreateImage(aWidth, aHeight);
@@ -99,7 +99,7 @@ void BackgroundGrabber::Paint(Component *theComponent, Graphics &g)
 				mDebugWindow = new MSWindow;
 				mDebugWindow->SetParent(theComponent->GetRoot());
 				mDebugWindow->mStyle=0x40;
-				WONRectangle aRect(0,0,mBGImage->mWidth,mBGImage->mHeight);
+				WONRectangle aRect(0,0,mBGImage->GetWidth(),mBGImage->GetHeight());
 				mDebugWindow->Create(aRect);
 			}
 			
@@ -116,7 +116,7 @@ void BackgroundGrabber::Paint(Component *theComponent, Graphics &g)
 
 		}
 
-		NativeImage *anImage = theComponent->GetRoot()->mOffscreenImage.get();
+		NativeImage *anImage = theComponent->GetRoot()->GetOffscreenImage();
 		int x = 0, y = 0;
 		theComponent->RootToChild(x,y);
 		mBGImage->GetGraphics().DrawImage(anImage, x, y);
@@ -141,7 +141,7 @@ void BackgroundGrabber::Paint(Component *theComponent, Graphics &g)
 			}
 	
 			SmartPtr<RawImage32> aRawImage = mBGImage->GetRaw();
-			int aNumPixels = aRawImage->mWidth*aRawImage->mHeight;
+			int aNumPixels = aRawImage->GetWidth()*aRawImage->GetHeight();
 			DWORD *aPixels =aRawImage->mImageData;
 			DWORD *anEndPixels = aPixels+aNumPixels;
 			switch(mTranslucentLevel)

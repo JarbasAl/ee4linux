@@ -91,7 +91,7 @@ public:
     LobbyClient* GetClient(int inId);       // 0x3aa370 (int: EELobbyGame 0x692c7e zero-extends the id it passes)
     LobbyClient* Fn3AA380(unsigned long inId);
     LobbyClient* Fn3AA390();
-    LobbyGroup* Fn3AA3B0(unsigned short inId);
+    LobbyGroup* Fn3AA3B0(int inId);
     int Fn3AA410();
     bool Fn3AA430();
     void Fn3AA440();
@@ -141,6 +141,7 @@ public:
     LobbyGame* Next();
     bool IsEmpty();
     bool RemoveStaleGames(long);
+    long GetType() const { return mType; }
     long mType;                            // +08
     LobbyIdGameMap mIdGames;                // +0c
     LobbyAddrGameMap mAddrGames;            // +18

@@ -72,7 +72,7 @@ int RegKey::QueryDWORD(const std::string& name,DWORD& value)
 }
 // Native2a46e0/322. Empty binary returns NoSize without changing caller owner.
 // FUNCTION: WON 0x6a46e0
-int RegKey::QueryBinary(const std::string& name,SmartPtr<ByteBuffer>& value)
+int RegKey::QueryBinary(const std::string& name,ConstSmartPtr<ByteBuffer>& value)
 {
     if(mIsOpen) {
         unsigned long length=0;

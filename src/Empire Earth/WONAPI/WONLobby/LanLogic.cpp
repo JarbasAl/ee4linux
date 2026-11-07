@@ -23,6 +23,15 @@ namespace WONAPI {
 // Canonical names to reconcile with account/model before compilation.
 AuthContext* GetLobbyAuthContext(); // actual cdecl auth-context getter
 
+// FUNCTION: WON 0x007dfb90
+void LobbyLanSocket::Fn3DFB90(LobbyLanClient* inClient)
+{
+    if (mClient.get() != NULL)
+        mClient->mSocket = NULL;
+    mClient = inClient;
+    if (mClient.get() != NULL)
+        mClient->mSocket = this;
+}
 // FUNCTION: WON 0x007dfc00
 LanLogic::LanLogic()
 {
@@ -161,6 +170,47 @@ void LanLogic::Fn3E0190()
     mClients->Fn3A5770();
 }
 
+// FUNCTION: WON 0x007e0300
+void LanLogic::Fn3E0300(AsyncOp* inOp)
+{
+    LobbyLanSocket* aSocket = static_cast<LobbyLanSocket*>(
+        static_cast<SocketOp*>(inOp)->mSocket.get());
+    if (aSocket == NULL)
+        return;
+    if (Fn3E0160()) {
+        if (aSocket->mClient.get() != NULL) {
+            WriteBuffer aBuffer(2, true);
+            aBuffer.AppendByte(4);
+            aBuffer.AppendShort(aSocket->mClient->GetClientId());
+            aSocket->Fn3DFB90(NULL);
+            Fn3E1AD0(aBuffer.ToByteBuffer(true).get(), true);
+        }
+        mPendingSockets.erase(aSocket);
+    } else if (aSocket == mServerSocket.get()) {
+        mServerSocket->Close();
+        mServerSocket = NULL;
+        LobbyFn361E50(true);
+    }
+}
+
+// FUNCTION: WON 0x007e04e0
+void LanLogic::Fn3E04E0(AsyncOp* inOp)
+{
+    if (inOp != mNetworkTimer.get())
+        return;
+    if (Fn3E0160()) {
+        long aTime = time(NULL);
+        for (std::set<SmartPtr<LobbyLanSocket> >::iterator anItr = mPendingSockets.begin();
+             anItr != mPendingSockets.end(); ++anItr)
+            if (aTime - (*anItr)->mLastMessageTime > 300)
+                (*anItr)->QueueClose(1000);
+    } else if (mServerSocket.get() != NULL && time(NULL) - mLastServerPing >= 120) {
+        WriteBuffer aBuffer(2, true);
+        aBuffer.AppendByte(7);
+        Fn3E1980(aBuffer.ToByteBuffer(true).get());
+    }
+    Fn3E0620();
+}
 // New AsyncOp/LogicCompletion objects require model's complete canonical types.
 // Their pointed-to sockets are never constructed here.
 // FUNCTION: WON 0x007e0620
@@ -173,20 +223,188 @@ void LanLogic::Fn3E0620()
     mNetworkTimer->RunAsync(120000);
 }
 
-// FUNCTION: WON 0x007e53a0
-void LanLogic::Fn3E53A0()
+// IPAddr/Socket nominal APIs are original+SDK corroborated proposals awaiting E3.
+// SendMsgOp is a fully proved op proposal, no socket object is allocated here.
+// Password conversion's two original wstring temporaries require normal COFF audit.
+// FUNCTION: WON 0x007e0760
+void LanLogic::Fn3E0760(ReadBuffer& inBuffer, LobbyLanSocket* inSocket)
 {
-    if (mDiscoveryTimer.get() == NULL) {
-        mDiscoveryTimer = new AsyncOp;
-        mDiscoveryTimer->mCompletion = new LogicCompletion<LanLogic>(&LanLogic::Fn3E4BE0, this);
+    if (mMyClient.get() == NULL)
+        return;
+    LobbyGame* aGame = GetMyLobbyGame();
+    if (aGame == NULL)
+        return;
+    std::wstring aName;
+    std::wstring aPassword;
+    inBuffer.ReadWString(aName, 2);
+    inBuffer.ReadWString(aPassword, 2);
+    WriteBuffer aReply(2, true);
+    aReply.AppendByte(2);
+    if (aGame->GetGameType() == 1) {
+        IPAddr aLocalAddr = IPAddr::GetLocalAddr();
+        const char* aPeerBytes = inSocket->GetDestAddr().GetSixByte();
+        const char* aLocalBytes = aLocalAddr.GetSixByte();
+        if (aPeerBytes[2] != aLocalBytes[2] || aPeerBytes[3] != aLocalBytes[3]) {
+            aReply.AppendShort(3);
+            inSocket->Fn2B4740(new SendMsgOp(aReply.ToByteBuffer(true).get()), -1);
+            return;
+        }
     }
-    mDiscoveryTimer->RunAsync(15000);
+    if (aPassword != std::wstring(aGame->mPassword)) {
+        aReply.AppendShort(2);
+        inSocket->Fn2B4740(new SendMsgOp(aReply.ToByteBuffer(true).get()), -1);
+        return;
+    }
+    SmartPtr<LobbyLanClient> aClient = new LobbyLanClient;
+    aClient->mName = aName;
+    aClient->mClientId = Fn3E0110();
+    mClients->Fn3A5CC0(aClient.get());
+    WriteBuffer aNotify(2, true);
+    aNotify.AppendByte(3);
+    aNotify.AppendShort(aClient->GetClientId());
+    aNotify.AppendWString(aClient->mName, 2);
+    Fn3E1AD0(aNotify.ToByteBuffer(true).get(), true);
+    inSocket->Fn3DFB90(aClient.get());
+    aReply.AppendShort(0);
+    aReply.AppendShort(mMyClient->GetClientId());
+    aReply.AppendShort(aClient->GetClientId());
+    aReply.AppendShort(mClients->mClients.size());
+    for (LobbyClientMap::iterator anItr = mClients->mClients.begin();
+         anItr != mClients->mClients.end(); ++anItr) {
+        LobbyClient* aListedClient = anItr->second.get();
+        aReply.AppendShort(aListedClient->mClientId);
+        aReply.AppendWString(aListedClient->mName, 2);
+    }
+    Fn3E1840(aClient.get(), aReply.ToByteBuffer(true).get());
+}
+// FUNCTION: WON 0x007e0f90
+int LanLogic::Fn3E0F90(const ByteBuffer* inBuffer, LobbyGame* inGame)
+{
+    if (inBuffer == NULL || mServerSocket.get() == NULL || inGame == NULL)
+        return 1;
+    ReadBuffer aBuffer(inBuffer->data(), inBuffer->length());
+    try {
+        if (aBuffer.ReadByte() != 2)
+            return 1;
+        short aStatus = aBuffer.ReadShort();
+        if (aStatus != 0)
+            return aStatus;
+        unsigned short aCaptainId = aBuffer.ReadShort();
+        unsigned short aMyId = aBuffer.ReadShort();
+        inGame->mL60 = aCaptainId;
+        unsigned short aNumClients = aBuffer.ReadShort();
+        for (int i = 0; i < aNumClients; ++i) {
+            unsigned short anId = aBuffer.ReadShort();
+            std::wstring aName;
+            aBuffer.ReadWString(aName, 2);
+            SmartPtr<LobbyLanClient> aClient = new LobbyLanClient;
+            aClient->mClientId = anId;
+            aClient->mName = GUIString(new GUIStringData(aName));
+            mClients->Fn3A5CC0(aClient.get());
+            if (anId == aMyId)
+                mMyClient = aClient;
+            else if (anId == aCaptainId) {
+                mServerSocket->Fn3DFB90(aClient.get());
+                aClient->Fn3A5500(true, true);
+            }
+        }
+        return 0;
+    } catch (ReadBufferException&) {
+    }
+    return 1;
+}
+// FUNCTION: WON 0x007e1210
+void LanLogic::Fn3E1210(const ByteBuffer* inBuffer, LobbyLanSocket* inSocket)
+{
+    if (inBuffer == NULL || inSocket == NULL || !Fn3E0160())
+        return;
+    ReadBuffer aBuffer(inBuffer->data(), inBuffer->length());
+    try {
+        switch (aBuffer.ReadByte()) {
+        case 1: Fn3E0760(aBuffer, inSocket); break;
+        }
+    } catch (ReadBufferException&) {
+    }
+}
+// Original catch landing/return continuation11f1..1209 is owned EH support,
+
+// Actual RecvMsgOp callback; reference-only until canonical descendant migration.
+// FUNCTION: WON 0x007e12a0
+void LanLogic::Fn3E12A0(AsyncOp* inOp)
+{
+    if (inOp->mStatus != 0 || inOp->mB39)
+        return;
+    RecvMsgOp* anOp = static_cast<RecvMsgOp*>(inOp);
+    LobbyLanSocket* aSocket = static_cast<LobbyLanSocket*>(anOp->mSocket.get());
+    if (Fn3E0160()) {
+        aSocket->mLastMessageTime = time(NULL);
+        if (aSocket->mClient.get() == NULL) {
+            Fn3E1210(anOp->GetMsg().get(), aSocket);
+            return;
+        }
+    }
+    Fn3E2610(anOp->GetMsg().get(), aSocket->mClient.get());
+}
+// Requires model's complete RecvMsgOpB4/SocketOp5c proposal and canonical Queue API.
+// This allocates an operation only; no socket object is constructed.
+// FUNCTION: WON 0x007e13b0
+void LanLogic::Fn3E13B0(LobbyLanSocket* inSocket)
+{
+    inSocket->SetCloseCompletion(new LogicCompletion<LanLogic>(&LanLogic::Fn3E0300, this));
+    inSocket->Fn2B3BF0(new LogicCompletion<LanLogic>(&LanLogic::Fn3E12A0, this));
+    inSocket->Fn2B4500(new RecvMsgOp);
+    inSocket->mLastMessageTime = time(NULL);
+    mPendingSockets.insert(inSocket);
+}
+// FUNCTION: WON 0x007e1840
+void LanLogic::Fn3E1840(LobbyClient* inClient, const ByteBuffer* inBuffer)
+{
+    if (!Fn3E0160() || !Fn3E0140())
+        return;
+    if (inClient == mMyClient.get()) {
+        Fn3E2610(inBuffer, mMyClient.get());
+        return;
+    }
+    LobbyLanClient* aClient = static_cast<LobbyLanClient*>(inClient);
+    if (aClient->mSocket == NULL)
+        return;
+    aClient->mSocket->Fn2B4740(new SendMsgOp(inBuffer), -1);
+}
+
+// FUNCTION: WON 0x007e1980
+void LanLogic::Fn3E1980(const ByteBuffer* inBuffer)
+{
+    if (!Fn3E0140())
+        return;
+    if (Fn3E0160()) {
+        Fn3E2610(inBuffer, mMyClient.get());
+        return;
+    }
+    if (mServerSocket.get() != NULL) {
+        mLastServerPing = time(NULL);
+        mServerSocket->Fn2B4740(new SendMsgOp(inBuffer), -1);
+    }
+}
+
+// FUNCTION: WON 0x007e1ad0
+void LanLogic::Fn3E1AD0(const ByteBuffer* inBuffer, bool inDeliverLocal)
+{
+    if (!Fn3E0160())
+        return;
+    if (inDeliverLocal)
+        Fn3E2610(inBuffer, mMyClient.get());
+    for (std::set<SmartPtr<LobbyLanSocket> >::iterator anItr = mPendingSockets.begin();
+         anItr != mPendingSockets.end(); ++anItr) {
+        LobbyLanSocket* aSocket = anItr->get();
+        if (aSocket->mClient.get() != NULL)
+            aSocket->Fn2B4740(new SendMsgOp(inBuffer), -1);
+    }
 }
 
 // Local WriteBuffer construction awaits model's complete actual field contract.
 // AppendBuffer second argument is an unsigned-byte length field size, not bool.
 // FUNCTION: WON 0x007e1c30
-void LanLogic::Virtual24(ByteBuffer* inBuffer)
+void LanLogic::Virtual24(const ByteBuffer* inBuffer)
 {
     WriteBuffer aMessage(2, true);
     aMessage.AppendByte(8);
@@ -195,7 +413,7 @@ void LanLogic::Virtual24(ByteBuffer* inBuffer)
 }
 
 // FUNCTION: WON 0x007e1cf0
-void LanLogic::Virtual28(ByteBuffer* inBuffer)
+void LanLogic::Virtual28(const ByteBuffer* inBuffer)
 {
     WriteBuffer aMessage(2, true);
     aMessage.AppendByte(8);
@@ -204,7 +422,7 @@ void LanLogic::Virtual28(ByteBuffer* inBuffer)
 }
 
 // FUNCTION: WON 0x007e1db0
-void LanLogic::Virtual2C(LobbyClient* inClient, ByteBuffer* inBuffer)
+void LanLogic::Virtual2C(LobbyClient* inClient, const ByteBuffer* inBuffer)
 {
     WriteBuffer aMessage(2, true);
     aMessage.AppendByte(8);
@@ -212,6 +430,374 @@ void LanLogic::Virtual2C(LobbyClient* inClient, ByteBuffer* inBuffer)
     Fn3E1840(inClient, aMessage.ToByteBuffer(true).get());
 }
 
+// FUNCTION: WON 0x007e1e70
+void LanLogic::Fn3E1E70(ReadBuffer& inBuffer)
+{
+    unsigned short anId = inBuffer.ReadShort();
+    std::wstring aName;
+    inBuffer.ReadWString(aName, 2);
+    SmartPtr<LobbyClient> aClient;
+    if (Fn3E0160())
+        aClient = mClients->FindClient(anId);
+    else {
+        SmartPtr<LobbyLanClient> aNewClient = new LobbyLanClient;
+        aNewClient->mClientId = anId;
+        aNewClient->mName = GUIString(new GUIStringData(aName));
+        aClient = aNewClient.get();
+        mClients->Fn3A5CC0(aClient.get());
+    }
+    if (aClient.get() != NULL) {
+        LobbyFn359100(new ClientChangedEvent(aClient.get(), GetRoomSpec(), 0), true);
+    }
+}
+
+// FUNCTION: WON 0x007e2080
+void LanLogic::Fn3E2080(ReadBuffer& inBuffer)
+{
+    unsigned short aClientId = inBuffer.ReadShort();
+    SmartPtr<LobbyClient> aClient = mClients->Fn3A5D90(aClientId);
+    if (aClient.get() != NULL) {
+        LobbyFn359100(new ClientChangedEvent(aClient.get(), GetRoomSpec(), 1), true);
+        LobbyFn361E70(aClient.get());
+    }
+}
+
+// FUNCTION: WON 0x007e2160
+void LanLogic::Fn3E2160(ReadBuffer& inBuffer, LobbyClient* inSender)
+{
+    if (!Fn3E0160())
+        return;
+    unsigned short aFlags = inBuffer.ReadShort();
+    std::wstring aText;
+    inBuffer.ReadWString(aText, 2);
+    unsigned short aTargetId = inBuffer.ReadShort();
+    WriteBuffer aBuffer(2, true);
+    aBuffer.AppendByte(6);
+    aBuffer.AppendShort(aFlags);
+    aBuffer.AppendShort(inSender->GetClientId());
+    aBuffer.AppendWString(aText, 2);
+    aBuffer.AppendShort(aTargetId);
+    ByteBufferPtr aMessage = aBuffer.ToByteBuffer(true);
+    if (aFlags & 4) {
+        LobbyClient* aTarget = mClients->FindClient(aTargetId);
+        if (aTarget == NULL)
+            return;
+        Fn3E1840(aTarget, aMessage.get());
+        if (inSender != aTarget)
+            Fn3E1840(inSender, aMessage.get());
+    }
+    else if (aFlags & 0x100) {
+        LobbyClientIterator anItr(mClients.get());
+        while (anItr.HasMore()) {
+            LobbyClient* aClient = anItr.Next();
+            if (aClient->Fn3A55C0(inSender))
+                Fn3E1840(aClient, aMessage.get());
+        }
+    }
+    else
+        Fn3E1AD0(aMessage.get(), true);
+}
+// FUNCTION: WON 0x007e23a0
+void LanLogic::Fn3E23A0(ReadBuffer& inBuffer)
+{
+    unsigned short aFlags = inBuffer.ReadShort();
+    unsigned short aSenderId = inBuffer.ReadShort();
+    std::wstring aText;
+    inBuffer.ReadWString(aText, 2);
+    unsigned short aTargetId = inBuffer.ReadShort();
+    LobbyClient* aSender = mClients->FindClient(aSenderId);
+    if (aSender == NULL)
+        return;
+    if (aSender->mB22)
+        return;
+    LobbyClient* aTarget = NULL;
+    if (aFlags & 4) {
+        aFlags = 4;
+        aTarget = mClients->FindClient(aTargetId);
+        if (aTarget == NULL)
+            return;
+        if (aSender != mMyClient.get()) {
+            if (LobbyFn35E330())
+                LobbyFn35B9A0(::LobbyGlobal_WhisperRecv_Sound.get());
+            ChatCommandParser* aParser = LobbyFn35B710();
+            if (aParser != NULL)
+                aParser->mInput = aSender->mName;
+        }
+    }
+    LobbyFn359100(new RecvChatEvent(8, aFlags, aSender,
+        aText, aTarget), true);
+}
+
+// FUNCTION: WON 0x007e25f0
+void LanLogic::Fn3E25F0(ReadBuffer& inBuffer, LobbyClient* inSender)
+{
+    LobbyFn361E30(inBuffer, inSender);
+}
+// FUNCTION: WON 0x007e2610
+void LanLogic::Fn3E2610(const ByteBuffer* inBuffer, LobbyClient* inClient)
+{
+    if (inBuffer == NULL || inClient == NULL)
+        return;
+    unsigned long anOffset = 0;
+    if (Fn3E0160() && inClient == mMyClient.get())
+        anOffset = 2;
+    ReadBuffer aBuffer(inBuffer->data() + anOffset, inBuffer->length() - anOffset);
+    try {
+        switch (aBuffer.ReadByte()) {
+        case 3: Fn3E1E70(aBuffer); break;
+        case 4: Fn3E2080(aBuffer); break;
+        case 5: Fn3E2160(aBuffer, inClient); break;
+        case 6: Fn3E23A0(aBuffer); break;
+        case 8: Fn3E25F0(aBuffer, inClient); break;
+        }
+    }
+    catch (ReadBufferException&) {}
+}
+// FUNCTION: WON 0x007e2760
+void LanLogic::HandleControlEvent(int inControlId)
+{
+    switch (inControlId) {
+    case 0x30d53: Fn3E2800(); return;
+    case 0x30d54: Fn3E2850(); return;
+    case 0x30d50: Fn3E3290(); return;
+    case 0x30d49: Fn3E3480(); return;
+    }
+}
+
+// FUNCTION: WON 0x007e27c0
+void LanLogic::HandleComponentEvent(ComponentEvent* inEvent)
+{
+    switch (inEvent->mType) {
+    case 0x186a5: Fn3E2DC0(static_cast<ClientActionEvent*>(inEvent)); break;
+    case 0x186a8: Fn3E28D0(static_cast<ChangeDirectConnectEvent*>(inEvent)); break;
+    case 0x186ac: Fn3E3050(inEvent->mComponent); break;
+    }
+}
+
+// FUNCTION: WON 0x007e2800
+void LanLogic::Fn3E2800()
+{
+    mLanNameDialog->Reset();
+    if (LobbyDoDialog(mLanNameDialog.get()) == 0x186a1 && mLanNameDialog->GetName().length() != 0) {
+        LobbyFn35D6C0(mLanNameDialog->GetName());
+        LobbyFn359120(0x186d2, true);
+    }
+}
+
+// FUNCTION: WON 0x007e2850
+void LanLogic::Fn3E2850()
+{
+    int aPort = LobbyFn35E3C0();
+    mLanPortDialog->SetGamePort(LobbyFn361400());
+    mLanPortDialog->SetPort(aPort);
+    mLanPortDialog->Reset();
+    if (LobbyDoDialog(mLanPortDialog.get()) == 0x186a1) {
+        int aNewPort = mLanPortDialog->GetPort();
+        if (aNewPort != aPort) {
+            LobbyFn35E3F0(aNewPort);
+            LobbyFn359120(0x186d2, true);
+            Fn3E54E0();
+        }
+    }
+}
+// FUNCTION: WON 0x007e28d0
+void LanLogic::Fn3E28D0(ChangeDirectConnectEvent* inEvent)
+{
+    if (inEvent->IsDelete()) {
+        if (inEvent->mGame.get() != NULL) {
+            LobbyFn35D870(inEvent->mGame->mAddress);
+            mDirectGames->RemoveGame(inEvent->mGame->mAddress);
+            LobbyFn359100(new GameChangedEvent(inEvent->mGame.get(), 1), true);
+        }
+    }
+    else if (inEvent->IsAdd()) {
+        mDirectConnectDialog->Reset();
+        if (LobbyDoDialog(mDirectConnectDialog.get()) == 0x186a1) {
+        IPAddr anAddress;
+        LobbyConfig* aConfig = GetLobbyConfig();
+        int aDefaultPort = LobbyFn361400();
+        if (aConfig != NULL)
+            aDefaultPort = aConfig->mLobbyPort;
+        anAddress.Fn2B2DF0(mDirectConnectDialog->GetAddress(), aDefaultPort);
+        if (!anAddress.IsValid()) {
+            SmartPtr<DNSTestOp> anOp = new DNSTestOp(mDirectConnectDialog->GetAddress());
+            LobbyFn358E70(anOp.get(), ::LANLogic_CheckingAddressTitle_String, ::LANLogic_CheckingAddressDetails_String, 1, 0);
+            if (!anOp->Succeeded())
+                return;
+            anAddress = anOp->GetHostAddr();
+            if (anAddress.GetPort() == 0)
+                anAddress.SetPort(aDefaultPort);
+        }
+        GUIString aName = mDirectConnectDialog->GetName();
+        if (aName.length() == 0)
+            aName = mDirectConnectDialog->GetAddress();
+        bool aFlag = false;
+        LobbyGame* aGame = mDirectGames->GetOrCreateGame(anAddress, &aFlag);
+        aGame->mName = aName;
+        LobbyFn35D7F0(anAddress, aName);
+        LobbyFn359100(new GameChangedEvent(aGame, aFlag ? 2 : 0), true);
+        }
+    }
+}
+// Full90 ClientOptionsPopup contract belongs Dialogs; promotion waits its header.
+// FUNCTION: WON 0x007e2ce0
+void LanLogic::Fn3E2CE0(LobbyClient* inClient, int inRoomSpec)
+{
+    if (mMyClient.get() == NULL || inClient == NULL)
+        return;
+    SmartPtr<ClientOptionsPopup> aPopup = new ClientOptionsPopup;
+    aPopup->Init(inClient, mMyClient.get(), inRoomSpec);
+    LobbyFn358DF0(aPopup.get(), 0x23e7, -1, -1);
+}
+
+// FUNCTION: WON 0x007e2dc0
+void LanLogic::Fn3E2DC0(ClientActionEvent* inEvent)
+{
+    if (!Fn3E0140() || !((inEvent->mRoomSpec & 8) ? true : false))
+        return;
+    LobbyClient* aClient = inEvent->mClient.get();
+    if (aClient == NULL)
+        return;
+    switch (inEvent->mAction) {
+    case 18:
+        Fn3E2CE0(aClient, inEvent->mRoomSpec);
+        return;
+    case 5:
+        LobbyFn35B7B0(aClient, true, 8);
+        return;
+    case 12:
+        LobbyFn35B7B0(aClient, false, 8);
+        return;
+    case 16:
+        LobbyFn359100(new SetChatInputEvent(2, aClient->mName,
+            inEvent->mRoomSpec, false), true);
+        return;
+    case 7:
+        LobbyFn361BC0(aClient, false);
+        return;
+    }
+}
+
+// FUNCTION: WON 0x007e2f40
+void LanLogic::Fn3E2F40(const GUIString& inText, unsigned short inFlags,
+                       unsigned short inTarget)
+{
+    WriteBuffer aBuffer(2, true);
+    aBuffer.AppendByte(5);
+    aBuffer.AppendShort(inFlags);
+    aBuffer.AppendWString(inText, 2);
+    aBuffer.AppendShort(inTarget);
+    Fn3E1980(aBuffer.ToByteBuffer(true).get());
+}
+
+// FUNCTION: WON 0x007e3050
+void LanLogic::Fn3E3050(Component* inTarget)
+{
+    if (!Fn3E0140())
+        return;
+    ChatCommandParser* aParser = LobbyFn35B710();
+    if (aParser == NULL || !(aParser->mRoomFlags & 8))
+        return;
+    LobbyClient* aClient = aParser->mTarget.get();
+    switch (aParser->mCommand) {
+    case 1: case 3: {
+        unsigned short aFlags = aParser->mCommand == 3 ? 2 : 0;
+        if (aParser->mRoomFlags & 0x10)
+            aFlags |= 0x100;
+        Fn3E2F40(aParser->mText, aFlags, 0);
+        return;
+    }
+    case 2:
+        if (aClient != NULL)
+            Fn3E2F40(aParser->mText, 4, aClient->mClientId);
+        return;
+    case 5:
+        if (aClient != NULL)
+            LobbyFn35B7B0(aClient, !aClient->mB22, 4);
+        return;
+    default:
+        LobbyFn359260(new ChatCommandErrorEvent(::RoutingLogic_InvalidCommand_String), inTarget);
+        break;
+    }
+}
+// FUNCTION: WON 0x007e3290
+void LanLogic::Fn3E3290()
+{
+    int aKind = LobbyFn361190();
+    if (aKind == 1) {
+        mLanGames->Clear();
+        LobbyFn359100(new SyncGameListEvent(mLanGames.get()), true);
+        if (mDiscoverySocket.get() == NULL)
+            return;
+        WriteBuffer aBuffer(0, true);
+        aBuffer.AppendByte(4);
+        mDiscoverySocket->Fn2B4740(new SendBytesToOp(
+            aBuffer.ToByteBuffer(true).get(), mDiscoveryAddress), -1);
+    } else if (aKind == 3) {
+        mDirectGames->Rewind();
+        while (mDirectGames->HasMore()) {
+            LobbyGame* aGame = mDirectGames->Next();
+            if (!aGame->GetIsFiltered())
+                LobbyFn35B900(aGame, false);
+        }
+        LobbyFn359120(0x186da, true);
+    }
+}
+// Canonical Core map alias/getter are queued; no persistence-object allocation/view.
+// FUNCTION: WON 0x007e3480
+void LanLogic::Fn3E3480()
+{
+    LobbyFn35CF90(NULL);
+    mLanGames->Clear();
+    mDirectGames->Clear();
+    const LobbyDirectConnectMap& aSavedGames = LobbyFn35D8E0();
+    LobbyDirectConnectMap::const_iterator anItr;
+    for (anItr = aSavedGames.begin(); anItr != aSavedGames.end(); ++anItr) {
+        LobbyGame* aGame = mDirectGames->GetOrCreateGame(anItr->first, NULL);
+        aGame->mName = anItr->second;
+    }
+    LobbyFn359100(new SyncGameListEvent(mDirectGames.get()), true);
+    Fn3E54E0();
+    LobbyFn360F90();
+}
+// Complete source draft only. Genuine socket allocation remains uncompiled until
+// root admits true full74/a0/a8 headers and reviews all ordinary constructor/EH data.
+// FUNCTION: WON 0x007e37a0
+bool LanLogic::Virtual18(LobbyGame* inGame)
+{
+    Fn3E0190();
+    if (inGame->GetGameType() == 3 && LobbyFn35B540()) {
+        mB74 = true;
+        if (!Fn3E35A0())
+            return false;
+    }
+    LobbyFn35B980();
+    mIsCaptain = true;
+    mMyClient = new LobbyLanClient;
+    mMyClient->mClientId = Fn3E0110();
+    mMyClient->mName = LobbyFn35D640();
+    mMyClient->Fn3A5500(true, true);
+    mClients->Fn3A5CC0(mMyClient.get());
+    inGame->SetClients(mClients.get());
+    mListenSocket = new LobbyLanSocket;
+    WONStatus aStatus = mListenSocket->Fn2B0D90(LobbyFn361400(), 0);
+    if (aStatus != 0) {
+        LobbyFn358ED0(::LANLogic_SocketBindError_String, aStatus);
+        return false;
+    }
+    aStatus = mListenSocket->Fn2B0FC0(1000);
+    if (aStatus != 0) {
+        LobbyFn358ED0(::LANLogic_SocketListenError_String, aStatus);
+        return false;
+    }
+    mListenSocket->Fn2B3BF0(new LogicCompletion<LanLogic>(&LanLogic::Fn3E1700, this));
+    mListenSocket->Fn2B4500(new AcceptOp(NULL));
+    LobbyFn359100(new JoinedRoomEvent("",
+        inGame->mName, 10, mMyClient->GetClientId(), inGame->mClients.get()), true);
+    mLastBroadcastTime = 0;
+    Fn3E0620();
+    return true;
+}
 // FUNCTION: WON 0x007e4590
 void LanLogic::Virtual38(LobbyClient* inClient, bool)
 {
@@ -240,82 +826,6 @@ void LanLogic::Virtual34(LobbyGame* inGame)
 void LanLogic::Virtual3C(bool) {}
 void LanLogic::Virtual44() {}
 
-// FUNCTION: WON 0x007e5900
-void LanLogic::Virtual48() { LobbyFn361310(0); }
-
-// FUNCTION: WON 0x007e5910
-void LanLogic::Virtual4C()
-{
-    Fn3E5810();
-    mDirectGames->Clear();
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e1840
-void LanLogic::Fn3E1840(LobbyClient* inClient, ByteBuffer* inBuffer)
-{
-    if (!Fn3E0160() || !Fn3E0140())
-        return;
-    if (inClient == mMyClient.get()) {
-        Fn3E2610(inBuffer, mMyClient.get());
-        return;
-    }
-    LobbyLanClient* aClient = static_cast<LobbyLanClient*>(inClient);
-    if (aClient->mSocket == NULL)
-        return;
-    aClient->mSocket->Fn2B4740(new SendMsgOp(inBuffer), -1);
-}
-
-// FUNCTION: WON 0x007e1980
-void LanLogic::Fn3E1980(ByteBuffer* inBuffer)
-{
-    if (!Fn3E0140())
-        return;
-    if (Fn3E0160()) {
-        Fn3E2610(inBuffer, mMyClient.get());
-        return;
-    }
-    if (mServerSocket.get() != NULL) {
-        mLastServerPing = time(NULL);
-        mServerSocket->Fn2B4740(new SendMsgOp(inBuffer), -1);
-    }
-}
-
-// FUNCTION: WON 0x007e4be0
-void LanLogic::Fn3E4BE0(AsyncOp* inOp)
-{
-    if (inOp != mDiscoveryTimer.get())
-        return;
-    if (Fn3E0160()) {
-        LobbyGame* aGame = GetMyLobbyGame();
-        if (aGame != NULL)
-            Fn3E4800(aGame);
-    }
-    if (mLanGames->RemoveStaleGames(30))
-        LobbyFn359100(new SyncGameListEvent(mLanGames.get()), true);
-    Fn3E53A0();
-}
-
-// FUNCTION: WON 0x007e5810
-void LanLogic::Fn3E5810()
-{
-    if (!mLanGames->IsEmpty()) {
-        mLanGames->Clear();
-        LobbyFn359100(new SyncGameListEvent(mLanGames.get()), true);
-    }
-    if (mDiscoveryTimer.get() != NULL) {
-        mDiscoveryTimer->Kill(true);
-        mDiscoveryTimer = NULL;
-    }
-    if (mDiscoverySocket.get() != NULL) {
-        mDiscoverySocket->Close();
-        mDiscoverySocket = NULL;
-    }
-}
-}
-
-namespace WONAPI {
 // FUNCTION: WON 0x007e4600
 bool LanLogic::Fn3E4600(LobbyGame* inGame)
 {
@@ -363,184 +873,21 @@ void LanLogic::Fn3E4A10(LobbyGame* inGame)
     aBuffer.AppendShort(inGame->mAddress.GetPort());
     mDiscoverySocket->Fn2B4740(new SendBytesToOp(aBuffer.ToByteBuffer(true).get(), mDiscoveryAddress), -1);
 }
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e1e70
-void LanLogic::Fn3E1E70(ReadBuffer& inBuffer)
+// FUNCTION: WON 0x007e4be0
+void LanLogic::Fn3E4BE0(AsyncOp* inOp)
 {
-    unsigned short anId = inBuffer.ReadShort();
-    std::wstring aName;
-    inBuffer.ReadWString(aName, 2);
-    SmartPtr<LobbyClient> aClient;
-    if (Fn3E0160())
-        aClient = mClients->FindClient(anId);
-    else {
-        SmartPtr<LobbyLanClient> aNewClient = new LobbyLanClient;
-        aNewClient->mClientId = anId;
-        aNewClient->mName = GUIString(new GUIStringData(aName));
-        aClient = aNewClient.get();
-        mClients->Fn3A5CC0(aClient.get());
-    }
-    if (aClient.get() != NULL) {
-        int aRoomSpec = 8;
-        LobbyFn359100(new ClientChangedEvent(aClient.get(), aRoomSpec, 0), true);
-    }
-}
-
-// FUNCTION: WON 0x007e2080
-void LanLogic::Fn3E2080(ReadBuffer& inBuffer)
-{
-    unsigned short aClientId = inBuffer.ReadShort();
-    SmartPtr<LobbyClient> aClient = mClients->Fn3A5D90(aClientId);
-    if (aClient.get() != NULL) {
-        LobbyFn359100(new ClientChangedEvent(aClient.get(), 8, 1), true);
-        LobbyFn361E70(aClient.get());
-    }
-}
-
-// FUNCTION: WON 0x007e2160
-void LanLogic::Fn3E2160(ReadBuffer& inBuffer, LobbyClient* inSender)
-{
-    if (!Fn3E0160())
+    if (inOp != mDiscoveryTimer.get())
         return;
-    unsigned short aFlags = inBuffer.ReadShort();
-    std::wstring aText;
-    inBuffer.ReadWString(aText, 2);
-    unsigned short aTargetId = inBuffer.ReadShort();
-    WriteBuffer aBuffer(2, true);
-    aBuffer.AppendByte(6);
-    aBuffer.AppendShort(aFlags);
-    aBuffer.AppendShort(inSender->GetClientId());
-    aBuffer.AppendWString(aText, 2);
-    aBuffer.AppendShort(aTargetId);
-    ByteBufferPtr aMessage = aBuffer.ToByteBuffer(true);
-    if (aFlags & 4) {
-        LobbyClient* aTarget = mClients->FindClient(aTargetId);
-        if (aTarget == NULL)
-            return;
-        Fn3E1840(aTarget, aMessage.get());
-        if (inSender != aTarget)
-            Fn3E1840(inSender, aMessage.get());
+    if (Fn3E0160()) {
+        LobbyGame* aGame = GetMyLobbyGame();
+        if (aGame != NULL)
+            Fn3E4800(aGame);
     }
-    else if (aFlags & 0x100) {
-        LobbyClientIterator anItr(mClients.get());
-        while (anItr.HasMore()) {
-            LobbyClient* aClient = anItr.Next();
-            if (aClient->Fn3A55C0(inSender))
-                Fn3E1840(aClient, aMessage.get());
-        }
-    }
-    else
-        Fn3E1AD0(aMessage.get(), true);
-}
+    if (mLanGames->RemoveStaleGames(30))
+        LobbyFn359100(new SyncGameListEvent(mLanGames.get()), true);
+    Fn3E53A0();
 }
 
-namespace WONAPI {
-// FUNCTION: WON 0x007e23a0
-void LanLogic::Fn3E23A0(ReadBuffer& inBuffer)
-{
-    unsigned short aFlags = inBuffer.ReadShort();
-    unsigned short aSenderId = inBuffer.ReadShort();
-    std::wstring aText;
-    inBuffer.ReadWString(aText, 2);
-    unsigned short aTargetId = inBuffer.ReadShort();
-    LobbyClient* aSender = mClients->FindClient(aSenderId);
-    if (aSender == NULL || aSender->mB22)
-        return;
-    LobbyClient* aTarget = NULL;
-    if (aFlags & 4) {
-        aTarget = mClients->FindClient(aTargetId);
-        aFlags = 4;
-        if (aTarget == NULL)
-            return;
-        if (aSender != mMyClient.get()) {
-            if (LobbyFn35E330())
-                LobbyFn35B9A0(::LobbyGlobal_WhisperRecv_Sound.get());
-            ChatCommandParser* aParser = LobbyFn35B710();
-            if (aParser != NULL)
-                aParser->mInput = aSender->mName;
-        }
-    }
-    int aRoomSpec = 8;
-    LobbyFn359100(new RecvChatEvent(aRoomSpec, aFlags, aSender,
-        GUIString(new GUIStringData(aText)), aTarget), true);
-}
-
-// FUNCTION: WON 0x007e25f0
-void LanLogic::Fn3E25F0(ReadBuffer& inBuffer, LobbyClient* inSender)
-{
-    LobbyFn361E30(inBuffer, inSender);
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e2610
-void LanLogic::Fn3E2610(ByteBuffer* inBuffer, LobbyClient* inClient)
-{
-    if (inBuffer == NULL || inClient == NULL)
-        return;
-    unsigned long anOffset = 0;
-    if (Fn3E0160() && inClient == mMyClient.get())
-        anOffset = 2;
-    ReadBuffer aBuffer(inBuffer->data() + anOffset, inBuffer->length() - anOffset);
-    try {
-        switch (aBuffer.ReadByte()) {
-        case 3: Fn3E1E70(aBuffer); break;
-        case 4: Fn3E2080(aBuffer); break;
-        case 5: Fn3E2160(aBuffer, inClient); break;
-        case 6: Fn3E23A0(aBuffer); break;
-        case 8: Fn3E25F0(aBuffer, inClient); break;
-        }
-    }
-    catch (ReadBufferException&) {}
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e28d0
-void LanLogic::Fn3E28D0(ChangeDirectConnectEvent* inEvent)
-{
-    if (inEvent->IsDelete()) {
-        if (inEvent->mGame.get() == NULL)
-            return;
-        LobbyFn35D870(inEvent->mGame->mAddress);
-        mDirectGames->RemoveGame(inEvent->mGame->mAddress);
-        LobbyFn359100(new GameChangedEvent(inEvent->mGame.get(), 1), true);
-        return;
-    }
-    if (!inEvent->IsAdd())
-        return;
-    mDirectConnectDialog->Reset();
-    if (LobbyDoDialog(mDirectConnectDialog.get()) != 0x186a1)
-        return;
-    IPAddr anAddress;
-    LobbyConfig* aConfig = GetLobbyConfig();
-    unsigned short aDefaultPort = LobbyFn361400();
-    if (aConfig != NULL)
-        aDefaultPort = aConfig->mLobbyPort;
-    anAddress.Fn2B2DF0(mDirectConnectDialog->GetAddress(), aDefaultPort);
-    if (!anAddress.IsValid()) {
-        SmartPtr<DNSTestOp> anOp = new DNSTestOp(mDirectConnectDialog->GetAddress());
-        LobbyFn358E70(anOp.get(), ::LANLogic_CheckingAddressTitle_String, ::LANLogic_CheckingAddressDetails_String, 1, 0);
-        if (!anOp->Succeeded())
-            return;
-        anAddress = anOp->GetHostAddr();
-        if (anAddress.GetPort() == 0)
-            anAddress.SetPort(aDefaultPort);
-    }
-    GUIString aName = mDirectConnectDialog->GetName();
-    if (aName.length() == 0)
-        aName = mDirectConnectDialog->GetAddress();
-    bool aFlag = false;
-    LobbyGame* aGame = mDirectGames->GetOrCreateGame(anAddress, &aFlag);
-    aGame->mName = aName;
-    LobbyFn35D7F0(anAddress, aName);
-    LobbyFn359100(new GameChangedEvent(aGame, aFlag ? 2 : 0), true);
-}
-}
-
-namespace WONAPI {
 // FUNCTION: WON 0x007e4c90
 void LanLogic::Fn3E4C90(ReadBuffer&, const IPAddr& inAddress)
 {
@@ -577,8 +924,9 @@ void LanLogic::Fn3E4EC0(ReadBuffer& inBuffer, const IPAddr& inAddress)
     if (anAddress.Fn2B2FB0() != anIP)
         return;
     LobbyGame* aGame = mLanGames->GetGame(anAddress);
-    if (aGame != NULL)
-        aGame->mL1C = time(NULL);
+    if (aGame == NULL)
+        return;
+    aGame->mL1C = time(NULL);
 }
 
 // FUNCTION: WON 0x007e5050
@@ -586,459 +934,42 @@ void LanLogic::Fn3E5050(ReadBuffer& inBuffer, const IPAddr& inAddress)
 {
     IPAddr anAddress = inAddress;
     anAddress.SetPort(inBuffer.ReadShort());
-    if (inAddress.Fn2B2FB0() != anAddress.Fn2B2FB0())
+    long aBroadcast = inAddress.Fn2B2FB0();
+    if (anAddress.Fn2B2FB0() != aBroadcast)
         return;
     SmartPtr<LobbyGame> aGame = mLanGames->RemoveGame(anAddress);
     if (aGame.get() != NULL)
         LobbyFn359100(new GameChangedEvent(aGame.get(), 1), true);
 }
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e2800
-void LanLogic::Fn3E2800()
+// E3 genuine nullable ByteBuffer API closes this complete discovery receive path.
+// FUNCTION: WON 0x007e5200
+void LanLogic::Fn3E5200(AsyncOp* inOp)
 {
-    mLanNameDialog->Reset();
-    if (LobbyDoDialog(mLanNameDialog.get()) == 0x186a1 && mLanNameDialog->GetName().length() != 0) {
-        LobbyFn35D6C0(mLanNameDialog->GetName());
-        LobbyFn359120(0x186d2, true);
-    }
-}
-
-// FUNCTION: WON 0x007e2850
-void LanLogic::Fn3E2850()
-{
-    int aPort = LobbyFn35E3C0();
-    mLanPortDialog->SetGamePort(LobbyFn361400());
-    mLanPortDialog->SetPort(aPort);
-    mLanPortDialog->Reset();
-    if (LobbyDoDialog(mLanPortDialog.get()) == 0x186a1) {
-        int aNewPort = mLanPortDialog->GetPort();
-        if (aNewPort != aPort) {
-            LobbyFn35E3F0(aNewPort);
-            LobbyFn359120(0x186d2, true);
-            Fn3E54E0();
-        }
-    }
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007dfb90
-void LobbyLanSocket::Fn3DFB90(LobbyLanClient* inClient)
-{
-    if (mClient.get() != NULL)
-        mClient->mSocket = NULL;
-    mClient = inClient;
-    if (mClient.get() != NULL)
-        mClient->mSocket = this;
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e1ad0
-void LanLogic::Fn3E1AD0(ByteBuffer* inBuffer, bool inDeliverLocal)
-{
-    if (!Fn3E0160())
+    RecvBytesFromOp* anOp = static_cast<RecvBytesFromOp*>(inOp);
+    if (anOp->mSocket.get() != mDiscoverySocket.get() || !anOp->Succeeded())
         return;
-    if (inDeliverLocal)
-        Fn3E2610(inBuffer, mMyClient.get());
-    for (std::set<SmartPtr<LobbyLanSocket> >::iterator anItr = mPendingSockets.begin();
-         anItr != mPendingSockets.end(); ++anItr) {
-        LobbyLanSocket* aSocket = anItr->get();
-        if (aSocket->mClient.get() != NULL)
-            aSocket->Fn2B4740(new SendMsgOp(inBuffer), -1);
-    }
-}
-
-// FUNCTION: WON 0x007e0300
-void LanLogic::Fn3E0300(AsyncOp* inOp)
-{
-    LobbyLanSocket* aSocket = static_cast<LobbyLanSocket*>(
-        static_cast<SocketOp*>(inOp)->mSocket.get());
-    if (aSocket == NULL)
-        return;
-    if (Fn3E0160()) {
-        if (aSocket->mClient.get() != NULL) {
-            WriteBuffer aBuffer(2, true);
-            aBuffer.AppendByte(4);
-            aBuffer.AppendShort(aSocket->mClient->GetClientId());
-            aSocket->Fn3DFB90(NULL);
-            Fn3E1AD0(aBuffer.ToByteBuffer(true).get(), true);
-        }
-        mPendingSockets.erase(aSocket);
-    } else if (aSocket == mServerSocket.get()) {
-        mServerSocket->Close();
-        mServerSocket = NULL;
-        LobbyFn361E50(true);
-    }
-}
-
-// FUNCTION: WON 0x007e04e0
-void LanLogic::Fn3E04E0(AsyncOp* inOp)
-{
-    if (inOp != mNetworkTimer.get())
-        return;
-    if (Fn3E0160()) {
-        long aTime = time(NULL);
-        for (std::set<SmartPtr<LobbyLanSocket> >::iterator anItr = mPendingSockets.begin();
-             anItr != mPendingSockets.end(); ++anItr)
-            if (aTime - (*anItr)->mLastMessageTime > 300)
-                (*anItr)->QueueClose(1000);
-    } else if (mServerSocket.get() != NULL && time(NULL) - mLastServerPing >= 120) {
-        WriteBuffer aBuffer(2, true);
-        aBuffer.AppendByte(7);
-        Fn3E1980(aBuffer.ToByteBuffer(true).get());
-    }
-    Fn3E0620();
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e2760
-void LanLogic::HandleControlEvent(int inControlId)
-{
-    switch (inControlId) {
-    case 0x30d53: Fn3E2800(); return;
-    case 0x30d54: Fn3E2850(); return;
-    case 0x30d50: Fn3E3290(); return;
-    case 0x30d49: Fn3E3480(); return;
-    }
-}
-
-// FUNCTION: WON 0x007e27c0
-void LanLogic::HandleComponentEvent(ComponentEvent* inEvent)
-{
-    switch (inEvent->mType) {
-    case 0x186a5: Fn3E2DC0(static_cast<ClientActionEvent*>(inEvent)); break;
-    case 0x186a8: Fn3E28D0(static_cast<ChangeDirectConnectEvent*>(inEvent)); break;
-    case 0x186ac: Fn3E3050(inEvent->mComponent); break;
-    }
-}
-
-// FUNCTION: WON 0x007e2f40
-void LanLogic::Fn3E2F40(const GUIString& inText, unsigned short inFlags,
-                       unsigned short inTarget)
-{
-    WriteBuffer aBuffer(2, true);
-    aBuffer.AppendByte(5);
-    aBuffer.AppendShort(inFlags);
-    aBuffer.AppendWString(inText, 2);
-    aBuffer.AppendShort(inTarget);
-    Fn3E1980(aBuffer.ToByteBuffer(true).get());
-}
-
-// FUNCTION: WON 0x007e3050
-void LanLogic::Fn3E3050(Component* inTarget)
-{
-    if (!Fn3E0140())
-        return;
-    ChatCommandParser* aParser = LobbyFn35B710();
-    if (aParser == NULL || !(aParser->mRoomFlags & 8))
-        return;
-    LobbyClient* aClient = aParser->mTarget.get();
-    switch (aParser->mCommand) {
-    case 1: case 3: {
-        unsigned short aFlags = aParser->mCommand == 3 ? 2 : 0;
-        if (aParser->mRoomFlags & 0x10)
-            aFlags |= 0x100;
-        Fn3E2F40(aParser->mText, aFlags, 0);
-        return;
-    }
-    case 2:
-        if (aClient != NULL)
-            Fn3E2F40(aParser->mText, 4, aClient->mClientId);
-        return;
-    case 5:
-        if (aClient != NULL)
-            LobbyFn35B7B0(aClient, !aClient->mB22, 4);
-        return;
-    default:
-        LobbyFn359260(new ChatCommandErrorEvent(::RoutingLogic_InvalidCommand_String), inTarget);
-        break;
-    }
-}
-}
-
-namespace WONAPI {
-// Actual RecvMsgOp callback; reference-only until canonical descendant migration.
-// FUNCTION: WON 0x007e12a0
-void LanLogic::Fn3E12A0(AsyncOp* inOp)
-{
-    if (inOp->mStatus != 0 || inOp->mB39)
-        return;
-    RecvMsgOp* anOp = static_cast<RecvMsgOp*>(inOp);
-    LobbyLanSocket* aSocket = static_cast<LobbyLanSocket*>(anOp->mSocket.get());
-    if (Fn3E0160()) {
-        aSocket->mLastMessageTime = time(NULL);
-        if (aSocket->mClient.get() == NULL) {
-            Fn3E1210(anOp->GetMsg().get(), aSocket);
-            return;
-        }
-    }
-    Fn3E2610(anOp->GetMsg().get(), aSocket->mClient.get());
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x007e1210
-void LanLogic::Fn3E1210(ByteBuffer* inBuffer, LobbyLanSocket* inSocket)
-{
-    if (inBuffer == NULL || inSocket == NULL || !Fn3E0160())
-        return;
-    ReadBuffer aBuffer(inBuffer->data(), inBuffer->length());
+    ReadBuffer aBuffer(anOp->GetBytes()->data(), anOp->GetBytes()->length());
+    const IPAddr& aFrom = anOp->mFromAddress;
     try {
         switch (aBuffer.ReadByte()) {
-        case 1: Fn3E0760(aBuffer, inSocket); break;
-        }
-    } catch (ReadBufferException&) {
-    }
-}
-}
-
-namespace WONAPI {
-// Original catch landing/return continuation11f1..1209 is owned EH support,
-
-// FUNCTION: WON 0x007e0f90
-int LanLogic::Fn3E0F90(ByteBuffer* inBuffer, LobbyGame* inGame)
-{
-    if (inBuffer == NULL || mServerSocket.get() == NULL || inGame == NULL)
-        return 1;
-    ReadBuffer aBuffer(inBuffer->data(), inBuffer->length());
-    try {
-        if (aBuffer.ReadByte() != 2)
-            return 1;
-        int aStatus = aBuffer.ReadShort();
-        if (aStatus != 0)
-            return aStatus;
-        unsigned short aCaptainId = aBuffer.ReadShort();
-        unsigned short aMyId = aBuffer.ReadShort();
-        inGame->mL60 = aCaptainId;
-        unsigned short aNumClients = aBuffer.ReadShort();
-        for (int i = 0; i < aNumClients; ++i) {
-            unsigned short anId = aBuffer.ReadShort();
-            std::wstring aName;
-            aBuffer.ReadWString(aName, 2);
-            SmartPtr<LobbyLanClient> aClient = new LobbyLanClient;
-            aClient->mClientId = anId;
-            aClient->mName = GUIString(new GUIStringData(aName));
-            mClients->Fn3A5CC0(aClient.get());
-            if (anId == aMyId)
-                mMyClient = aClient;
-            else if (anId == aCaptainId) {
-                mServerSocket->Fn3DFB90(aClient.get());
-                aClient->Fn3A5500(true, true);
-            }
-        }
-        return 0;
-    } catch (ReadBufferException&) {
-    }
-    return 1;
-}
-}
-
-namespace WONAPI {
-// IPAddr/Socket nominal APIs are original+SDK corroborated proposals awaiting E3.
-// SendMsgOp is a fully proved op proposal, no socket object is allocated here.
-// Password conversion's two original wstring temporaries require normal COFF audit.
-// FUNCTION: WON 0x007e0760
-void LanLogic::Fn3E0760(ReadBuffer& inBuffer, LobbyLanSocket* inSocket)
-{
-    if (mMyClient.get() == NULL)
-        return;
-    LobbyGame* aGame = GetMyLobbyGame();
-    if (aGame == NULL)
-        return;
-    std::wstring aName;
-    std::wstring aPassword;
-    inBuffer.ReadWString(aName, 2);
-    inBuffer.ReadWString(aPassword, 2);
-    WriteBuffer aReply(2, true);
-    aReply.AppendByte(2);
-    if (aGame->GetGameType() == 1) {
-        IPAddr aLocalAddr = IPAddr::GetLocalAddr();
-        const char* aPeerBytes = inSocket->GetDestAddr().GetSixByte();
-        const char* aLocalBytes = aLocalAddr.GetSixByte();
-        if (aPeerBytes[2] != aLocalBytes[2] || aPeerBytes[3] != aLocalBytes[3]) {
-            aReply.AppendShort(3);
-            inSocket->Fn2B4740(new SendMsgOp(aReply.ToByteBuffer(true).get()), -1);
-            return;
+        case 1: Fn3E4CB0(aBuffer, aFrom); break;
+        case 2: Fn3E4EC0(aBuffer, aFrom); break;
+        case 3: Fn3E5050(aBuffer, aFrom); break;
+        case 4: Fn3E4C90(aBuffer, aFrom); break;
         }
     }
-    if (aPassword != std::wstring(aGame->mPassword)) {
-        aReply.AppendShort(2);
-        inSocket->Fn2B4740(new SendMsgOp(aReply.ToByteBuffer(true).get()), -1);
-        return;
-    }
-    SmartPtr<LobbyLanClient> aClient = new LobbyLanClient;
-    aClient->mName = GUIString(new GUIStringData(aName));
-    aClient->mClientId = Fn3E0110();
-    mClients->Fn3A5CC0(aClient.get());
-    WriteBuffer aNotify(2, true);
-    aNotify.AppendByte(3);
-    aNotify.AppendShort(aClient->GetClientId());
-    aNotify.AppendWString(aClient->mName, 2);
-    Fn3E1AD0(aNotify.ToByteBuffer(true).get(), true);
-    inSocket->Fn3DFB90(aClient.get());
-    aReply.AppendShort(0);
-    aReply.AppendShort(mMyClient->GetClientId());
-    aReply.AppendShort(aClient->mClientId);
-    aReply.AppendShort(mClients->mClients.size());
-    for (LobbyClientMap::iterator anItr = mClients->mClients.begin();
-         anItr != mClients->mClients.end(); ++anItr) {
-        LobbyClient* aListedClient = anItr->second.get();
-        aReply.AppendShort(aListedClient->mClientId);
-        aReply.AppendWString(aListedClient->mName, 2);
-    }
-    Fn3E1840(aClient.get(), aReply.ToByteBuffer(true).get());
+    catch (ReadBufferException&) {}
 }
-}
-
-namespace WONAPI {
-// Full90 ClientOptionsPopup contract belongs Dialogs; promotion waits its header.
-// FUNCTION: WON 0x007e2ce0
-void LanLogic::Fn3E2CE0(LobbyClient* inClient, int inRoomSpec)
+// FUNCTION: WON 0x007e53a0
+void LanLogic::Fn3E53A0()
 {
-    if (mMyClient.get() == NULL || inClient == NULL)
-        return;
-    SmartPtr<ClientOptionsPopup> aPopup = new ClientOptionsPopup;
-    aPopup->Init(inClient, mMyClient.get(), inRoomSpec);
-    LobbyFn358DF0(aPopup.get(), 0x23e7, -1, -1);
-}
-
-// FUNCTION: WON 0x007e2dc0
-void LanLogic::Fn3E2DC0(ClientActionEvent* inEvent)
-{
-    if (!Fn3E0140() || !(inEvent->mRoomSpec & 8))
-        return;
-    LobbyClient* aClient = inEvent->mClient.get();
-    if (aClient == NULL)
-        return;
-    switch (inEvent->mAction) {
-    case 5:
-        LobbyFn35B7B0(aClient, true, 8);
-        break;
-    case 7:
-        LobbyFn361BC0(aClient, false);
-        break;
-    case 12:
-        LobbyFn35B7B0(aClient, false, 8);
-        break;
-    case 16:
-        LobbyFn359100(new SetChatInputEvent(2, aClient->mName,
-            inEvent->mRoomSpec, false), true);
-        break;
-    case 18:
-        Fn3E2CE0(aClient, inEvent->mRoomSpec);
-        break;
+    if (mDiscoveryTimer.get() == NULL) {
+        mDiscoveryTimer = new AsyncOp;
+        mDiscoveryTimer->mCompletion = new LogicCompletion<LanLogic>(&LanLogic::Fn3E4BE0, this);
     }
-}
-}
-
-namespace WONAPI {
-
-// FUNCTION: WON 0x007e3290
-void LanLogic::Fn3E3290()
-{
-    int aKind = LobbyFn361190();
-    if (aKind == 1) {
-        mLanGames->Clear();
-        LobbyFn359100(new SyncGameListEvent(mLanGames.get()), true);
-        if (mDiscoverySocket.get() == NULL)
-            return;
-        WriteBuffer aBuffer(0, true);
-        aBuffer.AppendByte(4);
-        mDiscoverySocket->Fn2B4740(new SendBytesToOp(
-            aBuffer.ToByteBuffer(true).get(), mDiscoveryAddress), -1);
-    } else if (aKind == 3) {
-        mDirectGames->Rewind();
-        while (mDirectGames->HasMore()) {
-            LobbyGame* aGame = mDirectGames->Next();
-            if (!aGame->GetIsFiltered())
-                LobbyFn35B900(aGame, false);
-        }
-        LobbyFn359120(0x186da, true);
-    }
-}
+    mDiscoveryTimer->RunAsync(15000);
 }
 
-namespace WONAPI {
-// Requires model's complete RecvMsgOpB4/SocketOp5c proposal and canonical Queue API.
-// This allocates an operation only; no socket object is constructed.
-// FUNCTION: WON 0x007e13b0
-void LanLogic::Fn3E13B0(LobbyLanSocket* inSocket)
-{
-    inSocket->SetCloseCompletion(new LogicCompletion<LanLogic>(&LanLogic::Fn3E0300, this));
-    inSocket->Fn2B3BF0(new LogicCompletion<LanLogic>(&LanLogic::Fn3E12A0, this));
-    inSocket->Fn2B4500(new RecvMsgOp);
-    inSocket->mLastMessageTime = time(NULL);
-    mPendingSockets.insert(inSocket);
-}
-}
-
-namespace WONAPI {
-// Canonical Core map alias/getter are queued; no persistence-object allocation/view.
-// FUNCTION: WON 0x007e3480
-void LanLogic::Fn3E3480()
-{
-    LobbyFn35CF90(NULL);
-    mLanGames->Clear();
-    mDirectGames->Clear();
-    const LobbyDirectConnectMap& aSavedGames = LobbyFn35D8E0();
-    LobbyDirectConnectMap::const_iterator anItr;
-    for (anItr = aSavedGames.begin(); anItr != aSavedGames.end(); ++anItr) {
-        LobbyGame* aGame = mDirectGames->GetOrCreateGame(anItr->first, NULL);
-        aGame->mName = anItr->second;
-    }
-    LobbyFn359100(new SyncGameListEvent(mDirectGames.get()), true);
-    Fn3E54E0();
-    LobbyFn360F90();
-}
-}
-
-namespace WONAPI {
-// Complete source draft only. Genuine socket allocation remains uncompiled until
-// root admits true full74/a0/a8 headers and reviews all ordinary constructor/EH data.
-// FUNCTION: WON 0x007e37a0
-bool LanLogic::Virtual18(LobbyGame* inGame)
-{
-    Fn3E0190();
-    if (inGame->GetGameType() == 3 && LobbyFn35B540()) {
-        mB74 = true;
-        if (!Fn3E35A0())
-            return false;
-    }
-    LobbyFn35B980();
-    mIsCaptain = true;
-    mMyClient = new LobbyLanClient;
-    mMyClient->mClientId = Fn3E0110();
-    mMyClient->mName = LobbyFn35D640();
-    mMyClient->Fn3A5500(true, true);
-    mClients->Fn3A5CC0(mMyClient.get());
-    inGame->SetClients(mClients.get());
-    mListenSocket = new LobbyLanSocket;
-    WONStatus aStatus = mListenSocket->Fn2B0D90(LobbyFn361400(), 0);
-    if (aStatus != 0) {
-        LobbyFn358ED0(::LANLogic_SocketBindError_String, aStatus);
-        return false;
-    }
-    aStatus = mListenSocket->Fn2B0FC0(1000);
-    if (aStatus != 0) {
-        LobbyFn358ED0(::LANLogic_SocketListenError_String, aStatus);
-        return false;
-    }
-    mListenSocket->Fn2B3BF0(new LogicCompletion<LanLogic>(&LanLogic::Fn3E1700, this));
-    mListenSocket->Fn2B4500(new AcceptOp(NULL));
-    int aRoomSpec = 10;
-    LobbyFn359100(new JoinedRoomEvent(GUIString(""),
-        inGame->mName, aRoomSpec, mMyClient->GetClientId(), inGame->mClients.get()), true);
-    mLastBroadcastTime = 0;
-    Fn3E0620();
-    return true;
-}
-}
-
-namespace WONAPI {
 // Uncompiled source draft; actual full QueueSocketa0 and op90/88 gates required.
 // FUNCTION: WON 0x007e54e0
 void LanLogic::Fn3E54E0()
@@ -1046,7 +977,8 @@ void LanLogic::Fn3E54E0()
     Fn3E5810();
     mDiscoveryAddress = IPAddr::GetBroadcastAddr(LobbyFn35E3C0());
     mDiscoverySocket = new QueueSocket(1);
-    if (mDiscoverySocket->Fn2B0D90(LobbyFn35E3C0(), 0) != 0) {
+    long aResult = mDiscoverySocket->Fn2B0D90(LobbyFn35E3C0(), 0);
+    if (aResult != 0) {
         Fn3E5810();
         return;
     }
@@ -1063,26 +995,30 @@ void LanLogic::Fn3E54E0()
             Fn3E4630(aGame, mDiscoveryAddress);
     }
 }
-}
-
-// E3 genuine nullable ByteBuffer API closes this complete discovery receive path.
-namespace WONAPI {
-// FUNCTION: WON 0x007e5200
-void LanLogic::Fn3E5200(AsyncOp* inOp)
+// FUNCTION: WON 0x007e5810
+void LanLogic::Fn3E5810()
 {
-    RecvBytesFromOp* anOp = static_cast<RecvBytesFromOp*>(inOp);
-    if (anOp->mSocket.get() != mDiscoverySocket.get() || !anOp->Succeeded())
-        return;
-    ReadBuffer aBuffer(anOp->GetBytes()->data(), anOp->GetBytes()->length());
-    try {
-        switch (aBuffer.ReadByte()) {
-        case 1: Fn3E4CB0(aBuffer, anOp->mFromAddress); break;
-        case 2: Fn3E4EC0(aBuffer, anOp->mFromAddress); break;
-        case 3: Fn3E5050(aBuffer, anOp->mFromAddress); break;
-        case 4: Fn3E4C90(aBuffer, anOp->mFromAddress); break;
-        }
+    if (!mLanGames->IsEmpty()) {
+        mLanGames->Clear();
+        LobbyFn359100(new SyncGameListEvent(mLanGames.get()), true);
     }
-    catch (ReadBufferException&) {}
+    if (mDiscoveryTimer.get() != NULL) {
+        mDiscoveryTimer->Kill(true);
+        mDiscoveryTimer = NULL;
+    }
+    if (mDiscoverySocket.get() != NULL) {
+        mDiscoverySocket->Close();
+        mDiscoverySocket = NULL;
+    }
+}
+// FUNCTION: WON 0x007e5900
+void LanLogic::Virtual48() { LobbyFn361310(0); }
+
+// FUNCTION: WON 0x007e5910
+void LanLogic::Virtual4C()
+{
+    Fn3E5810();
+    mDirectGames->Clear();
 }
 }
 /* Deferred original-carved bodies, zero handwritten source credit:
@@ -1094,6 +1030,39 @@ void LanLogic::Fn3E5200(AsyncOp* inOp)
 extern unsigned short gEmptyWideString[]; // 0x8e60bc, an empty wide string (zero .bss; defined in EEWonNet.cpp)
 // actual external GetCert11fc owner; only this auth initializer is newly closed.
 namespace WONAPI {
+// Private reviewed-contract draft only: actual PeerAuthServerOp2240 allocation waits Root integration authority.
+// FUNCTION: WON 0x007e1600
+void LanLogic::Fn3E1600(AsyncOp* inOp)
+{
+    PeerAuthServerOp* op=static_cast<PeerAuthServerOp*>(inOp);
+    LobbyLanSocket* socket=static_cast<LobbyLanSocket*>(op->GetSocket());
+    if(!op->Succeeded()) {
+        socket->QueueClose(1000);
+        return;
+    }
+    const AuthCertificateBase* certificate=op->mPeerAuthServer.GetClientCertificate();
+    AuthContext* auth=GetLobbyAuthContext();
+    if(!auth) return;
+    DWORD community=auth->GetPeerData()->GetCertificate2()->GetFirstCommunity();
+    if(!certificate->VerifyPermissions(0,community,0)) {
+        socket->QueueClose(1000);
+        return;
+    }
+    Fn3E13B0(socket);
+}
+// FUNCTION: WON 0x007e1700
+void LanLogic::Fn3E1700(AsyncOp* inOp)
+{
+    if(inOp->GetStatus()!=0 || inOp->mB39) return;
+    LobbyLanSocket* socket=static_cast<LobbyLanSocket*>(static_cast<AcceptOp*>(inOp)->mAcceptedSocket.get());
+    if(mB74) {
+        AuthContext* auth=GetLobbyAuthContext();
+        if(!auth) return;
+        SmartPtr<PeerAuthServerOp> server=new PeerAuthServerOp(auth,socket);
+        RunTrackedOp(server.get(),new LogicCompletion<LanLogic>(&LanLogic::Fn3E1600,this),30000);
+    } else
+        Fn3E13B0(socket);
+}
 // FUNCTION: WON 0x007e35a0
 bool LanLogic::Fn3E35A0()
 {
@@ -1117,22 +1086,19 @@ bool LanLogic::Fn3E35A0()
     }
     return false;
 }
-}
-
 // private next-cohort draft: requires Root F actual PeerAuthOp2244 owner before canonical allocation.
-namespace WONAPI {
 // FUNCTION: WON 0x007e3d20
 bool LanLogic::Virtual1C(LobbyGame* game)
 {
-    int joined=0;
-    SmartPtr<AuthContext> auth;
     Fn3E0190();
+    SmartPtr<AuthContext> auth;
     if(game->GetGameType()==3 && LobbyFn35B540()) {
         mB74=true;
         if(!Fn3E35A0()) return false;
         auth=GetLobbyAuthContext();
     }
     mServerSocket=new LobbyLanSocket;
+    bool joined=false;
     bool needPassword=game->mB10;
     bool needConnect=true;
     while(!joined) {
@@ -1177,50 +1143,8 @@ bool LanLogic::Virtual1C(LobbyGame* game)
     mServerSocket->Fn2B4500(new RecvMsgOp);
     Fn3E0620();
     game->SetClients(mClients.get());
-    int roomSpec=10;
-    LobbyFn359100(new JoinedRoomEvent(GUIString(new GUIStringData("")),game->mName,
-        roomSpec,mMyClient->GetClientId(),game->mClients.get()),true);
+    LobbyFn359100(new JoinedRoomEvent(GUIString(new GUIStringData("")),game->mName,10,mMyClient->GetClientId(),game->mClients.get()),true);
     return true;
-}
-}
-
-// Private reviewed-contract draft only: actual PeerAuthServerOp2240 allocation waits Root integration authority.
-namespace WONAPI {
-// FUNCTION: WON 0x007e1600
-void LanLogic::Fn3E1600(AsyncOp* inOp)
-{
-    PeerAuthServerOp* op=static_cast<PeerAuthServerOp*>(inOp);
-    LobbyLanSocket* socket=static_cast<LobbyLanSocket*>(op->GetSocket());
-    if(op->GetStatus()!=0 || op->mB39) {
-        socket->QueueClose(1000);
-        return;
-    }
-    const AuthCertificateBase* certificate=op->mPeerAuthServer.GetClientCertificate();
-    AuthContext* auth=GetLobbyAuthContext();
-    if(!auth) return;
-    DWORD community;
-    {
-        ConstSmartPtr<AuthPeerData> peer=auth->GetPeerData();
-        community=peer->GetCertificate2()->GetFirstCommunity();
-    }
-    if(!certificate->VerifyPermissions(0,community,0)) {
-        socket->QueueClose(1000);
-        return;
-    }
-    Fn3E13B0(socket);
-}
-// FUNCTION: WON 0x007e1700
-void LanLogic::Fn3E1700(AsyncOp* inOp)
-{
-    if(inOp->GetStatus()!=0 || inOp->mB39) return;
-    LobbyLanSocket* socket=static_cast<LobbyLanSocket*>(static_cast<AcceptOp*>(inOp)->mAcceptedSocket.get());
-    if(mB74) {
-        AuthContext* auth=GetLobbyAuthContext();
-        if(!auth) return;
-        SmartPtr<PeerAuthServerOp> server=new PeerAuthServerOp(auth,socket);
-        RunTrackedOp(server.get(),new LogicCompletion<LanLogic>(&LanLogic::Fn3E1600,this),30000);
-    } else
-        Fn3E13B0(socket);
 }
 }
 
@@ -1230,7 +1154,7 @@ void LanLogic::Fn3E1700(AsyncOp* inOp)
 // TEMPLATE: WON 0x007dfe00
 // (public: virtual __thiscall WONAPI::NetLogic::~NetLogic(void)    [??1NetLogic@WONAPI@@UAE@XZ])
 // TEMPLATE: WON 0x007e0e80
-// (public: __thiscall WONAPI::SendBytesOp::SendBytesOp(class WONAPI::ByteBuffer *,class WONAPI::AsyncSocket *)    [??0SendBytesOp@WONAPI@@QAE@PAVByteBuff)
+// (public: __thiscall WONAPI::SendBytesOp::SendBytesOp(class WONAPI::const ByteBuffer*,class WONAPI::AsyncSocket *)    [??0SendBytesOp@WONAPI@@QAE@PAVByteBuff)
 // TEMPLATE: WON 0x007e0f80
 // (public: virtual __thiscall WONAPI::LobbyLanClient::~LobbyLanClient(void)    [??1LobbyLanClient@WONAPI@@UAE@XZ])
 

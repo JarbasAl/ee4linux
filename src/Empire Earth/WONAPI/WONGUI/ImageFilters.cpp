@@ -11,6 +11,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyConfigImages.h"
+#include "LostDebug.h"
 namespace WONAPI {
 static inline void NewRaw(SmartPtr<RawImage8>& image,int width,int height) { image=new RawImage8(width,height,NULL); }
 static inline void NewRaw(SmartPtr<RawImage32>& image,int width,int height) { image=new RawImage32(width,height); }
@@ -65,29 +66,28 @@ bool ScaleImageFilter::CheckSize(Image* image)
 template<class ImageType,class PixelType>
 static SmartPtr<ImageType> ScalePixels(ImageType* src,int width,int height)
 {
-    SmartPtr<ImageType> dst;
-    NewRaw(dst,width,height);
+    SmartPtr<ImageType> dst=new ImageType(width,height);
     CopyInfo(dst.get(),src);
     int cy=0,oy=0;
     for(int y=0;y<height;++y)
     {
         src->StartRowTraversal(oy);
         dst->StartRowTraversal(y);
-        PixelType value=*src->mRowPtr;
+        PixelType value=src->GetRowPixel();
         int cx=0;
         for(int x=0;x<width;++x)
         {
-            *dst->mRowPtr=value;
-            ++dst->mRowPtr;
-            cx+=src->mWidth;
+            dst->SetRowPixel(value);
+            dst->NextRowPixel();
+            cx+=src->GetWidth();
             if(cx>=width)
             {
-                src->mRowPtr+=cx/width;
+                src->NextRowPixel(cx/width);
                 cx%=width;
-                value=*src->mRowPtr;
+                value=src->GetRowPixel();
             }
         }
-        cy+=src->mHeight;
+        cy+=src->GetHeight();
         if(cy>=height) { oy+=cy/height;cy%=height; }
     }
     return dst;
@@ -115,21 +115,21 @@ static SmartPtr<RawImage1> ScaleBits(RawImage1* src,int width,int height)
     {
         src->StartRowTraversal(oy);
         dst->StartRowTraversal(y);
-        bool value=CurrentBit(src);
+        bool value=src->GetRowPixel();
         int cx=0;
         for(int x=0;x<width;++x)
         {
-            PutBit(dst.get(),value);
-            cx+=src->mWidth;
+            dst->SetRowPixel(value);
+            dst->NextRowPixel();
+            cx+=src->GetWidth();
             if(cx>=width)
             {
-                int count=cx/width;
-                for(int bit=0;bit<count;++bit) NextBit(src);
+                src->NextRowPixel(cx/width);
                 cx%=width;
-                value=CurrentBit(src);
+                value=src->GetRowPixel();
             }
         }
-        cy+=src->mHeight;
+        cy+=src->GetHeight();
         if(cy>=height) { oy+=cy/height;cy%=height; }
     }
     return dst;
@@ -141,7 +141,10 @@ SmartPtr<RawImage> ScaleImageFilter::Filter(RawImage* image)
     if(CheckSize(image)) return image;
     switch(image->mType)
     {
-    case 0:return ScaleBits((RawImage1*)image,mWidth,mHeight).get();
+    case 0:
+        // LOST-DEBUG: none: exact only
+        EE_LOST_DEBUG(6);
+        return ScaleBits((RawImage1*)image,mWidth,mHeight).get();
     case 1:return ScalePixels<RawImage8,unsigned char>((RawImage8*)image,mWidth,mHeight).get();
     case 2:return ScalePixels<RawImage32,DWORD>((RawImage32*)image,mWidth,mHeight).get();
     default:return image;
@@ -171,22 +174,23 @@ SmartPtr<RawImage> TintImageFilter::Filter(RawImage* image)
         for(int i=0;i<palette->mNumColors;++i)
             palette->mColors[i]=TintColor(palette->mColors[i],mRed,mGreen,mBlue);
         raw->mPalette=palette;
+        return image;
     }
     else if(image->mType==2)
     {
         RawImage32* raw=(RawImage32*)image;
         raw->StartRowTraversal(0);
-        while(raw->mRowEnd<=raw->mImageEnd)
+        while(raw->HasMoreRows())
         {
-            while(raw->mRowPtr<raw->mRowEnd)
+            while(raw->HasMoreRowPixels())
             {
-                DWORD color=*raw->mRowPtr;
-                *raw->mRowPtr=(color&0xff000000)|TintColor(color,mRed,mGreen,mBlue);
-                ++raw->mRowPtr;
+                DWORD color=raw->GetRowPixel();
+                raw->SetRowPixel((color&0xff000000)|TintColor(color,mRed,mGreen,mBlue));
+                raw->NextRowPixel();
             }
-            raw->mRowPtr=raw->mRowEnd;
-            raw->mRowEnd+=raw->mWidth;
+            raw->NextRow();
         }
+        return image;
     }
     return image;
 }
@@ -221,23 +225,25 @@ SmartPtr<RawImage> TransparentImageFilter::Filter(RawImage* image)
         Palette* palette=raw->mPalette.get();
         for(int i=0;i<palette->mNumColors;++i)
             if(palette->mColors[i]==color) { raw->mTransparentColor=i;break; }
+        return image;
     }
     else if(image->mType==2)
     {
         RawImage32* raw=(RawImage32*)image;
         raw->mDoTransparency=true;
         raw->StartRowTraversal(0);
-        while(raw->mRowEnd<=raw->mImageEnd)
+        while(raw->HasMoreRows())
         {
-            while(raw->mRowPtr<raw->mRowEnd)
+            while(raw->HasMoreRowPixels())
             {
-                if(*raw->mRowPtr==color) *raw->mRowPtr=0;
-                else *raw->mRowPtr|=0xff000000;
-                ++raw->mRowPtr;
+                DWORD aColor=raw->GetRowPixel();
+                if(aColor==color) raw->SetRowPixel(0);
+                else raw->SetRowPixel(aColor|0xff000000);
+                raw->NextRowPixel();
             }
-            raw->mRowPtr=raw->mRowEnd;
-            raw->mRowEnd+=raw->mWidth;
+            raw->NextRow();
         }
+        return image;
     }
     return image;
 }

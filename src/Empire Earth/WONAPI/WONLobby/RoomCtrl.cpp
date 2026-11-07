@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONLobbyModel.h"
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyRoomServer.h"
+#include "LostDebug.h"
 using namespace WONAPI;
 // Scratch RoomCtrl's private global list-item family. External base construction/lifetime actual.
 // FUNCTION: WON 0x007c19a0
@@ -44,16 +45,16 @@ void RoomListItem::Fn3C1D40(WONAPI::LobbyServer* inServer,WONAPI::LobbyGroup* in
         sprintf(aCount," (%d)",inGroup->mNumClients);
         mText=inGroup->mName;
         if(static_cast<int>(inGroup->mNumClients)>0)
-            mText.append(WONAPI::GUIString(new WONAPI::GUIStringData(aCount)));
+            mText.append(aCount);
     }
     else if(inServer!=NULL)
     {
         sprintf(aCount," (%d)",inServer->Fn3AA410());
         mText=inServer->mName;
         if(inServer->Fn3AA410()!=0)
-            mText.append(WONAPI::GUIString(new WONAPI::GUIStringData(aCount)));
+            mText.append(aCount);
     }
-    else mText=WONAPI::GetEmptyGUIStringData();
+    else mText.erase();
     if(inGroup!=NULL && inGroup->Fn3A9020()) mImage=::RoomCtrl_Password_Image;
     else mImage=NULL;
 }
@@ -72,7 +73,7 @@ void RoomListItem::Virtual08(WONAPI::ListArea* inList)
     if(mImage.get()!=NULL)
     {
         mL10+=mImage->mWidth+2;
-        if(mImage->mHeight>mHeight) mHeight=mImage->mHeight;
+        if(mImage->GetHeight()>mHeight) mHeight=mImage->GetHeight();
     }
 }
 // Requires GUI-owned typed SelectionColor atListArea140/listFlags124.
@@ -223,14 +224,12 @@ void RoomCtrl::HandleSetRoomList()
         if(aItem!=NULL)
         {
             mRoomList->Fn315220(aItem,false);
-            if(aGroup!=NULL)
+            if(aGroup==NULL || (aItem=GetGroupItem(aServer,aGroup))!=NULL)
             {
-                aItem=GetGroupItem(aServer,aGroup);
-                if(aItem==NULL) { EnableControls(); return; }
-            }
             ListArea* aList=mRoomList.get();
             aList->SetSelItem(aList->GetItemPos(aItem),true);
             mRoomList->EnsureVisible(aItem);
+            }
         }
     }
     EnableControls();
@@ -268,6 +267,8 @@ void RoomCtrl::HandleGroupChanged(GroupChangedEvent* inEvent)
 // FUNCTION: WON 0x007c2f00
 void RoomCtrl::HandleItemOpened(TreeItemOpenedEvent* inEvent)
 {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     TreeItem* aTree=inEvent->mItem.get();
     if(aTree->mOpen)
     {

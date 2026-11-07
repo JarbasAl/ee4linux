@@ -12,39 +12,35 @@
 using namespace WONAPI;
 // FUNCTION: WON 0x007cfe50
 SmartPtr<RawImage32> MSNativeImage::GetRaw() {
-    SmartPtr<RawImage32> image=new RawImage32(mWidth,mHeight);
+    SmartPtr<RawImage32> image=new RawImage32(GetWidth(),GetHeight());
     SelectBitmap(false);
-    char infoBuffer[sizeof(BITMAPINFO)+12];
+    char infoBuffer[sizeof(BITMAPINFOHEADER)+12];
     BITMAPINFO& info=*(BITMAPINFO*)infoBuffer;
     BITMAPINFOHEADER& header=info.bmiHeader;
     header.biSize=sizeof(BITMAPINFOHEADER);
-    header.biWidth=mWidth;
-    header.biHeight=-mHeight;
+    header.biWidth=GetWidth();
+    header.biHeight=-GetHeight();
     header.biPlanes=1;
     header.biBitCount=32;
     header.biCompression=BI_RGB;
-    GetDIBits(mDC,mBitmap,0,mHeight,image->mImageData,&info,DIB_RGB_COLORS);
+    GetDIBits(mDC,mBitmap,0,GetHeight(),image->GetImageData(),&info,DIB_RGB_COLORS);
     if(mTransparentMask.get()!=NULL) {
         image->mDoTransparency=true;
-        SmartPtr<RawImage1> mask=new RawImage1(mWidth,mHeight);
+        SmartPtr<RawImage1> mask=new RawImage1(GetWidth(),GetHeight());
         header.biBitCount=1;
-        GetDIBits(mDC,((MSNativeMask*)mTransparentMask.get())->mMask,0,mHeight,
-            mask->mImageData,&info,DIB_RGB_COLORS);
+        GetDIBits(mDC,((MSNativeMask*)mTransparentMask.get())->GetMask(),0,GetHeight(),
+            mask->GetImageData(),&info,DIB_RGB_COLORS);
         mask->StartRowTraversal(0);
         image->StartRowTraversal(0);
         for(int row=0;row<mHeight;++row) {
-            while(image->mRowPtr<image->mRowEnd) {
-                bool transparent=(*mask->mRowPtr&mask->mRowMask)!=0;
-                if(!transparent) *image->mRowPtr|=0xff000000;
-                ++image->mRowPtr;
-                mask->mRowMask>>=1;
-                if(mask->mRowMask==0) { ++mask->mRowPtr; mask->mRowMask=128; }
+            while(image->HasMoreRowPixels()) {
+                bool transparent=mask->GetRowPixel();
+                if(!transparent) image->SetRowPixel(image->GetRowPixel()|0xff000000);
+                image->NextRowPixel();
+                mask->NextRowPixel();
             }
-            image->mRowPtr=image->mRowEnd;
-            image->mRowEnd+=image->mWidth;
-            mask->mRowPtr=mask->mRowEnd+mask->mRowPad;
-            mask->mRowEnd+=mask->mBytesPerRow;
-            mask->mRowMask=128;
+            image->NextRow();
+            mask->NextRow();
         }
     }
     SelectBitmap(true);
@@ -175,7 +171,7 @@ SmartPtr<NativeIcon> MSNativeImage::GetIcon()
 	anInfo.yHotspot = 0; 
 	anInfo.hbmMask = NULL;
 	if(mTransparentMask.get()!=NULL)
-		anInfo.hbmMask = ((MSNativeMask*)mTransparentMask.get())->mMask;
+		anInfo.hbmMask = ((MSNativeMask*)mTransparentMask.get())->GetMask();
    
 	anInfo.hbmColor = mBitmap; 
 
@@ -191,7 +187,7 @@ SmartPtr<Cursor> MSNativeImage::GetCursor(int hotX,int hotY) {
     info.yHotspot=0;
     info.hbmMask=NULL;
     if(mTransparentMask.get()!=NULL)
-        info.hbmMask=((MSNativeMask*)mTransparentMask.get())->mMask;
+        info.hbmMask=((MSNativeMask*)mTransparentMask.get())->GetMask();
     info.hbmColor=mBitmap;
     return new MSCursor((HCURSOR)CreateIconIndirect(&info),true);
 }

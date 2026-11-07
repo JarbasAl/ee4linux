@@ -17,8 +17,8 @@ public:
     const void* GetKey() const { return mRawKey.data(); } //actual SDK accessor, support0
     int GetKeyLen() const { return mRawKey.length(); } //actual SDK accessor, support0
     bool SetKey(const void* inKey, int inKeyLength); //3d5e90;5..56
-    SmartPtr<ByteBuffer> Encrypt(const void* inData, int inLength) const; //3d6dd0
-    SmartPtr<ByteBuffer> Decrypt(const void* inData, int inLength) const; //3d7150
+    ConstSmartPtr<ByteBuffer> Encrypt(const void* inData, int inLength) const; //3d6dd0
+    ConstSmartPtr<ByteBuffer> Decrypt(const void* inData, int inLength) const; //3d7150
     // Destructor implicit; two actual RawBuffer members own their respective COW allocations.
 private:
     static const int Pinit[18];

@@ -33,9 +33,7 @@ void LostUserNameCtrl::InitComponent(ComponentInit& inInit)
 // FUNCTION: WON 0x007c0890
 void LostUserNameCtrl::UpdateRetrieveButton()
 {
-    const std::string& email=mEmailInput->GetText(); //single lifetime-extended conversion temporary
-    Button* button=mRetrieveButton.get();
-    button->SetEnabled(LobbyFn3BA6A0(email));
+    mRetrieveButton->SetEnabled(LobbyFn3BA6A0(mEmailInput->GetText()));
 }
 //3c0930..3c0a83,339B. Five event-construction cleanup states; null new skips GetText.
 // FUNCTION: WON 0x007c0930

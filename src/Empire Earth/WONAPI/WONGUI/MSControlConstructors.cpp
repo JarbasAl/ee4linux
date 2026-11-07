@@ -11,7 +11,24 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyRoomServer.h"
+#include "ee/wonapi/WONLobbySkinnedContainers.h"
 namespace WONAPI {
+// FUNCTION: WON 0x006f5560
+void Component::SetComponentFlags(int flags,bool on)
+{
+    if(on) mComponentBits|=flags;
+    else mComponentBits&=~flags;
+}
+// FUNCTION: WON 0x006f7910
+Dialog::Dialog()
+{
+    mDragX=mDragY=0;
+    SetComponentFlags(0x118,true);
+    mAllowDrag=true;
+    mKeepInRoot=true;
+    mEndOnEscape=false;
+    mEscapeId=-1;
+}
 // SUPPORT: EXE 0x006ff0c0; native86B, true Direction retained after real Button base.
 MSArrowButton::MSArrowButton(Direction direction)
 {
@@ -284,3 +301,5 @@ MSEtchedFrame::MSEtchedFrame() { SetComponentFlags(0x800,true); }
 // (public: virtual __thiscall WONAPI::MSListCtrl::~MSListCtrl(void))
 // TEMPLATE: WON 0x00700d60
 // (public: virtual __thiscall WONAPI::MSHeaderControl::~MSHeaderControl(void))
+// TEMPLATE: WON 0x006f7970
+// (public: virtual void * __thiscall WONAPI::Dialog::`scalar deleting destructor'(unsigned int)    [??_GDialog@WONAPI@@UAEPAXI@Z])

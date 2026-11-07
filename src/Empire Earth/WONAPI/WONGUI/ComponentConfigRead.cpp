@@ -160,37 +160,36 @@ VertAlign ComponentConfig::ReadVertAlign()
     throw ConfigObjectException("Bad VertAlign");
 }
 
+inline int safe_isspace(unsigned long ch) { return ch<256?isspace(ch):0; }
+inline int safe_isalnum(unsigned long ch) { return ch<256?isalnum(ch):0; }
 // FUNCTION: WON 0x00782f40
 int ComponentConfig::GetIntValue()
 {
-    {
-        int value;
-        if(mStringParser->ReadValue(value)) return value;
-    }
+    int result;
+    if(mStringParser->ReadValue(result)) return result;
     std::string name;
     while(!mStringParser->EndOfString())
     {
         char next=mStringParser->GetChar(0);
-        unsigned int c=next;
-        if(c<256 && isspace(c)) break;
-        if(next!='@' && next!='_' && next!='.' && !(c<256 && isalnum(c))) break;
+        if(safe_isspace(next)) break;
+        if(next!='@' && next!='_' && next!='.' && !safe_isalnum(next)) break;
         name+=next;
         mStringParser->IncrementPos(1);
     }
     bool isFunction=mStringParser->GetChar(0)=='(';
+    ComponentConfig* config=this;
     if(name[0]=='@')
     {
-        // Native compares the letters directly before its redundant toupper(bool).
-        if(name.length()>3 && name[1]=='I' && name[2]=='D' && name[3]=='_')
+        if(name.length()>3 && toupper(name[1]=='I') && toupper(name[2]=='D') && name[3]=='_')
         {
+            std::string idName=name.substr(4);
             int controlId;
-            if(!mResourceConfigTable->GetControlId(name.substr(4),controlId))
+            if(!mResourceConfigTable->GetControlId(idName,controlId))
                 throw ConfigObjectException("Invalid control id: "+name);
             return controlId;
         }
         return GetIntResource(std::string(name.c_str()+1));
     }
-    ComponentConfig* config=this;
     std::string key;
     std::string::size_type dot=name.rfind('.');
     if(dot!=std::string::npos)
@@ -201,7 +200,6 @@ int ComponentConfig::GetIntValue()
     }
     else key=name;
     StringToUpperCaseInPlace(key);
-    int result;
     if(isFunction)
     {
         std::vector<int> params;

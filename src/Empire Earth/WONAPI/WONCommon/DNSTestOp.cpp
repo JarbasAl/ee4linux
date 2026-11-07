@@ -31,7 +31,6 @@ void DNSTestOp::Virtual04()
     DNSTestThread* thread=new DNSTestThread(this);
     thread->SetAutoDelete(true);
     thread->Start();
-    AsyncOp::Virtual04();
 }
 // FUNCTION: WON 0x006d9920
 void DNSTestThread::ThreadFunc()

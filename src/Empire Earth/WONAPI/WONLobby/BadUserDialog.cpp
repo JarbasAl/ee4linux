@@ -11,6 +11,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
+#include "LostDebug.h"
 using namespace WONAPI;
 // Actual global RTTI BadUserItem, complete50 own tail; constructor remains original external3f5290.
 class BadUserItem : public ListItem {
@@ -28,13 +29,14 @@ public:
 BadUserItem::BadUserItem(const RoutingBadUser& inUser, bool inSimple)
 {
     mIsSimple = inSimple;
-    mStrings[0] = GUIString(inUser.mName);
+    mStrings[0] = GUIString(new GUIStringData(inUser.mName));
     char aBuffer[100];
     sprintf(aBuffer, "%d", inUser.mWONId);
-    mStrings[1] = GUIString(aBuffer);
+    mStrings[1] = aBuffer;
     mValues[1] = inUser.mWONId;
 
     unsigned long aDuration = inUser.mExpirationDiff;
+    GUIString aText;
     GUIString aUnit;
     if (aDuration > 86400) {
         aDuration /= 86400;
@@ -52,12 +54,12 @@ BadUserItem::BadUserItem(const RoutingBadUser& inUser, bool inSimple)
     }
     sprintf(aBuffer, "%d", aDuration);
     mValues[2] = inUser.mExpirationDiff;
-    mStrings[2] = LobbyFormatString(aUnit, GUIString(new GUIStringData(aBuffer)));
-    mStrings[3] = GUIString(new GUIStringData(inUser.mModeratorName));
+    mStrings[2] = LobbyFormatString(aUnit, GUIString(aBuffer));
+    mStrings[3] = GUIString(inUser.mModeratorName);
     sprintf(aBuffer, "%d", inUser.mModeratorWONId);
-    mStrings[4] = GUIString(new GUIStringData(aBuffer));
+    mStrings[4] = GUIString(aBuffer);
     mValues[4] = inUser.mModeratorWONId;
-    mStrings[5] = GUIString(new GUIStringData(inUser.mModeratorComment));
+    mStrings[5] = GUIString(inUser.mModeratorComment);
 }
 
 // FUNCTION: WON 0x7f5790
@@ -71,10 +73,11 @@ void BadUserItem::Virtual04(Graphics& inGraphics,ListArea* inList)
 {
     DWORD aColor=inList->GetTextColor();
     if(mB08) aColor=inList->GetSelColor().GetForegroundColor(inGraphics,aColor);
-    bool aSelected=mB08;
     int aColumn=0;
-    if(!mIsSimple) aColumn=static_cast<MultiListArea*>(inList)->GetColumnPaintContext();
-    if((mIsSimple || aColumn==-1) && aSelected) {
+    bool aSelected=mB08;
+    bool aSimple=mIsSimple;
+    if(!aSimple) aColumn=static_cast<MultiListArea*>(inList)->GetColumnPaintContext();
+    if((aSimple || aColumn==-1) && aSelected) {
         inGraphics.SetColor(inList->GetSelColor().GetBackgroundColor(inGraphics));
         int aWidth=inList->mL12C;
         int aHeight=mFont->GetHeight();

@@ -51,6 +51,8 @@ SmartPtr<Font> ComponentConfig::ReadFont()
                 if(fontConfig!=NULL) break;
                 current=(ComponentConfig*)current->mL38;
             }
+            if(fontConfig==NULL)
+                throw ConfigObjectException("Invalid FontConfig: "+name);
             if(fontConfig->GetFont()==NULL)
                 throw ConfigObjectException("NULL Font: "+name);
             if(!mStringParser->CheckNextChar(')'))
@@ -64,9 +66,8 @@ SmartPtr<Font> ComponentConfig::ReadFont()
 // FUNCTION: WON 0x00784890
 SmartPtr<Image> ComponentConfig::GetImageFromStr(const std::string& spec,bool getRaw)
 {
-    SmartPtr<Image> image;
     if(spec[0]=='@') {
-        std::string::size_type split=spec.find_first_of('_');
+        std::string::size_type split=spec.find('_');
         if(split!=std::string::npos) {
             std::string type=spec.substr(1,split-1);
             if(_stricmp(type.c_str(),"CFG")==0) {
@@ -80,20 +81,23 @@ SmartPtr<Image> ComponentConfig::GetImageFromStr(const std::string& spec,bool ge
                 }
                 if(config==NULL)
                     throw ConfigObjectException("Invalid ImageConfig: "+spec);
-                if(getRaw) image=config->GetRawImage();
-                else image=config->GetImage();
+                else {
+                SmartPtr<Image> image;
+                image=getRaw?(Image*)config->GetRawImage():config->GetImage();
                 if(image.get()==NULL)
                     throw ConfigObjectException("Image Doesn't Exist: "+spec);
                 return image;
+                }
             }
         } else if(_stricmp(spec.c_str(),"@NULL")==0) return NULL;
         else return GetImageResource(spec.c_str()+1);
         throw ConfigObjectException("Bad Image Specification: "+spec);
     }
+    SmartPtr<Image> image;
     if(getRaw)
         image=Window::GetDefaultWindow()->DecodeImageRaw(GetResourceFile(spec).c_str()).get();
-    else image=WONAPI::WindowManager::GetDefaultWindowManager()->DecodeDelayImage(GetResourceFile(spec).c_str()).get();
-    if(image.get()==NULL)
+    else image=WONAPI::WindowManager::GetDefaultWindowManager()->DecodeDelayImage(GetResourceFile(spec).c_str());
+    if(image.mPtr==NULL)
         throw ConfigObjectException("Failed to decode image: "+spec);
     return image;
 }

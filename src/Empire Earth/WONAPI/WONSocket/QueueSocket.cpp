@@ -72,7 +72,7 @@ void QueueSocket::Fn2B3D50(long inTimeout)
 // FUNCTION: WON 0x006b3ed0
 void QueueSocket::Fn2B3ED0()
 {
-    if (mCloseTimer.get() != NULL) {
+    if (mCloseTimer.mPtr != NULL) {
         AsyncOpPtr aTimer = mCloseTimer;
         mCloseTimer = NULL;
         aTimer->Kill(true);
@@ -249,14 +249,12 @@ void QueueSocket::Virtual08()
         mQueueOp = NULL;
         mCurQueueCompletion = NULL;
     }
-    std::list<SmartPtr<SocketOp> >::iterator anItr;
-    anItr=mOpQueue.begin();
-    while(true) {
-        if(!(anItr != mOpQueue.end())) break;
+    std::list<SmartPtr<SocketOp> >::iterator anItr=mOpQueue.begin();
+    while(anItr != mOpQueue.end()) {
         (*anItr)->Kill(true);
         ++anItr;
     }
-    if (mCloseTimer.get() != NULL) {
+    if (mCloseTimer.mPtr != NULL) {
         mCloseTimer->Kill(true);
         mCloseTimer = NULL;
     }

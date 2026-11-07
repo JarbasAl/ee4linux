@@ -24,7 +24,7 @@ void TextArea::AddSegment(const GUIString& text,bool lineBreak)
 void TextArea::AddSegment(const GUIString& text,int color,bool lineBreak)
 {
     SmartPtr<TextSegment> seg=new TextSegment;
-    seg->mText=text;
+    seg->mText.mData=text.mData;
     seg->mColor=color;
     seg->mFont=mFont;
     seg->mLineBreak=lineBreak;
@@ -34,7 +34,7 @@ void TextArea::AddSegment(const GUIString& text,int color,bool lineBreak)
 void TextArea::AddSegment(const GUIString& text,int color,Font* font,bool lineBreak)
 {
     SmartPtr<TextSegment> seg=new TextSegment;
-    seg->mText=text;
+    seg->mText.mData=text.mData;
     seg->mColor=color;
     seg->mFont=font;
     seg->mLineBreak=lineBreak;

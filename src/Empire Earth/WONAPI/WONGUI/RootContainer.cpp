@@ -9,6 +9,7 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "LostDebug.h"
 using namespace WONAPI;
 
 // FUNCTION: WON 0x007040d0
@@ -265,9 +266,11 @@ void RootContainer::Virtual78(Cursor *theCursor)
 
 			aComponent->SetComponentFlags(0x100 | 0x800 | 0x1000, true);
 			aComponent->SetVisible(true);
+			// LOST-DEBUG: none: exact only
+			EE_LOST_DEBUG(4);
 			
-			int x = mWindow->mMouseX-mx; 
-			int y = mWindow->mMouseY-my; 
+			int x = mWindow->mMouseX-mx;
+			int y = mWindow->mMouseY-my;
 			aComponent->Fn2F4B70(x,y);
 
 			Fn2F6A60(aComponent);

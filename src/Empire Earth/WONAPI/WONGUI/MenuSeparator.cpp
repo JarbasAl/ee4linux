@@ -38,14 +38,6 @@ void ComponentListItem::Virtual04(Graphics& g,ListArea* area)
     }
 }
 
-// FUNCTION: WON 0x006fd8b0
-void PopupMenu::AddSeperator()
-{
-    InsertItem(new ComponentListItem(new MSSeperator(6),true,false));
-    SetSizeEqualToTotal(100,-1);
-}
 }
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x006fda80
-// (protected: virtual void * __thiscall WONAPI::ComponentListItem::`scalar deleting destructor'(unsigned int)    [??_GComponentListItem@WONAPI@@MAEPAXI@Z)

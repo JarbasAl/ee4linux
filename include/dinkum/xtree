@@ -36,7 +36,11 @@ _STD_BEGIN
 template<class _Pr>
 	class _Tree_pred {
 protected:
+#ifdef EE_DINKUM_SXL233
+	_Tree_pred(_Pr _Parg)
+#else
 	_Tree_pred(const _Pr& _Parg)
+#endif
 		: key_compare(_Parg) {}
 	_Pr key_compare;
 	};
@@ -344,7 +348,7 @@ public:
 			std::swap(_Color(_Y), _Color(_Z)); }
 		if (_Color(_Z) == _Black)
 			{for (; _X != _Root() && _Color(_X) == _Black;
-				_X = _Xpar, _Xpar = _Parent(_X))
+				_Xpar = _Parent(_X))
 				if (_X == _Left(_Xpar))
 					{_Nodeptr _W = _Right(_Xpar);
 					if (_Color(_W) == _Red)

@@ -13,6 +13,10 @@ public:
     virtual void InitComponent(ComponentInit&);
     virtual void HandleComponentEvent(ComponentEvent*);
     void CalcLabel();
+    void SetPrefix(const GUIString& inPrefix) { mPrefix=inPrefix; }
+    void SetRoomSpecFlags(int inFlags) { mRoomSpecFlags=inFlags; }
+    void SetShowUserCount(bool inShow) { if(!inShow) mUserCt=-1; else if(mUserCt<0) mUserCt=0; }
+    void SetShowServer(bool inShow) { mShowServer=inShow; }
     int mRoomSpecFlags; //84
     SmartPtr<Label> mLabel; //88
     GUIString mPrefix; //8c
@@ -194,6 +198,7 @@ public:
     static void InitColumnMap(); //3c6050
     static void AddDefaultFilters(const GUIString&,const GUIString&,bool); //3c6340 sequence wrapper24, zeroquota
     ColumnInfoVector mColumnInfo; //84..93
+    void SetGameType(int inType) { mGameType=inType; }
     int mGameType; //94
     bool mNeedFilter; //98
     int mFilterTimeAccum; //9c

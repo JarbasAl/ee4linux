@@ -12,6 +12,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 #include "ee/wonapi/WONLobbyConfigImages.h"
+#include "LostDebug.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x0078b370
@@ -87,6 +88,8 @@ SmartPtr<RawImage> ImageFilterConfig::HandleFilter()
         filter=new TransparentImageFilter(Fn385510());
     if(filter.get()!=NULL) return filter->Filter(mRawImage.get());
     return SmartPtr<RawImage>();
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(2);
 }
 
 // FUNCTION: WON 0x0078c6e0

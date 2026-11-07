@@ -9,6 +9,11 @@ typedef void (*BrowseCallback)(const std::string&,void*);
 BrowseCallback gPreBrowseCallback = NULL;
 void* gPreBrowseData = NULL;
 bool GetBrowserCommandLineFromRegistry(std::string& browser);
+void SetPreBrowseCallback(BrowseCallback pCallback, void* pData)
+{
+    gPreBrowseCallback = pCallback;
+    gPreBrowseData = pData;
+}
 // FUNCTION: WON 0x006a30e0
 bool Browse(const std::string& url)
 {
@@ -68,10 +73,9 @@ bool GetBrowserCommandLineFromRegistry(std::string& browser)
         std::string::size_type last=browser.length();
         while(last>0) {
             last--;
-            if(browser[last]==' ' || browser[last]=='\t' || browser[last]=='\n')
-                browser.erase(last);
-            else
+            if(browser[last]!=' ' && browser[last]!='\t' && browser[last]!='\n')
                 break;
+            browser.erase(last);
             last=browser.length();
         }
     }
@@ -81,12 +85,6 @@ bool GetBrowserCommandLineFromRegistry(std::string& browser)
 
 // Genuine same-library SDK implementations. Native entries remain unidentified.
 namespace WONAPI {
-void SetPreBrowseCallback(BrowseCallback pCallback, void* pData)
-{
-    gPreBrowseCallback = pCallback;
-    gPreBrowseData = pData;
-}
-
 DWORD LaunchSierraUp(const char* thePath)
 {
     char sPath[MAX_PATH];

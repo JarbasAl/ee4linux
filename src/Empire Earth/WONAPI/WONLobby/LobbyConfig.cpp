@@ -56,14 +56,17 @@ LobbyConfig::LobbyConfig()
     KeyAdd("AllowJoinGameWithoutPing", mAllowJoinGameWithoutPing, true);
 
     bool useLocalIP = false;
-    RegKey registry(2, "SOFTWARE\\Sierra\\WONLobby", false, true);
+    const char* regKey = "SOFTWARE\\Sierra\\WONLobby";
+    const char* valueName = "UseLocalIP";
+    int hive = 2;
+    RegKey registry(hive, regKey, false, true);
     DWORD value = 0;
-    if (registry.QueryDWORD("UseLocalIP", value) == 0)
+    if (registry.QueryDWORD(valueName, value) == 0)
         useLocalIP = value != 0;
     mUseLocalIP = useLocalIP;
     // Original target56634d lies in an existing configuration data field.
     // The canonical external bool is distinct from the member registry default.
-    KeyAdd("UseLocalIP", gLobbyUseLocalIP56634D, useLocalIP);
+    KeyAdd(valueName, gLobbyUseLocalIP56634D, useLocalIP);
 }
 
 // Destructor is implicit, shared original294e04; scalar-delete358570 is generated.

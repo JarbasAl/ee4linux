@@ -104,7 +104,7 @@ int ResourceConfig::SafeReadFontStyle(StringParser& inParser)
 {
     int style=0;
     std::string name;
-    for(;;)
+    while(true)
     {
         inParser.ReadString(name,true);
         if(name.empty()) break;

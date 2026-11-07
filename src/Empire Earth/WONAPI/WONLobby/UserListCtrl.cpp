@@ -69,7 +69,7 @@ Image* GetLobbyClientIcon(LobbyClient* inClient,bool inMode)
     if(inClient->Fn3A54B0()) return ::UserListCtrl_Away_Image.get();
     if(inClient->Fn3A54C0()) return ::UserListCtrl_Admin_Image.get();
     if(inClient->Fn3A54D0()) return ::UserListCtrl_Moderator_Image.get();
-    return inClient->Fn3A5470()?::UserListCtrl_Captain_Image.get() : ::UserListCtrl_Normal_Image.get();
+    return inClient->Fn3A54E0(inMode)?::UserListCtrl_Captain_Image.get() : ::UserListCtrl_Normal_Image.get();
 }
 // Original3caa70..3cac49,473B. Raw incomingclient is not additionally pinned.
 // FUNCTION: WON 0x007caa70
@@ -229,6 +229,20 @@ void UserListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
     case 100006: ClientChanged(static_cast<ClientChangedEvent*>(inEvent)); return;
     case 100030: JoinedRoom(static_cast<JoinedRoomEvent*>(inEvent)); return;
     case 100033: LeftRoom(static_cast<LeftRoomEvent*>(inEvent)); return;
+    case 15: {
+        Component* anIgnore=mIgnoreButton.get();
+        Component* component=inEvent->mComponent;
+        if(component==anIgnore) {
+            LobbyClient* client=GetSelectedClient();
+            if(client!=NULL)
+                Fn2F53F0(new ClientActionEvent(client->GetB22()?12:5,GetRoomSpecFlags(),client),false);
+        } else if(component==mWhisperButton.get()) {
+            LobbyClient* client=GetSelectedClient();
+            if(client!=NULL)
+                LobbyFn359100(new SetChatInputEvent(2,client->GetName(),mModeFlags,false),true);
+        }
+        return;
+    }
     case 22: UpdateButtons(); return;
     case 23: {
         LobbyClient* client=GetSelectedClient();
@@ -236,23 +250,10 @@ void UserListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
         ListItemClickedEvent* clicked=static_cast<ListItemClickedEvent*>(inEvent);
         ListItem* item=clicked->mItem.get();
         if(GetSelectedItem()!=item) return;
-        if(clicked->mButton==2)
-            Fn2F53F0(new ClientActionEvent(18,int(mModeFlags),client),false);
-        else if(clicked->mButton==0 && clicked->mDoubleClick)
-            LobbyFn359100(new SetChatInputEvent(2,client->mName,mModeFlags,false),true);
-        return;
-    }
-    case 15: {
-        Component* component=inEvent->mComponent;
-        if(component==mIgnoreButton.get()) {
-            LobbyClient* client=GetSelectedClient();
-            if(client!=NULL)
-                Fn2F53F0(new ClientActionEvent(client->mB22?12:5,int(mModeFlags),client),false);
-        } else if(component==mWhisperButton.get()) {
-            LobbyClient* client=GetSelectedClient();
-            if(client!=NULL)
-                LobbyFn359100(new SetChatInputEvent(2,client->mName,mModeFlags,false),true);
-        }
+        if(clicked->GetButton()==2)
+            Fn2F53F0(new ClientActionEvent(18,GetRoomSpecFlags(),client),false);
+        else if(clicked->GetButton()==0 && clicked->IsDoubleClick())
+            LobbyFn359100(new SetChatInputEvent(2,client->GetName(),mModeFlags,false),true);
         return;
     }
     default: Component::HandleComponentEvent(inEvent); return;

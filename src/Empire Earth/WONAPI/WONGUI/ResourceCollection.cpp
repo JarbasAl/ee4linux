@@ -374,7 +374,7 @@ RefCount* ResourceCollection::DecodeResource(const ResourceEntry *theEntry, Reso
 				aBuf.Reserve(anEntry->mFileSize);
 				aFileReader->ReadBytes(aBuf.data(),aBuf.capacity());
 				aBuf.Fn2A8260(aBuf.capacity()); // current exact SkipBytes API spelling
-				SmartPtr<ByteBuffer> aByteBuffer = aBuf.ToByteBuffer(true); // explicit genuine SDK release default
+				ConstSmartPtr<ByteBuffer> aByteBuffer = aBuf.ToByteBuffer(true); // explicit genuine SDK release default
 				anEntry->mData = (ByteBuffer*)aByteBuffer.get();
 			}
 			catch(FileReaderException&)

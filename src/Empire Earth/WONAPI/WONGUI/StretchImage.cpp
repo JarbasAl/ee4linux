@@ -11,6 +11,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyStretchImage.h"
+#include "LostDebug.h"
 
 
 using namespace WONAPI;
@@ -18,7 +19,7 @@ using namespace WONAPI;
 
 static void ImageFilter_NewRawImage(SmartPtr<RawImage8>& image,int w,int h) { image=new RawImage8(w,h,NULL); }
 static void ImageFilter_NewRawImage(SmartPtr<RawImage32>& image,int w,int h) { image=new RawImage32(w,h); }
-inline void CopyRawImageInfo(RawImage8* dst,RawImage8* src) { dst->mPalette=src->mPalette; dst->mTransparentColor=src->mTransparentColor; }
+inline void CopyRawImageInfo(RawImage8* dst,RawImage8* src) { dst->mPalette=src->mPalette.get(); dst->mTransparentColor=src->mTransparentColor; }
 inline void CopyRawImageInfo(RawImage32* dst,RawImage32* src) { dst->mDoTransparency=src->mDoTransparency; }
 
 
@@ -144,15 +145,21 @@ static void RawStretch(ImageType *src, ImageType *dst, int x1, int x2, int y1, i
 template <class ImageType, class PixelType> 
 static SmartPtr<ImageType> DoFilter(ImageType *theImage, StretchImageFilter *theFilter)
 {
-	int mWidth = theFilter->mWidth, mHeight = theFilter->mHeight;
-	int mLeftWidth = theFilter->mLeftWidth, mRightWidth = theFilter->mRightWidth, mTopHeight = theFilter->mTopHeight, mBottomHeight = theFilter->mBottomHeight;
+    // LOST-DEBUG: none: exact only (RawImage32 instance)
+    EE_LOST_DEBUG(3);
+	int mWidth = theFilter->mWidth;
+	int mHeight = theFilter->mHeight;
+	int mLeftWidth = theFilter->mLeftWidth;
+	int mRightWidth = theFilter->mRightWidth;
+	int mTopHeight = theFilter->mTopHeight;
+	int mBottomHeight = theFilter->mBottomHeight;
 	bool mTileHorz = theFilter->mTileHorz, mTileVert = theFilter->mTileVert; 
 
-	if(mTopHeight + mBottomHeight > mHeight)
-		mHeight = mTopHeight + mBottomHeight;
+	if(mBottomHeight + mTopHeight > mHeight)
+		mHeight = mBottomHeight + mTopHeight;
 
-	if(mLeftWidth + mRightWidth > mWidth)
-		mWidth = mLeftWidth + mRightWidth;
+	if(mRightWidth + mLeftWidth > mWidth)
+		mWidth = mRightWidth + mLeftWidth;
 
 	ImageType *src = theImage;
 	SmartPtr<ImageType> newImage = new ImageType(mWidth,mHeight);
@@ -166,20 +173,19 @@ static SmartPtr<ImageType> DoFilter(ImageType *theImage, StretchImageFilter *the
 	// Simplification: Assume left and top are 0, and width and height are mWidth and mHeight
 	int imageLeft = 0;
 	int imageTop = 0;
-	unsigned short sw=src->mWidth, sh=src->mHeight;
-	int imageRight = sw-mRightWidth;
-	int imageBottom = sh-mBottomHeight;
+	int imageRight = src->GetWidth()-mRightWidth;
+	int imageBottom = src->GetHeight()-mBottomHeight;
 	
 	left = x;
 	top = y;
 	int right = x + mWidth - mRightWidth;
 	int bottom = y + mHeight - mBottomHeight;
 
-	int centerWidth = mWidth - mLeftWidth - mRightWidth;
-	int centerHeight = mHeight - mTopHeight - mBottomHeight;
+	int centerWidth = mWidth - mRightWidth - mLeftWidth;
+	int centerHeight = mHeight - mBottomHeight - mTopHeight;
 
-	int imageCenterWidth = sw - mLeftWidth - mRightWidth;
-	int imageCenterHeight = sh - mTopHeight - mBottomHeight;
+	int imageCenterWidth = src->GetWidth() - mRightWidth - mLeftWidth;
+	int imageCenterHeight = src->GetHeight() - mBottomHeight - mTopHeight;
 
 	int minCenterWidth = centerWidth<imageCenterWidth?centerWidth:imageCenterWidth; 
 	int minCenterHeight = centerHeight<imageCenterHeight?centerHeight:imageCenterHeight; 
@@ -327,7 +333,7 @@ void StretchImage::CalcImage(DisplayContext *context)
 {
 	SmartPtr<StretchImageFilter> aFilter = new StretchImageFilter;
 	aFilter->SetBorders(mLeftWidth,mTopHeight,mRightWidth,mBottomHeight);
-	aFilter->SetSize(mWidth,mHeight);
+	aFilter->SetSize(GetWidth(),GetHeight());
 	aFilter->SetTile(mTileHorz,mTileVert);
 	aFilter->SetSkipCenter(mSkipCenter);
 	mCachedImage = aFilter->Filter(mImage.get())->GetNative(context);

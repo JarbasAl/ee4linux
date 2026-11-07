@@ -126,7 +126,7 @@ void ProfileData::ClearNewsletterSub(unsigned short theId)
 void ProfileData::SetCustomAction(unsigned short theActionId, const ByteBuffer *theData)
 {
 	mCustomActionId = theActionId;
-	mCustomActionData = const_cast<ByteBuffer*>(theData);
+	mCustomActionData = theData;
 }
 
 void ProfileData::ClearCustomAction()

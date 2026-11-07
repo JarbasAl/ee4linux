@@ -45,3 +45,7 @@ void WONInputBox::Paint(Graphics& graphics)
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0071c300
 // (public: void __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::pop_back(void)    [?pop_back@?$deque@VGUIS)
+
+// Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x0071ee40
+// (protected: void __thiscall std::deque<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::_Tidy(void)    [?_Tidy@?$deque@VGUIStri)

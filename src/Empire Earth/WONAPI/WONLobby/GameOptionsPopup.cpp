@@ -24,25 +24,25 @@ void GameOptionsPopup::Init(LobbyGame* inGame)
 {
     mPopupMenu->Fn2FAA50(false);
     mGame=inGame;
-    SmartPtr<Font> anOldFont=mPopupMenu->mFont;
+    SmartPtr<Font> anOldFont=mPopupMenu->mFont.get();
     SmartPtr<Font> aBoldFont=mPopupMenu->Fn2F5A30(anOldFont.get(),1,0);
-    mPopupMenu->mFont=aBoldFont;
+    mPopupMenu->SetFont(aBoldFont);
     mPopupMenu->AddItem(inGame->mName,0)->mB09=false;
-    mPopupMenu->mFont=anOldFont;
+    mPopupMenu->SetFont(anOldFont);
     mPopupMenu->AddSeperator();
     if(inGame->Fn3A7A20()) AddItem(::GameOptionsPopup_Join_String,1);
     bool allowPing=true;
-    if(inGame->mB13) {
+    if(inGame->IsInProgress()) {
         LobbyConfig* aConfig=GetLobbyConfig();
-        if(aConfig!=NULL) allowPing=!aConfig->mNoPingInProgress;
+        if(aConfig!=NULL) allowPing=!aConfig->GetNoPingInProgress();
     }
     if(allowPing) {
-        if(inGame->mL2C!=1) AddItem(::GameOptionsPopup_Ping_String,2);
+        if(inGame->GetGameType()!=1) AddItem(::GameOptionsPopup_Ping_String,2);
         if(allowPing) AddItem(::GameOptionsPopup_QueryDetails_String,3);
     }
-    if(inGame->mB16) AddItem(::GameOptionsPopup_HideDetails_String,5);
+    if(inGame->GetShowDetails()) AddItem(::GameOptionsPopup_HideDetails_String,5);
     else AddItem(::GameOptionsPopup_ShowDetails_String,4);
-    if(inGame->mL2C==3) {
+    if(inGame->GetGameType()==3) {
         mPopupMenu->AddSeperator();
         AddItem(::GameOptionsPopup_Remove_String,6);
     }

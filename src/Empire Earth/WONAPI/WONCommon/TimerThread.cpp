@@ -120,3 +120,5 @@ void TimerThread::ThreadFunc()
 // (public: class std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::AsyncOp> >,struct std::_Mmapk<unsign)
 // TEMPLATE: WON 0x006a0460
 // (public: virtual void * __thiscall WONAPI::Thread::`scalar deleting destructor'(unsigned int))
+// TEMPLATE: WON 0x006f28c0
+// (public: virtual __thiscall WONAPI::Thread::~Thread(void))

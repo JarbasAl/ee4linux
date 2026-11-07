@@ -52,7 +52,7 @@ void StatusDialog::SetText(const GUIString& inTitle, const GUIString& inStatus, 
     mStatusLabel->SetText(gEmptyGUIString, true);
     mStatusLabel->Fn2F4B90(0, 0);
     Fn2F4B90(0, 0);
-    Fn2F4BC0(mCloseButton->Width() + mTitleLabel->Width() +
+    Fn2F4BC0(mTitleLabel->Width() + mCloseButton->Width() +
               mBack->VirtualC8() + mBack->VirtualD0() + 5, 0);
     mDialogComponent->Fn2F4B90(0, 0);
     mDialogComponent->Fn2F4E90(0, 0);
@@ -62,7 +62,7 @@ void StatusDialog::SetText(const GUIString& inTitle, const GUIString& inStatus, 
     int anOldStatusHeight = mStatusLabel->Height();
     int aRootWidth = GetLobbyRoot()->Width();
     int aRootHeight = GetLobbyRoot()->Height();
-    int aBodyWidth = mStatusLabel->mWrappedText->mFont->GetStringWidth(inStatus, 0, inStatus.length());
+    int aBodyWidth = mStatusLabel->mWrappedText->mFont->GetStringWidth(inStatus);
     int aMinWidth = mStatusLabel->mWrappedText->mFont->Virtual10('M') * 30;
     if (aBodyWidth < aMinWidth)
         aBodyWidth = aMinWidth;
@@ -82,14 +82,15 @@ void StatusDialog::SetText(const GUIString& inTitle, const GUIString& inStatus, 
     int aHeightChange = mStatusLabel->Height() - anOldStatusHeight;
     if (aHeightChange < 0)
         aHeightChange = 0;
-    if (anOldHeight + aHeightChange > anOldWidth + aWidthChange ||
-        anOldHeight + aHeightChange >= aRootHeight) {
-        int anExtraWidth = (anOldWidth + aWidthChange) * 5 / 4 - aWidthChange - anOldWidth;
+    int aNewWidth = anOldWidth + aWidthChange;
+    int aNewHeight = aHeightChange + anOldHeight;
+    if (aNewHeight > aNewWidth || aNewHeight >= aRootHeight) {
+        int anExtraWidth = aNewWidth * 5 / 4 - aWidthChange - anOldWidth;
         aWidthChange += anExtraWidth;
         mStatusLabel->Fn2F4B90(aBodyWidth + anExtraWidth, mStatusLabel->Height());
         aHeightChange = mStatusLabel->Height() - anOldStatusHeight;
     }
-    Fn2F4B90(anOldWidth + aWidthChange, anOldHeight + aHeightChange);
+    Fn2F4B90(aWidthChange + anOldWidth, aHeightChange + anOldHeight);
     if (GetTickCount() - mStartTick < 50) {
         mStatusLabel->Fn2F4BC0(anInitialStatusWidth, anInitialStatusHeight);
         mDialogComponent->Fn2F4BC0(anInitialComponentWidth, anInitialComponentHeight);

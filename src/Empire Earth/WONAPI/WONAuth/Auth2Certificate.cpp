@@ -21,7 +21,7 @@ bool Auth2Certificate::UnpackHook(ReadBuffer& input)
     for (int i=0; i<count; ++i) {
         unsigned short type = input.ReadShort();
         unsigned short length = input.ReadShort();
-        int start = input.mL00;
+        int start = input.pos();
         switch (type) {
         case 0: {
             mUserId = input.ReadLong();
@@ -56,7 +56,7 @@ bool Auth2Certificate::UnpackHook(ReadBuffer& input)
             break;
         }
         }
-        input.ReadBytes(length - (input.mL00 - start));
+        input.ReadBytes(length - (input.pos() - start));
     }
     return true;
 }

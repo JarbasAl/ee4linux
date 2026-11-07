@@ -31,7 +31,8 @@ void RequestAccountInfoEmailOp::Virtual04()
     mMessageType=1002;
     mSubMessageType=mMsgType;
     WriteBuffer msg(0,true);
-    msg.AppendString(mEmail,2);
+    const std::string& email=mEmail;
+    msg.AppendString(email,2);
     mProfileData->PackRequestData(msg,true);
     mRequestData=msg.ToByteBuffer(true);
     ServerRequestOp::Virtual04();
@@ -65,7 +66,8 @@ void RequestPasswordEmailOp::Virtual04()
     mMessageType=1002;
     mSubMessageType=mMsgType;
     WriteBuffer msg(0,true);
-    msg.AppendWString(mUserName,2);
+    const std::wstring& userName=mUserName;
+    msg.AppendWString(userName,2);
     mProfileData->PackRequestData(msg,true);
     mRequestData=msg.ToByteBuffer(true);
     ServerRequestOp::Virtual04();

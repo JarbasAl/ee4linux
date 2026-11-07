@@ -44,7 +44,8 @@ void DialogLogic::StatusOpComplete(AsyncOp* inOp)
 {
     if (inOp != mStatusOp.get())
         return;
-    if (mStatusMode == 2 || (mStatusMode == 1 && inOp->GetStatus() == 0))
+    bool aDone = mStatusMode == 2 || (mStatusMode == 1 && inOp->GetStatus() == 0);
+    if (aDone)
         GetLobbyWindow()->Fn32DDB0(-1, NULL, mStatusDialog.get());
     else
         UpdateStatus(inOp->GetStatus());
@@ -71,7 +72,7 @@ void DialogLogic::ClearDialogs()
         DialogStack::iterator anItr = mDialogStack.begin();
         while (anItr != mDialogStack.end()) {
             if (!anItr->mInModal)
-                anItr = mDialogStack.erase(anItr);
+                mDialogStack.erase(anItr++);
             else
                 ++anItr;
         }
@@ -221,8 +222,9 @@ namespace WONAPI {
 // FUNCTION: WON 0x007dced0
 void DialogLogic::UpdateStatus(WONStatus inStatus)
 {
-    int anOldWidth = mStatusDialog->Width();
-    int anOldHeight = mStatusDialog->Height();
+    WONRectangle anOldBounds = mStatusDialog->GetBounds();
+    int anOldWidth = anOldBounds.Width();
+    int anOldHeight = anOldBounds.Height();
     std::wstring aText; // constructed and destroyed; no statement reads it
     mStatusDialog->SetStatus(LobbyFn366170(inStatus), false);
     if (inStatus != 0 && LobbyFn35E320())
@@ -231,17 +233,16 @@ void DialogLogic::UpdateStatus(WONStatus inStatus)
         return;
     if (mPopupWindows) {
         Window* aWindow = mStatusDialog->Fn2F5940();
-        if (aWindow != NULL) {
-            aWindow->SetClientSize(mStatusDialog->Width(), mStatusDialog->Height());
-            aWindow->Center(true);
-        }
+        if (aWindow == NULL)
+            return;
+        aWindow->SetClientSize(mStatusDialog->Width(), mStatusDialog->Height());
+        aWindow->Center(true);
     }
     else {
         Container* aRoot = GetLobbyRoot();
         if (aRoot != NULL) {
             CenterLayout::Center(aRoot, mStatusDialog.get(), true, true);
-            WONRectangle aBounds(mStatusDialog->Left(), mStatusDialog->Top(),
-                                 mStatusDialog->Width(), mStatusDialog->Height());
+            WONRectangle aBounds(mStatusDialog->GetBounds());
             aRoot->Virtual60(aBounds);
         }
     }

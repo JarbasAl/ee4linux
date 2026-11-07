@@ -22,7 +22,7 @@ public:
 };
 
 inline AuthLoginCommunityData::AuthLoginCommunityData() {}
-typedef SmartPtr<ByteBuffer> ByteBufferPtr;
+typedef ConstSmartPtr<ByteBuffer> ByteBufferPtr;
 
 // Complete actual 20-byte offset buffer: owns the original allocation at +10.
 // Mutable allocation parameter is a bounded native ownership-contract spelling.
@@ -81,7 +81,7 @@ public:
     // (EELobbyGame 0x293437/0x2934a0: a 0x18-byte local, ctor (0, true), the dtor called directly)
     WriteBuffer(unsigned char inLengthFieldSize, bool inLengthIncludesField);   // 0x2a8140 (vtable 0x84c930)
     virtual ~WriteBuffer();                 // 0x2a8190 (delete[] of +0x14)
-    SmartPtr<ByteBuffer> ToByteBuffer(bool inRelease);    // 0x2a8480
+    ConstSmartPtr<ByteBuffer> ToByteBuffer(bool inRelease);    // 0x2a8480
     void AppendByte(unsigned char inByte);  // 0x2a82c0
     void AppendBool(bool inValue);          // 0x2a82d0
     void AppendShort(short inValue);        // 0x2a82f0

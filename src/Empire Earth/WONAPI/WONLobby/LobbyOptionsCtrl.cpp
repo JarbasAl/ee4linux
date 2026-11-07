@@ -50,8 +50,8 @@ LobbyOptionsCtrl::~LobbyOptionsCtrl() {} //ownVTstore3be08f; zeroquota,normalCOF
 void LobbyOptionsCtrl::InitComponent(ComponentInit& inInit)
 {
     if (inInit.mType==2) {
-        SmartPtr<Button> button;
         ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
+        SmartPtr<Button> button;
         SafeGetComponent(config,mChatSoundEffectsCheck,"ChatSoundEffectsCheck",2,__FILE__,95);
         SafeGetComponent(config,mConnectionSpeedCombo,"ConnectionSpeedCombo",__FILE__,96);
         SafeGetComponent(config,mCrossPromotionCheck,"CrossPromotionCheck",3,__FILE__,97);
@@ -76,7 +76,7 @@ void LobbyOptionsCtrl::InitComponent(ComponentInit& inInit)
             SafeGetComponent(config,mDoAutoAFKCheck,"DoAutoAFKCheck",4,__FILE__,120);
             SafeGetComponent(config,mFilterDirtyWordsCheck,"FilterDirtyWordsCheck",0x30d55,__FILE__,121);
         }
-        mLocalAddressDetailLabel->SetText(GUIString(IPAddr::GetLocalAddr().GetHostString(true)),true);
+        mLocalAddressDetailLabel->SetText(IPAddr::GetLocalAddr().GetHostString(true),true);
         Fn2F5360(1);
     }
 }
@@ -109,13 +109,16 @@ void LobbyOptionsCtrl::RefreshLanOptions() {
     if(mIsLan) {
         mUserNameCombo->Clear(true);
         const LobbyLanNameInfoMap& names=LobbyFn35D660();
-        for(LobbyLanNameInfoMap::const_iterator i=names.begin();i!=names.end();++i)
+        LobbyLanNameInfoMap::const_iterator i=names.begin();
+        while(i!=names.end()) {
             mUserNameCombo->AddString(i->first,-1);
+            ++i;
+        }
         ComboBox* combo=mUserNameCombo.get(); //original ESI snapshot3bed24 before getter
         combo->SetTextAndSel(LobbyFn35D640(),true);
         char port[20]; //original20-byte local extent
         sprintf(port,"%d",LobbyFn35E3C0());
-        mLANBroadcastDetailLabel->SetText(GUIString(new GUIStringData(port)),true);
+        mLANBroadcastDetailLabel->SetText(port,true);
     }
 }
 //3bedf0,311B. Notification booleans are original-specific, do not normalize.
@@ -222,8 +225,7 @@ void LobbyOptionsCtrl::RefreshPublicAddress()
             mPublicAddressDetailLabel->SetText(::LobbyOptions_CheckingAddress_String,true);
         else mPublicAddressDetailLabel->SetText(::LobbyOptions_AddressUnavailable_String,true);
     } else {
-        const std::string& host=address.GetHostString(true); //temporary exists BEFORE raw new
-        mPublicAddressDetailLabel->SetText(GUIString(new GUIStringData(host)),true);
+        mPublicAddressDetailLabel->SetText(address.GetHostString(true),true);
     }
 }
 } //namespace WONAPI

@@ -101,7 +101,7 @@ void Scrollbar::LayoutThumb(bool changePos)
 
 	if(aThumbPos<S_Top(mScrollRect.get()))
 	{
-		aThumbPos = S_Top(mScrollRect.get());
+		if(mVertical) aThumbPos = mScrollRect->Top(); else aThumbPos = mScrollRect->Left();
 		changePos = true;
 	}
 	if(aThumbPos+aThumbSize >= S_Bottom(mScrollRect.get()))
@@ -158,7 +158,7 @@ void Scrollbar::Virtual38(int x, int y)
 		int aNewY = mVertical? (mThumb->Top() + dy) : (mThumb->Left() + dx);
 
 		if(aNewY<S_Top(mScrollRect.get()))
-			aNewY = S_Top(mScrollRect.get());
+			if(mVertical) aNewY = mScrollRect->Top(); else aNewY = mScrollRect->Left();
 		if(aNewY+S_Height(mThumb.get()) > S_Bottom(mScrollRect.get()))
 			aNewY = S_Bottom(mScrollRect.get())-S_Height(mThumb.get());
 

@@ -7,6 +7,7 @@
 #include <set>
 #include <vector>
 #include "lle/LowLevelEngine.h"
+#include "LostDebug.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONBuffer.h"
@@ -48,6 +49,8 @@ WONStatus DirEntityReplyParser::ParseMultiEntityReply(const void* inData,
     count = (unsigned short)message.ReadShort();
     for (i = 0; i < count; ++i) {
         DirEntityPtr entity = new DirEntity;
+        // LOST-DEBUG: none: exact only
+        EE_LOST_DEBUG(1);
         if (flags & 0x10) entity->mType = message.ReadByte();
         isService = entity->mType == 'S' || onlyServices;
         isDir = entity->mType == 'D' || onlyDirs;
@@ -91,11 +94,11 @@ WONStatus DirEntityReplyParser::ParseMultiEntityReply(const void* inData,
                 type = message.ReadByte();
                 userCount = (unsigned short)message.ReadShort();
                 for (k = 0; k < userCount; ++k) {
+                    long user = message.ReadLong();
+                    long comm = message.ReadLong();
+                    short trust = message.ReadShort();
                     DirACL acl;
-                    acl.mType = type;
-                    acl.mUser = message.ReadLong();
-                    acl.mCommunity = message.ReadLong();
-                    acl.mTrust = message.ReadShort();
+                    acl.mType=type; acl.mUser=user; acl.mCommunity=comm; acl.mTrust=trust;
                     entity->mACLs.push_back(acl);
                 }
             }

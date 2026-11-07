@@ -22,11 +22,20 @@ public:
 	void _Xlen() const;
 	void _Xran() const;
 	};
+		// TEMPLATE CLASS _String_val
+template<class _E,
+	class _A>
+	class _String_val : public _String_base {
+protected:
+	_String_val(_A _Al = _A())
+		: _Alval(_Al) {}
+	_A _Alval;
+	};
 		// TEMPLATE CLASS basic_string
 template<class _E,
 	class _Tr = char_traits<_E>,
 	class _A = allocator<_E> >
-	class basic_string : public _String_base {
+	class basic_string : public _String_val<_E, _A> {
 public:
 	typedef basic_string<_E, _Tr, _A> _Myt;
 	typedef _A::size_type size_type;
@@ -47,34 +56,34 @@ public:
 		reference, pointer, difference_type>
 			reverse_iterator;
 	basic_string()
-		: allocator(_A()) {_Tidy(); }
+		: _String_val<_E, _A>() {_Tidy(); }
 	explicit basic_string(const _A& _Al)
-		: allocator(_Al) {_Tidy(); }
+		: _String_val<_E, _A>(_Al) {_Tidy(); }
 	basic_string(const _Myt& _X)
-		: allocator(_X.get_allocator())
+		: _String_val<_E, _A>(_X._Alval)
 		{_Tidy(), assign(_X, 0, npos); }
 	basic_string(const _Myt& _X, size_type _P, size_type _M)
-		: allocator(_A()) {_Tidy(), assign(_X, _P, _M); }
+		: _String_val<_E, _A>() {_Tidy(), assign(_X, _P, _M); }
 	basic_string(const _Myt& _X, size_type _P, size_type _M,
 		const _A& _Al)
-		: allocator(_Al) {_Tidy(), assign(_X, _P, _M); }
+		: _String_val<_E, _A>(_Al) {_Tidy(), assign(_X, _P, _M); }
 	basic_string(const _E *_S, size_type _N)
-		: allocator(_A()) {_Tidy(), assign(_S, _N); }
+		: _String_val<_E, _A>() {_Tidy(), assign(_S, _N); }
 	basic_string(const _E *_S, size_type _N, const _A& _Al)
-		: allocator(_Al) {_Tidy(), assign(_S, _N); }
+		: _String_val<_E, _A>(_Al) {_Tidy(), assign(_S, _N); }
 	basic_string(const _E *_S)
-		: allocator(_A()) {_Tidy(), assign(_S); }
+		: _String_val<_E, _A>() {_Tidy(), assign(_S); }
 	basic_string(const _E *_S, const _A& _Al)
-		: allocator(_Al) {_Tidy(), assign(_S); }
+		: _String_val<_E, _A>(_Al) {_Tidy(), assign(_S); }
 	basic_string(size_type _N, _E _C)
-		: allocator(_A()) {_Tidy(), assign(_N, _C); }
+		: _String_val<_E, _A>() {_Tidy(), assign(_N, _C); }
 	basic_string(size_type _N, _E _C, const _A& _Al)
-		: allocator(_Al) {_Tidy(), assign(_N, _C); }
+		: _String_val<_E, _A>(_Al) {_Tidy(), assign(_N, _C); }
 	typedef const_iterator _It;
 	basic_string(const _E *_F, const _E *_L, const _A& _Al = _A())
-		: allocator(_Al) {_Tidy(); assign(_F, _L - _F); }
+		: _String_val<_E, _A>(_Al) {_Tidy(); assign(_F, _L - _F); }
 	basic_string(_It _F, _It _L, const _A& _Al = _A())
-		: allocator(_Al) {_Tidy(); assign(_F, _L); }
+		: _String_val<_E, _A>(_Al) {_Tidy(); assign(_F, _L); }
 	~basic_string()
 		{_Tidy(true); }
 	typedef _Tr traits_type;
@@ -140,10 +149,11 @@ public:
 		if (_M < _N)
 			_N = _M;
 		if (this == &_X)
-			erase((size_type)(_P + _N)), erase(0, _P);
+			{erase((size_type)(_P + _N));
+			erase(0, _P); }
 		else if (0 < _N && _N == _X.size()
 			&& _Refcnt(_X.c_str()) < _FROZEN - 1
-			&& allocator == _X.allocator)
+			&& _Alval == _X._Alval)
 			{_Tidy(true);
 			_Ptr = (_E *)_X.c_str();
 			_Len = _X.size();
@@ -375,7 +385,7 @@ public:
 	size_type size() const
 		{return (_Len); }
 	size_type max_size() const
-		{size_type _N = allocator.max_size();
+		{size_type _N = _Alval.max_size();
 		return (_N <= 2 ? 1 : _N - 2); }
 	void resize(size_type _N, _E _C)
 		{_N <= _Len ? erase(_N) : append(_N - _Len, _C); }
@@ -397,7 +407,7 @@ public:
 			_Tr::copy(_S, _Ptr + _P0, _N);
 		return (_N); }
 	void swap(_Myt& _X)
-		{if (allocator == _X.allocator)
+		{if (_Alval == _X._Alval)
 			{std::swap(_Ptr, _X._Ptr);
 			std::swap(_Len, _X._Len);
 			std::swap(_Res, _X._Res); }
@@ -540,9 +550,8 @@ public:
 		return (_Ans != 0 ? _Ans : _N0 < _M ? -1
 			: _N0 == _M ? 0 : +1); }
 	_A get_allocator() const
-		{return (allocator); }
+		{return (_Alval); }
 protected:
-	_A allocator;
 private:
 	enum {_MIN_SIZE = sizeof (_E) <= 32 ? 31 : 7};
 	void _Copy(size_type _N)
@@ -551,10 +560,10 @@ private:
 			_Ns = _N;
 		_E *_S;
 		_TRY_BEGIN
-			_S = allocator.allocate(_Ns + 2, (void *)0);
+			_S = _Alval.allocate(_Ns + 2, (void *)0);
 		_CATCH_ALL
 			_Ns = _N;
-			_S = allocator.allocate(_Ns + 2, (void *)0);
+			_S = _Alval.allocate(_Ns + 2, (void *)0);
 		_CATCH_END
 		if (0 < _Len)
 			_Tr::copy(_S + 1, _Ptr, _Len);
@@ -626,7 +635,7 @@ private:
 		{if (!_Built || _Ptr == 0)
 			;
 		else if (_Refcnt(_Ptr) == 0 || _Refcnt(_Ptr) == _FROZEN)
-			allocator.deallocate(_Ptr - 1, _Res + 2);
+			_Alval.deallocate(_Ptr - 1, _Res + 2);
 		else
 			--_Refcnt(_Ptr);
 		_Ptr = 0, _Len = 0, _Res = 0; }
@@ -640,6 +649,8 @@ template<class _E, class _Tr, class _A>
 #ifdef	_DLL
 #pragma warning(disable:4231) /* the extern before template is a non-standard extension */
 
+extern template class _CRTIMP _String_val<char, allocator<char> >;
+extern template class _CRTIMP _String_val<wchar_t, allocator<wchar_t> >;
 extern template class _CRTIMP basic_string<char, char_traits<char>, allocator<char> >;
 extern template class _CRTIMP basic_string<wchar_t, char_traits<wchar_t>, allocator<wchar_t> >;
 

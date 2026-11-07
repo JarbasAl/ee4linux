@@ -1470,10 +1470,10 @@ void EEWorld::RecordStatistics()
         if (theTime == 0)
             theTime = this->mStatistics.mEndTime;
         this->mStatistics.mRecords[theIndex].mEndTime = theTime;
-        if (thePlayer->GetPlayerID() == 0)
-            this->mStatistics.mRecords[theIndex].mColorIndex = 0;
+        if (thePlayer->GetPlayerID() > 0)
+            this->mStatistics.mRecords[theIndex].mTeam = this->mGameOptions.mPlayers[thePlayer->GetPlayerID() - 1].mTeam;
         else
-            this->mStatistics.mRecords[theIndex].mColorIndex = this->mGameOptions.mPlayers[thePlayer->GetPlayerID()].mColor;
+            this->mStatistics.mRecords[theIndex].mTeam = 0;
         for (unsigned long r = 2; r < 7; r++)
             this->mStatistics.mRecords[theIndex].mResources[r] = thePlayer->mResourceCaps[r];
         if (thePlayer->GetPlayerID() == (unsigned long)this->mCurrentPlayer) {

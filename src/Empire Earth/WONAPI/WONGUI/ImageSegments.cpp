@@ -39,8 +39,8 @@ void LineSegment::DrawSelection2(Graphics &g, int x, int y)
 	if(mSelectImageMask.get()==NULL)
 	{
 		SmartPtr<Palette> aPalette = new Palette(2);
-		aPalette->mColors[0]=0x000000;
-		aPalette->mColors[1]=0x000080;
+		aPalette->SetColor(0,0x000000);
+		aPalette->SetColor(1,0x000080);
 		SmartPtr<RawImage8> anImage = new RawImage8(MASK_WIDTH,MASK_HEIGHT,aPalette.get());
 		anImage->mTransparentColor=0;
 
@@ -50,8 +50,8 @@ void LineSegment::DrawSelection2(Graphics &g, int x, int y)
 			anImage->StartRowTraversal(i);
 			for(int j=0; j<MASK_HEIGHT; j++)
 			{
-				*anImage->mRowPtr=(unsigned char)pixel;
-				++anImage->mRowPtr;
+				anImage->SetRowPixel(pixel);
+				anImage->NextRowPixel();
 				pixel = 1-pixel;
 			}
 		}

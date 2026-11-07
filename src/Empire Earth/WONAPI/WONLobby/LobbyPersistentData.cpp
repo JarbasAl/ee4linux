@@ -147,7 +147,8 @@ void LobbyPersistentData::Fn35F7B0()
         for (int i = 0; i < aCount; ++i)
         {
             GUIString aName = Fn35F000(aReader);
-            LobbyUserInfo& aUser = mUsers.insert(LobbyUserInfoMap::value_type(aName, LobbyUserInfo())).first->second;
+            std::pair<LobbyUserInfoMap::iterator,bool> aPair = mUsers.insert(LobbyUserInfoMap::value_type(aName, LobbyUserInfo()));
+            LobbyUserInfo& aUser = aPair.first->second;
             aUser.mUserName = aName;
             aUser.mLastUseTime = aReader.ReadLong();
             aUser.mUserId = aReader.ReadShort();
@@ -300,7 +301,7 @@ void LobbyPersistentData::Fn35EB30()
         aFile.Delete(true);
         mUserIds.erase(aUser.mUserId);
         mUsers.erase(aTime->second);
-        ++aTime; // original increments before the still-live WONFile destructor
+        aTime++;
     }
 }
 
@@ -311,14 +312,14 @@ LobbyFriend* LobbyFn35D460(const GUIString& inName, unsigned long inUserId)
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL)
         return NULL;
-    SmartPtr<LobbyFriend>& aFriend = aData->mFriends.insert(
-        LobbyFriendMap::value_type(inUserId, SmartPtr<LobbyFriend>())).first->second;
-    if (aFriend.get() == NULL)
+    std::pair<LobbyFriendMap::iterator,bool> aPair = aData->mFriends.insert(
+        LobbyFriendMap::value_type(inUserId, SmartPtr<LobbyFriend>()));
+    if (aPair.first->second.get() == NULL)
     {
-        aFriend = new LobbyFriend(inName, inUserId);
+        aPair.first->second = new LobbyFriend(inName, inUserId);
         aData->mUserDirty = true;
     }
-    return aFriend.get();
+    return aPair.first->second.get();
 }
 // Original296B. Preserve assignment: an unsuccessful erase CLEARS old dirty state.
 // FUNCTION: WON 0x0075d2c0
@@ -378,18 +379,18 @@ GUIString LobbyPersistentData::Fn35F190(FileReader& reader)
     reader.ReadBytes(storage.mData, length);
     ByteBufferPtr decrypted = mEncryptKey.Decrypt(storage.mData, length);
     if (decrypted.get() == NULL)
-        return GUIString(new GUIStringData(""));
+        return GUIString("");
     ReadBuffer decoded(decrypted->data(), decrypted->length());
     try
     {
         std::wstring text;
         decoded.ReadWString(text, 2);
-        return GUIString(new GUIStringData(text));
+        return GUIString(text);
     }
     catch (ReadBufferException&)
     {
-        return GUIString(new GUIStringData(""));
     }
+    return GUIString("");
 }
 
 // FUNCTION: WON 0x0075f530
@@ -484,7 +485,7 @@ void LobbyPersistentData::Fn35FC70()
     catch (FileReaderException&) {}
     if (!haveGameOptions)
         mGameOptions = mDefaultGameOptions;
-    mGlobalDirty = mB5C != mB6C || mB5D != mB6D;
+    mGlobalDirty = mB5C != mB6C || mB6D != mB5D;
     mUserDirty = false;
 }
 
@@ -544,9 +545,10 @@ void LobbyPersistentData::Fn360770()
         writer.WriteShort((unsigned short)mReconnectInfoMap.size());
         for (std::map<IPAddr, LobbyReconnectInfo>::const_iterator a = mReconnectInfoMap.begin(); a != mReconnectInfoMap.end(); ++a)
         {
+            const LobbyReconnectInfo& anInfo = a->second;
             writer.WriteBytes(a->first.GetSixByte(), 6);
-            writer.WriteLong(a->second.mLastUseTime);
-            writer.WriteLong(a->second.mReconnectId);
+            writer.WriteLong(anInfo.mLastUseTime);
+            writer.WriteLong(anInfo.mReconnectId);
         }
         writer.WriteShort((unsigned short)mIgnoredNames.size());
         for (LobbyIgnoredNameSet::const_iterator n = mIgnoredNames.begin(); n != mIgnoredNames.end(); ++n)
@@ -600,8 +602,9 @@ void LobbyFn35D940(const IPAddr& inAddress, int inReconnectId)
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL)
         return;
-    LobbyReconnectInfo& anInfo = aData->mReconnectInfoMap.insert(
-        std::map<IPAddr, LobbyReconnectInfo>::value_type(inAddress, LobbyReconnectInfo())).first->second;
+    std::pair<std::map<IPAddr, LobbyReconnectInfo>::iterator,bool> aPair = aData->mReconnectInfoMap.insert(
+        std::map<IPAddr, LobbyReconnectInfo>::value_type(inAddress, LobbyReconnectInfo()));
+    LobbyReconnectInfo& anInfo = aPair.first->second;
     anInfo.mLastUseTime = time(NULL);
     anInfo.mReconnectId = inReconnectId;
     aData->Fn360770();
@@ -643,11 +646,14 @@ namespace WONAPI {
 void LobbyFn35D100(const GUIString& inName, bool inIgnore)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
-    if (aData == NULL) return;
-    if (inIgnore)
-        aData->mUserDirty = aData->mIgnoredNames.insert(inName).second;
-    else
-        aData->mUserDirty = aData->mIgnoredNames.erase(inName) > 0;
+    if (aData != NULL) {
+        bool aDirty;
+        if (inIgnore)
+            aDirty = aData->mIgnoredNames.insert(inName).second;
+        else
+            aDirty = aData->mIgnoredNames.erase(inName) > 0;
+        aData->mUserDirty = aDirty;
+    }
 }
 // FUNCTION: WON 0x0075d6c0
 void LobbyFn35D6C0(const GUIString& inName)
@@ -722,16 +728,21 @@ void LobbyPersistentData::Fn35E7E0()
     for (LobbyLanNameInfoMap::iterator anItr = mLanNameInfoMap.begin();
          anItr != mLanNameInfoMap.end(); ++anItr)
         aTimes.insert(TimeMap::value_type(anItr->second, anItr));
-    for (TimeMap::iterator aTime = aTimes.begin();
-         aTime != aTimes.end() && mLanNameInfoMap.size() > 50; ++aTime)
+    TimeMap::iterator aTime = aTimes.begin();
+    while (aTime != aTimes.end() && mLanNameInfoMap.size() > 50)
+    {
         mLanNameInfoMap.erase(aTime->second);
+        aTime++;
+    }
 }
 // FUNCTION: WON 0x0075ea40
 void LobbyPersistentData::Fn35EA40()
 {
+    GetLobbyPersistentData();
     mS68 = Fn35C520();
     long aLastTime = 0;
-    for (LobbyLanNameInfoMap::iterator anItr = mLanNameInfoMap.begin();
+    LobbyLanNameInfoMap::iterator anItr;
+    for (anItr = mLanNameInfoMap.begin();
          anItr != mLanNameInfoMap.end(); ++anItr) {
         if (aLastTime == 0 || anItr->second > aLastTime) {
             mS68 = anItr->first;
@@ -753,7 +764,8 @@ GUIString LobbyPersistentData::Fn35C520()
     CRC16 aCRC;
     aCRC.Put(&anAddress,4);
     char aNumber[256];
-    _itoa(aCRC.Get() % 10000, aNumber, 10);
+    unsigned short aValue = aCRC.Get() % 10000;
+    _itoa(aValue, aNumber, 10);
     aName.append(GUIString(aNumber));
     return aName;
 }
@@ -767,7 +779,7 @@ LobbyPersistentData::LobbyPersistentData()
     aKey.Reserve(8);
     aKey.AppendLong(0x22fa655f);
     aKey.AppendLong(CDKey::GetMachineId(NULL));
-    mEncryptKey.SetKey(aKey.mData,aKey.mLength);
+    mEncryptKey.SetKey(aKey.data(),aKey.length());
     // Native deliberately leaves mCurrentUserId untouched before this reset.
     Fn35C720();
     mPort66 = 8585;
@@ -985,3 +997,11 @@ void LobbyOptionSet::clear()
 // (protected: void __thiscall std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class std::list<class WONAPI::GUIString,)
 // TEMPLATE: WON 0x0076f800
 // (protected: struct std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class std::list<class WONAPI::GUIString,class std)
+// TEMPLATE: WON 0x006a9950
+// (protected: struct std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::LobbyFriend> >,struct std::_Mapk)
+// TEMPLATE: WON 0x006a9980
+// (protected: struct std::_Tree<unsigned long,struct std::pair<unsigned long const ,class WONAPI::SmartPtr<class WONAPI::LobbyFriend> >,struct std::_Mapk)
+// TEMPLATE: WON 0x0076c440
+// (public: __thiscall std::list<class WONAPI::GUIString,class std::allocator<class WONAPI::GUIString> >::list<class WONAPI::GUIString,class std::allocato)
+// TEMPLATE: WON 0x0076e050
+// (protected: class std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,long>,struct std::_Mapk<class WONAPI::GUIString,lo)

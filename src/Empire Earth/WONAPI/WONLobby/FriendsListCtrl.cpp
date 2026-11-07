@@ -132,11 +132,11 @@ LobbyFriend* FriendsListCtrl::GetSelectedFriend()
 // FUNCTION: WON 0x007bb880
 void FriendsListCtrl::HandleFriendChanged(FriendChangedEvent* inEvent)
 {
-    if(inEvent->mChangeKind==0) {
+    if(inEvent->IsAdd()) {
         SmartPtr<FriendsListItem> item=new FriendsListItem;
         UpdateFriend(inEvent->mFriend.get(),item.get());
         mFriendsList->InsertItem(item.get(),-1);
-    } else if(inEvent->mChangeKind==1) {
+    } else if(inEvent->IsDelete()) {
         FriendsListItem* item=FindFriend(inEvent->mFriend.get());
         if(item==NULL) return;
         mFriendsList->RemoveItem(item);
@@ -195,18 +195,6 @@ void FriendsListCtrl::UpdateButtons()
 void FriendsListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType) {
-    case 23: {
-        FriendsListItem* item=static_cast<FriendsListItem*>(mFriendsList->mSelItem);
-        ListItemClickedEvent* click=static_cast<ListItemClickedEvent*>(inEvent);
-        if(item!=NULL&&item==click->mItem.get()&&item->mFriend.get()!=NULL) {
-            if(click->mButton==2)
-                Fn2F53F0(new FriendActionEvent(5,item->mFriend.get(),0),false);
-            else if(click->mButton==0&&click->mDoubleClick)
-                Fn2F53F0(new FriendActionEvent(1,item->mFriend.get(),0),false);
-        }
-        return;
-    }
-    case 22:UpdateButtons();return;
     case 15:
         if(inEvent->mComponent==mRemoveButton.get()) {
             LobbyFriend* aFriend=GetSelectedFriend();
@@ -218,6 +206,20 @@ void FriendsListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
             return;
         }
         break;
+    case 22:UpdateButtons();return;
+    case 23: {
+        FriendsListItem* item=static_cast<FriendsListItem*>(mFriendsList->mSelItem);
+        ListItemClickedEvent* click=static_cast<ListItemClickedEvent*>(inEvent);
+        if(item!=NULL&&item==click->mItem.get()&&item->mFriend.get()!=NULL) {
+            if(click->GetButton()==2) {
+                Fn2F53F0(new FriendActionEvent(5,item->mFriend.get(),0),false);
+                return;
+            }
+            if(click->GetButton()==0&&click->IsDoubleClick())
+                Fn2F53F0(new FriendActionEvent(1,item->mFriend.get(),0),false);
+        }
+        return;
+    }
     case 100014:FillFriends();return;
     case 100016:HandleFriendChanged(static_cast<FriendChangedEvent*>(inEvent));return;
     case 100056:RefreshFriends();return;

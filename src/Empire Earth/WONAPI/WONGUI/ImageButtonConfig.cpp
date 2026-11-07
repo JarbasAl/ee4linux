@@ -11,6 +11,10 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyImageButton.h"
 namespace WONAPI {
+// FUNCTION: WON 0x0078ac90
+ImageButtonConfig::ImageButtonConfig()
+{
+}
 // FUNCTION: WON 0x0078acb0
 bool ImageButtonConfig::Virtual24(const std::string& instruction)
 {
@@ -23,13 +27,6 @@ bool ImageButtonConfig::Virtual24(const std::string& instruction)
     else return ComponentConfig::Virtual24(instruction);
     mImageButton->SetImage(type,ReadImage(false).get());
     return true;
-}
-}
-
-namespace WONAPI {
-// FUNCTION: WON 0x0078ac90
-ImageButtonConfig::ImageButtonConfig()
-{
 }
 // FUNCTION: WON 0x0078f8d0
 void ImageButtonConfig::Virtual34(Component* component)

@@ -11,7 +11,7 @@ public:
     void AddSegment(LineSegment*); //30b5d0 genuine SDK line metrics builder
     void StartBuild(LineElement*); //30b560 actual original provider
     void FinishBuild(); //30b790 actual original provider
-    int GetHeight() { int h=mMaxAscent+mMaxDescent; return h>=mTopAlignHeight?h:mTopAlignHeight; }
+    int GetHeight() { return mMaxAscent+mMaxDescent>=mTopAlignHeight?mMaxAscent+mMaxDescent:mTopAlignHeight; }
     inline void Clear(); // defined in WONLobbyLineLayout.h after LineElement (MultiLineBuilder 0x70c000 inlines it)
     inline bool IsEmpty(); // defined in WONLobbyLineLayout.h after LineElement (HTMLDisplayGen 0x7384a0 inlines it)
 };

@@ -16,10 +16,10 @@ PopupParams::PopupParams(Component* popup,int flags,Component* owner,int x,int y
 {
     mPopup=popup;
     mFlags=flags;
-    mx=x;
     mParent=NULL;
     mInputComponent=NULL;
     mOwnerComponent=owner;
+    mx=x;
     my=y;
 }
 // FUNCTION: WON 0x0072b0a0

@@ -18,6 +18,9 @@
 using namespace WONAPI;
 using namespace std;
 
+// LOST-DEBUG: none: exact only; the explicit instantiation makes the GUIString copy in 0x74b060 known nothrow
+template class WONAPI::SmartPtr<GUIStringData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 HTMLTag::HTMLTag(HTMLTagType theType, unsigned short theFlags)
@@ -813,3 +816,5 @@ int HTMLTagAttributes::GetColor(const GUIString &theKey)
 // (protected: struct std::_Tree<class WONAPI::GUIString,struct std::pair<class WONAPI::GUIString const ,class WONAPI::GUIString>,struct std::_Mapk<class )
 // TEMPLATE: WON 0x0074b060
 // (public: class WONAPI::GUIString & __thiscall std::map<class WONAPI::GUIString,class WONAPI::GUIString,struct WONAPI::StringLessNoCase,class std::alloc)
+// TEMPLATE: WON 0x007431c0
+// (public: __thiscall std::map<class WONAPI::GUIString,int,struct WONAPI::StringLessNoCase,class std::allocator<struct std::pair<class WONAPI::GUIString )

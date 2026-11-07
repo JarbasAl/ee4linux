@@ -132,8 +132,6 @@ void WONControlsConfig_Init(ResourceConfigTable *theTable)
 	theTable->AddAllocator("WONScrollContainer",WONScrollContainerConfig::CfgFactory,ScrollContainerFactory);
 	theTable->AddAllocator("WONListCtrl",WONListCtrlConfig::CfgFactory,ListCtrlFactory);
 	theTable->AddAllocator("WONFrameComponent",WONFrameComponentConfig::CfgFactory,WONFrameComponentFactory);
-	// LOST-DEBUG: none: exact only (one site after the last string temp, as WONGUIConfig_Init)
-	EE_LOST_DEBUG(1);
 }
 }
 

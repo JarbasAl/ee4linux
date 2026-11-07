@@ -19,6 +19,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyParser.h"
+#include "LostDebug.h"
 extern unsigned short gEmptyWideString[]; // 0x8e60bc, an empty wide string (zero .bss)
 using namespace WONAPI;
 namespace WONAPI {
@@ -80,6 +81,8 @@ void ChatCommandParser::AddCommand(const GUIString& text,int command)
  GUIString key=text;
  mCommands[key]=command;
  std::map<int,std::wstring>::iterator i=mCommandStrings.find(command);
+ // LOST-DEBUG: none: exact only
+ EE_LOST_TRACE(i==mCommandStrings.end());
  if(i==mCommandStrings.end())
   mCommandStrings.insert(std::map<int,std::wstring>::value_type(command,text));
 }
@@ -90,8 +93,13 @@ GUIString ChatCommandParser::GetCommandString(int command)
  std::map<int,std::wstring>::iterator i=mCommandStrings.find(command);
  if(i!=mCommandStrings.end()) return GUIString(i->second);
  ChatCommandParser::CommandMap::iterator j=mCommands.begin();
- for(;j!=mCommands.end();++j)
+ // LOST-DEBUG: none: exact only
+ EE_LOST_DEBUG(5);
+ while(true) {
+  if(j==mCommands.end()) break;
   if(j->second==command) return GUIString(j->first);
+  ++j;
+ }
  return GUIString("");
 }
 
@@ -112,13 +120,17 @@ const char* ChatCommandParser::GetCommandName(int command)
 // FUNCTION: WON 0x756760
 void ChatCommandParser::AddCommands(const std::wstring& names,int command)
 {
- StringParser parser(names.c_str());
+ StringParser parser; parser.Set(names.c_str());
  std::list<std::wstring> tokens;
  parser.ReadValue(tokens);
- if(!names.empty() && !tokens.empty()) {
+ if(names.empty() || tokens.empty()) {
+  AddCommand(GUIString(GetCommandName(command)),command);
+  return;
+ } else {
   for(std::list<std::wstring>::iterator i=tokens.begin();i!=tokens.end();++i)
    AddCommand(GUIString(*i),command);
- } else AddCommand(GUIString(GetCommandName(command)),command);
+  return;
+ }
 }
 
 // FUNCTION: WON 0x756950
@@ -136,7 +148,7 @@ static bool CompareNames(const GUIString& a,const GUIString& b,bool& prefix)
 // FUNCTION: WON 0x7569f0
 static void SkipWhitespace(const GUIString& text,int& pos)
 {
- while(pos<text.length() && iswctype(text[pos],_SPACE)) ++pos;
+ while(pos<text.length() && iswctype(text.at(pos),_SPACE)) ++pos;
 }
 
 // FUNCTION: WON 0x756a40
@@ -159,6 +171,8 @@ static GUIString GetToken(const GUIString& text,int& pos,bool upper,bool quotes)
   if(upper) ch=towupper(ch);
   if(ch==' ') return token;
   token.append(ch);
+  // LOST-DEBUG: none: exact only
+  EE_LOST_DEBUG(3);
   ++pos;
  }
  return token;
@@ -172,22 +186,25 @@ static GUIString GetRestOfLine(const GUIString& text,int pos)
  GUIString result;
  if(text[pos]=='"') {
   int end=text.find('"',pos+1);
-  if(end>=0) { result=text.substr(pos+1,end-pos-1); return result; }
+  if(end>=0) { result=text.substr(pos+1,end-pos-1); return result.mData.get(); }
  }
  int end=text.length()-1;
+ // LOST-DEBUG: none: exact only
+ EE_LOST_DEBUG(7);
  while(end>pos && text[end]==' ') --end;
- if(end<=pos) return GUIString("");
- return text.substr(pos,end-pos+1);
+ if(end>pos) return text.substr(pos,end-pos+1);
+ else return GUIString("");
 }
 
 // FUNCTION: WON 0x756e90
 LobbyClient* ChatCommandParser::FindClient(const GUIString& name,int* outMatch)
 {
+ LobbyClientMap::iterator i;
  int match=0;
  LobbyClient* found=NULL;
  LobbyClientList* clients=mClients.get();
  if(clients!=NULL) {
-  for(LobbyClientMap::iterator i=clients->mClients.begin();i!=clients->mClients.end();++i) {
+  for(i=clients->mClients.begin();i!=clients->mClients.end();++i) {
    LobbyClient* client=i->second.get();
    bool prefix=false;
    if(CompareNames(name,client->mName,prefix)) {
@@ -211,51 +228,57 @@ bool ChatCommandParser::ParseCommand(const GUIString& text)
  GUIString command=GetToken(text,pos,true,false);
  ChatCommandParser::CommandMap::iterator i=mCommands.find(command);
  if(i==mCommands.end()) { mCommand=0;mError=1;return false; }
+ // LOST-DEBUG: none: exact only
+ EE_LOST_TRACE(text.empty());
  mCommand=i->second;
+ bool needTarget=false;
  switch(mCommand) {
- case 18: mTargetName=mInput; break;
+ case 18: mTargetName=mInput; needTarget=true; break;
  case 5:
   mTargetName=GetRestOfLine(text,pos);
-  if(mTargetName.length()==0) goto target_done;
+  needTarget=!mTargetName.empty();
   break;
- case 4: mTargetName=GetRestOfLine(text,pos); break;
+ case 4: mTargetName=GetRestOfLine(text,pos); needTarget=true; break;
  case 12:
  case 13:
   mTargetName=GetRestOfLine(text,pos);
-  if(mTargetName.length()==0) goto target_done;
+  if(mTargetName.length()!=0) needTarget=true;
   break;
  case 2:case 8:case 9:case 10:case 11:case 16:case 17:case 25:
-  mTargetName=GetToken(text,pos,false,true); break;
- default: goto target_done;
+  mTargetName=GetToken(text,pos,false,true);
+  needTarget=true;
+  break;
  }
- if(mTargetName.length()==0) { mError=2;return false; }
- {
+ if(needTarget) {
+  if(mTargetName.length()==0) { mError=2;return false; }
   int match;
   mTarget=FindClient(mTargetName,&match);
   if(match<mMatchThreshold) {
-   mError=match==1?4:3;
+   if(match==1) mError=4;
+   else mError=3;
    return false;
   }
  }
-target_done:
  SkipWhitespace(text,pos);
  switch(mCommand) {
  case 2:case 3:case 22:case 25:
   if(pos>=text.length()) { mError=5;return false; }
   mText=text.substr(pos);
-  break;
+  return true;
  case 18:
   mText=text.substr(pos);
   if(mText.length()!=0) mCommand=2;
-  break;
+  return true;
  case 16:case 17:
   mText=text.substr(pos);
   mInvitation=mCommand==16;
-  break;
+  return true;
+ case 5:case 6:case 7:case 20:case 24:
+  return true;
  case 8:case 9:case 10:case 11:case 23:
   {
    std::string duration=GetToken(text,pos,true,false);
-   if(duration!="INFINITE" && duration.length()>0) {
+   if(!(duration=="INFINITE") && duration.length()>0) {
     char unit=duration[duration.length()-1];
     if(isalpha(unit)) duration=duration.substr(0,duration.length()-1);
     int value=atoi(duration.c_str());
@@ -264,16 +287,23 @@ target_done:
     case 'H': value*=60;
     case 'M': value*=60;
     case 'S': break;
-    default: mError=7;return false;
+    default: value=0;
     }
     if(value==0) { mError=7;return false; }
+    // LOST-DEBUG: none: exact only
+    EE_LOST_TRACE(text.empty());
+    EE_LOST_TRACE(text.empty());
     mDuration=value;
    }
    mText=GetRestOfLine(text,pos);
   }
-  break;
- case 12:case 13: mText=GetRestOfLine(text,pos); break;
+  return true;
+ case 12:case 13: mText=GetRestOfLine(text,pos); return true;
  }
+ // LOST-DEBUG: none: exact only
+ EE_LOST_TRACE(text.empty());
+ EE_LOST_TRACE(text.empty());
+ EE_LOST_TRACE(text.empty());
  return true;
 }
 
@@ -356,6 +386,8 @@ GUIString ChatCommandParser::GetHelp(unsigned short clientId)
 }
 
 // Compiler-generated and header-inline functions this unit emits:
+// TEMPLATE: WON 0x006aa250
+// (std::list<std::wstring>::~list)
 // TEMPLATE: WON 0x00755850
 // (public: virtual void * __thiscall WONAPI::ChatCommandParser::`scalar deleting destructor'(unsigned int)    [??_GChatCommandParser@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00756190
@@ -402,3 +434,7 @@ GUIString ChatCommandParser::GetHelp(unsigned short clientId)
 // (void __cdecl std::_Construct(struct std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsi)
 // TEMPLATE: WON 0x00768ce0
 // (public: struct std::pair<class std::_Tree<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned)
+// TEMPLATE: WON 0x00768ee0
+// (public: __thiscall std::pair<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> > con)
+// TEMPLATE: WON 0x007694f0
+// (public: class std::list<class std::basic_string<unsigned short,struct std::char_traits<unsigned short>,class std::allocator<unsigned short> >,class st)

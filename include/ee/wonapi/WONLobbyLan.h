@@ -43,6 +43,7 @@ public:
 class LanLogic : public NetLogic {
 public:
     LanLogic(); //3dfc00
+    int GetRoomSpec() const { return 8; }
     virtual ~LanLogic(); //3dfef0
     virtual void InitComponent(ComponentConfig* inConfig); //3e00a0
     virtual void HandleControlEvent(int inControlId); //3e2760
@@ -50,9 +51,9 @@ public:
     virtual bool Virtual18(LobbyGame* inGame); //3e37a0
     virtual bool Virtual1C(LobbyGame* inGame); //3e3d20
     virtual LobbyClient* Virtual20(); //3e0180
-    virtual void Virtual24(ByteBuffer* inBuffer); //3e1c30
-    virtual void Virtual28(ByteBuffer* inBuffer); //3e1cf0
-    virtual void Virtual2C(LobbyClient* inClient, ByteBuffer* inBuffer); //3e1db0
+    virtual void Virtual24(const ByteBuffer* inBuffer); //3e1c30
+    virtual void Virtual28(const ByteBuffer* inBuffer); //3e1cf0
+    virtual void Virtual2C(LobbyClient* inClient, const ByteBuffer* inBuffer); //3e1db0
     virtual void Virtual30(LobbyGame* inGame); //3e45c0
     virtual void Virtual34(LobbyGame* inGame); //3e45e0
     virtual void Virtual38(LobbyClient* inClient, bool inFlag); //3e4590
@@ -69,15 +70,15 @@ public:
     void Fn3E0300(AsyncOp* inOp);
     void Fn3E04E0(AsyncOp* inOp);
     void Fn3E0620();
-    void Fn3E1840(LobbyClient* inClient, ByteBuffer* inBuffer);
-    void Fn3E1980(ByteBuffer* inBuffer);
-    void Fn3E1AD0(ByteBuffer* inBuffer, bool inFlag);
+    void Fn3E1840(LobbyClient* inClient, const ByteBuffer* inBuffer);
+    void Fn3E1980(const ByteBuffer* inBuffer);
+    void Fn3E1AD0(const ByteBuffer* inBuffer, bool inFlag);
     void Fn3E1E70(ReadBuffer& inBuffer);
     void Fn3E2080(ReadBuffer& inBuffer);
     void Fn3E2160(ReadBuffer& inBuffer, LobbyClient* inSender);
     void Fn3E23A0(ReadBuffer& inBuffer);
     void Fn3E25F0(ReadBuffer& inBuffer, LobbyClient* inSender);
-    void Fn3E2610(ByteBuffer* inBuffer, LobbyClient* inClient);
+    void Fn3E2610(const ByteBuffer* inBuffer, LobbyClient* inClient);
     void Fn3E2800();
     void Fn3E2850();
     void Fn3E54E0();
@@ -100,9 +101,9 @@ public:
     void Fn3E3290(); //483B; model Game20 field/canonical Core wrappers pending
     void Fn3E3480(); //287B, closed Core saved-map alias/getter queued
     void Fn3E12A0(AsyncOp*); //262B, reference-only RecvMsgOp
-    void Fn3E1210(ByteBuffer*,LobbyLanSocket*); //128B
+    void Fn3E1210(const ByteBuffer*,LobbyLanSocket*); //128B
     void Fn3E0760(ReadBuffer&,LobbyLanSocket*); //1815B original handler; socket/IP canonical API pending
-    int Fn3E0F90(ByteBuffer*,LobbyGame*);
+    int Fn3E0F90(const ByteBuffer*,LobbyGame*);
     void Fn3E2CE0(LobbyClient*,int); //212B, Dialogs full ClientOptionsPopup90 proposal required
     void Fn3E13B0(LobbyLanSocket*); //579B, complete RecvMsgOpB4 proposal and Queue API/header pending
     bool Fn3E35A0(); //512B auth initialization remains originalcallee; no giant partial op allocation

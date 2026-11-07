@@ -9,6 +9,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
+#include "LostDebug.h"
 using namespace WONAPI;
 // Actual RTTI is global NetworkAdapterListItem, not WONAPI namespace.
 class NetworkAdapterListItem : public MultiListItem {
@@ -42,6 +43,8 @@ void ChooseNetworkAdapterDialog::InitComponent(ComponentInit& inInit)
 // FUNCTION: WON 0x7f9da0
 void ChooseNetworkAdapterDialog::Reset()
 {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
     mAdapterList->Fn2FAA00();
     mAdapterList->Fn2FAA50(false);
     mAdapterList->InsertItem(new NetworkAdapterListItem(0),-1);
@@ -50,16 +53,14 @@ void ChooseNetworkAdapterDialog::Reset()
     std::list<LobbyNetAddress> anAddresses;
     LobbyGetNetAddresses(anAddresses,true);
     for(std::list<LobbyNetAddress>::const_iterator anItr=anAddresses.begin();anItr!=anAddresses.end();++anItr) {
-        IPAddr anAddress(anItr->mHandle,0);
-        GUIString aName(new GUIStringData(anItr->mName));
+        const LobbyNetAddress& aNet=*anItr;
+        IPAddr anAddress(aNet.mHandle,0);
+        GUIString aName(aNet.mName);
         if(aName.length()==0) aName=::ChooseNetworkAdapterDialog_Unknown_String;
-        mAdapterList->InsertItem(new NetworkAdapterListItem(anItr->mHandle),-1);
+        mAdapterList->InsertItem(new NetworkAdapterListItem(aNet.mHandle),-1);
         mAdapterList->SetString(mAdapterList->GetNumItems()-1,0,aName,NULL);
-        {
-            std::string aHostString=anAddress.GetHostString(true);
-            mAdapterList->SetString(mAdapterList->GetNumItems()-1,1,GUIString(new GUIStringData(aHostString)),NULL);
-        }
-        if(WONAPI::IPAddr::GetLocalHost()==anItr->mHandle) mAdapterList->SetSelItem(mAdapterList->GetNumItems()-1,true);
+        mAdapterList->SetString(mAdapterList->GetNumItems()-1,1,anAddress.GetHostString(true),NULL);
+        if(WONAPI::IPAddr::GetLocalHost()==aNet.mHandle) mAdapterList->SetSelItem(mAdapterList->GetNumItems()-1,true);
     }
     mAdapterList->Fn2FAA10();
 }

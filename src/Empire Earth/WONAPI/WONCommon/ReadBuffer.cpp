@@ -7,6 +7,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONBuffer.h"
+#include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006a39f0
 ReadBuffer::ReadBuffer(const void* data,unsigned long length)
@@ -25,7 +26,7 @@ const void* ReadBuffer::ReadBytes(unsigned long amount)
 {
     if(length()-pos()<amount)
         throw ReadBufferException("Attempt to read past end of buffer.");
-    const char* result=(const char*)data()+pos();
+    const void* result=(const char*)data()+mL00;
     mL00+=amount;
     return result;
 }
@@ -66,6 +67,8 @@ void ReadBuffer::ReadRawWString(std::wstring& text,unsigned long length)
     text.erase();
     const wchar_t* data=(const wchar_t*)ReadBytes(length*2);
     text.append(data,length);
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
 }
 // Original40f0/30 forwarding wrapper, existing canonicalint contract retained, zeroquota.
 // FUNCTION: WON 0x006a40f0

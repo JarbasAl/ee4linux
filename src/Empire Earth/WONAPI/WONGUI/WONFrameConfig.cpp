@@ -31,11 +31,9 @@ bool WONFrameComponentConfig::Virtual2C(const std::string& key,int& value)
     else if(key=="TOPPAD") value=mFrameComponent->VirtualCC();
     else if(key=="BOTTOMPAD") value=mFrameComponent->VirtualD4();
     else if(key=="HORZPAD") {
-        WONFrameComponent* frame=mFrameComponent;
-        int right=frame->VirtualD0(); value=right+frame->VirtualC8();
+        value=mFrameComponent->VirtualD0()+mFrameComponent->VirtualC8();
     } else if(key=="VERTPAD") {
-        WONFrameComponent* frame=mFrameComponent;
-        int bottom=frame->VirtualD4(); value=bottom+frame->VirtualCC();
+        value=mFrameComponent->VirtualD4()+mFrameComponent->VirtualCC();
     } else return ComponentConfig::Virtual2C(key,value);
     return true;
 }

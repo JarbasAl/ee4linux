@@ -154,7 +154,11 @@ public:
 		_Head(_Buynode()), _Size(0)
 		{insert(begin(), _N, _V); }
 	list(const _Myt& _X)
+#ifdef EE_DINKUM_SXL233
+		: allocator(_X.get_allocator()),
+#else
 		: allocator(_X.allocator),
+#endif
 		_Head(_Buynode()), _Size(0)
 		{insert(begin(), _X.begin(), _X.end()); }
 	list(const _Ty *_F, const _Ty *_L, const _A& _Al = _A())
@@ -213,7 +217,11 @@ public:
 	const_reference back() const
 		{return (*(--end())); }
 	void push_front(const _Ty& _X)
+#ifdef EE_DINKUM_SXL233
+		{_Insert(begin(), _X); }
+#else
 		{insert(begin(), _X); }
+#endif
 	void pop_front()
 		{erase(begin()); }
 #ifdef EE_DINKUM_SXL233
@@ -261,12 +269,21 @@ public:
 		_RERAISE;
 		_CATCH_END }
 	void _Insert(iterator _P, const _Ty& _X)
+#ifdef EE_DINKUM_SXL233	// no node local: this inline's size sets the share its nested _Buynode gets
+		{_Nodeptr _N = _Buynode(_P._Mynode(), _Acc::_Prev(_P._Mynode()));
+		_Incsize(1);
+		allocator.construct(&_Acc::_Value(_N), _X);
+		_Acc::_Prev(_P._Mynode()) = _N;
+		_Nodeptr _Q = _Acc::_Prev(_N);
+		_Acc::_Next(_Q) = _N; }
+#else
 		{_Nodeptr _S = _P._Mynode();
 		_Nodeptr _N = _Buynode(_S, _Acc::_Prev(_S));
 		_Incsize(1);
 		allocator.construct(&_Acc::_Value(_N), _X);
 		_Acc::_Prev(_S) = _N;
 		_Acc::_Next(_Acc::_Prev(_N)) = _N; }
+#endif
 	iterator erase(iterator _P)
 		{_Nodeptr _S = (_P++)._Mynode();
 		_Acc::_Next(_Acc::_Prev(_S)) = _Acc::_Next(_S);
@@ -426,7 +443,6 @@ protected:
 		_Acc::_Next(_S) = _Narg != 0 ? _Narg : _S;
 		_Acc::_Prev(_S) = _Parg != 0 ? _Parg : _S;
 		_CATCH_ALL
-		allocator.deallocate(_S, 1);
 		_RERAISE;
 		_CATCH_END
 #else

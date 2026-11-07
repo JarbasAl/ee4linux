@@ -74,7 +74,7 @@ void BrowserComponent::DownloadImageCompletion(AsyncOpPtr op,ImageParamPtr param
     }
     int httpStatus=request->GetHTTPStatus();
     HTMLDocument::LoadedImageStruct* image=param->mImageStruct;
-    if(request->GetStatus()==0) {
+    if(request->Succeeded()) {
         if(image->mImage.get()!=NULL && httpStatus>=200 && httpStatus<300)
             image->mImage=NULL;
         if(image->mImage.get()==NULL)

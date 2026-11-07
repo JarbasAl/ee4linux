@@ -49,12 +49,6 @@ void Component::EnsureOnTopOf(Component* sibling)
 {
     if(mParent!=NULL) mParent->EnsureOnTopOf(sibling,this);
 }
-// FUNCTION: WON 0x006f5560
-void Component::SetComponentFlags(int flags,bool on)
-{
-    if(on) mComponentBits|=flags;
-    else mComponentBits&=~flags;
-}
 // FUNCTION: WON 0x006f4fb0
 void Component::SetTranslucentColor(int color,int level)
 {

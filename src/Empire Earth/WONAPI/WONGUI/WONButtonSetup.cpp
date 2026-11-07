@@ -42,3 +42,5 @@ WONButton::WONButton()
 // (public: __thiscall std::map<class WONAPI::Font *,class WONAPI::SmartPtr<class WONAPI::WrappedText>,struct std::less<class WONAPI::Font *>,class std::a)
 // TEMPLATE: WON 0x00717df0
 // (public: virtual void * __thiscall WONAPI::WONButton::`scalar deleting destructor'(unsigned int))
+// TEMPLATE: WON 0x00717dd0
+// (public: __thiscall WONAPI::WONButton::ButtonState::ButtonState(void))

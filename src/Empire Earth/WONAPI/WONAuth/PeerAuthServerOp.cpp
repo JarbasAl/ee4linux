@@ -13,49 +13,6 @@
 #include "ee/wonapi/WONAuthPeerData.h"
 
 namespace WONAPI {
-// FUNCTION: WON 0x006e9050
-void PeerAuthServerOp::Virtual04()
-{
-    mLengthFieldSize=mSocket->GetLengthFieldSize();
-    mPeerAuthServer.Start(mAuthContext->GetPeerData(),mLengthFieldSize);
-    if(mRunMode==1)
-    {
-        AsyncRun();
-        return;
-    }
-
-    ByteBufferPtr recvMsg;
-    WONStatus status=mSocket->RecvMsg(recvMsg,RecvTime());
-    if(CheckStatus(status))
-        return;
-
-    ByteBufferPtr sendMsg;
-    status=mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
-    CheckStatus(status);
-    if(sendMsg.get()==NULL)
-        return;
-
-    status=mSocket->SendMsg(sendMsg.get(),SendTime());
-    CheckStatus(status);
-    if(mStatus!=100000) // WS_Pending
-        return;
-
-    status=mSocket->RecvMsg(recvMsg,RecvTime());
-    if(CheckStatus(status))
-        return;
-
-    status=mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
-    CheckStatus(status);
-    if(sendMsg.get()==NULL)
-        return;
-
-    status=mSocket->SendMsg(sendMsg.get(),SendTime());
-    if(status==0)
-        Success();
-    else
-        Fn29F220(status);
-}
-
 // FUNCTION: WON 0x006e8950
 PeerAuthServerOp::PeerAuthServerOp(AuthContext* context,BlockingSocket* socket)
 {
@@ -113,6 +70,49 @@ bool PeerAuthServerOp::CheckStatus(WONStatus status)
 void PeerAuthServerOp::AsyncRun()
 {
     mSocket->Fn2B4740(static_cast<SocketOp*>(Track(new RecvMsgOp,1)),RecvTime());
+}
+
+// FUNCTION: WON 0x006e9050
+void PeerAuthServerOp::Virtual04()
+{
+    mLengthFieldSize=mSocket->GetLengthFieldSize();
+    mPeerAuthServer.Start(mAuthContext->GetPeerData(),mLengthFieldSize);
+    if(mRunMode==1)
+    {
+        AsyncRun();
+        return;
+    }
+
+    ByteBufferPtr recvMsg;
+    WONStatus status=mSocket->RecvMsg(recvMsg,RecvTime());
+    if(CheckStatus(status))
+        return;
+
+    ByteBufferPtr sendMsg;
+    status=mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
+    CheckStatus(status);
+    if(sendMsg.get()==NULL)
+        return;
+
+    status=mSocket->SendMsg(sendMsg.get(),SendTime());
+    CheckStatus(status);
+    if(mStatus!=100000) // WS_Pending
+        return;
+
+    status=mSocket->RecvMsg(recvMsg,RecvTime());
+    if(CheckStatus(status))
+        return;
+
+    status=mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
+    CheckStatus(status);
+    if(sendMsg.get()==NULL)
+        return;
+
+    status=mSocket->SendMsg(sendMsg.get(),SendTime());
+    if(status==0)
+        Success();
+    else
+        Fn29F220(status);
 }
 
 // FUNCTION: WON 0x006e9370

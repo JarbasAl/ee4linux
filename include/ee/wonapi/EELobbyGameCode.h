@@ -85,7 +85,11 @@ public:
     virtual void Virtual18();               // +0x18 0x292797 (ICF: +0x1c)
     virtual void Virtual1C();
     virtual bool Virtual20();               // +0x20 0x292719 (false: everyone is on one team)
+#ifdef EE_DINKUM_SXL233
+    virtual bool Virtual24();
+#else
     virtual long Virtual24();               // +0x24 0x2926f9 (returns through eax: push 1/pop eax, xor eax, eax)
+#endif
     virtual bool Virtual28();               // +0x28 0x2926df
     virtual void Virtual30(LobbyClient* inClient);      // +0x30 0x292a23
     virtual void Virtual34(WriteBuffer& outBuffer);     // +0x34 0x292e42

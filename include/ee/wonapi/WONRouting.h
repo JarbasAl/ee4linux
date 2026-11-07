@@ -69,6 +69,7 @@ public:
     AsyncOpContainer* mContainer;           // +0x24, nonowning; Queue29f200
     unsigned long mStartTime;               // +0x28, GetTickCount
     unsigned long mTimeout;                 // +0x2c, unsignedelapsed comparison29f700
+    bool IsAsync() const { return mRunMode==1; }
     long mRunMode;                          // +0x30
     //: 0x291983 (an inline COMDAT of EELobbyFileTransfer.cpp): finished without error
 #ifdef EE_DINKUM_SXL233
@@ -461,7 +462,7 @@ public:
 // compiler-emitted inline support. Implicit destructor2abad0 has no own-vptr store.
 class SendBytesOp : public SocketOp {
 public:
-    SendBytesOp(ByteBuffer* inData, AsyncSocket* inSocket = NULL)
+    SendBytesOp(const ByteBuffer* inData, AsyncSocket* inSocket = NULL)
         : SocketOp(inSocket),
           mReadBuffer(inData->data(), inData->length()),
           mBuffer(inData)
@@ -475,7 +476,7 @@ public:
 // TD4d41c0, VT44c9a0, total70. Implicit destructor2abb80 has no own-vptr store.
 class SendMsgOp : public SendBytesOp {
 public:
-    SendMsgOp(ByteBuffer* inMessage, AsyncSocket* inSocket = NULL)
+    SendMsgOp(const ByteBuffer* inMessage, AsyncSocket* inSocket = NULL)
         : SendBytesOp(NULL, inSocket), mMessage(inMessage) {}
     virtual WONStatus Virtual0C(); //2b5fa0
     virtual WONStatus Virtual10(); //2b6020
@@ -486,7 +487,7 @@ public:
 // Implicit destructor2aa980 destroys IPAddr60, buffer5c, socket54, AsyncOp.
 class SendBytesToOp : public SocketOp {
 public:
-    SendBytesToOp(ByteBuffer* inData, const IPAddr& inAddress,
+    SendBytesToOp(const ByteBuffer* inData, const IPAddr& inAddress,
                   AsyncSocket* inSocket = NULL)
         : SocketOp(inSocket), mBuffer(inData), mAddress(inAddress)
     { mB58[1] = true; }
@@ -504,10 +505,10 @@ public:
     virtual void Virtual04(); //2b57d0
     virtual WONStatus Virtual10(); //2b5820
     virtual AsyncOp* Duplicate(); //2b5660, actual fresh same-class allocation
-    ByteBufferPtr GetBytes() const; //2aa920, owning51B sret/AddRef, field60
+    SmartPtr<ByteBuffer> GetBytes() const; //2aa920, owning51B sret/AddRef, field60
     const IPAddr& GetAddr() const { return mFromAddress; }
     char* mRawBuffer; //5c, owned array: allocate/transfer/clear; explicit native destructor deletes remainder
-    ByteBufferPtr mReceivedData; //60, initializednull
+    SmartPtr<ByteBuffer> mReceivedData; //60, initializednull
     unsigned short mMaxLength; //64, actual first constructor argument
     IPAddr mFromAddress; //68, natural two-byte alignment before this member
 };
@@ -525,6 +526,7 @@ public:
     const IPAddr& GetFromAddr();
     void SetFromAddr(const IPAddr& theAddr);
     const ByteBuffer* GetMsg() { return mReceivedData.get(); }
+    void SetMsg(const ByteBuffer* theMsg) { mReceivedData=theMsg; }
     // Implicit destructor2b6930, no own-vptr store; natural owned-member cleanup.
     virtual void Virtual04(); //2b6fb0
     virtual void Virtual08(); //2b6f60
@@ -579,7 +581,7 @@ public:
 
     UDPManager(); //2b76b0, original-carved
     void SetDefaultCompletion(CompletionBase<AsyncOpPtr>* theCompletion) { mDefaultCompletion=theCompletion; }
-    void Send(ByteBuffer*, const IPAddr&); //2b7ec0, void/ret8, currentPing draftname; SDKSendBytesTo spelling separatelyprovisional
+    void Send(const ByteBuffer*, const IPAddr&); //2b7ec0, void/ret8, currentPing draftname; SDKSendBytesTo spelling separatelyprovisional
     void Close(); //2b78e0
     void SetAutoRecv(bool); //2b7b40
     void QueueOp(UDPManagerRecvOp*,unsigned long); //2b7c50
@@ -615,6 +617,7 @@ inline void UDPManagerSendRecvOp::SetDestAddr(const IPAddr& theAddr) { mAddress=
 // vtables 0x84c49c / 0x84c4ac; r23 PROVISIONAL member names)
 class LobbyCompletionBase : public CompletionBase<AsyncOpPtr> {
 public:
+    LobbyCompletionBase() throw() {}
     virtual void Complete(AsyncOpPtr theParam);     // +0x04 0x357d70 (calls +0x08)
     virtual void Run(AsyncOp* inOp) {}      // +0x08
 };
@@ -813,6 +816,10 @@ public:
     unsigned long mBanTime; //68, ctor0
     std::wstring mBanComment; //6c..7b
     void SetBanComment(const std::wstring& v) { mBanComment=v; }
+    void SetGroupId(unsigned short v) { mGroupId=v; }
+    void SetBanTime(unsigned long v) { mBanTime=v; }
+    void SetClientId(unsigned short v) { mClientId=v; mBanByWONId=false; }
+    void SetWONId(unsigned long v,bool inIsCDKeyId) { mWONId=v; mBanByWONId=true; mWONIdIsCDKeyId=inIsCDKeyId; }
     bool mBanByWONId; //7c, ctortrue
     bool mWONIdIsCDKeyId; //7d, ctorfalse; alignment7e..7f
     unsigned long mWONId; //80, ctor0
@@ -833,6 +840,11 @@ public:
     unsigned long mMuteTime; //68
     std::wstring mMuteComment; //6c
     void SetMuteComment(const std::wstring& v) { mMuteComment=v; }
+    void SetGroupId(unsigned short v) { mGroupId=v; }
+    void SetMuteTime(unsigned long v) { mMuteTime=v; }
+    void SetClientId(unsigned short v) { mClientId=v; mMuteByWONId=false; }
+    void SetWONId(unsigned long v,bool inIsCDKeyId) { mWONId=v; mMuteByWONId=true; mWONIdIsCDKeyId=inIsCDKeyId; }
+    void SetIsMuted(bool v) { mIsMuted=v; }
     bool mMuteByWONId; //7c
     bool mWONIdIsCDKeyId; //7d
     unsigned long mWONId; //80
@@ -963,6 +975,7 @@ public:
     std::wstring mClientName; //64..73
     std::wstring mServerPassword; //74..83
     unsigned long mReconnectId; //84: ctor2c8502 DWORD, request2c87f2 DWORD->AppendLong; reply2c88a6 DWORD
+    unsigned long GetReconnectId() const { return mReconnectId; }
     unsigned long mAsyncMessageFlags; //88: ctor2c8508,request2c8800 DWORD
     unsigned long mRegisterFlags; //8c: ctor2c850e,request2c880e DWORD
     unsigned long mClientFlags; //90: ctor2c8514,request2c881c DWORD
@@ -972,6 +985,10 @@ public:
     int mNumRepliesNeeded; //a8: SendRequest2c87b6 sets1,2c87c2 sets2
 public:
     unsigned short GetClientId() const { return mClientId; }
+    const std::wstring& GetClientName() const { return mClientName; }
+    unsigned long GetClientFlags() const { return mClientFlags; }
+    unsigned long GetAsyncMessageFlags() const { return mAsyncMessageFlags; }
+    const RoutingClientMap& GetClientMap() const { return mClientMap; }
 };
 
 // Old protected EEWonNet spelled +84 ULONG "mClientId". That is a semantic
@@ -1014,6 +1031,9 @@ public:
 public:
     unsigned short GetClientId() const { return mClientId; }
     unsigned char GetMemberFlags() const { return mMemberFlags; }
+    const std::wstring& GetClientName() const { return mClientName; }
+    unsigned long GetClientFlags() const { return mClientFlags; }
+    bool HasClientFlags() const { return mHasClientFlags; }
 };
 
 // RTTI44ce78; type8; processor2c4700 calls actual info getter2c4640 then
@@ -1027,6 +1047,7 @@ public:
     virtual WONStatus Virtual10(unsigned char, ReadBuffer&); // native 0x2c4700
     static void ParseExClientData(ReadBuffer&, RoutingClientInfo*); // native2c4680 cdecl
     SmartPtr<RoutingClientInfo> mClientInfo; //64
+    const std::wstring& GetClientName() const { if(mClientInfo.get()!=NULL) return mClientInfo->mName; else return GetEmptyWStr(); }
 };
 
 // RTTI44ce5c; type9; processor2c4800 reads two shorts.
@@ -1070,7 +1091,7 @@ public:
     unsigned short mLinkId; //64
     std::string mDataType; //68
     std::wstring mName; //78
-    SmartPtr<ByteBuffer> mData; //88
+    ConstSmartPtr<ByteBuffer> mData; //88
     // SUPPORT actuald06f1: returns owned pointer in caller-provided sret; no class lifetime.
     ByteBufferPtr GetData() const { return mData; }
     unsigned short GetLinkId() const { return mLinkId; } //actual scalar value accessor
@@ -1122,6 +1143,9 @@ public:
 public:
     unsigned short GetGroupId() const { return mGroupId; }
     unsigned long GetFlags() const { return mFlags; }
+    unsigned long GetAsyncFlags() const { return mAsyncFlags; }
+    unsigned short GetMaxClients() const { return mMaxClients; }
+    const std::wstring& GetName() const { return mName; }
 };
 
 // RTTI44cd98; type25; processor2c6da0 reads one short; Routing3e9040 removes group64.
@@ -1207,6 +1231,9 @@ public:
 public:
     unsigned short GetClientId() const { return mClientId; }
     unsigned short GetFlags() const { return mFlags; }
+    bool IsWhisper() const { return (mFlags & 4) ? true : false; }
+    const std::wstring& GetText() const { return mText; }
+    const std::list<unsigned short>& GetRecipients() const { return mRecipients; }
 };
 
 // RTTI44cc80; type40; processor2c7e00 ReadShort64, ReadBuffer2a4110 thenowned buffer68.
@@ -2136,6 +2163,7 @@ public:
     bool ExtractRedirect(const char*); //2d45f0
 
     HTTPGetOp(const std::string& inURL); //2d3f90,actual15ccaller3ddd81
+    void Init();
     HTTPGetOp(const std::string& inHost,const std::string& inPath); //2d3b10 call-only untilnewctorcohort
     void SetRecvChunkCompletion(CompletionBase<AsyncOpPtr>*,DWORD); //2d44e0 actual107B ownershipsetter call-only
     static void ReadProxyHostFile(bool inForce=true); //2d3830
@@ -2159,6 +2187,8 @@ public:
     void SetOnlySend() { mOnlySend=true; mOnlyRecv=false; }
     void SetOnlyRecv() { mOnlyRecv=true; mOnlySend=false; }
     void SetSendAndRecv() { mOnlySend=false; mOnlyRecv=false; }
+    bool GetOnlySend() { return mOnlySend; }
+    bool GetOnlyRecv() { return mOnlyRecv; }
     void SetDoRangeResume(bool doRangeResume) { mDoRangeResume=doRangeResume; }
     void SetCloseConnection(bool closeConnection) { mCloseConnection=closeConnection; }
     bool ContentIsNew() { return mContentIsNew; }
@@ -2556,6 +2586,7 @@ protected:
     void Init(); //actual native163B, length84=4 then new completeProfile20
     virtual ~RequestPasswordEmailOp(); //2ce520,329B, explicit ownVT2ce540
 public:
+    void SetUserName(const std::wstring& inUser) { mUserName=inUser; }
     std::wstring mUserName; //12c..13c
     SmartPtr<ProfileData> mProfileData; //13c
     const unsigned short mMsgType; //140=8,naturalpadding142..143
@@ -2569,6 +2600,7 @@ protected:
     void Init(); //actual native163B, length84=4 then new completeProfile20
     virtual ~RequestAccountInfoEmailOp(); //2ce130,328B,explicit ownVT2ce150
 public:
+    void SetEmail(const std::string& inEmail) { mEmail=inEmail; }
     std::string mEmail; //12c..13c
     SmartPtr<ProfileData> mProfileData; //13c
     const unsigned short mMsgType; //140=14,naturalpadding142..143
@@ -2638,6 +2670,8 @@ public:
     virtual WONStatus Virtual10();          //2ceb30 GetNextRequest
     virtual WONStatus Virtual14();          //2cec80 CheckResponse
     virtual void Virtual18();               //4142a0 Reset, actual override
+    void SetEmail(const std::string& inEmail) { mEmail=inEmail; }
+    void SetNewPassword(const std::wstring& inPassword) { mNewPassword=inPassword; }
     SmartPtr<ProfileData> mProfileData;      //f4
     std::string mErrorString;               //f8..108
     std::wstring mNewPassword;              //108..118

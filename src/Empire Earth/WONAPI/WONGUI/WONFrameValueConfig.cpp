@@ -51,8 +51,6 @@ bool WONTabCtrlConfig::Virtual24(const std::string& key)
         GUIString name=Fn3842F0(false); EnsureComma();
         Container* tab=SafeConfigGetComponent<Container*>(ReadComponent(),"Container");
         mTabCtrl->AddStandardTab(name,tab);
-        // LOST-DEBUG: none: exact only
-        EE_LOST_DEBUG(1);
     } else if(key=="FRAME") mTabCtrl->SetFrame(ReadFrame(this));
     else return TabCtrlConfig::Virtual24(key);
     return true;

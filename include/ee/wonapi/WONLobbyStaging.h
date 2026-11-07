@@ -27,10 +27,10 @@ public:
     void Fn3EFAC0(ReadBuffer& inBuffer, LobbyClient* inClient);
     void Fn3EFB00(ReadBuffer& inBuffer, LobbyClient* inClient);
     void Fn3EFB50(ReadBuffer& inBuffer, LobbyClient* inClient);
-    void Fn3EFD20(ByteBuffer* inMessage, LobbyClient* inClient);
-    void Fn3EFD60(ByteBuffer* inMessage);
-    void Fn3EFDA0(ByteBuffer* inMessage);
-    void Fn3EFDE0(LobbyClient* inClient, ByteBuffer* inMessage);
+    void Fn3EFD20(const ByteBuffer* inMessage, LobbyClient* inClient);
+    void Fn3EFD60(const ByteBuffer* inMessage);
+    void Fn3EFDA0(const ByteBuffer* inMessage);
+    void Fn3EFDE0(LobbyClient* inClient, const ByteBuffer* inMessage);
     bool Fn3EFE10();
     bool Fn3EFE30();
     void Fn3EFEE0(LobbyGame* inGame);

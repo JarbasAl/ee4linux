@@ -17,19 +17,19 @@ namespace WONAPI {
 // Existing ordinary persistence function, native35d100/cdecl.
 void LobbyFn35D100(const GUIString&,bool);
 // FUNCTION: WON 0x0075b850
-void LobbyFn35B850(LobbyClient* client,bool flag,int roomSpec)
+void LobbyFn35B850(LobbyClient* client,bool flag,unsigned int roomSpec)
 {
     WONLobbyPrv* data=gLobbyData.get();
     if(data==NULL || !data->mConfig->mCDKeyCheck) return;
-    if(client->mB23==flag) return;
+    if(client->GetB23()==flag) return;
     client->mB23=flag;
     LobbyFn359100(new ClientChangedEvent(client,roomSpec,2),true);
 }
 // FUNCTION: WON 0x0075b7b0
-void LobbyFn35B7B0(LobbyClient* client,bool flag,int roomSpec)
+void LobbyFn35B7B0(LobbyClient* client,bool flag,unsigned int roomSpec)
 {
     if(gLobbyData.get()==NULL) return;
-    if(client->mB22==flag) return;
+    if(client->GetB22()==flag) return;
     client->mB22=flag;
     LobbyFn35D100(client->mName,flag);
     LobbyFn359100(new ClientChangedEvent(client,roomSpec,2),true);

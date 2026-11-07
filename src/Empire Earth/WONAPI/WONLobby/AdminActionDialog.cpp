@@ -57,9 +57,9 @@ unsigned long AdminActionDialog::GetNumSeconds()
     switch(mTimeSegmentCombo->GetSelItem()) {
         case 2: aSeconds*=24;
         case 1: aSeconds*=60;
-        case 0: return aSeconds*60;
-        default: return aSeconds;
+        case 0: aSeconds*=60;
     }
+    return aSeconds;
 }
 // FUNCTION: WON 0x7f4dc0
 void AdminActionDialog::InitComponent(ComponentInit& inInit)
@@ -107,7 +107,8 @@ void AdminActionDialog::Reset(int inAction, LobbyClient* inTarget)
     aTitle.append(GUIString(new GUIStringData(" ")));
     aTitle.append(inTarget->GetName());
     mTitleLabel->SetText(aTitle,true);
-    mExplanationHeader->SetText(mIsReasonOptional ? ::AdminActionDialog_ExplanationOpt_String : ::AdminActionDialog_ExplanationReq_String,true);
+    if(mIsReasonOptional) mExplanationHeader->SetText(::AdminActionDialog_ExplanationOpt_String,true);
+    else mExplanationHeader->SetText(::AdminActionDialog_ExplanationReq_String,true);
     mDoActionButton->SetText(anAction,true);
     Fn2F6290();
 }

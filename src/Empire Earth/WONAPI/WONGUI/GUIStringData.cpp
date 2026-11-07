@@ -34,7 +34,8 @@ std::string GUIStringData::GetString() const
     result.reserve(mLength);
     for(int i=0;i<mLength;++i)
     {
-        if(mText[i]<256) result+=static_cast<char>(mText[i]);
+        wchar_t c=mText[i];
+        if(c<256) result+=(char)c;
         else result+='?';
     }
     return result;
@@ -50,8 +51,9 @@ std::wstring GUIStringData::GetWString() const
 int GUIStringData::Compare(const GUIStringData* other) const
 {
     unsigned short len1=mLength, len2=other->mLength;
-    int count=len2;
-    if(len1<count) count=len1;
+    int a=len1;
+    int b=len2;
+    int count=b<a?b:a;
     for(int i=0;i<count;++i)
         if(mText[i]!=other->mText[i]) return mText[i]-other->mText[i];
     if(len1==len2) return 0;
@@ -65,13 +67,13 @@ int GUIStringData::CompareNoCase(const GUIStringData* other) const
     if(other->mLength<count) count=other->mLength;
     const wchar_t* a=mText;
     const wchar_t* b=other->mText;
-    for(int i=0;i<count;++i,++a,++b)
+    for(int i=0;i<count;++a,++b,++i)
     {
-        unsigned short ca=towupper(*a);
-        unsigned short cb=towupper(*b);
+        int ca=towupper(*a);
+        int cb=towupper(*b);
         if(ca!=cb) return ca-cb;
     }
-    if(mLength==other->mLength) return 0;
+    if(other->mLength==mLength) return 0;
     return mLength<other->mLength?-1:1;
 }
 // Original328150/140: offset is full signed int, ASCII bytes widen unsigned; counted wide text wins over early NUL.
@@ -80,11 +82,11 @@ int GUIStringData::CompareNoCase(const char* other, int offset) const
 {
     const wchar_t* a=mText+offset;
     int count=mLength-offset;
-    for(int i=0;i<count;++i,++a,++other)
+    for(int i=0;i<count;++a,++other,++i)
     {
-        unsigned short ca=towupper(*a);
+        int ca=towupper(*a);
         unsigned char byte=*other;
-        unsigned short cb=towupper(byte);
+        int cb=towupper(byte);
         if(cb==0) return 1;
         if(ca!=cb) return ca-cb;
     }
@@ -102,9 +104,10 @@ int GUIStringData::ToInt(unsigned short offset) const
         negative=true;
         ++offset;
     } else negative=false;
-    for(;;)
+    while(true)
     {
-        int digit=text[offset++]-'0';
+        int digit=text[offset]-'0';
+        ++offset;
         if(digit<0 || digit>9) break;
         value=value*10+digit;
     }
@@ -143,17 +146,15 @@ int GUIStringData::find(const GUIStringData* other, int start) const
 // FUNCTION: WON 0x00728340
 int GUIStringData::findNoCase(const GUIStringData* other, int start) const
 {
+    int candidate=start;
     int length=mLength;
     int needleLength=other->mLength;
     const wchar_t* needle=other->mText;
-    for(int candidate=start;candidate<length;++candidate)
+    for(;candidate<length;++candidate)
     {
         int pos=candidate,matched=0;
-        while(pos<length && matched<needleLength)
+        while(pos<length && matched<needleLength && towupper(mText[pos])==towupper(needle[matched]))
         {
-            unsigned short a=towupper(mText[pos]);
-            unsigned short b=towupper(needle[matched]);
-            if(a!=b) break;
             ++pos;
             ++matched;
         }

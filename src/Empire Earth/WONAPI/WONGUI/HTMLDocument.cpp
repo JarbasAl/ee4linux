@@ -16,6 +16,7 @@
 #include "ee/wonapi/WONLobbyImageHelpers.h"
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 #include "ee/wonapi/WONLobbyConfigImages.h"
+#include "LostDebug.h"
 
 namespace WONAPI {
 inline HTMLDocument::LoadedImageStruct::LoadedImageStruct(NativeImage* image,Animation* animation) : mImage(image),mAnimation(animation)
@@ -25,6 +26,33 @@ inline HTMLDocument::LoadedImageStruct::LoadedImageStruct(NativeImage* image,Ani
 // FUNCTION: WON 0x0073c780
 // (??_GHTMLDocument@WONAPI@@UAEPAXI@Z)
 
+// FUNCTION: WON 0x0073c610
+HTMLDocument::HTMLDocument(const GUIString &theBasePath)
+{
+	Clear();
+
+	mDecodingImages = false;
+	mDelayImages = true;
+	mWindow = Window::GetDefaultWindow();
+
+	if(!(theBasePath.length()==0))
+		SetBasePath(theBasePath);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// FUNCTION: WON 0x0073cbd0
+void HTMLDocument::Clear()
+{
+	mBodyStart = mBodyEnd = mTagList.end();
+	mImageTagMap.clear();
+	mLoadedImageMap.clear();
+	mScaledImageMap.clear();
+	mImageTagList.clear();
+	mTagList.clear();
+	mListStack.clear();
+	mCurImageMap = NULL;
+	mImageMapMap.clear();
+}
 // FUNCTION: WON 0x0073ccf0
 void HTMLDocument::SetBasePath(const GUIString& path)
 {
@@ -387,33 +415,6 @@ void HTMLDocument::DecodeImages(bool continueDelay)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-// FUNCTION: WON 0x0073c610
-HTMLDocument::HTMLDocument(const GUIString &theBasePath)
-{
-	Clear();
-
-	mDecodingImages = false;
-	mDelayImages = true;
-	mWindow = Window::GetDefaultWindow();
-
-	if(!(theBasePath.length()==0))
-		SetBasePath(theBasePath);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// FUNCTION: WON 0x0073cbd0
-void HTMLDocument::Clear()
-{
-	mBodyStart = mBodyEnd = mTagList.end();
-	mImageTagMap.clear();
-	mLoadedImageMap.clear();
-	mScaledImageMap.clear();
-	mImageTagList.clear();
-	mTagList.clear();
-	mListStack.clear();
-	mCurImageMap = NULL;
-	mImageMapMap.clear();
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -422,9 +423,9 @@ NativeImage* HTMLDocument::CheckScaleImage(LoadedImageStruct* image,const GUIStr
 {
     NativeImage* native=image->mImage.get();
     // Target revision defaults nonpositive dimensions independently; no aspect-ratio inference.
-    if(width<=0) width=native->mWidth;
-    if(height<=0) height=native->mHeight;
-    if(width!=native->mWidth || height!=native->mHeight)
+    if(width<=0) width=native->GetWidth();
+    if(height<=0) height=native->GetHeight();
+    if(width!=native->GetWidth() || height!=native->GetHeight())
     {
         char buffer[50];
         sprintf(buffer,"_%d_%d",width,height);
@@ -541,6 +542,8 @@ void HTMLDocument::HandleImage(HTMLImageTag *theTag)
 
 		theTag->mImageMap = anItr->second;
 	}
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -548,6 +551,8 @@ void HTMLDocument::HandleImage(HTMLImageTag *theTag)
 // FUNCTION: WON 0x0073e020
 void HTMLDocument::HandleImageMap(HTMLImageMapTag* theTag)
 {
+    // LOST-DEBUG: none: exact only
+    EE_LOST_DEBUG(2);
 	if(theTag->IsEnd())
 	{
 		mCurImageMap = NULL;
@@ -621,8 +626,8 @@ void HTMLDocument::HandleBody(HTMLBodyTag *theTag)
 	NativeImage *anImage = aStruct->mImage.get();
 
 	// Pre-Tile the image a little if it's too small
-	int aWidth = anImage->mWidth;
-	int aHeight = anImage->mHeight;
+	int aWidth = anImage->GetWidth();
+	int aHeight = anImage->GetHeight();
 	int anExtraWidth = 0;
 	int anExtraHeight = 0;
 	if(aWidth < 50)
@@ -646,8 +651,8 @@ void HTMLDocument::HandleBody(HTMLBodyTag *theTag)
 		aHeight+=anExtraHeight;
 		SmartPtr<NativeImage> aBigImage = mWindow->CreateImage(aWidth,aHeight);
 		Graphics &g = aBigImage->GetGraphics();
-		for(int x=0; x<aWidth; x+=anImage->mWidth)
-			for(int y=0; y<aHeight; y+=anImage->mHeight)
+		for(int x=0; x<aWidth; x+=anImage->GetWidth())
+			for(int y=0; y<aHeight; y+=anImage->GetHeight())
 				g.DrawImage(anImage,x,y);
 
 		theTag->mBGImage = aBigImage.get();

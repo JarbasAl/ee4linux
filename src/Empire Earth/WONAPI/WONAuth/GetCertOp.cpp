@@ -425,3 +425,5 @@ WONStatus GetCertOp::Virtual14()
 // (protected: void __thiscall std::list<struct WONAPI::GetCertOp::COMMUNITY_STATUS,class std::allocator<struct WONAPI::GetCertOp::COMMUNITY_STATUS> >::_I)
 // TEMPLATE: WON 0x006efca0
 // (void __cdecl std::_Construct(struct WONAPI::GetCertOp::COMMUNITY_STATUS *,struct WONAPI::GetCertOp::COMMUNITY_STATUS const &))
+// TEMPLATE: WON 0x006eb150
+// (protected: struct std::list<class WONAPI::ElGamal,class std::allocator<class WONAPI::ElGamal> >::_Node * __thiscall std::list<class WONAPI::ElGamal,cl)

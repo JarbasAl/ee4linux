@@ -24,12 +24,7 @@ void LoginHelpCtrl::InitComponent(ComponentInit& inInit)
 void LoginHelpCtrl::Paint(Graphics& inGraphics)
 {
     if(!mHaveLoadedHelp) {
-        {
-            std::string path="help/loginhelp.html";
-            std::string resource=ComponentConfig::GetResourceFile(path);
-            GUIString location(new GUIStringData(resource));
-            mBrowser->Go(location,false,0,-1);
-        }
+        mBrowser->Go(ComponentConfig::GetResourceFile("help/loginhelp.html"),false,0,-1);
         mBrowser->SetLaunchBrowserOnLink(true);
         mHaveLoadedHelp=true;
     }

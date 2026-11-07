@@ -130,7 +130,7 @@ void AccountLogic::HandleLostPassword(ComponentEvent* inEvent)
     if (account == NULL || !CheckLoginStatus())
         return;
     SmartPtr<RequestPasswordEmailOp> op = new RequestPasswordEmailOp(account);
-    op->mUserName = static_cast<GetLostPasswordEvent*>(inEvent)->mUserName;
+    op->SetUserName(static_cast<GetLostPasswordEvent*>(inEvent)->mUserName);
     LobbyFn358E70(op.get(), ::LobbyContainer_RetrievePasswordTitle_String, ::LobbyContainer_RetrievePasswordDetails_String, 0, 0);
 }
 // FUNCTION: WON 0x007db920
@@ -140,7 +140,7 @@ void AccountLogic::HandleLostUsername(ComponentEvent* inEvent)
     if (account == NULL || !CheckLoginStatus())
         return;
     SmartPtr<RequestAccountInfoEmailOp> op = new RequestAccountInfoEmailOp(account);
-    op->mEmail = static_cast<GetLostUserNameEvent*>(inEvent)->mEmail;
+    op->SetEmail(static_cast<GetLostUserNameEvent*>(inEvent)->mEmail);
     LobbyFn358E70(op.get(), ::LobbyContainer_RetrieveUsernameTitle_String, ::LobbyContainer_RetrieveUsernameDetails_String, 0, 0);
 }
 // FUNCTION: WON 0x007dbee0
@@ -155,7 +155,7 @@ void AccountLogic::QueryAccount()
     profile->AddNewsletterSub(1,false);
     LobbyFn358E70(op.get(),::LobbyContainer_QueryAccountTitle_String,::LobbyContainer_QueryAccountDetails_String,1,0);
     if (op->GetStatus() == 0)
-        LobbyFn359100(new QueryAccountResultEvent(GUIString(op->mEmail),
+        LobbyFn359100(new QueryAccountResultEvent(op->mEmail,
                                                   profile->GetNewsletterSub(1)),true);
 }
 
@@ -168,8 +168,8 @@ void AccountLogic::HandleUpdateAccount(ComponentEvent* inEvent)
         return;
     SmartPtr<UpdateAccountOp> op = new UpdateAccountOp(account,auth);
     UpdateAccountEvent* event = static_cast<UpdateAccountEvent*>(inEvent);
-    op->mEmail = event->mEmail;
-    op->mNewPassword = event->mNewPassword;
+    op->SetEmail(event->mEmail);
+    op->SetNewPassword(event->mNewPassword);
     op->mProfileData->AddNewsletterSub(1,event->mNewsletter);
     LobbyFn358E70(op.get(),::LobbyContainer_UpdateAccountTitle_String,::LobbyContainer_UpdateAccountDetails_String,0,0);
 }
@@ -200,18 +200,14 @@ void AccountLogic::HandleCreateAccount(ComponentEvent* inBaseEvent)
     profile->SetBirthDate(event->mMonth,event->mDay,event->mYear);
     op->SetProfileData(profile.get());
     LobbyFn358E70(op.get(),::LobbyContainer_CreateAccountTitle_String,::LobbyContainer_CreateAccountDetails_String,0,0);
-    if(op->GetStatus()!=0) return;
-    LobbyUserInfo* user;
-    {
-        GUIString emptyPassword(new GUIStringData(""));
-        GUIString userName(new GUIStringData(event->mUserName));
-        user=LobbyFn35C910(userName,emptyPassword,false);
+    if(op->GetStatus()==0) {
+        LobbyUserInfo* user=LobbyFn35C910(event->mUserName,"",false);
+        if(user) LobbyFn35B600(user->mValue04,user->mValue08);
+        LobbyFn35E660(true);
+        LobbyFn359120(100052,true);
+        LobbyFn359100(new SetLoginFieldsEvent(GUIString(event->mUserName),
+            GUIString(event->mPassword),false),true);
     }
-    if(user) LobbyFn35B600(user->mValue04,user->mValue08);
-    LobbyFn35E660(true);
-    LobbyFn359120(100052,true);
-    LobbyFn359100(new SetLoginFieldsEvent(GUIString(event->mUserName),
-        GUIString(event->mPassword),false),true);
 }
 }
 
@@ -228,7 +224,7 @@ void AccountLogic::HandleLogin(ComponentEvent* inBaseEvent)
     LoginEvent* event=static_cast<LoginEvent*>(inBaseEvent);
     if(event->mUserName.empty() || !CheckLoginStatus()) return;
     bool admin=false;
-    if(event->mUserName[0]==L'@') {
+    if(event->mUserName.at(0)==L'@') {
         admin=true;
         event->mUserName=event->mUserName.substr(1);
     }
@@ -254,12 +250,8 @@ void AccountLogic::HandleLogin(ComponentEvent* inBaseEvent)
     if(op->GetStatus()!=0) return;
     auth->Fn2DEB30(true);
     GUIString password(GetEmptyGUIStringData());
-    if(event->mRemember) password=GUIString(new GUIStringData(event->mPassword));
-    LobbyUserInfo* user;
-    {
-        GUIString name(new GUIStringData(event->mUserName));
-        user=LobbyFn35C910(name,password,false);
-    }
+    if(event->mRemember) password=event->mPassword;
+    LobbyUserInfo* user=LobbyFn35C910(event->mUserName,password,false);
     if(user) {
         LobbyFn35B600(user->mValue04,user->mValue08);
         LobbyFn35E660(true);

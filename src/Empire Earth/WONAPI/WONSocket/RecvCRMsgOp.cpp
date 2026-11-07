@@ -26,8 +26,8 @@ WONStatus RecvCRMsgOp::Virtual10()
         if (aStatus==0) {
             mBuffer.AppendByte(aByte);
             if (aByte==10 && mBuffer.mLength>=2 && mBuffer.mData[mBuffer.mLength-2]==13) {
-                mBuffer.mData[mBuffer.mLength-2]=0;
-                mBuffer.SetSize(mBuffer.mLength-1);
+                mBuffer.data()[mBuffer.mLength-2]=0;
+                mBuffer.SetSize(mBuffer.length()-1);
                 mMessage=mBuffer.ToByteBuffer(true);
                 return 0;
             }

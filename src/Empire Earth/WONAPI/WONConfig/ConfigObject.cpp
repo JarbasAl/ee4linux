@@ -9,6 +9,7 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyConfig.h"
+#include "LostDebug.h"
 namespace WONAPI {
 class ConfigDefineScope {
     ConfigParser& mParser;
@@ -55,8 +56,10 @@ bool ConfigObject::Virtual14(const std::string& key,std::string& outValue)
 // FUNCTION: WON 0x007af040
 void ConfigObject::Virtual1C(std::string& outValues)
 {
+    const KeyValMap& aMap=mKeyMap;
     KeyValMap::const_iterator itr=mKeyMap.begin();
-    while(itr!=mKeyMap.end()) {
+    while(true) {
+        if(itr==aMap.end()) break;
         outValues+=itr->first;
         outValues+=": ";
         QueryValue(itr,outValues);
@@ -118,7 +121,8 @@ bool ConfigObject::Virtual10(ConfigParser*) {return true;}
 bool ConfigObject::ParseTopLevel(ConfigParser& parser,const char* filePath)
 {
     if(filePath!=NULL && !parser.OpenFile(std::string(filePath))) {
-        std::string error=std::string("File not found: ")+filePath;
+        std::string error("File not found: ");
+        error+=filePath;
         parser.SetError(error,false);
         return false;
     }
@@ -144,20 +148,16 @@ bool ConfigObject::ParseGroup(ConfigParser& parser,bool checkBraces,bool skip,bo
                 break;
             }
             if(token[token.length()-1]==':') {
-                token.erase(token.length()-1);
+                token.resize(token.length()-1);
                 std::string value;
                 std::wstring wideValue;
                 StringParser valueParser("");
                 if(parser.mIsUnicode) {
                     if(!parser.ReadToken(wideValue,true,skip)) return false;
-                    valueParser.mText.mWide=wideValue.c_str();
-                    valueParser.mPos=0;
-                    valueParser.mWide=true;
+                    valueParser.Set(wideValue.c_str());
                 } else {
                     if(!parser.ReadToken(value,true,skip)) return false;
-                    valueParser.mText.mNarrow=value.c_str();
-                    valueParser.mPos=0;
-                    valueParser.mWide=false;
+                    valueParser.Set(value.c_str());
                 }
                 if(!skip && !Virtual08(&parser,token,valueParser))
                     parser.AddWarning("Unexpected key/val: "+token+" "+value);
@@ -171,7 +171,7 @@ bool ConfigObject::ParseGroup(ConfigParser& parser,bool checkBraces,bool skip,bo
             }
         }
         if(prePost && !skip && !Virtual10(&parser)) return false;
-    } catch(const ConfigObjectException& exception) {
+    } catch(ConfigObjectException& exception) {
         if(exception.mFlag) parser.SetError(exception.mText,false);
         else parser.AddWarning(exception.mText);
     }
@@ -219,15 +219,16 @@ bool ConfigObject::HandleKeyVal(ConfigParser& parser,StringParser& value,KeyValM
 // FUNCTION: WON 0x007b18e0
 void ConfigObject::RegisterKeyValue(const char* key,ConfigValueBase* value)
 {
-    mKeyMap.insert(KeyValMap::value_type(std::string(key),value));
+    if(!mKeyMap.insert(KeyValMap::value_type(std::string(key),value)).second) {
+    }
 }
 // FUNCTION: WON 0x007b00b0
 bool ConfigObject::IncludeFile(ConfigParser& parser,const std::string& path,bool required)
 {
     std::string file=path;
     std::string::size_type slash=file.find_last_of("/");
-    if(slash==std::string::npos) slash=file.find_last_of('\\');
-    if(parser.mIgnorePathOnIncludeFile && slash!=std::string::npos)
+    if(slash==std::string::npos) slash=file.find_last_of("\\");
+    if(parser.GetIgnorePathOnIncludeFile() && slash!=std::string::npos)
         file=file.substr(slash+1,file.length()-slash-1);
     file=parser.mFilePath+file;
     ConfigParser included;
@@ -236,7 +237,7 @@ bool ConfigObject::IncludeFile(ConfigParser& parser,const std::string& path,bool
         bool result=ParseGroup(included,false,false,false,true);
         parser.CopyWarnings(included);
         if(!result) {parser.SetError(included.GetAbortReason(),false);return false;}
-        if(included.mStopped) parser.mStopped=true;
+        if(included.IsStopped()) parser.Stop();
     } else if(required) {parser.SetError("File not found: "+file,false);return false;}
     return true;
 }
@@ -315,8 +316,8 @@ bool ConfigObject::Virtual04(ConfigParser* parser,const std::string& instruction
         return true;
     }
     KeyGroupMap::iterator itr=mM48.find(instruction);
-    if(itr==mM48.end()) return false;
-    return HandleChildGroup(*parser,itr);
+    if(itr!=mM48.end()) return HandleChildGroup(*parser,itr);
+    else return false;
 }
 // FUNCTION: WON 0x007b11d0
 bool ConfigObject::Virtual08(ConfigParser* parser,const std::string& instruction,StringParser& value)
@@ -325,11 +326,11 @@ bool ConfigObject::Virtual08(ConfigParser* parser,const std::string& instruction
         std::string name;
         if(!value.ReadString(name,true)) {parser->AddWarning("Invalid define.");return true;}
         value.SkipWhitespace();
-        if(value.mWide) {
-            std::wstring rest=value.mText.mWide+value.mPos;
+        if(value.GetIsWString()) {
+            std::wstring rest=value.GetWStr()+value.GetPos();
             parser->AddDefine(name,WStringToString(rest),instruction=="REDEFINE");
         } else {
-            std::string rest=value.mText.mNarrow+value.mPos;
+            std::string rest=value.GetStr()+value.GetPos();
             parser->AddDefine(name,rest,instruction=="REDEFINE");
         }
         return true;
@@ -346,7 +347,8 @@ bool ConfigObject::Virtual08(ConfigParser* parser,const std::string& instruction
                 parser->AddWarning("Expecting string: optional after include group, include is required.");
             else required=false;
         }
-        return IncludeGroup(*parser,name,required);
+        IncludeGroup(*parser,name,required);
+        return true;
     }
     if(instruction=="INCLUDEFILE") {
         std::string path;
@@ -360,11 +362,12 @@ bool ConfigObject::Virtual08(ConfigParser* parser,const std::string& instruction
                 parser->AddWarning("Expecting string: optional after include file, include is required.");
             else required=false;
         }
-        return IncludeFile(*parser,path,required);
+        IncludeFile(*parser,path,required);
+        return true;
     }
     KeyValMap::iterator itr=mKeyMap.find(instruction);
-    if(itr==mKeyMap.end()) return false;
-    return HandleKeyVal(*parser,value,itr);
+    if(itr!=mKeyMap.end()) return HandleKeyVal(*parser,value,itr);
+    else return false;
 }
 
 }

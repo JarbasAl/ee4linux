@@ -46,7 +46,7 @@ SmartPtr<RawImage> WIMDecoder::DoDecodeRaw()
 
         SmartPtr<RawImage32> image=new RawImage32(width,height);
         image->mDoTransparency=transparency;
-        mFileReader->ReadBytes(image->mImageData,numBytes);
+        mFileReader->ReadBytes(image->GetImageData(),numBytes);
         return image.get();
     }
     catch(FileReaderException&) {}

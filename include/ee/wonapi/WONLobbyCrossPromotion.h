@@ -21,6 +21,7 @@ public:
     void Fn3C9A30(Image*);
     virtual void HandleComponentEvent(ComponentEvent*);
     SmartPtr<Image> mDefaultImage; //68
+    void SetDefaultBrowse(const GUIString& inBrowse) { mDefaultBrowse=inBrowse; }
     GUIString mDefaultBrowse; //6c
 };
 }

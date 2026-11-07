@@ -13,6 +13,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyTextAreaConfig.h"
 namespace WONAPI {
+static inline void AppendRange(GUIString& text,const GUIString& f,int s,int l) { text.append(f,(unsigned short)s,(unsigned short)l); }
 // FUNCTION: WON 0x0074a1c0
 void LobbyFn34A1C0(TextArea* area,const GUIString& format,
     const GUIString*const* strings,int numStrings,const int* colors,int numColors,
@@ -23,21 +24,21 @@ void LobbyFn34A1C0(TextArea* area,const GUIString& format,
     Font* font=area->mFont.get();
     GUIString text;
     int start=0;
-    int open;
     while(true)
     {
-        open=format.find('<',start);
+        int open=format.find('<',start);
         if(open<0)
             break;
-        text.append(format,(unsigned short)start,(unsigned short)(open-start));
-        int command=format[open+1];
+        AppendRange(text,format,start,open-start);
+        int next=open+1;
+        int command=format[next];
         if(command=='<')
         {
             text.append(L'<');
             start=open+2;
             continue;
         }
-        if(open+1<format.length())
+        if(next<format.length())
         {
             if(!text.empty())
             {
@@ -72,7 +73,7 @@ void LobbyFn34A1C0(TextArea* area,const GUIString& format,
         start=close+1;
     }
     if(start<format.length())
-        text.append(format,(unsigned short)start,(unsigned short)(format.length()-start));
+        text.append(format,(unsigned short)start);
     if(!text.empty() || lineBreak)
         area->AddSegment(text,color,font,lineBreak);
 }

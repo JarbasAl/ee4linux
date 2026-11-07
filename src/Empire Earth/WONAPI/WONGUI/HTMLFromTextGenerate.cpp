@@ -89,7 +89,7 @@ HTMLDocument* HTMLFromText::GenerateFromText(const GUIString& text,int flags)
     mBackStr.reserve(text.length());
     for(int i=text.length()-1;i>=0;--i) mBackStr.append(text[i]);
     if(flags&HTMLDocGenFlag_IsOptionalHTML) {
-        if((flags&HTMLDocGenFlag_SkipFirstCharIfNotHTML) && mBackStr.length()!=0)
+        if((flags&HTMLDocGenFlag_SkipFirstCharIfNotHTML) && mBackStr.length()>0)
             mBackStr.resize(mBackStr.length()-1);
     }
     return Generate(false);

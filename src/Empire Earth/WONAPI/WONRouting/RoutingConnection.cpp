@@ -8,8 +8,8 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "LostDebug.h"
 // NEW actualRoutingConnection1c0 source family, NOT SmartRoutingConnection258.
-// Scratch only; declaration preflight/Rootguard/capture gate applies.
 namespace WONAPI {
 // FUNCTION: WON 0x006ba050
 RoutingConnection::RoutingConnection()
@@ -98,60 +98,6 @@ void RoutingConnection::JoinGroup(unsigned short inGroupId,
     op->Run(-1);
 }
 
-// Native factory GetUnsolicitedOp1893 and completeInfo allocating factories stay
-// deferred, with existing target-call declarations; no partial new/subobject view.
-// Actual typed ReadBufferException catch entry2bca7c is NOT a separate function.
-// MsgCallback's status value on a thrown ReadBufferException is left uninitialized
-// by the original hot body/catch; never invent a default status/error replacement.
-// This body remains commented until narrow native API preflight + intent peer.
-// void RoutingConnection::Virtual18(const ByteBuffer* inData)
-// {
-//     AutoCrit crit(mDataCrit);
-//     SmartPtr<RoutingOp> op;
-//     RoutingOpList::iterator itr;
-//     bool unsolicited = false;
-//     WONStatus status;
-//     try {
-//         ReadBuffer msg(inData->data(), inData->length());
-//         msg.ReadByte();
-//         unsigned char service = msg.ReadByte();
-//         unsigned char msgType = msg.ReadByte();
-//         bool derived = service != 7;
-//         int savedPos = msg.pos();
-//         op = GetUnsolicitedOp(msgType, derived);
-//         if (op.get() != NULL) {
-//             mOpList.push_front(op);
-//             unsolicited = true;
-//         }
-//         for (itr=mOpList.begin(); itr!=mOpList.end(); ++itr) {
-//             op = *itr;
-//             if (op->mIsDerivedServerOp != derived) continue;
-//             status = op->Virtual10(msgType, msg);
-//             if (status == (WONStatus)100105) break;
-//             if (status == (WONStatus)100104) {
-//                 msg.SetPos(savedPos);
-//                 continue;
-//             }
-//             mOpList.erase(itr);
-//             crit.Leave();
-//             op->SetMode(OP_MODE_BLOCK);
-//             if (unsolicited) op->ForceFinish(status);
-//             else op->Fn29F220(status);
-//             Virtual2C(op.get());
-//             op->Complete();
-//             break;
-//         }
-//     } catch (ReadBufferException&) {
-//         if (op.get() != NULL) {
-//             mOpList.erase(itr);
-//             crit.Leave();
-//             op->SetMode(OP_MODE_BLOCK);
-//             if (unsolicited) op->ForceFinish(status);
-//             else op->Fn29F220(status);
-//             op->Complete();
-//         }
-//     }
-// }
 }
 
 namespace WONAPI {
@@ -303,6 +249,8 @@ void RoutingConnection::SetGroupFlags(unsigned short id,unsigned long mask,unsig
 // FUNCTION: WON 0x006bddd0
 void RoutingConnection::SendServerAlert(const std::wstring& text,CompletionBase<AsyncOpPtr>* completion)
 {
+    // LOST-DEBUG: none: exact only.
+    EE_LOST_DEBUG(2);
     SmartPtr<RoutingSendServerAlertOp> op=new RoutingSendServerAlertOp(this,text);
     op->SetCompletion(completion);
     op->Run(-1);
@@ -398,21 +346,21 @@ void RoutingConnection::Virtual18(const ByteBuffer* inData)
         }
         for (itr=mOpList.begin(); itr!=mOpList.end(); ++itr) {
             op = *itr;
-            if (op->mIsDerivedServerOp != derived) continue;
+            if (derived == op->mIsDerivedServerOp) {
             status = op->Virtual10(msgType, msg);
             if (status == (WONStatus)100105) break;
-            if (status == (WONStatus)100104) {
-                msg.SetPos(savedPos);
-                continue;
+            if (status != (WONStatus)100104) {
+                mOpList.erase(itr);
+                crit.Leave();
+                op->SetMode(OP_MODE_BLOCK);
+                if (unsolicited) op->ForceFinish(status);
+                else op->Fn29F220(status);
+                Virtual2C(op.get());
+                op->Complete();
+                break;
             }
-            mOpList.erase(itr);
-            crit.Leave();
-            op->SetMode(OP_MODE_BLOCK);
-            if (unsolicited) op->ForceFinish(status);
-            else op->Fn29F220(status);
-            Virtual2C(op.get());
-            op->Complete();
-            break;
+            msg.SetPos(savedPos);
+            }
         }
     } catch (ReadBufferException&) {
         if (op.get() != NULL) {
@@ -438,7 +386,7 @@ void RoutingConnection::CreateDataObject(unsigned char flags,unsigned short link
     op->SetDataType(type);
     op->SetDataName(name);
     // Genuine SDK ConstSmartPtr storage bridge, no payload mutation.
-    op->mData=const_cast<ByteBuffer*>(data);
+    op->mData=data;
     op->SetCompletion(completion);
     op->Run(-1);
 }
@@ -464,7 +412,7 @@ void RoutingConnection::ModifyDataObject(unsigned short link,const std::string& 
     op->mOffset=offset;
     op->mIsInsert=insert;
     // Genuine SDK ConstSmartPtr storage bridge, no payload mutation.
-    op->mData=const_cast<ByteBuffer*>(data);
+    op->mData=data;
     op->SetCompletion(completion);
     op->Run(-1);
 }
@@ -524,6 +472,7 @@ SmartPtr<RoutingOp> RoutingConnection::GetUnsolicitedOp(unsigned char messageTyp
         case 35: op=new RoutingGroupInvitationOp(this); break;
         case 36: op=new RoutingGroupJoinAttemptOp(this); break;
         case 37: op=new RoutingGroupMaxPlayersChangedOp(this); break;
+        case 71: op=new RoutingGroupMemberCountOp(this); break;
         case 38: op=new RoutingGroupNameChangedOp(this); break;
         case 39: op=new RoutingGroupObserverCountOp(this); break;
         case 44: op=new RoutingMemberFlagsChangedOp(this); break;
@@ -534,10 +483,12 @@ SmartPtr<RoutingOp> RoutingConnection::GetUnsolicitedOp(unsigned char messageTyp
         case 59: op=new RoutingServerShutdownStartedOp(this); break;
         case 69: op=new RoutingYouWereBannedOp(this); break;
         case 70: op=new RoutingYouWereMutedOp(this); break;
-        case 71: op=new RoutingGroupMemberCountOp(this); break;
         }
     } else
         op=Virtual28(messageType);
+    // LOST-DEBUG: none: exact only.
+    EE_LOST_TRACE(op.get());
+    EE_LOST_TRACE(op.get());
     if(op.get()!=NULL)
         CalcCompletion(op.get());
     return op;
@@ -936,3 +887,7 @@ void RoutingConnection::GetBadUserList(RoutingBadUserListType theListType, unsig
 // (public: class std::list<struct WONAPI::RoutingBadUser,class std::allocator<struct WONAPI::RoutingBadUser> >::iterator __thiscall std::list<struct WONA)
 // TEMPLATE: WON 0x006cbaf0
 // (public: void __thiscall std::list<unsigned short,class std::allocator<unsigned short> >::assign(class std::list<unsigned short,class std::allocator<un)
+// TEMPLATE: WON 0x006c9600
+// (public: void __thiscall std::list<class WONAPI::SmartPtr<class WONAPI::RoutingOp>,class std::allocator<class WONAPI::SmartPtr<class WONAPI::RoutingOp>)
+// TEMPLATE: WON 0x007322c0
+// (protected: __thiscall std::_Tree_val<struct std::less<unsigned short>,class std::allocator<struct std::pair<unsigned short const ,class WONAPI::SmartP)

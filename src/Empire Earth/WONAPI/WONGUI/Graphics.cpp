@@ -23,6 +23,10 @@ Graphics::~Graphics()
 	Detach();
 }
 
+void Graphics::Detach()
+{
+}
+
 // FUNCTION: WON 0x00726c70
 void Graphics::Attach(DisplayContext *theContext)
 {

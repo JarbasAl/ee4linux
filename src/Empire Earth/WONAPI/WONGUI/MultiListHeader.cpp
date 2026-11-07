@@ -145,7 +145,7 @@ Component* MultiListHeader::GetDragComponent(int x)
     std::vector<MultiListArea::ColumnInfo>& columns=mListArea->mColumnInfoVector;
     for(int i=0;i<mColumnVector.size();++i) {
         Component* component=mColumnVector[i].mComponent;
-        if(component!=NULL && x>=component->Left() && x<=component->Left()+component->Width()) {
+        if(component!=NULL && x>=component->Left() && x<=component->Right()) {
             int width=component->Width()/4;
             if(width>5) width=5;
             if(x-component->Left()<width && i!=0) mDragColumn=i-1;

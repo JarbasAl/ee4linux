@@ -127,7 +127,7 @@ public:
 	void SetName(const std::wstring &theName) { mName = theName; }
 	void SetDisplayName(const std::wstring &theDisplayName) { mDisplayName = theDisplayName; }
 	void SetLifespan(unsigned long theLifespan) { mLifespan = theLifespan; }
-	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=const_cast<ByteBuffer*>(theData); mDataObjects.push_back(anObject); }
+	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mDataObjects.push_back(anObject); }
 	void ClearDataObjects() { mDataObjects.clear(); }
 	
 	DWORD GetFlags() const { return mFlags; }
@@ -203,7 +203,7 @@ public:
 	void SetNewName(const std::wstring &theNewName) { mNewName = theNewName; }
 	void SetNewDisplayName(const std::wstring &theNewDisplayName) { mNewDisplayName = theNewDisplayName; }
 	void SetNewLifespan(unsigned long theLifespan) { mNewLifespan = theLifespan; }
-	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=const_cast<ByteBuffer*>(theData); mDataObjects.push_back(anObject); }
+	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mDataObjects.push_back(anObject); }
 	void ClearDataObjects() { mDataObjects.clear(); }
 	
 	DWORD GetFlags() const { return mFlags; }
@@ -470,7 +470,7 @@ public:
 
 	// DataObjectSetMode defined in DirTypes.h
 	void SetDataObjectMode(DirDataObjectSetMode theMode) { mDataObjectMode = theMode; }
-	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=const_cast<ByteBuffer*>(theData); mDataObjects.push_back(anObject); }
+	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mDataObjects.push_back(anObject); }
 	void ClearDataObjects() { mDataObjects.clear(); }
 	
 	const std::wstring& GetPath() const { return mPath; }
@@ -614,7 +614,7 @@ public:
 	void AddDataObjectMod(const std::string &theType, 
 		const ByteBuffer* theData, 
 		bool isInsert, 
-		unsigned short theOffset) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=const_cast<ByteBuffer*>(theData); mDataObjectMods.push_back(DataObjectMod(anObject,isInsert,theOffset)); }
+		unsigned short theOffset) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mDataObjectMods.push_back(DataObjectMod(anObject,isInsert,theOffset)); }
 	
 	void ClearDataObjectMods() { mDataObjectMods.clear(); }
 	
@@ -697,7 +697,7 @@ public:
 	void SetMatchName(const std::wstring &theName) { mName = theName; }
 	void SetMatchDisplayName(const std::wstring &theDisplayName) { mDisplayName = theDisplayName; }
 	
-	void AddFindDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=const_cast<ByteBuffer*>(theData); mFindDataObjects.push_back(anObject); }
+	void AddFindDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mFindDataObjects.push_back(anObject); }
 	void ClearFindDataObjects() { mFindDataObjects.clear(); }	
 
 	void AddGetDataObject(const std::string &theType) { mGetDataTypes.insert(theType); }

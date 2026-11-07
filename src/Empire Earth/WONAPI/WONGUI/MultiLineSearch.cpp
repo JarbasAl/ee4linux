@@ -39,11 +39,8 @@ FloatingSegment* MultiLineElement::FindFloatingSegmentAt(int x,int y,bool left)
     }
     if(item==items->end()) return NULL;
     FloatingSegment& segment=*item;
-    if(segment.mx>x) return NULL;
-    int width=segment.GetWidth();
-    if(segment.mx+width<x) return NULL;
-    int height=segment.GetHeight();
-    if(segment.my+height<y) return NULL;
+    if(segment.mx>x || segment.mx+segment.GetWidth()<x || segment.my+segment.GetHeight()<y)
+        return NULL;
     return &segment;
 }
 }

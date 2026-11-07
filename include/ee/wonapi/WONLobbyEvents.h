@@ -26,6 +26,10 @@ class AlertEvent : public LobbyEvent {
 public:
     virtual ~AlertEvent(); //original explicit destructor stores its own vptr
     AlertEvent(int inKind, int inValue, int inSeverity, const GUIString& inText); //359580
+    int GetKind() const { return mKind; }
+    int GetValue() const { return mValue; }
+    int GetSeverity() const { return mSeverity; }
+    const GUIString& GetText() const { return mText; }
     int mKind; //20
     int mValue; //24
     int mSeverity; //28
@@ -118,6 +122,9 @@ class ClientActionEvent : public LobbyEvent {
 public:
     virtual ~ClientActionEvent(); //original explicit destructor stores its own vptr
     ClientActionEvent(int inAction, const int& inRoomSpec, LobbyClient* inClient); //359a90
+    int GetAction() const { return mAction; }
+    int GetRoomSpec() const { return mRoomSpec; }
+    LobbyClient* GetClient() const { return mClient.get(); }
     int mAction; int mRoomSpec; SmartPtr<LobbyClient> mClient; //20,24,28
 };
 class GotHTTPDocumentEvent : public LobbyEvent {
@@ -134,6 +141,7 @@ public:
 };
 class ClientChangedEvent : public LobbyChangeEvent {
 public:
+    int GetRoomSpec() const { return mRoomSpec; }
     virtual ~ClientChangedEvent(); //original explicit destructor stores its own vptr
     ClientChangedEvent(LobbyClient* inClient, const int& inRoomSpec, int inChangeKind); //359b90
     SmartPtr<LobbyClient> mClient; int mRoomSpec; //24,28
@@ -168,6 +176,7 @@ public:
 };
 class JoinedRoomEvent : public LobbyEvent {
 public:
+    int GetRoomSpec() const { return mRoomSpec; }
     virtual ~JoinedRoomEvent(); //original explicit destructor stores its own vptr
     JoinedRoomEvent(const GUIString& inServerName, const GUIString& inGroupName,
         const int& inRoomSpec, unsigned short inClientId, LobbyClientList* inClients); //35a9b0
@@ -186,7 +195,7 @@ public:
 // Producer-owned declarations only; implementation and emitted markers remain in original owner.
 class SetRoomSpecFlagsEvent : public LobbyEvent {
 public:
-    SetRoomSpecFlagsEvent(int inFlags); //3c4620; RootScreen family
+    SetRoomSpecFlagsEvent(int inFlags) : LobbyEvent(100054), mFlags(inFlags) {}
     int mFlags; //20; size24
 };
 class LoginInitStatusEvent : public LobbyEvent {
@@ -217,7 +226,7 @@ public:
 };
 class LoginEvent : public LobbyEvent {
 public:
-    LoginEvent(const GUIString& inUser, const GUIString& inPassword, bool inRemember)
+    LoginEvent(const GUIString& inPassword, bool inRemember, const GUIString& inUser)
         : LobbyEvent(100035), mUserName((std::wstring)inUser),
           mPassword((std::wstring)inPassword), mRemember(inRemember) {}
     std::wstring mUserName; std::wstring mPassword; bool mRemember; //20,30,40; size44
@@ -239,6 +248,7 @@ public:
 };
 class LeftRoomEvent : public LobbyEvent {
 public:
+    int GetRoomSpec() const { return mRoomSpec; }
     LeftRoomEvent(int inRoomSpec, bool inForced, bool inFlag)
         : LobbyEvent(100033), mRoomSpec(inRoomSpec), mForced(inForced), mFlag(inFlag) {}
     int mRoomSpec; bool mForced; bool mFlag; //20,24,25;size28

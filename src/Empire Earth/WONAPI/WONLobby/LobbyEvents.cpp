@@ -112,19 +112,19 @@ GroupJoinAttemptEvent::GroupJoinAttemptEvent(int inKind, LobbyClient* inClient, 
 // FUNCTION: WON 0x0075a9b0
 JoinedRoomEvent::JoinedRoomEvent(const GUIString& inServerName, const GUIString& inGroupName,
     const int& inRoomSpec, unsigned short inClientId, LobbyClientList* inClients)
-    : LobbyEvent(100030), mClients(inClients), mServerName(inServerName), mGroupName(inGroupName), mClientId(inClientId)
-{ mRoomSpec = inRoomSpec; }
+    : LobbyEvent(100030), mClients(inClients), mServerName(inServerName), mGroupName(inGroupName), mClientId(inClientId), mRoomSpec(inRoomSpec)
+{}
 // FUNCTION: WON 0x0075ae30
 RecvChatEvent::RecvChatEvent(const int& inRoomSpec, unsigned long inFlags, LobbyClient* inSender,
     const GUIString& inText, LobbyClient* inTarget)
     : LobbyEvent(100044), mSender(inSender), mTarget(inTarget), mRoomSpec(inRoomSpec), mText(inText)
 { mFlags = inFlags; }
 // FUNCTION: WON 0x0075afb0
-bool RecvChatEvent::IsEmote() { return (mFlags & 4) != 0; }
+bool RecvChatEvent::IsEmote() { return (mFlags & 4) ? true : false; }
 // FUNCTION: WON 0x0075afc0
-bool RecvChatEvent::IsWhisper() { return (mFlags & 2) != 0; }
+bool RecvChatEvent::IsWhisper() { return (mFlags & 2) ? true : false; }
 // FUNCTION: WON 0x0075afd0
-bool RecvChatEvent::IsWarning() { return (mFlags & 16) != 0; }
+bool RecvChatEvent::IsWarning() { return (mFlags & 16) ? true : false; }
 // FUNCTION: WON 0x0075afe0
 bool RecvChatEvent::IsTeam() { if (mFlags & 256) return true; return false; }
 // FUNCTION: WON 0x007594f0

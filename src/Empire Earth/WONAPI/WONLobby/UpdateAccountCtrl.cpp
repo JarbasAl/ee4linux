@@ -54,21 +54,13 @@ void UpdateAccountCtrl::CheckInput()
 {
     bool error=false;
     bool queryAllowed=true;
-    Label* oldDesc=mOldPasswordDesc.get();
-    if(SetDesc(mOldPasswordInput->GetText()!=mActualOldPassword,oldDesc)) {
+    if(SetDesc(mOldPasswordInput->GetText()!=mActualOldPassword,mOldPasswordDesc.get())) {
         error=true;
         queryAllowed=false;
     }
-    bool shortPassword=mPasswordInput->GetText().length()!=0 && mPasswordInput->GetText().length()<4;
-    if(SetDesc(shortPassword,mPasswordDesc.get())) error=true;
-    Label* confirmDesc=mConfirmPasswordDesc.get();
-    InputBox* confirm=mConfirmPasswordInput.get();
-    const GUIString& password=mPasswordInput->GetText();
-    if(SetDesc(password!=confirm->GetText(),confirmDesc)) error=true;
-    bool badEmail=false;
-    if(mEmailInput->GetText().length()!=0)
-        badEmail=!LobbyFn3BA6A0(mEmailInput->GetText());
-    if(SetDesc(badEmail,mEmailDesc.get())) error=true;
+    if(SetDesc(mPasswordInput->GetText().length()!=0 && mPasswordInput->GetText().length()<4,mPasswordDesc.get())) error=true;
+    if(SetDesc(mPasswordInput->GetText()!=mConfirmPasswordInput->GetText(),mConfirmPasswordDesc.get())) error=true;
+    if(SetDesc(mEmailInput->GetText().length()!=0 && !LobbyFn3BA6A0(mEmailInput->GetText()),mEmailDesc.get())) error=true;
     mUpdateButton->SetEnabled(!error);
     mQueryButton->SetEnabled(queryAllowed);
 }

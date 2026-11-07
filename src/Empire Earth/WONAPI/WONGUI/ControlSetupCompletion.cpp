@@ -12,16 +12,6 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbySkinnedContainers.h"
 namespace WONAPI {
-// FUNCTION: WON 0x006f7910
-Dialog::Dialog()
-{
-    mDragX=mDragY=0;
-    SetComponentFlags(0x118,true);
-    mAllowDrag=true;
-    mKeepInRoot=true;
-    mEndOnEscape=false;
-    mEscapeId=-1;
-}
 // FUNCTION: WON 0x006f66c0
 void Container::MouseAt()
 {
@@ -46,8 +36,6 @@ void WONScrollContainer::CopyAttributes(WONScrollContainer* from)
 }
 
 // Compiler-generated and header-inline functions this unit emits:
-// TEMPLATE: WON 0x006f7970
-// (public: virtual void * __thiscall WONAPI::Dialog::`scalar deleting destructor'(unsigned int)    [??_GDialog@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x00719c50
 // (public: __thiscall WONAPI::WONScrollContainer::WONScrollContainer(void)    [??0WONScrollContainer@WONAPI@@QAE@XZ])
 

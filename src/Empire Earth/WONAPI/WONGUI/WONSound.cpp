@@ -660,7 +660,7 @@ void WONSoundThread::ThreadFunc()
 bool WONSoundThread::PutSoundInChannel(WONSound *theSound, ChannelSet &theSet)
 {
 	// Should already be in DataCrit
-	bool isMusic = (theSound->mL08 & 0x0002)!=0;
+	bool isMusic = (theSound->mDescriptor.mL00 & 0x0002)!=0;
 
 //	if(isMusic && theSet==mBusyChannels) // can't add music to an already playing channel
 //		return false;

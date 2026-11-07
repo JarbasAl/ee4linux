@@ -115,6 +115,7 @@ public:
 #endif
     explicit GUIString(unsigned short capacity) : mData(new GUIStringData(capacity)) {} //genuineSDKinline, native3398f7..339929
     void erase() { mData=GetEmptyGUIStringData(); } //genuineSDKinline noCOW, actualemptySP replacement
+    int ToInt(int start=0) const { return mData->ToInt(start); }
     void reserve(int length) { mData->Reserve(length,false); } //genuineSDKinline, deliberately noCOW; native33ff52/34053e
 #ifdef EE_DINKUM_SXL233 // WON library view: built inline (ChatCommandParser::AddHelpEntry 0x757800, GetHelp 0x7579c0)
     GUIString(const char* inText) : mData(new GUIStringData(inText)) {}
@@ -152,17 +153,20 @@ public:
     void Fill(int ch,unsigned short offset,unsigned short length) { CopyOnWrite(); mData->Fill(ch,offset,length); } //actual SDKinline; support0
 #ifdef EE_DINKUM_SXL233
     void resize(int inLength) { CopyOnWrite(); mData->resize(inLength,false); }
+    void assign(const GUIString& s,unsigned short o,unsigned short n) { CopyOnWrite(); mData->assign(s.mData,o,n); }
+    void assign(const GUIString& s,unsigned short o) { unsigned short off=o; unsigned short l=s.length(); assign(s,off,l-off); }
 #else
     void resize(int inLength);              // 0x29119a
 #endif
     unsigned short length() const { return mData->mLength; }
     bool empty() const { return mData->mLength==0; }
     int operator[](int inPos) const { return mData->mText[inPos]; }
+    unsigned short at(int inPos) const { return mData->mText[inPos]; }
     GUIString substr(unsigned short inStart, unsigned short inLength) const; // 0x2f8b90
     GUIString substr(unsigned short inStart) const; // 0x339c80
     int find(int inChar, int inStart) const { return mData->find(inChar, inStart); }
-    int find(const GUIString& inText, int inStart) const { return mData->find(inText.mData.mPtr, inStart); }
-    int findNoCase(const GUIString& inText, int inStart) const { return mData->findNoCase(inText.mData.mPtr, inStart); }
+    int find(const GUIString& inText, int inStart) const { return mData->find(inText.mData.get(), inStart); }
+    int findNoCase(const GUIString& inText, int inStart) const { return mData->findNoCase(inText.mData.get(), inStart); }
     int rFind(int ch,int start=-1) const { return mData->rFind(ch,start); } //actual SDK inline, support0
     int rFind(const GUIString& text,int start=-1) const { return mData->rFind(text.mData.get(),start); }
     int findOneOf(const GUIString& text,int start=0) const { return mData->findOneOf(text.mData.get(),start); }

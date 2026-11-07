@@ -190,6 +190,8 @@ void MSGraphics::FillRectBlendHook(int tx, int ty, int width, int height, int th
 	static DWORD *anImageData;
 	static int aWidth = 100;
 	static int aHeight = 100;
+	static int aNumPixels = aWidth*aHeight;
+	static int aLastColor = mColor+1;
 	if(anAlphaImage.get()==NULL)
 	{	
 		BITMAPINFO anInfo;
@@ -305,3 +307,5 @@ void MSGraphics::SetClipRectHook(int x, int y, int width, int height)
 // TEMPLATE: WON 0x007cf110
 // (public: virtual void * __thiscall WONAPI::MSGraphics::`scalar deleting destructor'(unsigned int)    [??_GMSGraphics@WONAPI@@UAEPAXI@Z])
 // TEMPLATE: WON 0x007cf4e0
+// TEMPLATE: WON 0x007cf780
+// (_$E74)

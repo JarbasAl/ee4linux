@@ -28,7 +28,7 @@ public:
     SmartPtr<Image> mImage; //14
     int mHSpace,mVSpace,mBorder,mBorderColor; //18,1c,20,24
     char mAlign; //28; natural29..2b
-    ImageLineSegment(Image* =NULL); //33aa30 actualexternal constructor RET4
+    ImageLineSegment(Image* image=NULL) : mImage(image),mHSpace(5),mVSpace(0),mBorder(0),mBorderColor(0),mAlign(0) {}
     virtual int GetWidth(); //33aa80
     virtual int GetHeight(); //33aaa0
     virtual char GetVertAlign(); //33aac0

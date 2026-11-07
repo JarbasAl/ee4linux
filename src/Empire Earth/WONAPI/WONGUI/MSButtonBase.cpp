@@ -60,11 +60,13 @@ void MSButtonBase::DrawButtonText(Graphics& g,int xoff,int yoff) {
     int height=Height()-mTopTextPad-mBottomTextPad;
     int x,y;
     switch(mHAlign) {
+    case HorzAlign_Left: x=0;break;
     case HorzAlign_Center: x=(width-textWidth)/2;break;
     case HorzAlign_Right: x=width-textWidth;break;
     default:x=0;break;
     }
     switch(mVAlign) {
+    case VertAlign_Top:y=0;break;
     case VertAlign_Center:y=(height-textHeight)/2;break;
     case VertAlign_Bottom:y=height-textHeight;break;
     default:y=0;break;
