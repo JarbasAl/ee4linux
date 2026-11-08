@@ -2152,7 +2152,7 @@ void EEUnitClass::PlayCreationEffect(EEUnit* inUnit)
 
 // FUNCTION: EXE 0x6340a7
 // Launches a projectile (or carried cargo) from the unit's weapon tag point toward the target or ground point; the
-// idle-after-launch test compares the category with 0x16e and never passes
+// volcano idles after each launch
 void EEUnitClass::LaunchShot(EEComplexUnit* inUnit, EEUnit* inTarget, GE3DPoint& inLocation, EEComplexUnit* inCargo)
 {
     GE3DPoint theOffset;
@@ -2242,7 +2242,7 @@ void EEUnitClass::LaunchShot(EEComplexUnit* inUnit, EEUnit* inTarget, GE3DPoint&
     theClass->LaunchProjectile(theCreated->GetComplexUnit(), inLocation);
     // LOST-DEBUG: none: exact only; the wrapper refuses RTSMap::GetTile (inline_sim +k calls after the site, 11 natural getters so far)
     EE_LOST_DEBUG(1);
-    if (inUnit->GetUnitClass()->GetCategory() == 0x16e)
+    if (inUnit->GetUnitClass()->GetUnitType() == kUnitTypeVolcano)   // the unit type (was the category, which never is 0x16e)
         inUnit->StartAction(kActionIdle);
 }
 
