@@ -326,8 +326,8 @@ void EEWonNet::ListGamesCallback(AsyncOp* inOp)
 }
 
 // FUNCTION: EXE 0x4cda04
-// Rebuilds the room list from the server's chat-room groups (name, maximum players); every room description is
-// taken from the past-the-end group instead of the room's data object (original bug)
+// Rebuilds the room list from the server's chat-room groups (name, maximum players) and the rooms' descriptions
+// from their data objects
 void EEWonNet::ListRoomCallback(AsyncOp* inOp)
 {
     WONStatus theStatus = inOp->GetStatus();
@@ -359,7 +359,9 @@ void EEWonNet::ListRoomCallback(AsyncOp* inOp)
             theWide = gEmptyWideString;
             theWide.assign((const wchar_t*)(*theData)->GetData(), (*theData)->GetDataLength() / 2);
             memset(theName, 0, 1024);
-            wcstombs(theName, theGroup->second->mName.c_str(), 1024);
+            // Fix: the description is the data object's text; this used to read the name of the past-the-end
+            // group left over from the loop above.
+            wcstombs(theName, theWide.c_str(), 1023);
             theString = UWideString(theName);
             this->mRooms[(*theData)->mLinkId].mDescription = theString;
         }
