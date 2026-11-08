@@ -144,8 +144,10 @@ long EECampaignProgress::RestoreCivilization(const UWideString& inUser, const UW
     FSFileSpec* theTemporary;
     std::vector<UWideString>::iterator theFound;
 
-    if (EECampaignFormManager::GetBuiltInCampaign(inCampaign) != 0)
+    if (EECampaignFormManager::GetBuiltInCampaign(inCampaign) != 0) {
+        thePath->Dereference();
         return kErrorOK;
+    }
     theResult = this->Load(inUser, inCampaign, inChecksum, false);
     if (theResult == kErrorOK) {
         sprintf(theChecksum, "%d", inChecksum);
@@ -201,10 +203,10 @@ long EECampaignProgress::RestoreCivilization(const UWideString& inUser, const UW
                 theTemporary->Delete();
                 delete theTemporary;
             }
-            thePath->Dereference();
         }
     }
-    // The original releases the search path only when a civilization was extracted (0x68fab9), else it leaks
+    // The search path is released on every path (it was released only when a civilization was extracted).
+    thePath->Dereference();
     return theResult;
 }
 
