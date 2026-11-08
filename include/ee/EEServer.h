@@ -83,7 +83,7 @@ public:
     bool mHasLeftGame;                      // +0x34c (sizeof 0x350: the SP random map's operator new)
 };
 
-// (FnB7992, the callback after the host left: ee/EEClient.h)
+// (CancelGameCallback, the callback after the host left: ee/EEClient.h)
 class NEProtocol;
 // 0x296c89 (User Interface Thread; provisional name): the local address to publish (the protocol's, or WON's)
 UWideString& EEGetLocalAddress(NEProtocol* inProtocol, unsigned long inAdapter);

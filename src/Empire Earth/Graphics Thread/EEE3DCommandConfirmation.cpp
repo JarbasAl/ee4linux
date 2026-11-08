@@ -294,7 +294,7 @@ long EEE3DCommandConfirmation::DrawPass4()
         gRasterizer->SetZCompare(kCompareLess, theScreen);
         gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
         gRasterizer->SetShadingColorSource(0, theScreen);
-        Fn10F7C8();
+        SetWhiteLighting();
         theTransformation.SetPosition(this->mPosition.GetX(), this->mPosition.GetY(), this->mPosition.GetZ());
         theTransformation.SetOrientationYPR(gWorld.GetCameraYaw() - 0.7853982f, 0.0f, 0.0f);
         theTransformation.SetElement(3, 0, 0.0f);

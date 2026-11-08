@@ -164,13 +164,13 @@ long EEE2DExplosion::DrawPass6()
     gRasterizer->SetZBuffer(kZBufferTestOnly, theScreen);
     gRasterizer->SetBlending(kBlendOne, kBlendOne, theScreen);
     gRasterizer->SetShadingColorSource(0, theScreen);
-    Fn10F7C8();
+    SetWhiteLighting();
     for (unsigned long i = 0; i < theCount && theResult == 0; i++) {
         GETexture* theTexture = this->mParts[i].mGraphicObject->mTextures[0];
         theTexture->SetFrame(this->mParts[i].mDrawFrame);
         theMaterial->SetTexture(theTexture, theScreen);
         float theValue;
-        Fn11A130(this->mParts[i].mPosition, theFog, theValue);
+        GetFogFactor(this->mParts[i].mPosition, theFog, theValue);
         gRasterizer->SetAmbientColor(GEColor(theValue, theValue, theValue), theScreen);
         const GE3DPoint& thePosition = (this->mParts.begin() + i)->mPosition;
         theTransformation.SetPosition(thePosition);
@@ -253,7 +253,7 @@ void EEE2DExplosion::UpdatePart(unsigned long inIndex)
                 theChanged = true;
             else
                 theChanged = false;
-            this->SetSound(Fn1487A3(theLocation, this->mParts[0].mGraphicObject, 0, this->mSound, theFrame, theChanged));
+            this->SetSound(PlayAnimationSound(theLocation, this->mParts[0].mGraphicObject, 0, this->mSound, theFrame, theChanged));
             if (this->GetSound())
                 this->GetSound()->Dereference();
         }

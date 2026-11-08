@@ -1220,7 +1220,7 @@ void EECPPersonnel::UnloadTransport(EEComplexUnit* inUnit)
         if (theContinent->mCategory != kContinentCategoryLand) {
             gContinentManager.GetAdjacentIDs(theIDs, theContinent->mID);
             if (theIDs.size() != 0) {
-                Fn4EEF9(theIDs, UMFloatToLong(gPhysics->mRandom.Generate()));
+                PermuteValues(theIDs, UMFloatToLong(gPhysics->mRandom.Generate()));
                 while (theIDs.size() != 0) {
                     if (gContinentManager.GetContinentByID(theIDs.back()) != NULL &&
                         gContinentManager.GetContinentByID(theIDs.back())->mCategory == kContinentCategoryLand) {
@@ -1238,7 +1238,7 @@ void EECPPersonnel::UnloadTransport(EEComplexUnit* inUnit)
         else
             theTarget->GetShoreInRegion(gContinentManager.GetContinent(inUnit, kAIPathSpaceRegion), theTiles, kAIPathSpaceRegion);
         if (theTiles.size() != 0) {
-            Fn4EEF9(theTiles, UMFloatToLong(gPhysics->mRandom.Generate()));
+            PermuteValues(theTiles, UMFloatToLong(gPhysics->mRandom.Generate()));
             for (n = 0x14; theTiles.size() != 0; ) {
                 theGoal->mDestination = theTiles.back();
                 theGoal->FindUnloadTiles();

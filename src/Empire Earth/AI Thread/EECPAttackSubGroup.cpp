@@ -86,7 +86,7 @@ EECPAttackSubGroupUnit* EECPCreateSubGroupUnitOfKind(EEComplexUnit* inUnit, EECP
 
 // 0x4e5c88 (.data, zero; between EEComputerPlayer.obj's 0x4e5c70 and EECPCivilizationManager.obj's 0x4e5d18): the
 // targets' pool. Its chain 0x5ac57..0x5ac9c (ctor 0x613a1 unguarded, dtor guarded by bit 1 of 0x4e5c80) sits right
-// before this unit's first function and every user is in this unit (Fn5B397 and the target new/delete/release), so
+// before this unit's first function and every user is in this unit (SetAttackTargetPoolSize and the target new/delete/release), so
 // it is defined here. The dtor guard suggests a class static data member whose owner is not decoded; the file-scope
 // form is inferred (provisional name)
 UMemoryPool<EECPASTargetUnit> EECPAttackSubGroup::sTargetPool;
@@ -312,7 +312,7 @@ void EECPAttackSubGroup::RequestUnits(std::vector<long>& inClasses, std::vector<
 // FUNCTION: EXE 0x45b397
 // Sizes the shared target pool (chunk size and maximum chunk count)
 // cdecl; EECPCombatManager's ctor calls it with 0x200, 0x19 (provisional name)
-void Fn5B397(long inChunkSize, long inMaxChunks)
+void SetAttackTargetPoolSize(long inChunkSize, long inMaxChunks)
 {
     EECPAttackSubGroup::sTargetPool.SetSize(inChunkSize, inMaxChunks, 1);
 }

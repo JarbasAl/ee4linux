@@ -2102,7 +2102,7 @@ void EESEPlayerRow::ApplySettings(unsigned long inPlayer)
         }
     } else if (theCivilization != thePlayer->mCivilizationFile) {
         thePlayer->mCivilizationFile = theCivilization;
-        Fn2806E7(thePlayer->mCivilizationFile, thePlayer);
+        EEApplyCivilizationFile(thePlayer->mCivilizationFile, thePlayer);
         theChanged = true;
     }
     if (thePlayer->mComputerPlayer != NULL) {

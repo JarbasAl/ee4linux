@@ -313,7 +313,7 @@ long EEE3DParticleEmitter::Step()
         theTransformation.SetPosition(theLocation.GetX(), theLocation.GetY(), theLocation.GetZ());
         this->SetTransformation(theTransformation);
         if (this->mGraphicEffect->mGraphicObject) {
-            this->SetSound(Fn1487A3(theLocation, this->mGraphicEffect->mGraphicObject, 0, this->mSound, 0, this->mIsFirstStep));
+            this->SetSound(PlayAnimationSound(theLocation, this->mGraphicEffect->mGraphicObject, 0, this->mSound, 0, this->mIsFirstStep));
             if (this->mSound)
                 this->mSound->Dereference();
         }

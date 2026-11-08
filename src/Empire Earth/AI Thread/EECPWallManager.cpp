@@ -75,7 +75,7 @@
 // 0x24b794: the tiles on the line inFrom..inTo
 void EEGetWallLine(const U2DPoint<long>& inFrom, const U2DPoint<long>& inTo, std::vector<U2DPoint<long> >& outTiles);
 // 0x2492c2 (ee/EECPIntelligence.h declares it with vector<EETileCoordinate>): the tiles around (inX, inY) at inRadius
-void Fn2492C2(long inX, long inY, long inRadius, std::vector<U2DPoint<long> >& outTiles);
+void EEGetSquareRingTiles(long inX, long inY, long inRadius, std::vector<U2DPoint<long> >& outTiles);
 // 0x24c3df: the units on tile (inX, inY)
 long EEGetUnitsOnTile(long inX, long inY, std::vector<EEUnit*>& outUnits);
 // 0x24c433: the units on inTiles
@@ -220,7 +220,7 @@ bool EECPWallManager::IsPathBlocked(std::vector<U2DPoint<long> >& inTiles)
     for (std::vector<U2DPoint<long> >::iterator it = inTiles.begin(); it != inTiles.end(); it++) {
         theAll.push_back(*it);
         for (unsigned long theRadius = 1; theRadius <= 2; theRadius++) {
-            Fn2492C2(it->mX, it->mY, theRadius, theAround);
+            EEGetSquareRingTiles(it->mX, it->mY, theRadius, theAround);
             theAll.insert(theAll.end(), theAround.begin(), theAround.end());
         }
     }

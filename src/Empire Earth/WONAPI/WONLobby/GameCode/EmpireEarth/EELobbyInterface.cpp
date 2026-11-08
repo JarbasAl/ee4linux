@@ -204,7 +204,7 @@ UWideString EELobbyToWideString(const GUIString& inText)
 UWideString& EEGetLocalAddress(NEProtocol* inProtocol, unsigned long inAdapter)
 {
     LobbyGame* theGame = NULL;
-    if (EECheck2989A9(true))
+    if (EEIsMultiplayerGame(true))
         theGame = GetMyLobbyGame();
     if (theGame == NULL)
         return inProtocol->GetLocalAddress(inAdapter);

@@ -175,16 +175,16 @@ long EEEvent::Trigger(long inEvent, long inPlayerIndex, long inID, EEPlayer* inP
     return theResult;
 }
 
-long Fn1CA9CF(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
-long Fn1CAEA4(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
-void Fn1CB964(EEEventEffect* inEffect, long inIndex, EEPlayer* inPlayer, EEUnitClass* inClass, EEUnitClassUpgrade* inUpgrade);
-long Fn1CAAED(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* inPlayer);
-long Fn1CABBF(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* inPlayer);
-long Fn1CACB4(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEComplexUnit* inUnit);
-long Fn1CAA9A(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
+long SetEventButton(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
+long ApplyEventAttribute(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
+void ApplyEventGatherRate(EEEventEffect* inEffect, long inIndex, EEPlayer* inPlayer, EEUnitClass* inClass, EEUnitClassUpgrade* inUpgrade);
+long SetEventUnitModel(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* inPlayer);
+long SetEventUnitSound(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* inPlayer);
+long ConvertEventUnits(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEComplexUnit* inUnit);
+long SetEventTechTreeMedia(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
 long PlayEventSound(EEEventEffect* inEffect);
 long ResearchEventTechnology(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
-long Fn1CB8F6(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
+long MakeEventTechnologyObsolete(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
 long SetEventPrerequisite(EEEventEffect* inEffect, long inPlayerIndex, long inPrerequisite, EEPlayer* inPlayer);
 // kind 7: an empty handler (`return 0`, ICF-folded into 0xfca98; provisional name, defined at the end of the unit)
 long EEEventKind7(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer);
@@ -199,27 +199,27 @@ long EEEvent::RunEffect(unsigned long inEffect, long inPlayerIndex, long inID, E
     if (inEffect < 2000 && (!gLoadingSavedGame || gEventEffects[inEffect].mRunOnLoad == 1)) {
         switch (gEventEffects[inEffect].mKind) {
         case 2:
-            theResult = Fn1CAEA4(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
+            theResult = ApplyEventAttribute(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
             break;
         case 8:
             theResult = SetEventPrerequisite(&gEventEffects[inEffect], thePlayerIndex, inID, inPlayer);
             break;
         case 9:
-            theResult = Fn1CB8F6(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
+            theResult = MakeEventTechnologyObsolete(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
             break;
         case 6:
-            theResult = Fn1CAAED(&gEventEffects[inEffect], thePlayerIndex, inID, inPlayer);
+            theResult = SetEventUnitModel(&gEventEffects[inEffect], thePlayerIndex, inID, inPlayer);
             break;
         case 12:
         case 13:
         case 14:
-            theResult = Fn1CAA9A(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
+            theResult = SetEventTechTreeMedia(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
             break;
         case 10:
             theResult = ResearchEventTechnology(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
             break;
         case 1:
-            theResult = Fn1CA9CF(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
+            theResult = SetEventButton(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
             break;
         case 7:
             theResult = EEEventKind7(&gEventEffects[inEffect], thePlayerIndex, inPlayer);
@@ -233,11 +233,11 @@ long EEEvent::RunEffect(unsigned long inEffect, long inPlayerIndex, long inID, E
         case 18:
         case 20:
         case 21:
-            theResult = Fn1CABBF(&gEventEffects[inEffect], thePlayerIndex, inID, inPlayer);
+            theResult = SetEventUnitSound(&gEventEffects[inEffect], thePlayerIndex, inID, inPlayer);
             break;
         case 19:
             if (gEventsEnabled && !gLoadingSavedGame)
-                theResult = Fn1CACB4(&gEventEffects[inEffect], thePlayerIndex, inID, inUnit);
+                theResult = ConvertEventUnits(&gEventEffects[inEffect], thePlayerIndex, inID, inUnit);
             else
                 theResult = 0;
             break;
@@ -254,7 +254,7 @@ long EEEvent::RunEffect(unsigned long inEffect, long inPlayerIndex, long inID, E
 
 // FUNCTION: EXE 0x5ca962
 // Sets the unit type's area effect template and rebuilds the area effects of the player's living units of that type
-long Fn1CA962(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer,
+long SetEventAreaEffect(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer,
               EEUnitClass* inClass, EEUnitClassUpgrade* inUpgrade)
 {
     if (inPlayer == NULL)
@@ -276,7 +276,7 @@ long Fn1CA962(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer,
 // FUNCTION: EXE 0x5ca9cf
 // Gives a tech node and its unit class a new command button, refreshing the local player's saved groups of that
 // class; returns 9 for a missing node or button
-long Fn1CA9CF(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
+long SetEventButton(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
 {
     if (inPlayer == NULL)
         inPlayer = gWorld.mPlayers[inPlayerIndex];
@@ -303,7 +303,7 @@ long Fn1CA9CF(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
 
 // FUNCTION: EXE 0x5caa9a
 // Sets the player's tech tree background media and posts a background refresh (twice for the local player)
-long Fn1CAA9A(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
+long SetEventTechTreeMedia(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
 {
     if (inPlayer == NULL)
         inPlayer = gWorld.mPlayers[inPlayerIndex];
@@ -318,7 +318,7 @@ long Fn1CAA9A(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
 
 // FUNCTION: EXE 0x5caaed
 // Swaps the unit type's model for the player when this is its latest model effect, updating its units; 9 on failure
-long Fn1CAAED(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* inPlayer)
+long SetEventUnitModel(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* inPlayer)
 {
     if (inPlayer == NULL)
         inPlayer = gWorld.mPlayers[inPlayerIndex];
@@ -348,7 +348,7 @@ long Fn1CAAED(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* 
 
 // FUNCTION: EXE 0x5cabbf
 // Sets a unit type's acknowledge, creation, death or selection sound when this is its latest such effect; 9 on failure
-long Fn1CABBF(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* inPlayer)
+long SetEventUnitSound(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEPlayer* inPlayer)
 {
     if (inPlayer == NULL)
         inPlayer = gWorld.mPlayers[inPlayerIndex];
@@ -394,7 +394,7 @@ long EEGetPlayerUnitsOfType(long inUnitType, long inPlayer, std::vector<EEUnit*>
 // FUNCTION: EXE 0x5cacb4
 // Replaces the player's units of one class by the effect's new class (kind 0x13), or only inUnit when it is in the
 // effect's unit set and inID is a kind-3 tech node; returns 3 when no unit qualifies
-long Fn1CACB4(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEComplexUnit* inUnit)
+long ConvertEventUnits(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEComplexUnit* inUnit)
 {
     std::vector<EEUnit*> theUnits;
     EEPlayer* thePlayer = gWorld.mPlayers[inPlayerIndex];
@@ -448,7 +448,7 @@ long Fn1CACB4(EEEventEffect* inEffect, long inPlayerIndex, long inID, EEComplexU
 // FUNCTION: EXE 0x5caea4
 // Applies an event's stat change to a unit class or unit set for the player (attack, range, sight, hit points, armor,
 // gather rates, terrain ...) or to the player (population bonus, tribute fee); 9 for an unknown stat
-long Fn1CAEA4(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
+long ApplyEventAttribute(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
 {
     EEPlayer* thePlayer = inPlayer;
     if (thePlayer == NULL)
@@ -584,25 +584,25 @@ long Fn1CAEA4(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
             case 22: case 24: case 25: case 34: case 35:
                 break;
             case 26:
-                Fn1CB964(inEffect, 0, thePlayer, theClass, theUpgrade);
+                ApplyEventGatherRate(inEffect, 0, thePlayer, theClass, theUpgrade);
                 break;
             case 27:
-                Fn1CB964(inEffect, 1, thePlayer, theClass, theUpgrade);
+                ApplyEventGatherRate(inEffect, 1, thePlayer, theClass, theUpgrade);
                 break;
             case 28:
-                Fn1CB964(inEffect, 2, thePlayer, theClass, theUpgrade);
+                ApplyEventGatherRate(inEffect, 2, thePlayer, theClass, theUpgrade);
                 break;
             case 29:
-                Fn1CB964(inEffect, 3, thePlayer, theClass, theUpgrade);
+                ApplyEventGatherRate(inEffect, 3, thePlayer, theClass, theUpgrade);
                 break;
             case 31:
-                Fn1CB964(inEffect, 4, thePlayer, theClass, theUpgrade);
+                ApplyEventGatherRate(inEffect, 4, thePlayer, theClass, theUpgrade);
                 break;
             case 32:
-                Fn1CB964(inEffect, 5, thePlayer, theClass, theUpgrade);
+                ApplyEventGatherRate(inEffect, 5, thePlayer, theClass, theUpgrade);
                 break;
             case 33:
-                Fn1CB964(inEffect, 6, thePlayer, theClass, theUpgrade);
+                ApplyEventGatherRate(inEffect, 6, thePlayer, theClass, theUpgrade);
                 break;
             case 36:
                 theUpgrade->mConvertsPriests = true;
@@ -611,7 +611,7 @@ long Fn1CAEA4(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
                 theUpgrade->mConvertsBuildings = true;
                 break;
             case 40:
-                theResult = Fn1CA962(inEffect, inPlayerIndex, inPlayer, theClass, theUpgrade);
+                theResult = SetEventAreaEffect(inEffect, inPlayerIndex, inPlayer, theClass, theUpgrade);
                 break;
             case 41:
                 theUpgrade->mPowerRegeneration = EEApplyEventEffect(theClass->mPowerRegeneration, theUpgrade->mPowerRegeneration, inEffect);
@@ -704,7 +704,7 @@ long ResearchEventTechnology(EEEventEffect* inEffect, long inPlayerIndex, EEPlay
 
 // FUNCTION: EXE 0x5cb8f6
 // Makes the event's technology obsolete for the player; returns 9 without a player
-long Fn1CB8F6(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
+long MakeEventTechnologyObsolete(EEEventEffect* inEffect, long inPlayerIndex, EEPlayer* inPlayer)
 {
     if (inPlayer == NULL)
         inPlayer = gWorld.mPlayers[inPlayerIndex];
@@ -732,7 +732,7 @@ long SetEventPrerequisite(EEEventEffect* inEffect, long inPlayerIndex, long inPr
 
 // FUNCTION: EXE 0x5cb964
 // Changes one gather rate of the unit type's upgrade by the event: offset, factor of the class rate, or set value
-void Fn1CB964(EEEventEffect* inEffect, long inIndex, EEPlayer* inPlayer,
+void ApplyEventGatherRate(EEEventEffect* inEffect, long inIndex, EEPlayer* inPlayer,
               EEUnitClass* inClass, EEUnitClassUpgrade* inUpgrade)
 {
     if (inUpgrade == NULL)

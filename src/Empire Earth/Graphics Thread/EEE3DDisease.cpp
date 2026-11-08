@@ -179,7 +179,7 @@ long EEE3DDisease::DrawPass5()
     gRasterizer->SetZBuffer(kZBufferTestAndWrite, theScreen);
     gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
     gRasterizer->SetShadingColorSource(0, theScreen);
-    Fn10FA01();
+    SetUnitLighting();
     const GE3DPoint& theLocation = this->mLocation;
     theTransformation.SetPosition(theLocation.GetX(), theLocation.GetY(), theLocation.GetZ());
     theModel->SetGraphicsPostModelTransform(theTransformation);
@@ -278,7 +278,7 @@ long EEE3DDisease::Step()
             else
                 theChanged = false;
             this->mUnit->mComplexUnit->mPhysicalModel.GetLocation().GetPosition(theLocation);
-            this->SetSound(Fn1487A3(theLocation, this->mGraphicObject, 0, this->mSound, theFrame, theChanged));
+            this->SetSound(PlayAnimationSound(theLocation, this->mGraphicObject, 0, this->mSound, theFrame, theChanged));
             if (this->mSound)
                 this->mSound->Dereference();
         } else

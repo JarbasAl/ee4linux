@@ -160,12 +160,12 @@ long EEE3DDamageVent::DrawPass6()
         gRasterizer->SetBlending(kBlendOne, kBlendOne, theScreen);
     else
         gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
-    Fn10F7C8();
+    SetWhiteLighting();
     theModel->SetTexture(this->mGraphicObject->mTextures[0], theScreen);
     if (theAdditive) {
         GETransformation theTransformation(this->mTransformation);
         GE3DPoint theLocation(theTransformation.GetX(), theTransformation.GetY(), theTransformation.GetZ());
-        Fn11A130(theLocation, theFog, theValue);
+        GetFogFactor(theLocation, theFog, theValue);
     }
     for (long i = 0; i < (long)this->mDrawCount && (unsigned long)i < this->mParts.size(); i++) {
         EEE3DDamageVentPart& thePart = this->mParts[i];
@@ -241,7 +241,7 @@ long EEE3DDamageVent::Step()
             for (long i = theParts - theWanted; i > 0; i--)
                 this->mParts.pop_back();
         } else if (theParts < theWanted) {
-            long theTag = Fn102F57(0, theCount - 1);
+            long theTag = GetEffectRandomLong(0, theCount - 1);
             std::vector<EEE3DDamageVentPart>::iterator theEnd = this->mParts.end();
             std::vector<EEE3DDamageVentPart>::iterator theOther = this->mParts.begin();
             while (theOther != theEnd) {
@@ -256,7 +256,7 @@ long EEE3DDamageVent::Step()
             }
             EEE3DDamageVentPart thePart;
             thePart.mTag = theTag;
-            thePart.mSpeed = Fn102F3D(theEffect->GetParam3(), theEffect->GetParam4());
+            thePart.mSpeed = GetEffectRandomFloat(theEffect->GetParam3(), theEffect->GetParam4());
             thePart.mFrame = 0;
             thePart.mLength = 0.0f;
             thePart.mTime = 0.0f;
@@ -319,7 +319,7 @@ long EEE3DDamageVent::Step()
             thePart->mNextSubEffectTime -= theElapsed;
             if (!(thePart->mNextSubEffectTime <= 0.0f))
                 continue;
-            thePart->mNextSubEffectTime = Fn102F3D(theEffect->GetParam6(), theEffect->GetParam7());
+            thePart->mNextSubEffectTime = GetEffectRandomFloat(theEffect->GetParam6(), theEffect->GetParam7());
             float theSpread = theEffect->mParam8;
             GE3DPoint thePlace((0.5f - EEEffect::GetRandom()) * theSpread + theFrom.GetX(),
                                (0.5f - EEEffect::GetRandom()) * theSpread + theFrom.GetY(),

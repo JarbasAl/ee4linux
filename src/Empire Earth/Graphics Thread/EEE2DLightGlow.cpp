@@ -311,7 +311,7 @@ long EEE2DLightGlow::DrawPass6()
 {
     for (unsigned long i = 0; i < this->mSpotCount; i++) {
         if (this->mSpots[i].mDrawVisible)
-            Fn10317D(this->mSpots[i].mDrawPosition, this->mSpots[i].mColor, 0.0f, this->mGraphicEffect->GetSize(), 1.0f, 1.0f,
+            AddGlowSprite(this->mSpots[i].mDrawPosition, this->mSpots[i].mColor, 0.0f, this->mGraphicEffect->GetSize(), 1.0f, 1.0f,
                      this->mGraphicEffect->mGraphicObject ? this->mGraphicEffect->mGraphicObject->mAlphaReference : 0.0f);
     }
     return 0;

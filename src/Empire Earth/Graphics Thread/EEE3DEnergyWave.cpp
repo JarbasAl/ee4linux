@@ -160,7 +160,7 @@ long EEE3DEnergyWave::DrawPass6()
     else
         theReference = 0.0f;
     GEColor theColor;
-    Fn103634(theCenter, theColor, 0.0f, this->mGraphicEffect->mSize * this->mDrawPhase * 2.0f, this->mHeights,
+    AddGroundQuad(theCenter, theColor, 0.0f, this->mGraphicEffect->mSize * this->mDrawPhase * 2.0f, this->mHeights,
              this->mGraphicEffect->GetParam4(), theReference);
     return 0;
 }

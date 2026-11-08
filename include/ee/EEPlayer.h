@@ -1012,7 +1012,7 @@ public:
     void SetClassCreationSound(unsigned long inUnitClass, EESoundObject* inSound);  // 0x163de1
     void SetClassDeathSound(unsigned long inUnitClass, EESoundObject* inSound);  // 0x163e05
     void SetClassModel(unsigned long inUnitClass, EEGraphicObject* inModel);  // 0x163e29 (EEModel)
-    void SetClassButton(unsigned long inUnitClass, EEButtonObject* inButton);  // 0x163e4d (the unit class's button; EEEvent Fn1CA9CF)
+    void SetClassButton(unsigned long inUnitClass, EEButtonObject* inButton);  // 0x163e4d (the unit class's button; EEEvent SetEventButton)
     void SetClassSelectionSound(unsigned long inUnitClass, EESoundObject* inSound, long inIndex);  // 0x163e71
 
     // Layout (no gaps; sizeof 0xb80: EEHumanPlayer adds a UWideString at +0xb80, sizeof 0xb94):

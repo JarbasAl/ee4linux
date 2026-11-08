@@ -125,7 +125,7 @@ bool EEUCBasicCitizen::FindWoodSite(EEComplexUnit* inUnit, long inUnitType, U2DP
     do {
         if (theFound)
             break;
-        Fn2492C2(theX, theY, theRadius, theTiles);
+        EEGetSquareRingTiles(theX, theY, theRadius, theTiles);
         for (std::vector<EETileCoordinate>::iterator it = theTiles.begin(); it != theTiles.end() && !theFound; ++it) {
             if (!((unsigned long)it->GetX() < gMapWidth) || !((unsigned long)it->GetY() < gMapHeight))
                 continue;

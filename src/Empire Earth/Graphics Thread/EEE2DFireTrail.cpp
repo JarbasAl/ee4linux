@@ -122,7 +122,7 @@ long EEE2DFireTrail::DrawPass6()
     float theEndSize = theEffect->GetSize();
     float theFrom = theEffect->GetStartSize();
     GEColor theColor;
-    Fn10317D(this->mDrawPosition, theColor, this->mRotation, (theEndSize - theFrom) * this->mDrawAge + theStartSize, 1.0f - this->mDrawAge, 1.0f, theReference);
+    AddGlowSprite(this->mDrawPosition, theColor, this->mRotation, (theEndSize - theFrom) * this->mDrawAge + theStartSize, 1.0f - this->mDrawAge, 1.0f, theReference);
     return 0;
 }
 

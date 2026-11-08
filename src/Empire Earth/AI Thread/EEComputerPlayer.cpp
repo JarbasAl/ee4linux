@@ -70,7 +70,7 @@
 #include "ee/EECPBehavior.h"
 #include "LostDebug.h"   // NOT original source: EE_LOST_DEBUG stand-in (RepairPointers; docs/LOST_DEBUG.md)
 // The existing civilization-loader helper declared in EEAResetAllPlayerInfo.h (0x2806e7).
-long Fn2806E7(UString& ioName, EEPlayer* inPlayer);
+long EEApplyCivilizationFile(UString& ioName, EEPlayer* inPlayer);
 
 // Orders resource centers by the distance of their centres from mCenter (0x2ceb4; the sort COMDATs 0x408ae.. take it
 // by value: EETileDistanceLess's copy ctor). Unit-local (provisional name)
@@ -732,7 +732,7 @@ unsigned short EEComputerPlayer::GetObjectRegion(EEComplexUnit* inUnit)
     std::map<unsigned short, unsigned long>::iterator theBest;
     std::map<unsigned short, unsigned long> theCounts;
     std::vector<EETileCoordinate> theTiles;
-    Fn2492C2(inUnit->mTileX, inUnit->mTileY, 1, theTiles);
+    EEGetSquareRingTiles(inUnit->mTileX, inUnit->mTileY, 1, theTiles);
     for (std::vector<EETileCoordinate>::iterator it = theTiles.begin(); it != theTiles.end(); ++it) {
         EEAIPathArea* theArea = gContinentManager.GetPathAreaAt(*it);
         unsigned short theID = theArea != NULL ? theArea->mID : 0;
@@ -4643,7 +4643,7 @@ void EEComputerPlayer::ChooseCivilization()
         }
         if (theNames.size() > 0) {
             long theIndex = gPhysics->GetRandom(0L, (long)theNames.size() - 1);
-            Fn2806E7(theNames[theIndex], this);
+            EEApplyCivilizationFile(theNames[theIndex], this);
             this->mCivilizationFile = theNames[theIndex];
         }
     }

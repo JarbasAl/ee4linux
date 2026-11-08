@@ -171,7 +171,7 @@ long EEE3DNuclearExplosion::DrawPass6()
     gRasterizer->SetZBuffer(kZBufferTestAndWrite, theScreen);
     gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
     gRasterizer->SetShadingColorSource(0, theScreen);
-    Fn10FA01();
+    SetUnitLighting();
     theCloud->GetMaterial(0)->SetTexture(this->mGraphicObject->mTextures[9], theScreen);
     theStem->GetMaterial(0)->SetTexture(this->mGraphicObject->mTextures[9], theScreen);
     thePosition.SetX(this->mTransformation.GetX());
@@ -205,9 +205,9 @@ long EEE3DNuclearExplosion::DrawPass6()
     gRasterizer->Draw(theCloud, theScreen, 1.0f, gOrthographicView);
     theStem->PrepareTransforms();
     gRasterizer->Draw(theStem, theScreen, 1.0f, gOrthographicView);
-    Fn10F7C8();
+    SetWhiteLighting();
     float theLight;
-    Fn11A130(thePosition, theFog, theLight);
+    GetFogFactor(thePosition, theFog, theLight);
     theLight = (1.0f - this->mDrawFlash * this->mDrawFlash) * theLight;
     GEColor theColor(theLight, theLight, theLight);
     gRasterizer->SetAmbientColor(theColor, theScreen);

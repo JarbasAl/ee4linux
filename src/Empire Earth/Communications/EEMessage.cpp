@@ -4240,7 +4240,7 @@ void EEMLoadOrSaveGameResponse::Execute()
 }
 
 extern long gAutoSaveCount;                 // 0x5308b8 (the auto-save count LoadOrSave passes on; provisional name)
-// (0x14cbc7 Fn14CBC7: ee/EESaveLoad.h)
+// (0x14cbc7 TrimAutoSaves: ee/EESaveLoad.h)
 
 // FUNCTION: EXE 0x4c1052
 // Saves the game under the requested name, rotates the auto-saves for an auto-save, restores the mouse and reports
@@ -4260,7 +4260,7 @@ long EEMLoadOrSaveGame::LoadOrSave()
     if (this->mIsAutoSave == 1) {
         theDirectory = UString("data\\") + UString("Saved Games\\");
         theName = UString("AutoSave") + UString("*") + gSavedGameExtension;
-        Fn14CBC7(theName, theDirectory, gAutoSaveCount);
+        TrimAutoSaves(theName, theDirectory, gAutoSaveCount);
     }
     if (gCommunications->IsServer() && !this->mIsQuiet && theResult == 0)
         gUserInterface->CloseForm(NULL);

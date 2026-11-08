@@ -138,7 +138,7 @@ void EEClient::SetConnectionState(long inState)
     UWideString theText;
     switch (inState) {
     case 0:
-        if (EECheck2989A9(true))
+        if (EEIsMultiplayerGame(true))
             EELobbyPostConnectStatus(false);
         else {
             gUserInterface->CloseForm(NULL);
@@ -151,7 +151,7 @@ void EEClient::SetConnectionState(long inState)
         }
         break;
     case 1:
-        if (!EECheck2989A9(true)) {
+        if (!EEIsMultiplayerGame(true)) {
             gResource->GetString(IDS_CONNECTING_TO_SERVER, theText);
             gUIManager->DisplayMessage(theText, true, NULL, NULL, false);
         }
@@ -257,7 +257,7 @@ void EEClient::ExecuteRemovePlayer(unsigned char inPlayer, bool inWasBooted, boo
         } else if (inPlayer == this->GetPlayerNumber()) {
             if (inGameIsExiting) {
                 this->mHasLeftGame = true;
-                FnB7992(&theUnused);
+                CancelGameCallback(&theUnused);
             } else {
                 if (inPlayerIsOOS)
                     gResource->GetString(IDS_YOU_ARE_OUT_OF_SYNCH, theFormat);
@@ -267,7 +267,7 @@ void EEClient::ExecuteRemovePlayer(unsigned char inPlayer, bool inWasBooted, boo
                 this->mIgnoreConnectionTimeout = true;
                 this->mWasBooted = true;
                 this->mHasLeftGame = true;
-                gUIManager->DisplayMessage(theText, true, NULL, (EEUIFErrorCallback)FnB7992, true);
+                gUIManager->DisplayMessage(theText, true, NULL, (EEUIFErrorCallback)CancelGameCallback, true);
             }
         } else {
             if (inPlayerIsOOS)
@@ -291,7 +291,7 @@ void EEClient::ExecuteRemovePlayer(unsigned char inPlayer, bool inWasBooted, boo
 
 // FUNCTION: EXE 0x4b7992
 // Cancels the game (the callback of the booted message box)
-void FnB7992(void* inData)
+void CancelGameCallback(void* inData)
 {
     gUserInterface->PostCancelGame();
 }
@@ -381,7 +381,7 @@ void EEClient::HandleMessage(NEMessage* inMessage)
         if (theResponse->GetError() == kConnectionAccepted) {
             this->mUISlotNumber = theResponse->GetUISlotNumber();
             gLocalPlayerOut = false;
-            if (EECheck2989A9(true))
+            if (EEIsMultiplayerGame(true))
                 EELobbyPostConnectStatus(true);
             else
                 gUserInterface->OpenForm(gUIManager->GetFormByID(kFormLobby));
@@ -389,7 +389,7 @@ void EEClient::HandleMessage(NEMessage* inMessage)
             gCommunications->SetCurrentCommunicationsTick(theResponse->GetCurrentCT());
             unsigned long theCT = gCommunications->GetNumberOfCTsProcessedInPhysics();
         } else if (this->mUISlotNumber == 0xff) {
-            if (EECheck2989A9(true))
+            if (EEIsMultiplayerGame(true))
                 EELobbyPostConnectStatus(false);
             else if (theResponse->GetError() == kConnectionNameInUse) {
                 if (gWonNet != NULL) {

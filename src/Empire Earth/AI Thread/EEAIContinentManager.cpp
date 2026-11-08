@@ -2111,7 +2111,7 @@ bool EEAIContinentManager::GetTilesNextTo(long inX, long inY, std::vector<U2DPoi
     outTiles.clear();
     if (theID != inID) {
         if (this->mTileFlags[this->mFlagsWidth * theID + inID]) {
-            Fn2492C2(inX, inY, 1, theTiles);
+            EEGetSquareRingTiles(inX, inY, 1, theTiles);
             for (long i = theTiles.size() - 1; i >= 0; i--) {
                 if (!(theTiles[i].GetX() >= 0) || !(theTiles[i].GetY() >= 0))
                     continue;

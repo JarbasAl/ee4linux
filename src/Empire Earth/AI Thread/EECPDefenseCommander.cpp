@@ -247,7 +247,7 @@ static const float kDCOwnArmyRange = 225.0f;   // 0x43c0f8 (ComputeTownThreat)
 
 // unit-local globals (provisional names)
 extern long gDCGameSpeed;                   // 0x530d24 (> 0x32: the naval maintenance)
-#include "ee/EEUnitUtilities.h" // Fn4EEF9, the shared pointer shuffle (eight callers in the original)
+#include "ee/EEUnitUtilities.h" // PermuteValues, the shared pointer shuffle (eight callers in the original)
 long EEGetPlayerUnitsOfType(long inUnitType, long inPlayerID, std::vector<EEUnit*>& outUnits);   // 0x64c395
 
 // FUNCTION: EXE 0x477718
@@ -744,7 +744,7 @@ void EECPDefenseCommander::AidAllies()
 {
     std::vector<EEPlayer*> theAllies(this->mPlayer->mAllies);
     EECPMilitaryAidPackage thePackage(this->mPlayer);
-    Fn4EEF9(theAllies, UMFloatToLong(gPhysics->mRandom.GenerateUnit()));
+    PermuteValues(theAllies, UMFloatToLong(gPhysics->mRandom.GenerateUnit()));
     long theTownID;
     for (long i = theAllies.size() - 1; i >= 0; i--) {
         if (theAllies[i] == this->mPlayer)

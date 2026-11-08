@@ -20,10 +20,10 @@ template <class T> class U2DPoint;
 
 // 0x2492c2 (cdecl; outside this unit's range): the regions around region (inX, inY) within inRadius appended to
 // outRegions (EECPIntelligencePlayerFile::GetInfluence 0x81a0d) (provisional name; signature inferred)
-void Fn2492C2(long inX, long inY, long inRadius, std::vector<EETileCoordinate>& outRegions);
+void EEGetSquareRingTiles(long inX, long inY, long inRadius, std::vector<EETileCoordinate>& outRegions);
 // the real signature (names.txt 2492c2, every AI caller's mangled call): the tiles are U2DPoint<long>;
 // the EETileCoordinate form above stays for EEUCBuilding.cpp until its caller is retyped
-void Fn2492C2(long inX, long inY, long inRadius, std::vector<U2DPoint<long> >& outTiles);
+void EEGetSquareRingTiles(long inX, long inY, long inRadius, std::vector<U2DPoint<long> >& outTiles);
 
 // A unit type's count in a player file (12 bytes; EECPIntelligencePlayerFile::AddUnitType 0x81b0e) (provisional names)
 struct EECPIUnitTypeCount {

@@ -330,15 +330,15 @@ long EEE3DParticle::DrawPass6()
     gRasterizer->SetShadingColorSource(0, theScreen);
     if (!this->mGraphicEffect->mFlag1) {
         gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
-        Fn10FA01();
+        SetUnitLighting();
         theModel->SetOpacity((1.0f - this->mLifeFraction) * this->mGraphicEffect->GetParam1());
         GEColor theAmbient(this->mBrightness, this->mBrightness, this->mBrightness);
         gRasterizer->SetAmbientColor(theAmbient, theScreen);
     } else {
         float theLight;
-        Fn11A130(this->mPosition, theFog, theLight);
+        GetFogFactor(this->mPosition, theFog, theLight);
         gRasterizer->SetBlending(kBlendOne, kBlendOne, theScreen);
-        Fn10F7C8();
+        SetWhiteLighting();
         theModel->SetOpacity(this->mGraphicEffect->GetParam1());
         float theValue = (1.0f - this->mLifeFraction) * this->mBrightness * theLight;
         GEColor theAmbient(theValue, theValue, theValue);

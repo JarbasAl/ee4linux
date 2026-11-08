@@ -170,10 +170,10 @@ long EEE3DBlastWave::DrawPass6()
     gRasterizer->SetZBuffer(kZBufferTestOnly, theScreen);
     gRasterizer->SetBlending(kBlendOne, kBlendOne, theScreen);
     gRasterizer->SetShadingColorSource(0, theScreen);
-    Fn10F7C8();
+    SetWhiteLighting();
     theMaterial->SetTexture(this->mGraphicObject->mTextures[0], theScreen);
     GE3DPoint theLocation(theTransformation.GetX(), theTransformation.GetY(), theTransformation.GetZ());
-    Fn11A130(theLocation, theFog, theValue);
+    GetFogFactor(theLocation, theFog, theValue);
     theLocation.SetY(theTransformation.GetY());
     theLocation.SetZ(theTransformation.GetZ());
     theTransformation.SetPosition(theTransformation.GetX(), theLocation.GetY(), theLocation.GetZ());

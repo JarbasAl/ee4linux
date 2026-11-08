@@ -242,7 +242,7 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerVolcano::PickTarget()
     EEComplexUnit* theResult = NULL;
     this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenOnlyBuildings(this->mProphet, this, true));
     if (theTargets.size() > 0)
-        Fn4EEF9(theTargets, UMFloatToLong(gPhysics->mRandom.GenerateUnit()));
+        PermuteValues(theTargets, UMFloatToLong(gPhysics->mRandom.GenerateUnit()));
     while (!theTargets.empty()) {
         theTile = theTargets.back()->mUnit->GetTile();
         EEComplexUnit* theCast = theTargets.back()->mUnit;

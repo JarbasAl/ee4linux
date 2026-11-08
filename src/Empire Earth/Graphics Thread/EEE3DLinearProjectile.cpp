@@ -163,7 +163,7 @@ long EEE3DLinearProjectile::DrawPass5()
         gRasterizer->SetAlphaTestingRefValue(0.0f, theScreen);
     gRasterizer->SetZBuffer(kZBufferTestOnly, theScreen);
     gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
-    Fn10F71C();
+    SetPrelitLighting();
     const GE3DPoint& theLocation = this->mLocation;
     theTransformation.SetPosition(theLocation.GetX(), theLocation.GetY(), theLocation.GetZ());
     theModel->SetGraphicsPostModelTransform(theTransformation);

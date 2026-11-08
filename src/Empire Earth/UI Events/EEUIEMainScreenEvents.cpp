@@ -114,7 +114,7 @@ long EEUIEMSEMultiPlayer::ProcessEvent(UIForm* inForm, UIEntity* inEntity)
     EEUIManager* theManager = static_cast<EEUIManager*>(inForm->GetManager());
     theManager->mInScenarioEditor = false;
     gGameState.mGameOptions.mIsMultiplayer = true;
-    if (EECheck2989A9(false))
+    if (EEIsMultiplayerGame(false))
         EEStartExternalLobby();
     else {
         UIEvent* theEvent = new EEUIEMSOpenMultiplayerScreen;

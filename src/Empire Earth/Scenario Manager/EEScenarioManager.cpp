@@ -1742,7 +1742,7 @@ long EEScenarioManager::Load(unsigned long inMajorVersion, unsigned long inMinor
                     delete theSMEffect;
                     break;
                 }
-                if (!Fn14A09E())
+                if (!GetIsLoadingScenario())
                     this->mPendingEffects.push_back(theSMEffect);
                 else
                     delete theSMEffect;

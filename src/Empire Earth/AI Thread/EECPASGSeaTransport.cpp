@@ -350,7 +350,7 @@ bool EECPASGSeaTransport::TestCondition(long inState, long inTime)
 
 // GetRallyPoint: moves the rally point to where a ship would dock at one of the player's docks (picked after a
 // shuffle); returns it. ICF-folded into EECPASGSpaceTransport's 0x450af9 (the same body; both vtables' +0x88
-// slot); this unit's copy of the Fn4EEF9<vector<EEUnit*> > COMDAT it instantiates is the one kept
+// slot); this unit's copy of the PermuteValues<vector<EEUnit*> > COMDAT it instantiates is the one kept
 EETileLocation EECPASGSeaTransport::GetRallyPoint(bool inIncludeAllies)
 {
     std::vector<EEUnit*> theUnits;
@@ -360,7 +360,7 @@ EETileLocation EECPASGSeaTransport::GetRallyPoint(bool inIncludeAllies)
     if (theUnits.size() > 0) {
         GETransformation theTransformation;
         GE3DPoint theLocation(0.0f, 0.0f, 0.0f);
-        Fn4EEF9(theUnits, UMFloatToLong(gPhysics->mRandom.GenerateUnit()));
+        PermuteValues(theUnits, UMFloatToLong(gPhysics->mRandom.GenerateUnit()));
         if (EEGetDockShipFacing(&theLocation, this->mUnits.front()->GetUnit()->GetUnitClass(),
                       theUnits.front(), false, &theTransformation)) {
             this->mRallyPoint.mTile = EETileLocation(UMFloor(theTransformation.GetX()), UMFloor(theTransformation.GetY()));
@@ -369,7 +369,7 @@ EETileLocation EECPASGSeaTransport::GetRallyPoint(bool inIncludeAllies)
     return this->mRallyPoint.mTile;
 }
 
-// Fn4EEF9<vector<EEUnit*> > (ee/EEUnitUtilities.h; ICF-shared by AirTransport's EEPlayer*/EETown* calls 0x4432a/0x44392)
+// PermuteValues<vector<EEUnit*> > (ee/EEUnitUtilities.h; ICF-shared by AirTransport's EEPlayer*/EETown* calls 0x4432a/0x44392)
 // TEMPLATE: EXE 0x44eef9
 
 // SYNTHETIC: EXE 0x44f0bb

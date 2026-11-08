@@ -668,7 +668,7 @@ float EEGetSeabedUnder(EEComplexUnit* inUnit, const GE3DPoint& inLocation)
     std::vector<U2DPoint<long> > theTiles;
     GETerrainMesh& theMesh = ::gWorld.GetMap()->mTerrainMesh;
     float theZ = theMesh.GetMeshZ(inLocation.GetX(), inLocation.GetY());
-    Fn248FE4(inUnit, theTiles, kUUFootprintMargin);
+    EEGetUnitTiles(inUnit, theTiles, kUUFootprintMargin);
     unsigned long i;
     for (i = 0; i < theTiles.size(); i++) {
         if (theMesh.GetIsValidTile(theTiles[i].GetX(), theTiles[i].GetY())) {
@@ -2173,7 +2173,7 @@ bool EEFindPlacement(GE3DPoint* inPoint, EEComplexUnit* inUnit, EEUnitClass* inC
                 continue;
             if (!inCorners && inRings > 1) {
                 if (inTarget != NULL) {
-                    Fn246EA2(inTarget, theX, theY, &theToX, &theToY);
+                    EEGetFootprintDistance(inTarget, theX, theY, &theToX, &theToY);
                 } else {
                     theToX = inX;
                     theToY = inY;
@@ -2443,7 +2443,7 @@ inline bool EEUUTargetSearch::Score(EEComplexUnit* inTarget)
 }
 
 // 0x24fcd1 (template COMDAT after the range): the unit regions of inArea, the nine around inTile's region first, each
-// in the order of a permutation (Fn4EEF9 with the physics' random value); inSearch's candidates it scores (it never
+// in the order of a permutation (PermuteValues with the physics' random value); inSearch's candidates it scores (it never
 // keeps one in outUnits) until it is done. Returns outUnits.size() (provisional name)
 template <class F> long EEUUSearchTiles(const U2DPoint<long>& inTile, U2DRectangle<long>* inArea,
                                         std::vector<EEComplexUnit*>& outUnits, F& inSearch)
@@ -2476,7 +2476,7 @@ template <class F> long EEUUSearchTiles(const U2DPoint<long>& inTile, U2DRectang
     }
     for (; thePass < 2; thePass++) {
         std::vector<std::vector<EEComplexUnit*>*>& theList = thePass != 0 ? theOuter : theInner;
-        Fn4EEF9(theList, gPhysics->mTickRandom);
+        PermuteValues(theList, gPhysics->mTickRandom);
         for (long i = theList.size() - 1; i >= 0; i--) {
             std::vector<EEComplexUnit*>* theRegion = theList[i];
             for (long j = theRegion->size() - 1; j >= 0; j--) {
@@ -2545,7 +2545,7 @@ template <class F> long EEUUSearchTiles(const GE2DPoint& inPosition, const U2DPo
         if (inSearch.mIsDone)
             return outUnits.size();
     }
-    Fn4EEF9(theOuter, gPhysics->mTickRandom);
+    PermuteValues(theOuter, gPhysics->mTickRandom);
     for (long i = theOuter.size() - 1; i >= 0; i--) {
         std::vector<EEComplexUnit*>* theRegion = *(theOuter.begin() + i);
         for (long j = theRegion->size() - 1; j >= 0; j--) {
@@ -3798,7 +3798,7 @@ EEComplexUnit* EEGetWaitingGatherer(EEUnit* inUnit)
         EEGetResourceSpots(inUnit, theTiles);
         EEGetUnitsOn(theTiles, theUnits);
         float theRandom = gPhysics->mRandom.Generate();
-        Fn4EEF9(theUnits, UMFloatToLong(theRandom));
+        PermuteValues(theUnits, UMFloatToLong(theRandom));
         for (unsigned long i = 0; i < theUnits.size() && theResult == NULL; i++) {
             EEComplexUnit* theUnit = theUnits[i]->mComplexUnit;
             if (theUnit == NULL)
@@ -3851,7 +3851,7 @@ float EEGetNearestFootprintTile(EEComplexUnit* inUnit, const GE3DPoint& inPoint,
 
 // FUNCTION: EXE 0x646ea2
 // Returns the tile of a unit's footprint nearest to a tile's centre and that squared distance
-float Fn246EA2(EEComplexUnit* inUnit, long inX, long inY, long* outX, long* outY)
+float EEGetFootprintDistance(EEComplexUnit* inUnit, long inX, long inY, long* outX, long* outY)
 {
     GE3DPoint thePoint((float)inX + 0.5f, (float)inY + 0.5f, 0.0f);
     return EEGetNearestFootprintTile(inUnit, thePoint, outX, outY);
@@ -4664,7 +4664,7 @@ long EETurnAway(long inDirection, long inSpread)
 // FUNCTION: EXE 0x648fe4
 // Collects the tiles a unit covers, widened by a margin (a line along a ship's heading, else a disc)
 // The tiles inUnit covers, widened by inMargin (a line along a ship's heading; a disc otherwise) (inferred)
-void Fn248FE4(EEUnit* inUnit, std::vector<U2DPoint<long> >& outTiles, float inMargin)
+void EEGetUnitTiles(EEUnit* inUnit, std::vector<U2DPoint<long> >& outTiles, float inMargin)
 {
     GE3DPoint thePosition;
     GE3DPoint theFront;
@@ -4690,7 +4690,7 @@ void Fn248FE4(EEUnit* inUnit, std::vector<U2DPoint<long> >& outTiles, float inMa
                    UMFloor(theBack.GetY()), &outTiles, 1, 0);
     } else {
         inUnit->GetPosition(thePosition);
-        Fn24B212(thePosition, inMargin + inUnit->mUnitClass->GetInnerCollisionSphere(), outTiles);
+        EEGetTilesNearPoint(thePosition, inMargin + inUnit->mUnitClass->GetInnerCollisionSphere(), outTiles);
     }
 }
 
@@ -4744,7 +4744,7 @@ unsigned long EEGetLeadUnitID(EEPlayer* inPlayer)
 
 // FUNCTION: EXE 0x6492c2
 // Collects the ring of tiles at a distance around a tile
-void Fn2492C2(long inX, long inY, long inRadius, std::vector<U2DPoint<long> >& outTiles)
+void EEGetSquareRingTiles(long inX, long inY, long inRadius, std::vector<U2DPoint<long> >& outTiles)
 {
     long theSide = inRadius * 2 + 1;
     long theInner = inRadius * 2 - 1;
@@ -5114,7 +5114,7 @@ void EEGetTileLine(long inX1, long inY1, long inX2, long inY2, std::vector<U2DPo
 
 // FUNCTION: EXE 0x64b212
 // Collects the tiles whose nearest point lies within a distance of a point
-void Fn24B212(const GE3DPoint& inPoint, float inDistance, std::vector<EETileCoordinate>& outTiles)
+void EEGetTilesNearPoint(const GE3DPoint& inPoint, float inDistance, std::vector<EETileCoordinate>& outTiles)
 {
     float theDistanceSquared = inDistance * inDistance;
     long theLeft = UMFloor(inPoint.GetX() - inDistance);
@@ -5476,7 +5476,7 @@ long EEGetUnitsNearTile(const GE3DPoint& inCenter, float inRadius, std::vector<E
     std::vector<EETileCoordinate> theTiles;
     float theRadiusSquared = inRadius * inRadius;
     outUnits.clear();
-    Fn24B212(inCenter, inRadius, theTiles);
+    EEGetTilesNearPoint(inCenter, inRadius, theTiles);
     EEGetUnitsOnTiles(theTiles, outUnits);
     std::vector<EEUnit*>::iterator it = outUnits.begin();
     while (it != outUnits.end()) {

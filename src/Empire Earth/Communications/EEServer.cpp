@@ -140,7 +140,7 @@ void EEServer::ProcessConnectionRequest(unsigned char inSlot, const EEGameOption
         gLocalPlayerOut = false;
         theCount = gGameOptions.mIsMultiplayer ? 16 : 2;
         thePlayer.mType = 3;
-        if (!EECheck2989A9(true)) {
+        if (!EEIsMultiplayerGame(true)) {
             for (i = 0; i < 16; i++) {
                 EEGameOptionsPlayer& theSlotPlayer = gGameOptions.mPlayers[i];
                 thePlayer = theSlotPlayer;
@@ -171,7 +171,7 @@ void EEServer::ProcessConnectionRequest(unsigned char inSlot, const EEGameOption
         this->UnregisterSlot(inSlot);
         theOK = false;
     }
-    if (!EECheck2989A9(true)) {
+    if (!EEIsMultiplayerGame(true)) {
         if (theOK != true)
             goto done;
         for (i = 0; i < 16; i++) {
@@ -209,7 +209,7 @@ void EEServer::ProcessConnectionRequest(unsigned char inSlot, const EEGameOption
     if (theOK == true) {
         for (theIndex = inSlot != kSlotServer; theIndex < 16; theIndex++) {
             thePlayer = gGameOptions.mPlayers[theIndex];
-            if (EECheck2989A9(true)) {
+            if (EEIsMultiplayerGame(true)) {
                 if (thePlayer.mType != 1 && thePlayer.mType != 2)
                     continue;
             } else {
@@ -236,7 +236,7 @@ void EEServer::ProcessConnectionRequest(unsigned char inSlot, const EEGameOption
         theResponse->SetOriginatingSlot(kSlotServer);
         this->SendMessageTo(inSlot, theResponse, true);
         theResponse->Dereference();
-        if (!EECheck2989A9(true)) {
+        if (!EEIsMultiplayerGame(true)) {
             if (gGameOptions.mLoadType == 0) {
                 thePlayer.mType = inPlayer.mType;
                 thePlayer.mColor = gDefaultPlayerColors[theIndex];
@@ -284,7 +284,7 @@ void EEServer::ProcessConnectionRequest(unsigned char inSlot, const EEGameOption
         if (theResult == kErrorOK) {
             theHeader.mMajorVersion = kSaveGameMajorVersion;
             theHeader.mMinorVersion = kSaveGameMinorVersion;
-            if (theHeader.LoadFromFile(*theFile) == kErrorOK && !EECheck2989A9(true))
+            if (theHeader.LoadFromFile(*theFile) == kErrorOK && !EEIsMultiplayerGame(true))
                 this->XferFileToClient(*theFile, theHeader.mChecksum, this->GetSendToSlot((unsigned char)thePlayer.mSlot), theXferID, false);
         }
     loaded:
@@ -457,14 +457,14 @@ void EEServer::ExecuteRemovePlayer(unsigned char inPlayer, bool inWasBooted, boo
         if (inPlayer == kSlotServer) {
             this->mHasLeftGame = true;
             if (inGameIsExiting)
-                FnB7992(&theUnused);
+                CancelGameCallback(&theUnused);
             else {
                 if (inPlayerIsOOS)
                     gResource->GetString(IDS_YOU_ARE_OUT_OF_SYNCH, theFormat);
                 else
                     gResource->GetString(IDS_YOU_HAVE_BEEN_BOOTED_DUE, theFormat);
                 sprintf(theText, theFormat);
-                gUIManager->DisplayMessage(theText, true, NULL, (EEUIFErrorCallback)FnB7992, true);
+                gUIManager->DisplayMessage(theText, true, NULL, (EEUIFErrorCallback)CancelGameCallback, true);
             }
         } else {
             if (inPlayerIsOOS)
@@ -732,7 +732,7 @@ bool EEServer::FilterPlayerInput(NEMessage* inMessage)
                 }
                 theResult = false;
             } else if (theError == kConnectionPlayerJoined) {
-                if (!EECheck2989A9(true))
+                if (!EEIsMultiplayerGame(true))
                     gUIManager->Push(gUIManager->GetFormByID(kFormLobby));
                 theResult = true;
             } else

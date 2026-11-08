@@ -412,7 +412,7 @@ long EECPIntelligencePlayerFile::GetInfluence(long inX, long inY, long inRadius)
     long theSum = 0;
     long theX = inX / theTable->mRegionSize;
     long theY = inY / theTable->mRegionSize;
-    Fn2492C2(theX, theY, inRadius, theRegions);
+    EEGetSquareRingTiles(theX, theY, inRadius, theRegions);
     theRegions.push_back(U2DPoint<long>(theX, theY));
     for (long i = theRegions.size() - 1; i >= 0; i--)
         theSum += theTable->GetValue(thePlayerID, theRegions[i].GetX(), theRegions[i].GetY());

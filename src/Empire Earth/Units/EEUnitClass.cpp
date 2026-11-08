@@ -3626,7 +3626,7 @@ void EEUnitClass::FindPath(EEComplexUnit* inUnit)
     EEUnit* theCarrier = static_cast<EEUnit*>(inUnit->mBlockingUnit);
     if (theCarrier != NULL) {
         if (theCarrier->mUnitClass->mInnerCollisionSphere >= 2.0f) {
-            Fn248FE4(theCarrier, theTiles, 0.0f);
+            EEGetUnitTiles(theCarrier, theTiles, 0.0f);
             for (unsigned long i = 0; i < theTiles.size(); i++)
                 inUnit->mBoundedPathTiles.push_back(theTiles[i]);
         } else {

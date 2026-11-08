@@ -150,7 +150,7 @@ long EEE2DFire::SetUp()
         float theZ = this->mParts[i].mPosition.GetZ() + theOffset;
         this->mParts[i].mPosition.SetZ(theZ);
         unsigned long theStart = this->mParts[i].mGraphicObject->mStartFrames[0];
-        this->mParts[i].mFrame = theStart + Fn102F57(0, this->mParts[i].mGraphicObject->mFrameCounts[0] - 1);
+        this->mParts[i].mFrame = theStart + GetEffectRandomLong(0, this->mParts[i].mGraphicObject->mFrameCounts[0] - 1);
     }
     this->SetPosition(thePosition);
     this->SetBoundingRadius(theHeight);
@@ -177,13 +177,13 @@ long EEE2DFire::DrawPass6()
     gRasterizer->SetZBuffer(kZBufferTestOnly, theScreen);
     gRasterizer->SetBlending(kBlendOne, kBlendOne, theScreen);
     gRasterizer->SetShadingColorSource(0, theScreen);
-    Fn10F7C8();
+    SetWhiteLighting();
     for (unsigned long i = 0; i < theCount && theResult == 0; i++) {
         GETexture* theTexture = this->mParts[i].mGraphicObject->mTextures[0];
         theTexture->SetFrame((this->mParts.begin() + i)->mDrawFrame);
         theMaterial->SetTexture(theTexture, theScreen);
         float theValue;
-        Fn11A130(this->mParts[i].mPosition, theFog, theValue);
+        GetFogFactor(this->mParts[i].mPosition, theFog, theValue);
         gRasterizer->SetAmbientColor(GEColor(theValue, theValue, theValue), theScreen);
         const GE3DPoint& thePosition = this->mParts[i].mPosition;
         theTransformation.SetPosition(thePosition.GetX(), thePosition.GetY(), thePosition.GetZ());
@@ -279,7 +279,7 @@ void EEE2DFire::UpdatePart(unsigned long inIndex)
         theChanged = true;
     else
         theChanged = false;
-    this->SetSound(Fn1487A3(theLocation, this->mParts[0].mGraphicObject, 0, this->mSound, theFrame, theChanged));
+    this->SetSound(PlayAnimationSound(theLocation, this->mParts[0].mGraphicObject, 0, this->mSound, theFrame, theChanged));
     if (this->mSound)
         this->mSound->Dereference();
 }

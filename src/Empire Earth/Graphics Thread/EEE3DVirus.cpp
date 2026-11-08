@@ -179,7 +179,7 @@ long EEE3DVirus::DrawPass5()
         gRasterizer->SetAlphaTestingRefValue(0.0f, theScreen);
     gRasterizer->SetZBuffer(kZBufferTestAndWrite, theScreen);
     gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
-    Fn10FA01();
+    SetUnitLighting();
     const GE3DPoint& theLocation = this->mLocation;
     theTransformation.SetPosition(theLocation.GetX(), theLocation.GetY(), theLocation.GetZ());
     theModel->SetGraphicsPostModelTransform(theTransformation);
@@ -303,7 +303,7 @@ long EEE3DVirus::Step()
                 theChanged = true;
             else
                 theChanged = false;
-            this->SetSound(Fn1487A3(theLocation, this->mGraphicObject, 0, this->mSound, theFrame, theChanged));
+            this->SetSound(PlayAnimationSound(theLocation, this->mGraphicObject, 0, this->mSound, theFrame, theChanged));
             if (this->mSound)
                 this->mSound->Dereference();
         } else

@@ -156,7 +156,7 @@ long EEE2DExhaustTrail::DrawPass5()
     gWorld.mTransformation.Apply(theRotation, theTransformation);
     gRasterizer->SetZBuffer(kZBufferTestOnly, theScreen);
     gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
-    Fn10F71C();
+    SetPrelitLighting();
     for (unsigned long i = 0; i < theCount && theResult == 0; i++) {
         GETexture* theTexture = this->mParts[i].mGraphicObject->mTextures[0];
         theTexture->SetFrame(this->mParts[i].mDrawFrame);

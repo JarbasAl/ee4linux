@@ -715,9 +715,9 @@ long EEE3DFarm::DrawPass2()
         gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
         gRasterizer->SetShadingColorSource(0, theScreen);
         if (!this->mDoppelganger)
-            Fn10F833();
+            SetTerrainLighting();
         else
-            Fn10FB74();
+            DimUnitLighting();
         this->mGroundCopy->SetOpacity(theOpacity);
         this->mCropsCopy->SetOpacity(theOpacity);
         bool theSorted = gOrthographicView;

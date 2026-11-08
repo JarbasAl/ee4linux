@@ -471,7 +471,7 @@ void EECPBuildManager::CollectSiteTiles(char inKind)
         theKindContinent->GetShoreNextTo(theContinent->mID, theTiles);
         theRegion = theTiles;
         for (std::vector<U2DPoint<long> >::iterator it = theRegion.begin(); it != theRegion.end(); it++) {
-            Fn2492C2(it->mX, it->mY, 1, theRing);
+            EEGetSquareRingTiles(it->mX, it->mY, 1, theRing);
             theTiles.insert(theTiles.end(), theRing.begin(), theRing.end());
         }
         std::sort(theTiles.begin(), theTiles.end());
@@ -555,7 +555,7 @@ bool EECPBuildManager::FindAirportSite(EETileCoordinate& outTile)
         long theOffset = -2 - theSize;
         for (long k = 4; k >= 3 && !theResult; k--) {
             for (long r = 5; r < 100 && !theResult; r++) {
-                Fn2492C2(theCenter.mX, theCenter.mY, r, theTiles);
+                EEGetSquareRingTiles(theCenter.mX, theCenter.mY, r, theTiles);
                 for (std::vector<U2DPoint<long> >::iterator it = theTiles.begin(); it != theTiles.end() && !theResult;
                     it++) {
                     long theX = it->mX;
@@ -838,7 +838,7 @@ bool EECPBuildManager::FindGranarySite(EETileCoordinate& outTile)
         theResourceCenter->GetCenter(theCenter);
         unsigned short theContinent = gContinentManager.GetContinent(theCenter, kAIPathLandMass);
         for (long r = theRadius + 1; r < theRadius + 0x1e && !theResult; r++) {
-            Fn2492C2(theCenter.mX, theCenter.mY, r, theTiles);
+            EEGetSquareRingTiles(theCenter.mX, theCenter.mY, r, theTiles);
             for (std::vector<EETileCoordinate>::iterator it = theTiles.begin(); it != theTiles.end() && !theResult;
                 it++) {
                 theResult = this->CanBuildAt(theContinent, kUnitTypeFarm, *it, theSize * 3, false, true, theCenter.mX, theCenter.mY);
@@ -1051,7 +1051,7 @@ bool EECPBuildManager::FindTowerSite(long inUnitClass, long inSize, EETileCoordi
                     if (theNear)
                         continue;
                     for (unsigned long r = 1; r <= 2 && !theResult; r++) {
-                        Fn2492C2(theCenter.GetX(), theCenter.GetY(), r, theRing);
+                        EEGetSquareRingTiles(theCenter.GetX(), theCenter.GetY(), r, theRing);
                         for (unsigned long k = 0, n = theRing.size(); k < n && !theResult; k++) {
                             EETile* theTile = theMap->GetTile((*(theRing.begin() + k)).GetX(),
                                 theRing[k].GetY());
@@ -1184,7 +1184,7 @@ bool EECPBuildManager::FindWonderSite(long inUnitClass, unsigned long inSize, EE
         EECPWallManager* theWalls = this->GetManager()->mWallManager;
         if (theWalls->mGateTile.GetX() != 0 && theWalls->mGateTile.GetY() != 0) {
             for (unsigned long r = 1; r < 200; r++) {
-                Fn2492C2(theCenter.GetX(), theCenter.GetY(), r, theTiles);
+                EEGetSquareRingTiles(theCenter.GetX(), theCenter.GetY(), r, theTiles);
                 unsigned long theCount = theTiles.size();
                 if (theCount == 0)
                     break;
@@ -1224,7 +1224,7 @@ bool EECPBuildManager::FindSpotNearTownCenter(EEUnit* inUnit, EETileCoordinate& 
         std::vector<U2DPoint<long> > theRing;
         EEMap* theMap = gWorld.GetMap();
         for (unsigned short r = 3; r > 0 && !theResult; r--) {
-            Fn2492C2(theTile.GetX(), theTile.GetY(), r, theRing);
+            EEGetSquareRingTiles(theTile.GetX(), theTile.GetY(), r, theRing);
             for (unsigned short k = 0; k < theRing.size() && !theResult; k++) {
                 EETile* theMapTile = theMap->GetTile((theRing[k]).GetX(), (theRing[k]).GetY());
                 if (theMapTile != NULL && inUnit->GetUnitClass()->mTerrainTypes[theMapTile->GetTerrainType()]) {
@@ -1345,7 +1345,7 @@ bool EECPBuildManager::FindSpotNearDock(EEUnit* inUnit, EETileCoordinate& outTil
             continue;
         std::vector<U2DPoint<long> > theRing;
         EEMap* theMap = gWorld.GetMap();
-        Fn2492C2(theTile.GetX(), theTile.GetY(), 4, theRing);
+        EEGetSquareRingTiles(theTile.GetX(), theTile.GetY(), 4, theRing);
         for (unsigned short k = 0; k < theRing.size() && !theResult; k++) {
             EETile* theMapTile = theMap->GetTile((theRing[k]).GetX(), (theRing[k]).GetY());
             if (theMapTile != NULL && inUnit->GetUnitClass()->mTerrainTypes[theMapTile->GetTerrainType()]) {

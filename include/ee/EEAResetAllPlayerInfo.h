@@ -25,6 +25,6 @@ public:
 
 // 0x2806e7 (cdecl; the civilization unit at 0x27fdfe..0x2813f4): EEAResetAllPlayerInfo passes the player's +0x7ac
 // string and the player (provisional name; types inferred)
-long Fn2806E7(UString& ioName, EEPlayer* inPlayer);
+long EEApplyCivilizationFile(UString& ioName, EEPlayer* inPlayer);
 
 #endif

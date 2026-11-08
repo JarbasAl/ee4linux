@@ -114,10 +114,10 @@ static inline bool IsWaterTile(EEMapTile* inTile)
 long EEE3DSnow::AddFlake()
 {
     GE3DPoint thePosition;
-    EETileCoordinate& theTile = this->mTiles[Fn102F57(0, this->mTiles.size() - 1)];
-    float theRandom = Fn102F3D(0.0f, 1.0f);
+    EETileCoordinate& theTile = this->mTiles[GetEffectRandomLong(0, this->mTiles.size() - 1)];
+    float theRandom = GetEffectRandomFloat(0.0f, 1.0f);
     float theX = theTile.GetX() + theRandom;
-    theRandom = Fn102F3D(0.0f, 1.0f);
+    theRandom = GetEffectRandomFloat(0.0f, 1.0f);
     long theTileY = theTile.GetY();
     thePosition.mX = theX;
     thePosition.mY = theTileY + theRandom;
@@ -134,8 +134,8 @@ long EEE3DSnow::AddFlake()
 EEE3DSnowFlake::EEE3DSnowFlake(const GE3DPoint& inPosition, float inGroundZ, float inAngle)
     : mPosition(inPosition), mGroundZ(inGroundZ), mAngle(inAngle)
 {
-    this->mDrift.SetX(Fn102F3D(-1.0f, 1.0f));
-    this->mDrift.SetY(Fn102F3D(-1.0f, 1.0f));
+    this->mDrift.SetX(GetEffectRandomFloat(-1.0f, 1.0f));
+    this->mDrift.SetY(GetEffectRandomFloat(-1.0f, 1.0f));
     this->mDrift.SetZ(0.0f);
 }
 
@@ -272,8 +272,8 @@ long EEE3DSnow::DrawPass6()
     gRasterizer->SetZBuffer(kZBufferTestOnly, theScreen);
     gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
     gRasterizer->SetShadingColorSource(0, theScreen);
-    Fn10F772();
-    Fn10F60F();
+    SetCloudLighting();
+    SetSceneFog();
     for (std::vector<EE3DSnowDraw>::iterator theDraw = this->mDraws.begin(); theDraw != this->mDraws.end() && theResult == 0;
          theDraw++) {
         theTransformation.SetX(theDraw->mPosition.GetX());
@@ -418,8 +418,8 @@ long EEE3DSnowFlake::Update()
     float theX = this->mPosition.mX;
     float theY = this->mPosition.mY;
     if (EEEffect::GetRandom() < kSnowTurnChance) {
-        this->mDrift.SetX(Fn102F3D(-1.0f, 1.0f));
-        this->mDrift.SetY(Fn102F3D(-1.0f, 1.0f));
+        this->mDrift.SetX(GetEffectRandomFloat(-1.0f, 1.0f));
+        this->mDrift.SetY(GetEffectRandomFloat(-1.0f, 1.0f));
         this->mDrift.SetZ(0.0f);
     }
     this->mPosition.mX = this->mDrift.GetX() * kSnowDrift + theX;

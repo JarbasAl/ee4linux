@@ -427,7 +427,7 @@ long EEComplexUnit::Load(unsigned long inMajorVersion, unsigned long inMinorVers
     this->mIsFiringHigh = theFlag;
     if (theResult != 0 || (theResult = inFile.Read(theScale)) != 0)
         goto LoadFlags;
-    if (Fn14A09E() || theScale == 0.0f) {
+    if (GetIsLoadingScenario() || theScale == 0.0f) {
         if (this->GetUnitClass() == NULL) {
             if (theScale == 0.0f)
                 theScale = 1.0f;

@@ -270,7 +270,7 @@ public:
     static void ReleaseTargetPool();                    // 0x5b3ac: mCounts from mTargets' units (Virtual90) (provisional name)
     // 0x4e5c88: the targets' pool. A class static: its `$E` chain 0x45ac57 registers a GUARDED dtor (0x45ac77, bit 1
     // of 0x4e5c80), as for class statics (EECPBuildManager::sData), not a file-scope global; the users are this
-    // class's static target functions and Fn5B397. Name is provisional.
+    // class's static target functions and SetAttackTargetPoolSize. Name is provisional.
     static UMemoryPool<EECPASTargetUnit> sTargetPool;
 
     // 0x6a9b / 0x6aae / 0x6ad7 (EECPASGUMechPriest.cpp's range holds their COMDATs; the real header has them inline,

@@ -332,7 +332,7 @@ const GUIString& EELobbyFn2988E9()
 
 // FUNCTION: EXE 0x6989a9
 // Returns whether the game is multiplayer when the flag is set, true otherwise
-bool EECheck2989A9(bool inFlag)
+bool EEIsMultiplayerGame(bool inFlag)
 {
     return inFlag ? gGameOptions.mIsMultiplayer : true;
 }

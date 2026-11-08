@@ -108,7 +108,7 @@ long EEE3DGoal::DrawPass3()
         theText.SetText(theString);
         thePosition = this->mLocation;
         thePosition.SetZ(thePosition.GetZ() + kGoalLabelHeight);
-        Fn118676(thePosition, theScreenPoint);
+        GetScreenPoint(thePosition, theScreenPoint);
         theText.SetLocation(theScreenPoint);
         if (!gFreeCamera)
             gUIManager->mMainGameForm->DrawClippedText(theRectangle, &theText, NULL);

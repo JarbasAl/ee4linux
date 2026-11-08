@@ -857,7 +857,7 @@ public:
     void SetAngularVelocity(const GEOrientation& inV) { this->mAngularVelocity = inV; }
     GEOrientation mAngularVelocity;         // +0x17c (saved)
     GEOrientation mOrientation;             // +0x188 (saved)
-    std::vector<U2DPoint<long> > mBoundedPathTiles;  // +0x194 (filled from Fn248FE4's vector 0x2373bd; assigned with operator= 0x1a4f4 at 0x419ccb)
+    std::vector<U2DPoint<long> > mBoundedPathTiles;  // +0x194 (filled from EEGetUnitTiles's vector 0x2373bd; assigned with operator= 0x1a4f4 at 0x419ccb)
     U2DPoint<long> mCollisionTile;          // +0x1a4 (the ctor's dead lea: U2DPoint's inline ctor; Virtual10 prints it as the tile)
     GEColor mColor;                         // +0x1ac (1, 1, 1; saved)
     EEOrbital** mOrbitals;                  // +0x1b8 (+0x1b8..+0x20c: zeroed by 0x1fac37; mAreaEffectTemplate0 copies of the model's orbitals: Virtual64/Virtual30)

@@ -74,8 +74,8 @@ extern UString gU5656B8; // original UString("Civilizations")
 extern UString gU5656C8; // original UString(".civ")
 extern UString gU530B88; // existing Empire Earth.cpp archive extension object
 // cdecl civilization helpers (the original's callers push zero and two arguments; the second returns an error code)
-void Fn280BB1();
-long Fn28015D(const UString& inName, bool inCampaign);
+void CivBuilderEditCurrentCivilization();
+long CivBuilderSaveCivilization(const UString& inName, bool inCampaign);
 
 // the progress archive's tag keys (unguarded file-scope globals, 0x565720 down to 0x5656d8)
 const UWideString kEECampaignProgressChecksumKey("Checksum");
@@ -120,7 +120,7 @@ void EECampaignProgress::GetCompletedScenarios(std::vector<UWideString>& outScen
 // The pooled empty byte string (referenced at 0x68f763)
 extern char gEmptyString[];
 // Original cdecl scenario-civilization loader (EEAResetAllPlayerInfo, 0x2806e7).
-long Fn2806E7(UString& inName, EEPlayer* inPlayer);
+long EEApplyCivilizationFile(UString& inName, EEPlayer* inPlayer);
 
 // FUNCTION: EXE 0x68f56d
 // Before a scenario of a user campaign, loads the player's progress and gives the current player the civilization
@@ -183,7 +183,7 @@ long EECampaignProgress::RestoreCivilization(const UWideString& inUser, const UW
                         theResult = theCivilization->Copy(theDestination, false, true);
                         if (theResult == kErrorOK) {
                             theExtracted = true;
-                            theResult = Fn2806E7(UString((const char*)theKey), gWorld.GetCurrentPlayer());
+                            theResult = EEApplyCivilizationFile(UString((const char*)theKey), gWorld.GetCurrentPlayer());
                             if (theResult == kErrorOK && theAvailable > 0)
                                 gWorld.GetCurrentPlayer()->mCivilization.AddPoints(theAvailable);
                         }
@@ -309,8 +309,8 @@ long EECampaignProgress::SaveCompletedScenario(const UWideString& inUser, const 
     std::vector<UWideString>::iterator theFound = std::find(this->mCompletedScenarios.begin(), this->mCompletedScenarios.end(), inScenario);
     if (theFound != this->mCompletedScenarios.end())
         theAlreadyCompleted = true;
-    Fn280BB1();
-    theResult = Fn28015D(UString((const char*)theKey), true);
+    CivBuilderEditCurrentCivilization();
+    theResult = CivBuilderSaveCivilization(UString((const char*)theKey), true);
     if (theResult == kErrorOK) {
         if (!theAlreadyCompleted) {
             this->mNumScenariosCompleted++;

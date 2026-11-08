@@ -1124,7 +1124,7 @@ void EECreateGameTimer()
 #include "ee/EEE2DParticle.h"
 #include "ee/EEE3DParticle.h"
 
-void Fn1030AB(); // actual cdecl effect-media reset, defined in EEEffect.cpp
+void CreatePlaneModels(); // actual cdecl effect-media reset, defined in EEEffect.cpp
 
 // FUNCTION: EXE 0x53fcbc
 // Loads the status box icons, mini map, effect, unit, sky and ground shadow media
@@ -1132,7 +1132,7 @@ void EELoadGameMedia()
 {
     EEUIFMGStatusBox::LoadIcons();
     EEUIMiniMap::LoadMedia();
-    Fn1030AB();
+    CreatePlaneModels();
     EEROUnits::LoadMedia();
     EEROTerrain::CreateSkyModel();
     EEROGroundShadows::CreateShadowModel();
@@ -1323,7 +1323,7 @@ void EEStopAllSounds()
     gSoundManager->StopAllOneShotSounds();
 }
 
-void Fn104275(); // effect media cleanup, defined in EEEffect.cpp
+void ReleasePlaneModels(); // effect media cleanup, defined in EEEffect.cpp
 
 // FUNCTION: EXE 0x540d1e
 // Releases the status box icons, mini map, effect, unit, sky and ground shadow media
@@ -1331,7 +1331,7 @@ void EEUnloadGameMedia()
 {
     EEUIFMGStatusBox::UnloadIcons();
     EEUIMiniMap::UnloadMedia();
-    Fn104275();
+    ReleasePlaneModels();
     EEROUnits::ReleaseMedia();
     EEROTerrain::ReleaseSkyModels();
     EEROGroundShadows::ReleaseShadowModel();
@@ -1514,7 +1514,7 @@ void EEReleaseInstanceMutex(bool inShutdown)
 #include "ee/EEDisplayDevices.h"
 
 extern std::vector<GETexture*> gU4E8EF0; // defined in EERenderObject.cpp
-void Fn102E1B(); // effect-render cleanup, defined in EEEffect.cpp
+void DeleteEffectBatchBuffers(); // effect-render cleanup, defined in EEEffect.cpp
 static unsigned long sOriginalVideoMode; // 0x52a1a8: the video mode index found at start-up, restored at shutdown
 
 // FUNCTION: EXE 0x543ece
@@ -1570,7 +1570,7 @@ void EEGraphicsShutdown(bool inShutdown)
     delete gGameWindow;
     gGameWindow = NULL;
     UnregisterClassA("Empire Earth Expansion", gInstance);
-    Fn102E1B();
+    DeleteEffectBatchBuffers();
     gRasterizer->Deactivate();
     delete gU565350;
     gU565350 = NULL;
@@ -1700,7 +1700,7 @@ void EEShutdownThreads(bool inShutdown)
 #include "ee/EECameraControl.h"
 #include "ee/EEButtonObject.h"
 
-void Fn10269C(); // effect reset, defined in EEEffect.cpp
+void CreateEffectBatchBuffers(); // effect reset, defined in EEEffect.cpp
 extern bool sIconsLoaded; // the status box's icons-loaded flag (defined in EEUIFMGStatusBox's unit)
 
 // FUNCTION: EXE 0x540306
@@ -1728,13 +1728,13 @@ void EEChangeGameScreen(unsigned long inWidth, unsigned long inHeight, bool inFu
         theBlack = GEColor(0.0f, 0.0f, 0.0f);
         gRasterizer->GetSecondarySurface(theScreen)->Clear(theOldRectangle, theBlack, 1.0f);
         gRasterizer->GetScreen(theScreen)->Release(gGameWindow);
-        Fn102E1B();
+        DeleteEffectBatchBuffers();
         gRasterizer->Deactivate();
     }
     long theResult = gRasterizer->Activate();
 
     ESVERIFY_AT(theResult == keseOK, 2978);
-    Fn10269C();
+    CreateEffectBatchBuffers();
     theResult = gRasterizer->GetScreen(theScreen)->Capture(gGameWindow, gGamePreferences.mSettings.GetFullScreen());
 
     ESVERIFY_AT(theResult == keseOK, 2987);
@@ -1808,7 +1808,7 @@ void EEChangeGameScreen(unsigned long inWidth, unsigned long inHeight, bool inFu
 #include "ee/EEUserInterface.h"
 
 void EEEnumerateDisplayDevices(); // 0x548514
-void Fn10269C(); // effect reset, defined in EEEffect.cpp
+void CreateEffectBatchBuffers(); // effect reset, defined in EEEffect.cpp
 GERasterizer* gRasterizer;
 GEWindow* gGameWindow;
 
@@ -1862,7 +1862,7 @@ bool EEInitializeDisplay()
         gGamePreferences.mSettings.mGameBitDepth = 16;
     }
     gGamePreferences.Save();
-    Fn10269C();
+    CreateEffectBatchBuffers();
     WNDCLASSEXA theClass;
     theClass.cbSize = sizeof(theClass);
     theClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -2485,7 +2485,7 @@ void EEInitializeDatabase()
     EEGraphicEffect::SortMediaByKind();
     theResult = EEFn0FCA98();
     if (theResult != kErrorOK) ESVerify(__FILE__, 0x4c1, "theResult == keseOK");
-    Fn1030AB();
+    CreatePlaneModels();
     EEInitGamePools();
     theResult = URegisterShutdown(EEDeleteDatabase);
     if (theResult != kErrorOK) ESVerify(__FILE__, 0x4cb, "theResult == keseOK");

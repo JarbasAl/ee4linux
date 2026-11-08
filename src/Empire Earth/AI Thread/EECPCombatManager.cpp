@@ -73,8 +73,8 @@
 #include "ee/EECPPlayerInteractionManager.h"
 #include "ee/EECPCombatManager.h"
 #include "LostDebug.h"   // synthetic, NOT original source (LOST-DEBUG: EE_LOST_DEBUG)
-void Fn5B397(long inChunkSize, long inMaxChunks);  // 0x45b397 (cdecl; 0x200, 0x19 from the ctor) (provisional name)
-float Fn102F3D(float inMinimum, float inMaximum);   // 0x502f3d (cdecl; a value in [inMinimum, inMaximum]) (provisional name)
+void SetAttackTargetPoolSize(long inChunkSize, long inMaxChunks);  // 0x45b397 (cdecl; 0x200, 0x19 from the ctor) (provisional name)
+float GetEffectRandomFloat(float inMinimum, float inMaximum);  // 0x502f3d (cdecl; a value in [inMinimum, inMaximum]) (provisional name)
 extern long gDCGameSpeed;                   // 0x530d24 (EECPDefenseCommander.cpp's name; EpochReached: >= 250) (provisional name)
 // 0x563938 = gUnitClassTable[0xa3] (EpochReached: its technology must be researched)
 // 0x56420c = gUnitClassTable[0x2d8] (Attack: a transport class whose technology must be researched)
@@ -212,7 +212,7 @@ EECPCombatManager::EECPCombatManager(EEComputerPlayer* inPlayer)
     this->mDefenseCommander = new EECPDefenseCommander(inPlayer);
     this->mDefenseCommander->mAttackCommander = this->mAttackCommander;
     this->mUnitSelector = new EECPUnitSelector(inPlayer);
-    Fn5B397(0x200, 0x19);
+    SetAttackTargetPoolSize(0x200, 0x19);
     this->mImprovementsEnabled = false;
     this->mB63 = false;
     this->mTracksThreats = true;
@@ -634,7 +634,7 @@ void EECPCombatManager::AttackPlayer(EEPlayer* inPlayer)
     this->mPlayer->mInteractionManager->SendChat(IDS_CHAT_FACE_ME_COWARD, 0x3a98);
     EESoundObject* theSound = EESoundObject::Get(kSoundComputerAttack);
     if (theSound)
-        theSound->Play(Fn102F3D(0.45f, 1.0f), Fn102F3D(0.1f, 1.0f), Fn102F3D(0.8f, kCMSoundPitch));
+        theSound->Play(GetEffectRandomFloat(0.45f, 1.0f), GetEffectRandomFloat(0.1f, 1.0f), GetEffectRandomFloat(0.8f, kCMSoundPitch));
     for (it = this->mDefenseCommander->mPackages.begin(); it != this->mDefenseCommander->mPackages.end(); ++it)
         if (it->second)
             it->second->mNextSendTime >>= 1;

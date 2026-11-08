@@ -254,16 +254,16 @@ long EEE3DIcon::DrawPass6()
     gRasterizer->SetShadingColorSource(0, theScreen);
     if (theAdditive) {
         gRasterizer->SetBlending(kBlendSrcAlpha, kBlendInvSrcAlpha, theScreen);
-        Fn10F71C();
+        SetPrelitLighting();
         gRasterizer->SetZBuffer(kZBufferTestAndWrite, theScreen);
     } else {
         gRasterizer->SetBlending(kBlendOne, kBlendOne, theScreen);
-        Fn10F7C8();
+        SetWhiteLighting();
         theFogPoint.SetX(this->mDrawTransformation.GetX());
         theFogPoint.SetY(this->mDrawTransformation.GetY());
         theFogPoint.SetZ(this->mDrawTransformation.GetZ());
         float theValue;
-        Fn11A130(theFogPoint, theFog, theValue);
+        GetFogFactor(theFogPoint, theFog, theValue);
         gRasterizer->SetAmbientColor(GEColor(theValue, theValue, theValue), theScreen);
         theTransformation.SetOrientationYPR(gWorld.GetCameraYaw(), 0.0f, 0.0f);
         gRasterizer->SetZBuffer(kZBufferTestOnly, theScreen);
