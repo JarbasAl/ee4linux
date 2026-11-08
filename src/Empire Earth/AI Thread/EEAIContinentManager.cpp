@@ -2325,7 +2325,7 @@ void EEAIContinentManager::RepairPathArea(const U2DPoint<long>& inTile)
                         theNeighbours[i].second->GetContinentID() != theArea->GetContinentID())
                         continue;
                     if (theKind == kAITileUnitObstacle)
-                        theOK = theArea->mUnitID == EEAIGetTileWallID(inTile);
+                        theOK = theNeighbours[i].second->mUnitID == EEAIGetTileWallID(inTile);   // the neighbour's wall (was the old area's)
                     if (!theOK)
                         continue;
                     // a diagonal neighbour joins only through two same-kind orthogonal steps
