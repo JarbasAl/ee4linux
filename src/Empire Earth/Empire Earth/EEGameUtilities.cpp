@@ -228,6 +228,9 @@ SESMInstanceNode* PlayAnimationSound(const GE3DPoint& inLocation, EEGraphicObjec
                                                                    theSound->GetLooping(), NULL);
         } else {
             gSoundManager->Stop(inSound, !gSoundManager->GetIsLooping(inSound));
+            // drop the reference taken above, as the same-sample branch does (the old sound node used to leak)
+            if (inSound != NULL)
+                inSound->Dereference();
             EEComputeSoundParameters(theSound->GetVolume(), inLocation, theVolume, thePan, thePitch, kGraphicSoundFalloff);
             theResult = gSoundManager->PlayAndReturnReferencedNode(theSound->GetSampleID(), theVolume, thePan, thePitch,
                                                                    theSound->GetLooping(), NULL);
