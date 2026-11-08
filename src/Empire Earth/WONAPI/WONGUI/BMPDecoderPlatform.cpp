@@ -1,4 +1,4 @@
-// Native BMP platform decoder; actual target BMP8 owns this override.
+// Windows BMP decoder: builds a GDI bitmap from the file (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,13 +14,14 @@
 #include "ee/wonapi/WONLobbyImageDecoder.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007ce870
+// Reads a whole BMP file into a GDI device-dependent bitmap for the display; NULL if it is not a BMP or is empty
 SmartPtr<NativeImage> BMPDecoder::DoDecode(DisplayContext *theContext)
 {
 	try
 	{
 		// Read file header
 		BITMAPFILEHEADER aHeader;
-		mFileReader->ReadBytes(&aHeader,sizeof(aHeader));
+		this->mFileReader->ReadBytes(&aHeader,sizeof(aHeader));
 		if (aHeader.bfType != ((unsigned short) ('M' << 8) | 'B'))
 			return NULL;
 
@@ -31,7 +32,7 @@ SmartPtr<NativeImage> BMPDecoder::DoDecode(DisplayContext *theContext)
 		char *aData = new char[aSize];
 		std::auto_ptr<char> aDelData(aData);
 
-		mFileReader->ReadBytes(aData,aSize);
+		this->mFileReader->ReadBytes(aData,aSize);
 		BITMAPINFOHEADER &bmiHeader = *(LPBITMAPINFOHEADER)(aData);
 		BITMAPINFO &bmInfo = *(LPBITMAPINFO)(aData);
 

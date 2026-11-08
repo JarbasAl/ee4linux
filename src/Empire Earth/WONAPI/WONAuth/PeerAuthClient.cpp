@@ -1,4 +1,4 @@
-// Actual complete peer-authentication client protocol and original typed owners.
+// PeerAuthClient: client side of the WON peer authentication handshake (request, challenges, complete)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <time.h>
@@ -12,85 +12,91 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONAuthPeerData.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006e5c30
+// Creates an idle client that prefers auth2 certificates and an 8-byte server-chosen session key
 PeerAuthClient::PeerAuthClient()
 {
-    Reset();
-    mUseAuth2=true;
-    mUseClientSecret=false;
-    mClientKeySize=8;
+    this->Reset();
+    this->mUseAuth2=true;
+    this->mUseClientSecret=false;
+    this->mClientKeySize=8;
 }
 // FUNCTION: WON 0x006e5cb0
+// Returns the handshake to the not-started state
 void PeerAuthClient::Reset()
 {
-    mState=STATE_NOT_STARTED;
+    this->mState=STATE_NOT_STARTED;
 }
 // FUNCTION: WON 0x6e5cc0
+// Decrypts the server secret, checks the server certificate and builds challenge 2; returns the status
 WONStatus PeerAuthClient::HandleChallenge1(ReadBuffer &theChallenge, ByteBufferPtr &challenge2)
 {
 	unsigned short aSecretLenWithLen = theChallenge.ReadShort();
-	ByteBufferPtr aSecretBuf = mPeerData->GetPrivateKey().Decrypt(theChallenge.ReadBytes(aSecretLenWithLen),aSecretLenWithLen);
+	ByteBufferPtr aSecretBuf = this->mPeerData->GetPrivateKey().Decrypt(theChallenge.ReadBytes(aSecretLenWithLen),aSecretLenWithLen);
 	if(aSecretBuf.get()==NULL)
-		return 100025 /* WS_PeerAuthClient_Challenge1DecryptFailure */;
+		return WS_PeerAuthClient_Challenge1DecryptFailure /* WS_PeerAuthClient_Challenge1DecryptFailure */;
 		
 	unsigned short aSecretLen = aSecretBuf->data()[0] | (aSecretBuf->data()[1]<<8);
 	unsigned long aMaxLen = aSecretBuf->length()-2;
 	if(aSecretLen>aMaxLen)
-		return 100026 /* WS_PeerAuthClient_Challenge1InvalidSecretLen */;
+		return WS_PeerAuthClient_Challenge1InvalidSecretLen /* WS_PeerAuthClient_Challenge1InvalidSecretLen */;
 		
-	mSecretA.Create(mClientKeySize);		
+	this->mSecretA.Create(this->mClientKeySize);		
 	const void* aKey = aSecretBuf->data()+2;
-	if(!mSecretB.SetKey(aKey, aSecretLen))
-		return 100027 /* WS_PeerAuthClient_Challenge1InvalidSecretKey */;
+	if(!this->mSecretB.SetKey(aKey, aSecretLen))
+		return WS_PeerAuthClient_Challenge1InvalidSecretKey /* WS_PeerAuthClient_Challenge1InvalidSecretKey */;
 
 	unsigned short aCertLen = theChallenge.ReadShort();
 
-	if(mUseAuth2)
-		mServerCertificate = new Auth2Certificate(theChallenge.ReadBytes(aCertLen),aCertLen);
+	if(this->mUseAuth2)
+		this->mServerCertificate = new Auth2Certificate(theChallenge.ReadBytes(aCertLen),aCertLen);
 	else
-		mServerCertificate = new AuthCertificate(theChallenge.ReadBytes(aCertLen),aCertLen);
+		this->mServerCertificate = new AuthCertificate(theChallenge.ReadBytes(aCertLen),aCertLen);
 
-	if(!mServerCertificate->IsValid())
-		return 100028 /* WS_PeerAuthClient_Challenge1CertificateUnpackFailure */;
+	if(!this->mServerCertificate->IsValid())
+		return WS_PeerAuthClient_Challenge1CertificateUnpackFailure /* WS_PeerAuthClient_Challenge1CertificateUnpackFailure */;
 
-	if(!mPeerData->Verify(mServerCertificate.get()))
-		return 100029 /* WS_PeerAuthClient_Challenge1CertificateVerifyFailure */;
+	if(!this->mPeerData->Verify(this->mServerCertificate.get()))
+		return WS_PeerAuthClient_Challenge1CertificateVerifyFailure /* WS_PeerAuthClient_Challenge1CertificateVerifyFailure */;
 
-	return GetChallenge2(challenge2);
+	return this->GetChallenge2(challenge2);
 }
 	
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x6e5fb0
+// Builds challenge 2: both secrets encrypted with the server certificate's public key
 WONStatus PeerAuthClient::GetChallenge2(ByteBufferPtr &challenge2)
 {
-	mState = STATE_AWAITING_COMPLETE;
+	this->mState = STATE_AWAITING_COMPLETE;
 
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 		
 	aMsg.AppendLong(203);								// Auth1 Peer To Peer
 	aMsg.AppendLong(52);								// Auth1 Challenge 2
 
 	WriteBuffer anEncryptBuf(0,true);
-	anEncryptBuf.AppendShort(mSecretB.GetKeyLen());
-	anEncryptBuf.AppendBytes(mSecretB.GetKey(), mSecretB.GetKeyLen());
-	anEncryptBuf.AppendBytes(mSecretA.GetKey(), mSecretA.GetKeyLen());
+	anEncryptBuf.AppendShort(this->mSecretB.GetKeyLen());
+	anEncryptBuf.AppendBytes(this->mSecretB.GetKey(), this->mSecretB.GetKeyLen());
+	anEncryptBuf.AppendBytes(this->mSecretA.GetKey(), this->mSecretA.GetKeyLen());
 
-	ByteBufferPtr anEncrypt = mServerCertificate->GetPubKey().Encrypt(anEncryptBuf.mData,anEncryptBuf.mLength);
+	ByteBufferPtr anEncrypt = this->mServerCertificate->GetPubKey().Encrypt(anEncryptBuf.mData,anEncryptBuf.mLength);
 	if(anEncrypt.get()==NULL)
-		return 100030 /* WS_PeerAuthClient_Challenge2EncryptFailure */;
+		return WS_PeerAuthClient_Challenge2EncryptFailure /* WS_PeerAuthClient_Challenge2EncryptFailure */;
 
 	aMsg.AppendShort(anEncrypt->length());
 	aMsg.AppendBytes(anEncrypt->data(),anEncrypt->length());
 	challenge2 = aMsg.ToByteBuffer(true);
-	return 0;
+	return WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x6e61d0
+// Checks the server's complete message echoes our secret and creates the session; returns the status
 WONStatus PeerAuthClient::HandleComplete(ReadBuffer &theComplete)
 {
 	short aStatus = theComplete.ReadShort();
@@ -107,42 +113,43 @@ WONStatus PeerAuthClient::HandleComplete(ReadBuffer &theComplete)
 	}
 		
 	unsigned short aLen = theComplete.ReadShort();
-	ByteBufferPtr aDecrypt = mPeerData->GetPrivateKey().Decrypt(theComplete.ReadBytes(aLen),aLen);
+	ByteBufferPtr aDecrypt = this->mPeerData->GetPrivateKey().Decrypt(theComplete.ReadBytes(aLen),aLen);
 	if(aDecrypt.get()==NULL)
-		return 100031 /* WS_PeerAuthClient_CompleteDecryptFailure */;
+		return WS_PeerAuthClient_CompleteDecryptFailure /* WS_PeerAuthClient_CompleteDecryptFailure */;
 
 	if(aDecrypt->length()<2)
-		return 100032 /* WS_PeerAuthClient_CompleteInvalidSecretLen */;
+		return WS_PeerAuthClient_CompleteInvalidSecretLen /* WS_PeerAuthClient_CompleteInvalidSecretLen */;
 	
 	aLen = (aDecrypt->data()[0] | (aDecrypt->data()[1]<<8));
-	if(aLen>aDecrypt->length()-2 || aLen!=mSecretA.GetKeyLen() || memcmp(mSecretA.GetKey(),aDecrypt->data()+2,aLen)!=0)
-		return 100033 /* WS_PeerAuthClient_CompleteInvalidSecretKey */;	
+	if(aLen>aDecrypt->length()-2 || aLen!=this->mSecretA.GetKeyLen() || memcmp(this->mSecretA.GetKey(),aDecrypt->data()+2,aLen)!=0)
+		return WS_PeerAuthClient_CompleteInvalidSecretKey /* WS_PeerAuthClient_CompleteInvalidSecretKey */;	
 
 	unsigned short aSessionId = 0;
-	if(mAuthType==AUTH_TYPE_SESSION)
+	if(this->mAuthType==AUTH_TYPE_SESSION)
 		aSessionId = theComplete.ReadShort();
 
-	if(mAuthType!=AUTH_TYPE_PERSISTENT_NOCRYPT)
-		mSession = new AuthSession(mAuthType, aSessionId, mUseClientSecret?mSecretA:mSecretB, mLengthFieldSize);
+	if(this->mAuthType!=AUTH_TYPE_PERSISTENT_NOCRYPT)
+		this->mSession = new AuthSession(this->mAuthType, aSessionId, this->mUseClientSecret?this->mSecretA:this->mSecretB, this->mLengthFieldSize);
 
-	return 0;
+	return WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x6e6730
+// Builds the peer auth request with the auth type, encryption flags and our certificate
 ByteBufferPtr PeerAuthClient::Start(const AuthPeerData *theData, AuthType theType, unsigned char theLengthFieldSize)
 {
-	mState = STATE_AWAITING_CHALLENGE;
+	this->mState = STATE_AWAITING_CHALLENGE;
 
-	mPeerData = theData;
-	mAuthType = theType;
-	mLengthFieldSize = theLengthFieldSize;
+	this->mPeerData = theData;
+	this->mAuthType = theType;
+	this->mLengthFieldSize = theLengthFieldSize;
 
-	bool sessioned = (mAuthType==AUTH_TYPE_SESSION);
-	bool encrypted = (sessioned || mAuthType==AUTH_TYPE_PERSISTENT);
+	bool sessioned = (this->mAuthType==AUTH_TYPE_SESSION);
+	bool encrypted = (sessioned || this->mAuthType==AUTH_TYPE_PERSISTENT);
 
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 	aMsg.AppendLong(203);								// Auth1 Peer To Peer
 	aMsg.AppendLong(50);								// Auth1 Request
 
@@ -152,17 +159,17 @@ ByteBufferPtr PeerAuthClient::Start(const AuthPeerData *theData, AuthType theTyp
 
 	int anEncryptFlags = 0;
 	if(!sessioned) anEncryptFlags |= 0x0001;
-	if(mUseClientSecret) anEncryptFlags |= 0x8000;
+	if(this->mUseClientSecret) anEncryptFlags |= 0x8000;
 	aMsg.AppendShort(anEncryptFlags);					// 0x0000 None
 														// 0x0001 Don't Use sequence numbers
 														// 0x0002 Allow clear messages
 														// 0x8000 Use client specified session key
 
-	const AuthCertificateBase *aCert = mPeerData->GetCertificate2();
-	if(aCert==NULL || !mUseAuth2)
+	const AuthCertificateBase *aCert = this->mPeerData->GetCertificate2();
+	if(aCert==NULL || !this->mUseAuth2)
 	{
-		mUseAuth2 = false;
-		aCert = mPeerData->GetCertificate();
+		this->mUseAuth2 = false;
+		aCert = this->mPeerData->GetCertificate();
 	}
 
 	unsigned short aCertLen = aCert->GetRawLen();
@@ -174,6 +181,7 @@ ByteBufferPtr PeerAuthClient::Start(const AuthPeerData *theData, AuthType theTyp
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x6e68d0
+// Dispatches a received handshake message to the challenge or complete handler; returns the status
 WONStatus PeerAuthClient::HandleRecvMsg(const void *inMsg, unsigned long inMsgLen, ByteBufferPtr &outMsg)
 {
 	outMsg = NULL;
@@ -185,23 +193,23 @@ WONStatus PeerAuthClient::HandleRecvMsg(const void *inMsg, unsigned long inMsgLe
 		DWORD aMessageType = aMsg.ReadLong();
 
 		if(aServiceType!=203) // Auth 1 peer to peer
-			return 100034 /* WS_PeerAuthClient_InvalidServiceType */;
+			return WS_PeerAuthClient_InvalidServiceType /* WS_PeerAuthClient_InvalidServiceType */;
 
 		if(aMessageType==53)
-			return HandleComplete(aMsg);
+			return this->HandleComplete(aMsg);
 		else if(aMessageType==51)
 		{
-			if(mState!=STATE_AWAITING_CHALLENGE)
-				return 100035 /* WS_PeerAuthClient_UnexpectedChallenge */;
+			if(this->mState!=STATE_AWAITING_CHALLENGE)
+				return WS_PeerAuthClient_UnexpectedChallenge /* WS_PeerAuthClient_UnexpectedChallenge */;
 			
-			return HandleChallenge1(aMsg, outMsg);
+			return this->HandleChallenge1(aMsg, outMsg);
 		}
 		else
-			return 100036 /* WS_PeerAuthClient_InvalidMessage */;
+			return WS_PeerAuthClient_InvalidMessage /* WS_PeerAuthClient_InvalidMessage */;
 	}
 	catch(ReadBufferException&)
 	{
-		return 100037 /* WS_PeerAuthClient_MsgUnpackFailure */;
+		return WS_PeerAuthClient_MsgUnpackFailure /* WS_PeerAuthClient_MsgUnpackFailure */;
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,4 +1,4 @@
-// Original-backed protocol family; pending first ordinary full-COFF review.
+// WONAPI routing op that creates a group (and optionally joins it)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,75 +8,78 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 namespace WONAPI {
 
 // FUNCTION: WON 0x006c4a80
+// Creates a create-group request with no group id, no parent group and no flags
 RoutingCreateGroupOp::RoutingCreateGroupOp(RoutingConnection* inConnection)
     : RoutingOp(inConnection)
 {
-    mGroupId = 0xffff;
-    mParentGroupId = 0xffff;
-    mMaxPlayers = 0;
-    mJoinFlags = 0;
-    mGroupFlags = 0;
-    mAsyncFlags = 0;
-    mLeaveGroupOnCancel = false;
+    this->mGroupId = 0xffff;
+    this->mParentGroupId = 0xffff;
+    this->mMaxPlayers = 0;
+    this->mJoinFlags = 0;
+    this->mGroupFlags = 0;
+    this->mAsyncFlags = 0;
+    this->mLeaveGroupOnCancel = false;
 }
 
 // FUNCTION: WON 0x006c4c20
-void RoutingCreateGroupOp::Virtual0C()
+// Sends the routing server the create-group request (name, password, size, join and group flags, parent)
+void RoutingCreateGroupOp::SendRequest()
 {
-    InitSendMsg(13);
-    mSendMsg.AppendShort(mGroupId);
-    mSendMsg.AppendWString(mGroupName, 2);
-    mSendMsg.AppendWString(mGroupPassword, 2);
-    mSendMsg.AppendShort(mMaxPlayers);
-    mSendMsg.AppendByte(mJoinFlags);
-    mSendMsg.AppendLong(mGroupFlags);
-    mSendMsg.AppendLong(mAsyncFlags);
-    mSendMsg.AppendShort(mParentGroupId);
-    SendMsg();
-    AddOp();
+    this->InitSendMsg(13);
+    this->mSendMsg.AppendShort(this->mGroupId);
+    this->mSendMsg.AppendWString(this->mGroupName, 2);
+    this->mSendMsg.AppendWString(this->mGroupPassword, 2);
+    this->mSendMsg.AppendShort(this->mMaxPlayers);
+    this->mSendMsg.AppendByte(this->mJoinFlags);
+    this->mSendMsg.AppendLong(this->mGroupFlags);
+    this->mSendMsg.AppendLong(this->mAsyncFlags);
+    this->mSendMsg.AppendShort(this->mParentGroupId);
+    this->SendMsg();
+    this->AddOp();
 }
 
 // FUNCTION: WON 0x006c4d90
-WONStatus RoutingCreateGroupOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
+// Reads the create-group reply (new group id and name, parent) and the join status that follows when joining
+WONStatus RoutingCreateGroupOp::HandleReply(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType == 41) {
-        if (mJoinFlags == 0)
-            return (WONStatus)100104;
+        if (this->mJoinFlags == 0)
+            return (WONStatus)WS_RoutingOp_DontWantReply;
         short status = inMsg.ReadShort();
-        CheckLeaveGroup(status);
+        this->CheckLeaveGroup(status);
         return status;
     }
     if (inMsgType != 12)
-        return (WONStatus)100104;
+        return (WONStatus)WS_RoutingOp_DontWantReply;
     WONStatus status = inMsg.ReadShort();
     if (status == 0) {
-        mGroupId = inMsg.ReadShort();
-        inMsg.ReadWString(mGroupName, 2);
-        CheckLeaveGroup((short)status);
-        if (mJoinFlags != 0)
-            return (WONStatus)100105;
+        this->mGroupId = inMsg.ReadShort();
+        inMsg.ReadWString(this->mGroupName, 2);
+        this->CheckLeaveGroup((short)status);
+        if (this->mJoinFlags != 0)
+            return (WONStatus)WS_RoutingOp_NeedMoreReplies;
     }
-    // Target2c4e24 compares the reader positions unsigned. Current canonical
-    // member spellings are signed; retain the actual bounds comparison explicitly.
+    // The original compares the reader positions unsigned; the members are signed, so the cast stays
     if ((unsigned long)inMsg.pos() < inMsg.length())
-        mParentGroupId = inMsg.ReadShort();
+        this->mParentGroupId = inMsg.ReadShort();
     return status;
 }
 
-// Whole-family deferred body, nativeLeaveGroupOp68 constructor/fulltype gate.
 // FUNCTION: WON 0x006c4cb0
+// Leaves the new group again (async) when the op already ended before success arrived and leave-on-cancel is set
 void RoutingCreateGroupOp::CheckLeaveGroup(short inStatus)
 {
-    if (inStatus == 0 && mStatus != (WONStatus)100000 && mLeaveGroupOnCancel) {
-        mLeaveGroupOnCancel = false;
-        SmartPtr<RoutingLeaveGroupOp> op = new RoutingLeaveGroupOp(mConnection.get(),mGroupId);
-        op->Run(-1);
-    }
+    if (inStatus != 0 || this->mStatus == (WONStatus)WS_Pending || !this->mLeaveGroupOnCancel)
+        return;
+    this->mLeaveGroupOnCancel = false;
+    SmartPtr<RoutingLeaveGroupOp> op = new RoutingLeaveGroupOp(this->mConnection.get(),this->mGroupId);
+    op->RunAsync(-1);
 }
 }
 

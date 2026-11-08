@@ -1,4 +1,4 @@
-// Browser document/image download completion and asynchronous image scheduling.
+// Browser downloads: document and image completions and image download scheduling
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -14,29 +14,32 @@
 #include "ee/wonapi/WONLobbyHTMLDisplayGen.h"
 #include "ee/wonapi/WONURL.h"
 #include "ee/wonapi/WONLobbyGUICompletion.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 
-// Native3fb2c0/92 status assignment and event forwarding, support0.
 // FUNCTION: WON 0x007fb2c0
+// Sets the browser's status text and signals a status change
 void BrowserComponent::SetStatus(const GUIString& status)
 {
-    mCurStatus=status;
-    Fn2F5380(ComponentEvent_BrowserStatusChange,0);
+    this->mCurStatus=status;
+    this->Fn2F5380(ComponentEvent_BrowserStatusChange,0);
 }
 
 // FUNCTION: WON 0x007fb320
+// Finishes a page download: reports it in the status and parses the file, or on failure updates the buttons
+// (and sets the same status again)
 void BrowserComponent::DownloadDocumentCompletion(AsyncOpPtr op,SmartPtr<RefCount> that)
 {
     BrowserComponent* browser=(BrowserComponent*)that.get();
     HTTPGetOp* request=(HTTPGetOp*)op.get();
-    if(request->mB39)
+    if(request->mKilled)
         return;
     char status[512];
     sprintf(status,"Got %s%s - %s %d",request->GetHost().c_str(),
         request->GetRemotePath().c_str(),WONStatusToString(request->GetStatus()),request->GetHTTPStatus());
     browser->SetStatus(status);
     --browser->mNumPendingOps;
-    if(request->GetStatus()!=0) {
+    if(request->GetStatus()!=WS_Success) {
         browser->Fn2F5380(ComponentEvent_BrowserButtonChange,0);
         browser->SetStatus(status);
         return;
@@ -47,27 +50,30 @@ void BrowserComponent::DownloadDocumentCompletion(AsyncOpPtr op,SmartPtr<RefCoun
 }
 
 // FUNCTION: WON 0x007fb6a0
+// Decodes the downloaded images, rebuilds the page view, clears the status and cancels remaining downloads
 void BrowserComponent::FinishImages()
 {
-    mHTMLDocument->DecodeImages(false);
+    this->mHTMLDocument->DecodeImages(false);
     SmartPtr<MultiLineElement> element=new MultiLineElement;
     HTMLDisplayGen generator;
-    generator.SetFontSize(mFontSize);
-    generator.SetNoBackground(mHaveBackground);
-    generator.Generate(mHTMLDocument.get(),element.get(),mHTMLView.get());
-    mHTMLView->SetContents(element.get());
-    SetStatus("");
-    mHTTPSession->KillAll();
-    mNumPendingOps=0;
-    Fn2F5380(ComponentEvent_BrowserButtonChange,0);
+    generator.SetFontSize(this->mFontSize);
+    generator.SetNoBackground(this->mHaveBackground);
+    generator.Generate(this->mHTMLDocument.get(),element.get(),this->mHTMLView.get());
+    this->mHTMLView->SetContents(element.get());
+    this->SetStatus("");
+    this->mHTTPSession->KillAll();
+    this->mNumPendingOps=0;
+    this->Fn2F5380(ComponentEvent_BrowserButtonChange,0);
 }
 
 // FUNCTION: WON 0x007fb930
+// Finishes one image download: decodes it (replacing a cached copy on a 2xx reply), reports it,
+// and finishes the page when it was the last pending download
 void BrowserComponent::DownloadImageCompletion(AsyncOpPtr op,ImageParamPtr param)
 {
     HTTPGetOp* request=(HTTPGetOp*)op.get();
     char status[1024];
-    if(request->mB39) {
+    if(request->mKilled) {
         sprintf(status,"Killed %s%s.",request->GetHost().c_str(),request->GetRemotePath().c_str());
         param->mBrowser->SetStatus(status);
         return;
@@ -90,33 +96,35 @@ void BrowserComponent::DownloadImageCompletion(AsyncOpPtr op,ImageParamPtr param
 }
 
 // FUNCTION: WON 0x007fbc10
+// Loads the page's images: local files at once, HTTP ones from the cache and by download; returns true when
+// nothing is pending (the page is then finished)
 bool BrowserComponent::DownloadImages()
 {
-    Window* window=GetRoot();
-    HTMLDocument::LoadedImageMap& images=mHTMLDocument->GetLoadedImageMap();
+    Window* window=this->GetRoot();
+    HTMLDocument::LoadedImageMap& images=this->mHTMLDocument->GetLoadedImageMap();
     HTMLDocument::LoadedImageMap::iterator i=images.begin();
     while(i!=images.end()) {
         HTMLDocument::LoadedImageStruct& image=i->second;
         URL path(i->first);
-        URL base(mCurPath);
+        URL base(this->mCurPath);
         path.CalcRelativeTo(base);
         if(path.GetType()==URLType_File)
-            mHTMLDocument->DoDecodeImage(&image,window,path.GetPathAsLocalFilePath());
+            this->mHTMLDocument->DoDecodeImage(&image,window,path.GetPathAsLocalFilePath());
         else if(path.GetType()==URLType_HTTP) {
             SmartPtr<HTTPGetOp> request=new HTTPGetOp(path.GetAddress(),path.GetPath());
-            SmartPtr<HTTPCacheEntry> entry=mHTTPCache->GetEntry(path.GetAddress()+path.GetPath());
+            SmartPtr<HTTPCacheEntry> entry=this->mHTTPCache->GetEntry(path.GetAddress()+path.GetPath());
             if(entry->IsValid())
-                mHTMLDocument->DoDecodeImage(&image,window,entry->GetLocalPath());
-            request->SetHTTPCache(mHTTPCache.get());
+                this->mHTMLDocument->DoDecodeImage(&image,window,entry->GetLocalPath());
+            request->SetHTTPCache(this->mHTTPCache.get());
             request->mCompletion=new OpGUICompletion(new ParamCompletion<AsyncOpPtr,ImageParamPtr>(
-                DownloadImageCompletion,new ImageParam(this,&image)));
-            mHTTPSession->AddOp(request.get());
-            ++mNumPendingOps;
+                BrowserComponent::DownloadImageCompletion,new ImageParam(this,&image)));
+            this->mHTTPSession->AddOp(request.get());
+            ++this->mNumPendingOps;
         }
         ++i;
     }
-    if(mNumPendingOps<=0) {
-        FinishImages();
+    if(this->mNumPendingOps<=0) {
+        this->FinishImages();
         return true;
     }
     return false;

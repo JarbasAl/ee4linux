@@ -1,5 +1,5 @@
-// Genuine complete same-SDK standalone software raster surface unit.
-// SOURCE_ONLY_NO_NATIVE_ID: zero Native/primary/physical credit; no renderer/backend switch.
+// Software raster surface: pixel, line, circle, rectangle and image drawing into a pixel buffer
+// (not identified in the original exe)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -22,14 +22,14 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 SurfaceBase::SurfaceBase() : mBitmapInfo(*(BITMAPINFO*)mBitmapInfoBuffer)
 {
-	mImageBase = NULL;
-	mWidth = mHeight = 0;
-	ClearClipRect();
+	this->mImageBase = NULL;
+	this->mWidth = this->mHeight = 0;
+	this->ClearClipRect();
 
-	memset(&mBitmapInfo,0,sizeof(mBitmapInfo));
+	memset(&this->mBitmapInfo,0,sizeof(this->mBitmapInfo));
 
 #ifdef WIN32_NOT_XBOX
-	BITMAPINFOHEADER &aHeader = mBitmapInfo.bmiHeader;
+	BITMAPINFOHEADER &aHeader = this->mBitmapInfo.bmiHeader;
 	aHeader.biSize = sizeof(aHeader);
 #endif
 }
@@ -39,7 +39,7 @@ SurfaceBase::SurfaceBase() : mBitmapInfo(*(BITMAPINFO*)mBitmapInfoBuffer)
 ///////////////////////////////////////////////////////////////////////////////
 SurfaceBase::~SurfaceBase()
 {
-	Free();
+	this->Free();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,43 +67,43 @@ SurfaceBasePtr SurfaceBase::GetNewSurface(SurfaceFormat theFormat)
 ///////////////////////////////////////////////////////////////////////////////
 SurfaceBasePtr SurfaceBase::GetNewDefaultSurface()
 {
-	return GetNewSurface(gDefaultSurfaceFormat);
+	return SurfaceBase::GetNewSurface(gDefaultSurfaceFormat);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void SurfaceBase::Create(int theWidth, int theHeight)
 {
-	Free();
+	this->Free();
 
 #ifdef WIN32_NOT_XBOX
-	mBitmapInfo.bmiHeader.biWidth = theWidth;
-	mBitmapInfo.bmiHeader.biHeight = -theHeight;
+	this->mBitmapInfo.bmiHeader.biWidth = theWidth;
+	this->mBitmapInfo.bmiHeader.biHeight = -theHeight;
 #endif
 
-	mBytesPerRow = theWidth*GetPixelSize();
-	if(mBytesPerRow%4!=0)
-		mBytesPerRow += 4-mBytesPerRow%4;
+	this->mBytesPerRow = theWidth*this->GetPixelSize();
+	if(this->mBytesPerRow%4!=0)
+		this->mBytesPerRow += 4-this->mBytesPerRow%4;
 
-	mPixelsPerRow = mBytesPerRow/GetPixelSize();
+	this->mPixelsPerRow = this->mBytesPerRow/this->GetPixelSize();
 
-	mImageBase = new char[mBytesPerRow*theHeight];
+	this->mImageBase = new char[this->mBytesPerRow*theHeight];
 
-	mWidth = theWidth;
-	mHeight = theHeight;
+	this->mWidth = theWidth;
+	this->mHeight = theHeight;
 
-	ClearClipRect();
+	this->ClearClipRect();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void SurfaceBase::Free()
 {
-	delete [] (char*)mImageBase;
-	mImageBase = NULL;
-	mWidth = mHeight = 0;
-	mBytesPerRow = 0;
-	ClearClipRect();
+	delete [] (char*)this->mImageBase;
+	this->mImageBase = NULL;
+	this->mWidth = this->mHeight = 0;
+	this->mBytesPerRow = 0;
+	this->ClearClipRect();
 }
 
 #ifdef WIN32_NOT_XBOX
@@ -111,14 +111,14 @@ void SurfaceBase::Free()
 ///////////////////////////////////////////////////////////////////////////////
 void SurfaceBase::BlitToDC(HDC theDC)
 {
-	SetDIBitsToDevice(theDC,0,0,mWidth,mHeight,0,0,0,mHeight,mImageBase,&mBitmapInfo,DIB_RGB_COLORS);
+	SetDIBitsToDevice(theDC,0,0,this->mWidth,this->mHeight,0,0,0,this->mHeight,this->mImageBase,&this->mBitmapInfo,DIB_RGB_COLORS);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void SurfaceBase::BlitToDC(HDC theDC, int x, int y, int left, int top, int width, int height)
 {
-	SetDIBitsToDevice(theDC,x,y,width,height,left,top,top,height,mImageBase,&mBitmapInfo,DIB_RGB_COLORS);
+	SetDIBitsToDevice(theDC,x,y,width,height,left,top,top,height,this->mImageBase,&this->mBitmapInfo,DIB_RGB_COLORS);
 }
 #endif
 
@@ -126,28 +126,28 @@ void SurfaceBase::BlitToDC(HDC theDC, int x, int y, int left, int top, int width
 ///////////////////////////////////////////////////////////////////////////////
 void SurfaceBase::SetClipRect(int x, int y, int width, int height)
 {
-	mClipX1 = x;
-	mClipY1 = y;
-	mClipX2 = x+width-1;
-	mClipY2 = y+height-1;
+	this->mClipX1 = x;
+	this->mClipY1 = y;
+	this->mClipX2 = x+width-1;
+	this->mClipY2 = y+height-1;
 
-	if(mClipX1<0)
-		mClipX1 = 0;
-	if(mClipY1<0)
-		mClipY1 = 0;
-	if(mClipX2>=mWidth)
-		mClipX2 = mWidth-1;
-	if(mClipY2>=mHeight)
-		mClipY2 = mHeight-1;
+	if(this->mClipX1<0)
+		this->mClipX1 = 0;
+	if(this->mClipY1<0)
+		this->mClipY1 = 0;
+	if(this->mClipX2>=this->mWidth)
+		this->mClipX2 = this->mWidth-1;
+	if(this->mClipY2>=this->mHeight)
+		this->mClipY2 = this->mHeight-1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void SurfaceBase::ClearClipRect()
 {
-	mClipX1 = mClipY1 = 0;
-	mClipX2 = mWidth-1;
-	mClipY2 = mHeight-1;
+	this->mClipX1 = this->mClipY1 = 0;
+	this->mClipX2 = this->mWidth-1;
+	this->mClipY2 = this->mHeight-1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -156,10 +156,10 @@ void SurfaceBase::DoClipRect(int &x, int &y, int &width, int &height)
 {
 	int x2 = x+width-1, y2 = y+height-1;
 
-	if(x<mClipX1) x = mClipX1; 
-	if(x2>mClipX2) x2 = mClipX2;
-	if(y<mClipY1) y = mClipY1; 
-	if(y2>mClipY2) y2 = mClipY2;
+	if(x<this->mClipX1) x = this->mClipX1; 
+	if(x2>this->mClipX2) x2 = this->mClipX2;
+	if(y<this->mClipY1) y = this->mClipY1; 
+	if(y2>this->mClipY2) y2 = this->mClipY2;
 
 	width = x2-x+1;
 	height = y2-y+1;
@@ -171,10 +171,10 @@ void SurfaceBase::DoClipRect(int &x, int &y, int &left, int &top, int &width, in
 {
 	int x2 = x+width-1, y2 = y+height-1;
 
-	if(x<mClipX1) { left += mClipX1-x; x = mClipX1; }
-	if(x2>mClipX2) x2 = mClipX2;
-	if(y<mClipY1) { top += mClipY1-y; y = mClipY1; }
-	if(y2>mClipY2) y2 = mClipY2;
+	if(x<this->mClipX1) { left += this->mClipX1-x; x = this->mClipX1; }
+	if(x2>this->mClipX2) x2 = this->mClipX2;
+	if(y<this->mClipY1) { top += this->mClipY1-y; y = this->mClipY1; }
+	if(y2>this->mClipY2) y2 = this->mClipY2;
 
 	width = x2-x+1;
 	height = y2-y+1;
@@ -185,13 +185,13 @@ void SurfaceBase::DoClipRect(int &x, int &y, int &left, int &top, int &width, in
 inline int SurfaceBase::CalcClipCode(int x, int y)
 {
 	int aCode = 0;
-	if(x<mClipX1)
+	if(x<this->mClipX1)
 		aCode |= 1;
-	if(y<mClipY1)
+	if(y<this->mClipY1)
 		aCode |= 2;
-	if(x>mClipX2)
+	if(x>this->mClipX2)
 		aCode |= 4;
-	if(y>mClipY2)
+	if(y>this->mClipY2)
 		aCode |= 8;
 
 	return aCode;
@@ -202,33 +202,33 @@ inline int SurfaceBase::CalcClipCode(int x, int y)
 template <class PixelType>
 Surface<PixelType>::Surface(SurfaceFormat theFormat)
 {
-	mImage = NULL;
-	mColor = 0;
-	mFormat = theFormat;
+	this->mImage = NULL;
+	this->mColor = 0;
+	this->mFormat = theFormat;
 
 #ifdef WIN32_NOT_XBOX
-	BITMAPINFOHEADER &aHeader = mBitmapInfo.bmiHeader;
+	BITMAPINFOHEADER &aHeader = this->mBitmapInfo.bmiHeader;
 	aHeader.biPlanes = 1;
 
-	switch(mFormat)
+	switch(this->mFormat)
 	{
 		case SurfaceFormat_555:
 		case SurfaceFormat_565:
 			aHeader.biBitCount = 16; 
-			if(mFormat==SurfaceFormat_565)
+			if(this->mFormat==SurfaceFormat_565)
 				aHeader.biCompression = BI_BITFIELDS;
 			else
 				aHeader.biCompression = BI_RGB;
 
-			*(DWORD*)&mBitmapInfo.bmiColors[0] = 0xf800;
-			*(DWORD*)&mBitmapInfo.bmiColors[1] = 0x7e0;
-			*(DWORD*)&mBitmapInfo.bmiColors[2] = 0x1f;
+			*(DWORD*)&this->mBitmapInfo.bmiColors[0] = 0xf800;
+			*(DWORD*)&this->mBitmapInfo.bmiColors[1] = 0x7e0;
+			*(DWORD*)&this->mBitmapInfo.bmiColors[2] = 0x1f;
 			break;
 		
 		case SurfaceFormat_32: 
 			aHeader.biBitCount = 32; 
 			aHeader.biCompression = BI_RGB;
-			mFormat = SurfaceFormat_32; 
+			this->mFormat = SurfaceFormat_32; 
 			break;
 	}
 #endif
@@ -240,7 +240,7 @@ Surface<PixelType>::Surface(SurfaceFormat theFormat)
 template <class PixelType>
 Surface<PixelType>::~Surface()
 {
-	Free();
+	this->Free();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -249,7 +249,7 @@ template <class PixelType>
 void Surface<PixelType>::Create(int theWidth, int theHeight)
 {
 	SurfaceBase::Create(theWidth, theHeight);
-	mImage = (PixelType*)mImageBase;
+	this->mImage = (PixelType*)this->mImageBase;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -258,7 +258,7 @@ template <class PixelType>
 void Surface<PixelType>::Free()
 {
 	SurfaceBase::Free();
-	mImage = NULL;
+	this->mImage = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -266,9 +266,9 @@ void Surface<PixelType>::Free()
 template <class PixelType>
 SurfaceBasePtr Surface<PixelType>::Duplicate()
 {
-	SmartPtr<Surface<PixelType> > aSurface = new Surface<PixelType>(mFormat);
-	aSurface->Create(mWidth,mHeight);
-	memcpy(aSurface->mImage,mImage,mBytesPerRow*mHeight);
+	SmartPtr<Surface<PixelType> > aSurface = new Surface<PixelType>(this->mFormat);
+	aSurface->Create(this->mWidth,this->mHeight);
+	memcpy(aSurface->mImage,this->mImage,this->mBytesPerRow*this->mHeight);
 	return aSurface.get();
 }
 
@@ -277,13 +277,13 @@ SurfaceBasePtr Surface<PixelType>::Duplicate()
 template <class PixelType>
 void Surface<PixelType>::CopySurface(SurfaceBase *theSurface, int x, int y, int left, int top, int width, int height)
 {
-	DoClipRect(x,y,left,top,width,height);
+	this->DoClipRect(x,y,left,top,width,height);
 	if(width<=0 || height<=0)
 		return;
 
 	int srcPixelsPerRow = theSurface->GetPixelsPerRow();
 	PixelType *srcRow = ((PixelType*)theSurface->GetPixelsBase()) + srcPixelsPerRow*top + left;
-	PixelType *destRow = mImage + mPixelsPerRow*y + x;
+	PixelType *destRow = this->mImage + this->mPixelsPerRow*y + x;
 	PixelType *src, *dest;
 
 	for(int i=0; i<height; i++)
@@ -294,7 +294,7 @@ void Surface<PixelType>::CopySurface(SurfaceBase *theSurface, int x, int y, int 
 			*dest++ = *src++;
 
 		srcRow += srcPixelsPerRow;
-		destRow += mPixelsPerRow;
+		destRow += this->mPixelsPerRow;
 	}
 }
 
@@ -303,14 +303,14 @@ void Surface<PixelType>::CopySurface(SurfaceBase *theSurface, int x, int y, int 
 template <class PixelType>
 void Surface<PixelType>::CopySurface(SurfaceBase *theSurface, const char *theMaskData, int x, int y, int left, int top, int width, int height)
 {
-	DoClipRect(x,y,left,top,width,height);
+	this->DoClipRect(x,y,left,top,width,height);
 	if(width<=0 || height<=0)
 		return;
 
 	int srcWidth = theSurface->GetWidth();
 	int srcPixlesPerRow = theSurface->GetPixelsPerRow();
 	PixelType *srcRow = ((PixelType*)theSurface->GetPixelsBase()) + srcPixlesPerRow*top + left;
-	PixelType *destRow = mImage + mPixelsPerRow*y + x;
+	PixelType *destRow = this->mImage + this->mPixelsPerRow*y + x;
 
 	int aMaskBytesPerRow = srcWidth/8;
 	if(srcWidth%8!=0)
@@ -318,7 +318,7 @@ void Surface<PixelType>::CopySurface(SurfaceBase *theSurface, const char *theMas
 
 	int aMaskStartVal = 1<<(7-(left%8));
 	unsigned char aMask;
-	const unsigned char *aMaskRow = (const unsigned char*)theMaskData + aMaskBytesPerRow*top + left/8;
+	const unsigned char *aMaskRow = reinterpret_cast<const unsigned char*>(theMaskData) + aMaskBytesPerRow*top + left/8;
 
 	PixelType *src, *dest;
 	const unsigned char *aMaskPtr;
@@ -349,7 +349,7 @@ void Surface<PixelType>::CopySurface(SurfaceBase *theSurface, const char *theMas
 		}
 
 		srcRow += srcPixlesPerRow;
-		destRow += mPixelsPerRow;
+		destRow += this->mPixelsPerRow;
 		aMaskRow += aMaskBytesPerRow;
 	}
 }
@@ -422,7 +422,7 @@ static inline DWORD SurfaceColorFrom32(DWORD theColor, SurfaceFormat theFormat)
 template <class PixelType>
 void Surface<PixelType>::SetColor(DWORD theColor)
 {
-	mColor = SurfaceColorFrom32(theColor,mFormat);
+	this->mColor = SurfaceColorFrom32(theColor,this->mFormat);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -430,20 +430,20 @@ void Surface<PixelType>::SetColor(DWORD theColor)
 template <class PixelType>
 void Surface<PixelType>::FillRect(int x, int y, int width, int height)
 {
-	DoClipRect(x,y,width,height);
+	this->DoClipRect(x,y,width,height);
 	if(width<=0 || height<=0)
 		return;
 
 	int i,j;
-	PixelType *aRow = mImage + y*mPixelsPerRow + x;
+	PixelType *aRow = this->mImage + y*this->mPixelsPerRow + x;
 	PixelType *aPtr;
 	for(i=0; i<height; i++)
 	{
 		aPtr = aRow;   
 		for(j=0; j<width; j++)
-			*aPtr++ = mColor;
+			*aPtr++ = this->mColor;
 
-		aRow+=mPixelsPerRow;
+		aRow+=this->mPixelsPerRow;
 	}
 }
 
@@ -455,20 +455,20 @@ void Surface<PixelType>::DrawRect(int x, int y, int width, int height)
 	if(width==1)
 	{
 		// vert line special case
-		DrawVertLine(x,y,y+height-1);
+		this->DrawVertLine(x,y,y+height-1);
 		return;
 	}
 	if(height==1)
 	{
 		// horz line special case
-		DrawHorzLine(x,x+width-1,y);
+		this->DrawHorzLine(x,x+width-1,y);
 		return;
 	}
 
-	DrawHorzLine(x,x+width-1,y);
-	DrawHorzLine(x,x+width-1,y+height-1);
-	DrawVertLine(x,y,y+height-1);
-	DrawVertLine(x+width-1,y,y+height-1);
+	this->DrawHorzLine(x,x+width-1,y);
+	this->DrawHorzLine(x,x+width-1,y+height-1);
+	this->DrawVertLine(x,y,y+height-1);
+	this->DrawVertLine(x+width-1,y,y+height-1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -476,21 +476,21 @@ void Surface<PixelType>::DrawRect(int x, int y, int width, int height)
 template <class PixelType>
 void Surface<PixelType>::DrawHorzLine(int x1, int x2, int y)
 {
-	if(y<mClipY1 || y>mClipY2)
+	if(y<this->mClipY1 || y>this->mClipY2)
 		return;
 
 	if(x2<x1)
 		std::swap(x2,x1);
 
-	if(x1<mClipX1) x1 = mClipX1;
-	if(x2>mClipX2) x2 = mClipX2;
+	if(x1<this->mClipX1) x1 = this->mClipX1;
+	if(x2>this->mClipX2) x2 = this->mClipX2;
 	if(x2<x1)
 		return;
 
-	PixelType *aPtr = mImage + y*mPixelsPerRow + x1;   
+	PixelType *aPtr = this->mImage + y*this->mPixelsPerRow + x1;   
 	const int distance = x2-x1+1;
 	for(int i=0; i<distance; i++)
-		*aPtr++ = mColor;
+		*aPtr++ = this->mColor;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -498,23 +498,23 @@ void Surface<PixelType>::DrawHorzLine(int x1, int x2, int y)
 template <class PixelType>
 void Surface<PixelType>::DrawVertLine(int x, int y1, int y2)
 {
-	if(x<mClipX1 || x>mClipX2)
+	if(x<this->mClipX1 || x>this->mClipX2)
 		return;
 
 	if(y2<y1)
 		std::swap(y1,y2);
 
-	if(y1<mClipY1) y1 = mClipY1;
-	if(y2>mClipY2) y2 = mClipY2;
+	if(y1<this->mClipY1) y1 = this->mClipY1;
+	if(y2>this->mClipY2) y2 = this->mClipY2;
 	if(y2<y1)
 		return;
 
-	PixelType *aPtr = mImage + y1*mPixelsPerRow + x;   
+	PixelType *aPtr = this->mImage + y1*this->mPixelsPerRow + x;   
 	const int distance = y2-y1+1;
 	for(int i=0; i<distance; i++)
 	{
-		*aPtr = mColor;
-		aPtr += mPixelsPerRow;
+		*aPtr = this->mColor;
+		aPtr += this->mPixelsPerRow;
 	}
 }
 
@@ -547,22 +547,22 @@ void Surface<PixelType>::DrawLine(int x1, int y1, int x2, int y2)
 {
 	if(x1==x2) 
 	{
-		DrawVertLine(x1,y1,y2);
+		this->DrawVertLine(x1,y1,y2);
 		return;
 	}
 	
 	if(y1==y2)
 	{
-		DrawHorzLine(x1,x2,y1);
+		this->DrawHorzLine(x1,x2,y1);
 		return;
 	}
 
-	int clipCode1 = CalcClipCode(x1,y1);
-	int clipCode2 = CalcClipCode(x2,y2);
+	int clipCode1 = this->CalcClipCode(x1,y1);
+	int clipCode2 = this->CalcClipCode(x2,y2);
 	if(clipCode1!=0 || clipCode2!=0) // Need clipping
 	{
 		if((clipCode1&clipCode2)==0)
-			DrawLineClip(x1,y1,x2,y2);
+			this->DrawLineClip(x1,y1,x2,y2);
 		// else line is completely outside clipping rectangle
 
 		return;
@@ -575,19 +575,19 @@ void Surface<PixelType>::DrawLine(int x1, int y1, int x2, int y2)
 	int width = x2-x1;
 	int height = y2-y1;
 	const int xinc = width>0?1:-1;
-	const int yinc = height>0?mPixelsPerRow:-mPixelsPerRow;
+	const int yinc = height>0?this->mPixelsPerRow:-this->mPixelsPerRow;
 	if(width<0)
 		width = -width;
 	if(height<0)
 		height = -height;
 
-	PixelType *aPtr = mImage + y1*mPixelsPerRow + x1;
+	PixelType *aPtr = this->mImage + y1*this->mPixelsPerRow + x1;
 	if(width<height)
 	{
 		// up/down
 		for(i=0; i<height; i++)
 		{
-			*aPtr = mColor;
+			*aPtr = this->mColor;
 			aPtr += yinc;
 			accum += width;
 			if(accum >= height)
@@ -603,7 +603,7 @@ void Surface<PixelType>::DrawLine(int x1, int y1, int x2, int y2)
 		// left/right
 		for(i=0; i<width; i++)
 		{
-			*aPtr = mColor;
+			*aPtr = this->mColor;
 			aPtr += xinc;
 			accum += height;
 			if(accum >= width)
@@ -615,7 +615,7 @@ void Surface<PixelType>::DrawLine(int x1, int y1, int x2, int y2)
 	}
 
 	// Draw last point
-	*aPtr = mColor;
+	*aPtr = this->mColor;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -638,32 +638,31 @@ void Surface<PixelType>::DrawLineClip(int x1, int y1, int x2, int y2)
 	const int xCoordInc = width>0?1:-1;
 	const int yCoordInc = height>0?1:-1;
 	const int xinc = xCoordInc;
-	const int yinc = yCoordInc*mPixelsPerRow;
+	const int yinc = yCoordInc*this->mPixelsPerRow;
 
 	if(width<0)
 		width = -width;
 	if(height<0)
 		height = -height;
 
-	PixelType *aPtr = mImage + y1*mPixelsPerRow + x1;
+	PixelType *aPtr = this->mImage + y1*this->mPixelsPerRow + x1;
 	int x=x1, y=y1;
 	if(width<height)
 	{
 		// up/down
 		for(i=0; i<height; i++)
 		{
-			if(NotClipped(x,y))
-				*aPtr = mColor;
+			if(this->NotClipped(x,y))
+				*aPtr = this->mColor;
 
 			aPtr += yinc;
 			y += yCoordInc;
 			accum += width;
-			if(accum >= height)
-			{
-				aPtr += xinc;
-				x += xCoordInc;
-				accum -= height;
-			}
+			if(accum < height)
+				continue;
+			aPtr += xinc;
+			x += xCoordInc;
+			accum -= height;
 		}
 
 	}
@@ -672,24 +671,23 @@ void Surface<PixelType>::DrawLineClip(int x1, int y1, int x2, int y2)
 		// left/right
 		for(i=0; i<width; i++)
 		{
-			if(NotClipped(x,y))
-				*aPtr = mColor;
+			if(this->NotClipped(x,y))
+				*aPtr = this->mColor;
 
 			aPtr += xinc;
 			x += xCoordInc;
 			accum += height;
-			if(accum >= width)
-			{
-				aPtr += yinc;
-				y += yCoordInc;
-				accum -= width;
-			}
+			if(accum < width)
+				continue;
+			aPtr += yinc;
+			y += yCoordInc;
+			accum -= width;
 		}
 	}
 
 	// Draw last point
-	if(NotClipped(x,y))
-		*aPtr = mColor;
+	if(this->NotClipped(x,y))
+		*aPtr = this->mColor;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -727,14 +725,14 @@ void Surface<PixelType>::DrawCircle(int x, int y, int r)
 
 	while(x1>=y1)
 	{
-		PutPixel(x + x1,y - y1); // (0-45)
-		PutPixel(x + y1,y - x1); // (45-90)
-		PutPixel(x - y1,y - x1); // (90-135)
-		PutPixel(x - x1,y - y1); // (135,180)
-		PutPixel(x - x1,y + y1); // (180,225)
-		PutPixel(x - y1,y + x1); // (225,270)
-		PutPixel(x + y1,y + x1); // (270,315)
-		PutPixel(x + x1,y + y1); // (315,360);
+		this->PutPixel(x + x1,y - y1); // (0-45)
+		this->PutPixel(x + y1,y - x1); // (45-90)
+		this->PutPixel(x - y1,y - x1); // (90-135)
+		this->PutPixel(x - x1,y - y1); // (135,180)
+		this->PutPixel(x - x1,y + y1); // (180,225)
+		this->PutPixel(x - y1,y + x1); // (225,270)
+		this->PutPixel(x + y1,y + x1); // (270,315)
+		this->PutPixel(x + x1,y + y1); // (315,360);
 
 		if(d>0) // Evalue D(x-1,y+1)
 		{
@@ -760,10 +758,10 @@ void Surface<PixelType>::FillCircle(int x, int y, int r)
 
 	while(x1>y1)
 	{
-		DrawHorzLine(x-x1,x+x1,y-y1); // (0-45, 135-180)
-		DrawHorzLine(x-x1,x+x1,y+y1); // (180-225, 315-360)
-		DrawHorzLine(x-y1,x+y1,y-x1); // (45-90, 90-135)
-		DrawHorzLine(x-y1,x+y1,y+x1); // (225-270,270-315)
+		this->DrawHorzLine(x-x1,x+x1,y-y1); // (0-45, 135-180)
+		this->DrawHorzLine(x-x1,x+x1,y+y1); // (180-225, 315-360)
+		this->DrawHorzLine(x-y1,x+y1,y-x1); // (45-90, 90-135)
+		this->DrawHorzLine(x-y1,x+y1,y+x1); // (225-270,270-315)
 
 		if(d>0) // Evalue D(x-1,y+1)
 		{
@@ -830,10 +828,10 @@ void Surface<PixelType>::DrawEllipse(int x, int y, int width, int height)
 	{
 //		double d2 = 4*(b2*(x1-0.5)*(x1-0.5) + a2*(y1+1)*(y1+1) - a2*b2);
 
-		PutPixel(cx + x1,cy - y1); // (0-45)
-		PutPixel(cx - x1,cy - y1); // (135,180)
-		PutPixel(cx - x1,cy + y1); // (180,225)
-		PutPixel(cx + x1,cy + y1); // (315,360);
+		this->PutPixel(cx + x1,cy - y1); // (0-45)
+		this->PutPixel(cx - x1,cy - y1); // (135,180)
+		this->PutPixel(cx - x1,cy + y1); // (180,225)
+		this->PutPixel(cx + x1,cy + y1); // (315,360);
 
 		if(d>0) // Evalue D(x-1,y+1)
 		{
@@ -856,10 +854,10 @@ void Surface<PixelType>::DrawEllipse(int x, int y, int width, int height)
 	{
 //		double d2 = 4*(b2*(x1-1)*(x1-1) + a2*(y1+0.5)*(y1+0.5) - a2*b2);
 		
-		PutPixel(cx + x1,cy - y1); // (45-90)
-		PutPixel(cx - x1,cy - y1); // (90,135)
-		PutPixel(cx - x1,cy + y1); // (225,270)
-		PutPixel(cx + x1,cy + y1); // (270,315);
+		this->PutPixel(cx + x1,cy - y1); // (45-90)
+		this->PutPixel(cx - x1,cy - y1); // (90,135)
+		this->PutPixel(cx - x1,cy + y1); // (225,270)
+		this->PutPixel(cx + x1,cy + y1); // (270,315);
 
 		if(d<0) // Evalue D(x-1,y+1)
 		{
@@ -896,8 +894,8 @@ void Surface<PixelType>::FillEllipse(int x, int y, int width, int height)
 	{
 //		double d2 = 4*(b2*(x1-0.5)*(x1-0.5) + a2*(y1+1)*(y1+1) - a2*b2);
 
-		DrawHorzLine(cx - x1, cx + x1, cy-y1);
-		DrawHorzLine(cx - x1, cx + x1, cy+y1);
+		this->DrawHorzLine(cx - x1, cx + x1, cy-y1);
+		this->DrawHorzLine(cx - x1, cx + x1, cy+y1);
 
 		if(d>0) // Evalue D(x-1,y+1)
 		{
@@ -917,8 +915,8 @@ void Surface<PixelType>::FillEllipse(int x, int y, int width, int height)
 	{
 //		double d2 = 4*(b2*(x1-1)*(x1-1) + a2*(y1+0.5)*(y1+0.5) - a2*b2);
 
-		DrawHorzLine(cx - x1, cx + x1, cy-y1);
-		DrawHorzLine(cx - x1, cx + x1, cy+y1);
+		this->DrawHorzLine(cx - x1, cx + x1, cy-y1);
+		this->DrawHorzLine(cx - x1, cx + x1, cy+y1);
 
 		if(d<0) // Evalue D(x-1,y+1)
 		{
@@ -948,55 +946,55 @@ struct OctantEndPoint
 
 	enum { BIG_VAL = 100000 };
 
-	void SetOctant(int theOctant, bool inverseArc) { mOctant = theOctant; mInverseArc = inverseArc; }
-	void SetEnd1(IntType x, IntType y) { x1 = x; y1 = y; }
-	void SetEnd2(IntType x, IntType y) { x2 = x; y2 = y; }
+	void SetOctant(int theOctant, bool inverseArc) { this->mOctant = theOctant; this->mInverseArc = inverseArc; }
+	void SetEnd1(IntType x, IntType y) { this->x1 = x; this->y1 = y; }
+	void SetEnd2(IntType x, IntType y) { this->x2 = x; this->y2 = y; }
 
-	void InvertLimits() { x1*=-1; y1*=-1; x2*=-1; y2*=-1; }
-	void InitMax1() { x1 = y2 = BIG_VAL; x2 = y1 = -BIG_VAL; }
-	void InitMax2() { x1 = y2 = -BIG_VAL; x2 = y1 = BIG_VAL; }
+	void InvertLimits() { this->x1*=-1; this->y1*=-1; this->x2*=-1; this->y2*=-1; }
+	void InitMax1() { this->x1 = this->y2 = BIG_VAL; this->x2 = this->y1 = -BIG_VAL; }
+	void InitMax2() { this->x1 = this->y2 = -BIG_VAL; this->x2 = this->y1 = BIG_VAL; }
 
 	void IncludeAll() 
 	{ 
-		switch(mOctant)
+		switch(this->mOctant)
 		{
-			case 0: y1 = -BIG_VAL; y2 = BIG_VAL; break;
-			case 1: x1 = BIG_VAL; x2 = -BIG_VAL; break;
-			case 2: x1 = BIG_VAL; x2= -BIG_VAL; break;
-			case 3: y1 = BIG_VAL; y2 = -BIG_VAL; break;
-			case 4: y1 = BIG_VAL; y2 = -BIG_VAL; break;
-			case 5: x1 = -BIG_VAL; x2 = BIG_VAL; break;
-			case 6: x1 = -BIG_VAL; x2 = BIG_VAL; break;
-			case 7: y1 = -BIG_VAL; y2 = BIG_VAL; break;
+			case 0: this->y1 = -BIG_VAL; this->y2 = BIG_VAL; break;
+			case 1: this->x1 = BIG_VAL; this->x2 = -BIG_VAL; break;
+			case 2: this->x1 = BIG_VAL; this->x2= -BIG_VAL; break;
+			case 3: this->y1 = BIG_VAL; this->y2 = -BIG_VAL; break;
+			case 4: this->y1 = BIG_VAL; this->y2 = -BIG_VAL; break;
+			case 5: this->x1 = -BIG_VAL; this->x2 = BIG_VAL; break;
+			case 6: this->x1 = -BIG_VAL; this->x2 = BIG_VAL; break;
+			case 7: this->y1 = -BIG_VAL; this->y2 = BIG_VAL; break;
 		}
 	}
 
 	void IncludeNone() 
 	{
-		IncludeAll();
-		InvertLimits();
+		this->IncludeAll();
+		this->InvertLimits();
 	}
 
 	bool IncludePointPrv(IntType x, IntType y)
 	{
-		switch(mOctant)
+		switch(this->mOctant)
 		{
-			case 0: return y>=y1 && y<=y2;
-			case 1: return x<=x1 && x>=x2;
-			case 2: return x<=x1 && x>=x2;
-			case 3: return y<=y1 && y>=y2;
-			case 4: return y<=y1 && y>=y2;
-			case 5: return x>=x1 && x<=x2;
-			case 6: return x>=x1 && x<=x2;
-			case 7: return y>=y1 && y<=y2;
+			case 0: return y>=this->y1 && y<=this->y2;
+			case 1: return x<=this->x1 && x>=this->x2;
+			case 2: return x<=this->x1 && x>=this->x2;
+			case 3: return y<=this->y1 && y>=this->y2;
+			case 4: return y<=this->y1 && y>=this->y2;
+			case 5: return x>=this->x1 && x<=this->x2;
+			case 6: return x>=this->x1 && x<=this->x2;
+			case 7: return y>=this->y1 && y<=this->y2;
 			default: return false;
 		}
 	}
 
 	bool IncludePoint(IntType x, IntType y)
 	{
-		bool aVal = IncludePointPrv(x,y);
-		if(mInverseArc)
+		bool aVal = this->IncludePointPrv(x,y);
+		if(this->mInverseArc)
 			return !aVal;
 		else
 			return aVal;
@@ -1011,7 +1009,7 @@ void Surface<PixelType>::DrawArc(int x, int y, int width, int height, int startA
 {
 	if(arcAngle>=360)
 	{
-		DrawEllipse(x,y,width,height);
+		this->DrawEllipse(x,y,width,height);
 		return;
 	}
 
@@ -1068,10 +1066,10 @@ void Surface<PixelType>::DrawArc(int x, int y, int width, int height, int startA
 
 	while(a2*y1 < b2*x1)
 	{
-		if(oep[0].IncludePoint(x1,y1)) PutPixel(cx + x1,cy - y1); // (0-45)
-		if(oep[3].IncludePoint(-x1,y1)) PutPixel(cx - x1,cy - y1); // (135,180)
-		if(oep[4].IncludePoint(-x1,-y1)) PutPixel(cx - x1,cy + y1); // (180,225)
-		if(oep[7].IncludePoint(x1,-y1)) PutPixel(cx + x1,cy + y1); // (315,360);
+		if(oep[0].IncludePoint(x1,y1)) this->PutPixel(cx + x1,cy - y1); // (0-45)
+		if(oep[3].IncludePoint(-x1,y1)) this->PutPixel(cx - x1,cy - y1); // (135,180)
+		if(oep[4].IncludePoint(-x1,-y1)) this->PutPixel(cx - x1,cy + y1); // (180,225)
+		if(oep[7].IncludePoint(x1,-y1)) this->PutPixel(cx + x1,cy + y1); // (315,360);
 
 		if(d>0) // Evalue D(x-1,y+1)
 		{
@@ -1089,10 +1087,10 @@ void Surface<PixelType>::DrawArc(int x, int y, int width, int height, int startA
 	d = d + 4*(-a2*y1 - b2*x1 - a2 + b2) + a2 - b2;
 	while(x1>=0)
 	{
-		if(oep[1].IncludePoint(x1,y1)) PutPixel(cx + x1,cy - y1); // (45-90)
-		if(oep[2].IncludePoint(-x1,y1)) PutPixel(cx - x1,cy - y1); // (90,135)
-		if(oep[5].IncludePoint(-x1,-y1)) PutPixel(cx - x1,cy + y1); // (225,270)
-		if(oep[6].IncludePoint(x1,-y1)) PutPixel(cx + x1,cy + y1); // (270,315);
+		if(oep[1].IncludePoint(x1,y1)) this->PutPixel(cx + x1,cy - y1); // (45-90)
+		if(oep[2].IncludePoint(-x1,y1)) this->PutPixel(cx - x1,cy - y1); // (90,135)
+		if(oep[5].IncludePoint(-x1,-y1)) this->PutPixel(cx - x1,cy + y1); // (225,270)
+		if(oep[6].IncludePoint(x1,-y1)) this->PutPixel(cx + x1,cy + y1); // (270,315);
 
 		if(d<0) // Evalue D(x-1,y+1)
 		{
@@ -1114,8 +1112,8 @@ void Surface<PixelType>::DrawArc(int x, int y, int width, int height, int startA
 template <class PixelType>
 void Surface<PixelType>::PutPixel(int x, int y)
 {
-	if(NotClipped(x,y))
-		*(mImage + y*mPixelsPerRow + x) = mColor;
+	if(this->NotClipped(x,y))
+		*(this->mImage + y*this->mPixelsPerRow + x) = this->mColor;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1133,8 +1131,8 @@ void Surface<PixelType>::PutPixel(int x, int y, PixelType *thePtr)
 template <class PixelType>
 void Surface<PixelType>::SetPixel(int x, int y, DWORD theColor)
 {
-	if(NotClipped(x,y))
-		*(mImage + y*mPixelsPerRow + x) = SurfaceColorFrom32(theColor,mFormat);
+	if(this->NotClipped(x,y))
+		*(this->mImage + y*this->mPixelsPerRow + x) = SurfaceColorFrom32(theColor,this->mFormat);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1142,8 +1140,8 @@ void Surface<PixelType>::SetPixel(int x, int y, DWORD theColor)
 template <class PixelType>
 DWORD Surface<PixelType>::GetPixel(int x, int y)
 {
-	if(x<0 || y<0 || x>=mWidth || y>=mHeight)
+	if(x<0 || y<0 || x>=this->mWidth || y>=this->mHeight)
 		return 0;
 
-	return *(mImage + y*mPixelsPerRow + x);
+	return *(this->mImage + y*this->mPixelsPerRow + x);
 }

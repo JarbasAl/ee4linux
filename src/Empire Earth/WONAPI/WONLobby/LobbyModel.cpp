@@ -1,11 +1,7 @@
 #include <stdio.h>
-// C:\EEX\Empire Earth\WONAPI\WONLobby\LobbyModel.cpp (reconstruction filename PROVISIONAL).
-// One root-adjudicated original model object hypothesis, grounded by EH/order and deferred templates.
-// Original file spelling unproved. User families3a51a0..3aa9e0; deferred template tail through3ae8d0.
-// Complete contributed bodies only; other original functions remain carved, with zero replacement credit.
-// Scoped SXL233 repairs frozen0/library-exception ownership; residual grow/trim helpers remain qualified near.
-// PROVISIONAL: canonical hinted insertion ignores hints; invalid/stale-hint behavior and complexity are unproved.
-// Near bodies have no runtime substitution authority. Primary code matches do not certify complete EH/data.
+// C:\EEX\Empire Earth\WONAPI\WONLobby\LobbyModel.cpp (file name inferred: no __FILE__)
+// The lobby's data model: clients, friends, games, rooms, players, servers and the server list
+// (0x7a51a0..0x7aa9e0, followed by the template functions it instantiates through 0x7ae8d0).
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 
 #include <windows.h>
@@ -27,548 +23,546 @@
 namespace WONAPI {
 LobbyClientMap& GetEmptyClientMap();
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a51a0
+// Creates a lobby client with no id, no room or game membership and no flags
 LobbyClient::LobbyClient() : mName(GetEmptyGUIStringData())
 {
-    mClientId = 0xffff;
-    mGroupId1E = 0xffff;
-    mGroupId20 = 0xffff;
-    mU10 = 0;
-    mU14 = 0;
-    mU18 = 0;
-    mFlags1C = 0;
-    mFlags1D = 0;
-    mB22 = false;
-    mB23 = false;
-    mB24 = false;
-    mB25 = false;
-    mB26 = false;
-    mB27 = false;
+    this->mClientId = 0xffff;
+    this->mChatGroupId = 0xffff;
+    this->mGameGroupId = 0xffff;
+    this->mClientFlags = 0;
+    this->mWONUserId = 0;
+    this->mCDKeyId = 0;
+    this->mChatMemberFlags = 0;
+    this->mGameMemberFlags = 0;
+    this->mIgnored = false;
+    this->mBlocked = false;
+    this->mIsFriend = false;
+    this->mIsGameCaptain = false;
+    this->mIsChatCaptain = false;
+    this->mInvited = false;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5260
+// Destroys the client, releasing its name and player data
 LobbyClient::~LobbyClient() {}
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a52f0
-void LobbyClient::Fn3A52F0(unsigned short inId, bool inMode)
+// Takes the client out of the given chat room or game if it is in it, clearing its flags and captaincy there
+void LobbyClient::ClearGroup(unsigned short inId, bool inGame)
 {
-    if (inMode) {
-        if (inId == mGroupId20) {
-            mGroupId20 = 0xffff; mFlags1D = 0; mB25 = false;
+    if (inGame) {
+        if (inId == this->mGameGroupId) {
+            this->mGameGroupId = 0xffff; this->mGameMemberFlags = 0; this->mIsGameCaptain = false;
         }
-    } else if (inId == mGroupId1E) {
-        mGroupId1E = 0xffff; mFlags1C = 0; mB26 = false;
+    } else if (inId == this->mChatGroupId) {
+        this->mChatGroupId = 0xffff; this->mChatMemberFlags = 0; this->mIsChatCaptain = false;
     }
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5330
-bool LobbyClient::Fn3A5330() { return mGroupId1E != 0xffff; }
+// Returns whether the client is in a chat room
+bool LobbyClient::IsInChatGroup() { return this->mChatGroupId != 0xffff; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5340
-bool LobbyClient::Fn3A5340() { return mGroupId20 != 0xffff; }
+// Returns whether the client is in a game
+bool LobbyClient::IsInGameGroup() { return this->mGameGroupId != 0xffff; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5350
-void LobbyClient::Fn3A5350(RoutingClientInfo* inInfo)
+// Copies the client's name, flags, ids and CD key id from the routing server's client info
+void LobbyClient::ReadRoutingInfo(RoutingClientInfo* inInfo)
 {
-    mName = GUIString(new GUIStringData(inInfo->mName));
-    mU10 = inInfo->mFlags;
-    mClientId = inInfo->mClientId;
-    mU14 = inInfo->mUserId;
-    mU18 = inInfo->mAddress;
+    this->mName = GUIString(new GUIStringData(inInfo->mName));
+    this->mClientFlags = inInfo->mFlags;
+    this->mClientId = inInfo->mClientId;
+    this->mWONUserId = inInfo->mUserId;
+    this->mCDKeyId = inInfo->mAddress;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5450
-void LobbyClient::Fn3A5450()
+// Refreshes whether the client is ignored by name and blocked by CD key
+void LobbyClient::UpdateIgnoreStatus()
 {
-    mB22 = LobbyFn35D010(mName);
-    mB23 = LobbyFn35D090(mU18);
+    this->mIgnored = LobbyIsNameIgnored(this->mName);
+    this->mBlocked = LobbyIsCDKeyBlocked(this->mCDKeyId);
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5470
-bool LobbyClient::Fn3A5470() { return (mU10 & 0x40) ? true : false; }
+// Returns whether the client is flagged anonymous on the server
+bool LobbyClient::IsAnonymous() { return (this->mClientFlags & 0x40) ? true : false; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5480
-bool LobbyClient::Fn3A5480(bool inMode)
+// Returns whether the client is muted server-wide or in the given chat room or game
+bool LobbyClient::IsMuted(bool inGame)
 {
-    if (mU10 & 2) return true;
-    if (inMode) return (mFlags1D & 2) ? true : false;
-    return (mFlags1C & 2) ? true : false;
+    if (this->mClientFlags & 2) return true;
+    if (inGame) return (this->mGameMemberFlags & 2) ? true : false;
+    return (this->mChatMemberFlags & 2) ? true : false;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a54b0
-bool LobbyClient::Fn3A54B0() { return (mU10 & 8) ? true : false; }
+// Returns whether the client is flagged away
+bool LobbyClient::IsAway() { return (this->mClientFlags & 8) ? true : false; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a54c0
-bool LobbyClient::Fn3A54C0() { return (mU10 & 0x20) ? true : false; }
+// Returns whether the client is a server administrator
+bool LobbyClient::IsAdmin() { return (this->mClientFlags & 0x20) ? true : false; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a54d0
-bool LobbyClient::Fn3A54D0() { return (mU10 & 1) ? true : false; }
+// Returns whether the client is a moderator
+bool LobbyClient::IsModerator() { return (this->mClientFlags & 1) ? true : false; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a54e0
-bool LobbyClient::Fn3A54E0(bool inFlag) { return inFlag ? mB25 : mB26; }
+// Returns whether the client captains its game or its chat room
+bool LobbyClient::IsCaptain(bool inGame) { return inGame ? this->mIsGameCaptain : this->mIsChatCaptain; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5500
-void LobbyClient::Fn3A5500(bool inValue, bool inMode)
+// Sets whether the client captains its game or its chat room
+void LobbyClient::SetCaptain(bool inCaptain, bool inGame)
 {
-    if (inMode) mB25 = inValue;
-    else mB26 = inValue;
+    if (inGame) this->mIsGameCaptain = inCaptain;
+    else this->mIsChatCaptain = inCaptain;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5520
-void LobbyClient::Fn3A5520(LobbyPlayer* inPlayer) { mPlayer = inPlayer; }
+// Attaches the client's in-game player data (NULL detaches it)
+void LobbyClient::SetPlayer(LobbyPlayer* inPlayer) { this->mPlayer = inPlayer; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5580
-bool LobbyClient::Fn3A5580() { return mPlayer.get() != NULL; }
+// Returns whether the client has joined the game as a player
+bool LobbyClient::HasPlayer() { return this->mPlayer.get() != NULL; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5590
-bool LobbyClient::Fn3A5590() { return mPlayer.get() != NULL ? mPlayer->mBA : false; }
+// Returns whether the client's player has clicked ready; false without a player
+bool LobbyClient::IsReady() { return this->mPlayer.get() != NULL ? this->mPlayer->mIsReady : false; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a55a0
-unsigned short LobbyClient::Fn3A55A0()
+// Returns the client's player ping, or 0xfffe (unknown) without a player
+unsigned short LobbyClient::GetPing()
 {
-    if (mPlayer.get() != NULL) return mPlayer->mPlayerId;
+    if (this->mPlayer.get() != NULL) return this->mPlayer->mPing;
     return 0xfffe;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a55c0
-bool LobbyClient::Fn3A55C0(LobbyClient* inOther)
+// Returns whether both clients have players on the same team
+bool LobbyClient::IsTeammate(LobbyClient* inOther)
 {
-    if (inOther == NULL || mPlayer.get() == NULL || inOther->mPlayer.get() == NULL) return false;
-    return mPlayer->IsSameTeam(inOther->mPlayer.get());
+    if (inOther == NULL || this->mPlayer.get() == NULL || inOther->mPlayer.get() == NULL) return false;
+    return this->mPlayer->IsSameTeam(inOther->mPlayer.get());
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a55f0
+// Creates an empty client list
 LobbyClientList::LobbyClientList() {}
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a56a0
+// Destroys the client list, releasing every client
 LobbyClientList::~LobbyClientList() {}
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5770
-void LobbyClientList::Fn3A5770() { mClients.clear(); }
+// Removes every client from the list
+void LobbyClientList::Clear() { this->mClients.clear(); }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5820
-void LobbyClientList::Fn3A5820(const RoutingClientMap& inMap)
+// Merges the routing server's client map into the list: drops gone clients, adds new ones, refreshes the rest
+void LobbyClientList::SyncClients(const RoutingClientMap& inMap)
 {
-    LobbyClientMap::iterator aClient = mClients.begin();
-    LobbyClientMap::iterator anInsert = mClients.begin();
+    LobbyClientMap::iterator aClient = this->mClients.begin();
+    LobbyClientMap::iterator anInsert = this->mClients.begin();
     RoutingClientMap::const_iterator anInfo = inMap.begin();
-    while (aClient != mClients.end() && anInfo != inMap.end()) {
-        if (anInfo->first > aClient->first) mClients.erase(aClient++);
+    while (aClient != this->mClients.end() && anInfo != inMap.end()) {
+        if (anInfo->first > aClient->first) this->mClients.erase(aClient++);
         else if (anInfo->first < aClient->first) {
             SmartPtr<LobbyClient> aNewClient = new LobbyClient;
-            aNewClient->Fn3A5350(anInfo->second.get());
-            anInsert = mClients.insert(anInsert, LobbyClientMap::value_type(aNewClient->mClientId, aNewClient));
+            aNewClient->ReadRoutingInfo(anInfo->second.get());
+            anInsert = this->mClients.insert(anInsert, LobbyClientMap::value_type(aNewClient->mClientId, aNewClient));
             ++anInfo;
         } else {
             SmartPtr<LobbyClient> aCopy = aClient->second;
-            aCopy->Fn3A5350(anInfo->second.get());
+            aCopy->ReadRoutingInfo(anInfo->second.get());
             ++aClient; ++anInfo;
         }
     }
-    mClients.erase(aClient, mClients.end());
+    this->mClients.erase(aClient, this->mClients.end());
     while (anInfo != inMap.end()) {
         SmartPtr<LobbyClient> aNewClient = new LobbyClient;
-        aNewClient->Fn3A5350(anInfo->second.get());
-        anInsert = mClients.insert(anInsert, LobbyClientMap::value_type(aNewClient->GetClientId(), aNewClient));
+        aNewClient->ReadRoutingInfo(anInfo->second.get());
+        anInsert = this->mClients.insert(anInsert, LobbyClientMap::value_type(aNewClient->GetClientId(), aNewClient));
         ++anInfo;
     }
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5c50
-void LobbyClientList::Fn3A5C50()
+// Refreshes the ignored/blocked state of every client in the list
+void LobbyClientList::UpdateIgnoreStatus()
 {
-    for (LobbyClientMap::iterator it = mClients.begin(); it != mClients.end(); ++it)
-        it->second->Fn3A5450();
+    for (LobbyClientMap::iterator it = this->mClients.begin(); it != this->mClients.end(); ++it)
+        it->second->UpdateIgnoreStatus();
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5cc0
-void LobbyClientList::Fn3A5CC0(LobbyClient* inClient) {
+// Adds the client under its id, replacing any client with the same id
+void LobbyClientList::AddClient(LobbyClient* inClient) {
     unsigned short clientId = inClient->mClientId;
-    mClients[clientId] = inClient;
+    this->mClients[clientId] = inClient;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5d30
+// Returns the client with the given id, or NULL
 LobbyClient* LobbyClientList::FindClient(unsigned short inId)
 {
-    LobbyClientMap::iterator anItr = mClients.find(inId);
-    return anItr != mClients.end() ? anItr->second.get() : NULL;
+    LobbyClientMap::iterator anItr = this->mClients.find(inId);
+    return anItr != this->mClients.end() ? anItr->second.get() : NULL;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5d90
-SmartPtr<LobbyClient> LobbyClientList::Fn3A5D90(unsigned short inId)
+// Removes the client with the given id and returns it (NULL if absent)
+SmartPtr<LobbyClient> LobbyClientList::RemoveClient(unsigned short inId)
 {
-    LobbyClientMap::iterator anItr = mClients.find(inId);
-    if (anItr != mClients.end()) {
+    LobbyClientMap::iterator anItr = this->mClients.find(inId);
+    if (anItr != this->mClients.end()) {
         SmartPtr<LobbyClient> aClient = anItr->second;
-        mClients.erase(anItr);
+        this->mClients.erase(anItr);
         return aClient;
     }
     return NULL;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5ea0
-LobbyClient* LobbyClientList::Fn3A5EA0(unsigned long inId)
+// Returns the first client with the given WON user id, or NULL
+LobbyClient* LobbyClientList::FindClientByWONId(unsigned long inId)
 {
-    for (LobbyClientMap::iterator anItr = mClients.begin(); anItr != mClients.end(); ++anItr)
+    for (LobbyClientMap::iterator anItr = this->mClients.begin(); anItr != this->mClients.end(); ++anItr)
     {
         LobbyClient* aClient = anItr->second;
-        if (aClient->GetU14() == inId) return aClient;
+        if (aClient->GetWONUserId() == inId) return aClient;
     }
     return NULL;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5f10
-void LobbyClientList::Fn3A5F10()
+// Clears the invited mark on every client in the list
+void LobbyClientList::ClearInvited()
 {
-    for (LobbyClientMap::iterator anItr = mClients.begin(); anItr != mClients.end(); ++anItr)
-        anItr->second->SetB27(false);
+    for (LobbyClientMap::iterator anItr = this->mClients.begin(); anItr != this->mClients.end(); ++anItr)
+        anItr->second->SetInvited(false);
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5f70
+// Starts iterating the list's clients (an empty list when NULL)
 LobbyClientIterator::LobbyClientIterator(LobbyClientList* inList)
     : mClients(inList != NULL ? &inList->mClients : &GetEmptyClientMap())
 {
-    Rewind();
+    this->Rewind();
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a5fa0
+// Returns the shared empty client map used by iterators over no list
 LobbyClientMap& GetEmptyClientMap() { static LobbyClientMap aMap; return aMap; }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a60b0
-bool LobbyClientIterator::HasMore() { return mItr != mClients->end(); }
+// Returns whether clients remain
+bool LobbyClientIterator::HasMore() { return this->mItr != this->mClients->end(); }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a60d0
+// Returns the next client and advances, or NULL at the end
 LobbyClient* LobbyClientIterator::Next()
 {
-    if (mItr != mClients->end()) {
-        LobbyClient* aClient = mItr->second.get();
-        ++mItr;
+    if (this->mItr != this->mClients->end()) {
+        LobbyClient* aClient = this->mItr->second.get();
+        ++this->mItr;
         return aClient;
     }
     return NULL;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a6140
-void LobbyClientIterator::Rewind() { mItr = mClients->begin(); }
+// Restarts the iteration at the first client
+void LobbyClientIterator::Rewind() { this->mItr = this->mClients->begin(); }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a6150
+// Starts iterating the list's clients that joined the game as players (an empty list when NULL)
 LobbyClientSetIterator::LobbyClientSetIterator(LobbyClientList* inList)
     : mClients(inList != NULL ? &inList->mClients : &GetEmptyClientMap())
 {
-    Rewind();
+    this->Rewind();
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a6180
+// Skips to the next client that has a player; returns whether one remains
 bool LobbyClientSetIterator::HasMore()
 {
-    if (mReady) return true;
-    while (mItr != mClients->end()) {
-        if (mItr->second->mPlayer.get() != NULL) {
-            mReady = true;
+    if (this->mReady) return true;
+    while (this->mItr != this->mClients->end()) {
+        if (this->mItr->second->mPlayer.get() != NULL) {
+            this->mReady = true;
             return true;
         }
-        ++mItr;
+        ++this->mItr;
     }
     return false;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a6210
+// Returns the next player and advances, also passing out its client; NULL at the end
 LobbyPlayer* LobbyClientSetIterator::Next(LobbyClient** outClient)
 {
-    if (HasMore()) {
-        LobbyClient* aClient = mItr->second.get();
+    if (this->HasMore()) {
+        LobbyClient* aClient = this->mItr->second.get();
         if (outClient != NULL) *outClient = aClient;
         LobbyPlayer* aPlayer = aClient->mPlayer.get();
-        mReady = false;
-        ++mItr;
+        this->mReady = false;
+        ++this->mItr;
         return aPlayer;
     }
     return NULL;
 }
 
-// CONTRIBUTOR: client/LobbyClient.cpp.draft
 // FUNCTION: WON 0x7a62a0
-void LobbyClientSetIterator::Rewind() { mItr = mClients->begin(); mReady = false; }
+// Restarts the iteration at the first client
+void LobbyClientSetIterator::Rewind() { this->mItr = this->mClients->begin(); this->mReady = false; }
 
-// CONTRIBUTOR: social/LobbyFriend.cpp.draft
 // FUNCTION: WON 0x7a62b0
+// Creates a friends-list entry for the given name and WON user id, with no known location
 LobbyFriend::LobbyFriend(const GUIString& inName, unsigned long inUserId)
     : mName(inName), mLocation(GetEmptyGUIStringData())
 {
-    mUserId = inUserId;
-    mFlags = 0;
-    mLastSearch = 0;
-    mLastLocate = 0;
-    mSearchStart = 0;
-    mAnonymous = false;
+    this->mUserId = inUserId;
+    this->mFlags = 0;
+    this->mLastSearch = 0;
+    this->mLastLocate = 0;
+    this->mSearchStart = 0;
+    this->mAnonymous = false;
 }
 
-// CONTRIBUTOR: social/LobbyFriend.cpp.draft
-// TODO: EXE 0x7a6380 Original state=1 store at 0x3a63d0 before IPAddr host release is missing in candidate; state remains too high across delete and may repeat IPAddr destruction on throw. Original remains carved.
 
-// CONTRIBUTOR: social/LobbyFriend.cpp.draft
 // FUNCTION: WON 0x7a6440
-void LobbyFriend::Fn3A6440(const IPAddr& inAddress, const GUIString& inLocation,
+// Records the server address, server name and status flags where the friend was found
+void LobbyFriend::SetLocation(const IPAddr& inAddress, const GUIString& inLocation,
                           int inFlags)
 {
-    mAddress = inAddress;
-    mLocation = inLocation;
-    mFlags = inFlags;
+    this->mAddress = inAddress;
+    this->mLocation = inLocation;
+    this->mFlags = inFlags;
 }
 
-// CONTRIBUTOR: social/LobbyFriend.cpp.draft
 // FUNCTION: WON 0x7a65b0
-void LobbyFriend::Fn3A65B0()
+// Forgets where the friend is: address, location name, status, last locate time and anonymity
+void LobbyFriend::ClearLocation()
 {
-    mAddress = IPAddr();
-    mLocation = GetEmptyGUIStringData();
-    mFlags = 0;
-    mLastLocate = 0;
-    mAnonymous = false;
+    this->mAddress = IPAddr();
+    this->mLocation = GetEmptyGUIStringData();
+    this->mFlags = 0;
+    this->mLastLocate = 0;
+    this->mAnonymous = false;
 }
 
-// CONTRIBUTOR: social/LobbyFriend.cpp.draft
 // FUNCTION: WON 0x7a66b0
-void LobbyFriend::Fn3A66B0(LobbyClient* inClient)
+// Sets the friend's status (in a chat room, in a game) and anonymity from their lobby client
+void LobbyFriend::SetStatusFromClient(LobbyClient* inClient)
 {
     int flags = 0;
-    if (inClient->Fn3A5330()) flags = 1;
-    if (inClient->Fn3A5340()) flags |= 2;
-    mFlags = flags;
-    mAnonymous = inClient->Fn3A5470();
+    if (inClient->IsInChatGroup()) flags = 1;
+    if (inClient->IsInGameGroup()) flags |= 2;
+    this->mFlags = flags;
+    this->mAnonymous = inClient->IsAnonymous();
 }
 
-// CONTRIBUTOR: social/LobbyFriend.cpp.draft
 // FUNCTION: WON 0x7a66f0
-void LobbyFriend::Fn3A66F0(bool inAnonymous) { mAnonymous = inAnonymous; }
+// Sets whether the friend is anonymous
+void LobbyFriend::SetAnonymous(bool inAnonymous) { this->mAnonymous = inAnonymous; }
 
-// CONTRIBUTOR: social/LobbyFriend.cpp.draft
 // FUNCTION: WON 0x7a6700
-void LobbyFriend::Fn3A6700(unsigned long inTime)
+// Marks the friend as being located (replacing the other status flags) and records when the search started
+void LobbyFriend::StartLocate(unsigned long inTime)
 {
-    mFlags = 4;
-    mSearchStart = inTime;
+    this->mFlags = 4;
+    this->mSearchStart = inTime;
 }
 
-// CONTRIBUTOR: social/LobbyFriend.cpp.draft
 // FUNCTION: WON 0x7a6710
-void LobbyFriend::Fn3A6710(unsigned long inTime)
+// Clears the locating mark and records the time of the last locate
+void LobbyFriend::EndLocate(unsigned long inTime)
 {
-    mFlags &= ~4;
-    mLastLocate = inTime;
+    this->mFlags &= ~4;
+    this->mLastLocate = inTime;
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6790
+// Creates an empty game: no captain or room, no players or slots, ping unknown
 LobbyGame::LobbyGame() : mName(GetEmptyGUIStringData()), mPassword(GetEmptyGUIStringData())
 {
-    mL60 = mL62 = 0xffff;
-    mL2C = 0;
-    mB11 = false;
-    mB12 = false;
-    mB13 = false;
-    mB10 = false;
-    mB14 = false;
-    mIsHost = false;
-    mB16 = false;
-    mB17 = false;
-    mB18 = false;
-    mL30 = 0;
-    mL24 = 0;
-    mNumOpenSlots = 0;
-    mL64 = 0xfffe;
-    mL1C = 0;
+    this->mCaptainId = this->mGroupId = 0xffff;
+    this->mGameType = 0;
+    this->mInviteOnly = false;
+    this->mAskToJoin = false;
+    this->mInProgress = false;
+    this->mHasPassword = false;
+    this->mInvited = false;
+    this->mIsHost = false;
+    this->mShowDetails = false;
+    this->mHaveDetails = false;
+    this->mPingReplied = false;
+    this->mSkill = 0;
+    this->mNumPlayers = 0;
+    this->mNumOpenSlots = 0;
+    this->mPing = 0xfffe;
+    this->mLastSeenTime = 0;
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a69d0
+// Copies every setting of another game (name, password, flags, counts, address, ping) and its game-code data
 void LobbyGame::CopyFrom(LobbyGame* inGame)
 {
-    mName = inGame->mName;
-    mPassword = inGame->mPassword;
-    mB10 = inGame->mB10;
-    mB11 = inGame->mB11;
-    mB12 = inGame->mB12;
-    mB13 = inGame->mB13;
-    mB14 = inGame->mB14;
-    mIsHost = inGame->mIsHost;
-    mB16 = inGame->mB16;
-    mB17 = inGame->mB17;
-    mB18 = inGame->mB18;
-    mL1C = inGame->mL1C;
-    mL24 = inGame->mL24;
-    mNumOpenSlots = inGame->mNumOpenSlots;
-    mL2C = inGame->mL2C;
-    mL30 = inGame->mL30;
-    mClients = inGame->mClients.get();
-    mAddress = inGame->mAddress;
-    mL60 = inGame->mL60;
-    mL62 = inGame->mL62;
-    mL64 = inGame->mL64;
-    Virtual40(inGame);
+    this->mName = inGame->mName;
+    this->mPassword = inGame->mPassword;
+    this->mHasPassword = inGame->mHasPassword;
+    this->mInviteOnly = inGame->mInviteOnly;
+    this->mAskToJoin = inGame->mAskToJoin;
+    this->mInProgress = inGame->mInProgress;
+    this->mInvited = inGame->mInvited;
+    this->mIsHost = inGame->mIsHost;
+    this->mShowDetails = inGame->mShowDetails;
+    this->mHaveDetails = inGame->mHaveDetails;
+    this->mPingReplied = inGame->mPingReplied;
+    this->mLastSeenTime = inGame->mLastSeenTime;
+    this->mNumPlayers = inGame->mNumPlayers;
+    this->mNumOpenSlots = inGame->mNumOpenSlots;
+    this->mGameType = inGame->mGameType;
+    this->mSkill = inGame->mSkill;
+    this->mClients = inGame->mClients.get();
+    this->mAddress = inGame->mAddress;
+    this->mCaptainId = inGame->mCaptainId;
+    this->mGroupId = inGame->mGroupId;
+    this->mPing = inGame->mPing;
+    this->CopyFromHook(inGame);
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6c10
-void LobbyGame::SetClients(LobbyClientList* inClients) { mClients = inClients; }
+// Sets the client list of the game's members
+void LobbyGame::SetClients(LobbyClientList* inClients) { this->mClients = inClients; }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6c70
+// Returns the game member with the given client id, or NULL
 LobbyClient* LobbyGame::FindClient(unsigned short inId)
 {
-    if (mClients.get() != NULL) return mClients->FindClient(inId);
+    if (this->mClients.get() != NULL) return this->mClients->FindClient(inId);
     return NULL;
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6d40
-bool LobbyGame::Fn3A6D40(long inFlags)
+// Returns whether the game suits the room: Internet games for flag 4, LAN or direct-connect games for flag 8
+bool LobbyGame::MatchesRoomSpec(long inFlags)
 {
     if (inFlags & 4) {
-        if (mL2C == 2) return true;
+        if (this->mGameType == 2) return true;
     }
     else if (inFlags & 8) {
-        if (mL2C == 1 || mL2C == 3) return true;
+        if (this->mGameType == 1 || this->mGameType == 3) return true;
     }
     return false;
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6d70
-bool LobbyGame::Fn3A6D70() { return mL64 == 0xfffd || mL64 == 0xfffc; }
+// Returns whether a ping or a details query is outstanding for the game
+bool LobbyGame::IsPinging() { return this->mPing == 0xfffd || this->mPing == 0xfffc; }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6d90
-bool LobbyGame::Fn3A6D90() { return mL64 == 0xfffc; }
+// Returns whether a details query is outstanding for the game
+bool LobbyGame::IsQueryingDetails() { return this->mPing == 0xfffc; }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6da0
-bool LobbyGame::Fn3A6DA0() { return Virtual04(); }
+// Lets the game code prepare before the lobby joins the game on the network
+bool LobbyGame::PreNetJoinGame() { return this->PreNetJoinGameHook(); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6db0
-bool LobbyGame::Fn3A6DB0() { return Virtual08(); }
+// Lets the game code react after the lobby joined the game on the network
+bool LobbyGame::PostNetJoinGame() { return this->PostNetJoinGameHook(); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6dc0
-bool LobbyGame::Fn3A6DC0() { return Virtual0C(); }
+// Lets the game code prepare before the lobby creates the game on the network
+bool LobbyGame::PreNetCreateGame() { return this->PreNetCreateGameHook(); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6dd0
-bool LobbyGame::Fn3A6DD0() { return Virtual10(); }
+// Lets the game code react after the lobby created the game on the network
+bool LobbyGame::PostNetCreateGame() { return this->PostNetCreateGameHook(); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6de0
-void LobbyGame::Fn3A6DE0() { Virtual14(); }
+// Lets the game code react before the lobby leaves the game on the network
+void LobbyGame::PreNetLeaveGame() { this->PreNetLeaveGameHook(); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6df0
-void LobbyGame::Fn3A6DF0() { Virtual18(); }
+// Lets the game code react after the lobby left the game on the network
+void LobbyGame::PostNetLeaveGame() { this->PostNetLeaveGameHook(); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a6ed0
+// Writes the game's listing summary (address or product id, name, skill, join flags, players, slots)
 void LobbyGame::WriteSummary(WriteBuffer& outBuffer)
 {
-    if (mL2C == 2)
-        outBuffer.AppendBytes(mAddress.GetSixByte(), 6);
+    if (this->mGameType == 2)
+        outBuffer.AppendBytes(this->mAddress.GetSixByte(), 6);
     else
         outBuffer.AppendShort(GetLobbyProductId());
-    outBuffer.AppendBool(mB13);
-    if (mL2C != 2)
-        outBuffer.AppendWString(mName, 2);
-    outBuffer.AppendByte(mL30);
-    if (mL2C != 2) {
+    outBuffer.AppendBool(this->mInProgress);
+    if (this->mGameType != 2)
+        outBuffer.AppendWString(this->mName, 2);
+    outBuffer.AppendByte(this->mSkill);
+    if (this->mGameType != 2) {
         unsigned char aFlags = 0;
-        if (mPassword.length() != 0) aFlags = 1;
-        if (mB11) aFlags |= 2;
-        if (mB12) aFlags |= 4;
+        if (this->mPassword.length() != 0) aFlags = 1;
+        if (this->mInviteOnly) aFlags |= 2;
+        if (this->mAskToJoin) aFlags |= 4;
         outBuffer.AppendByte(aFlags);
     }
-    outBuffer.AppendShort(mL24);
-    outBuffer.AppendShort(mNumOpenSlots);
-    Virtual50(outBuffer);
+    outBuffer.AppendShort(this->mNumPlayers);
+    outBuffer.AppendShort(this->mNumOpenSlots);
+    this->WriteSummaryHook(outBuffer);
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a7000
+// Reads a game's listing summary; false for another product or a short buffer
 bool LobbyGame::ReadSummary(ReadBuffer& inBuffer)
 {
     try {
-        if (mL2C == 2)
-            mAddress.SetSixByte(inBuffer.ReadBytes(6));
+        if (this->mGameType == 2)
+            this->mAddress.SetSixByte(inBuffer.ReadBytes(6));
         else {
             short aProductId = inBuffer.ReadShort();
             if (aProductId != GetLobbyProductId()) return false;
         }
-        mB13 = inBuffer.ReadBool();
-        if (mL2C != 2) {
+        this->mInProgress = inBuffer.ReadBool();
+        if (this->mGameType != 2) {
             std::wstring aName;
             inBuffer.ReadWString(aName, 2);
-            mName = GUIString(new GUIStringData(aName));
+            this->mName = GUIString(new GUIStringData(aName));
         }
-        mL30 = (char)inBuffer.ReadByte();
-        if (mL30 < 0 || mL30 >= 5) mL30 = 0;
-        if (mL2C != 2) {
+        this->mSkill = (char)inBuffer.ReadByte();
+        if (this->mSkill < 0 || this->mSkill >= 5) this->mSkill = 0;
+        if (this->mGameType != 2) {
             unsigned char aFlags = inBuffer.ReadByte();
-            mB10 = (aFlags & 1) != 0;
-            mB11 = ((aFlags >> 1) & 1) != 0;
-            mB12 = ((aFlags >> 2) & 1) != 0;
+            this->mHasPassword = (aFlags & 1) != 0;
+            this->mInviteOnly = ((aFlags >> 1) & 1) != 0;
+            this->mAskToJoin = ((aFlags >> 2) & 1) != 0;
         }
-        mL24 = inBuffer.ReadShort();
-        mNumOpenSlots = inBuffer.ReadShort();
-        return Virtual58(inBuffer);
+        this->mNumPlayers = inBuffer.ReadShort();
+        this->mNumOpenSlots = inBuffer.ReadShort();
+        return this->ReadSummaryHook(inBuffer);
     }
     catch (ReadBufferException&) { return false; }
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a7240
-void LobbyGame::Fn3A7240(WriteBuffer& outBuffer) { Virtual54(outBuffer); }
+// Writes the game code's detailed game description
+void LobbyGame::WriteDetails(WriteBuffer& outBuffer) { this->WriteDetailsHook(outBuffer); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a7250
+// Reads the game code's detailed game description and marks the details as received
 bool LobbyGame::ReadDetails(ReadBuffer& inBuffer)
 {
     try {
-        if (Virtual5C(inBuffer)) {
-            mB17 = true;
+        if (this->ReadDetailsHook(inBuffer)) {
+            this->mHaveDetails = true;
             return true;
         }
         return false;
@@ -576,562 +570,556 @@ bool LobbyGame::ReadDetails(ReadBuffer& inBuffer)
     catch (ReadBufferException&) { return false; }
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a74b0
-bool LobbyGame::Fn3A74B0() { return Virtual28(); }
+// Returns whether the game code lets the local player click ready
+bool LobbyGame::CanReady() { return this->CanReadyHook(); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a74c0
-bool LobbyGame::Fn3A74C0() { return Virtual20(); }
+// Asks the game code to start the game; returns whether it did
+bool LobbyGame::TryStartGame() { return this->TryStartGameHook(); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a74d0
-void LobbyGame::Fn3A74D0(LobbyClient* inClient) { Virtual4C(inClient); }
+// Passes a newly joined player to the game code
+void LobbyGame::HandlePlayerJoined(LobbyClient* inClient) { this->HandlePlayerJoinedHook(inClient); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a74e0
+// Removes the client's player from the game, lowering the player count and telling the game code
 void LobbyGame::RemoveClient(LobbyClient* inClient)
 {
     SmartPtr<LobbyPlayer> aPlayer(inClient->mPlayer);
     if (aPlayer.get() == NULL) return;
-    --mL24;
-    inClient->Fn3A5520(NULL);
-    Virtual48(inClient, aPlayer.get());
+    --this->mNumPlayers;
+    inClient->SetPlayer(NULL);
+    this->HandlePlayerLeftHook(inClient, aPlayer.get());
 }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a79e0
-void LobbyGame::Fn3A79E0(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom)
-{ Virtual60(inType, inBuffer, inFrom); }
+// Passes a game message from another client to the game code
+void LobbyGame::HandleGameMessage(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom)
+{ this->HandleGameMessageHook(inType, inBuffer, inFrom); }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a7a00
-bool LobbyGame::IsFull() { return mNumOpenSlots > 0 && mL24 >= mNumOpenSlots; }
+// Returns whether every open slot is taken (never full without slots)
+bool LobbyGame::IsFull() { return this->mNumOpenSlots > 0 && this->mNumPlayers >= this->mNumOpenSlots; }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a7a20
-bool LobbyGame::Fn3A7A20() { return GetJoinStatus() == 0; }
+// Returns whether the local player may join the game
+bool LobbyGame::CanJoin() { return this->GetJoinStatus() == 0; }
 
-// CONTRIBUTOR: player/LobbyGame.cpp
 // FUNCTION: WON 0x7a7a30
+// Returns why the game cannot be joined (full, not invited, in progress, game code's reason) or 0
 short LobbyGame::GetJoinStatus()
 {
-    if (IsFull()) return 2;
-    if (mB11 && !mB14 && !mIsHost) return 5;
-    if (mB13) return 3;
-    return Virtual2C();
+    if (this->IsFull()) return 2;
+    if (this->mInviteOnly && !this->mInvited && !this->mIsHost) return 5;
+    if (this->mInProgress) return 3;
+    return this->GetJoinStatusHook();
 }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a8a90
+// Creates an empty chat room or game group with its own client list
 LobbyGroup::LobbyGroup() : mName(GetEmptyGUIStringData()), mClients(NULL)
 {
-    mNumClients = 0; mMaxClients = 0; mFlags = 0;
-    mId = 0xffff; mCaptainId = 0xffff;
-    mClients = new LobbyClientList;
+    this->mNumClients = 0; this->mMaxClients = 0; this->mFlags = 0;
+    this->mId = 0xffff; this->mCaptainId = 0xffff;
+    this->mClients = new LobbyClientList;
 }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a8ba0
+// Destroys the group, releasing its client list
 LobbyGroup::~LobbyGroup() {}
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a8c30
-void LobbyGroup::Fn3A8C30(RoutingGroupInfo* inInfo, LobbyClientList* inClients)
+// Copies a room's id, name, member count, flags, captain and capacity from the routing server; fills members
+void LobbyGroup::ReadRoutingInfo(RoutingGroupInfo* inInfo, LobbyClientList* inClients)
 {
-    mId = inInfo->mId;
-    mName = GUIString(new GUIStringData(inInfo->mName));
-    mNumClients = inInfo->mMaxPlayers; // canonical legacy name: original +0x2a is current member count
-    mFlags = inInfo->mFlags;
-    mCaptainId = inInfo->mCaptainId;
-    mMaxClients = inInfo->mMaxClients;
-    if (inClients != NULL) Fn3A8D50(inInfo->mMembers, inClients);
+    this->mId = inInfo->mId;
+    this->mName = GUIString(new GUIStringData(inInfo->mName));
+    this->mNumClients = inInfo->mMaxPlayers; // the routing field at +0x2a is the current member count despite its name
+    this->mFlags = inInfo->mFlags;
+    this->mCaptainId = inInfo->mCaptainId;
+    this->mMaxClients = inInfo->mMaxClients;
+    if (inClients != NULL) this->SetMembers(inInfo->mMembers, inClients);
 }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a8d50
-void LobbyGroup::Fn3A8D50(const RoutingMemberMap& inMembers, LobbyClientList* inClients)
+// Rebuilds the member list from the routing server, setting each member's flags, captaincy and room
+void LobbyGroup::SetMembers(const RoutingMemberMap& inMembers, LobbyClientList* inClients)
 {
-    mClients->Fn3A5770();
+    this->mClients->Clear();
     RoutingMemberMap::const_iterator it = inMembers.begin();
     while (it != inMembers.end()) {
         LobbyClient* client = inClients->FindClient(it->first);
         if (client != NULL) {
             RoutingMemberInfo* aMember = it->second;
-            client->SetMemberFlags(aMember->mFlags, Fn3A9060());
-            client->Fn3A5500(client->GetClientId() == mCaptainId, Fn3A9060());
-            client->SetGroupId(mId, Fn3A9060());
-            mClients->Fn3A5CC0(client);
+            client->SetMemberFlags(aMember->mFlags, this->IsGameGroup());
+            client->SetCaptain(client->GetClientId() == this->mCaptainId, this->IsGameGroup());
+            client->SetGroupId(this->mId, this->IsGameGroup());
+            this->mClients->AddClient(client);
         }
         ++it;
     }
-    mNumClients = mClients->mClients.size();
+    this->mNumClients = this->mClients->mClients.size();
 }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a8e40
-void LobbyGroup::Fn3A8E40(LobbyClient* inClient, unsigned char inFlags)
+// Adds the client as a member with the given flags, marking its room and captaincy
+void LobbyGroup::AddClient(LobbyClient* inClient, unsigned char inFlags)
 {
-    mClients->Fn3A5CC0(inClient);
-    inClient->SetGroupId(mId, Fn3A9060());
-    inClient->SetMemberFlags(inFlags, Fn3A9060());
-    inClient->Fn3A5500(inClient->GetClientId() == mCaptainId, Fn3A9060());
-    mNumClients = mClients->mClients.size();
+    this->mClients->AddClient(inClient);
+    inClient->SetGroupId(this->mId, this->IsGameGroup());
+    inClient->SetMemberFlags(inFlags, this->IsGameGroup());
+    inClient->SetCaptain(inClient->GetClientId() == this->mCaptainId, this->IsGameGroup());
+    this->mNumClients = this->mClients->mClients.size();
 }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a8eb0
-SmartPtr<LobbyClient> LobbyGroup::Fn3A8EB0(unsigned short inId)
+// Removes the member with the given id, clearing its room membership; returns it
+SmartPtr<LobbyClient> LobbyGroup::RemoveClient(unsigned short inId)
 {
-    SmartPtr<LobbyClient> client = mClients->Fn3A5D90(inId);
-    mNumClients = mClients->mClients.size();
-    if (client.get() != NULL) client->Fn3A52F0(mId, Fn3A9060());
+    SmartPtr<LobbyClient> client = this->mClients->RemoveClient(inId);
+    this->mNumClients = this->mClients->mClients.size();
+    if (client.get() != NULL) client->ClearGroup(this->mId, this->IsGameGroup());
     return client;
 }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a8f80
-LobbyClient* LobbyGroup::Fn3A8F80(unsigned short inId, LobbyClient** outOld)
+// Moves the captaincy to the given member (0xffff: none); returns the new captain, passes out the old
+LobbyClient* LobbyGroup::SetCaptain(unsigned short inId, LobbyClient** outOld)
 {
-    LobbyClient* oldClient = Fn3A8FF0();
-    if (oldClient != NULL) oldClient->Fn3A5500(false, Fn3A9060());
+    LobbyClient* oldClient = this->GetCaptain();
+    if (oldClient != NULL) oldClient->SetCaptain(false, this->IsGameGroup());
     LobbyClient* newClient = NULL;
     if (inId != 0xffff) {
-        newClient = Fn3A9010(inId);
-        if (newClient != NULL) newClient->Fn3A5500(true, Fn3A9060());
+        newClient = this->FindClient(inId);
+        if (newClient != NULL) newClient->SetCaptain(true, this->IsGameGroup());
     }
     if (outOld != NULL) *outOld = oldClient;
-    mCaptainId = inId;
+    this->mCaptainId = inId;
     return newClient;
 }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a8ff0
-LobbyClient* LobbyGroup::Fn3A8FF0()
+// Returns the group's captain, or NULL
+LobbyClient* LobbyGroup::GetCaptain()
 {
-    if (mCaptainId != 0xffff) return Fn3A9010(mCaptainId);
+    if (this->mCaptainId != 0xffff) return this->FindClient(this->mCaptainId);
     return NULL;
 }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a9010
-LobbyClient* LobbyGroup::Fn3A9010(unsigned short inId) { return mClients->FindClient(inId); }
+// Returns the member with the given client id, or NULL
+LobbyClient* LobbyGroup::FindClient(unsigned short inId) { return this->mClients->FindClient(inId); }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a9020
-bool LobbyGroup::Fn3A9020() { return (mFlags >> 2) & 1; }
+// Returns whether joining the group needs a password
+bool LobbyGroup::IsPasswordProtected() { return (this->mFlags >> 2) & 1; }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a9030
-bool LobbyGroup::Fn3A9030() { return (mFlags >> 8) & 1; }
+// Returns whether joining the group needs the captain's approval
+bool LobbyGroup::IsAskToJoin() { return (this->mFlags >> 8) & 1; }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a9040
-bool LobbyGroup::Fn3A9040() { return (mFlags >> 7) & 1; }
+// Returns whether the group can only be joined by invitation
+bool LobbyGroup::IsInviteOnly() { return (this->mFlags >> 7) & 1; }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a9050
-bool LobbyGroup::Fn3A9050() { return ((mFlags >> 11) & 1) ? true : false; }
+// Returns whether the group is a chat room
+bool LobbyGroup::IsChatGroup() { return ((this->mFlags >> 11) & 1) ? true : false; }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a9060
-bool LobbyGroup::Fn3A9060() { return ((mFlags >> 11) & 1) ? false : true; }
+// Returns whether the group is a game
+bool LobbyGroup::IsGameGroup() { return ((this->mFlags >> 11) & 1) ? false : true; }
 
-// CONTRIBUTOR: social/LobbyGroup.cpp.draft
 // FUNCTION: WON 0x7a9070
-bool LobbyGroup::Fn3A9070()
+// Returns whether the group is a chat room anyone may enter (no password, invitation or approval)
+bool LobbyGroup::IsPublicChatGroup()
 {
-    return Fn3A9050() && !Fn3A9020() && !Fn3A9040() && !Fn3A9030();
+    return this->IsChatGroup() && !this->IsPasswordProtected() && !this->IsInviteOnly() && !this->IsAskToJoin();
 
 }
 
-// CONTRIBUTOR: player/LobbyPlayer.cpp
 // FUNCTION: WON 0x7a90b0
-LobbyPlayer::LobbyPlayer() { mPlayerId=0xfffe; mBA=false; }
+// Creates a player who is not ready and has an unknown ping
+LobbyPlayer::LobbyPlayer() { this->mPing=0xfffe; this->mIsReady=false; }
 
-// CONTRIBUTOR: player/LobbyPlayer.cpp
 // FUNCTION: WON 0x7a90d0
+// Returns false: the base player has no teams
 bool LobbyPlayer::IsTeammate(LobbyPlayer* inOther) { return false; }
 
-// CONTRIBUTOR: player/LobbyPlayer.cpp
 // FUNCTION: WON 0x7a90f0
+// Reads the player's ping, ready state and game data; false on a short buffer
 bool LobbyPlayer::ReadFromBuffer(ReadBuffer& inBuffer)
 {
     try {
-        mPlayerId = inBuffer.ReadShort();
-        mBA = inBuffer.ReadBool();
-        return ReadData(inBuffer);
+        this->mPing = inBuffer.ReadShort();
+        this->mIsReady = inBuffer.ReadBool();
+        return this->ReadData(inBuffer);
     }
     catch (ReadBufferException&) {
         return false;
     }
 }
 
-// CONTRIBUTOR: player/LobbyPlayer.cpp
 // FUNCTION: WON 0x7a9170
+// Writes the player's ping, ready state and game data
 void LobbyPlayer::WriteToBuffer(WriteBuffer& outBuffer)
 {
-    outBuffer.AppendShort(mPlayerId);
-    outBuffer.AppendBool(mBA);
-    WriteData(outBuffer);
+    outBuffer.AppendShort(this->mPing);
+    outBuffer.AppendBool(this->mIsReady);
+    this->WriteData(outBuffer);
 }
 
-// CONTRIBUTOR: player/LobbyPlayer.cpp
 // FUNCTION: WON 0x7a91a0
+// Returns whether the other player is this one or on its team
 bool LobbyPlayer::IsSameTeam(LobbyPlayer* inOther)
 {
     if (this == inOther) return true;
     if (inOther == NULL) return false;
-    return IsTeammate(inOther);
+    return this->IsTeammate(inOther);
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7a91c0
+// Creates a disconnected lobby server entry with an empty client list
 LobbyServer::LobbyServer() : mName(GetEmptyGUIStringData()), mClients(NULL), mConnection(NULL)
 {
-    mNumChatClients = 0; mNumClients = 0; mLastPing = 0; mB4C = false; mMyClientId = 0xffff;
-    mClients = new LobbyClientList;
+    this->mNumChatClients = 0; this->mNumClients = 0; this->mLastPing = 0; this->mQueryingGroups = false; this->mMyClientId = 0xffff;
+    this->mClients = new LobbyClientList;
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7a9490
-bool LobbyServer::Fn3A9490(const std::string& inName)
+// Returns whether the server lists the given address name (case-insensitive)
+bool LobbyServer::HasAddress(const std::string& inName)
 {
-    return mAddresses.find(inName) != mAddresses.end();
+    return this->mAddresses.find(inName) != this->mAddresses.end();
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
-// TODO: EXE 0x7a9500 Original state=2 store at 0x3a95a9 before IPAddr host release is missing in candidate; state remains too high across delete and may repeat IPAddr destruction on throw. Original remains carved.
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7a9640
-void LobbyServer::Fn3A9640(RoutingConnection* inConnection) { mConnection = inConnection; }
+// Sets the server's routing connection
+void LobbyServer::SetConnection(RoutingConnection* inConnection) { this->mConnection = inConnection; }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7a9ad0
-void LobbyServer::Fn3A9AD0(const RoutingClientMap& inMap)
+// Merges the routing server's client map into the server's clients and refreshes who is ignored
+void LobbyServer::SyncClients(const RoutingClientMap& inMap)
 {
-    mClients->Fn3A5820(inMap);
-    mClients->Fn3A5C50();
+    this->mClients->SyncClients(inMap);
+    this->mClients->UpdateIgnoreStatus();
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7a9af0
-void LobbyServer::Fn3A9AF0()
+// Marks which clients are friends and records this server as each friend's location
+void LobbyServer::UpdateFriends()
 {
-    LobbyClientMap& aClients = mClients->mClients;
+    LobbyClientMap& aClients = this->mClients->mClients;
     for (LobbyClientMap::iterator it = aClients.begin(); it != aClients.end(); ++it) {
         LobbyClient* client = it->second;
-        LobbyFriend* aFriend = LobbyFn35D3F0(client->GetU14());
+        LobbyFriend* aFriend = LobbyFindFriend(client->GetWONUserId());
         if (aFriend != NULL) {
             client->SetIsFriend(true);
-            aFriend->Fn3A6440(mAddress, mName, 0);
-            aFriend->Fn3A66B0(client);
+            aFriend->SetLocation(this->mAddress, this->mName, 0);
+            aFriend->SetStatusFromClient(client);
         } else client->SetIsFriend(false);
     }
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7a9b60
-void LobbyServer::Fn3A9B60()
+// Forgets the location of anonymous friends on the server and stamps the others' last locate time
+void LobbyServer::ClearFriendLocations()
 {
     time_t now = time(NULL);
-    LobbyClientMap& aClients = mClients->mClients;
+    LobbyClientMap& aClients = this->mClients->mClients;
     for (LobbyClientMap::iterator it = aClients.begin(); it != aClients.end(); ++it) {
         LobbyClient* client = it->second;
         if (client->IsFriend()) {
-            LobbyFriend* aFriend = LobbyFn35D3F0(client->GetU14());
+            LobbyFriend* aFriend = LobbyFindFriend(client->GetWONUserId());
             if (aFriend != NULL) {
-                if (client->Fn3A5470()) aFriend->Fn3A65B0();
+                if (client->IsAnonymous()) aFriend->ClearLocation();
                 else aFriend->SetLastLocate(now);
             }
         }
     }
 }
 
-// CONTRIBUTOR: social/ServerMerge.cpp.draft
 // FUNCTION: WON 0x7a9be0
-void LobbyServer::Fn3A9BE0(const RoutingGroupMap& inGroups, bool inUpdateClients)
+// Merges the routing server's room map into the server's rooms and recounts the people in them
+void LobbyServer::SyncGroups(const RoutingGroupMap& inGroups, bool inUpdateClients)
 {
-    mNumChatClients = 0;
-    mNumClients = 0;
-    LobbyClientList* clients = inUpdateClients ? mClients : SmartPtr<LobbyClientList>(NULL);
-    LobbyGroupMap::iterator groupIt = mGroups.begin();
-    LobbyGroupMap::iterator insertIt = mGroups.begin();
+    this->mNumChatClients = 0;
+    this->mNumClients = 0;
+    LobbyClientList* clients = inUpdateClients ? this->mClients : SmartPtr<LobbyClientList>(NULL);
+    LobbyGroupMap::iterator groupIt = this->mGroups.begin();
+    LobbyGroupMap::iterator insertIt = this->mGroups.begin();
     RoutingGroupMap::const_iterator infoIt = inGroups.begin();
-    while (groupIt != mGroups.end() && infoIt != inGroups.end()) {
-        if (infoIt->first > groupIt->first) mGroups.erase(groupIt++);
+    while (groupIt != this->mGroups.end() && infoIt != inGroups.end()) {
+        if (infoIt->first > groupIt->first) this->mGroups.erase(groupIt++);
         else if (infoIt->first < groupIt->first) {
             SmartPtr<LobbyGroup> group = new LobbyGroup;
-            group->Fn3A8C30(infoIt->second.get(), clients);
-            insertIt = mGroups.insert(insertIt, LobbyGroupMap::value_type(group->mId, group));
-            if (group->Fn3A9050()) mNumChatClients += group->mNumClients;
-            mNumClients += group->mNumClients;
+            group->ReadRoutingInfo(infoIt->second.get(), clients);
+            insertIt = this->mGroups.insert(insertIt, LobbyGroupMap::value_type(group->mId, group));
+            if (group->IsChatGroup()) this->mNumChatClients += group->mNumClients;
+            this->mNumClients += group->mNumClients;
             ++infoIt;
         } else {
             SmartPtr<LobbyGroup> group = groupIt->second;
-            group->Fn3A8C30(infoIt->second.get(), clients);
-            if (group->Fn3A9050()) mNumChatClients += group->mNumClients;
-            mNumClients += group->mNumClients;
+            group->ReadRoutingInfo(infoIt->second.get(), clients);
+            if (group->IsChatGroup()) this->mNumChatClients += group->mNumClients;
+            this->mNumClients += group->mNumClients;
             ++groupIt;
             ++infoIt;
         }
     }
-    while (groupIt != mGroups.end()) mGroups.erase(groupIt++);
+    while (groupIt != this->mGroups.end()) this->mGroups.erase(groupIt++);
     while (infoIt != inGroups.end()) {
         SmartPtr<LobbyGroup> group = new LobbyGroup;
-        group->Fn3A8C30(infoIt->second.get(), clients);
-        insertIt = mGroups.insert(insertIt, LobbyGroupMap::value_type(group->GetId(), group));
-        if (group->Fn3A9050()) mNumChatClients += group->mNumClients;
-        mNumClients += group->mNumClients;
+        group->ReadRoutingInfo(infoIt->second.get(), clients);
+        insertIt = this->mGroups.insert(insertIt, LobbyGroupMap::value_type(group->GetId(), group));
+        if (group->IsChatGroup()) this->mNumChatClients += group->mNumClients;
+        this->mNumClients += group->mNumClients;
         ++infoIt;
     }
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7a9f50
-LobbyClient* LobbyServer::Fn3A9F50(RoutingClientInfo* inInfo)
+// Creates a client from the routing server's info, checks ignore/block and adds it
+LobbyClient* LobbyServer::AddClient(RoutingClientInfo* inInfo)
 {
     SmartPtr<LobbyClient> client = new LobbyClient;
-    client->Fn3A5350(inInfo);
-    client->Fn3A5450();
-    mClients->Fn3A5CC0(client.get());
+    client->ReadRoutingInfo(inInfo);
+    client->UpdateIgnoreStatus();
+    this->mClients->AddClient(client.get());
     return client.get();
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa000
-void LobbyServer::Fn3AA000(LobbyClient* inClient, unsigned char inFlags, LobbyGroup* inGroup)
+// Adds the client to the room or game, counting it in the chat population for chat rooms
+void LobbyServer::AddClientToGroup(LobbyClient* inClient, unsigned char inFlags, LobbyGroup* inGroup)
 {
-    inGroup->Fn3A8E40(inClient, inFlags);
-    if (inGroup->Fn3A9050()) ++mNumChatClients;
+    inGroup->AddClient(inClient, inFlags);
+    if (inGroup->IsChatGroup()) ++this->mNumChatClients;
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa030
-LobbyGroup* LobbyServer::Fn3AA030(RoutingGroupInfo* inInfo)
+// Creates a room from the routing server's info, fills its members and adds it
+LobbyGroup* LobbyServer::AddGroup(RoutingGroupInfo* inInfo)
 {
     SmartPtr<LobbyGroup> group = new LobbyGroup;
-    group->Fn3A8C30(inInfo, mClients.get());
-    mGroups[group->GetId()] = group;
+    group->ReadRoutingInfo(inInfo, this->mClients.get());
+    this->mGroups[group->GetId()] = group;
     return group.get();
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa170
-SmartPtr<LobbyGroup> LobbyServer::Fn3AA170(unsigned short inId)
+// Removes the room with the given id and returns it (NULL if absent)
+SmartPtr<LobbyGroup> LobbyServer::RemoveGroup(unsigned short inId)
 {
-    LobbyGroupMap::iterator it = mGroups.find(inId);
-    if (it == mGroups.end()) return NULL;
+    LobbyGroupMap::iterator it = this->mGroups.find(inId);
+    if (it == this->mGroups.end()) return NULL;
     SmartPtr<LobbyGroup> group = it->second;
-    mGroups.erase(it);
+    this->mGroups.erase(it);
     return group;
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa280
-SmartPtr<LobbyClient> LobbyServer::Fn3AA280(unsigned short inId)
+// Removes the client with the given id from the server and returns it
+SmartPtr<LobbyClient> LobbyServer::RemoveClient(unsigned short inId)
 {
-    return mClients->Fn3A5D90(inId);
+    return this->mClients->RemoveClient(inId);
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa2b0
-SmartPtr<LobbyClient> LobbyServer::Fn3AA2B0(unsigned short inId, LobbyGroup* inGroup)
+// Removes the client from the room or game, lowering the chat population for chat rooms
+SmartPtr<LobbyClient> LobbyServer::RemoveClientFromGroup(unsigned short inId, LobbyGroup* inGroup)
 {
-    SmartPtr<LobbyClient> client = inGroup->Fn3A8EB0(inId);
-    if (client.get() != NULL && inGroup->Fn3A9050()) {
-        --mNumChatClients;
-        if (mNumChatClients < 0) mNumChatClients = 0;
+    SmartPtr<LobbyClient> client = inGroup->RemoveClient(inId);
+    if (client.get() != NULL && inGroup->IsChatGroup()) {
+        --this->mNumChatClients;
+        if (this->mNumChatClients < 0) this->mNumChatClients = 0;
     }
     return client;
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa370
-LobbyClient* LobbyServer::GetClient(int inId) { return mClients->FindClient(inId); }
+// Returns the client with the given id, or NULL
+LobbyClient* LobbyServer::GetClient(int inId) { return this->mClients->FindClient(inId); }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa380
-LobbyClient* LobbyServer::Fn3AA380(unsigned long inId) { return mClients->Fn3A5EA0(inId); }
+// Returns the client with the given WON user id, or NULL
+LobbyClient* LobbyServer::FindClientByWONId(unsigned long inId) { return this->mClients->FindClientByWONId(inId); }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa390
-LobbyClient* LobbyServer::Fn3AA390()
+// Returns the local player's client on this server, or NULL
+LobbyClient* LobbyServer::GetMyClient()
 {
-    if (mMyClientId == 0xffff) return NULL;
-    return GetClient(mMyClientId);
+    if (this->mMyClientId == 0xffff) return NULL;
+    return this->GetClient(this->mMyClientId);
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa3b0
-LobbyGroup* LobbyServer::Fn3AA3B0(int inId)
+// Returns the room or game with the given id, or NULL
+LobbyGroup* LobbyServer::GetGroup(int inId)
 {
-    LobbyGroupMap::iterator it = mGroups.find(inId);
-    return it != mGroups.end() ? it->second.get() : NULL;
+    LobbyGroupMap::iterator it = this->mGroups.find(inId);
+    return it != this->mGroups.end() ? it->second.get() : NULL;
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa410
-int LobbyServer::Fn3AA410()
+// Returns the server's population: the live client count when connected, else the listed count
+int LobbyServer::GetNumClients()
 {
-    if (Fn3AA430()) return mClients->mClients.size();
-    return mNumClients;
+    if (this->IsConnected()) return this->mClients->mClients.size();
+    return this->mNumClients;
 }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa430
-bool LobbyServer::Fn3AA430() { return mConnection.get() != NULL; }
+// Returns whether the lobby is connected to the server
+bool LobbyServer::IsConnected() { return this->mConnection.get() != NULL; }
 
-// CONTRIBUTOR: social/LobbyServer.windowB.cpp.draft
 // FUNCTION: WON 0x7aa440
-void LobbyServer::Fn3AA440() { mGroups.clear(); }
+// Removes every room and game of the server
+void LobbyServer::ClearGroups() { this->mGroups.clear(); }
 
-// CONTRIBUTOR: social/LobbyServerList.cpp.draft
 // FUNCTION: WON 0x7aa4f0
+// Creates an empty server list
 LobbyServerList::LobbyServerList() {}
 
-// CONTRIBUTOR: social/LobbyServerList.cpp.draft
 // FUNCTION: WON 0x7aa5a0
+// Destroys the server list, releasing every server
 LobbyServerList::~LobbyServerList() {}
 
-// CONTRIBUTOR: social/LobbyServerList.cpp.draft
 // FUNCTION: WON 0x7aa670
-void LobbyServerList::Fn3AA670(const DirEntityList& inEntities)
+// Adds the directory's servers by address and refreshes the listing of each one not connected
+void LobbyServerList::UpdateFromDirectory(const DirEntityList& inEntities)
 {
     for (DirEntityList::const_iterator it = inEntities.begin(); it != inEntities.end(); ++it) {
         DirEntity* entity = it->get();
-        LobbyServerMap::iterator serverIt = mServers.insert(LobbyServerMap::value_type(entity->GetNetAddrAsIP(), NULL)).first;
+        LobbyServerMap::iterator serverIt = this->mServers.insert(LobbyServerMap::value_type(entity->GetNetAddrAsIP(), NULL)).first;
         if (serverIt->second.get() == NULL) serverIt->second = new LobbyServer;
         LobbyServer* aServer = serverIt->second.get();
-        if (!aServer->Fn3AA430()) aServer->Fn3A9700(entity);
+        if (!aServer->IsConnected()) aServer->ReadDirEntity(entity);
     }
 }
 
-// CONTRIBUTOR: social/LobbyServerList.cpp.draft
 // FUNCTION: WON 0x7aa980
-LobbyServer* LobbyServerList::Fn3AA980(const IPAddr& inAddress)
+// Returns the server at the given address, or NULL
+LobbyServer* LobbyServerList::FindServer(const IPAddr& inAddress)
 {
-    LobbyServerMap::iterator it = mServers.find(inAddress);
-    return it == mServers.end() ? NULL : it->second.get();
+    LobbyServerMap::iterator it = this->mServers.find(inAddress);
+    return it == this->mServers.end() ? NULL : it->second.get();
 }
 
-// OPEN: 0x3a96a0 inherited socket Close receiver remains unresolved; original carved, no substitute.
-// OPEN: 0x3a9700 DirEntity metadata decode remains unresolved; original carved, no substitute.
 
 }
 
-// Deferred source: not compiled, no source-body credit.
-// BLOCKER: EH debt: candidate3 states vs original4; missing clients cleanup guard during IPAddr destruction. Keep original carved.
-// // DEFERRED FUNCTION: EXE 0x7a68f0
-// LobbyGame::~LobbyGame() {}
 
 
 
 
-// DEFERRED: Original state=1 store at 0x3a63d0 before IPAddr host release is missing in candidate; state remains too high across delete and may repeat IPAddr destruction on throw. Original remains carved.
-// // DEFERRED FUNCTION: EXE 0x7a6380
-// LobbyFriend::~LobbyFriend() {}
 
-// DEFERRED: Original state=2 store at 0x3a95a9 before IPAddr host release is missing in candidate; state remains too high across delete and may repeat IPAddr destruction on throw. Original remains carved.
-// // DEFERRED FUNCTION: EXE 0x7a9500
-// LobbyServer::~LobbyServer() {}
 
 
 namespace WONAPI {
-// Original data4dec84/4dec88 are function pointers, initialized to3a6730/3a5140.
 // FUNCTION: WON 0x7a6c90
-void LobbyGame::Fn3A6C90()
+// Detaches the player data of every member of the game
+void LobbyGame::ClearPlayers()
 {
-    LobbyClientList* clients = mClients.get();
+    LobbyClientList* clients = this->mClients.get();
     if (clients == NULL) return;
     for (LobbyClientMap::iterator it=clients->mClients.begin(); it!=clients->mClients.end(); ++it)
-        it->second->Fn3A5520(NULL);
+        it->second->SetPlayer(NULL);
 }
 // FUNCTION: WON 0x7a6d00
-bool LobbyGame::Fn3A6D00(LobbyGame* inOther)
+// Returns whether two games are the same: same type and same room (Internet) or same address
+bool LobbyGame::IsSameGame(LobbyGame* inOther)
 {
-    if (inOther->mL2C != mL2C) return false;
-    if (mL2C == 2) return inOther->mL62 == mL62;
-    return inOther->mAddress == mAddress;
+    if (inOther->mGameType != this->mGameType) return false;
+    if (this->mGameType == 2) return inOther->mGroupId == this->mGroupId;
+    return inOther->mAddress == this->mAddress;
 }
 // FUNCTION: WON 0x7a6e00
-void LobbyGame::Fn3A6E00(LobbyGroup* inGroup)
+// Copies the game room's name, join restrictions, id, captain and members into the game
+void LobbyGame::ReadGroup(LobbyGroup* inGroup)
 {
-    mName = inGroup->mName;
-    mB10 = inGroup->Fn3A9020();
-    mB11 = inGroup->Fn3A9040();
-    mB12 = inGroup->Fn3A9030();
-    mL62 = inGroup->mId;
-    mL60 = inGroup->mCaptainId;
-    mClients = inGroup->mClients;
+    this->mName = inGroup->mName;
+    this->mHasPassword = inGroup->IsPasswordProtected();
+    this->mInviteOnly = inGroup->IsInviteOnly();
+    this->mAskToJoin = inGroup->IsAskToJoin();
+    this->mGroupId = inGroup->mId;
+    this->mCaptainId = inGroup->mCaptainId;
+    this->mClients = inGroup->mClients;
 }
 // FUNCTION: WON 0x7a7200
-bool LobbyGame::Fn3A7200(const ByteBuffer* inData)
+// Reads the game's listing summary from a byte buffer; false without one
+bool LobbyGame::ReadSummaryBuffer(const ByteBuffer* inData)
 {
     if (inData == NULL) return false;
     ReadBuffer buffer(inData->data(),inData->length());
-    return ReadSummary(buffer);
+    return this->ReadSummary(buffer);
 }
 // FUNCTION: WON 0x7a72c0
-ConstSmartPtr<ByteBuffer> LobbyGame::Fn3A72C0()
+// Builds the join request for the game: message 1, the local ping and the game code's data
+ConstSmartPtr<ByteBuffer> LobbyGame::GetJoinRequest()
 {
     WriteBuffer buffer(0,true);
     buffer.AppendByte(1);
-    buffer.AppendShort(mL64);
-    Virtual34(buffer);
+    buffer.AppendShort(this->mPing);
+    this->GetJoinGameRequestHook(buffer);
     return buffer.ToByteBuffer(true);
 }
 // FUNCTION: WON 0x7a7360
-void LobbyGame::Fn3A7360(LobbyClient* inClient)
+// Gives the host a player, lets the game code set up and counts one player
+void LobbyGame::HandleHostGame(LobbyClient* inClient)
 {
     SmartPtr<LobbyPlayer> player = LobbyPlayer::CreatePlayer();
-    inClient->Fn3A5520(player.get());
-    Virtual30(inClient);
-    mL24 = 1;
+    inClient->SetPlayer(player.get());
+    this->HandleHostGameHook(inClient);
+    this->mNumPlayers = 1;
 }
 // FUNCTION: WON 0x7a7400
-bool LobbyGame::Fn3A7400()
+// Returns whether every player except the captain has clicked ready
+bool LobbyGame::AreAllReady()
 {
-    LobbyClientMap& clients = mClients->mClients;
+    LobbyClientMap& clients = this->mClients->mClients;
     for (LobbyClientMap::iterator it=clients.begin(); it!=clients.end(); ++it) {
         LobbyClient* client=it->second.get();
-        if (client->Fn3A5580() && !client->Fn3A54E0(1) && !client->Fn3A5590()) return false;
+        if (client->HasPlayer() && !client->IsCaptain(1) && !client->IsReady()) return false;
     }
     return true;
 }
 // FUNCTION: WON 0x7a7490
-bool LobbyGame::Fn3A7490()
+// Returns whether all players are ready and the game code allows the start
+bool LobbyGame::CanStartGame()
 {
-    if (!Fn3A7400()) return false;
-    return Virtual24();
+    if (!this->AreAllReady()) return false;
+    return this->CanStartGameHook();
 }
 // FUNCTION: WON 0x7a7570
-short LobbyGame::Fn3A7570(ReadBuffer& inBuffer,LobbyClient* inClient,WriteBuffer& outBuffer)
+// Admits or refuses a join request; on success writes the player count and every player into the reply
+short LobbyGame::HandleJoinRequest(ReadBuffer& inBuffer,LobbyClient* inClient,WriteBuffer& outBuffer)
 {
     SmartPtr<LobbyPlayer> player;
-    if (IsFull()) return 2;
-    if (mB13) return 3;
+    if (this->IsFull()) return 2;
+    if (this->mInProgress) return 3;
     LobbyConfig* config=GetLobbyConfig();
     if (config!=NULL && !config->mAllowDuplicateNames) {
-        for (LobbyClientMap::iterator it=mClients->mClients.begin(); it!=mClients->mClients.end(); ++it)
+        for (LobbyClientMap::iterator it=this->mClients->mClients.begin(); it!=this->mClients->mClients.end(); ++it)
             if (it->second->GetName()==inClient->GetName() && it->second.get()!=inClient) return 8;
     }
     // LOST-DEBUG: none: exact only (one more free site refuses the second early return ~SmartPtr)
     EE_LOST_TRACE(inClient->GetName());
     player=LobbyPlayer::CreatePlayer();
-    inClient->Fn3A5520(player.get());
+    inClient->SetPlayer(player.get());
     try {
         short anId=inBuffer.ReadShort();
-        player->mPlayerId=anId;
-        short result=Virtual38(inBuffer,inClient);
-        if (result!=0) { inClient->Fn3A5520(NULL); return result; }
+        player->mPing=anId;
+        short result=this->HandleJoinGameRequestHook(inBuffer,inClient);
+        if (result!=0) { inClient->SetPlayer(NULL); return result; }
     } catch (ReadBufferException&) {
-        inClient->Fn3A5520(NULL);
+        inClient->SetPlayer(NULL);
         return 4;
     }
-    outBuffer.AppendShort(++mL24);
-    LobbyClientSetIterator it(mClients.get());
+    outBuffer.AppendShort(++this->mNumPlayers);
+    LobbyClientSetIterator it(this->mClients.get());
     while (it.HasMore()) {
         LobbyClient* client;
         LobbyPlayer* otherPlayer=it.Next(&client);
@@ -1140,20 +1128,22 @@ short LobbyGame::Fn3A7570(ReadBuffer& inBuffer,LobbyClient* inClient,WriteBuffer
             otherPlayer->WriteToBuffer(outBuffer);
         }
     }
-    Virtual3C(inClient,outBuffer);
+    this->GetJoinGameReplyHook(inClient,outBuffer);
     return 0;
 }
 // FUNCTION: WON 0x7a7830
-ConstSmartPtr<ByteBuffer> LobbyGame::Fn3A7830(ReadBuffer& inBuffer,LobbyClient* inClient)
+// Handles a join request and builds the reply: message 2, the join status and the players
+ConstSmartPtr<ByteBuffer> LobbyGame::GetJoinReply(ReadBuffer& inBuffer,LobbyClient* inClient)
 {
     WriteBuffer buffer(0,true);
     buffer.AppendByte(2);
     buffer.AppendShort(0);
-    buffer.SetShort(1,Fn3A7570(inBuffer,inClient,buffer));
+    buffer.SetShort(1,this->HandleJoinRequest(inBuffer,inClient,buffer));
     return buffer.ToByteBuffer(true);
 }
 // FUNCTION: WON 0x7a78e0
-short LobbyGame::Fn3A78E0(ReadBuffer& inBuffer)
+// Reads the host's join reply: on success creates every listed player; returns the join status
+short LobbyGame::HandleJoinReply(ReadBuffer& inBuffer)
 {
     short result;
     try {
@@ -1161,135 +1151,152 @@ short LobbyGame::Fn3A78E0(ReadBuffer& inBuffer)
         if (result!=0) return result;
         unsigned short count=inBuffer.ReadShort();
         for (int i=0; i<count; ++i) {
-            LobbyClient* client=FindClient(inBuffer.ReadShort());
+            LobbyClient* client=this->FindClient(inBuffer.ReadShort());
             if (client!=NULL) {
                 SmartPtr<LobbyPlayer> player=LobbyPlayer::CreatePlayer();
-                if (player->ReadFromBuffer(inBuffer)) client->Fn3A5520(player.get());
+                if (player->ReadFromBuffer(inBuffer)) client->SetPlayer(player.get());
             }
         }
-        Virtual44(inBuffer);
+        this->HandleJoinGameReplyHook(inBuffer);
     } catch (ReadBufferException&) { result=4; }
     return result;
 }
 
 // FUNCTION: WON 0x7a7c50
-LobbyGameList::LobbyGameList(int inType) : mIdItr(NULL),mAddrItr(NULL) { mType=inType; }
+// Creates an empty game list for the given game type
+LobbyGameList::LobbyGameList(int inType) : mIdItr(NULL),mAddrItr(NULL) { this->mType=inType; }
 // FUNCTION: WON 0x7a7e00
+// Destroys the game list, releasing every game
 LobbyGameList::~LobbyGameList() {}
 // FUNCTION: WON 0x7a7f10
-void LobbyGameList::Clear() { mIdGames.clear(); mAddrGames.clear(); }
+// Removes every game from the list
+void LobbyGameList::Clear() { this->mIdGames.clear(); this->mAddrGames.clear(); }
 // FUNCTION: WON 0x7a8030
+// Adds the game under its room id (Internet) or its address, setting its type to the list's
 void LobbyGameList::AddGame(LobbyGame* inGame)
 {
-    inGame->mL2C=mType;
-    if (mType==2) {
-        unsigned short id = inGame->mL62;
-        mIdGames[id]=inGame;
+    inGame->mGameType=this->mType;
+    if (this->mType==2) {
+        unsigned short id = inGame->mGroupId;
+        this->mIdGames[id]=inGame;
     }
-    else mAddrGames[inGame->mAddress]=inGame;
+    else this->mAddrGames[inGame->mAddress]=inGame;
 }
 // FUNCTION: WON 0x7a80f0
+// Returns the game in the given room, creating it if new; passes out whether it existed
 LobbyGame* LobbyGameList::GetOrCreateGame(unsigned short inId,bool* outExisted)
 {
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(5);
-    LobbyIdGameMap::iterator it=mIdGames.insert(LobbyIdGameMap::value_type(inId,NULL)).first;
+    LobbyIdGameMap::iterator it=this->mIdGames.insert(LobbyIdGameMap::value_type(inId,NULL)).first;
     SmartPtr<LobbyGame>& game=it->second;
     if (game.get()==NULL) {
-        game=LobbyGame::CreateGame(static_cast<LobbyGameType>(mType));
-        game->mL62=inId;
+        game=LobbyGame::CreateGame(static_cast<LobbyGameType>(this->mType));
+        game->mGroupId=inId;
         if (outExisted!=NULL) *outExisted=false;
     } else if (outExisted!=NULL) *outExisted=true;
     return game.get();
 }
 // FUNCTION: WON 0x7a8290
+// Returns the game at the given address, creating it if new; passes out whether it existed
 LobbyGame* LobbyGameList::GetOrCreateGame(const IPAddr& inAddress,bool* outExisted)
 {
-    LobbyAddrGameMap::iterator it=mAddrGames.insert(LobbyAddrGameMap::value_type(inAddress,NULL)).first;
+    LobbyAddrGameMap::iterator it=this->mAddrGames.insert(LobbyAddrGameMap::value_type(inAddress,NULL)).first;
     SmartPtr<LobbyGame>& game=it->second;
     if (game.get()==NULL) {
-        game=LobbyGame::CreateGame(static_cast<LobbyGameType>(mType));
+        game=LobbyGame::CreateGame(static_cast<LobbyGameType>(this->mType));
         game->mAddress=inAddress;
         if (outExisted!=NULL) *outExisted=false;
     } else if (outExisted!=NULL) *outExisted=true;
     return game.get();
 }
 // FUNCTION: WON 0x7a8560
+// Returns the game in the given room, or NULL
 LobbyGame* LobbyGameList::GetGame(unsigned short inId)
 {
-    LobbyIdGameMap::iterator it=mIdGames.find(inId);
-    return it!=mIdGames.end()?it->second.get():NULL;
+    LobbyIdGameMap::iterator it=this->mIdGames.find(inId);
+    return it!=this->mIdGames.end()?it->second.get():NULL;
 }
 // FUNCTION: WON 0x7a85c0
+// Returns the game at the given address, or NULL
 LobbyGame* LobbyGameList::GetGame(const IPAddr& inAddress)
 {
-    LobbyAddrGameMap::iterator it=mAddrGames.find(inAddress);
-    return it!=mAddrGames.end()?it->second.get():NULL;
+    LobbyAddrGameMap::iterator it=this->mAddrGames.find(inAddress);
+    return it!=this->mAddrGames.end()?it->second.get():NULL;
 }
 // FUNCTION: WON 0x7a8620
+// Removes the game in the given room, resetting its ping; returns it (NULL if absent)
 SmartPtr<LobbyGame> LobbyGameList::RemoveGame(unsigned short inId)
 {
-    LobbyIdGameMap::iterator it=mIdGames.find(inId);
-    if (it==mIdGames.end()) return NULL;
+    LobbyIdGameMap::iterator it=this->mIdGames.find(inId);
+    if (it==this->mIdGames.end()) return NULL;
     SmartPtr<LobbyGame> game=it->second;
-    game->mL64=0xfffe;
-    mIdGames.erase(it);
+    game->mPing=0xfffe;
+    this->mIdGames.erase(it);
     return game;
 }
 // FUNCTION: WON 0x7a8730
+// Removes the game at the given address, resetting its ping; returns it (NULL if absent)
 SmartPtr<LobbyGame> LobbyGameList::RemoveGame(const IPAddr& inAddress)
 {
-    LobbyAddrGameMap::iterator it=mAddrGames.find(inAddress);
-    if (it==mAddrGames.end()) return NULL;
+    LobbyAddrGameMap::iterator it=this->mAddrGames.find(inAddress);
+    if (it==this->mAddrGames.end()) return NULL;
     SmartPtr<LobbyGame> game=it->second;
-    game->mL64=0xfffe;
-    mAddrGames.erase(it);
+    game->mPing=0xfffe;
+    this->mAddrGames.erase(it);
     return game;
 }
 // FUNCTION: WON 0x7a8850
+// Restarts iteration over the games
 void LobbyGameList::Rewind()
 {
-    if (mType==2) mIdItr=mIdGames.begin();
-    else mAddrItr=mAddrGames.begin();
+    if (this->mType==2) this->mIdItr=this->mIdGames.begin();
+    else this->mAddrItr=this->mAddrGames.begin();
 }
 // FUNCTION: WON 0x7a8870
+// Returns whether games remain in the iteration
 bool LobbyGameList::HasMore()
 {
-    if (mType==2) return mIdItr!=mIdGames.end();
-    return mAddrItr!=mAddrGames.end();
+    if (this->mType==2) return this->mIdItr!=this->mIdGames.end();
+    return this->mAddrItr!=this->mAddrGames.end();
 }
 // FUNCTION: WON 0x7a88a0
+// Returns the next game and advances (no end check: callers test HasMore first)
 LobbyGame* LobbyGameList::Next()
 {
-    if (mType==2) return (mIdItr++)->second.get();
-    return (mAddrItr++)->second.get();
+    if (this->mType==2) return (this->mIdItr++)->second.get();
+    return (this->mAddrItr++)->second.get();
 }
 // FUNCTION: WON 0x7a8960
+// Returns whether the list has no games
 bool LobbyGameList::IsEmpty()
 {
-    if (mType==2) return mIdGames.empty();
-    return mAddrGames.empty();
+    if (this->mType==2) return this->mIdGames.empty();
+    return this->mAddrGames.empty();
 }
 // FUNCTION: WON 0x7a8980
+// Drops LAN/direct games not seen for longer than the given seconds; returns whether any went
 bool LobbyGameList::RemoveStaleGames(long inMaxAge)
 {
-    if (mType==2) return false;
+    if (this->mType==2) return false;
     time_t now=time(NULL);
-    unsigned long oldSize=mAddrGames.size();
-    LobbyAddrGameMap::iterator it=mAddrGames.begin();
-    while (it!=mAddrGames.end()) {
-        if (now-it->second->mL1C>inMaxAge) {
-            it->second->mL64=0xfffe;
-            mAddrGames.erase(it++);
+    unsigned long oldSize=this->mAddrGames.size();
+    LobbyAddrGameMap::iterator it=this->mAddrGames.begin();
+    while (it!=this->mAddrGames.end()) {
+        if (now-it->second->mLastSeenTime>inMaxAge) {
+            it->second->mPing=0xfffe;
+            this->mAddrGames.erase(it++);
         } else ++it;
     }
-    return mAddrGames.size()<oldSize;
+    return this->mAddrGames.size()<oldSize;
 }
 }
 namespace WONAPI {
 // FUNCTION: WON 0x7a68f0
+// Destroys the game, releasing its name, password, address and member list
 LobbyGame::~LobbyGame() {}
 // FUNCTION: WON 0x7a9500
+// Destroys the server entry, releasing its rooms, clients, connection and address names
 LobbyServer::~LobbyServer() {}
 
 }
@@ -1298,10 +1305,11 @@ namespace WONAPI {
 // The stored count is little-endian, as is the host.
 static unsigned short ShortFromLittleEndian(unsigned short theShort);
 // FUNCTION: WON 0x007a9700
-void LobbyServer::Fn3A9700(DirEntity* inEntity)
+// Reads the server's name, address, population (_C) and address names (_L) from its directory entry
+void LobbyServer::ReadDirEntity(DirEntity* inEntity)
 {
-    mName = GUIString(inEntity->mDisplayName);
-    mAddress = inEntity->GetNetAddrAsIP();
+    this->mName = GUIString(inEntity->mDisplayName);
+    this->mAddress = inEntity->GetNetAddrAsIP();
     const DirDataObjectList& aList = inEntity->mDataObjects;
     if (!aList.empty())
     for (DirDataObjectList::const_iterator anItr = aList.begin(); anItr != aList.end(); ++anItr) {
@@ -1310,9 +1318,9 @@ void LobbyServer::Fn3A9700(DirEntity* inEntity)
             anObject.mData->length() == 2) {
             unsigned short aCount;
             memcpy(&aCount,anObject.mData->data(),2);
-            mNumClients = ShortFromLittleEndian(aCount);
+            this->mNumClients = ShortFromLittleEndian(aCount);
         } else if (anObject.mDataType == "_L") {
-            mAddresses.clear();
+            this->mAddresses.clear();
             const ByteBuffer* aData = anObject.mData.get();
             std::string aText(anObject.mData->data(),anObject.mData->length());
             StringParser aParser(aText.c_str());
@@ -1320,12 +1328,13 @@ void LobbyServer::Fn3A9700(DirEntity* inEntity)
             aParser.ReadValue(aNames);
             for (std::list<std::string>::iterator aName = aNames.begin();
                  aName != aNames.end(); ++aName)
-                mAddresses.insert(*aName);
+                this->mAddresses.insert(*aName);
         }
     }
 }
 
 // FUNCTION: WON 0x7a9ac0
+// Returns a little-endian short in host order (unchanged on x86)
 static unsigned short ShortFromLittleEndian(unsigned short theShort)
 {
     return theShort;
@@ -1334,22 +1343,24 @@ static unsigned short ShortFromLittleEndian(unsigned short theShort)
 
 namespace WONAPI {
 // FUNCTION: WON 0x007a96a0
-void LobbyServer::Fn3A96A0()
+// Disconnects from the server, keeping its last population and forgetting the local client and clients
+void LobbyServer::Disconnect()
 {
-    if (mConnection.get() != NULL) {
-        Fn3A9B60();
-        mNumClients = mClients->mClients.size();
-        mConnection->QueueClose(-1);
-        mConnection = NULL;
+    if (this->mConnection.get() != NULL) {
+        this->ClearFriendLocations();
+        this->mNumClients = this->mClients->mClients.size();
+        this->mConnection->QueueClose(-1);
+        this->mConnection = NULL;
     }
-    mMyClientId = 0xffff;
-    mClients->Fn3A5770();
+    this->mMyClientId = 0xffff;
+    this->mClients->Clear();
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007a7a90
-GUIString LobbyGame::Fn3A7A90(short status)
+// Returns the text for a join status: the lobby's strings, the game code's text, or the number
+GUIString LobbyGame::GetStatusString(short status)
 {
     switch(status) {
     case 0: return ::LobbyGameStatus_Success_String;
@@ -1361,7 +1372,7 @@ GUIString LobbyGame::Fn3A7A90(short status)
     case 7: return ::LobbyGameStatus_InvalidPassword_String;
     case 8: return ::LobbyGameStatus_DuplicateName_String;
     }
-    GUIString custom=Virtual64(status);
+    GUIString custom=this->GetStatusStringHook(status);
     if(custom.length()!=0) return custom;
     char buffer[50];
     sprintf(buffer,"%d",static_cast<int>(status));
@@ -1370,46 +1381,48 @@ GUIString LobbyGame::Fn3A7A90(short status)
 }
 
 namespace WONAPI {
-// SUPPORT-ONLY: genuine SDK explicit LobbyClient::IsFriend; shared native physical body, zero new physical/primary credit.
+// Returns whether the client is on the local player's friends list (no marker: the linker folds its body
+// with an identical function)
 bool LobbyClient::IsFriend()
 {
-    return mB24;
+    return this->mIsFriend;
 }
 }
 
 namespace WONAPI {
-// SUPPORT-ONLY: genuine SDK explicit empty LobbyPlayer lifetime; already shared native7B, zero physical/primary novelty.
+// Destroys the player (no marker: the linker folds its body with an identical function)
 LobbyPlayer::~LobbyPlayer() {}
 }
 
 namespace WONAPI {
-// SUPPORT-ONLY: genuine SDK CPP implementation LobbyGame::Virtual2C, positive native 4B; no primary credit.
 // FUNCTION: WON 0x007a7a80
-short LobbyGame::Virtual2C()
+// Returns 0 (joinable): the default for a game code with no extra join rules
+short LobbyGame::GetJoinStatusHook()
 {
     return 0;
 }
 }
 
 namespace WONAPI {
-// SUPPORT-ONLY: actual SDK public creator3a6c00, existing canonical cdecl API; no new allocation or primary credit.
 // FUNCTION: WON 0x007a6c00
+// Creates a game of the given type through the installed game factory
 LobbyGame* LobbyGame::CreateGame(LobbyGameType inType)
 {
-    LobbyGame* game=mGameFactory();
-    game->mL2C=inType;
+    LobbyGame* game=LobbyGame::mGameFactory();
+    game->mGameType=inType;
     return game;
 }
-// SUPPORT-ONLY: actual SDK public creator3a90e0, existing canonical cdecl API.
 // FUNCTION: WON 0x007a90e0
+// Creates a player through the installed player factory
 LobbyPlayer* LobbyPlayer::CreatePlayer()
 {
-    return mPlayerFactory();
+    return LobbyPlayer::mPlayerFactory();
 }
 }
 
 namespace WONAPI {
-// Genuine SDK class-static storage: one mutable pointer per model, no CRT initializer.
+// Factories the game code replaces to create its own game and player types: LobbyGame::mGameFactory (0x8dec84)
+// and LobbyPlayer::mPlayerFactory (0x8dec88) start as the defaults at 0x7a6730 and 0x7a5140 (no CRT initializer)
 LobbyGame::LobbyGameFactory LobbyGame::mGameFactory = LobbyGame::DefaultGameFactory;
 LobbyPlayer::LobbyPlayerFactory LobbyPlayer::mPlayerFactory = LobbyPlayer::DefaultPlayerFactory;
 }

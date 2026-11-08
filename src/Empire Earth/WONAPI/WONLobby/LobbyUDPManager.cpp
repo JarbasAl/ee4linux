@@ -1,4 +1,4 @@
-// Original lobby UDP binding and configured/random-port fallback.
+// Binds the lobby's UDP port (pings and friend searches)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -17,22 +17,23 @@
 
 namespace WONAPI {
 // FUNCTION: WON 0x0075ba00
-void LobbyFn35BA00()
+// Binds the lobby UDP port from the config (8888 by default), else a random port 10000-19999, and starts receiving
+void LobbyBindUDPPort()
 {
     LobbyConfig* aConfig=GetLobbyConfig();
     unsigned short aPort=aConfig?aConfig->mLobbyPort:8888;
-    LobbyFn361420(aPort);
-    UDPManager* aMgr=LobbyFn35B8F0();
-    if(aMgr!=NULL) {
-        WONStatus aStatus=aMgr->Fn2B79C0(aPort,true);
-        if(aStatus!=0) {
-            srand(time(NULL));
-            aPort=rand()%10000+10000;
-            aStatus=aMgr->Fn2B79C0(aPort,false);
-            LobbyFn361420(aPort);
-        }
-        if(aStatus==0)
-            aMgr->SetAutoRecv(true);
+    LobbySetLobbyPort(aPort);
+    UDPManager* aMgr=LobbyGetUDPManager();
+    if(aMgr==NULL)
+        return;
+    WONStatus aStatus=aMgr->Bind(aPort,true);
+    if(aStatus!=0) {
+        srand(time(NULL));
+        aPort=rand()%10000+10000;
+        aStatus=aMgr->Bind(aPort,false);
+        LobbySetLobbyPort(aPort);
     }
+    if(aStatus==0)
+        aMgr->SetAutoRecv(true);
 }
 }

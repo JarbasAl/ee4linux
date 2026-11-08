@@ -1,4 +1,4 @@
-// Original-backed MD5-based random byte state and Windows seed collection.
+// Random: MD5-based random byte generator seeded from disk space, tick count and system time
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,39 +10,42 @@
 #include "ee/wonapi/WONRandom.h"
 namespace WONAPI {
 long Random::usageCount = 0;
-// Native leaves randomBytesUsed and counter uninitialized; preserve actual source behavior.
+// The original leaves randomBytesUsed and counter uninitialized
 // FUNCTION: WON 0x007da510
+// Creates a generator seeded from the system
 Random::Random()
 {
-    setSeed(getSeed(20));
+    this->setSeed(Random::getSeed(20));
 }
 // FUNCTION: WON 0x007da5e0
+// Mixes a seed into the generator state with MD5
 void Random::setSeed(const RawBuffer& seed)
 {
-    if (state.length() != 0)
-        digest.update(state);
-    state = digest.digest(seed);
+    if (this->state.length() != 0)
+        this->digest.update(this->state);
+    this->state = this->digest.digest(seed);
 }
 // FUNCTION: WON 0x007da770
+// Fills the buffer with random bytes, hashing the state and a counter for each 16-byte block
 void Random::nextBytes(RawBuffer& bytes)
 {
     int requested = bytes.length();
     int received = 0;
     while (received < requested) {
-        if (randomBytes.length() == 0 || randomBytesUsed == randomBytes.length()) {
-            digest.update(state);
-            randomBytes = digest.digest(longToByteArray(counter++));
-            randomBytesUsed = 0;
+        if (this->randomBytes.length() == 0 || this->randomBytesUsed == this->randomBytes.length()) {
+            this->digest.update(this->state);
+            this->randomBytes = this->digest.digest(this->longToByteArray(this->counter++));
+            this->randomBytesUsed = 0;
         }
-        bytes[received++] = randomBytes[randomBytesUsed++];
+        bytes[received++] = this->randomBytes[this->randomBytesUsed++];
     }
 }
-// Requested seed size is intentionally ignored by this native method.
 // FUNCTION: WON 0x007da950
+// Returns 8 seed bytes from disk space, tick count, system time and a use counter (size ignored)
 RawBuffer Random::getSeed(int)
 {
     RawBuffer bytes(8, static_cast<unsigned char>(0));
-    long usage = ++usageCount;
+    long usage = ++Random::usageCount;
     unsigned long sectorsPerCluster, bytesPerSector, freeClusters, usedClusters;
     __int64 seed = 0;
     GetDiskFreeSpaceA(NULL, &sectorsPerCluster, &bytesPerSector, &freeClusters, &usedClusters);
@@ -57,6 +60,7 @@ RawBuffer Random::getSeed(int)
     return bytes.assign(reinterpret_cast<const unsigned char*>(&seed), 8);
 }
 // FUNCTION: WON 0x007dab20
+// Returns a 64-bit value as 8 little-endian bytes
 RawBuffer Random::longToByteArray(__int64 value)
 {
     RawBuffer bytes(8, static_cast<unsigned char>(0));
@@ -70,23 +74,23 @@ RawBuffer Random::longToByteArray(__int64 value)
 
 namespace WONAPI {
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent overload; no Native credit.
+// No original address identified: WON SDK overload
 Random::Random(const RawBuffer& seed) 
 {
-	setSeed(seed);
+	this->setSeed(seed);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent overload; no Native credit.
+// No original address identified: WON SDK overload
 void Random::setSeed(__int64 seed) 
 {
 	if (seed != 0)
-		setSeed(longToByteArray(seed));
+		this->setSeed(this->longToByteArray(seed));
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent overload; no Native credit.
+// No original address identified: WON SDK overload
 void Random::nextBytes(void* data, int theLen)
 {
-	char *bytes = (char*)data;
+	char *bytes = static_cast<char*>(data);
 
 	int numRequested = theLen;
 	int numGot = 0;
@@ -94,19 +98,19 @@ void Random::nextBytes(void* data, int theLen)
 	while (numGot < numRequested) 
 	{
 		// If no more random bytes, make some more
-		if (randomBytes.length() == 0 || randomBytesUsed == randomBytes.length()) 
+		if (this->randomBytes.length() == 0 || this->randomBytesUsed == this->randomBytes.length()) 
 		{
-			digest.update(state);
-			randomBytes = digest.digest(longToByteArray(counter++));
-			randomBytesUsed = 0;
+			this->digest.update(this->state);
+			this->randomBytes = this->digest.digest(this->longToByteArray(this->counter++));
+			this->randomBytesUsed = 0;
 		}
 
-		bytes[numGot++] = randomBytes[randomBytesUsed++];
+		bytes[numGot++] = this->randomBytes[this->randomBytesUsed++];
 	}
 	
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent overload; no Native credit.
+// No original address identified: WON SDK overload
 unsigned int Random::next(int numBits) 
 {
 	int numBytes = (numBits+7)/8;
@@ -114,7 +118,7 @@ unsigned int Random::next(int numBits)
 	
 	unsigned int next = 0;
 
-	nextBytes(b);
+	this->nextBytes(b);
 	for (int i=0; i<numBytes; i++)
 		next = (next << 8) + (b[i] & 0xFF);
 

@@ -1,4 +1,4 @@
-// Complete existing SDK widget owners moved from CrossPromotionButton.cpp; no duplicate class or field/lifetime change.
+// Image buttons with a caption; CrossPromotionButton shows the cross-promotion image and opens its link
 #ifndef EE_WONAPI_WONLOBBYCROSSPROMOTION_H
 #define EE_WONAPI_WONLOBBYCROSSPROMOTION_H
 #include "ee/wonapi/WONLobbyResource.h"
@@ -9,20 +9,20 @@ class ImageTextButton : public ImageButton {
 public:
     ImageTextButton(const GUIString& = "");
     virtual void Paint(Graphics&);
-    virtual bool VirtualAC();
-    SmartPtr<Font> mFont; //5c
-    GUIString mText; //60
-    GUIString mBrowse; //64
+    virtual bool HandleActivate();
+    SmartPtr<Font> mFont; // 0x5c
+    GUIString mText; // 0x60
+    GUIString mBrowse; // 0x64
 };
 class CrossPromotionButton : public ImageTextButton {
 public:
-    CrossPromotionButton(); //3c96a0 actual complete70 owner
-    void Fn3C98B0(SetCrossPromotionEvent*);
-    void Fn3C9A30(Image*);
+    CrossPromotionButton(); // 0x7c96a0; object size 0x70
+    void HandleSetCrossPromotion(SetCrossPromotionEvent*);
+    void SetDefaultImage(Image*);
     virtual void HandleComponentEvent(ComponentEvent*);
-    SmartPtr<Image> mDefaultImage; //68
-    void SetDefaultBrowse(const GUIString& inBrowse) { mDefaultBrowse=inBrowse; }
-    GUIString mDefaultBrowse; //6c
+    SmartPtr<Image> mDefaultImage; // 0x68
+    void SetDefaultBrowse(const GUIString& inBrowse) { this->mDefaultBrowse=inBrowse; }
+    GUIString mDefaultBrowse; // 0x6c
 };
 }
 #endif

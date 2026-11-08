@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// Constructors of the skinned simple button and scroll thumb (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,18 +14,18 @@
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 #include "ee/wonapi/WONLobbySkinFrame.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x00717990 (113B genuine declared SDK simple button constructor)
+// Creates a skinned simple button: unscaled image, repaints on mouse-over, no mouse-down check (emitted at 0x00717990)
 WONSimpleButton::WONSimpleButton()
 {
-    mScaleImage=false;
-    mCheckMouseButtonDown=false;
-    Fn2F3370(1,true); //actual ButtonFlag_InvalidateOnMouseOver value1, genuine SetButtonFlags provider
+    this->mScaleImage=false;
+    this->mCheckMouseButtonDown=false;
+    this->SetButtonFlags(1,true); // ButtonFlag_InvalidateOnMouseOver = 1
 }
-// SUPPORT-ONLY: EXE 0x007194a0 (26B genuine declared SDK thumb constructor)
+// Creates a skinned scroll thumb that checks the mouse-down state and scales its image (emitted at 0x007194a0)
 WONScrollThumb::WONScrollThumb()
 {
-    SetCheckMouseButtonDown(true);
-    SetScaleImage(true);
+    this->SetCheckMouseButtonDown(true);
+    this->SetScaleImage(true);
 }
 }
 

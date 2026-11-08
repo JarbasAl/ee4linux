@@ -3,13 +3,12 @@
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 #include "ee/wonapi/WONLobbyMSSkinImage.h"
 namespace WONAPI {
-// Actual80 borrowed descendants: ButtonConfig7c +raw own-control pointer7c.
-// No config/control new, constructor/copy/lifetime/vtable allocation authority.
+// Config classes (0x80 bytes): ButtonConfig (0x7c) + a raw pointer to the control at +0x7c.
 class WONSimpleButtonConfig : public ButtonConfig {
 public:
-    static ComponentConfig* CfgFactory(); //3969c0 genuine SDK external API; call-only
-    virtual bool Virtual24(const std::string&); //3974e0 actual24
-    virtual void Virtual34(Component*); //396a20 sharedoriginal SetComponent
+    static ComponentConfig* CfgFactory(); // at 0x007969c0
+    virtual bool Virtual24(const std::string&); // slot 0x24, at 0x007974e0
+    virtual void SetComponent(Component*); // at 0x00796a20 (shared body)
 protected:
     WONSimpleButton* mButton; //7c
     void HandleButtonState(); //3971c0
@@ -17,15 +16,14 @@ protected:
 };
 class WONButtonConfig : public ButtonConfig {
 public:
-    static ComponentConfig* CfgFactory(); //396a30 genuine SDK external API; call-only
-    virtual bool Virtual24(const std::string&); //397aa0 actual24
-    virtual void Virtual34(Component*); //396a20 genuine sharedoriginal
+    static ComponentConfig* CfgFactory(); // at 0x00796a30
+    virtual bool Virtual24(const std::string&); // slot 0x24, at 0x00797aa0
+    virtual void SetComponent(Component*); // at 0x00796a20 (shared body)
 protected:
     WONButton* mButton; //7c
     void HandleSetButtonState(); //397740
 };
 }
-// Genuine original SDK file-static owner566af0; reference declaration only.
-// No replacement definition, initialization or new source-owned state.
+// The original's file-static skin at 0x00966af0 (declaration only).
 extern WONAPI::SmartPtr<WONAPI::WONSkin> gSkin;
 #endif

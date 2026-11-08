@@ -11,91 +11,100 @@
 #include "ee/wonapi/WONLobbyDialogs.h"
 namespace WONAPI {
 // FUNCTION: WON 0x7f63e0
+// Creates the create-game dialog with no game type chosen
 CreateGameDialog::CreateGameDialog() : mGameType(0) {}
 // FUNCTION: WON 0x7f6450
+// Destroys the create-game dialog (members only)
 CreateGameDialog::~CreateGameDialog() {}
 // FUNCTION: WON 0x7f6600
+// Finds the name, skill, password, access radio and create controls in the layout
 void CreateGameDialog::InitComponent(ComponentInit& inInit)
 {
-    if (inInit.mType == 2) {
-        ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(aConfig, mNameInput, "GameNameInput", __FILE__, 34);
-        SafeGetComponent(aConfig, mSkillCombo, "SkillCombo", __FILE__, 35);
-        SafeGetComponent(aConfig, mPasswordInput, "PasswordInput", __FILE__, 36);
-        SafeGetComponent(aConfig, mPasswordLabel, "PasswordLabel", __FILE__, 37);
-        SafeGetComponent(aConfig, mOpenToAllRadio, "OpenToAllRadio", __FILE__, 38);
-        SafeGetComponent(aConfig, mPasswordRadio, "PasswordRadio", __FILE__, 39);
-        SafeGetComponent(aConfig, mInviteOnlyRadio, "InviteOnlyRadio", __FILE__, 40);
-        SafeGetComponent(aConfig, mAskToJoinRadio, "AskToJoinRadio", __FILE__, 41);
-        SafeGetComponent(aConfig, mCreateButton, "CreateButton", __FILE__, 42);
-    }
+    if (inInit.mType != 2)
+        return;
+    ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(aConfig, this->mNameInput, "GameNameInput", __FILE__, 34);
+    SafeGetComponent(aConfig, this->mSkillCombo, "SkillCombo", __FILE__, 35);
+    SafeGetComponent(aConfig, this->mPasswordInput, "PasswordInput", __FILE__, 36);
+    SafeGetComponent(aConfig, this->mPasswordLabel, "PasswordLabel", __FILE__, 37);
+    SafeGetComponent(aConfig, this->mOpenToAllRadio, "OpenToAllRadio", __FILE__, 38);
+    SafeGetComponent(aConfig, this->mPasswordRadio, "PasswordRadio", __FILE__, 39);
+    SafeGetComponent(aConfig, this->mInviteOnlyRadio, "InviteOnlyRadio", __FILE__, 40);
+    SafeGetComponent(aConfig, this->mAskToJoinRadio, "AskToJoinRadio", __FILE__, 41);
+    SafeGetComponent(aConfig, this->mCreateButton, "CreateButton", __FILE__, 42);
 }
 // FUNCTION: WON 0x7f6710
+// Focuses the game name; when asked, clears the form back to an open game of the first skill level
 void CreateGameDialog::Reset(bool inClear)
 {
-    mNameInput->Fn2F5890();
+    this->mNameInput->RequestFocus();
     if (inClear) {
-        mOpenToAllRadio->SetCheck(true, false);
-        mSkillCombo->SetSelItem(0, false);
-        mNameInput->Clear(false);
-        mPasswordInput->Clear(false);
-        UpdatePasswordVisibility();
+        this->mOpenToAllRadio->SetCheck(true, false);
+        this->mSkillCombo->SetSelItem(0, false);
+        this->mNameInput->Clear(false);
+        this->mPasswordInput->Clear(false);
+        this->UpdatePasswordVisibility();
     }
-    CheckInput();
+    this->CheckInput();
 }
 // FUNCTION: WON 0x7f6770
+// Sets the game type; invite-only and ask-to-join exist only for Internet games (else open to all)
 void CreateGameDialog::SetGameType(int inType)
 {
-    mGameType = inType;
+    this->mGameType = inType;
     bool aInternet = inType == 2;
-    if (mInviteOnlyRadio->IsChecked() || mAskToJoinRadio->IsChecked())
-        mOpenToAllRadio->SetCheck(true, false);
-    mInviteOnlyRadio->SetVisible(aInternet);
-    mAskToJoinRadio->SetVisible(aInternet);
+    if (this->mInviteOnlyRadio->IsChecked() || this->mAskToJoinRadio->IsChecked())
+        this->mOpenToAllRadio->SetCheck(true, false);
+    this->mInviteOnlyRadio->SetVisible(aInternet);
+    this->mAskToJoinRadio->SetVisible(aInternet);
 }
 // FUNCTION: WON 0x7f67e0
+// Creates a lobby game from the form: name, password if chosen, access mode and skill level
 SmartPtr<LobbyGame> CreateGameDialog::GetGame()
 {
-    SmartPtr<LobbyGame> aGame(LobbyGame::CreateGame(static_cast<LobbyGameType>(mGameType)));
-    aGame->SetName(mNameInput->GetText());
-    if (mPasswordRadio->IsChecked())
-        aGame->SetPassword(mPasswordInput->GetText());
-    aGame->SetAskToJoin(mAskToJoinRadio->IsChecked());
-    aGame->SetInviteOnly(mInviteOnlyRadio->IsChecked());
-    int aSkill = mSkillCombo->GetSelItem();
+    SmartPtr<LobbyGame> aGame(LobbyGame::CreateGame(static_cast<LobbyGameType>(this->mGameType)));
+    aGame->SetName(this->mNameInput->GetText());
+    if (this->mPasswordRadio->IsChecked())
+        aGame->SetPassword(this->mPasswordInput->GetText());
+    aGame->SetAskToJoin(this->mAskToJoinRadio->IsChecked());
+    aGame->SetInviteOnly(this->mInviteOnlyRadio->IsChecked());
+    int aSkill = this->mSkillCombo->GetSelItem();
     if (aSkill < 0 || aSkill >= 5)
         aSkill = 0;
     aGame->SetSkill(aSkill);
     return aGame;
 }
 // FUNCTION: WON 0x7f6920
+// Enables the create button only with a game name and, when shown, a password
 void CreateGameDialog::CheckInput()
 {
     bool aEnable = true;
-    if (mNameInput->GetText().length() == 0)
+    if (this->mNameInput->GetText().length() == 0)
         aEnable = false;
-    else if (mPasswordInput->IsVisible() && mPasswordInput->mText.length() == 0)
+    else if (this->mPasswordInput->IsVisible() && this->mPasswordInput->mText.length() == 0)
         aEnable = false;
-    mCreateButton->SetEnabled(aEnable);
+    this->mCreateButton->SetEnabled(aEnable);
 }
 // FUNCTION: WON 0x7f6980
+// Shows the password field only while the password radio is checked
 void CreateGameDialog::UpdatePasswordVisibility()
 {
-    mPasswordInput->SetVisible(mPasswordRadio->mChecked);
-    mPasswordLabel->SetVisible(mPasswordRadio->mChecked);
-    CheckInput();
+    this->mPasswordInput->SetVisible(this->mPasswordRadio->mChecked);
+    this->mPasswordLabel->SetVisible(this->mPasswordRadio->mChecked);
+    this->CheckInput();
 }
 // FUNCTION: WON 0x7f69d0
+// Updates the password field on a button press and rechecks the form on text or skill changes
 void CreateGameDialog::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if (inEvent->mType == 15)
-        UpdatePasswordVisibility();
-    else if (inEvent->mType == 21) {
-        CheckInput();
+    if (inEvent->mType == ComponentEvent_ButtonPressed)
+        this->UpdatePasswordVisibility();
+    else if (inEvent->mType == ComponentEvent_InputTextChanged) {
+        this->CheckInput();
         return;
     }
-    else if (inEvent->mType == 27 && inEvent->mComponent == mSkillCombo.get()) {
-        CheckInput();
+    else if (inEvent->mType == ComponentEvent_ComboSelChanged && inEvent->mComponent == this->mSkillCombo.get()) {
+        this->CheckInput();
         return;
     }
     Dialog::HandleComponentEvent(inEvent);

@@ -1,4 +1,4 @@
-// Genuine complete native Table140 construction, lifecycle support only.
+// Table construction (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,11 +11,11 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x0070f9d0
+// Creates a table showing the given contents, with no border padding (the constructor at 0x0070f9d0)
 Table::Table(LineSegment* contents)
 {
-    mContents=contents;
-    SetBorderPadding(0,0,0,0);
+    this->mContents=contents;
+    this->SetBorderPadding(0,0,0,0);
 }
 }
 

@@ -1,7 +1,6 @@
-// C:\EEX\Empire Earth\WONAPI\WONConfig\ConfigParser.cpp (RECONSTRUCTION).
-// Reference/token/file subset of original ConfigParser family; exact filename/TU boundary provisional.
-// Full target storage0x88=136B; native ctor/dtor now proved and implemented below.
-// Only independently proved nested32 define-map construction is admitted for the additional define behaviors.
+// C:\EEX\Empire Earth\WONAPI\WONConfig\ConfigParser.cpp
+// ConfigParser (0x88 bytes): config file reader with comments, pushback, defines and group defines
+// (file grouping inferred)
 
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
@@ -18,222 +17,230 @@ namespace WONAPI {
 
 int ConfigParser::mLineCount = 0;
 // FUNCTION: WON 0x007b1f90
-// Original3b1f90/32, inherits only flags when parent is nonnull.
+// Sets the parent parser and inherits its include-path and warnings-as-errors flags
 void ConfigParser::SetParent(ConfigParser* inParent)
 {
-    mParent = inParent;
+    this->mParent = inParent;
     if (inParent != NULL) {
-        mIgnorePathOnIncludeFile = inParent->mIgnorePathOnIncludeFile;
-        mWarningsAsErrors = inParent->mWarningsAsErrors;
+        this->mIgnorePathOnIncludeFile = inParent->mIgnorePathOnIncludeFile;
+        this->mWarningsAsErrors = inParent->mWarningsAsErrors;
     }
 }
 // FUNCTION: WON 0x007b32b0
+// Returns true when the file is exhausted and no character is pushed back
 bool ConfigParser::EndOfFile()
 {
-    if(!mFileReader.EndOfFile()) return false;
-    return mBackStr.empty();
+    if(!this->mFileReader.EndOfFile()) return false;
+    return this->mBackStr.empty();
 }
 // FUNCTION: WON 0x007b32d0
-// Original3b32d0/469. CR recursively normalizes through GetChar, including its original CR-CR behavior.
+// Reads the next character (pushback first, 16-bit in Unicode files), turning CR LF and lone CR into LF
+// A carriage return reads the next character through GetChar recursively (each one counts a line)
 int ConfigParser::GetChar()
 {
     int ch;
-    if (mBackStr.empty()) {
-        if (mIsUnicode) {
-            ch = mFileReader.TryReadByte();
-            ch |= mFileReader.TryReadByte() << 8;
+    if (this->mBackStr.empty()) {
+        if (this->mIsUnicode) {
+            ch = this->mFileReader.TryReadByte();
+            ch |= this->mFileReader.TryReadByte() << 8;
         } else {
-            ch = mFileReader.TryReadByte();
+            ch = this->mFileReader.TryReadByte();
         }
     } else {
-        ch = mBackStr[mBackStr.length() - 1];
-        mBackStr.resize(mBackStr.length() - 1);
+        ch = this->mBackStr[this->mBackStr.length() - 1];
+        this->mBackStr.resize(this->mBackStr.length() - 1);
     }
     if (ch == '\r') {
-        int next = GetChar();
+        int next = this->GetChar();
         if (next != '\n') {
-            UngetChar(next);
-            ++mLineCount;
-            ++mLineNum;
+            this->UngetChar(next);
+            ++ConfigParser::mLineCount;
+            ++this->mLineNum;
         }
         return '\n';
     }
     if (ch == '\n') {
-        ++mLineCount;
-        ++mLineNum;
+        ++ConfigParser::mLineCount;
+        ++this->mLineNum;
     }
     return ch;
 }
 // FUNCTION: WON 0x007b34b0
-// Original3b34b0/56. Closed-reader gate remains even if back-string was populated manually.
+// Returns the next character without consuming it, -1 at the end or with no file open
+// Returns -1 with no file open even when characters are pushed back
 int ConfigParser::PeekChar()
 {
-    if ((mFileReader.mFile != NULL || mFileReader.mBuffer != NULL) && !EndOfFile()) {
-        int ch = GetChar();
-        UngetChar(ch);
+    if ((this->mFileReader.mFile != NULL || this->mFileReader.mBuffer != NULL) && !this->EndOfFile()) {
+        int ch = this->GetChar();
+        this->UngetChar(ch);
         return ch;
     }
     return -1;
 }
 // FUNCTION: WON 0x007b34f0
-// Original3b34f0/230. EOF is not pushed; line counters are decremented before append can throw.
+// Pushes a character back (EOF is ignored), uncounting a newline
+// The line counters drop before the append that may throw
 void ConfigParser::UngetChar(int inChar)
 {
     if (inChar == -1) return;
     if (inChar == '\n') {
-        --mLineNum;
-        --mLineCount;
+        --this->mLineNum;
+        --ConfigParser::mLineCount;
     }
-    mBackStr += (wchar_t)inChar;
+    this->mBackStr += (wchar_t)inChar;
 }
 // FUNCTION: WON 0x007b35e0
-// Original3b35e0/51; plain signed-char promotion preserved before wide back-string insertion.
+// Pushes a string back so it is read again in order
+// Characters are sign-extended before going into the wide pushback string
 void ConfigParser::UngetStr(const std::string& inString)
 {
     for (int i = (int)inString.length() - 1; i >= 0; --i)
-        UngetChar(inString[i]);
+        this->UngetChar(inString[i]);
 }
 // FUNCTION: WON 0x007b3c50
-// Original3b3c50/133; comments include #, // and /* */, with two-character pushback for noncomment slash.
+// Skips whitespace and #, // and /* */ comments
+// A slash that starts no comment is pushed back with the character after it
 void ConfigParser::SkipWhitespace()
 {
-    while (!EndOfFile()) {
-        int ch = GetChar();
+    while (!this->EndOfFile()) {
+        int ch = this->GetChar();
         if ((unsigned int)ch < 256 && isspace(ch))
             continue;
         if (ch == '#') {
-            SkipLine();
+            this->SkipLine();
             continue;
         }
         if (ch == '/') {
-            int next = GetChar();
+            int next = this->GetChar();
             if (next == '/') {
-                SkipLine();
+                this->SkipLine();
                 continue;
             }
             if (next == '*') {
-                SkipBlockComment();
+                this->SkipBlockComment();
                 continue;
             }
-            UngetChar(next);
+            this->UngetChar(next);
         }
-        UngetChar(ch);
+        this->UngetChar(ch);
         return;
     }
 }
 // FUNCTION: WON 0x007b3ce0
-// Original3b3ce0/37; consumes terminating newline rather than pushing it back.
+// Skips to the end of the line, consuming the newline
 void ConfigParser::SkipLine()
 {
-    while (!EndOfFile())
-        if (GetChar() == '\n') return;
+    while (!this->EndOfFile())
+        if (this->GetChar() == '\n') return;
 }
 // FUNCTION: WON 0x007b3d10
-// Original3b3d10/51; only immediately preceding star closes the comment.
+// Skips to just past the closing */ of a block comment
 void ConfigParser::SkipBlockComment()
 {
     bool star = false;
-    while (!EndOfFile()) {
-        int ch = GetChar();
+    while (!this->EndOfFile()) {
+        int ch = this->GetChar();
         if (star && ch == '/') return;
         star = ch == '*';
     }
 }
 // FUNCTION: WON 0x007b1fb0
-// Original3b1fb0/307; append policy and temporary lifetime are deliberate.
+// Records a parse error with file and line, unless one is already set and append is off
 void ConfigParser::SetError(const std::string& inError, bool inAppend)
 {
-    if (!mAbortReason.empty() && !inAppend) return;
+    if (!this->mAbortReason.empty() && !inAppend) return;
     char location[1024];
-    sprintf(location, " (%s:%d)", mFileNameAndPath.c_str(), mLineNum);
-    mAbortReason += inError + location;
+    sprintf(location, " (%s:%d)", this->mFileNameAndPath.c_str(), this->mLineNum);
+    this->mAbortReason += inError + location;
 }
 // FUNCTION: WON 0x007b20f0
-// Original3b20f0/541; warnings-as-errors still appends a warning after setting the error.
+// Appends a warning line with file and line (also the error when warnings are errors), unless aborted
 void ConfigParser::AddWarning(const std::string& inWarning)
 {
-    if (!mAbortReason.empty()) return;
-    if (mWarningsAsErrors) SetError(inWarning, false);
+    if (!this->mAbortReason.empty()) return;
+    if (this->mWarningsAsErrors) this->SetError(inWarning, false);
     char warning[1024];
-    sprintf(warning, "Warning (%s: %d) - %s\n", mFileNameAndPath.c_str(), mLineNum, inWarning.c_str());
-    mWarnings += warning;
+    sprintf(warning, "Warning (%s: %d) - %s\n", this->mFileNameAndPath.c_str(), this->mLineNum, inWarning.c_str());
+    this->mWarnings += warning;
 }
 // FUNCTION: WON 0x007b2310
-// Original3b2310/265; append without clearing, including self-copy behavior from basic_string.
+// Appends another parser's warnings to this one's
 void ConfigParser::CopyWarnings(ConfigParser& inSource)
 {
-    mWarnings += inSource.mWarnings;
+    this->mWarnings += inSource.mWarnings;
 }
 // FUNCTION: WON 0x007b2420
-// Original3b2420/232; lazy error construction makes this more than a passive accessor.
+// Returns the parse error, first setting "Parse aborted." when there is none
 const std::string& ConfigParser::GetAbortReason()
 {
-    if (mAbortReason.empty()) SetError("Parse aborted.", false);
-    return mAbortReason;
+    if (this->mAbortReason.empty()) this->SetError("Parse aborted.", false);
+    return this->mAbortReason;
 }
 // FUNCTION: WON 0x007b3840
-// Original3b3840/598; reference record layout actual0pos/4path/14line/18back, size28hex.
+// Saves the read position, file name, line number and pushback for a later SetState
+// ConfigParserState (0x28 bytes): position +0, path +4, line +0x14, pushback +0x18
 void ConfigParser::GetState(ConfigParserState& outState)
 {
-    outState.mBackStr = mBackStr;
-    outState.mFileNameAndPath = mFileNameAndPath;
-    outState.mFilePos = mFileReader.pos();
-    outState.mLineNum = mLineNum;
+    outState.mBackStr = this->mBackStr;
+    outState.mFileNameAndPath = this->mFileNameAndPath;
+    outState.mFilePos = this->mFileReader.pos();
+    outState.mLineNum = this->mLineNum;
 }
 // FUNCTION: WON 0x007b3aa0
-// Original3b3aa0/427; failed reopen is not rolled back; line assignment precedes back-string copy.
+// Returns to a saved state, reopening its file when needed; false when the reopen fails
+// A failed reopen is not rolled back
 bool ConfigParser::SetState(const ConfigParserState& inState)
 {
-    if (!mFileReader.IsOpen() ||
-        inState.mFileNameAndPath != mFileNameAndPath) {
-        if (!OpenFile(inState.mFileNameAndPath)) return false;
+    if (!this->mFileReader.IsOpen() ||
+        inState.mFileNameAndPath != this->mFileNameAndPath) {
+        if (!this->OpenFile(inState.mFileNameAndPath)) return false;
     }
-    mFileReader.SetPos(inState.mFilePos);
-    mLineNum = inState.mLineNum;
-    mBackStr = inState.mBackStr;
+    this->mFileReader.SetPos(inState.mFilePos);
+    this->mLineNum = inState.mLineNum;
+    this->mBackStr = inState.mBackStr;
     return true;
 }
-// Original3b3830/8, pure forwarding support0.
 // FUNCTION: WON 0x007b3830
+// Closes the config file
 void ConfigParser::CloseFile()
 {
-    mFileReader.Close();
+    this->mFileReader.Close();
 }
 // FUNCTION: WON 0x007b3620
+// Opens a config file (UTF-16 when it starts with FF FE), loads it into memory and notes its directory
 
 bool ConfigParser::OpenFile(const std::string& inPath)
 {
-    CloseFile();
-    mLineNum = 1;
-    mIsUnicode = false;
-    mBackStr.erase();
-    mFileNameAndPath = inPath;
-    std::string::size_type sep = mFileNameAndPath.rfind('/');
-    if (sep == std::string::npos) sep = mFileNameAndPath.rfind('\\');
-    if (sep == std::string::npos) mFilePath = "";
-    else mFilePath = mFileNameAndPath.substr(0, sep + 1);
-    mFileReader.OpenText(inPath.c_str());
-    if (mFileReader.IsOpen()) {
-        int first = mFileReader.TryReadByte();
-        int second = mFileReader.TryReadByte();
-        mFileReader.TryReadByte();
-        int fourth = mFileReader.TryReadByte();
+    this->CloseFile();
+    this->mLineNum = 1;
+    this->mIsUnicode = false;
+    this->mBackStr.erase();
+    this->mFileNameAndPath = inPath;
+    std::string::size_type sep = this->mFileNameAndPath.rfind('/');
+    if (sep == std::string::npos) sep = this->mFileNameAndPath.rfind('\\');
+    if (sep == std::string::npos) this->mFilePath = "";
+    else this->mFilePath = this->mFileNameAndPath.substr(0, sep + 1);
+    this->mFileReader.OpenText(inPath.c_str());
+    if (this->mFileReader.IsOpen()) {
+        int first = this->mFileReader.TryReadByte();
+        int second = this->mFileReader.TryReadByte();
+        this->mFileReader.TryReadByte();
+        int fourth = this->mFileReader.TryReadByte();
         if (first == 0xff && second == 0xfe && fourth == 0) {
-            mFileReader.Open(inPath.c_str());
-            mFileReader.SkipBytes(2);
-            mIsUnicode = true;
+            this->mFileReader.Open(inPath.c_str());
+            this->mFileReader.SkipBytes(2);
+            this->mIsUnicode = true;
         } else {
-            mFileReader.Rewind();
+            this->mFileReader.Rewind();
         }
     }
-    mFileReader.ReadIntoMemory();
-    return mFileReader.IsOpen();
+    this->mFileReader.ReadIntoMemory();
+    return this->mFileReader.IsOpen();
 }
-// Additional original ConfigParser define family; complete nested32 type independently reviewed.
-// Target differs from archived SDK: narrow map values are std::string, not DefineStruct.
+// Unlike the archived WON SDK, the define map holds std::string values, not DefineStruct
 
 // FUNCTION: WON 0x007b2510
-// Original3b2510/158, actual null SmartPtr temporary and vector insertion.
+// Opens a new (empty) define scope on the root parser
 void ConfigParser::PushDefineStack()
 {
     ConfigParser* root=this;
@@ -241,7 +248,7 @@ void ConfigParser::PushDefineStack()
     root->mDefineStack.push_back(NULL);
 }
 // FUNCTION: WON 0x007b25b0
-// Original3b25b0/93: guard empty stack, erase last owned pointer.
+// Closes the innermost define scope of the root parser, if any
 void ConfigParser::PopDefineStack()
 {
     ConfigParser* root=this;
@@ -249,7 +256,8 @@ void ConfigParser::PopDefineStack()
     if(!root->mDefineStack.empty()) root->mDefineStack.pop_back();
 }
 // FUNCTION: WON 0x007b2610
-// Original3b2610/947; literals retain original misspelling.
+// Adds a define to the innermost scope (REDEFINE replaces); warns about spaces or a redefinition
+// The warning text keeps the original misspelling "Redefintion"
 bool ConfigParser::AddDefine(const std::string& name,const std::string& value,bool redefine)
 {
     ConfigParser* root=this;
@@ -267,7 +275,7 @@ bool ConfigParser::AddDefine(const std::string& name,const std::string& value,bo
     return true;
 }
 // FUNCTION: WON 0x007b2b00
-// Original3b2b00/218. Newest-to-oldest stack search skips null owned pointers.
+// Looks a define up from the innermost scope outwards; returns whether it exists
 bool ConfigParser::GetDefine(const std::string& name,std::string& outValue)
 {
     ConfigParser* root=this;
@@ -284,36 +292,37 @@ bool ConfigParser::GetDefine(const std::string& name,std::string& outValue)
     return false;
 }
 // FUNCTION: WON 0x007b2be0
-// Original3b2be0/320, genuine method (not constructor/helper): narrow temporary then conversion.
+// Looks a define up and returns its value as a wide string
 bool ConfigParser::GetDefine(const std::string& name,std::wstring& outValue)
 {
     std::string value;
-    if(!GetDefine(name,value)) return false;
+    if(!this->GetDefine(name,value)) return false;
     outValue=StringToWString(value);
     return true;
 }
 // FUNCTION: WON 0x007b2d20
-// Original3b2d20/935. Local state exists even when caller supplies one or parent handles it.
+// Records a named group at the given (or current) parser state in the root's innermost scope
+// The local state is constructed even when the caller supplies one or a parent takes the call
 bool ConfigParser::AddGroupDefine(const std::string& name,ConfigParserState* state)
 {
     if(name.find(' ')!=std::string::npos) {
-        AddWarning("Not allowed to have spaces in define names.");
+        this->AddWarning("Not allowed to have spaces in define names.");
         return true;
     }
     ConfigParserState localState;
-    if(state==NULL) {GetState(localState);state=&localState;}
-    if(mParent!=NULL) return mParent->AddGroupDefine(name,state);
-    if(mDefineStack.empty()) mDefineStack.push_back(new DefineMapContainer);
-    if(mDefineStack.back().get()==NULL) mDefineStack.back()=new DefineMapContainer;
-    DefineMapContainer::GroupDefineMap& aMap=mDefineStack.back()->mGroupDefineMap;
+    if(state==NULL) {this->GetState(localState);state=&localState;}
+    if(this->mParent!=NULL) return this->mParent->AddGroupDefine(name,state);
+    if(this->mDefineStack.empty()) this->mDefineStack.push_back(new DefineMapContainer);
+    if(this->mDefineStack.back().get()==NULL) this->mDefineStack.back()=new DefineMapContainer;
+    DefineMapContainer::GroupDefineMap& aMap=this->mDefineStack.back()->mGroupDefineMap;
     if(!aMap.insert(DefineMapContainer::GroupDefineMap::value_type(name,*state)).second) {
-        AddWarning("Redefintion of "+name);
+        this->AddWarning("Redefintion of "+name);
         return true;
     }
     return true;
 }
 // FUNCTION: WON 0x007b31a0
-// Original3b31a0/259, explicit state copy order matches original fields0/4/14/18.
+// Looks a group define up from the innermost scope outwards and copies its saved state
 bool ConfigParser::GetGroupDefine(const std::string& name,ConfigParserState& outState)
 {
     ConfigParser* root=this;
@@ -330,42 +339,44 @@ bool ConfigParser::GetGroupDefine(const std::string& name,ConfigParserState& out
     return false;
 }
 
-// Native full ConfigParser136 lifetime, independently proven. Existing Unicode5d remains intentionally uninitialized.
+// The original leaves the Unicode flag (+0x5d) uninitialized
 // FUNCTION: WON 0x007b1d20
+// Creates a parser with no file, no parent and all flags off
 ConfigParser::ConfigParser()
 {
-    mLineNum=0;
-    mParent=NULL;
-    mStopped=false;
-    mWarningsAsErrors=false;
-    mIgnorePathOnIncludeFile=false;
+    this->mLineNum=0;
+    this->mParent=NULL;
+    this->mStopped=false;
+    this->mWarningsAsErrors=false;
+    this->mIgnorePathOnIncludeFile=false;
 }
 // FUNCTION: WON 0x007b1e10
-ConfigParser::~ConfigParser() {CloseFile();}
+// Destroys the parser, closing its file
+ConfigParser::~ConfigParser() {this->CloseFile();}
 
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: compatible same-snapshot reset/pushback APIs, not later DefineStruct storage.
+// No original address identified: WON SDK reset and wide pushback
 void ConfigParser::Reset(void)
 {
 //	mDefineMap.clear();
-	mDefineStack.clear();
-	mAbortReason.erase();
-	mWarnings.erase();
-	mBackStr.erase();
+	this->mDefineStack.clear();
+	this->mAbortReason.erase();
+	this->mWarnings.erase();
+	this->mBackStr.erase();
 
-	mLineNum = 1;
-	mStopped = false;
+	this->mLineNum = 1;
+	this->mStopped = false;
 //	if(mFile)
 //		rewind(mFile);
-	mFileReader.Rewind();
+	this->mFileReader.Rewind();
 }
 
 void ConfigParser::UngetStr(const std::wstring &theStr)
 {
 	for(int i=theStr.length()-1; i>=0; i--)
-		UngetChar(theStr[i]);
+		this->UngetChar(theStr[i]);
 }
 }
 

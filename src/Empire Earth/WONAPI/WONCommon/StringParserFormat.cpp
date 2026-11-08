@@ -13,7 +13,7 @@
 #include "ee/wonapi/WONLobbyParser.h"
 namespace WONAPI {
 
-// SUPPORT-ONLY: native2a5a70 scalar formatting adapter.
+// Same body as StringParser.cpp 0x6a5a70: appends the integer in decimal
 void StringParser::ValueToString(const int& inValue, std::string& outText)
 {
     char aBuffer[50];
@@ -21,20 +21,20 @@ void StringParser::ValueToString(const int& inValue, std::string& outText)
     outText += aBuffer;
 }
 
-// SUPPORT-ONLY: native2a5c40 widens unsigned16 and delegates genuine int overload.
+// Same body as StringParser.cpp 0x6a5c40: widens the 16-bit value and appends it via the int form
 void StringParser::ValueToString(const unsigned short& inValue, std::string& outText)
 {
     int aValue = inValue;
-    ValueToString(aValue, outText);
+    StringParser::ValueToString(aValue, outText);
 }
 
-// SUPPORT-ONLY: native2a5c60 string append adapter.
+// Same body as StringParser.cpp 0x6a5c60: appends the string
 void StringParser::ValueToString(const std::string& inValue, std::string& outText)
 {
     outText += inValue;
 }
 
-// SUPPORT-ONLY: native2a5d70 delegates genuine narrow conversion then appends.
+// Same body as StringParser.cpp 0x6a5d70: appends the wide string converted to narrow
 void StringParser::ValueToString(const std::wstring& inValue, std::string& outText)
 {
     outText += WStringToString(inValue);

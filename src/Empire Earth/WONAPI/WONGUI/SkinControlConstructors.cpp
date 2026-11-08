@@ -1,4 +1,4 @@
-// Genuine SDK skin control constructor completion; support0.
+// Constructors of the skinned header button, scrollbar and tab control (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,25 +14,26 @@
 #include "ee/wonapi/WONLobbySkinListControls.h"
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 #include "ee/wonapi/WONLobbySkinTab.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
-// SUPPORT: EXE 0x007191a0; native115B, actual header button defaults after real WONButton base.
+// Creates a skinned list header button: left-aligned text, 4-pixel padding, never takes focus (emitted at 0x007191a0)
 WONHeaderButton::WONHeaderButton()
 {
-    SetHorzAlign(HorzAlign_Left);
-    mLeftTextPad=mRightTextPad=4;
-    mTopTextPad=mBottomTextPad=4;
-    SetComponentFlags(8,false);
+    this->SetHorzAlign(HorzAlign_Left);
+    this->mLeftTextPad=this->mRightTextPad=4;
+    this->mTopTextPad=this->mBottomTextPad=4;
+    this->SetComponentFlags(ComponentFlag_WantFocus,false);
 }
-// SUPPORT: EXE 0x00719540; native32B, true vertical argument forwarded to full Scrollbar base.
+// Creates an opaque skinned scrollbar, vertical or horizontal (emitted at 0x00719540)
 WONScrollbar::WONScrollbar(bool vertical) : Scrollbar(vertical)
 {
-    mIsTransparent=false;
+    this->mIsTransparent=false;
 }
-// SUPPORT: EXE 0x0071a830; native181B, real TabCtrl, SkinSP, Frame and BackSP automatic construction.
+// Creates an opaque skinned tab control using the given skin (emitted at 0x0071a830)
 WONTabCtrl::WONTabCtrl(WONSkin* skin)
 {
-    mSkin=skin;
-    mIsTransparent=false;
+    this->mSkin=skin;
+    this->mIsTransparent=false;
 }
 }
 

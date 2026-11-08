@@ -1,4 +1,4 @@
-// Actual MS control configuration dispatch on original-owned borrowed controls.
+// Resource-file instructions for the other Windows-style controls (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,60 +12,69 @@
 #include "ee/wonapi/WONLobbyMSExtraConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0078f810
+// Handles DRAWFRAME for a combo box; other keys go to the combo box config
 bool MSComboBoxConfig::Virtual24(const std::string& key)
 {
-    if(key=="DRAWFRAME") { bool on=Fn3837F0(); mMSComboBox->SetDrawFrame(on); }
+    if(key=="DRAWFRAME") { bool on=this->ReadBool(); this->mMSComboBox->SetDrawFrame(on); }
     else return ComboBoxConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x0078f880
+// Handles TRANSPARENT for a scrollbar; other keys go to the scrollbar config
 bool MSScrollbarConfig::Virtual24(const std::string& key)
 {
-    if(key=="TRANSPARENT") mMSScrollbar->SetTransparent(Fn3837F0());
+    if(key=="TRANSPARENT") this->mMSScrollbar->SetTransparent(this->ReadBool());
     else return ScrollbarConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x0078fa40
+// Handles TITLE and CONTAINEDCOMPONENT for an etched frame group; other keys go to the container config
 bool MSEtchedFrameGroupConfig::Virtual24(const std::string& key)
 {
-    if(key=="TITLE") mFrame->SetLabelText(Fn3842F0(false));
-    else if(key=="CONTAINEDCOMPONENT") mFrame->AddContainedComponent(ReadComponent());
+    if(key=="TITLE") this->mFrame->SetLabelText(this->ReadString(false));
+    else if(key=="CONTAINEDCOMPONENT") this->mFrame->AddContainedComponent(this->ReadComponent());
     else return ContainerConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x0078fb30
+// Handles TRANSPARENT and ADDSTANDARDTAB (title, container) for a tab control; other keys go to the
+// tab control config
 bool MSTabCtrlConfig::Virtual24(const std::string& key)
 {
-    if(key=="TRANSPARENT") mMSTabCtrl->SetTransparent(Fn3837F0());
+    if(key=="TRANSPARENT") this->mMSTabCtrl->SetTransparent(this->ReadBool());
     else if(key=="ADDSTANDARDTAB") {
-        GUIString text=Fn3842F0(false); EnsureComma();
-        Container* container=SafeConfigGetComponent<Container*>(ReadComponent(),"Container");
-        mMSTabCtrl->AddStandardTab(text,container);
+        GUIString text=this->ReadString(false); this->EnsureComma();
+        Container* container=SafeConfigGetComponent<Container*>(this->ReadComponent(),"Container");
+        this->mMSTabCtrl->AddStandardTab(text,container);
     } else return TabCtrlConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x0078fd30
+// Handles DRAWFRAME, DRAW3DFRAME and TRANSPARENT for a scroll container; other keys go to the
+// scroller config
 bool MSScrollContainerConfig::Virtual24(const std::string& key)
 {
-    if(key=="DRAWFRAME") mScrollContainer->SetDrawFrame(Fn3837F0());
-    else if(key=="DRAW3DFRAME") mScrollContainer->SetDraw3DFrame(Fn3837F0());
-    else if(key=="TRANSPARENT") { bool on=Fn3837F0(); mScrollContainer->SetTransparent(on); }
+    if(key=="DRAWFRAME") this->mScrollContainer->SetDrawFrame(this->ReadBool());
+    else if(key=="DRAW3DFRAME") this->mScrollContainer->SetDraw3DFrame(this->ReadBool());
+    else if(key=="TRANSPARENT") { bool on=this->ReadBool(); this->mScrollContainer->SetTransparent(on); }
     else return ScrollbarScrollerConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x0078ff00
+// Handles SETSTANDARDCOLUMN (column, title) for a list header; other keys go to the header config
 bool MSHeaderControlConfig::Virtual24(const std::string& key)
 {
     if(key=="SETSTANDARDCOLUMN") {
-        int column=ReadInt(); EnsureComma(); GUIString title=Fn3842F0(false);
-        mMSHeader->SetColumn(column,title);
+        int column=this->ReadInt(); this->EnsureComma(); GUIString title=this->ReadString(false);
+        this->mMSHeader->SetColumn(column,title);
     } else return MultiListHeaderConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x0078ffd0
+// Handles HEADERHEIGHT for a list control; other keys go to the scroll container config
 bool MSListCtrlConfig::Virtual24(const std::string& key)
 {
-    if(key=="HEADERHEIGHT") { int height=ReadInt(); mListCtrl->SetHeaderHeight(height); }
+    if(key=="HEADERHEIGHT") { int height=this->ReadInt(); this->mListCtrl->SetHeaderHeight(height); }
     else return MSScrollContainerConfig::Virtual24(key);
     return true;
 }

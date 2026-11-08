@@ -1,4 +1,4 @@
-// Complete original-backed GUI values; source-only, no runtime substitution.
+// The shared empty GUIStringData
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,11 +9,11 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
-// Original pooled UTF16 provider, already retained by current EEWonNet.cpp;
-// declaration only, no new global allocation or constant-value assumption.
+// Empty wide string defined in EEWonNet.cpp
 extern unsigned short gEmptyWideString[];
 namespace WONAPI {
 // FUNCTION: WON 0x00728450
+// Returns the shared empty string data, creating it on first use
 GUIStringData* GetEmptyGUIStringData()
 {
     static SmartPtr<GUIStringData> aNullStr=new GUIStringData(gEmptyWideString);

@@ -1,5 +1,5 @@
-// C:\EEX\Empire Earth\WONAPI\WONCommon\WONFile.cpp (RECONSTRUCTION).
-// Original WONFile family2a7610..2a8106; exact filename/TU boundaries provisional.
+// C:\EEX\Empire Earth\WONAPI\WONCommon\WONFile.cpp
+// WONFile 0x6a7610..0x6a8106: a file path with cached path parts and stat info (file grouping inferred)
 
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
@@ -15,155 +15,174 @@
 #include "ee/wonapi/WONLobbyResource.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006a7610
+// Creates a file object for the given path
 WONFile::WONFile(const std::string& inPath)
 {
-    SetFilePath(inPath);
+    this->SetFilePath(inPath);
 }
 // FUNCTION: WON 0x006a76c0
+// Clears the path and invalidates every cached path part and stat value
 void WONFile::Reset()
 {
-    mPath.erase();
-    mS10.erase();
-    mFileName.erase();
-    mS40.erase();
-    mS50.erase();
-    mB6B = false;
-    mB6C = false;
-    mB6D = false;
-    mStatValid = false;
-    mB6F = false;
-    mB6A = false;
+    this->mPath.erase();
+    this->mFileDirectory.erase();
+    this->mFileName.erase();
+    this->mFileExtension.erase();
+    this->mFullPath.erase();
+    this->mFileDirectoryValid = false;
+    this->mFileNameValid = false;
+    this->mFileExtensionValid = false;
+    this->mStatValid = false;
+    this->mFullPathValid = false;
+    this->mIsDir = false;
 }
 // FUNCTION: WON 0x006a7840
+// Sets the path, converting forward slashes to backslashes
 void WONFile::SetFilePath(const std::string& inPath)
 {
-    Reset();
-    mPath = inPath;
-    for (std::string::size_type i = 0; i < mPath.length(); ++i)
-        if (mPath[i] == '/')
-            mPath[i] = '\\';
+    this->Reset();
+    this->mPath = inPath;
+    for (std::string::size_type i = 0; i < this->mPath.length(); ++i)
+        if (this->mPath[i] == '/')
+            this->mPath[i] = '\\';
 }
 // FUNCTION: WON 0x006a7960
+// Deletes the file, first clearing its read-only flag when asked; returns success
 bool WONFile::Delete(bool inEvenIfReadOnly)
 {
     if (inEvenIfReadOnly) {
-        if (!mStatValid)
-            CalcFileInfo();
-        if (mB69)
-            SetReadOnly(false);
+        if (!this->mStatValid)
+            this->CalcFileInfo();
+        if (this->mIsReadOnly)
+            this->SetReadOnly(false);
     }
-    return remove(mPath.c_str()) == 0;
+    return remove(this->mPath.c_str()) == 0;
 }
 // FUNCTION: WON 0x006a79b0
+// Sets or clears the file's read-only flag; returns success
 bool WONFile::SetReadOnly(bool inReadOnly)
 {
-    return _chmod(mPath.c_str(), inReadOnly ? 0x100 : 0x180) == 0;
+    return _chmod(this->mPath.c_str(), inReadOnly ? 0x100 : 0x180) == 0;
 }
 
 // FUNCTION: WON 0x006a79e0
-const std::string& WONFile::GetFilePath() { return mPath; }
+// Returns the path as given
+const std::string& WONFile::GetFilePath() { return this->mPath; }
 // FUNCTION: WON 0x006a79f0
+// Stats the file and caches existence, read-only flag, size, modify time and directory flag
 void WONFile::CalcFileInfo()
 {
     struct _stat info;
-    mStatValid = true;
-    if (_stat(mPath.c_str(), &info) == 0) {
-        mB68 = true;
-        mB69 = (info.st_mode & 2) == 0;
-        mSize = info.st_size;
-        mModifyTime = info.st_mtime;
-        mB6A = (info.st_mode & 0x4000) != 0;
+    this->mStatValid = true;
+    if (_stat(this->mPath.c_str(), &info) == 0) {
+        this->mExists = true;
+        this->mIsReadOnly = (info.st_mode & 2) == 0;
+        this->mSize = info.st_size;
+        this->mModifyTime = info.st_mtime;
+        this->mIsDir = (info.st_mode & 0x4000) != 0;
     } else {
-        mSize = 0;
-        mModifyTime = 0;
-        mB68 = false;
-        mB69 = false;
+        this->mSize = 0;
+        this->mModifyTime = 0;
+        this->mExists = false;
+        this->mIsReadOnly = false;
     }
 }
 // FUNCTION: WON 0x006a7a60
+// Splits the path at the last backslash into the cached directory and file name
 void WONFile::CalcFileDirectory()
 {
-    std::string::size_type sep = mPath.rfind('\\');
+    std::string::size_type sep = this->mPath.rfind('\\');
     if (sep != std::string::npos)
-        mS10 = mPath.substr(0, sep);
-    mFileName = mPath.substr(sep + 1);
-    mB6B = true;
-    mB6C = true;
+        this->mFileDirectory = this->mPath.substr(0, sep);
+    this->mFileName = this->mPath.substr(sep + 1);
+    this->mFileDirectoryValid = true;
+    this->mFileNameValid = true;
 }
 // FUNCTION: WON 0x006a7c30
+// Caches the absolute form of the path
 void WONFile::CalcFullPath()
 {
     char path[260];
-    if (_fullpath(path, mPath.c_str(), sizeof(path)) != NULL)
-        mS50 = path;
-    mB6F = true;
+    if (_fullpath(path, this->mPath.c_str(), sizeof(path)) != NULL)
+        this->mFullPath = path;
+    this->mFullPathValid = true;
 }
 // FUNCTION: WON 0x006a7d80
+// Splits the file name at the last dot into the cached extension and base name
 void WONFile::CalcFileExtension()
 {
-    GetFileName();
-    std::string::size_type dot = mFileName.rfind('.');
+    this->GetFileName();
+    std::string::size_type dot = this->mFileName.rfind('.');
     if (dot != std::string::npos) {
-        mS40 = mFileName.substr(dot + 1);
-        mS30 = mFileName.substr(0, dot);
+        this->mFileExtension = this->mFileName.substr(dot + 1);
+        this->mFileNameNoExtension = this->mFileName.substr(0, dot);
     } else {
-        mS30 = mFileName;
+        this->mFileNameNoExtension = this->mFileName;
     }
-    mB6D = true;
+    this->mFileExtensionValid = true;
 }
 // FUNCTION: WON 0x006a7fd0
+// Returns the directory part of the path
 const std::string& WONFile::GetFileDirectory()
 {
-    if (!mB6B) CalcFileDirectory();
-    return mS10;
+    if (!this->mFileDirectoryValid) this->CalcFileDirectory();
+    return this->mFileDirectory;
 }
 // FUNCTION: WON 0x006a7ff0
+// Returns the file name part of the path
 const std::string& WONFile::GetFileName()
 {
-    if (!mB6C) GetFileDirectory();
-    return mFileName;
+    if (!this->mFileNameValid) this->GetFileDirectory();
+    return this->mFileName;
 }
 // FUNCTION: WON 0x006a8010
+// Returns the file extension without the dot
 const std::string& WONFile::GetFileExtension()
 {
-    if (!mB6D) CalcFileExtension();
-    return mS40;
+    if (!this->mFileExtensionValid) this->CalcFileExtension();
+    return this->mFileExtension;
 }
 // FUNCTION: WON 0x006a8030
+// Returns the absolute path
 const std::string& WONFile::GetFullPath()
 {
-    if (!mB6F) CalcFullPath();
-    return mS50;
+    if (!this->mFullPathValid) this->CalcFullPath();
+    return this->mFullPath;
 }
 // FUNCTION: WON 0x006a8050
+// Returns the file size, 0 when it does not exist
 unsigned long WONFile::GetSize()
 {
-    if (!mStatValid) CalcFileInfo();
-    return mSize;
+    if (!this->mStatValid) this->CalcFileInfo();
+    return this->mSize;
 }
 // FUNCTION: WON 0x006a8070
+// Returns the file's last modify time, 0 when it does not exist
 long WONFile::GetModifyTime()
 {
-    if (!mStatValid) CalcFileInfo();
-    return mModifyTime;
+    if (!this->mStatValid) this->CalcFileInfo();
+    return this->mModifyTime;
 }
 // FUNCTION: WON 0x006a8090
+// Returns true when the file exists
 bool WONFile::Exists()
 {
-    if (!mStatValid) CalcFileInfo();
-    return mB68;
+    if (!this->mStatValid) this->CalcFileInfo();
+    return this->mExists;
 }
 // FUNCTION: WON 0x006a80b0
+// Returns true when the path is a directory
 bool WONFile::IsDir()
 {
-    if (!mStatValid) CalcFileInfo();
-    return mB6A;
+    if (!this->mStatValid) this->CalcFileInfo();
+    return this->mIsDir;
 }
 // FUNCTION: WON 0x006a80d0
+// Creates the path as a directory; when it exists returns whether it is a directory
 bool WONFile::CreateAsDirectory(bool inUnused)
 {
-    if (Exists()) return IsDir();
-    return CreateDirectoryA(mPath.c_str(), NULL) != 0;
+    if (this->Exists()) return this->IsDir();
+    return CreateDirectoryA(this->mPath.c_str(), NULL) != 0;
 }
 }
 
@@ -172,23 +191,23 @@ bool WONFile::CreateAsDirectory(bool inUnused)
 #include <ctype.h>
 namespace WONAPI {
 using namespace std;
-// SOURCE_ONLY_NO_NATIVE_ID: exact SDK Windows separator branch; no Native data identity.
+// No original address identified: WON SDK path separator (Windows branch)
 const char WONFile::PATH_SEP = '\\';
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK method on unchanged current WONFile70 owner.
+// No original address identified: WON SDK method
 bool WONFile::NormalizePath()
 {
-	if(mPath.empty())
+	if(this->mPath.empty())
 		return false;
 
 	std::string aFilePath;
 	bool firstIsSlash = false;
-	if(mPath[0]!=PATH_SEP)
-		aFilePath = PATH_SEP + mPath;
+	if(this->mPath[0]!=WONFile::PATH_SEP)
+		aFilePath = WONFile::PATH_SEP + this->mPath;
 	else
 	{
 		firstIsSlash = true;
-		aFilePath = mPath;
+		aFilePath = this->mPath;
 	}
 
 	typedef std::vector<int> DirPosVec;
@@ -197,12 +216,12 @@ bool WONFile::NormalizePath()
 	int aPos = 0;
 	while(aPos < aFilePath.length())
 	{
-		if(aFilePath[aPos]==PATH_SEP)
+		if(aFilePath[aPos]==WONFile::PATH_SEP)
 		{
 			bool hadReplacement = false;
 			if(aPos+2<aFilePath.length() && aFilePath[aPos+1]=='.' && aFilePath[aPos+2]=='.')
 			{
-				if(aPos+3>=aFilePath.length() || aFilePath[aPos+3]==PATH_SEP)
+				if(aPos+3>=aFilePath.length() || aFilePath[aPos+3]==WONFile::PATH_SEP)
 				{
 					hadReplacement = true;
 
@@ -221,7 +240,7 @@ bool WONFile::NormalizePath()
 			else if(aPos+1<aFilePath.length() && aFilePath[aPos+1]=='.')
 			{
 				// ----> /./
-				if(aPos+2>=aFilePath.length() || aFilePath[aPos+2]==PATH_SEP)  
+				if(aPos+2>=aFilePath.length() || aFilePath[aPos+2]==WONFile::PATH_SEP)  
 				{
 					hadReplacement = true;
 					aFilePath = aFilePath.substr(0,aPos) + aFilePath.substr(aPos+2);
@@ -239,20 +258,20 @@ bool WONFile::NormalizePath()
 	}
 
 	if(!firstIsSlash)
-		mPath = aFilePath.substr(1);
+		this->mPath = aFilePath.substr(1);
 	else
-		mPath = aFilePath;
+		this->mPath = aFilePath;
 
-	mS10.erase();
-	mB6B = false;
+	this->mFileDirectory.erase();
+	this->mFileDirectoryValid = false;
 	
 	return true;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK method on unchanged current WONFile70 owner.
+// No original address identified: WON SDK method
 std::string WONFile::GetRelativePath(const WONFile &theSubFile)
 {
-	const std::string &aPath1 = GetFileDirectory();
+	const std::string &aPath1 = this->GetFileDirectory();
 	const std::string &aPath2 = theSubFile.mPath;
 	if(aPath2.length() > aPath1.length())
 	{
@@ -268,7 +287,7 @@ std::string WONFile::GetRelativePath(const WONFile &theSubFile)
 				break;
 		}
 
-		if(i==aPath1.length() && aPath2[i]==PATH_SEP) // paths match
+		if(i==aPath1.length() && aPath2[i]==WONFile::PATH_SEP) // paths match
 			return aPath2.substr(i+1);
 	}
 
@@ -276,7 +295,7 @@ std::string WONFile::GetRelativePath(const WONFile &theSubFile)
 	return aPath2;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK method on unchanged current WONFile70 owner.
+// No original address identified: WON SDK method
 WONFile WONFile::GetWorkingDirectory()
 {
 #ifdef _XBOX
@@ -288,17 +307,17 @@ WONFile WONFile::GetWorkingDirectory()
 #endif
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK method on unchanged current WONFile70 owner.
+// No original address identified: WON SDK method
 bool WONFile::SetWorkingDirectory()
 {
 #ifdef _XBOX
 	return false;
 #else
-	GetFileDirectory();
-	if(mS10.empty())
+	this->GetFileDirectory();
+	if(this->mFileDirectory.empty())
 		return false;
 	else
-		return chdir(mS10.c_str())==0;
+		return chdir(this->mFileDirectory.c_str())==0;
 #endif
 }
 }

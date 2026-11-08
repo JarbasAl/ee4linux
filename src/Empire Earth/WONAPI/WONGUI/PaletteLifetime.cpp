@@ -1,4 +1,4 @@
-// Complete original-backed GUI values; source-only, no runtime substitution.
+// Palette destructor (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,8 +11,8 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x00709880
-Palette::~Palette() { delete mColors; }
+// Destroys the palette, freeing its color table (emitted at 0x00709880)
+Palette::~Palette() { delete this->mColors; }
 }
 
 // Compiler-generated and header-inline functions this unit emits:

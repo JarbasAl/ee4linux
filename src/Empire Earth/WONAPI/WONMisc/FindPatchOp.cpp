@@ -1,8 +1,9 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK whole directory version/patch algorithm unit.
+// FindPatchOp: finds patches between product versions in the directory server (WON SDK)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing-unit proposed WONMisc family profile; no Native/primary/physical attribution.
+// No original address identified (file grouping inferred)
 #include "ee/wonapi/WONFindPatchOp.h"
 #include "ee/wonapi/WONLittleEndian.h"
+#include "ee/wonapi/WONStatus.h"
 
 using namespace WONAPI;
 using namespace std;
@@ -11,20 +12,20 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////////////////
 FindPatchOp::FindPatchOp(ServerContext *theDirServers, const std::string &theProduct)
 {
-	mDirServers = theDirServers;
-	mProduct = theProduct;
+	this->mDirServers = theDirServers;
+	this->mProduct = theProduct;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 FindPatchOp::FindPatchOp(GetVersionOp *theVersionOp)
 {
-	mDirServers = theVersionOp->GetDirServers();
-	mProduct = theVersionOp->GetProduct();
-	mExtraConfig = theVersionOp->GetExtraConfig();
-	mValidVersionSet = theVersionOp->GetValidVersionSet();
-	mVersionDescriptionMap = theVersionOp->GetVersionDescriptionMap();
-	mFilteredVersionSet = theVersionOp->GetFilteredVersionSet();
+	this->mDirServers = theVersionOp->GetDirServers();
+	this->mProduct = theVersionOp->GetProduct();
+	this->mExtraConfig = theVersionOp->GetExtraConfig();
+	this->mValidVersionSet = theVersionOp->GetValidVersionSet();
+	this->mVersionDescriptionMap = theVersionOp->GetVersionDescriptionMap();
+	this->mFilteredVersionSet = theVersionOp->GetFilteredVersionSet();
 }
 
 
@@ -34,7 +35,7 @@ bool FindPatchOp::ValidFromVersion(const std::string &theFromVersion, const Patc
 {
 	if(theInfo.mFromVersion==theFromVersion)
 		return true;
-	else if(theInfo.mFromVersion.empty() && mVersionCompare(theInfo.mToVersion,theFromVersion)>0)
+	else if(theInfo.mFromVersion.empty() && this->mVersionCompare(theInfo.mToVersion,theFromVersion)>0)
 		return true;
 	else
 		return false;
@@ -46,11 +47,11 @@ void FindPatchOp::GetPatchList(const std::string &theFromVersion, PatchList &aLi
 {
 	aList.clear();
 
-	PatchList::iterator anItr = mPatchList.begin();
-	while(anItr!=mPatchList.end())
+	PatchList::iterator anItr = this->mPatchList.begin();
+	while(anItr!=this->mPatchList.end())
 	{
 		const PatchInfo &anInfo = *anItr;
-		if(ValidFromVersion(theFromVersion,anInfo))
+		if(this->ValidFromVersion(theFromVersion,anInfo))
 			aList.push_back(anInfo);
 
 		++anItr;
@@ -64,11 +65,11 @@ void FindPatchOp::GetValidPatchList(const std::string &theFromVersion, PatchList
 {
 	aList.clear();
 
-	PatchList::iterator anItr = mPatchList.begin();
-	while(anItr!=mPatchList.end())
+	PatchList::iterator anItr = this->mPatchList.begin();
+	while(anItr!=this->mPatchList.end())
 	{
 		const PatchInfo &anInfo = *anItr;
-		if(ValidFromVersion(theFromVersion,anInfo) && mValidVersionSet.find(anInfo.mToVersion)!=mValidVersionSet.end())
+		if(this->ValidFromVersion(theFromVersion,anInfo) && this->mValidVersionSet.find(anInfo.mToVersion)!=this->mValidVersionSet.end())
 			aList.push_back(anInfo);
 
 		++anItr;
@@ -87,17 +88,17 @@ void FindPatchOp::GetHighestPatchList(const std::string &theFromVersion, const s
 	std::string aHighestVersion;
 	bool highestVersionHasFromVersion = false;
 
-	for(aPatchItr = mPatchList.begin(); aPatchItr!=mPatchList.end(); ++aPatchItr)
+	for(aPatchItr = this->mPatchList.begin(); aPatchItr!=this->mPatchList.end(); ++aPatchItr)
 	{
 		const PatchInfo &anInfo = *aPatchItr;
-		if(!ValidFromVersion(theFromVersion,anInfo))
+		if(!this->ValidFromVersion(theFromVersion,anInfo))
 			continue;
 
-		if(mVersionCompare(anInfo.mToVersion, theToVersion)<=0) // only want versions <= theToVersion
+		if(this->mVersionCompare(anInfo.mToVersion, theToVersion)<=0) // only want versions <= theToVersion
 			continue;
 
 		// Don't show filtered versions
-		if(mFilteredVersionSet.find(anInfo.mToVersion) != mFilteredVersionSet.end())
+		if(this->mFilteredVersionSet.find(anInfo.mToVersion) != this->mFilteredVersionSet.end())
 			continue;
 
 		if(aHighestVersion.empty())
@@ -106,7 +107,7 @@ void FindPatchOp::GetHighestPatchList(const std::string &theFromVersion, const s
 			highestVersionHasFromVersion = !anInfo.mFromVersion.empty();
 		}
 
-		int aComp = mVersionCompare(anInfo.mToVersion, aHighestVersion);
+		int aComp = this->mVersionCompare(anInfo.mToVersion, aHighestVersion);
 		if(aComp<0) // ToVersion less than highest version found
 			continue;
 		else if(aComp>0) // ToVersion greater than highest version found
@@ -142,7 +143,7 @@ void FindPatchOp::GetHighestPatchList(const std::string &theFromVersion, const s
 ///////////////////////////////////////////////////////////////////////////////
 void FindPatchOp::GetHighestPatchList(const std::string &theFromVersion, PatchList &aList)
 {
-	GetHighestPatchList(theFromVersion,GetHighestValidVersion(),aList);
+	this->GetHighestPatchList(theFromVersion,this->GetHighestValidVersion(),aList);
 /*	aList.clear();
 
 	PatchList::iterator aPatchItr;
@@ -201,7 +202,7 @@ void FindPatchOp::DoFinish(GetDirOp *theOp)
 {
 	if(!theOp->Succeeded())
 	{
-		Fn29F220(theOp->GetStatus());
+		this->Finish(theOp->GetStatus());
 		return;
 	}
 
@@ -211,7 +212,7 @@ void FindPatchOp::DoFinish(GetDirOp *theOp)
 	{
 		const DirEntity *anEntity = anItr->get();
 		if((anEntity->mType=='D'))
-			BuildValidVersionSet(anEntity);
+			this->BuildValidVersionSet(anEntity);
 		else
 		{
 			PatchInfo anInfo;
@@ -248,48 +249,48 @@ void FindPatchOp::DoFinish(GetDirOp *theOp)
 				++anItr;
 			}
 
-			mPatchList.push_back(anInfo);
+			this->mPatchList.push_back(anInfo);
 		}
 
 		++anItr;
 	}
 
-	Fn29F220(0);
+	this->Finish(WS_Success);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool FindPatchOp::CallbackHook(AsyncOp *theOp, int)
 {
-	DoFinish((GetDirOp*)theOp);
+	this->DoFinish(static_cast<GetDirOp*>(theOp));
 	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void FindPatchOp::Virtual04()
+void FindPatchOp::RunHook()
 {
-	mPatchList.clear();
+	this->mPatchList.clear();
 
-	SmartPtr<GetDirOp> anOp = new GetDirOp(mDirServers);
+	SmartPtr<GetDirOp> anOp = new GetDirOp(this->mDirServers);
 
-	anOp->SetPath(GetVersionDir());
+	anOp->SetPath(this->GetVersionDir());
 	DWORD aGetFlags = DIR_GF_DECOMPSERVICES | DIR_GF_SERVADDNAME | DIR_GF_ADDDISPLAYNAME | DIR_GF_SERVADDNETADDR 
 		| DIR_GF_ADDDATAOBJECTS | DIR_GF_ADDDOTYPE | DIR_GF_ADDDODATA;
 
-	if(mValidVersionSet.empty())
+	if(this->mValidVersionSet.empty())
 		aGetFlags |= DIR_GF_DECOMPROOT;
 
 	anOp->SetFlags(aGetFlags);
 
-	if(mRunMode==OP_MODE_ASYNC)
+	if(this->mRunMode==OP_MODE_ASYNC)
 	{
-		Track(anOp,0);
-		anOp->Run(INFINITE);
+		this->Track(anOp,0);
+		anOp->RunAsync(INFINITE);
 		return;
 	}
 
-	anOp->RunBlock(TimeLeft());
-	DoFinish(anOp);
+	anOp->RunBlock(this->TimeLeft());
+	this->DoFinish(anOp);
 }
 

@@ -1,4 +1,5 @@
-// ClientOptionsPopup behavior candidate; native constructor and PopupMenu allocation remain external.
+// Right-click menu of a player in a user list: whisper, invite, friends, ignore, block, AFK and admin actions.
+// Room spec bits: 2 = game room, 4 = Internet server (Init's locals isLAN and isGame hold these two bits)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -13,96 +14,100 @@
 #include "ee/wonapi/WONLobbyDialogs.h"
 namespace WONAPI {
 // FUNCTION: WON 0x7f5e00
+// Destroys the player menu, releasing its menu and player
 ClientOptionsPopup::~ClientOptionsPopup() {}
-// Native3f5ea0/28 forwarding support0.
 // FUNCTION: WON 0x007f5ea0
+// Adds a menu entry with the given text and action
 void ClientOptionsPopup::AddItem(const GUIString& inText,int inAction)
 {
-    mPopupMenu->AddItem(inText,NULL,NULL,inAction);
+    this->mPopupMenu->AddItem(inText,NULL,NULL,inAction);
 }
 // FUNCTION: WON 0x7f5ec0
+// Builds the menu for a player (name in bold, user id for moderators) from what we may do to them in this room
 void ClientOptionsPopup::Init(LobbyClient* inClient,LobbyClient* inMyClient,int inRoomSpec)
 {
     if(inClient==NULL || inMyClient==NULL) return;
-    mClient=inClient;
-    mRoomSpecFlags=inRoomSpec;
-    mPopupMenu->Fn2FAA50(false);
+    this->mClient=inClient;
+    this->mRoomSpecFlags=inRoomSpec;
+    this->mPopupMenu->Clear(false);
     bool isLAN=(inRoomSpec&2)!=0;
     bool isGame=(inRoomSpec&4)!=0;
-    bool isModerator=inMyClient->Fn3A54D0();
-    bool isCaptain=inMyClient->Fn3A54E0(isLAN);
+    bool isModerator=inMyClient->IsModerator();
+    bool isCaptain=inMyClient->IsCaptain(isLAN);
     bool isSelf=inMyClient->GetClientId()==inClient->GetClientId();
-    SmartPtr<Font> anOldFont=mPopupMenu->mFont;
-    SmartPtr<Font> aBoldFont=Fn2F5A30(anOldFont.get(),1,0);
-    mPopupMenu->SetFont(aBoldFont);
-    mPopupMenu->AddItem(inClient->mName,0)->mB09=false;
+    SmartPtr<Font> anOldFont=this->mPopupMenu->mFont;
+    SmartPtr<Font> aBoldFont=this->GetFontMod(anOldFont.get(),1,0);
+    this->mPopupMenu->SetFont(aBoldFont);
+    this->mPopupMenu->AddItem(inClient->mName,0)->mSelectable=false;
     if(isModerator) {
         char aBuffer[256];
-        sprintf(aBuffer,"%d",inClient->GetU14());
-        MenuItem* anItem=mPopupMenu->AddItem(GUIString(aBuffer),0);
-        anItem->mB09=false;
+        sprintf(aBuffer,"%d",inClient->GetWONUserId());
+        MenuItem* anItem=this->mPopupMenu->AddItem(GUIString(aBuffer),0);
+        anItem->mSelectable=false;
     }
-    mPopupMenu->mFont=anOldFont;
-    AddItem(::ClientOptionsCtrl_Whisper_String,16);
-    if(!isSelf && inMyClient->Fn3A54E0(1) && inClient->GetGroupId20()!=inMyClient->GetGroupId20()) {
-        if(!mClient->mB27) AddItem(::ClientOptionsCtrl_Invite_String,6);
-        else AddItem(::ClientOptionsCtrl_Uninvite_String,13);
+    this->mPopupMenu->mFont=anOldFont;
+    this->AddItem(::ClientOptionsCtrl_Whisper_String,16);
+    if(!isSelf && inMyClient->IsCaptain(1) && inClient->GetGameGroupId()!=inMyClient->GetGameGroupId()) {
+        if(!this->mClient->mInvited) this->AddItem(::ClientOptionsCtrl_Invite_String,6);
+        else this->AddItem(::ClientOptionsCtrl_Uninvite_String,13);
     }
     if(isGame) {
-        if(!isSelf) AddItem(::FriendOptionsCtrl_Locate_String,17);
-        if(!inClient->IsFriend()) AddItem(::ClientOptionsCtrl_AddToFriends_String,1);
-        else AddItem(::ClientOptionsCtrl_RemoveFromFriends_String,9);
-        mPopupMenu->AddSeperator();
+        if(!isSelf) this->AddItem(::FriendOptionsCtrl_Locate_String,17);
+        if(!inClient->IsFriend()) this->AddItem(::ClientOptionsCtrl_AddToFriends_String,1);
+        else this->AddItem(::ClientOptionsCtrl_RemoveFromFriends_String,9);
+        this->mPopupMenu->AddSeperator();
     }
     if(isSelf && isGame) {
-        if(inClient->Fn3A54B0()) AddItem(::ClientOptionsCtrl_ClearAFK_String,4);
-        else AddItem(::ClientOptionsCtrl_SetAFK_String,10);
+        if(inClient->IsAway()) this->AddItem(::ClientOptionsCtrl_ClearAFK_String,4);
+        else this->AddItem(::ClientOptionsCtrl_SetAFK_String,10);
     } else {
-        if(!inClient->mB22) AddItem(::ClientOptionsCtrl_Ignore_String,5);
-        else AddItem(::ClientOptionsCtrl_Unignore_String,12);
+        if(!inClient->mIgnored) this->AddItem(::ClientOptionsCtrl_Ignore_String,5);
+        else this->AddItem(::ClientOptionsCtrl_Unignore_String,12);
         if(isGame) {
-            if(!inClient->mB23) AddItem(::ClientOptionsCtrl_Block_String,3);
-            else AddItem(::ClientOptionsCtrl_Unblock_String,11);
+            if(!inClient->mBlocked) this->AddItem(::ClientOptionsCtrl_Block_String,3);
+            else this->AddItem(::ClientOptionsCtrl_Unblock_String,11);
         }
     }
     if(isGame) {
         if(isModerator || isCaptain) {
-            mPopupMenu->AddSeperator();
-            if(isModerator) AddItem(::ClientOptionsCtrl_Warn_String,15);
-            if(inClient->Fn3A5480(isLAN)) AddItem(::ClientOptionsCtrl_UnMute_String,14);
-            else AddItem(::ClientOptionsCtrl_Mute_String,8);
+            this->mPopupMenu->AddSeperator();
+            if(isModerator) this->AddItem(::ClientOptionsCtrl_Warn_String,15);
+            if(inClient->IsMuted(isLAN)) this->AddItem(::ClientOptionsCtrl_UnMute_String,14);
+            else this->AddItem(::ClientOptionsCtrl_Mute_String,8);
             if(!isSelf) {
-                AddItem(::ClientOptionsCtrl_Kick_String,7);
-                AddItem(::ClientOptionsCtrl_Ban_String,2);
+                this->AddItem(::ClientOptionsCtrl_Kick_String,7);
+                this->AddItem(::ClientOptionsCtrl_Ban_String,2);
             }
         }
     } else if(isCaptain && !isSelf) {
-        mPopupMenu->AddSeperator();
-        AddItem(::ClientOptionsCtrl_Kick_String,7);
+        this->mPopupMenu->AddSeperator();
+        this->AddItem(::ClientOptionsCtrl_Kick_String,7);
     }
-    Fn2F4B90(mPopupMenu->Width(),mPopupMenu->Height());
+    this->SetSize(this->mPopupMenu->Width(),this->mPopupMenu->Height());
 }
 // FUNCTION: WON 0x7f6310
+// On a left click on an entry sends its action for the player and room, then closes the menu
 void ClientOptionsPopup::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if(inEvent->mType!=24) {
+    if(inEvent->mType!=ComponentEvent_ListItemUpClicked) {
         Container::HandleComponentEvent(inEvent);
         return;
     }
     ListItemClickedEvent* anEvent=static_cast<ListItemClickedEvent*>(inEvent);
     if(anEvent->mItem.get()==NULL || anEvent->mButton!=0) return;
     int anAction=static_cast<MenuItem*>(anEvent->mItem.get())->mMenuId;
-    if(anAction!=0) Fn2F53F0(new ClientActionEvent(anAction,GetRoomSpecFlags(),mClient.get()),false);
-    GetRoot()->ClosePopup(this);
+    if(anAction!=0) this->DeliverEvent(new ClientActionEvent(anAction,this->GetRoomSpecFlags(),this->mClient.get()),false);
+    this->GetRoot()->ClosePopup(this);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007f5d10
+// Creates the player menu popup with an empty menu
 ClientOptionsPopup::ClientOptionsPopup()
 {
-    mPopupMenu=new PopupMenu;
-    Fn2F6A60(mPopupMenu.get());
+    this->mPopupMenu=new PopupMenu;
+    this->AddChild(this->mPopupMenu.get());
 }
 }
 

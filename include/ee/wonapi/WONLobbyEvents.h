@@ -2,341 +2,340 @@
 #define EE_WONAPI_WONLOBBYEVENTS_H
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONLobbyEventTypes.h"
 namespace WONAPI {
 class LobbyFriend;
 class LobbyGroup;
 class LobbyGameList;
-// Original RTTI451af0; base20, change kind20, size24.
+// RTTI 0x851af0; LobbyEvent is 0x20 bytes, the change kind is at 0x20, 0x24 bytes in all.
 class LobbyChangeEvent : public LobbyEvent {
 public:
-    LobbyChangeEvent(int inType, int inChangeKind); //3593a0
-    bool IsAdd();                                //359450
-    bool IsDelete();                             //359460
-    bool Fn359470();                             //359470; kind==2
+    LobbyChangeEvent(int inType, int inChangeKind); // 0x7593a0
+    bool IsAdd();                                // 0x759450
+    bool IsDelete();                             // 0x759460
+    bool IsModify();                             // 0x759470; kind 2
     int mChangeKind;
 };
 class AcceptClientEvent : public LobbyEvent {
 public:
-    virtual ~AcceptClientEvent(); //original explicit destructor stores its own vptr
-    AcceptClientEvent(LobbyClient* inClient, bool inAccepted); //359480
-    SmartPtr<LobbyClient> mClient; //20
-    bool mAccepted; //24
+    virtual ~AcceptClientEvent(); // explicit: writes its own vtable pointer
+    AcceptClientEvent(LobbyClient* inClient, bool inAccepted); // 0x759480
+    SmartPtr<LobbyClient> mClient; // 0x20
+    bool mAccepted; // 0x24
 };
 class AlertEvent : public LobbyEvent {
 public:
-    virtual ~AlertEvent(); //original explicit destructor stores its own vptr
-    AlertEvent(int inKind, int inValue, int inSeverity, const GUIString& inText); //359580
-    int GetKind() const { return mKind; }
-    int GetValue() const { return mValue; }
-    int GetSeverity() const { return mSeverity; }
-    const GUIString& GetText() const { return mText; }
-    int mKind; //20
-    int mValue; //24
-    int mSeverity; //28
-    GUIString mText; //2c
+    virtual ~AlertEvent(); // explicit: writes its own vtable pointer
+    AlertEvent(int inKind, int inValue, int inSeverity, const GUIString& inText); // 0x759580
+    int GetKind() const { return this->mKind; }
+    int GetValue() const { return this->mValue; }
+    int GetSeverity() const { return this->mSeverity; }
+    const GUIString& GetText() const { return this->mText; }
+    int mKind; // 0x20
+    int mValue; // 0x24
+    int mSeverity; // 0x28
+    GUIString mText; // 0x2c
 };
 class AnnounceClientLocationEvent : public LobbyEvent {
 public:
-    virtual ~AnnounceClientLocationEvent(); //original explicit destructor stores its own vptr
+    virtual ~AnnounceClientLocationEvent(); // explicit: writes its own vtable pointer
     AnnounceClientLocationEvent(LobbyClient* inClient, const GUIString& inServer,
-        const GUIString& inRoom, int inRoomId); //359710
-    SmartPtr<LobbyClient> mClient; //20
-    GUIString mServer; //24
-    GUIString mRoom; //28
-    int mRoomId; //2c
-    bool mHandled; //30
+        const GUIString& inRoom, int inRoomId); // 0x759710
+    SmartPtr<LobbyClient> mClient; // 0x20
+    GUIString mServer; // 0x24
+    GUIString mRoom; // 0x28
+    int mRoomId; // 0x2c
+    bool mHandled; // 0x30
 };
 class AnnounceFriendEvent : public LobbyChangeEvent {
 public:
-    virtual ~AnnounceFriendEvent(); //original explicit destructor stores its own vptr
-    AnnounceFriendEvent(LobbyFriend* inFriend, int inLocation, int inChangeKind); //359890
-    SmartPtr<LobbyFriend> mFriend; //24
-    int mLocation; //28
-    bool mHandled; //2c
+    virtual ~AnnounceFriendEvent(); // explicit: writes its own vtable pointer
+    AnnounceFriendEvent(LobbyFriend* inFriend, int inLocation, int inChangeKind); // 0x759890
+    SmartPtr<LobbyFriend> mFriend; // 0x24
+    int mLocation; // 0x28
+    bool mHandled; // 0x2c
 };
 class FriendActionEvent : public LobbyEvent {
 public:
-    virtual ~FriendActionEvent(); //original explicit destructor stores its own vptr
-    FriendActionEvent(int inAction, LobbyFriend* inFriend, int inValue); //359ea0
-    int mAction; //20
-    SmartPtr<LobbyFriend> mFriend; //24
-    int mValue; //28
+    virtual ~FriendActionEvent(); // explicit: writes its own vtable pointer
+    FriendActionEvent(int inAction, LobbyFriend* inFriend, int inValue); // 0x759ea0
+    int mAction; // 0x20
+    SmartPtr<LobbyFriend> mFriend; // 0x24
+    int mValue; // 0x28
 };
 class FriendChangedEvent : public LobbyChangeEvent {
 public:
-    virtual ~FriendChangedEvent(); //original explicit destructor stores its own vptr
-    FriendChangedEvent(LobbyFriend* inFriend, int inChangeKind); //359fa0
-    SmartPtr<LobbyFriend> mFriend; //24
+    virtual ~FriendChangedEvent(); // explicit: writes its own vtable pointer
+    FriendChangedEvent(LobbyFriend* inFriend, int inChangeKind); // 0x759fa0
+    SmartPtr<LobbyFriend> mFriend; // 0x24
 };
 class GameActionEvent : public LobbyEvent {
 public:
-    virtual ~GameActionEvent(); //original explicit destructor stores its own vptr
-    GameActionEvent(int inAction, LobbyGame* inGame); //35a0a0
-    int mAction; //20
-    SmartPtr<LobbyGame> mGame; //24
+    virtual ~GameActionEvent(); // explicit: writes its own vtable pointer
+    GameActionEvent(int inAction, LobbyGame* inGame); // 0x75a0a0
+    int mAction; // 0x20
+    SmartPtr<LobbyGame> mGame; // 0x24
 };
 class GameChangedEvent : public LobbyChangeEvent {
 public:
-    virtual ~GameChangedEvent(); //original explicit destructor stores its own vptr
-    GameChangedEvent(LobbyGame* inGame, int inChangeKind); //35a1a0
-    SmartPtr<LobbyGame> mGame; //24
+    virtual ~GameChangedEvent(); // explicit: writes its own vtable pointer
+    GameChangedEvent(LobbyGame* inGame, int inChangeKind); // 0x75a1a0
+    SmartPtr<LobbyGame> mGame; // 0x24
 };
 class JoinFriendsRoomEvent : public LobbyEvent {
 public:
-    virtual ~JoinFriendsRoomEvent(); //original explicit destructor stores its own vptr
-    JoinFriendsRoomEvent(LobbyFriend* inFriend); //35a7b0
-    SmartPtr<LobbyFriend> mFriend; //20
+    virtual ~JoinFriendsRoomEvent(); // explicit: writes its own vtable pointer
+    JoinFriendsRoomEvent(LobbyFriend* inFriend); // 0x75a7b0
+    SmartPtr<LobbyFriend> mFriend; // 0x20
 };
 class JoinGameEvent : public LobbyEvent {
 public:
-    virtual ~JoinGameEvent(); //original explicit destructor stores its own vptr
-    JoinGameEvent(LobbyGame* inGame); //35a8b0
-    SmartPtr<LobbyGame> mGame; //20
+    virtual ~JoinGameEvent(); // explicit: writes its own vtable pointer
+    JoinGameEvent(LobbyGame* inGame); // 0x75a8b0
+    SmartPtr<LobbyGame> mGame; // 0x20
 };
 class PingGameEvent : public LobbyEvent {
 public:
-    virtual ~PingGameEvent(); //original explicit destructor stores its own vptr
-    PingGameEvent(LobbyGame* inGame, bool inFlag); //35ab30
-    SmartPtr<LobbyGame> mGame; //20
-    bool mFlag; //24
+    virtual ~PingGameEvent(); // explicit: writes its own vtable pointer
+    PingGameEvent(LobbyGame* inGame, bool inFlag); // 0x75ab30
+    SmartPtr<LobbyGame> mGame; // 0x20
+    bool mFlag; // 0x24
 };
 class PlayerChangedEvent : public LobbyChangeEvent {
 public:
-    virtual ~PlayerChangedEvent(); //original explicit destructor stores its own vptr
-    PlayerChangedEvent(LobbyClient* inClient, int inChangeKind); //35ac30
-    SmartPtr<LobbyClient> mClient; //24
+    virtual ~PlayerChangedEvent(); // explicit: writes its own vtable pointer
+    PlayerChangedEvent(LobbyClient* inClient, int inChangeKind); // 0x75ac30
+    SmartPtr<LobbyClient> mClient; // 0x24
 };
 class PlayerTeamChangedEvent : public LobbyChangeEvent {
 public:
-    virtual ~PlayerTeamChangedEvent(); //original explicit destructor stores its own vptr
-    PlayerTeamChangedEvent(LobbyClient* inClient, int inChangeKind); //35ad30
-    SmartPtr<LobbyClient> mClient; //24
+    virtual ~PlayerTeamChangedEvent(); // explicit: writes its own vtable pointer
+    PlayerTeamChangedEvent(LobbyClient* inClient, int inChangeKind); // 0x75ad30
+    SmartPtr<LobbyClient> mClient; // 0x24
 };
 class ServerChangedEvent : public LobbyChangeEvent {
 public:
-    virtual ~ServerChangedEvent(); //original explicit destructor stores its own vptr
-    ServerChangedEvent(LobbyServer* inServer, int inChangeKind); //35aff0
-    SmartPtr<LobbyServer> mServer; //24
+    virtual ~ServerChangedEvent(); // explicit: writes its own vtable pointer
+    ServerChangedEvent(LobbyServer* inServer, int inChangeKind); // 0x75aff0
+    SmartPtr<LobbyServer> mServer; // 0x24
 };
 class ClientActionEvent : public LobbyEvent {
 public:
-    virtual ~ClientActionEvent(); //original explicit destructor stores its own vptr
-    ClientActionEvent(int inAction, const int& inRoomSpec, LobbyClient* inClient); //359a90
-    int GetAction() const { return mAction; }
-    int GetRoomSpec() const { return mRoomSpec; }
-    LobbyClient* GetClient() const { return mClient.get(); }
-    int mAction; int mRoomSpec; SmartPtr<LobbyClient> mClient; //20,24,28
+    virtual ~ClientActionEvent(); // explicit: writes its own vtable pointer
+    ClientActionEvent(int inAction, const int& inRoomSpec, LobbyClient* inClient); // 0x759a90
+    int GetAction() const { return this->mAction; }
+    int GetRoomSpec() const { return this->mRoomSpec; }
+    LobbyClient* GetClient() const { return this->mClient.get(); }
+    int mAction; int mRoomSpec; SmartPtr<LobbyClient> mClient; // 0x20, 0x24, 0x28
 };
 class GotHTTPDocumentEvent : public LobbyEvent {
 public:
-    virtual ~GotHTTPDocumentEvent(); //original explicit destructor stores its own vptr
-    GotHTTPDocumentEvent(GetHTTPDocumentOp* inOp); //35a2a0; Init3de280 consumer
-    SmartPtr<GetHTTPDocumentOp> mOp; //20; size24
+    virtual ~GotHTTPDocumentEvent(); // explicit: writes its own vtable pointer
+    GotHTTPDocumentEvent(GetHTTPDocumentOp* inOp); // 0x75a2a0; used by InitLogic::HTTPDocumentCompletion (0x7de280)
+    SmartPtr<GetHTTPDocumentOp> mOp; // 0x20; 0x24 bytes
 };
 class ChangeDirectConnectEvent : public LobbyChangeEvent {
 public:
-    virtual ~ChangeDirectConnectEvent(); //original explicit destructor stores its own vptr
-    ChangeDirectConnectEvent(int inChangeKind, LobbyGame* inGame); //359990; Staging3f00c3
-    SmartPtr<LobbyGame> mGame; //24; size28
+    virtual ~ChangeDirectConnectEvent(); // explicit: writes its own vtable pointer
+    ChangeDirectConnectEvent(int inChangeKind, LobbyGame* inGame); // 0x759990; created by staging at 0x7f00c3
+    SmartPtr<LobbyGame> mGame; // 0x24; 0x28 bytes
 };
 class ClientChangedEvent : public LobbyChangeEvent {
 public:
-    int GetRoomSpec() const { return mRoomSpec; }
-    virtual ~ClientChangedEvent(); //original explicit destructor stores its own vptr
-    ClientChangedEvent(LobbyClient* inClient, const int& inRoomSpec, int inChangeKind); //359b90
-    SmartPtr<LobbyClient> mClient; int mRoomSpec; //24,28
+    int GetRoomSpec() const { return this->mRoomSpec; }
+    virtual ~ClientChangedEvent(); // explicit: writes its own vtable pointer
+    ClientChangedEvent(LobbyClient* inClient, const int& inRoomSpec, int inChangeKind); // 0x759b90
+    SmartPtr<LobbyClient> mClient; int mRoomSpec; // 0x24, 0x28
 };
 class ClientModeratedEvent : public LobbyEvent {
 public:
-    virtual ~ClientModeratedEvent(); //original explicit destructor stores its own vptr
+    virtual ~ClientModeratedEvent(); // explicit: writes its own vtable pointer
     ClientModeratedEvent(LobbyClient* inClient, int inRoomSpec, const GUIString& inRoomName,
-        int inModerationKind, unsigned long inDuration, bool inFlag, const GUIString& inComment); //359c90
+        int inModerationKind, unsigned long inDuration, bool inFlag, const GUIString& inComment); // 0x759c90
     SmartPtr<LobbyClient> mClient; int mRoomSpec; GUIString mRoomName;
-    int mModerationKind; unsigned long mDuration; bool mFlag; GUIString mComment; //20,24,28,2c,30,34,38
+    int mModerationKind; unsigned long mDuration; bool mFlag; GUIString mComment; // 0x20, 0x24, 0x28, 0x2c, 0x30, 0x34, 0x38
 };
 class GroupChangedEvent : public LobbyChangeEvent {
 public:
-    virtual ~GroupChangedEvent(); //original explicit destructor stores its own vptr
-    GroupChangedEvent(LobbyGroup* inGroup, LobbyServer* inServer, int inChangeKind); //35a3a0
-    SmartPtr<LobbyServer> mServer; SmartPtr<LobbyGroup> mGroup; //24,28
+    virtual ~GroupChangedEvent(); // explicit: writes its own vtable pointer
+    GroupChangedEvent(LobbyGroup* inGroup, LobbyServer* inServer, int inChangeKind); // 0x75a3a0
+    SmartPtr<LobbyServer> mServer; SmartPtr<LobbyGroup> mGroup; // 0x24, 0x28
 };
 class GroupInvitationEvent : public LobbyEvent {
 public:
-    virtual ~GroupInvitationEvent(); //original explicit destructor stores its own vptr
+    virtual ~GroupInvitationEvent(); // explicit: writes its own vtable pointer
     GroupInvitationEvent(int inKind, const GUIString& inGameName, unsigned short inGameId,
-        LobbyClient* inClient, bool inInvite, const GUIString& inComment, bool inFlag); //35a4e0
+        LobbyClient* inClient, bool inInvite, const GUIString& inComment, bool inFlag); // 0x75a4e0
     int mKind; GUIString mGameName; unsigned short mGameId; SmartPtr<LobbyClient> mClient;
-    bool mInvite; bool mFlag; GUIString mComment; //20,24,28,2c,30,31,34
+    bool mInvite; bool mFlag; GUIString mComment; // 0x20, 0x24, 0x28, 0x2c, 0x30, 0x31, 0x34
 };
 class GroupJoinAttemptEvent : public LobbyEvent {
 public:
-    virtual ~GroupJoinAttemptEvent(); //original explicit destructor stores its own vptr
-    GroupJoinAttemptEvent(int inKind, LobbyClient* inClient, const GUIString& inComment); //35a670
-    int mKind; SmartPtr<LobbyClient> mClient; GUIString mComment; //20,24,28
+    virtual ~GroupJoinAttemptEvent(); // explicit: writes its own vtable pointer
+    GroupJoinAttemptEvent(int inKind, LobbyClient* inClient, const GUIString& inComment); // 0x75a670
+    int mKind; SmartPtr<LobbyClient> mClient; GUIString mComment; // 0x20, 0x24, 0x28
 };
 class JoinedRoomEvent : public LobbyEvent {
 public:
-    int GetRoomSpec() const { return mRoomSpec; }
-    virtual ~JoinedRoomEvent(); //original explicit destructor stores its own vptr
+    int GetRoomSpec() const { return this->mRoomSpec; }
+    virtual ~JoinedRoomEvent(); // explicit: writes its own vtable pointer
     JoinedRoomEvent(const GUIString& inServerName, const GUIString& inGroupName,
-        const int& inRoomSpec, unsigned short inClientId, LobbyClientList* inClients); //35a9b0
+        const int& inRoomSpec, unsigned short inClientId, LobbyClientList* inClients); // 0x75a9b0
     SmartPtr<LobbyClientList> mClients; GUIString mServerName; GUIString mGroupName;
-    unsigned short mClientId; int mRoomSpec; //20,24,28,2c,30
+    unsigned short mClientId; int mRoomSpec; // 0x20, 0x24, 0x28, 0x2c, 0x30
 };
 class RecvChatEvent : public LobbyEvent {
 public:
-    virtual ~RecvChatEvent(); //original explicit destructor stores its own vptr
+    virtual ~RecvChatEvent(); // explicit: writes its own vtable pointer
     RecvChatEvent(const int& inRoomSpec, unsigned long inFlags, LobbyClient* inSender,
-        const GUIString& inText, LobbyClient* inTarget); //35ae30
-    bool IsEmote(); bool IsWhisper(); bool IsWarning(); bool IsTeam();
+        const GUIString& inText, LobbyClient* inTarget); // 0x75ae30
+    bool IsWhisper(); bool IsEmote(); bool IsWarning(); bool IsTeam();
     SmartPtr<LobbyClient> mSender; SmartPtr<LobbyClient> mTarget; int mRoomSpec;
-    unsigned long mFlags; GUIString mText; //20,24,28,2c,30
+    unsigned long mFlags; GUIString mText; // 0x20, 0x24, 0x28, 0x2c, 0x30
 };
-// Producer-owned declarations only; implementation and emitted markers remain in original owner.
+// Inline events below: their implicit destructors are emitted by the units that create them.
 class SetRoomSpecFlagsEvent : public LobbyEvent {
 public:
-    SetRoomSpecFlagsEvent(int inFlags) : LobbyEvent(100054), mFlags(inFlags) {}
-    int mFlags; //20; size24
+    SetRoomSpecFlagsEvent(int inFlags) : LobbyEvent(LobbyEvent_SetRoomSpecFlags), mFlags(inFlags) {}
+    int mFlags; // 0x20; 0x24 bytes
 };
 class LoginInitStatusEvent : public LobbyEvent {
 public:
     LoginInitStatusEvent(const GUIString& inStatus, const GUIString& inDescription,
         bool inAllowIgnore, int inKind)
-        : LobbyEvent(100036), mStatus(inStatus), mDescription(inDescription),
+        : LobbyEvent(LobbyEvent_LoginInitStatus), mStatus(inStatus), mDescription(inDescription),
           mAllowIgnore(inAllowIgnore), mKind(inKind) {}
-    GUIString mStatus; //20
-    GUIString mDescription; //24
-    bool mAllowIgnore; //28
-    int mKind; //2c
+    GUIString mStatus; // 0x20
+    GUIString mDescription; // 0x24
+    bool mAllowIgnore; // 0x28
+    int mKind; // 0x2c
 };
 class SetLoginFieldsEvent : public LobbyEvent {
 public:
     SetLoginFieldsEvent(const GUIString& inUser, const GUIString& inPassword, bool inRemember)
-        : LobbyEvent(100051), mUserName(inUser), mPassword(inPassword), mRemember(inRemember) {}
-    GUIString mUserName; //20
-    GUIString mPassword; //24
-    bool mRemember; //28
+        : LobbyEvent(LobbyEvent_SetLoginFields), mUserName(inUser), mPassword(inPassword), mRemember(inRemember) {}
+    GUIString mUserName; // 0x20
+    GUIString mPassword; // 0x24
+    bool mRemember; // 0x28
 };
 class QueryAccountResultEvent : public LobbyEvent {
 public:
     QueryAccountResultEvent(const GUIString& inEmail, bool inNewsletter)
-        : LobbyEvent(100041), mEmail(inEmail), mNewsletter(inNewsletter) {}
-    GUIString mEmail; //20
-    bool mNewsletter; //24
+        : LobbyEvent(LobbyEvent_QueryAccountResult), mEmail(inEmail), mNewsletter(inNewsletter) {}
+    GUIString mEmail; // 0x20
+    bool mNewsletter; // 0x24
 };
 class LoginEvent : public LobbyEvent {
 public:
     LoginEvent(const GUIString& inPassword, bool inRemember, const GUIString& inUser)
-        : LobbyEvent(100035), mUserName((std::wstring)inUser),
+        : LobbyEvent(LobbyEvent_Login), mUserName((std::wstring)inUser),
           mPassword((std::wstring)inPassword), mRemember(inRemember) {}
-    std::wstring mUserName; std::wstring mPassword; bool mRemember; //20,30,40; size44
+    std::wstring mUserName; std::wstring mPassword; bool mRemember; // 0x20, 0x30, 0x40; 0x44 bytes
 };
-// Complete producer-event contracts; bodies/support remain with actual producer families.
 class GetLostPasswordEvent : public LobbyEvent {
 public:
     GetLostPasswordEvent(const GUIString& inUserName)
-        : LobbyEvent(100018), mUserName((std::wstring)inUserName) {}
-    std::wstring mUserName; //20;size30;VT453a38
-    // Normal3c06c0 no own-vptr store; implicit, producer Controls.
+        : LobbyEvent(LobbyEvent_GetLostPassword), mUserName((std::wstring)inUserName) {}
+    std::wstring mUserName; // 0x20; 0x30 bytes; vtable 0x853a38
+    // Implicit destructor 0x7c06c0, emitted by the unit that creates the event.
 };
 class GetLostUserNameEvent : public LobbyEvent {
 public:
     GetLostUserNameEvent(const GUIString& inEmail)
-        : LobbyEvent(100019), mEmail((std::string)inEmail) {}
-    std::string mEmail; //20;size30;VT453b14
-    // Normal3c0ab0 no own-vptr store; implicit, producer Controls.
+        : LobbyEvent(LobbyEvent_GetLostUserName), mEmail((std::string)inEmail) {}
+    std::string mEmail; // 0x20; 0x30 bytes; vtable 0x853b14
+    // Implicit destructor 0x7c0ab0, emitted by the unit that creates the event.
 };
 class LeftRoomEvent : public LobbyEvent {
 public:
-    int GetRoomSpec() const { return mRoomSpec; }
+    int GetRoomSpec() const { return this->mRoomSpec; }
     LeftRoomEvent(int inRoomSpec, bool inForced, bool inFlag)
-        : LobbyEvent(100033), mRoomSpec(inRoomSpec), mForced(inForced), mFlag(inFlag) {}
-    int mRoomSpec; bool mForced; bool mFlag; //20,24,25;size28
-    // No explicit destructor: actual3e7400 is implicit,producerRouting owns support.
+        : LobbyEvent(LobbyEvent_LeftRoom), mRoomSpec(inRoomSpec), mForced(inForced), mFlag(inFlag) {}
+    int mRoomSpec; bool mForced; bool mFlag; // 0x20, 0x24, 0x25; 0x28 bytes
+    // Implicit destructor 0x7e7400, emitted by RoutingLogic.
 };
 class SetChatInputEvent : public LobbyEvent {
 public:
     SetChatInputEvent(int inCommand, const GUIString& inText, int inRoomSpec, bool inHandled)
-        : LobbyEvent(100048), mCommand(inCommand), mText(inText), mRoomSpec(inRoomSpec), mHandled(inHandled) {}
-    int mCommand; GUIString mText; int mRoomSpec; bool mHandled; //20,24,28,2c;size30
-    // Actual deleting3bd9c0Ã¢â€ â€™normal3bd9e0..3bda67=135B, NO ownvptr: implicit destructor.
+        : LobbyEvent(LobbyEvent_SetChatInput), mCommand(inCommand), mText(inText), mRoomSpec(inRoomSpec), mHandled(inHandled) {}
+    int mCommand; GUIString mText; int mRoomSpec; bool mHandled; // 0x20, 0x24, 0x28, 0x2c; 0x30 bytes
+    // Implicit destructor: deleting 0x7bd9c0, normal 0x7bd9e0 (135 bytes).
 };
 class ChatCommandErrorEvent : public LobbyEvent {
 public:
-    ChatCommandErrorEvent(const GUIString& inText) : LobbyEvent(100009), mText(inText) {}
-    GUIString mText; //20;size24;VT4559e0,Routing inline3eb622..3eb63c
-    // Original3e3200 has no own-vptr store; implicit producer-owned destructor; normal COFF remains required.
+    ChatCommandErrorEvent(const GUIString& inText) : LobbyEvent(LobbyEvent_ChatCommandError), mText(inText) {}
+    GUIString mText; // 0x20; 0x24 bytes; vtable 0x8559e0; created inline at 0x7eb622
+    // Implicit destructor 0x7e3200, emitted by the unit that creates the event.
 };
 class CreateRoomEvent : public LobbyEvent {
 public:
-    CreateRoomEvent(const IPAddr& inAddress) : LobbyEvent(100011), mAddress(inAddress) {}
-    IPAddr mAddress; //20;size48
-    // Original3c2a80 has no own-vptr store; implicit producer-owned destructor.
+    CreateRoomEvent(const IPAddr& inAddress) : LobbyEvent(LobbyEvent_CreateRoom), mAddress(inAddress) {}
+    IPAddr mAddress; // 0x20; 0x48 bytes
+    // Implicit destructor 0x7c2a80, emitted by the unit that creates the event.
 };
 class JoinRoomEvent : public LobbyEvent {
 public:
     JoinRoomEvent(const IPAddr& inAddress, unsigned long inGroupId)
-        : LobbyEvent(100028), mAddress(inAddress), mGroupId(inGroupId) {}
-    IPAddr mAddress; unsigned long mGroupId; //20,48;size4c
-    // Original3c2860 has no own-vptr store; implicit producer-owned destructor.
+        : LobbyEvent(LobbyEvent_JoinRoom), mAddress(inAddress), mGroupId(inGroupId) {}
+    IPAddr mAddress; unsigned long mGroupId; // 0x20, 0x48; 0x4c bytes
+    // Implicit destructor 0x7c2860, emitted by the unit that creates the event.
 };
-// Original VT452f0c, producer3ba990; defaultstrings precede widget assignments.
+// Vtable 0x852f0c; created at 0x7ba990, which builds the default strings before reading the widgets.
 class CreateAccountEvent : public LobbyEvent {
 public:
-    CreateAccountEvent() : LobbyEvent(100010) {}
-    std::wstring mUserName; //20
-    std::wstring mPassword; //30
-    std::string mEmail; //40
-    unsigned char mMonth; //50, deliberately uninitialized until producer assignment
-    unsigned char mDay; //51
-    unsigned short mYear; //52
-    bool mNewsletter; //54, natural end58
-    // Normal3bac50 has no own-vptr store: implicit producer-owned destructor.
+    CreateAccountEvent() : LobbyEvent(LobbyEvent_CreateAccount) {}
+    std::wstring mUserName; // 0x20
+    std::wstring mPassword; // 0x30
+    std::string mEmail; // 0x40
+    unsigned char mMonth; // 0x50, not initialized by the constructor
+    unsigned char mDay; // 0x51
+    unsigned short mYear; // 0x52
+    bool mNewsletter; // 0x54; 0x58 bytes in all
+    // Implicit destructor 0x7bac50, emitted by the unit that creates the event.
 };
 class SyncGameListEvent : public LobbyEvent {
 public:
-    SyncGameListEvent(LobbyGameList* inGames); //35b0f0,coreoriginalfamily
-    virtual ~SyncGameListEvent(); //35b160,originalexplicitownvptr
-    SmartPtr<LobbyGameList> mGames; //20;size24
+    SyncGameListEvent(LobbyGameList* inGames); // 0x75b0f0
+    virtual ~SyncGameListEvent(); // 0x75b160; explicit: writes its own vtable pointer
+    SmartPtr<LobbyGameList> mGames; // 0x20; 0x24 bytes
 };
 class JumpToRoomEvent : public LobbyEvent {
 public:
     JumpToRoomEvent(const GUIString& inRoomName, unsigned short inGroupId, const IPAddr& inAddress)
-        : LobbyEvent(100031), mRoomName(inRoomName), mGroupId(inGroupId), mAddress(inAddress) {}
-    GUIString mRoomName; unsigned short mGroupId; IPAddr mAddress; //20,24,28;size50
-    // Actual normal3b9bc0 has NO own vptr store: implicit destructor, Controls support.
+        : LobbyEvent(LobbyEvent_JumpToRoom), mRoomName(inRoomName), mGroupId(inGroupId), mAddress(inAddress) {}
+    GUIString mRoomName; unsigned short mGroupId; IPAddr mAddress; // 0x20, 0x24, 0x28; 0x50 bytes
+    // Implicit destructor 0x7b9bc0, emitted by the unit that creates the event.
 };
 class QuickPlayEvent : public LobbyEvent {
 public:
-    QuickPlayEvent(int inGameType) : LobbyEvent(100043), mGameType(inGameType) {}
-    int mGameType; //20;size24;VT453cc0,producer3c1750 coldtail3c18aa
+    QuickPlayEvent(int inGameType) : LobbyEvent(LobbyEvent_QuickPlay), mGameType(inGameType) {}
+    int mGameType; // 0x20; 0x24 bytes; vtable 0x853cc0; created at 0x7c1750
 };
-// Actual VT455904/type100049,size34: raw non-owning pointer20/string24.
-// Archived header names Image*; nominal spelling is version-qualified.
+// Vtable 0x855904, event type 100049, 0x34 bytes: an unowned image pointer at 0x20 and the link at 0x24.
 class SetCrossPromotionEvent : public LobbyEvent {
 public:
     SetCrossPromotionEvent(Image* inImage, const std::string& inLink)
-        : LobbyEvent(100049), mImage(inImage), mLink(inLink) {}
-    Image* mImage; //20, no retain/release in actual producers or destructor
-    std::string mLink; //24
-    // Original3ddb70 has no own-vptr store: natural implicit destructor.
+        : LobbyEvent(LobbyEvent_SetCrossPromotion), mImage(inImage), mLink(inLink) {}
+    Image* mImage; // 0x20, not owned (never retained or released)
+    std::string mLink; // 0x24
+    // Implicit destructor 0x7ddb70.
 };
-// Actual VT454444/type100060,size2c; complete producer3ca410 field/constructor proof.
+// Vtable 0x854444, event type 100060, 0x2c bytes; created at 0x7ca410.
 class UpdateAccountEvent : public LobbyEvent {
 public:
     UpdateAccountEvent(const GUIString& inEmail, const GUIString& inNewPassword, bool inNewsletter)
-        : LobbyEvent(100060), mEmail(inEmail), mNewPassword(inNewPassword), mNewsletter(inNewsletter) {}
-    GUIString mEmail; //20
-    GUIString mNewPassword; //24
-    bool mNewsletter; //28
-    // Normal3ca5f0 no own-vptr store: implicit producer-owned destructor, no authored marker.
+        : LobbyEvent(LobbyEvent_UpdateAccount), mEmail(inEmail), mNewPassword(inNewPassword), mNewsletter(inNewsletter) {}
+    GUIString mEmail; // 0x20
+    GUIString mNewPassword; // 0x24
+    bool mNewsletter; // 0x28
+    // Implicit destructor 0x7ca5f0, emitted by the unit that creates the event.
 };
-// Actual VT453df0/type100042, producer3c2f00; complete48B with IPAddr20.
+// Vtable 0x853df0, event type 100042, 0x48 bytes with the IPAddr at 0x20; created at 0x7c2f00.
 class QueryServerGroupsEvent : public LobbyEvent {
 public:
-    QueryServerGroupsEvent(const IPAddr& inAddress) : LobbyEvent(100042), mAddress(inAddress) {}
-    IPAddr mAddress; //20..48
-    // Normal3c3120 no own-vptr store: implicit producer-owned destructor, zero source marker.
+    QueryServerGroupsEvent(const IPAddr& inAddress) : LobbyEvent(LobbyEvent_QueryServerGroups), mAddress(inAddress) {}
+    IPAddr mAddress; // 0x20..0x48
+    // Implicit destructor 0x7c3120, emitted by the unit that creates the event.
 };
 }
 #endif

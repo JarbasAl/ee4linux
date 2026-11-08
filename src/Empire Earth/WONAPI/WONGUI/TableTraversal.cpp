@@ -1,4 +1,4 @@
-// Table traversal and span mutation over original-owned cells.
+// Table element construction cursor: row and column stepping and cell spans (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,70 +11,72 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyTableElement.h"
 namespace WONAPI {
-// Support0 necessary original traversal helper.
 // FUNCTION: WON 0x0070e000
+// Moves the build cursor to the start of the next row, adding the row if needed
 void TableElement::NextRow()
 {
-	mCurRow++;
-	mCurCol = -1;
-	EnsureNumRows(mCurRow+1);
+	this->mCurRow++;
+	this->mCurCol = -1;
+	this->EnsureNumRows(this->mCurRow+1);
 }
 
 // FUNCTION: WON 0x0070E020
+// Moves the build cursor to the next cell with contents in the current row (starting a row first if
+// needed), adding columns as it goes; returns that cell's info
 TableElement::CellInfo* TableElement::NextColumn()
 {
-	if(mCurRow<0)
-		NextRow();
+	if(this->mCurRow<0)
+		this->NextRow();
 
-	RowInfo &aRowInfo = mRowVector[mCurRow];
+	RowInfo &aRowInfo = this->mRowVector[this->mCurRow];
 	CellInfo *aCellInfo;
 	do
 	{
-		mCurCol++;
-		EnsureNumCols(mCurCol+1);
-		aCellInfo = GetCellInfoAt(aRowInfo,mCurCol);
-		mCurCell = aCellInfo->mContents.get();
-	} while(mCurCell==NULL);
+		this->mCurCol++;
+		this->EnsureNumCols(this->mCurCol+1);
+		aCellInfo = this->GetCellInfoAt(aRowInfo,this->mCurCol);
+		this->mCurCell = aCellInfo->mContents.get();
+	} while(this->mCurCell==NULL);
 
 	return aCellInfo;
 }
 
 // FUNCTION: WON 0x0070E080
+// Makes the current cell span the given rows and columns, emptying the covered cells and marking them with
+// their offset back to it; truncates the span to the table or grows the table
 void TableElement::SetCellSpan(int theRowSpan, int theColumnSpan, bool truncate)
 {
-	if(mCurCell!=NULL)
+	if(this->mCurCell==NULL)
+		return;
+	if(truncate)
 	{
-		if(truncate)
-		{
-			if(mCurRow + theRowSpan > mRowVector.size())
-				theRowSpan = mRowVector.size()-mCurRow;
+		if(this->mCurRow + theRowSpan > this->mRowVector.size())
+			theRowSpan = this->mRowVector.size()-this->mCurRow;
 
-			if(mCurCol + theColumnSpan > mColumnVector.size())
-				theColumnSpan = mColumnVector.size()-mCurCol;
-		}
-		else
-		{
-			EnsureNumCols(mCurCol + theColumnSpan);
-			EnsureNumRows(mCurRow + theRowSpan);
-		}
-
-		for(int i=0; i<theRowSpan; i++)
-		{
-			for(int j=0; j<theColumnSpan; j++)
-			{
-				CellInfo* anInfo = GetCellInfoAt(mCurRow+i,mCurCol+j);
-				if(i!=0 || j!=0)
-				{
-					anInfo->mContents = NULL;
-					anInfo->mColumnSpan = -j;
-					anInfo->mRowSpan = -i;
-				}
-			}
-		}
-
-		CellInfo *anInfo = GetCellInfoAt(mCurRow,mCurCol);
-		anInfo->mColumnSpan = theColumnSpan;
-		anInfo->mRowSpan = theRowSpan;
+		if(this->mCurCol + theColumnSpan > this->mColumnVector.size())
+			theColumnSpan = this->mColumnVector.size()-this->mCurCol;
 	}
+	else
+	{
+		this->EnsureNumCols(this->mCurCol + theColumnSpan);
+		this->EnsureNumRows(this->mCurRow + theRowSpan);
+	}
+
+	for(int i=0; i<theRowSpan; i++)
+	{
+		for(int j=0; j<theColumnSpan; j++)
+		{
+			CellInfo* anInfo = this->GetCellInfoAt(this->mCurRow+i,this->mCurCol+j);
+			if(i==0 && j==0)
+				continue;
+			anInfo->mContents = NULL;
+			anInfo->mColumnSpan = -j;
+			anInfo->mRowSpan = -i;
+		}
+	}
+
+	CellInfo *anInfo = this->GetCellInfoAt(this->mCurRow,this->mCurCol);
+	anInfo->mColumnSpan = theColumnSpan;
+	anInfo->mRowSpan = theRowSpan;
 }
 }

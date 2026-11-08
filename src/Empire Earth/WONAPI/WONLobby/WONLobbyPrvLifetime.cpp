@@ -1,4 +1,3 @@
-// Complete native singleton orchestration; genuine external lifetime providers.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -25,6 +24,7 @@
 #include "ee/wonapi/WONCRC16.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007630a0
+// Destroys the lobby's private state (members only)
 WONLobbyPrv::~WONLobbyPrv() {}
 }
 

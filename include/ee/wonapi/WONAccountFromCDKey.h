@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: full same-SDK account lookup/reset DBProxy operation owners.
+// No original address identified: WON SDK account lookup/reset DBProxy operations
 #ifndef EE_WONAPI_WONACCOUNTFROMCDKEY_H
 #define EE_WONAPI_WONACCOUNTFROMCDKEY_H
 #include "ee/wonapi/WONRouting.h"
@@ -26,22 +26,22 @@ protected:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 10 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18();
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset();
 
 public:
 	void SetCDKey(const char* theCDKey);
 
-	std::wstring& GetUserName() { return mUserName; }
-	std::wstring& GetPassword() { return mPassword; }
-	std::string&  GetEmail()	{ return mEmail; }
-	std::string&  GetLastLogin(){ return mLastLogin; }
-	std::string&  GetActivated(){ return mActivated; }
-	std::string&  GetCDKey()	{ return mCDKey; }
+	std::wstring& GetUserName() { return this->mUserName; }
+	std::wstring& GetPassword() { return this->mPassword; }
+	std::string&  GetEmail()	{ return this->mEmail; }
+	std::string&  GetLastLogin(){ return this->mLastLogin; }
+	std::string&  GetActivated(){ return this->mActivated; }
+	std::string&  GetCDKey()	{ return this->mCDKey; }
 
-	void SetProfileData(ProfileData* theData) { mProfileData = theData; }
-	ProfileData* GetProfileData() { return mProfileData.get(); }
+	void SetProfileData(ProfileData* theData) { this->mProfileData = theData; }
+	ProfileData* GetProfileData() { return this->mProfileData.get(); }
 	// Constructor
 public:
 	GetAccountFromCDKeyOp(ServerContext* theContext, std::string theCDKey, unsigned long theCommunity);
@@ -87,7 +87,7 @@ protected:
 protected:
 	enum MSGTYPE { MSGTYPE = 12 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
 	//virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
+	virtual void RunHook();						// Send - For Extended Pack
 	//virtual void Virtual18();
 
 public:
@@ -105,8 +105,8 @@ public:
 	ProfileData* GetProfileData() { return mProfileData.get(); }
 	*/
 
-	void SetActionFlag(ACTIONFLAG actionFlag) { mActionFlag = actionFlag; }
-	ACTIONFLAG GetActionFlag() { return mActionFlag; }
+	void SetActionFlag(ACTIONFLAG actionFlag) { this->mActionFlag = actionFlag; }
+	ACTIONFLAG GetActionFlag() { return this->mActionFlag; }
 	static const char* GetActionString(ACTIONFLAG actionFlag);
 
 	// Constructor

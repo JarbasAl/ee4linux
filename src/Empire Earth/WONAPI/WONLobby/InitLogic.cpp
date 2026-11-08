@@ -1,9 +1,5 @@
-// SCRATCH coherent Init cohort, zero new active credit pending root/type/COFF gates.
-// Existing six pilot bodies762B plus seven candidate bodies3354B =4116B nominal.
+// InitLogic: Internet lobby start-up (DNS, directory, version and firewall checks, terms of use, advert)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Full HTTP/DNS/session/default-tracker/context/event/IO declarations required.
-// No constructor stand-ins, opaque tails, aliases or new helper markers.
-// No whole-TU runtime authority. This script does not compile or promote source.
 #include <windows.h>
 #include <string>
 #include <list>
@@ -18,9 +14,10 @@
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "ee/wonapi/WONLobbyAccountLogic.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace WONAPI;
 // Timeout for the firewall detect and accept operations, in milliseconds.
-unsigned long WONAPI::gLobbyTimeout4E0EBC = 20000;
+unsigned long WONAPI::gLobbyAcceptTimeout = 20000;
 
 // The three controls the login screen disables while it initialises.
 struct LoginControlIds : public ControlIdSet {
@@ -29,43 +26,49 @@ struct LoginControlIds : public ControlIdSet {
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dd100
+// Creates the lobby start-up logic with its own HTTP session
 InitLogic::InitLogic()
 {
-    mHTTPSession = new HTTPSession;
+    this->mHTTPSession = new HTTPSession;
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dd200
+// Destroys the start-up logic (members only)
 InitLogic::~InitLogic() {}
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dd340
+// Looks up the choose-network-adapter dialog from the lobby layout
 void InitLogic::InitComponent(ComponentConfig* inConfig)
 {
-    SafeGetComponent(inConfig, mNetworkAdapterDialog, "ChooseNetworkAdapterDialog", __FILE__, 49);
+    SafeGetComponent(inConfig, this->mNetworkAdapterDialog, "ChooseNetworkAdapterDialog", __FILE__, 49);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dd370
+// Shows the network adapter dialog and, on OK, uses the chosen adapter's address for the lobby
 void InitLogic::ChooseNetworkAdapter()
 {
-    mNetworkAdapterDialog->Reset();
-    if (LobbyDoDialog(mNetworkAdapterDialog.get()) == 100001)
-        LobbyFn35B9C0(mNetworkAdapterDialog->GetSelectedAddress());
+    this->mNetworkAdapterDialog->Reset();
+    if (LobbyDoDialog(this->mNetworkAdapterDialog.get()) == 100001)
+        LobbySetNetworkAdapter(this->mNetworkAdapterDialog->GetSelectedAddress());
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dd3b0
+// Keeps the start-up errors the player has not ignored and broadcasts an init-failed status; true if any remain
+// (the player may ignore them only when they are no-Internet or account-server errors)
 bool InitLogic::SetError(int inError, const GUIString& inDescription)
 {
-    mErrors = inError & ~mIgnoredErrors;
-    if (mErrors != 0) {
-        bool allowIgnore = (mErrors & 5) == mErrors;
-        LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_InitFailed_String, inDescription, allowIgnore, 3), true);
+    this->mErrors = inError & ~mIgnoredErrors;
+    if (this->mErrors != 0) {
+        bool allowIgnore = (this->mErrors & 5) == this->mErrors;
+        LobbyBroadcastEvent(new LoginInitStatusEvent(::LobbyContainer_InitFailed_String, inDescription, allowIgnore, 3), true);
         return true;
     }
     return false;
@@ -74,77 +77,79 @@ bool InitLogic::SetError(int inError, const GUIString& inDescription)
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dd570
+// Starts the lobby checks: tests the Internet connection, clears the server lists on a first try, runs DNS
 void InitLogic::Start(bool inRetry)
 {
-    LobbyFn35B500(100004);
-    mErrors = 0;
+    LobbySetVersionStatus(WS_None);
+    this->mErrors = 0;
     LobbyConfig* config = GetLobbyConfig();
     if (config != NULL && config->mCheckForInternet && !AsyncSocket::HasInternetConnection()) {
-        if (SetError(1, ::LobbyContainer_NoConnection_String))
+        if (this->SetError(1, ::LobbyContainer_NoConnection_String))
             return;
     }
     if (!inRetry) {
-        ServerContext* account = LobbyFn35B1F0();
-        ServerContext* auth = LobbyFn35B250();
-        ServerContext* firewall = LobbyFn35B370();
-        ServerContext* routing = LobbyFn35B3D0();
+        ServerContext* account = LobbyGetAccountServers();
+        ServerContext* auth = LobbyGetAuthServers();
+        ServerContext* firewall = LobbyGetFirewallDetectServers();
+        ServerContext* routing = LobbyGetPatchServers();
         if (account != NULL) account->Clear();
         if (auth != NULL) auth->Clear();
         if (firewall != NULL) firewall->Clear();
         if (routing != NULL) routing->Clear();
     }
-    StartDNSTest();
+    this->StartDNSTest();
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dd630
+// Loads settings, binds the UDP port, disables the login buttons, starts or stops lobby music, starts the checks
 void InitLogic::Init()
 {
-    mIgnoredErrors = 0;
-    LobbyFn35E640();
-    IPAddr::SetLocalHost(LobbyFn35E3E0(), true);
-    LoadTOUTimes();
-    LobbyFn35BA00();
-    LobbyFn359120(100052, true);
+    this->mIgnoredErrors = 0;
+    LobbyLoadGlobalPrefs();
+    IPAddr::SetLocalHost(LobbyGetNetworkAdapter(), true);
+    this->LoadTOUTimes();
+    LobbyBindUDPPort();
+    LobbyBroadcastLobbyEvent(100052, true);
     Container* aRoot = GetLobbyRoot();
     if(aRoot == NULL)
         return;
 
     LoginControlIds anIds;
     anIds.Add(200001,200002,200003);
-    aRoot->Virtual8C(anIds, false);
+    aRoot->EnableControlsById(anIds, false);
     ::LobbyGlobal_LobbyMusic_Sound->SetLooping(true);
-    if(LobbyFn35E350())
-        ::LobbyGlobal_LobbyMusic_Sound->Fn329BD0();
+    if(LobbyGetLobbyMusic())
+        ::LobbyGlobal_LobbyMusic_Sound->Play();
     else
         ::LobbyGlobal_LobbyMusic_Sound->Stop();
-    Start(false);
+    this->Start(false);
 }
 
-// cross-promotion source candidate; preserves admitted17 above byte-for-byte.
 }
 
 namespace WONAPI {
-// 3dd810: all four accessors are nullable. This callback owns no returned context.
+// Any of the four lookups may return NULL; nothing happens then
 // FUNCTION: WON 0x7dd810
+// After a good DNS test, fills the directory, room directory and auth server lists and starts the next queries
 void InitLogic::DNSCompletion(AsyncOp* inOp)
 {
     LobbyConfig* config = GetLobbyConfig();
-    ServerContext* dir = LobbyFn35B2B0();
-    ServerContext* roomDir = LobbyFn35B310();
-    ServerContext* auth = LobbyFn35B250();
+    ServerContext* dir = LobbyGetDirServers();
+    ServerContext* roomDir = LobbyGetRoomDirServers();
+    ServerContext* auth = LobbyGetAuthServers();
     if (config == NULL || dir == NULL || roomDir == NULL || auth == NULL)
         return;
-    if (inOp->GetStatus() == 0) {
-        // Original constructs this address, sets byte0=true, and destroys its host
-        // after both asynchronous setup calls. It is distinct from loop temporaries.
+    if (inOp->GetStatus() == WS_Success) {
+        // The original builds this address with mRememberHostString set and destroys it only after both
+        // queries are started; it is separate from the per-entry addresses in the loops
         IPAddr address;
-        address.mB00 = true;
+        address.mRememberHostString = true;
         dir->RemoveAllAddresses();
-        std::list<std::string>::iterator it = config->mL54.begin();
+        std::list<std::string>::iterator it = config->mDirServers.begin();
         while (true) {
-            if (it == config->mL54.end())
+            if (it == config->mDirServers.end())
                 break;
             {
                 IPAddr anAddr(*it);
@@ -152,9 +157,9 @@ void InitLogic::DNSCompletion(AsyncOp* inOp)
             }
             ++it;
         }
-        it = config->mL60.begin();
+        it = config->mRoomDirServers.begin();
         while (true) {
-            if (it == config->mL60.end())
+            if (it == config->mRoomDirServers.end())
                 break;
             {
                 IPAddr anAddr(*it);
@@ -162,9 +167,9 @@ void InitLogic::DNSCompletion(AsyncOp* inOp)
             }
             ++it;
         }
-        it = config->mL6C.begin();
+        it = config->mAuthServers.begin();
         while (true) {
-            if (it == config->mL6C.end())
+            if (it == config->mAuthServers.end())
                 break;
             {
                 IPAddr anAddr(*it);
@@ -173,29 +178,31 @@ void InitLogic::DNSCompletion(AsyncOp* inOp)
             ++it;
         }
         if (roomDir->GetNumAddresses() < 1)
-            LobbyFn35B430();
-        StartHTTPDocuments();
-        StartDirectoryQuery();
+            LobbyResetRoomDirServers();
+        this->StartHTTPDocuments();
+        this->StartDirectoryQuery();
     } else {
-        SetError(2, ::LobbyContainer_DNSLookupFailed_String);
+        this->SetError(2, ::LobbyContainer_DNSLookupFailed_String);
     }
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dda10
+// Decodes the downloaded advert image and broadcasts it with the advert's link
 void InitLogic::CrossPromotionImageCompletion(AsyncOp* inOp)
 {
-    if (inOp->mStatus != 0)
+    if (inOp->mStatus != WS_Success)
         return;
     HTTPGetOp* op = static_cast<HTTPGetOp*>(inOp);
     SmartPtr<Image> image = Window::GetDefaultWindow()->DecodeImage(op->GetLocalPath().c_str());
-    LobbyFn359100(new SetCrossPromotionEvent(image.get(),mCrossPromotion),true);
+    LobbyBroadcastEvent(new SetCrossPromotionEvent(image.get(),this->mCrossPromotion),true);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7ddc00
+// Reads the 'link' and 'image' lines of the advert document and downloads the image
 void InitLogic::ParseCrossPromotion(const ByteBuffer* inDocument)
 {
     WriteBuffer storage(0,true);
@@ -205,14 +212,14 @@ void InitLogic::ParseCrossPromotion(const ByteBuffer* inDocument)
     char* token = storage.mData;
     char delimiters[] = " \t\n=";
     std::string imageURL("");
-    mCrossPromotion = "";
+    this->mCrossPromotion = "";
     token = strtok(token,delimiters);
     while (token != NULL) {
         if (_stricmp(token,"link") == 0) {
             token = strtok(NULL,"\n");
             if (token == NULL)
                 break;
-            mCrossPromotion = token;
+            this->mCrossPromotion = token;
         } else if (_stricmp(token,"image") == 0) {
             token = strtok(NULL,"\n");
             if (token == NULL)
@@ -227,40 +234,40 @@ void InitLogic::ParseCrossPromotion(const ByteBuffer* inDocument)
         SmartPtr<HTTPGetOp> op = new HTTPGetOp(imageURL);
         op->SetHTTPCache(HTTPCache::GetGlobalCache());
         op->mCompletion = new LogicCompletion<InitLogic>(&InitLogic::CrossPromotionImageCompletion,this);
-        mHTTPSession->AddOp(op.get());
+        this->mHTTPSession->AddOp(op.get());
     }
 }
 
 
-// directory cohort SCRATCH ONLY; whole typed operation gate still pending.
 }
 
 namespace WONAPI {
-// 3ddef0: requires the reviewed complete WONFile70 scalar/bool tail.
 // FUNCTION: WON 0x7ddef0
+// Records the modification times of the saved system and game terms-of-use files
 void InitLogic::LoadTOUTimes()
 {
-    WONFile file(LobbyFn35B630());
+    WONFile file(LobbyGetSysTOUPath());
     long systemTime = file.GetModifyTime();
-    file.SetFilePath(LobbyFn35B650());
+    file.SetFilePath(LobbyGetGameTOUPath());
     long gameTime = file.GetModifyTime();
-    LobbyFn35B5D0(systemTime, gameTime);
+    LobbySetTOUTimes(systemTime, gameTime);
 }
 }
 
 namespace WONAPI {
-// 3de090..3de272, one body with two FileWriterException& catch continuations.
+// Each of the two file writes has its own FileWriterException handler
 // FUNCTION: WON 0x7de090
+// Saves newer system and game terms-of-use documents to disk and re-reads their times
 void InitLogic::HandleTOU(GetHTTPDocumentOp* inOp)
 {
     long systemTime;
     long gameTime;
-    LobbyFn35B600(systemTime, gameTime);
+    LobbyGetTOUTimes(systemTime, gameTime);
     bool changed = false;
     if (inOp->GetDocumentStatus(HTTPDocOwner_Sys) == 0 && inOp->GetModifiedTime(HTTPDocOwner_Sys) > systemTime) {
         FileWriter writer;
         try {
-            if (writer.Open(LobbyFn35B630().c_str(), true)) {
+            if (writer.Open(LobbyGetSysTOUPath().c_str(), true)) {
                 ByteBufferPtr document = inOp->GetDocument(HTTPDocOwner_Sys);
                 if (document.get() != NULL && document->length() > 1)
                     writer.WriteBytes(document->data(), document->length() - 1);
@@ -272,7 +279,7 @@ void InitLogic::HandleTOU(GetHTTPDocumentOp* inOp)
     if (inOp->GetDocumentStatus(HTTPDocOwner_Game) == 0 && inOp->GetModifiedTime(HTTPDocOwner_Game) > gameTime) {
         FileWriter writer;
         try {
-            if (writer.Open(LobbyFn35B650().c_str(), true)) {
+            if (writer.Open(LobbyGetGameTOUPath().c_str(), true)) {
                 ByteBufferPtr document = inOp->GetDocument(HTTPDocOwner_Game);
                 if (document.get() != NULL && document->length() > 1)
                     writer.WriteBytes(document->data(), document->length() - 1);
@@ -281,29 +288,30 @@ void InitLogic::HandleTOU(GetHTTPDocumentOp* inOp)
         } catch (FileWriterException&) {}
     }
     if (changed)
-        LoadTOUTimes();
+        this->LoadTOUTimes();
 }
 }
 
 namespace WONAPI {
-// 3de280: original always broadcasts the document event before type dispatch.
+// The document event is always broadcast before the document type is looked at
 // FUNCTION: WON 0x7de280
+// Broadcasts a downloaded document, then saves terms of use or parses the advert (clearing an empty advert)
 void InitLogic::HTTPDocumentCompletion(AsyncOp* inOp)
 {
     GetHTTPDocumentOp* op = static_cast<GetHTTPDocumentOp*>(inOp);
-    LobbyFn359100(new GotHTTPDocumentEvent(op), true);
+    LobbyBroadcastEvent(new GotHTTPDocumentEvent(op), true);
     switch (op->mDocumentType) {
-    case 1:
-        HandleTOU(op);
+    case HTTPDocType_TOU:
+        this->HandleTOU(op);
         break;
-    case 2:
+    case HTTPDocType_ADV:
         {
             ByteBufferPtr document = op->GetDocument(HTTPDocOwner_Game);
             if (document.get() != NULL && document->length() > 1) {
-                ParseCrossPromotion(document.get());
+                this->ParseCrossPromotion(document.get());
                 return;
             }
-            LobbyFn359100(new SetCrossPromotionEvent(NULL, std::string("")), true);
+            LobbyBroadcastEvent(new SetCrossPromotionEvent(NULL, std::string("")), true);
             return;
         }
     }
@@ -311,36 +319,37 @@ void InitLogic::HTTPDocumentCompletion(AsyncOp* inOp)
 
 
 #include "ee/wonapi/EELobbySound.h"
-// Existing admitted13 code above preserved verbatim; final entry4/761 below SCRATCH only.
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007de4c0
+// Fills the auth, account, firewall and version server lists from the directory; reports missing ones,
+// else starts the version check and firewall test
 void InitLogic::DirectoryCompletion(AsyncOp* inOp)
 {
-    ServerContext* account = LobbyFn35B1F0();
-    ServerContext* auth = LobbyFn35B250();
-    ServerContext* firewall = LobbyFn35B370();
-    ServerContext* versions = LobbyFn35B3D0();
-    ServerContext* directory = LobbyFn35B2B0();
+    ServerContext* account = LobbyGetAccountServers();
+    ServerContext* auth = LobbyGetAuthServers();
+    ServerContext* firewall = LobbyGetFirewallDetectServers();
+    ServerContext* versions = LobbyGetPatchServers();
+    ServerContext* directory = LobbyGetDirServers();
     LobbyConfig* config = GetLobbyConfig();
     if (config == NULL || account == NULL || auth == NULL ||
         firewall == NULL || directory == NULL)
         return;
     WONStatus status = inOp->GetStatus();
-    if (status == 0 || status == -1223) {
+    if (status == WS_Success || status == WS_DirServ_MultiGetPartialFailure) {
     GetMultiDirOp* op = static_cast<GetMultiDirOp*>(inOp);
     const GetEntityRequestList& requests = op->GetRequestList();
     GetEntityRequestList::const_iterator i = requests.begin();
     int index = 0;
     for (; i != requests.end(); ++i,++index) {
-        GetEntityRequest* request = (*i).get();
+        GetEntityRequest* request = i->get();
         if (request->GetStatus() != 0)
             continue;
         ServerContext* selected = NULL;
         switch (index) {
         case 0:
-            if (config->mL6C.empty())
+            if (config->mAuthServers.empty())
                 selected = auth;
             break;
         case 1: selected = account; break;
@@ -373,141 +382,144 @@ void InitLogic::DirectoryCompletion(AsyncOp* inOp)
         }
         GUIString description(::LobbyContainer_NoServers_String);
         description.append(names);
-        if (SetError(errors,description))
+        if (this->SetError(errors,description))
             return;
     }
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(2);
-    StartVersionCheck();
-    StartFirewallTest();
+    this->StartVersionCheck();
+    this->StartFirewallTest();
     }
     else {
-        GUIString description = LobbyFormatString(::LobbyContainer_DirLookupFailure_String,LobbyFn366170(status));
-        SetError(0x20,description);
+        GUIString description = LobbyFormatString(::LobbyContainer_DirLookupFailure_String,GetWONStatusString(status));
+        this->SetError(0x20,description);
     }
 }
 
 
-// remaining Version/Firewall cohort; original-backed source, normal capture pending.
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007de8f0
+// Records the version check result; re-enables the login buttons when the version is usable, else reports it
 void InitLogic::VersionCompletion(AsyncOp* inOp)
 {
     Container* root = GetLobbyRoot();
     if (root == NULL)
         return;
     WONStatus status = inOp->GetStatus();
-    LobbyFn35B500(status);
-    if (status != 0 && status != -2816 && status != -2814) {
-        if (status == -2815 || status == -2800) {
-            ServerContext* versions = LobbyFn35B3D0();
+    LobbySetVersionStatus(status);
+    if (status != WS_Success && status != WS_DBProxyServ_ValidNotLatest && status != WS_DBProxyServ_OutOfDate) {
+        if (status == WS_DBProxyServ_OutOfDateNoUpdate || status == WS_DBProxyServ_DBError) {
+            ServerContext* versions = LobbyGetPatchServers();
             if (versions != NULL)
                 versions->NotifyFailed(static_cast<CheckValidVersionOp*>(inOp)->GetCurAddr());
         }
-        GUIString description = LobbyFormatString(::LobbyContainer_VersionCheckFailure_String,LobbyFn366170(status));
-        SetError(0x40,description);
+        GUIString description = LobbyFormatString(::LobbyContainer_VersionCheckFailure_String,GetWONStatusString(status));
+        this->SetError(0x40,description);
         return;
     }
     LoginControlIds ids;
     ids.Add(200001,200002,200003);
-    root->Virtual8C(ids,true);
-    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_InitComplete_String,gEmptyGUIString,false,2),true);
+    root->EnableControlsById(ids,true);
+    LobbyBroadcastEvent(new LoginInitStatusEvent(::LobbyContainer_InitComplete_String,gEmptyGUIString,false,2),true);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007deb50
+// Ends the firewall test: no connection means behind a firewall, one from the firewall server means not
 void InitLogic::AcceptCompletion(AsyncOp* inOp)
 {
-    AcceptOp* op = mAcceptOp.get();
+    AcceptOp* op = this->mAcceptOp.get();
     if (inOp != op)
         return;
-    mAcceptOp = NULL;
-    if (op->GetStatus() != 0) {
-        LobbyFn361770(true);
-        LobbyFn359120(100055,true);
+    this->mAcceptOp = NULL;
+    if (op->GetStatus() != WS_Success) {
+        LobbySetBehindFirewall(true);
+        LobbyBroadcastLobbyEvent(100055,true);
         return;
     }
-    if (op->mAcceptedSocket->GetDestAddr().Fn2B2FB0() == mFirewallAddress.Fn2B2FB0()) {
-        LobbyFn361770(false);
-        LobbyFn359120(100055,true);
+    if (op->mAcceptedSocket->GetDestAddr().GetHost() == this->mFirewallAddress.GetHost()) {
+        LobbySetBehindFirewall(false);
+        LobbyBroadcastLobbyEvent(100055,true);
         return;
     }
-    mAcceptOp = new AcceptOp(op->mSocket.get());
-    RunOp(mAcceptOp.get(),new LogicCompletion<InitLogic>(&InitLogic::AcceptCompletion,this),
-          gLobbyTimeout4E0EBC);
+    this->mAcceptOp = new AcceptOp(op->mSocket.get());
+    this->RunOp(this->mAcceptOp.get(),new LogicCompletion<InitLogic>(&InitLogic::AcceptCompletion,this),
+          gLobbyAcceptTimeout);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007ded20
+// Records our public address and waits for the firewall server to connect back; failure means behind a firewall
 void InitLogic::FirewallCompletion(AsyncOp* inOp)
 {
     DetectFirewallOp* op = static_cast<DetectFirewallOp*>(inOp);
-    if (op->mStatus == 0) {
-        LobbyFn3615E0(op->GetPublicAddr());
-        if (mFirewallSocket.get() != NULL) {
-            mFirewallAddress = op->GetCurAddr();
-            mAcceptOp = new AcceptOp(mFirewallSocket.get());
-            RunOp(mAcceptOp.get(),new LogicCompletion<InitLogic>(&InitLogic::AcceptCompletion,this),
-                  gLobbyTimeout4E0EBC);
-            mFirewallSocket = NULL;
+    if (op->mStatus == WS_Success) {
+        LobbySetPublicAddress(op->GetPublicAddr());
+        if (this->mFirewallSocket.get() != NULL) {
+            this->mFirewallAddress = op->GetCurAddr();
+            this->mAcceptOp = new AcceptOp(this->mFirewallSocket.get());
+            this->RunOp(this->mAcceptOp.get(),new LogicCompletion<InitLogic>(&InitLogic::AcceptCompletion,this),
+                  gLobbyAcceptTimeout);
+            this->mFirewallSocket = NULL;
         }
     } else {
-        LobbyFn361770(true);
+        LobbySetBehindFirewall(true);
     }
-    LobbyFn359120(100055,true);
+    LobbyBroadcastLobbyEvent(100055,true);
 }
 }
 
 namespace WONAPI {
-// Complete original-backed next candidates. Scratch only; canonical ABI gates pending.
-// 3def30: DNSTestOp and LogicCompletion allocation require their full class contracts.
 // FUNCTION: WON 0x7def30
+// Broadcasts the start status and tests DNS on the first directory server
 void InitLogic::StartDNSTest()
 {
     LobbyConfig* config = GetLobbyConfig();
-    if (config == NULL || config->mL54.empty())
+    if (config == NULL || config->mDirServers.empty())
         return;
-    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_InitStart_String, gEmptyGUIString, false, 1), true);
-    SmartPtr<DNSTestOp> op = new DNSTestOp(config->mL54.front());
-    RunTrackedOp(op.get(), new LogicCompletion<InitLogic>(&InitLogic::DNSCompletion, this), 0);
+    LobbyBroadcastEvent(new LoginInitStatusEvent(::LobbyContainer_InitStart_String, gEmptyGUIString, false, 1), true);
+    SmartPtr<DNSTestOp> op = new DNSTestOp(config->mDirServers.front());
+    this->RunTrackedOp(op.get(), new LogicCompletion<InitLogic>(&InitLogic::DNSCompletion, this), 0);
 }
 }
 
 namespace WONAPI {
-// 3df0c0: all three op locals survive until return, preserving original ownership/EH.
+// All three op pointers live until return, as in the original's cleanup order
 // FUNCTION: WON 0x7df0c0
+// Requests the message of the day, terms of use and advert documents for the product and language
 void InitLogic::StartHTTPDocuments()
 {
     LobbyConfig* config = GetLobbyConfig();
     if (config == NULL)
         return;
-    SmartPtr<GetHTTPDocumentOp> motd = new GetHTTPDocumentOp(config->mS78, HTTPDocType_MOTD);
-    motd->SetExtraConfig(config->mSB8);
-    motd->SetHTTPSession(mHTTPSession.get());
-    RunTrackedOp(motd.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
-    SmartPtr<GetHTTPDocumentOp> tou = new GetHTTPDocumentOp(config->mS78, HTTPDocType_TOU);
-    tou->mPath = config->mSB8;
-    tou->mSession = mHTTPSession.get();
-    RunTrackedOp(tou.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
-    SmartPtr<GetHTTPDocumentOp> adv = new GetHTTPDocumentOp(config->mS78, HTTPDocType_ADV);
-    adv->SetExtraConfig(config->mSB8);
-    adv->mSession = mHTTPSession.get();
-    RunTrackedOp(adv.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
+    SmartPtr<GetHTTPDocumentOp> motd = new GetHTTPDocumentOp(config->mProductName, HTTPDocType_MOTD);
+    motd->SetExtraConfig(config->mLanguage);
+    motd->SetHTTPSession(this->mHTTPSession.get());
+    this->RunTrackedOp(motd.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
+    SmartPtr<GetHTTPDocumentOp> tou = new GetHTTPDocumentOp(config->mProductName, HTTPDocType_TOU);
+    tou->mPath = config->mLanguage;
+    tou->mSession = this->mHTTPSession.get();
+    this->RunTrackedOp(tou.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
+    SmartPtr<GetHTTPDocumentOp> adv = new GetHTTPDocumentOp(config->mProductName, HTTPDocType_ADV);
+    adv->SetExtraConfig(config->mLanguage);
+    adv->mSession = this->mHTTPSession.get();
+    this->RunTrackedOp(adv.get(), new LogicCompletion<InitLogic>(&InitLogic::HTTPDocumentCompletion, this), 0);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007df410
+// Broadcasts 'querying servers' and asks the directory for the auth, database, firewall and patch servers
 void InitLogic::StartDirectoryQuery()
 {
-    ServerContext* context = LobbyFn35B2B0();
+    ServerContext* context = LobbyGetDirServers();
     if (context == NULL)
         return;
-    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_QueryingServers_String, gEmptyGUIString, false, 0), true);
+    LobbyBroadcastEvent(new LoginInitStatusEvent(::LobbyContainer_QueryingServers_String, gEmptyGUIString, false, 0), true);
     SmartPtr<GetMultiDirOp> op = new GetMultiDirOp(context);
     op->SetFlags(0x04000002);
     op->AddPath(L"/TitanServers/Auth");
@@ -515,8 +527,8 @@ void InitLogic::StartDirectoryQuery()
     op->AddPath(L"/TitanServers/Firewall");
     LobbyConfig* config = GetLobbyConfig();
     if (config != NULL)
-        op->AddPath(config->mW88 + L"/Patch");
-    RunTrackedOp(op.get(), new LogicCompletion<InitLogic>(&InitLogic::DirectoryCompletion, this), 0);
+        op->AddPath(config->mProductDirectory + L"/Patch");
+    this->RunTrackedOp(op.get(), new LogicCompletion<InitLogic>(&InitLogic::DirectoryCompletion, this), 0);
     // LOST-DEBUG: none: exact only
     EE_LOST_TRACE(op.get());
 }
@@ -524,91 +536,97 @@ void InitLogic::StartDirectoryQuery()
 
 namespace WONAPI {
 // FUNCTION: WON 0x007df6c0
+// Broadcasts 'checking version' and asks the version servers whether this game version is valid
 void InitLogic::StartVersionCheck()
 {
-    ServerContext* versions = LobbyFn35B3D0();
+    ServerContext* versions = LobbyGetPatchServers();
     LobbyConfig* config = GetLobbyConfig();
     if (versions == NULL || config == NULL)
         return;
-    LobbyFn359100(new LoginInitStatusEvent(::LobbyContainer_CheckingVersion_String,gEmptyGUIString,false,0),true);
-    SmartPtr<CheckValidVersionOp> op = new CheckValidVersionOp(config->mS78,versions);
-    op->SetConfigName(config->mSB8);
-    op->SetVersion(config->mS98);
-    RunTrackedOp(op.get(),new LogicCompletion<InitLogic>(&InitLogic::VersionCompletion,this),0);
+    LobbyBroadcastEvent(new LoginInitStatusEvent(::LobbyContainer_CheckingVersion_String,gEmptyGUIString,false,0),true);
+    SmartPtr<CheckValidVersionOp> op = new CheckValidVersionOp(config->mProductName,versions);
+    op->SetConfigName(config->mLanguage);
+    op->SetVersion(config->mVersion);
+    this->RunTrackedOp(op.get(),new LogicCompletion<InitLogic>(&InitLogic::VersionCompletion,this),0);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007df880
+// Starts firewall detection on the lobby port and opens a listening socket for the server's connect-back
 void InitLogic::StartFirewallTest()
 {
-    ServerContext* firewall = LobbyFn35B370();
+    ServerContext* firewall = LobbyGetFirewallDetectServers();
     if (firewall == NULL)
         return;
-    KillFirewallTest();
-    LobbyFn361440();
+    this->KillFirewallTest();
+    LobbyResetFirewallTest();
     SmartPtr<DetectFirewallOp> op = new DetectFirewallOp(firewall);
-    op->SetListenPort(LobbyFn361400());
+    op->SetListenPort(LobbyGetLobbyPort());
     op->SetDoListen(false);
     op->SetWaitForConnect(false);
-    RunTrackedOp(op.get(),new LogicCompletion<InitLogic>(&InitLogic::FirewallCompletion,this),0);
-    LobbyFn359120(100055,true);
-    mFirewallSocket = new AsyncSocket(0);
-    WONStatus aStatus = mFirewallSocket->Fn2B0D90(LobbyFn361400(),0);
+    this->RunTrackedOp(op.get(),new LogicCompletion<InitLogic>(&InitLogic::FirewallCompletion,this),0);
+    LobbyBroadcastLobbyEvent(100055,true);
+    this->mFirewallSocket = new AsyncSocket(0);
+    WONStatus aStatus = this->mFirewallSocket->Fn2B0D90(LobbyGetLobbyPort(),0);
     if (aStatus == 0) {
-        aStatus = mFirewallSocket->Fn2B0FC0(1000);
+        aStatus = this->mFirewallSocket->Listen(1000);
         if (aStatus == 0)
             return;
     }
-    mFirewallSocket = NULL;
+    this->mFirewallSocket = NULL;
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dfa80
+// Stops waiting for a firewall connect-back and closes its sockets
 void InitLogic::KillFirewallTest()
 {
-    if (mAcceptOp.get() != NULL) {
-        mAcceptOp->Kill(true);
-        if (mAcceptOp->mSocket.get() != NULL)
-            mAcceptOp->mSocket->Fn2B1AD0();
-        mAcceptOp = NULL;
+    if (this->mAcceptOp.get() != NULL) {
+        this->mAcceptOp->Kill(true);
+        if (this->mAcceptOp->mSocket.get() != NULL)
+            this->mAcceptOp->mSocket->Close();
+        this->mAcceptOp = NULL;
     }
-    mFirewallSocket = NULL;
+    this->mFirewallSocket = NULL;
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dfb00
+// Cancels every HTTP download and the firewall test
 void InitLogic::KillHook()
 {
-    mHTTPSession->KillAll();
-    KillFirewallTest();
+    this->mHTTPSession->KillAll();
+    this->KillFirewallTest();
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dfb20
+// Handles the login screen's Back, Internet and choose-network-adapter buttons
 void InitLogic::HandleControlEvent(int inControlId)
 {
     switch (inControlId) {
-    case 200006: LobbyFn3627F0(0); break;
-    case 200008: LobbyFn360F00(); break;
-    case 200023: ChooseNetworkAdapter(); break;
+    case ID_LoginScreenBack: LobbyExit(0); break;
+    case ID_ShowInternetScreen: LobbyShowInternetScreen(); break;
+    case ID_ChooseNetworkAdapter: this->ChooseNetworkAdapter(); break;
     }
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x7dfb50
+// Retries start-up (event 100045), or ignores the current errors and retries (event 100025)
 void InitLogic::HandleComponentEvent(ComponentEvent* inEvent)
 {
     if (inEvent->mType != 100045) {
         if (inEvent->mType != 100025)
             return;
-        mIgnoredErrors |= mErrors;
+        this->mIgnoredErrors |= this->mErrors;
     }
-    Start(true);
+    this->Start(true);
 }
 }
 

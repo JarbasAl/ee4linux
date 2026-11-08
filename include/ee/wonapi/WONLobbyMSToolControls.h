@@ -2,8 +2,7 @@
 #define EE_WONAPI_WONLOBBYMSTOOLCONTROLS_H
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Complete genuine SDK classes with no additional data members; not opaque stand-ins.
-// Native identities remain unlocated; no handwritten implicit lifetime definitions.
+// Classes with no data members of their own (not identified in the original exe).
 class MSScrollButtonContainer : public ButtonScroller {
 public:
     MSScrollButtonContainer(ScrollArea*);

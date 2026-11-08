@@ -1,4 +1,4 @@
-// Source-only logical image decoders, no runtime substitution authority.
+// Image decoder base class and the extension-dispatching multi-decoder (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,11 +15,11 @@
 namespace WONAPI {
 ImageAttributes::ImageAttributes()
 {
-    mWidth=mHeight=0;
+    this->mWidth=this->mHeight=0;
 }
 ImageDecoder::ImageDecoder()
 {
-    mFileReader=NULL;
+    this->mFileReader=NULL;
 }
 ImageDecoder::~ImageDecoder() {}
 SmartPtr<Animation> ImageDecoder::GetAnimation() { return NULL; }
@@ -30,38 +30,39 @@ SmartPtr<Animation> ImageDecoder::GetAnimation() { return NULL; }
 // (??1ImageDecoder@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x00747940
+// Decodes a raw image and converts it to a native image for the display context; NULL on failure
 SmartPtr<NativeImage> ImageDecoder::DoDecode(DisplayContext* context)
 {
-    SmartPtr<RawImage> image=DoDecodeRaw();
+    SmartPtr<RawImage> image=this->DoDecodeRaw();
     if(image.get()!=NULL) return image->GetNative(context);
     return NULL;
 }
 SmartPtr<NativeImage> ImageDecoder::Decode(DisplayContext* context,const char* path)
 {
     FileReader reader(path);
-    return Decode(context,reader);
+    return this->Decode(context,reader);
 }
 SmartPtr<NativeImage> ImageDecoder::Decode(DisplayContext* context,FileReader& reader)
 {
     if(reader.mFile==NULL && reader.mBuffer==NULL) return NULL;
-    mFileReader=&reader;
-    return DoDecode(context);
+    this->mFileReader=&reader;
+    return this->DoDecode(context);
 }
 SmartPtr<RawImage> ImageDecoder::DecodeRaw(const char* path)
 {
     FileReader reader(path);
-    return DecodeRaw(reader);
+    return this->DecodeRaw(reader);
 }
 SmartPtr<RawImage> ImageDecoder::DecodeRaw(FileReader& reader)
 {
     if(reader.mFile==NULL && reader.mBuffer==NULL) return NULL;
-    mFileReader=&reader;
-    return DoDecodeRaw(); //target has no FileReaderException catch in this overload
+    this->mFileReader=&reader;
+    return this->DoDecodeRaw(); // the original has no FileReaderException catch in this overload
 }
 bool ImageDecoder::GetImageAttributes(const char* path,ImageAttributes& attributes)
 {
     FileReader reader(path);
-    return GetImageAttributes(reader,attributes);
+    return this->GetImageAttributes(reader,attributes);
 }
 // FUNCTION: WON 0x007479f0
 // (?Decode@ImageDecoder@WONAPI@@QAE?AV?$SmartPtr@VNativeImage@WONAPI@@@2@PAVDisplayContext@2@PBD@Z)
@@ -79,11 +80,13 @@ bool ImageDecoder::GetImageAttributes(const char* path,ImageAttributes& attribut
 // (?GetImageAttributes@ImageDecoder@WONAPI@@QAE_NPBDAAVImageAttributes@2@@Z)
 
 // FUNCTION: WON 0x00747be0
+// Reads the image attributes (size) from an open file reader; false if the reader is empty or a read
+// error is thrown
 bool ImageDecoder::GetImageAttributes(FileReader& reader,ImageAttributes& attributes)
 {
     if(reader.mFile==NULL && reader.mBuffer==NULL) return false;
-    mFileReader=&reader;
-    try { return DoGetAttrib(attributes); }
+    this->mFileReader=&reader;
+    try { return this->DoGetAttrib(attributes); }
     catch(FileReaderException&) {}
     return false;
 }
@@ -98,88 +101,101 @@ MultiImageDecoder::MultiImageDecoder() {}
 // (??1?$set@PAVImageDecoder@WONAPI@@U?$less@PAVImageDecoder@WONAPI@@@std@@V?$allocator@PAVImageDecoder@WONAPI@@@4@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x00747eb0
+// Destroys the multi-decoder, deleting every registered decoder
 MultiImageDecoder::~MultiImageDecoder()
 {
-    DecoderSet::iterator i=mDecoderSet.begin();
-    while(i!=mDecoderSet.end())
+    DecoderSet::iterator i=this->mDecoderSet.begin();
+    while(i!=this->mDecoderSet.end())
     {
         delete *i;
         ++i;
     }
 }
 // FUNCTION: WON 0x00748080
+// Registers a decoder for a file extension, replacing any earlier decoder for that extension
 void MultiImageDecoder::AddDecoder(ImageDecoder* decoder,const char* extension)
 {
-    // Target retains all distinct pointers, then replaces this extension's map value.
-    mDecoderSet.insert(decoder);
-    mDecoderMap[extension]=decoder;
+    // A replaced decoder stays in the set and is still deleted by the destructor
+    this->mDecoderSet.insert(decoder);
+    this->mDecoderMap[extension]=decoder;
 }
 // FUNCTION: WON 0x00748270
+// Selects the decoder by the path's file extension
 void MultiImageDecoder::SetFileName(const char* path)
 {
     WONFile file(path);
-    SetCurExtension(file.GetFileExtension().c_str());
+    this->SetCurExtension(file.GetFileExtension().c_str());
 }
 // FUNCTION: WON 0x00748450
+// Decodes the file at the path into a native image with the decoder for its extension
 SmartPtr<NativeImage> MultiImageDecoder::Decode(DisplayContext* context,const char* path)
 {
-    SetFileName(path);
+    this->SetFileName(path);
     return ImageDecoder::Decode(context,path);
 }
 // FUNCTION: WON 0x00748490
+// Decodes the file at the path into a raw image with the decoder for its extension
 SmartPtr<RawImage> MultiImageDecoder::DecodeRaw(const char* path)
 {
-    SetFileName(path);
+    this->SetFileName(path);
     return ImageDecoder::DecodeRaw(path);
 }
 // FUNCTION: WON 0x007484c0
+// Reads the attributes of the file at the path with the decoder for its extension
 bool MultiImageDecoder::GetImageAttributes(const char* path,ImageAttributes& attributes)
 {
-    SetFileName(path);
+    this->SetFileName(path);
     return ImageDecoder::GetImageAttributes(path,attributes);
 }
 // FUNCTION: WON 0x007484e0
+// Decodes the current reader into a native image with the current extension's decoder, keeping that
+// decoder's animation; NULL when no decoder handles the extension
 SmartPtr<NativeImage> MultiImageDecoder::DoDecode(DisplayContext* context)
 {
-    mAnimation=NULL;
-    DecoderMap::iterator i=mDecoderMap.find(mCurExtension);
-    if(i==mDecoderMap.end()) return NULL;
+    this->mAnimation=NULL;
+    DecoderMap::iterator i=this->mDecoderMap.find(this->mCurExtension);
+    if(i==this->mDecoderMap.end()) return NULL;
     ImageDecoder* decoder=i->second;
-    SmartPtr<NativeImage> image=decoder->Decode(context,*mFileReader);
-    if(image.get()!=NULL) mAnimation=decoder->GetAnimation();
+    SmartPtr<NativeImage> image=decoder->Decode(context,*this->mFileReader);
+    if(image.get()!=NULL) this->mAnimation=decoder->GetAnimation();
     return image;
 }
 // FUNCTION: WON 0x00748670
+// Decodes the current reader into a raw image with the current extension's decoder, keeping that
+// decoder's animation; NULL when no decoder handles the extension
 SmartPtr<RawImage> MultiImageDecoder::DoDecodeRaw()
 {
-    mAnimation=NULL;
-    DecoderMap::iterator i=mDecoderMap.find(mCurExtension);
-    if(i==mDecoderMap.end()) return NULL;
+    this->mAnimation=NULL;
+    DecoderMap::iterator i=this->mDecoderMap.find(this->mCurExtension);
+    if(i==this->mDecoderMap.end()) return NULL;
     ImageDecoder* decoder=i->second;
-    SmartPtr<RawImage> image=decoder->DecodeRaw(*mFileReader);
-    if(image.get()!=NULL) mAnimation=decoder->GetAnimation();
+    SmartPtr<RawImage> image=decoder->DecodeRaw(*this->mFileReader);
+    if(image.get()!=NULL) this->mAnimation=decoder->GetAnimation();
     return image;
 }
 // FUNCTION: WON 0x007487f0
+// Reads the current reader's image attributes with the current extension's decoder; false if none
 bool MultiImageDecoder::DoGetAttrib(ImageAttributes& attributes)
 {
-    DecoderMap::iterator i=mDecoderMap.find(mCurExtension);
-    if(i==mDecoderMap.end()) return false;
+    DecoderMap::iterator i=this->mDecoderMap.find(this->mCurExtension);
+    if(i==this->mDecoderMap.end()) return false;
     ImageDecoder* aDecoder=i->second;
-    return aDecoder->GetImageAttributes(*mFileReader,attributes);
+    return aDecoder->GetImageAttributes(*this->mFileReader,attributes);
 }
 // FUNCTION: WON 0x00748870
+// Returns the last decoded animation; NULL for a single-frame one unless evenIfOnlyOneFrame is set
 SmartPtr<Animation> MultiImageDecoder::GetAnimation(bool evenIfOnlyOneFrame)
 {
-    if(evenIfOnlyOneFrame) return mAnimation;
-    else if(mAnimation.get()==NULL || mAnimation->GetNumFrames()<=1) return NULL;
-    else return mAnimation;
+    if(evenIfOnlyOneFrame) return this->mAnimation;
+    else if(this->mAnimation.get()==NULL || this->mAnimation->GetNumFrames()<=1) return NULL;
+    else return this->mAnimation;
 }
 // FUNCTION: WON 0x007488e0
+// Creates a copy of the multi-decoder with a duplicate of every per-extension decoder
 ImageDecoder* MultiImageDecoder::Duplicate()
 {
     MultiImageDecoder* decoder=new MultiImageDecoder;
-    decoder->mDecoderMap=mDecoderMap;
+    decoder->mDecoderMap=this->mDecoderMap;
     DecoderMap::iterator i=decoder->mDecoderMap.begin();
     while(i!=decoder->mDecoderMap.end())
     {
@@ -192,29 +208,29 @@ ImageDecoder* MultiImageDecoder::Duplicate()
 }
 
 
-// Genuine SDK memory-source decoder overloads; SOURCE_ONLY_NO_NATIVE_ID.
+// Decoder overloads that read from a memory buffer (not identified in the original exe)
 namespace WONAPI {
 SmartPtr<NativeImage> ImageDecoder::Decode(DisplayContext *theContext, const void *theData, unsigned long theDataLen)
 {
 	FileReader aReader(theData,theDataLen);
-	return Decode(theContext, aReader);
+	return this->Decode(theContext, aReader);
 }
 
 SmartPtr<RawImage> ImageDecoder::DecodeRaw(const void *theData, unsigned long theDataLen)
 {
 	FileReader aReader(theData,theDataLen);
-	return DecodeRaw(aReader);
+	return this->DecodeRaw(aReader);
 }
 
 bool ImageDecoder::GetImageAttributes(const void *theData, unsigned long theDataLen, ImageAttributes &theAttrib)
 {
 	FileReader aReader(theData,theDataLen);
-	return GetImageAttributes(aReader,theAttrib);
+	return this->GetImageAttributes(aReader,theAttrib);
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: existing genuine SDK helper signatures, proposed explicit merged-target allocation port.
+// Raw image allocation helpers for decoders (not identified in the original exe)
 SmartPtr<RawImage32> ImageDecoder::CreateRawImage32(int theWidth,int theHeight)
 {
     return new RawImage32(theWidth,theHeight);

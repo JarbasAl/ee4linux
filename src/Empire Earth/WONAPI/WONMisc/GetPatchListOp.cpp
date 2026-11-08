@@ -1,6 +1,6 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: missing SDK patch-server request/reply implementation.
-// Missing unit uses proposed existing DBProxy/patch-server family profile.
+// GetPatchListOp: patch list request and reply through the DB proxy server (WON SDK)
+// No original address identified (file grouping inferred)
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,6 +10,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONPatchProtocol.h"
+#include "ee/wonapi/WONStatus.h"
 
 using namespace WONAPI;
 
@@ -19,7 +20,7 @@ GetPatchListOp::GetPatchListOp(ServerContext* theContext)
 	: DBProxyOp(theContext),
 	  mMsgType(17)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,7 @@ GetPatchListOp::GetPatchListOp(const IPAddr& theAddr)
 	: DBProxyOp(theAddr),
 	  mMsgType(17)
 {
-	Init();
+	this->Init();
 } 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,18 +40,18 @@ GetPatchListOp::~GetPatchListOp() // Safety Lock -- Enforces Smart Ptr Use
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus GetPatchListOp::Virtual14()
+WONStatus GetPatchListOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
-	if (mSubMessageReplyType != mMsgType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mMsgType+1)
+		return this->InvalidReplyHeader();
 	
 	// Do extended unpack
-	ReadBuffer readBuf(mReplyData->data(), mReplyData->length());
+	ReadBuffer readBuf(this->mReplyData->data(), this->mReplyData->length());
 
 	unsigned short numPatches = readBuf.ReadShort();
 	for (int patchNum=0; patchNum<numPatches; ++patchNum)
@@ -61,46 +62,46 @@ WONStatus GetPatchListOp::Virtual14()
 
 		SmartPtr<PatchData> thePatchData = new PatchData;
 		thePatchData->ReadFromBuffer(patchData, true);
-		mPatchDataList.push_back(thePatchData);
+		this->mPatchDataList.push_back(thePatchData);
 	}
 
 	// Finished
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetPatchListOp::Virtual04()
+void GetPatchListOp::RunHook()
 {
-	mMessageType=1004;
-	mSubMessageType=mMsgType;
+	this->mMessageType=1004;
+	this->mSubMessageType=this->mMsgType;
 
 	// Pack the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendString(mProductName);
-	requestData.AppendString(mConfigName);
-	requestData.AppendString(mFromVersion);
-	requestData.AppendString(mToVersion);
-	requestData.AppendByte(mStateFilter);
+	requestData.AppendString(this->mProductName);
+	requestData.AppendString(this->mConfigName);
+	requestData.AppendString(this->mFromVersion);
+	requestData.AppendString(this->mToVersion);
+	requestData.AppendByte(this->mStateFilter);
 	
 
 	// Pack and call base class implementation
-	mRequestData=requestData.ToByteBuffer(true);
-	DBProxyOp::Virtual04();
+	this->mRequestData=requestData.ToByteBuffer(true);
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GetPatchListOp::Init()
 {
-	Virtual18();
+	this->Reset();
 	ServerRequestOp::mLengthFieldSize = 4;
 
-	mProductName	= "";
-	mConfigName		= "";
-	mFromVersion	= "";
-	mToVersion		= "";
-	mStateFilter	= 2;
+	this->mProductName	= "";
+	this->mConfigName		= "";
+	this->mFromVersion	= "";
+	this->mToVersion		= "";
+	this->mStateFilter	= 2;
 }
 

@@ -1,4 +1,4 @@
-// Complete same-SDK new configuration owners; SOURCE_ONLY_NO_NATIVE_ID.
+// No original address identified: WON SDK configuration classes
 
 #ifndef _TITLE_CONFIG_H_
 #define _TITLE_CONFIG_H_
@@ -17,9 +17,9 @@ public:
 	TitleConfig(bool alreadyInTitle = false);
 
 	static ConfigObject* ConfigFactory() { return new TitleConfig(); }
-	virtual bool Virtual04(ConfigParser* theParser, const std::string& theTitleType);
-	virtual bool Virtual0C(ConfigParser* theParser);
-	virtual bool Virtual10(ConfigParser* theParser);
+	virtual bool HandleInstruction(ConfigParser* theParser, const std::string& theTitleType);
+	virtual bool PreParse(ConfigParser* theParser);
+	virtual bool PostParse(ConfigParser* theParser);
 	std::string ToString(bool includeName) const;
 
 	bool mAlreadyInTitle;
@@ -71,9 +71,9 @@ public:
 	CommunityConfig(const std::wstring& theCommunityName, unsigned long theCommunityID); // For dummy versions in authentication
 
 	static ConfigObject* ConfigFactory() { return new CommunityConfig(); }
-	virtual bool Virtual04(ConfigParser* theParser, const std::string& theCommunityType);
-	virtual bool Virtual0C(ConfigParser* theParser);
-	virtual bool Virtual10(ConfigParser* theParser);
+	virtual bool HandleInstruction(ConfigParser* theParser, const std::string& theCommunityType);
+	virtual bool PreParse(ConfigParser* theParser);
+	virtual bool PostParse(ConfigParser* theParser);
 	std::string ToString(void) const;
 
 	bool mAlreadyInCommunity;

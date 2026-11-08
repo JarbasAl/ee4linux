@@ -1,5 +1,5 @@
-// Genuine SDK resource collection writer, split from the original combined reader/writer unit.
-// SOURCE_ONLY_NO_NATIVE_ID: Native entry identities are unlocated, zero primary/physical credit.
+// Resource collection writer: builds a resource file and its C header of ids (split from the reader;
+// not identified in the original exe; file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -19,16 +19,16 @@ using namespace std;
 static const int RESOURCE_VERSION = 1;
 ResourceCollectionWriter::ResourceCollectionWriter()
 {
-	mTrackByName = true;
-	mDoInStringFilter = false;
-	mCurId = 0;
+	this->mTrackByName = true;
+	this->mDoInStringFilter = false;
+	this->mCurId = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ResourceCollectionWriter::~ResourceCollectionWriter()
 {
-	Close();
+	this->Close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@ bool ResourceCollectionWriter::OpenNew(const GUIString &theFileName)
 {
 	WONFile aFile(theFileName);
 	aFile.Delete(true);
-	return Open(theFileName);
+	return this->Open(theFileName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,19 +53,19 @@ bool ResourceCollectionWriter::Open(const GUIString &theFileName)
 void ResourceCollectionWriter::Close()
 {
 	ResourceCollection::Close();
-	mFileWriter.Close();
-	mCurId = 0;
-	mHadDelete = false;
-	mHadRename = false;
-	mHadIdChange = false;
-	mHadAdd = false;
+	this->mFileWriter.Close();
+	this->mCurId = 0;
+	this->mHadDelete = false;
+	this->mHadRename = false;
+	this->mHadIdChange = false;
+	this->mHadAdd = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollectionWriter::Save()
 {
-	SaveAs(mFileName);
+	this->SaveAs(this->mFileName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,34 +74,34 @@ void ResourceCollectionWriter::SaveAs(const GUIString &theName)
 {
 	try
 	{
-		string anOldName = mFileName;
+		string anOldName = this->mFileName;
 		string aNewName = theName;
-		mFileName = theName;
+		this->mFileName = theName;
 
-		bool overwrite = mFileReader.IsOpen() && StringCompareNoCase(anOldName,aNewName)==0;		
+		bool overwrite = this->mFileReader.IsOpen() && StringCompareNoCase(anOldName,aNewName)==0;		
 		bool writeHeader = true;
 		if(overwrite)
 		{
-			if(!IsModified()) // no change
+			if(!this->IsModified()) // no change
 				return;
 
-			if(!IsHeaderModified())
+			if(!this->IsHeaderModified())
 				writeHeader = false;
 
 			aNewName += ".new";
 		}
 
-		if(!mFileWriter.Open(aNewName.c_str(),true))
+		if(!this->mFileWriter.Open(aNewName.c_str(),true))
 		{
-			mErrorString = "Couldn't open file: " + aNewName;
+			this->mErrorString = "Couldn't open file: " + aNewName;
 			return;
 		}
 
-		WriteResources();
+		this->WriteResources();
 		if(writeHeader)
-			WriteHeaderFile();
+			this->WriteHeaderFile();
 
-		Close();
+		this->Close();
 		if(overwrite)
 		{
 			WONFile anOldFile = anOldName;
@@ -111,11 +111,11 @@ void ResourceCollectionWriter::SaveAs(const GUIString &theName)
 	}
 	catch(FileWriterException &anEx)
 	{
-		mErrorString = anEx.mDescription;
+		this->mErrorString = anEx.mDescription;
 	}
 
-	Close();
-	Open(mFileName);
+	this->Close();
+	this->Open(this->mFileName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -131,8 +131,8 @@ bool ResourceCollectionWriter::ExportToCFG(const GUIString &theName)
 	if(aFile==NULL)
 		return false;
 
-	ResourceIdMap::iterator anItr = mResourceIdMap.begin();
-	while(anItr!=mResourceIdMap.end())
+	ResourceIdMap::iterator anItr = this->mResourceIdMap.begin();
+	while(anItr!=this->mResourceIdMap.end())
 	{
 		const ResourceEntry *anEntry = anItr->second;
 		const char *aTypeName = "Unknown";
@@ -161,7 +161,7 @@ bool ResourceCollectionWriter::ExportToCFG(const GUIString &theName)
 ///////////////////////////////////////////////////////////////////////////////
 bool ResourceCollectionWriter::IsHeaderModified()
 {
-	if(mHadDelete || mHadRename || mHadIdChange || mHadAdd)
+	if(this->mHadDelete || this->mHadRename || this->mHadIdChange || this->mHadAdd)
 		return true;
 	else
 		return false;
@@ -171,10 +171,10 @@ bool ResourceCollectionWriter::IsHeaderModified()
 ///////////////////////////////////////////////////////////////////////////////
 bool ResourceCollectionWriter::IsModified()
 {
-	if(IsHeaderModified())
+	if(this->IsHeaderModified())
 		return true;
 
-	for(ResourceIdMap::iterator anItr=mResourceIdMap.begin(); anItr!=mResourceIdMap.end(); ++anItr)
+	for(ResourceIdMap::iterator anItr=this->mResourceIdMap.begin(); anItr!=this->mResourceIdMap.end(); ++anItr)
 	{
 		if(anItr->second->NeedUpdate())
 			return true;
@@ -187,9 +187,9 @@ bool ResourceCollectionWriter::IsModified()
 ///////////////////////////////////////////////////////////////////////////////
 GUIString ResourceCollectionWriter::GetHeaderFileName(const GUIString &theFilePath)
 {
-	WONFile aFileParse(mFileName);
-	aFileParse.GetFileExtension(); // existing target cache also computes basename in mS30
-	string aName = aFileParse.mS30 + "WRS";
+	WONFile aFileParse(this->mFileName);
+	aFileParse.GetFileExtension(); // also fills mFileNameNoExtension
+	string aName = aFileParse.mFileNameNoExtension + "WRS";
 	string aFileName = aFileParse.GetFileDirectory() + '\\' + aName + ".h";
 	return aFileName;
 }
@@ -200,7 +200,7 @@ void ResourceCollectionWriter::WriteResourceCollectionResource(ResourceEntry *th
 {	
 	try
 	{
-		mFileReader.SetPos(theEntry->mFileOffset);
+		this->mFileReader.SetPos(theEntry->mFileOffset);
 
 		const int CHUNK_SIZE = 32768;
 		char aBuf[CHUNK_SIZE];
@@ -208,8 +208,8 @@ void ResourceCollectionWriter::WriteResourceCollectionResource(ResourceEntry *th
 		while(aBytesLeft>0)
 		{
 			int aNumToRead = CHUNK_SIZE<aBytesLeft ? CHUNK_SIZE : aBytesLeft;
-			mFileReader.ReadBytes(aBuf,aNumToRead);
-			mFileWriter.WriteBytes(aBuf,aNumToRead);
+			this->mFileReader.ReadBytes(aBuf,aNumToRead);
+			this->mFileWriter.WriteBytes(aBuf,aNumToRead);
 			aBytesLeft-=aNumToRead;
 		}
 	}
@@ -230,7 +230,7 @@ void ResourceCollectionWriter::WriteFileResource(const ResourceEntry *theEntry)
 {
 	if(theEntry->mRawData.get()!=NULL)
 	{
-		mFileWriter.WriteBytes(theEntry->mRawData->data(),theEntry->mRawData->length());
+		this->mFileWriter.WriteBytes(theEntry->mRawData->data(),theEntry->mRawData->length());
 		return;
 	}
 
@@ -255,7 +255,7 @@ void ResourceCollectionWriter::WriteFileResource(const ResourceEntry *theEntry)
 		if(aLen<=0)
 			break;
 
-		mFileWriter.WriteBytes(aBuf,aLen);
+		this->mFileWriter.WriteBytes(aBuf,aLen);
 	}
 }
 
@@ -264,8 +264,8 @@ void ResourceCollectionWriter::WriteFileResource(const ResourceEntry *theEntry)
 void ResourceCollectionWriter::WriteAsciiString(const GUIString &theString)
 {
 	string aStr = theString;
-	mFileWriter.WriteShort(aStr.length());
-	mFileWriter.WriteBytes(aStr.data(),aStr.length());
+	this->mFileWriter.WriteShort(aStr.length());
+	this->mFileWriter.WriteBytes(aStr.data(),aStr.length());
 }
 
 
@@ -273,9 +273,9 @@ void ResourceCollectionWriter::WriteAsciiString(const GUIString &theString)
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollectionWriter::WriteWideString(const GUIString &theString)
 {
-	mFileWriter.WriteShort(theString.length());
+	this->mFileWriter.WriteShort(theString.length());
 	for(int i=0; i<theString.length(); i++)
-		mFileWriter.WriteShort(theString[i]);
+		this->mFileWriter.WriteShort(theString[i]);
 }
 
 
@@ -283,19 +283,19 @@ void ResourceCollectionWriter::WriteWideString(const GUIString &theString)
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollectionWriter::WriteResources()
 {
-	mFileWriter.WriteBytes("WRS",3);
-	mFileWriter.WriteLong(RESOURCE_VERSION);
+	this->mFileWriter.WriteBytes("WRS",3);
+	this->mFileWriter.WriteLong(RESOURCE_VERSION);
 
-	mFileWriter.WriteLong(0); // save place for table of contents position
+	this->mFileWriter.WriteLong(0); // save place for table of contents position
 	int anItemCount = 0;
-	for(ResourceIdMap::iterator anItr=mResourceIdMap.begin(); anItr!=mResourceIdMap.end(); ++anItr)
+	for(ResourceIdMap::iterator anItr=this->mResourceIdMap.begin(); anItr!=this->mResourceIdMap.end(); ++anItr)
 	{
 		ResourceEntry *anEntry = const_cast<ResourceEntry*>(anItr->second.get());
 		if(anEntry->NeedRemove())
 			continue;
 
 		anItemCount++;
-		int aFileOffset = mFileWriter.pos();
+		int aFileOffset = this->mFileWriter.pos();
 		if(anEntry->NeedUpdate())
 		{
 			switch(anEntry->mType)
@@ -304,37 +304,36 @@ void ResourceCollectionWriter::WriteResources()
 				case ResourceType_String: break;
 				case ResourceType_Color: break;
 				default: 
-					WriteFileResource(anEntry);
+					this->WriteFileResource(anEntry);
 			}
 		}
 		else
-			WriteResourceCollectionResource(anEntry);
+			this->WriteResourceCollectionResource(anEntry);
 
 		anEntry->mFileOffset = aFileOffset;
 	}		
-	WriteTableOfContents(anItemCount);
+	this->WriteTableOfContents(anItemCount);
 }
 	
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollectionWriter::WriteTableOfContents(int numItems)
 {
-	int aPos = mFileWriter.pos();
-	mFileWriter.SetPos(7);
-	mFileWriter.WriteLong(aPos);
-	mFileWriter.SetPos(aPos);
-	mFileWriter.WriteLong(numItems);
-	for(ResourceIdMap::iterator anItr=mResourceIdMap.begin(); anItr!=mResourceIdMap.end(); ++anItr)
+	int aPos = this->mFileWriter.pos();
+	this->mFileWriter.SetPos(7);
+	this->mFileWriter.WriteLong(aPos);
+	this->mFileWriter.SetPos(aPos);
+	this->mFileWriter.WriteLong(numItems);
+	for(ResourceIdMap::iterator anItr=this->mResourceIdMap.begin(); anItr!=this->mResourceIdMap.end(); ++anItr)
 	{
 		const ResourceEntry *anEntry = anItr->second;
-		if(!anEntry->NeedRemove())
-		{
-			mFileWriter.WriteLong(anEntry->mId);
-			mFileWriter.WriteShort((unsigned short)anEntry->mType);
-			mFileWriter.WriteLong(anEntry->mFileOffset);
-			WriteAsciiString(anEntry->mName);
-			WriteWideString(anEntry->mDesc);
-		}
+		if(anEntry->NeedRemove())
+			continue;
+		this->mFileWriter.WriteLong(anEntry->mId);
+		this->mFileWriter.WriteShort((unsigned short)anEntry->mType);
+		this->mFileWriter.WriteLong(anEntry->mFileOffset);
+		this->WriteAsciiString(anEntry->mName);
+		this->WriteWideString(anEntry->mDesc);
 	}
 }
 
@@ -342,9 +341,9 @@ void ResourceCollectionWriter::WriteTableOfContents(int numItems)
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollectionWriter::WriteHeaderFile()
 {
-	WONFile aFileParse(mFileName);
-	aFileParse.GetFileExtension(); // existing target cache also computes basename in mS30
-	string aName = aFileParse.mS30 + "WRS";
+	WONFile aFileParse(this->mFileName);
+	aFileParse.GetFileExtension(); // also fills mFileNameNoExtension
+	string aName = aFileParse.mFileNameNoExtension + "WRS";
 	string aFileName = aFileParse.GetFileDirectory() + '\\' + aName + ".h";
 
 	FILE *aFile = fopen(aFileName.c_str(),"w");
@@ -355,7 +354,7 @@ void ResourceCollectionWriter::WriteHeaderFile()
 		aFile = fopen(aFileName.c_str(),"w");
 		if(aFile==NULL)
 		{
-			mErrorString = "Couldn't open file: " + aFileName;
+			this->mErrorString = "Couldn't open file: " + aFileName;
 			return;
 		}
 	}
@@ -366,7 +365,7 @@ void ResourceCollectionWriter::WriteHeaderFile()
 	fprintf(aFile,"enum\n");
 	fprintf(aFile,"{\n");
 
-	for(ResourceIdMap::iterator anItr=mResourceIdMap.begin(); anItr!=mResourceIdMap.end(); ++anItr)
+	for(ResourceIdMap::iterator anItr=this->mResourceIdMap.begin(); anItr!=this->mResourceIdMap.end(); ++anItr)
 	{
 		const ResourceEntry *anEntry = anItr->second;
 		if(!anEntry->NeedRemove())
@@ -389,20 +388,20 @@ void ResourceCollectionWriter::WriteHeaderFile()
 ///////////////////////////////////////////////////////////////////////////////
 int ResourceCollectionWriter::GetNextFreeId()
 {
-	mCurId++;
-	ResourceIdMap::iterator anItr = mResourceIdMap.find(mCurId);
-	while(anItr!=mResourceIdMap.end())
+	this->mCurId++;
+	ResourceIdMap::iterator anItr = this->mResourceIdMap.find(this->mCurId);
+	while(anItr!=this->mResourceIdMap.end())
 	{
-		if(mCurId==anItr->first)
+		if(this->mCurId==anItr->first)
 		{
-			++mCurId;
+			++this->mCurId;
 			++anItr;
 		}
 		else
 			break;
 	}
 	
-	return mCurId;
+	return this->mCurId;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -412,7 +411,7 @@ void ResourceCollectionWriter::InStringFilter(ResourceEntry *theEntry)
 	if(theEntry->mType!=ResourceType_String)
 		return;
 
-	if(!mDoInStringFilter)
+	if(!this->mDoInStringFilter)
 		return;
 
 	GUIString &aStr = theEntry->mDesc;
@@ -452,23 +451,23 @@ void ResourceCollectionWriter::InStringFilter(ResourceEntry *theEntry)
 const ResourceEntry* ResourceCollectionWriter::AddResource(ResourceType theType, const GUIString &theName, const GUIString &theDesc, const ByteBuffer *theRawData)
 {
 	ResourceEntryPtr anEntry = new ResourceEntry;
-	ResourceNameMap::iterator anItr = mResourceNameMap.insert(ResourceNameMap::value_type(theName,ConstResourceEntryPtr(anEntry.get()))).first;
+	ResourceNameMap::iterator anItr = this->mResourceNameMap.insert(ResourceNameMap::value_type(theName,ConstResourceEntryPtr(anEntry.get()))).first;
 	if(anItr->second.get()!=anEntry.get())
 	{
-		mCollisionEntry = anItr->second;
+		this->mCollisionEntry = anItr->second;
 		return NULL;
 	}
 
-	mHadAdd = true;
+	this->mHadAdd = true;
 	anEntry->mType = theType;
 	anEntry->mName = theName;
 	anEntry->mDesc = theDesc;
 	anEntry->mRawData = theRawData;
-	anEntry->mId = GetNextFreeId();
-	mResourceIdMap[anEntry->mId] = anEntry;
+	anEntry->mId = this->GetNextFreeId();
+	this->mResourceIdMap[anEntry->mId] = anEntry;
 
-	InStringFilter(anEntry);
-	UpdateResource(anEntry);
+	this->InStringFilter(anEntry);
+	this->UpdateResource(anEntry);
 	return anEntry;
 }
 
@@ -478,8 +477,8 @@ bool ResourceCollectionWriter::ModifyResource(const ResourceEntry *theEntry, con
 {
 	ResourceEntry *anEntry = const_cast<ResourceEntry*>(theEntry);
 	anEntry->mDesc = theNewDesc;
-	InStringFilter(anEntry);
-	return UpdateResource(theEntry);
+	this->InStringFilter(anEntry);
+	return this->UpdateResource(theEntry);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -489,8 +488,8 @@ bool ResourceCollectionWriter::ModifyResourceId(const ResourceEntry *theEntry, i
 	if(theNewId<=0)
 		return false;
 
-	ResourceIdMap::iterator anItr = mResourceIdMap.find(theNewId);
-	if(anItr!=mResourceIdMap.end())
+	ResourceIdMap::iterator anItr = this->mResourceIdMap.find(theNewId);
+	if(anItr!=this->mResourceIdMap.end())
 	{
 		if(anItr->second==theEntry)
 			return true;
@@ -498,16 +497,16 @@ bool ResourceCollectionWriter::ModifyResourceId(const ResourceEntry *theEntry, i
 			return false;
 	}
 
-	if(theNewId >= mCurId)
-		mCurId++;
+	if(theNewId >= this->mCurId)
+		this->mCurId++;
 
 	ResourceEntry *anEntry = const_cast<ResourceEntry*>(theEntry);
 	int anOldId = anEntry->mId;
 	anEntry->mId = theNewId;
 
-	mResourceIdMap[theNewId] = anEntry;
-	mResourceIdMap.erase(anOldId);
-	mHadIdChange = true;
+	this->mResourceIdMap[theNewId] = anEntry;
+	this->mResourceIdMap.erase(anOldId);
+	this->mHadIdChange = true;
 	return true;
 }
 
@@ -531,23 +530,23 @@ bool ResourceCollectionWriter::UpdateResource(const ResourceEntry *theEntry)
 ///////////////////////////////////////////////////////////////////////////////
 bool ResourceCollectionWriter::RenameResource(const ResourceEntry *theEntry, const GUIString &theNewName)
 {
-	const ResourceEntry* aNew = GetResource(theNewName,false);
+	const ResourceEntry* aNew = this->GetResource(theNewName,false);
 	if(aNew!=NULL)
 	{
 		if(aNew==theEntry) // renaming to self
 			return true;
 
-		mCollisionEntry = aNew;
+		this->mCollisionEntry = aNew;
 		return false;
 	}
 
 	ResourceEntryPtr anEntry = const_cast<ResourceEntry*>(theEntry);
-	RemoveEntry(theEntry,true);
+	this->RemoveEntry(theEntry,true);
 
-	mHadRename = true;
+	this->mHadRename = true;
 
 	anEntry->mName = theNewName;
-	AddEntry(anEntry);
+	this->AddEntry(anEntry);
 	return true;
 }
 
@@ -555,9 +554,9 @@ bool ResourceCollectionWriter::RenameResource(const ResourceEntry *theEntry, con
 ///////////////////////////////////////////////////////////////////////////////
 bool ResourceCollectionWriter::DeleteResource(const ResourceEntry *theEntry)
 {
-	if(RemoveEntry(theEntry,false))
+	if(this->RemoveEntry(theEntry,false))
 	{
-		mHadDelete = true;
+		this->mHadDelete = true;
 		return true;
 	}
 	else

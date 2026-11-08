@@ -10,133 +10,138 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Native315030 support0.
 // FUNCTION: WON 0x00715030
+// Sets how the tree's items are sorted and re-sorts when it changes
 void TreeArea::SetSortType(ListSortType theType)
 {
-	if(mTreeSortType==theType)
+	if(this->mTreeSortType==theType)
 		return;
 
-	mTreeSortType = theType;
-	Sort();
+	this->mTreeSortType = theType;
+	this->Sort();
 }
 
-// Native315060 support0.
 // FUNCTION: WON 0x00715060
+// Forgets the hovered item and the item whose expand button the mouse is over
 void TreeArea::NotifyMouseItemGone()
 {
 	ListArea::NotifyMouseItemGone();
-	mMouseColItem = NULL;
+	this->mMouseColItem = NULL;
 }
 
 // FUNCTION: WON 0x00715080
-TreeItem* TreeArea::Fn315080(TreeItem *theParent, ListItem *theItem, int thePos)
+// Wraps a list item in a tree item and inserts it under a parent (the root when none) at a position;
+// returns the tree item
+TreeItem* TreeArea::InsertTreeItem(TreeItem *theParent, ListItem *theItem, int thePos)
 {
 	if(theParent==NULL)
-		theParent = mRoot.get();
+		theParent = this->mRoot.get();
 
 	SmartPtr<TreeItem> anItem = new TreeItem;
 	anItem->mItem = theItem;
-	anItem->mB09 = theItem->mB09;
+	anItem->mSelectable = theItem->mSelectable;
 	theParent->InsertChild(this, anItem.get(),thePos);
 	return anItem.get();
 }
 
-// Native315190 support0.
 // FUNCTION: WON 0x00715190
-void TreeArea::Fn315190(TreeItem *theItem)
+// Removes a tree item from its parent
+void TreeArea::RemoveTreeItem(TreeItem *theItem)
 {
 	theItem->RemoveFromParent(this);
 }
 
-// Native3151a0 support0.
 // FUNCTION: WON 0x007151a0
-void TreeArea::Fn3151A0(bool fireEventOnChange)
+// Removes every item from the tree (the event flag is ignored)
+void TreeArea::ClearTree(bool fireEventOnChange)
 {
-	Fn3151B0(NULL);
+	this->RemoveAllItems(NULL);
 }
 
 // FUNCTION: WON 0x007151b0
-void TreeArea::Fn3151B0(TreeItem *theParent)
+// Removes a parent's children, or with no parent clears the whole list and the root's children
+void TreeArea::RemoveAllItems(TreeItem *theParent)
 {
 	if(theParent==NULL)
 	{
-		ListArea::Fn2FAA50(true);
-		mRoot->mChildren.clear();
+		ListArea::Clear(true);
+		this->mRoot->mChildren.clear();
 	}
 	else
 		theParent->RemoveAllChildren(this);
 }
 
-// Native315220 support0.
 // FUNCTION: WON 0x00715220
-void TreeArea::Fn315220(TreeItem *theItem, bool sendEvent)
+// Expands a tree item, optionally sending an event
+void TreeArea::OpenItem(TreeItem *theItem, bool sendEvent)
 {
 	theItem->SetOpen(this, true, false, sendEvent);
 }
 
-// Native315240 support0.
 // FUNCTION: WON 0x00715240
+// Expands or collapses a tree item (collapsing its subtree too when closeAll is set)
 void TreeArea::ToggleItem(TreeItem *theItem, bool closeAll, bool sendEvent)
 {
 	theItem->ToggleOpen(this, closeAll, sendEvent);
 }
 
-// Native315260 support0.
 // FUNCTION: WON 0x00715260
-void TreeArea::Virtual2C(int x, int y, int theButton)
+// Handles a mouse press as the list area does
+void TreeArea::MouseDown(int x, int y, int theButton)
 {
-	ListArea::Virtual2C(x,y,theButton);	
+	ListArea::MouseDown(x,y,theButton);	
 }
 
 // FUNCTION: WON 0x00715280
+// Toggles the item next to a pressed expand button (control id 100003); passes other events to the
+// list area
 void TreeArea::HandleComponentEvent(ComponentEvent *theEvent)
 {
-	if(theEvent->mType==15 && theEvent->mComponent->mControlId==100003)
+	if(theEvent->mType==ComponentEvent_ButtonPressed && theEvent->mComponent->mControlId==100003)
 	{
-			TreeItem* anItem = (TreeItem*)FindItemAt(theEvent->mComponent->Top());
+			TreeItem* anItem = static_cast<TreeItem*>(this->FindItemAt(theEvent->mComponent->Top()));
 			if(anItem!=NULL)
-				ToggleItem(anItem,TreeFlagSet(4));
+				this->ToggleItem(anItem,this->TreeFlagSet(4));
 	}
 	else
 		ListArea::HandleComponentEvent(theEvent);
 
 }
 
-bool TreeArea::Sort() { return false; } //native315050 support0
+bool TreeArea::Sort() { return false; }
 }
 
 namespace WONAPI {
-// Native314ea0..314f9f255B: owned root creation/open and tree/list flags.
 // FUNCTION: WON 0x00714ea0
+// Creates an empty tree with an open root item, list flags 0x30 off and 0x200 on, and tree flags 3
 TreeArea::TreeArea()
 {
-    mRoot=new TreeItem;
-    mRoot->SetOpen(this,true,false,false);
-    Fn2FB600(0x30,false);
-    Fn2FB600(0x200,true);
-    mTreeFlags=3;
-    mMouseColItem=NULL;
+    this->mRoot=new TreeItem;
+    this->mRoot->SetOpen(this,true,false,false);
+    this->SetListFlags(0x30,false);
+    this->SetListFlags(0x200,true);
+    this->mTreeFlags=3;
+    this->mMouseColItem=NULL;
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK tree update methods.
+// Tree sorting, string items, closing and tree flags (not identified in the original exe)
 void TreeArea::Sort(TreeItem *theItem, bool recursive)
 {
-	if(mTreeSortType==ListSortType_None)
+	if(this->mTreeSortType==ListSortType_None)
 		return;
 
 	if(theItem==NULL)
 	{
 		// Do Root
-		ListArea::Fn2FAA50(false);
-		mRoot->Sort(this,recursive);
-		mRoot->InsertChildren(this,0);
+		ListArea::Clear(false);
+		this->mRoot->Sort(this,recursive);
+		this->mRoot->InsertChildren(this,0);
 		return;
 	}
 		
-	bool isVisible = theItem->IsOpen() && GetItemPos(theItem)>=0;
+	bool isVisible = theItem->IsOpen() && this->GetItemPos(theItem)>=0;
 
 	// if the item open and visible then remove the children, sort them and then reinsert them
 	if(isVisible)
@@ -152,10 +157,10 @@ TreeItem* TreeArea::InsertString(TreeItem *theParent, const GUIString &theStr, I
 {
 	SmartPtr<TextListItem> anItem = new TextListItem;
 	anItem->mText = theStr;
-	anItem->mL1C = mTextColor;
-	anItem->mFont = mFont;	
+	anItem->mColor = this->mTextColor;
+	anItem->mFont = this->mFont;	
 	anItem->mImage = theIcon;
-	return Fn315080(theParent, anItem.get(), thePos);
+	return this->InsertTreeItem(theParent, anItem.get(), thePos);
 }
 
 void TreeArea::CloseItem(TreeItem *theItem, bool closeAll, bool sendEvent)
@@ -166,9 +171,9 @@ void TreeArea::CloseItem(TreeItem *theItem, bool closeAll, bool sendEvent)
 void TreeArea::SetTreeFlags(int theFlags, bool on)
 {
 	if(on)
-		mTreeFlags |= theFlags;
+		this->mTreeFlags |= theFlags;
 	else
-		mTreeFlags &= ~theFlags;
+		this->mTreeFlags &= ~theFlags;
 }
 }
 

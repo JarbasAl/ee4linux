@@ -1,4 +1,4 @@
-// Native lobby address selection and complete original state adapters.
+// Lobby address state: firewall test result, the public address seen from outside, and the address to give peers
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,31 +13,32 @@
 #include "ee/wonapi/WONLobbyConfig.h"
 #include "ee/wonapi/WONLobbyCore.h"
 namespace WONAPI {
-// State reset361440/403 includes expanded ordinaryIPAddr copy; support0.
 // FUNCTION: WON 0x00761440
-void LobbyFn361440()
+// Forgets the firewall test result and the public address
+void LobbyResetFirewallTest()
 {
     if(gLobbyData.get()==NULL) return;
     gLobbyData->mFirewallTestDone=false;
     gLobbyData->mPublicAddr=IPAddr();
 }
-// Public address setter3615e0/391, original-owned address copy; support0.
 // FUNCTION: WON 0x007615e0
-void LobbyFn3615E0(const IPAddr& address)
+// Records the public address seen from outside
+void LobbySetPublicAddress(const IPAddr& address)
 {
     if(gLobbyData.get()==NULL) return;
     gLobbyData->mPublicAddr=address;
 }
-// Coupled boolean setter361770/33; support0.
 // FUNCTION: WON 0x00761770
-void LobbyFn361770(bool behindFirewall)
+// Records whether the player is behind a firewall and marks the test done
+void LobbySetBehindFirewall(bool behindFirewall)
 {
     if(gLobbyData.get()==NULL) return;
     gLobbyData->mBehindFirewall=behindFirewall;
     gLobbyData->mFirewallTestDone=true;
 }
 // FUNCTION: WON 0x007617a0
-IPAddr LobbyFn3617A0(int roomSpec)
+// Returns the address to give peers on the lobby port: public unless room spec 1 or UseLocalIP, else local
+IPAddr LobbyGetMyAddress(int roomSpec)
 {
     IPAddr address;
     if(gLobbyData.get()!=NULL) {
@@ -50,7 +51,8 @@ IPAddr LobbyFn3617A0(int roomSpec)
     return address;
 }
 // FUNCTION: WON 0x00761990
-IPAddr LobbyFn361990()
+// Returns the public address seen from outside, or an empty address
+IPAddr LobbyGetPublicAddress()
 {
     if(gLobbyData.get()!=NULL) return gLobbyData->mPublicAddr;
     return IPAddr();

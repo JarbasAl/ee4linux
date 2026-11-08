@@ -1,4 +1,4 @@
-// Original rich-text segment bounded substring search and cross-segment continuation.
+// Text search inside one rich text line segment, continuing a match across segments
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,21 +13,23 @@
 #include "ee/wonapi/WONLobbyTextSegment.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0070A3F0
+// Searches the segment's part of the search range for the find text (optionally ignoring case),
+// recording a full or trailing partial match; returns whether the whole text has been found
 bool TextLineSegment::FindStr(ElementFindInfo &theInfo)
 { 
-	if(mStartSelIndex<theInfo.mStartSelSegment || mStartSelIndex>theInfo.mEndSelSegment)
+	if(this->mStartSelIndex<theInfo.mStartSelSegment || this->mStartSelIndex>theInfo.mEndSelSegment)
 		return false;
 
 	int aStartPos = 0;
-	int anEndPos = mText.length();
-	if(theInfo.mStartSelSegment==mStartSelIndex)
+	int anEndPos = this->mText.length();
+	if(theInfo.mStartSelSegment==this->mStartSelIndex)
 		aStartPos = theInfo.mStartSelSegmentPos;
-	if(theInfo.mEndSelSegment==mStartSelIndex)
+	if(theInfo.mEndSelSegment==this->mStartSelIndex)
 		anEndPos = theInfo.mEndSelSegmentPos;
 
 	if(theInfo.mFoundStartSegment>=0)
 	{
-		if(FindPartial(theInfo,aStartPos,anEndPos))
+		if(this->FindPartial(theInfo,aStartPos,anEndPos))
 			return theInfo.mCurFoundLength == theInfo.mFindText.length();
 
 		theInfo.mFoundStartSegment = -1;
@@ -46,10 +48,10 @@ bool TextLineSegment::FindStr(ElementFindInfo &theInfo)
 		{
 			if(caseSensitive)
 			{
-				if(mText[p1]!=aText[p2])
+				if(this->mText[p1]!=aText[p2])
 					break;
 			}
-			else if(towupper(mText[p1])!=towupper(aText[p2]))
+			else if(towupper(this->mText[p1])!=towupper(aText[p2]))
 				break;
 
 			p1++; p2++;
@@ -62,10 +64,10 @@ bool TextLineSegment::FindStr(ElementFindInfo &theInfo)
 
 	if(p2>0)
 	{
-		theInfo.mFoundX = mAbsX;
-		theInfo.mFoundY = mAbsY;
+		theInfo.mFoundX = this->mAbsX;
+		theInfo.mFoundY = this->mAbsY;
 		theInfo.mCurFoundLength = p2;
-		theInfo.mFoundStartSegment = theInfo.mFoundEndSegment = mStartSelIndex;
+		theInfo.mFoundStartSegment = theInfo.mFoundEndSegment = this->mStartSelIndex;
 		theInfo.mFoundStartChar = cp;
 		theInfo.mFoundEndChar = p1;
  

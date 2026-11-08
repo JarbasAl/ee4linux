@@ -3,157 +3,149 @@
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 #include "ee/wonapi/WONLobbyComboBoxConfig.h"
 #include "ee/wonapi/WONLobbyTabCtrlConfig.h"
-#include "ee/wonapi/WONLobbyMSPainters.h" //existing complete fieldless MSDlgBack30 owner
-#include "ee/wonapi/WONLobbyMSRemainingPainters.h" //genuine complete MSScrollThumb30 for SDK inline factory
+#include "ee/wonapi/WONLobbyMSPainters.h" // full MSDlgBack (fieldless, 0x30 bytes)
+#include "ee/wonapi/WONLobbyMSRemainingPainters.h" // full MSScrollThumb (0x30) for the inline factory
 namespace WONAPI {
-// Actual control contracts; borrowed unless a complete owner is explicitly promoted below.
-// MSComboBoxa8/MSScrollbarbc/MSScrollContainera4/MSTabCtrle0 full owner contracts
-// authorize scoped composition source/allocation; shared base lifetimes stay original.
-// Other controls remain borrowed; no allocation/lifetime/vtable source authority.
-// MSComboBox is actual completea8: ComboBoxa4 + mDrawFramea4 + naturalpadding.
-// Genuine own operational constructor source is now permitted; original destructor
-// and shared base lifetime remain external. No new copy or destructor source bodies.
-// Other controls below retain their separately stated borrowed contracts.
-// Complete actual MSComboBoxa8; genuine operational constructor source now permitted.
-// Original own destructor remains external; no copy or new lifetime definitions.
+// Control classes. MSComboBox (0xa8), MSScrollbar (0xbc), MSScrollContainer (0xa4) and MSTabCtrl
+// (0xe0) are complete with their own constructors; their destructors are out of line.
+// MSComboBox: ComboBox (0xa4) + mDrawFrame at +0xa4 + padding.
 class MSComboBox : public ComboBox {
 public:
-    MSComboBox(); //2ffb20 actual661B operational composition constructor
-    virtual void Virtual08(); //2ffe30 actual SizeChanged, same08slot
-    virtual void Virtual0C(int&,int&); //2ffb00 actualdefaultsizegetter, support0
-    virtual void Paint(Graphics&); //2ffdf0 actual18slot
-    static SmartPtr<Button> (*ArrowButtonFactory)(Direction); //actual SDK MSArrowButtonFactory underlying type; retained original cell4d5e6c, undefined only
-    bool mDrawFrame; //a4 actual38f83a, SDK inline SetDrawFrame
-    void SetDrawFrame(bool v) { mDrawFrame=v; }
+    MSComboBox(); // constructor at 0x006ffb20
+    virtual void Virtual08(); // SizeChanged (slot 0x08), at 0x006ffe30
+    virtual void GetDesiredSize(int&,int&); // default size, at 0x006ffb00
+    virtual void Paint(Graphics&); // slot 0x18, at 0x006ffdf0
+    static SmartPtr<Button> (*ArrowButtonFactory)(Direction); // MSArrowButtonFactory; the variable is at 0x008d5e6c (declared only)
+    bool mDrawFrame; // offset 0xa4 (written at 0x0078f83a by the inline SetDrawFrame)
+    void SetDrawFrame(bool v) { this->mDrawFrame=v; }
 };
-typedef SmartPtr<Button> (*MSArrowButtonFactory)(Direction); //actual SDK returnedSP/Direction ABI
-SmartPtr<Button> DefaultMSArrowButtonFactory(Direction); //2fdc40 genuine SDK default allocation policy
-// Complete actual MSScrollbarbc, inheritedb8 +boolb8/natural tailb9..bb.
+typedef SmartPtr<Button> (*MSArrowButtonFactory)(Direction); // returns a SmartPtr, takes a Direction
+SmartPtr<Button> DefaultMSArrowButtonFactory(Direction); // at 0x006fdc40
+// MSScrollbar (0xbc bytes): Scrollbar (0xb8) + bool at +0xb8 + padding.
 class MSScrollbar : public Scrollbar {
 public:
-    MSScrollbar(bool=true); //2ff820 actual composition constructor559B
-    static MSArrowButtonFactory ArrowButtonFactory; //retained mutable original cell4d5e64, no definition
+    MSScrollbar(bool=true); // constructor at 0x006ff820
+    static MSArrowButtonFactory ArrowButtonFactory; // variable at 0x008d5e64 (declared only)
     // one-byte class by value: the ctor 0x6ff820 byte copy into a temp + dword push, its inline ctor a site (name is ours)
     struct ThumbType { bool mVertical; ThumbType(bool v) : mVertical(v) {} };
     typedef SmartPtr<Component> (*ThumbFactoryFunc)(ThumbType);
-    static SmartPtr<Component> DefaultThumbFactory(ThumbType) { return new MSScrollThumb; } //genuine SDK inline allocation policy2fccb0
-    static ThumbFactoryFunc ThumbFactory; //retained mutable original cell4d5e68, no definition
-    void SetTransparent(bool); //2ffa60 actual original13B provider
-    virtual void Paint(Graphics&); //2ffa70 actual18slot, onlynon-dtoroverride
+    static SmartPtr<Component> DefaultThumbFactory(ThumbType) { return new MSScrollThumb; } // inline (body at 0x006fccb0)
+    static ThumbFactoryFunc ThumbFactory; // variable at 0x008d5e68 (declared only)
+    void SetTransparent(bool); // at 0x006ffa60
+    virtual void Paint(Graphics&); // slot 0x18, at 0x006ffa70; the only override besides the destructor
 protected:
-    bool mIsTransparent; //b8 exactnative2ffa64store/2ffa85read; remainingtail originalowned
+    bool mIsTransparent; // offset 0xb8 (stored at 0x006ffa64, read at 0x006ffa85)
 };
 class MSEtchedFrameGroup : public Container {
 public:
-    MSEtchedFrameGroup(); //3008d0 genuine explicit SDK complete8c owner
-    virtual void Virtual0C(int&,int&); //300a60 actual desiredsize0c, support0
-    virtual void Virtual6C(); //300ab0 actual AddedToParent6c
-    virtual void Paint(Graphics&); //300c00 actual18slot
+    MSEtchedFrameGroup(); // at 0x007008d0 (0x8c bytes)
+    virtual void GetDesiredSize(int&,int&); // GetDesiredSize (slot 0x0c), at 0x00700a60
+    virtual void AddedToParent(); // AddedToParent (slot 0x6c), at 0x00700ab0
+    virtual void Paint(Graphics&); // slot 0x18, at 0x00700c00
     void SetLabelText(const GUIString&); //300b70
     void AddContainedComponent(Component*); //300ba0
-    Label* GetLabel() { return mLabel.get(); } //genuine SDK inline, borrowed ownedLabel84
-    SmartPtr<Label> mLabel; //84 actual owning pointer, borrowed receiver prefix
-    SmartPtr<Component> mComponent; //88 actual owning pointer, no receiver allocation authority
+    Label* GetLabel() { return this->mLabel.get(); } // inline, borrowed
+    SmartPtr<Label> mLabel; // offset 0x84, owning
+    SmartPtr<Component> mComponent; // offset 0x88, owning
 };
-// Complete actual MSTabCtrle0: fullTabCtrld8 +boold8/naturalpadd9..db +MSDlgBackSPdc.
-// Own composition constructor only; actual external destructor retains full member/base cleanup.
+// MSTabCtrl (0xe0 bytes): TabCtrl (0xd8) + bool at +0xd8 + padding + MSDlgBack pointer at +0xdc.
+// Own constructor; the destructor is out of line.
 class MSTabCtrl : public TabCtrl {
 public:
-    MSTabCtrl(); //3010e0 actual575B composition
-    virtual void Virtual6C(); //301670 actual5B AddedToParent JMP TabCtrl308cb0; real override
-    void SetTransparent(bool); //301660 original provider
-    void AddStandardTab(const GUIString&,Container*); //301680 original provider
-    bool mIsTransparent; //d8 native constructor/setter, actual natural d9..db alignment
-    SmartPtr<MSDlgBack> mBack; //dc owning, actual ctor defaultNULL/dtor3014ef releases first
+    MSTabCtrl(); // constructor at 0x007010e0
+    virtual void AddedToParent(); // at 0x00701670: jumps to TabCtrl::AddedToParent (0x00708cb0); a real override
+    void SetTransparent(bool); // at 0x00701660
+    void AddStandardTab(const GUIString&,Container*); // at 0x00701680
+    bool mIsTransparent; // offset 0xd8, set by the constructor and the setter; padding to 0xdb
+    SmartPtr<MSDlgBack> mBack; // offset 0xdc, owning; NULL after construction, released first by the destructor (0x007014ef)
 
 };
-// Complete actual MSScrollContainera4: true ScrollbarScroller9c base +int9c/boolsa0..a2/pada3.
+// MSScrollContainer (0xa4 bytes): ScrollbarScroller (0x9c) + int at +0x9c + bools at +0xa0..+0xa2 + padding.
 class MSScrollContainer : public ScrollbarScroller {
 public:
-    MSScrollContainer(ScrollArea* =NULL); //2ffeb0 actual composition constructor387B/RET4
-    virtual void Virtual08(); //300290 actualSizeChanged08slot
-    virtual void Paint(Graphics&); //300390 actual18slot
-    int mHeaderHeight; //9c actual390000 predecessor38fffa store
-    bool mDraw3DFrame,mDrawFrame,mTransparent; //a0/a1/a2 actual300254/274 and38fdb2
-    void SetDraw3DFrame(bool); //300250 original provider, preserves SizeChanged callback
-    void SetDrawFrame(bool); //300270 original provider, preserves SizeChanged callback
-    void SetTransparent(bool v) { mTransparent=v; } //actual SDK inline
+    MSScrollContainer(ScrollArea* =NULL); // constructor at 0x006ffeb0
+    virtual void Virtual08(); // SizeChanged (slot 0x08), at 0x00700290
+    virtual void Paint(Graphics&); // slot 0x18, at 0x00700390
+    int mHeaderHeight; // offset 0x9c (stored at 0x00790000 and 0x0078fffa)
+    bool mDraw3DFrame,mDrawFrame,mTransparent; // offsets 0xa0/0xa1/0xa2 (used at 0x00700254, 0x00700274 and 0x0078fdb2)
+    void SetDraw3DFrame(bool); // at 0x00700250; keeps the SizeChanged callback
+    void SetDrawFrame(bool); // at 0x00700270; keeps the SizeChanged callback
+    void SetTransparent(bool v) { this->mTransparent=v; } // inline
 };
 class MSHeaderControl : public MultiListHeader {
 public:
-    MSHeaderControl(MultiListArea* =NULL); //300d10 completeb0 SDK owner
-    void SetColumn(int,const GUIString&); //300dd0 genuine original provider
-    int mTextLeftPad; //ac genuine SDK scalar tail; allocation300eed isb0
+    MSHeaderControl(MultiListArea* =NULL); // at 0x00700d10 (0xb0 bytes)
+    void SetColumn(int,const GUIString&); // at 0x00700dd0
+    int mTextLeftPad; // offset 0xac; the allocation at 0x00700eed is 0xb0 bytes
 
 };
 class MSListCtrl : public MSScrollContainer {
 public:
-    MSListCtrl(MultiListArea* =NULL); //300e80 completea8 SDK owner
-    virtual void Virtual08(); //3010b0 genuine SDK SizeChanged override, existing actual08slot
-    void SetHeaderHeight(int v) { mHeaderHeight=v; } //actual SDK inline/native38fffa
-    MultiListArea* GetListArea() { return (MultiListArea*)GetScrollArea(); } //genuine SDK inline, borrowed84
-    MSHeaderControl* GetHeader() { return mHeader.get(); } //genuine SDK inline, borroweda4
-    SmartPtr<MSHeaderControl> mHeader; //actual sole retained taila4, native390062/300fe5; completea8
+    MSListCtrl(MultiListArea* =NULL); // at 0x00700e80 (0xa8 bytes)
+    virtual void Virtual08(); // SizeChanged (slot 0x08), at 0x007010b0
+    void SetHeaderHeight(int v) { this->mHeaderHeight=v; } // inline (used at 0x0078fffa)
+    MultiListArea* GetListArea() { return static_cast<MultiListArea*>(this->GetScrollArea()); } // inline, borrowed
+    MSHeaderControl* GetHeader() { return this->mHeader.get(); } // inline, borrowed
+    SmartPtr<MSHeaderControl> mHeader; // offset 0xa4, retained (used at 0x00790062 and 0x00700fe5); class size 0xa8
 };
-// Actual borrowed config subclasses, original14-slot surface retained. No local
-// config allocation/lifetime or predefined mapper source in this cohort.
+// Config subclasses (14-slot vtables; declarations only).
 class MSComboBoxConfig : public ComboBoxConfig {
 public:
-    static ComponentConfig* CfgFactory() { return new MSComboBoxConfig; } //genuine SDK inline, native38e770/83 completea0
-    static Component* CompFactory(); //38e710 genuine external SDK static factory; call-only
+    static ComponentConfig* CfgFactory() { return new MSComboBoxConfig; } // inline (body at 0x0078e770, 0xa0 bytes)
+    static Component* CompFactory(); // at 0x0078e710
     virtual bool Virtual24(const std::string&); //38f810
-    virtual void Virtual34(Component*); //38e7d0 original external
+    virtual void SetComponent(Component*); // at 0x0078e7d0
     MSComboBox* mMSComboBox; //9c borrowed, prefixa0
 };
 class MSScrollbarConfig : public ScrollbarConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38ec60 genuine external SDK static factory; call-only
-    static Component* CompFactory(); //38ec00 genuine external SDK static factory; call-only
+    static ComponentConfig* CfgFactory(); // at 0x0078ec60
+    static Component* CompFactory(); // at 0x0078ec00
     virtual bool Virtual24(const std::string&); //38f880
-    virtual void Virtual34(Component*); //38f860 original external
+    virtual void SetComponent(Component*); // at 0x0078f860
     MSScrollbar* mMSScrollbar; //9c borrowed, prefixa0
 };
 class MSEtchedFrameGroupConfig : public ContainerConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38efe0 genuine external SDK static factory; call-only
-    static Component* CompFactory(); //38ef80 genuine external SDK static factory; call-only
+    static ComponentConfig* CfgFactory(); // at 0x0078efe0
+    static Component* CompFactory(); // at 0x0078ef80
     virtual bool Virtual24(const std::string&); //38fa40
-    virtual bool Virtual28(const std::string&,ComponentConfig*&,Component*&); //38f980 original external
-    virtual void Virtual34(Component*); //38f960 original external, ICF shared inherited shape
+    virtual bool GetPredefinedComponent(const std::string&,ComponentConfig*&,Component*&); // at 0x0078f980
+    virtual void SetComponent(Component*); // at 0x0078f960 (identical body shared with the inherited one)
     MSEtchedFrameGroup* mFrame; //98 borrowed, prefix9c
 };
 class MSTabCtrlConfig : public TabCtrlConfig {
 public:
-    static ComponentConfig* CfgFactory() { return new MSTabCtrlConfig; } //genuine SDK inline, native38f0a0/83 completea0
-    static Component* CompFactory(); //38f040 genuine external SDK static factory; call-only
+    static ComponentConfig* CfgFactory() { return new MSTabCtrlConfig; } // inline (body at 0x0078f0a0, 0xa0 bytes)
+    static Component* CompFactory(); // at 0x0078f040
     virtual bool Virtual24(const std::string&); //38fb30
-    virtual void Virtual34(Component*); //38f100 original external
+    virtual void SetComponent(Component*); // at 0x0078f100
     MSTabCtrl* mMSTabCtrl; //9c borrowed, prefixa0
 };
 class MSScrollContainerConfig : public ScrollbarScrollerConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38f180 genuine external SDK static factory; call-only
-    static Component* CompFactory(); //38f120 genuine external SDK static factory; call-only
+    static ComponentConfig* CfgFactory(); // at 0x0078f180
+    static Component* CompFactory(); // at 0x0078f120
     virtual bool Virtual24(const std::string&); //38fd30
-    virtual bool Virtual28(const std::string&,ComponentConfig*&,Component*&); //38fdd0 original external
-    virtual void Virtual34(Component*); //38fd10 original external, ICF shared inherited shape
+    virtual bool GetPredefinedComponent(const std::string&,ComponentConfig*&,Component*&); // at 0x0078fdd0
+    virtual void SetComponent(Component*); // at 0x0078fd10 (identical body shared with the inherited one)
     MSScrollContainer* mScrollContainer; //a0 borrowed, prefixa4
 };
 class MSHeaderControlConfig : public MultiListHeaderConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38f240 genuine external SDK static factory; call-only
-    static Component* CompFactory(); //38f1e0 genuine external SDK static factory; call-only
+    static ComponentConfig* CfgFactory(); // at 0x0078f240
+    static Component* CompFactory(); // at 0x0078f1e0
     virtual bool Virtual24(const std::string&); //38ff00
-    virtual void Virtual34(Component*); //38f2a0 original external
+    virtual void SetComponent(Component*); // at 0x0078f2a0
     MSHeaderControl* mMSHeader; //9c borrowed, prefixa0
 };
 class MSListCtrlConfig : public MSScrollContainerConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38f320 genuine external SDK static factory; call-only
-    static Component* CompFactory(); //38f2c0 genuine external SDK static factory; call-only
+    static ComponentConfig* CfgFactory(); // at 0x0078f320
+    static Component* CompFactory(); // at 0x0078f2c0
     virtual bool Virtual24(const std::string&); //38ffd0
-    virtual bool Virtual28(const std::string&,ComponentConfig*&,Component*&); //390020 original external
-    virtual void Virtual34(Component*); //actual RTTI target pinned; original external
+    virtual bool GetPredefinedComponent(const std::string&,ComponentConfig*&,Component*&); // at 0x00790020
+    virtual void SetComponent(Component*); // defined out of line
     MSListCtrl* mListCtrl; //a4 borrowed, prefixa8
 };
 }

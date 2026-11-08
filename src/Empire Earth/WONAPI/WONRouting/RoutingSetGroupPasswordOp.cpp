@@ -1,5 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK routing group administration.
+// No original address identified: WON SDK routing group administration
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,24 +10,25 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONRoutingGroupAdmin.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void RoutingSetGroupPasswordOp::Virtual0C()
+void RoutingSetGroupPasswordOp::SendRequest()
 {
-	InitSendMsg(64 /* SDK RoutingSetGroupPasswordRequest */);
-	mSendMsg.AppendShort(mGroupId);
-	mSendMsg.AppendWString(mGroupPassword,2);
-	SendMsg();
-	AddOp();
+	this->InitSendMsg(64 /* SDK RoutingSetGroupPasswordRequest */);
+	this->mSendMsg.AppendShort(this->mGroupId);
+	this->mSendMsg.AppendWString(this->mGroupPassword,2);
+	this->SendMsg();
+	this->AddOp();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus RoutingSetGroupPasswordOp::Virtual10(unsigned char theMsgType, ReadBuffer &theMsg)
+WONStatus RoutingSetGroupPasswordOp::HandleReply(unsigned char theMsgType, ReadBuffer &theMsg)
 {
 	if(theMsgType!=66 /* SDK RoutingStatusReply */)
-		return 100104 /* SDK WS_RoutingOp_DontWantReply */;
+		return WS_RoutingOp_DontWantReply /* SDK WS_RoutingOp_DontWantReply */;
 
 	WONStatus aStatus = (WONStatus)theMsg.ReadShort();
 	return aStatus;

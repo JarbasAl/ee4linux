@@ -1,4 +1,4 @@
-// WONGUI ListArea configuration, borrowed external objects only.
+// Resource configuration of list boxes: list flags, text items, font, colours, sort type (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,9 +13,10 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x0078d5d0
+// Reads a list sort type (ASCENDING, DESCENDING or NONE); throws on any other name
 ListSortType ListAreaConfig::ReadSortType()
 {
-    GUIString name=Fn3842F0(false);
+    GUIString name=this->ReadString(false);
     if(name.CompareNoCase("ASCENDING")==0) return ListSortType_Ascending;
     if(name.CompareNoCase("DESCENDING")==0) return ListSortType_Descending;
     if(name.CompareNoCase("NONE")==0) return ListSortType_None;
@@ -23,6 +24,8 @@ ListSortType ListAreaConfig::ReadSortType()
 }
 
 // FUNCTION: WON 0x0078d790
+// Reads a list of named list flags (each optionally negated) and sets or clears them on the list box;
+// throws on an unknown name
 void ListAreaConfig::ReadListFlags(ComponentConfig* inConfig,ListArea* inArea)
 {
     while(true)
@@ -45,26 +48,28 @@ void ListAreaConfig::ReadListFlags(ComponentConfig* inConfig,ListArea* inArea)
         else if(name.CompareNoCase("NoAutoAdjustScrollPos")==0) flags=0x1000;
         else if(name.CompareNoCase("DoListItemToolTip")==0) flags=0x2000;
         else throw ConfigObjectException("Unknown list flag: "+(std::string)name);
-        inArea->Fn2FB600(flags,on);
+        inArea->SetListFlags(flags,on);
     }
 }
 
 // FUNCTION: WON 0x0078da70
+// Handles the LISTFLAGS, TEXTITEM, FONT, TEXTCOLOR, SELCOLOR and LISTSORTTYPE instructions; others go to
+// the scroll area config
 bool ListAreaConfig::Virtual24(const std::string& inInstruction)
 {
-    if(inInstruction=="LISTFLAGS") ReadListFlags(this,mListArea);
+    if(inInstruction=="LISTFLAGS") ListAreaConfig::ReadListFlags(this,this->mListArea);
     else if(inInstruction=="TEXTITEM")
     {
-        while(!EndOfString())
+        while(!this->EndOfString())
         {
-            mListArea->InsertString(Fn3842F0(false),-1);
-            if(!EndOfString()) EnsureComma();
+            this->mListArea->InsertString(this->ReadString(false),-1);
+            if(!this->EndOfString()) this->EnsureComma();
         }
     }
-    else if(inInstruction=="FONT") mListArea->SetFont(ReadFont());
-    else if(inInstruction=="TEXTCOLOR") mListArea->mTextColor=Fn385510();
-    else if(inInstruction=="SELCOLOR") mListArea->mSelColor=ReadSelectionColor();
-    else if(inInstruction=="LISTSORTTYPE") mListArea->SetSortType(ReadSortType());
+    else if(inInstruction=="FONT") this->mListArea->SetFont(this->ReadFont());
+    else if(inInstruction=="TEXTCOLOR") this->mListArea->mTextColor=this->ReadColor();
+    else if(inInstruction=="SELCOLOR") this->mListArea->mSelColor=this->ReadSelectionColor();
+    else if(inInstruction=="LISTSORTTYPE") this->mListArea->SetSortType(this->ReadSortType());
     else return ScrollAreaConfig::Virtual24(inInstruction);
     return true;
 }

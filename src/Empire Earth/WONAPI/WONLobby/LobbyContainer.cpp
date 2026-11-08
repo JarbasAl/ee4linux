@@ -1,4 +1,4 @@
-// Scratch whole LobbyContainer; common ScreenContainer external base now closed88.
+// The lobby's top container: switches between the login, Internet and LAN screens
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,58 +12,59 @@
 #include "ee/wonapi/WONLobbyHTMLDisplayGen.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 #include "ee/wonapi/WONLobbyRoomServer.h"
-// Own LoginScreen9c declaration will be canonical before any source promotion/compile.
 namespace WONAPI {
 
 LobbyContainer::LobbyContainer() {}
-// Original3bdd60..3bde1e,190B. Own-vptr3bdd7f precedes three owned releases.
+// The original stores its own vtable (0x7bdd7f) before releasing the three screens
 // FUNCTION: WON 0x007bdd60
+// Destroys the container, releasing its three screens
 LobbyContainer::~LobbyContainer() {}
-// Original3bde20..3bdeca,170B. Actual SafeGet line37/38/39 and screen-add order.
 // FUNCTION: WON 0x007bde20
+// Sets the HTML default font, finds and adds the login, Internet and LAN screens and shows the login one
 void LobbyContainer::InitComponent(ComponentInit& inInit)
 {
     if(inInit.mType!=2) return;
     ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-    HTMLDisplayGen::SetGlobalDefaultFontFace(Fn2F5B20()->mDescriptor.mFace);
-    SafeGetComponent(config,mLoginScreen,"LoginScreen",__FILE__,37);
-    SafeGetComponent(config,mInternetScreen,"InternetScreen",__FILE__,38);
-    SafeGetComponent(config,mLanScreen,"LanScreen",__FILE__,39);
-    AddScreen(mLoginScreen.get());
-    AddScreen(mInternetScreen.get());
-    AddScreen(mLanScreen.get());
-    ShowScreen(mLoginScreen.get(),true);
+    HTMLDisplayGen::SetGlobalDefaultFontFace(this->GetDefaultFont()->mDescriptor.mFace);
+    SafeGetComponent(config,this->mLoginScreen,"LoginScreen",__FILE__,37);
+    SafeGetComponent(config,this->mInternetScreen,"InternetScreen",__FILE__,38);
+    SafeGetComponent(config,this->mLanScreen,"LanScreen",__FILE__,39);
+    this->AddScreen(this->mLoginScreen.get());
+    this->AddScreen(this->mInternetScreen.get());
+    this->AddScreen(this->mLanScreen.get());
+    this->ShowScreen(this->mLoginScreen.get(),true);
 }
-// Original3bded0..3bdedf,15B.
 // FUNCTION: WON 0x007bded0
-void LobbyContainer::ShowInternetScreen() { ShowScreen(mInternetScreen.get(),true); }
-// Original3bdee0..3bdeef,15B.
+// Shows the Internet lobby screen
+void LobbyContainer::ShowInternetScreen() { this->ShowScreen(this->mInternetScreen.get(),true); }
 // FUNCTION: WON 0x007bdee0
-void LobbyContainer::ShowLanScreen() { ShowScreen(mLanScreen.get(),true); }
-// Original3bdef0..3bdf0e,30B. Reload LoginScreen receiver after ShowScreen callback.
+// Shows the LAN lobby screen
+void LobbyContainer::ShowLanScreen() { this->ShowScreen(this->mLanScreen.get(),true); }
+// mLoginScreen is read again after ShowScreen
 // FUNCTION: WON 0x007bdef0
+// Shows the login screen with the message of the day
 void LobbyContainer::ShowLoginScreen()
 {
-    ShowScreen(mLoginScreen.get(),true);
-    mLoginScreen->ShowMOTD();
+    this->ShowScreen(this->mLoginScreen.get(),true);
+    this->mLoginScreen->ShowMOTD();
 }
-// Original3bdf10..3bdf28,24B.
 // FUNCTION: WON 0x007bdf10
-bool LobbyContainer::OnInternetScreen() { return mCurScreen==mInternetScreen.get(); }
-// Original3bdf30..3bdf48,24B.
+// Returns whether the Internet lobby screen is showing
+bool LobbyContainer::OnInternetScreen() { return this->mCurScreen==this->mInternetScreen.get(); }
 // FUNCTION: WON 0x007bdf30
-bool LobbyContainer::OnLanScreen() { return mCurScreen==mLanScreen.get(); }
-// Original3bdf50..3bdf68,24B.
+// Returns whether the LAN lobby screen is showing
+bool LobbyContainer::OnLanScreen() { return this->mCurScreen==this->mLanScreen.get(); }
 // FUNCTION: WON 0x007bdf50
-bool LobbyContainer::OnLoginScreen() { return mCurScreen==mLoginScreen.get(); }
-// Original3bdf70..3bdfbe,78B. Preserve distinct mode predicates and rawDWORD result.
+// Returns whether the login screen is showing
+bool LobbyContainer::OnLoginScreen() { return this->mCurScreen==this->mLoginScreen.get(); }
 // FUNCTION: WON 0x007bdf70
+// Returns where games are set up: 2 Internet, 1 LAN games tab, 3 direct connect tab, else 0
 int LobbyContainer::GetGameScreenType()
 {
-    if(OnInternetScreen()) return 2;
-    if(OnLanScreen()) {
-        if(mLanScreen->OnLanTab()) return 1;
-        if(mLanScreen->OnDirectConnectTab()) return 3;
+    if(this->OnInternetScreen()) return 2;
+    if(this->OnLanScreen()) {
+        if(this->mLanScreen->OnLanTab()) return 1;
+        if(this->mLanScreen->OnDirectConnectTab()) return 3;
     }
     return 0;
 }

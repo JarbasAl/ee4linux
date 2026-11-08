@@ -1,4 +1,4 @@
-// Register child layout state and execute the immediate group before retaining it.
+// Child layout registration on containers (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,6 +12,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f61d0
+// Adds a child layout instruction to a group; group 0 is enabled and applied at once, other groups start disabled
 void Container::AddChildLayout(ChildLayoutInstructionBase* theInstr, int theId)
 {
     theInstr->mGroupId = theId;
@@ -21,14 +22,16 @@ void Container::AddChildLayout(ChildLayoutInstructionBase* theInstr, int theId)
     }
     else
         theInstr->mEnabled = false;
-    mChildLayout.AddInstruction(theInstr);
+    this->mChildLayout.AddInstruction(theInstr);
 }
 }
 
 #include "ee/wonapi/WONLobbyLayout.h"
 namespace WONAPI {
-// Genuine SDK Container::AddChildLayout component overload, existing reduced API spelling.
+// The SDK's AddChildLayout overload for one child component
 // FUNCTION: WON 0x006f6140
+// Adds a layout instruction placing a child relative to a reference component (flags, offsets, size)
+// to a layout group
 void Container::Fn2F6140(Component* child,int flags,Component* reference,
     int x,int y,int width,int height,int groupId)
 {
@@ -40,6 +43,6 @@ void Container::Fn2F6140(Component* child,int flags,Component* reference,
     instruction->mY=y;
     instruction->mWidth=width;
     instruction->mHeight=height;
-    AddChildLayout(instruction,groupId);
+    this->AddChildLayout(instruction,groupId);
 }
 }

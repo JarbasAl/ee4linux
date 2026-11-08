@@ -1,17 +1,17 @@
-// Native original-backed PerfTimer static API and timestamp calibration.
+// PerfTimer: global performance timing with rdtsc calibration
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include "ee/wonapi/WONPerfTimer.h"
 using namespace WONAPI;
-// Actual native state: RVA565ec0/8,565ed0/8,565ed8/8,565ee0/4,565ee4/1.
+// The original's state: RVA 565ec0/8, 565ed0/8, 565ed8/8, 565ee0/4, 565ee4/1
 
 static __int64 gPerfTotalTime = 0;
 static __int64 gPerfResetTick = 0;
 static double gPerfElapsedTime = 0;
 static int gPerfTimerStartCount = 0;
 static bool gPerfTimerStarted = false;
-// SUPPORT-ONLY: EXE 0x006a37f0
-// This is the original SDK's actual hardware timestamp primitive, not a codegen substitute.
+// 0x6a37f0 (emitted from the list below): reads the CPU time-stamp counter
+// The original SDK wrote this rdtsc read in inline asm
 static __int64 MyQueryPerformanceCounter()
 {
     unsigned long x,y;
@@ -26,9 +26,10 @@ static __int64 MyQueryPerformanceCounter()
     return result;
 }
 // FUNCTION: WON 0x006a3850
+// Returns the time-stamp counter rate per second, measured once over a 50 ms sleep and cached
 static __int64 MyQueryPerformanceFrequency()
 {
-    static __int64 aFreq=0; //actual native cached frequency RVA565ee8/8
+    static __int64 aFreq=0; //cached frequency, RVA 565ee8/8
     if(aFreq!=0) return aFreq;
     LARGE_INTEGER s1,e1,f1;
     __int64 s2,e2,f2;
@@ -44,7 +45,7 @@ static __int64 MyQueryPerformanceFrequency()
     return aFreq;
 }
 // FUNCTION: WON 0x006a3820
-// Scalar query/conversion adapter is not primary breadth.
+// Returns the time counted by the timers in milliseconds (raw ticks when the rate is unknown)
 double PerfTimer::GetCountedTime(const char*)
 {
     __int64 frequency=MyQueryPerformanceFrequency();
@@ -52,14 +53,17 @@ double PerfTimer::GetCountedTime(const char*)
     return (double)gPerfTotalTime/frequency*1000.0;
 }
 // FUNCTION: WON 0x006a3900
+// Returns the milliseconds between the last global start and stop
 double PerfTimer::GetElapsedTime(const char*) {return gPerfElapsedTime;}
 // FUNCTION: WON 0x006a3910
+// Returns the counted time as a fraction of the elapsed time, 0 when nothing elapsed
 double PerfTimer::GetPercentTime(const char*)
 {
     if(gPerfElapsedTime==0) return 0;
-    return GetCountedTime()/gPerfElapsedTime;
+    return PerfTimer::GetCountedTime()/gPerfElapsedTime;
 }
 // FUNCTION: WON 0x006a3940
+// Starts a global timing run, clearing the counted time and noting the start tick
 void PerfTimer::GlobalStart(const char*)
 {
     gPerfTimerStarted=true;
@@ -71,6 +75,7 @@ void PerfTimer::GlobalStart(const char*)
     gPerfResetTick=tick.QuadPart;
 }
 // FUNCTION: WON 0x006a3990
+// Ends the global timing run and records its elapsed milliseconds
 void PerfTimer::GlobalStop(const char*)
 {
     LARGE_INTEGER tick;
@@ -81,57 +86,54 @@ void PerfTimer::GlobalStop(const char*)
     gPerfTimerStarted=false;
 }
 
-// genuine missing instance family; SOURCE_ONLY_NO_NATIVE_ID.
-// Existing static APIs/calibration/data remain unchanged above.
-static __int64 gPerfStartTick = 0; // genuine SDK file-static instance accumulation tick
+// No original address identified: WON SDK PerfTimer instance methods
+static __int64 gPerfStartTick = 0; // start tick of the outermost running timer
 
 PerfTimer::PerfTimer(const char *theName)
 {
-	mName = theName;
-	mStarted = false;
-	Start();
+	this->mName = theName;
+	this->mStarted = false;
+	this->Start();
 }
 
 PerfTimer::~PerfTimer()
 {
-	Stop();
+	this->Stop();
 }
 
 void PerfTimer::Start()
 {
-	if(mName!=NULL)
+	if(this->mName!=NULL)
 		return;
 
-	if(!mStarted)
-	{
-		mStarted = true;
+	if(this->mStarted)
+		return;
+	this->mStarted = true;
 
-		gPerfTimerStartCount++;
-		if(gPerfTimerStartCount==1)
-			gPerfStartTick = MyQueryPerformanceCounter();
-	}
+	gPerfTimerStartCount++;
+	if(gPerfTimerStartCount==1)
+		gPerfStartTick = MyQueryPerformanceCounter();
 }
 
 void PerfTimer::Stop()
 {
-	if(mName!=NULL)
+	if(this->mName!=NULL)
 		return;
 
-	if(mStarted)
+	if(!this->mStarted)
+		return;
+	gPerfTimerStartCount--;
+	if(gPerfTimerStartCount<=0 && gPerfTimerStarted)
 	{
-		gPerfTimerStartCount--;
-		if(gPerfTimerStartCount<=0 && gPerfTimerStarted)
-		{
-			gPerfTotalTime += MyQueryPerformanceCounter() - gPerfStartTick;
-			gPerfTimerStartCount = 0;
-		}
-		else
-		{
-			int x = 0;
-			x++;
-		}
-		mStarted = false;
+		gPerfTotalTime += MyQueryPerformanceCounter() - gPerfStartTick;
+		gPerfTimerStartCount = 0;
 	}
+	else
+	{
+		int x = 0;
+		x++;
+	}
+	this->mStarted = false;
 }
 
 void PerfTimer::DumpTimesToStr(std::string &theStr)

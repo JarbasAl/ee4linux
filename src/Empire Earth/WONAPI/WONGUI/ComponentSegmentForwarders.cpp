@@ -1,4 +1,4 @@
-// Genuine ComponentLineSegment dimension, mouse forwarding and flag predicates.
+// ComponentLineSegment size, mouse forwarding and flag tests (file name inferred)
 
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
@@ -14,25 +14,36 @@
 #include "ee/wonapi/WONLobbyHTMLImageSegments.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0073a990
-int ComponentLineSegment::GetWidth() { return mComponent->Width(); }
+// Returns the hosted component's width
+int ComponentLineSegment::GetWidth() { return this->mComponent->Width(); }
 // FUNCTION: WON 0x0073a9a0
-int ComponentLineSegment::GetHeight() { return mComponent->Height(); }
+// Returns the hosted component's height
+int ComponentLineSegment::GetHeight() { return this->mComponent->Height(); }
 // FUNCTION: WON 0x0073a900
-void ComponentLineSegment::MouseEnter(int x,int y) { mComponent->Virtual24(x,y); }
+// Forwards mouse enter to the hosted component
+void ComponentLineSegment::MouseEnter(int x,int y) { this->mComponent->MouseEnter(x,y); }
 // FUNCTION: WON 0x0073a920
-void ComponentLineSegment::MouseExit() { mComponent->Virtual28(); }
+// Forwards mouse exit to the hosted component
+void ComponentLineSegment::MouseExit() { this->mComponent->MouseExit(); }
 // FUNCTION: WON 0x0073a930
-void ComponentLineSegment::MouseDown(int x,int y,MouseButton button) { mComponent->Virtual2C(x,y,button); }
+// Forwards a mouse press to the hosted component
+void ComponentLineSegment::MouseDown(int x,int y,MouseButton button) { this->mComponent->MouseDown(x,y,button); }
 // FUNCTION: WON 0x0070a840
-void ComponentLineSegment::MouseUp(int x,int y,MouseButton button) { mComponent->Virtual30(x,y,button); }
+// Forwards a mouse release to the hosted component
+void ComponentLineSegment::MouseUp(int x,int y,MouseButton button) { this->mComponent->MouseUp(x,y,button); }
 // FUNCTION: WON 0x0073a950
-void ComponentLineSegment::MouseMove(int x,int y) { mComponent->Virtual34(x,y); }
+// Forwards a mouse move to the hosted component
+void ComponentLineSegment::MouseMove(int x,int y) { this->mComponent->MouseMove(x,y); }
 // FUNCTION: WON 0x0070a880
-void ComponentLineSegment::MouseDrag(int x,int y) { mComponent->Virtual38(x,y); }
+// Forwards a mouse drag to the hosted component
+void ComponentLineSegment::MouseDrag(int x,int y) { this->mComponent->MouseDrag(x,y); }
 // FUNCTION: WON 0x0073a970
-bool ComponentLineSegment::IsInvalid() { return mComponent->mInvalidState!=0; }
+// Reports whether the hosted component needs repainting
+bool ComponentLineSegment::IsInvalid() { return this->mComponent->mInvalidState!=0; }
 // FUNCTION: WON 0x0070a7b0
+// Never starts a text selection on a component
 bool ComponentLineSegment::CanStartSelection() { return false; }
 // FUNCTION: WON 0x0073a980
-bool ComponentLineSegment::AllowModalInput() { return mComponent->ComponentFlagSet(0x8000); }
+// Allows input under a modal dialog when the hosted component has flag 0x8000
+bool ComponentLineSegment::AllowModalInput() { return this->mComponent->ComponentFlagSet(0x8000); }
 }

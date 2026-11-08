@@ -3,40 +3,40 @@
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 #include "ee/wonapi/WONLobbySkinListControls.h"
 namespace WONAPI {
-// Actual derived call-only control prefix; no allocation or tail access.
+// Derived control (declarations only).
 class WONScrollbar : public Scrollbar {
 public:
-    WONScrollbar(bool=true); //319540 original external RET4, bounded F newbc
-    bool mIsTransparent; //b8; natural padding throughbb, ctor319553
+    WONScrollbar(bool=true); // at 0x00719540 (0xbc bytes)
+    bool mIsTransparent; // offset 0xb8, padding to 0xbb; set by the constructor at 0x00719553
 };
-// Actual configuration prefixes, original lifetimes external; no allocation/copy/sizeof.
+// Config base parts; their constructors and destructors are out of line.
 class WONScrollbarConfig : public ScrollbarConfig {
 public:
-    static ComponentConfig* CfgFactory(); //396bc0 genuine SDK external API; call-only
+    static ComponentConfig* CfgFactory(); // at 0x00796bc0
     virtual bool Virtual24(const std::string&); //3986d0
-    virtual void Virtual34(Component*); //38f100 original
+    virtual void SetComponent(Component*); // at 0x0078f100
     WONScrollbar* mScrollbar; //9c
 };
 class WONScrollContainerConfig : public ScrollbarScrollerConfig {
 public:
-    static ComponentConfig* CfgFactory(); //396c20 genuine SDK external API; call-only
-    virtual bool Virtual24(const std::string&); //3987e0 original
-    virtual bool Virtual28(const std::string&,ComponentConfig*&,Component*&); //3989f0 original
-    virtual void Virtual34(Component* component) { ScrollbarScrollerConfig::Virtual34(component); mScrollContainer=(WONScrollContainer*)component; } //396c80
+    static ComponentConfig* CfgFactory(); // at 0x00796c20
+    virtual bool Virtual24(const std::string&); // at 0x007987e0
+    virtual bool GetPredefinedComponent(const std::string&,ComponentConfig*&,Component*&); // at 0x007989f0
+    virtual void SetComponent(Component* component) { ScrollbarScrollerConfig::SetComponent(component); this->mScrollContainer=static_cast<WONScrollContainer*>(component); } //396c80
     WONScrollContainer* mScrollContainer; //a0
 };
 class WONHeaderControlConfig : public MultiListHeaderConfig {
 public:
     virtual bool Virtual24(const std::string&); //398b20
-    virtual void Virtual34(Component*); //398f70 original
+    virtual void SetComponent(Component*); // at 0x00798f70
     WONHeaderControl* mHeader; //9c
 };
 class WONListCtrlConfig : public WONScrollContainerConfig {
 public:
-    static ComponentConfig* CfgFactory(); //396ca0 genuine SDK external API; call-only
+    static ComponentConfig* CfgFactory(); // at 0x00796ca0
     virtual bool Virtual24(const std::string&); //398c00
-    virtual bool Virtual28(const std::string&,ComponentConfig*&,Component*&); //398e30 original
-    virtual void Virtual34(Component*); //396d00 original
+    virtual bool GetPredefinedComponent(const std::string&,ComponentConfig*&,Component*&); // at 0x00798e30
+    virtual void SetComponent(Component*); // at 0x00796d00
     WONListCtrl* mListCtrl; //a4
 };
 }

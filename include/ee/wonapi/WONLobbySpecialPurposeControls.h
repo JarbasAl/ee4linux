@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: exact full SDK owners and explicit inline bodies.
+// Special-purpose controls (not identified in the original exe).
 #ifndef EE_WONAPI_WONLOBBYSPECIALPURPOSECONTROLS_H
 #define EE_WONAPI_WONLOBBYSPECIALPURPOSECONTROLS_H
 
@@ -38,10 +38,10 @@ public:
 public:
 	ColHeaderButton();
 
-	void SetText(const char *theText) { mText = theText; }
-	void SetFont(Font *theFont) { mFont = theFont; }
-	void SetBackColor(DWORD theBackColor) { mBackColor = theBackColor; }
-	void SetMultiListBox(MultiListArea* theMultiListBox, int theCol, SortMode theSortMode) {mMultiListBox = theMultiListBox; mCol = theCol; mSortMode = theSortMode; }
+	void SetText(const char *theText) { this->mText = theText; }
+	void SetFont(Font *theFont) { this->mFont = theFont; }
+	void SetBackColor(DWORD theBackColor) { this->mBackColor = theBackColor; }
+	void SetMultiListBox(MultiListArea* theMultiListBox, int theCol, SortMode theSortMode) {this->mMultiListBox = theMultiListBox; this->mCol = theCol; this->mSortMode = theSortMode; }
 };
 typedef WONAPI::SmartPtr<ColHeaderButton> ColHeaderButtonPtr;
 
@@ -68,7 +68,7 @@ public:
 	ImageCheckButton(int theNormalControlID, int theCheckedControlID);
 	virtual void Paint(Graphics &g);
 
-	void SetImage(ImageCheckButtonType theType, Image *theImage) { mImages[theType] = theImage; }
+	void SetImage(ImageCheckButtonType theType, Image *theImage) { this->mImages[theType] = theImage; }
 	void AlternateControlIDs(void);
 };
 typedef WONAPI::SmartPtr<ImageCheckButton> ImageCheckButtonPtr;
@@ -104,7 +104,7 @@ public:
 	CheckButtonSplitterContainer(void);
 
 	virtual void HandleComponentEvent(ComponentEvent *theEvent);
-	virtual void Virtual2C(int x, int y, int theButton);
+	virtual void MouseDown(int x, int y, int theButton);
 
 	void AddSplitterBars(BorderComponent* theNormalSplitter, BorderComponent* theMaxMinSplitter);
 	void AddMinButtons(ImageCheckButton* theFirstMinButton, ImageCheckButton* theSecondMinButton);
@@ -126,7 +126,7 @@ public:
 	virtual void Paint(Graphics &g);
 	virtual void Virtual08();
 
-	void SetImage(ImageButtonType theType, BorderComponent *theImage) { mImages[theType] = theImage; }
+	void SetImage(ImageButtonType theType, BorderComponent *theImage) { this->mImages[theType] = theImage; }
 };
 
 typedef WONAPI::SmartPtr<BorderImageButton> BorderImageButtonPtr;

@@ -1,4 +1,4 @@
-// Native user-authored ConfigValue template behaviors; source only.
+// Typed config values (bool, 16-bit, string, wide string, string list) and their key registration
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,138 +11,144 @@
 #include "ee/wonapi/WONLobbyConfig.h"
 #include "ee/wonapi/WONConfigValue.h"
 namespace WONAPI {
-// Genuine ConfigValue<T>::CopyValueHook instantiations:
-// bool3b3f70/56, ushort3b4000/58, string3b41a0/371, wstring3b4480/389, stringlist3b47b0/270.
+// Instantiations: bool 0x7b3f70, unsigned short 0x7b4000, string 0x7b41a0, wstring 0x7b4480,
+// string list 0x7b47b0
 // FUNCTION: WON 0x007b3f70
 // FUNCTION: WON 0x007b4000
 // FUNCTION: WON 0x007b41a0
 // FUNCTION: WON 0x007b4480
 // FUNCTION: WON 0x007b47b0
+// Copies the value from another config value of the same type; false when the type differs
 template<class T> bool ConfigValue<T>::CopyValueHook(ConfigValueBase* source)
 {
     ConfigValue<T>* value=dynamic_cast<ConfigValue<T>*>(source);
     if(value!=NULL) {
-        mVal=value->mVal;
+        this->mVal=value->mVal;
         return true;
     }
     return false;
 }
-// Tiny scalar default stores and parser/format forwarding methods are support0.
-template<class T> void SimpleConfigValue<T>::InitializeDefaultHook() {mVal=mDefVal;}
-template<class T> bool SimpleConfigValue<T>::ReadValue(StringParser& parser) {return parser.ReadValue(mVal);}
+template<class T> void SimpleConfigValue<T>::InitializeDefaultHook() {this->mVal=this->mDefVal;}
+template<class T> bool SimpleConfigValue<T>::ReadValue(StringParser& parser) {return parser.ReadValue(this->mVal);}
 template<> bool SimpleConfigValue<unsigned short>::ReadValue(StringParser& parser)
 {
     int value;
     bool result=parser.ReadValue(value);
-    mVal=(unsigned short)value;
+    this->mVal=(unsigned short)value;
     return result;
 }
-template<class T> void SimpleConfigValue<T>::WriteValue(std::string& out) {StringParser::ValueToString(mVal,out);}
-// Genuine ConfigStringValue<char/wchar_t>::InitializeDefaultHook3b4040/284 and3b4320/276.
+template<class T> void SimpleConfigValue<T>::WriteValue(std::string& out) {StringParser::ValueToString(this->mVal,out);}
+// Instantiations: char 0x7b4040, wchar_t 0x7b4320
 // FUNCTION: WON 0x007b4040
 // FUNCTION: WON 0x007b4320
+// Resets the string to its default text, or empties it when there is none
 template<class T> void ConfigStringValue<T>::InitializeDefaultHook()
 {
-    if(mDefVal!=NULL) mVal=mDefVal;
-    else mVal.erase();
+    if(this->mDefVal!=NULL) this->mVal=this->mDefVal;
+    else this->mVal.erase();
 }
-template<class T> bool ConfigStringValue<T>::ReadValue(StringParser& parser) {return parser.ReadString(mVal,false);}
-template<class T> void ConfigStringValue<T>::WriteValue(std::string& out) {StringParser::ValueToString(mVal,out);}
-// Genuine ConfigListValue<list<string> >::InitializeDefaultHook3b4610/154.
+template<class T> bool ConfigStringValue<T>::ReadValue(StringParser& parser) {return parser.ReadString(this->mVal,false);}
+template<class T> void ConfigStringValue<T>::WriteValue(std::string& out) {StringParser::ValueToString(this->mVal,out);}
 // FUNCTION: WON 0x007b4610
+// Resets the list to the items parsed from its default text
 template<class T> void ConfigListValue<T>::InitializeDefaultHook()
 {
-    mVal.clear();
-    if(mDefStr!=NULL) {
-        StringParser parser(mDefStr);
-        parser.SetIsWString(mIsWString);
-        parser.ReadValue(mVal);
+    this->mVal.clear();
+    if(this->mDefStr!=NULL) {
+        StringParser parser(this->mDefStr);
+        parser.SetIsWString(this->mIsWString);
+        parser.ReadValue(this->mVal);
     }
 }
-// Genuine ConfigListValue<list<string> >::ReadValue3b46b0/213.
 // FUNCTION: WON 0x007b46b0
+// Parses list items, replacing the list unless the key is additive
 template<class T> bool ConfigListValue<T>::ReadValue(StringParser& parser)
 {
-    if(!mAdditive) mVal.clear();
-    return parser.ReadValue(mVal);
+    if(!this->mAdditive) this->mVal.clear();
+    return parser.ReadValue(this->mVal);
 }
-template<class T> void ConfigListValue<T>::WriteValue(std::string& out) {StringParser::ValueToString(mVal,out);}
+template<class T> void ConfigListValue<T>::WriteValue(std::string& out) {StringParser::ValueToString(this->mVal,out);}
 // FUNCTION: WON 0x007b1b40
-void ConfigObject::KeyAdd(const char* key,bool& value,bool initial) {RegisterKeyValue(key,new SimpleConfigValue<bool>(value,initial));}
+// Registers a bool key bound to the given variable with a default
+void ConfigObject::KeyAdd(const char* key,bool& value,bool initial) {this->RegisterKeyValue(key,new SimpleConfigValue<bool>(value,initial));}
 // FUNCTION: WON 0x007b1ba0
-void ConfigObject::KeyAdd(const char* key,unsigned short& value,unsigned short initial) {RegisterKeyValue(key,new SimpleConfigValue<unsigned short>(value,initial));}
+// Registers a 16-bit key bound to the given variable with a default
+void ConfigObject::KeyAdd(const char* key,unsigned short& value,unsigned short initial) {this->RegisterKeyValue(key,new SimpleConfigValue<unsigned short>(value,initial));}
 // FUNCTION: WON 0x007b1c00
-void ConfigObject::KeyAdd(const char* key,std::string& value,const char* initial) {RegisterKeyValue(key,new ConfigStringValue<char>(value,initial));}
+// Registers a string key bound to the given variable with a default
+void ConfigObject::KeyAdd(const char* key,std::string& value,const char* initial) {this->RegisterKeyValue(key,new ConfigStringValue<char>(value,initial));}
 // FUNCTION: WON 0x007b1c60
-void ConfigObject::KeyAdd(const char* key,std::wstring& value,const wchar_t* initial) {RegisterKeyValue(key,new ConfigStringValue<wchar_t>(value,initial));}
+// Registers a wide string key bound to the given variable with a default
+void ConfigObject::KeyAdd(const char* key,std::wstring& value,const wchar_t* initial) {this->RegisterKeyValue(key,new ConfigStringValue<wchar_t>(value,initial));}
 // FUNCTION: WON 0x007b1cc0
-void ConfigObject::KeyAdd(const char* key,std::list<std::string>& value,const char* initial,bool additive) {RegisterKeyValue(key,new ConfigListValue<std::list<std::string> >(value,initial,additive));}
+// Registers a string list key bound to the given list, with a default and an additive flag
+void ConfigObject::KeyAdd(const char* key,std::list<std::string>& value,const char* initial,bool additive) {this->RegisterKeyValue(key,new ConfigListValue<std::list<std::string> >(value,initial,additive));}
 }
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK typed registration paths; no implicit-body or template-emission credit.
+// No original address identified: WON SDK typed key registration
 void ConfigObject::RegisterInt64Value(const char *theKey, __int64 &theInt64, __int64 theDefVal)
 {
-	RegisterKeyValue(theKey, new SimpleConfigValue<__int64>(theInt64,theDefVal));
+	this->RegisterKeyValue(theKey, new SimpleConfigValue<__int64>(theInt64,theDefVal));
 }
 
 void ConfigObject::RegisterIntValue(const char *theKey, int &theInt, int theDefVal)
 {
-	RegisterKeyValue(theKey, new SimpleConfigValue<int>(theInt,theDefVal));
+	this->RegisterKeyValue(theKey, new SimpleConfigValue<int>(theInt,theDefVal));
 }
 
 void ConfigObject::RegisterLongValue(const char *theKey, long &theLong, long theDefVal)
 {
-	RegisterKeyValue(theKey, new SimpleConfigValue<long>(theLong, theDefVal));
+	this->RegisterKeyValue(theKey, new SimpleConfigValue<long>(theLong, theDefVal));
 }
 
 void ConfigObject::RegisterShortValue(const char *theKey, short &theShort, short theDefVal)
 {
-	RegisterKeyValue(theKey, new SimpleConfigValue<short>(theShort, theDefVal));
+	this->RegisterKeyValue(theKey, new SimpleConfigValue<short>(theShort, theDefVal));
 }
 
 void ConfigObject::RegisterByteValue(const char *theKey, char &theByte, char theDefVal)
 {
-	RegisterKeyValue(theKey, new SimpleConfigValue<char>(theByte,theDefVal));
+	this->RegisterKeyValue(theKey, new SimpleConfigValue<char>(theByte,theDefVal));
 }
 
 void ConfigObject::RegisterUInt64Value(const char *theKey, unsigned __int64 &theInt64, unsigned __int64 theDefVal)
 {
-	RegisterKeyValue(theKey, new SimpleConfigValue<unsigned __int64>(theInt64,theDefVal));
+	this->RegisterKeyValue(theKey, new SimpleConfigValue<unsigned __int64>(theInt64,theDefVal));
 }
 
 void ConfigObject::RegisterBoolListValue(const char *theKey, std::list<bool> &theBoolList, const char *theDefVal, bool additive)
 {
-	RegisterKeyValue(theKey, new ConfigListValue<std::list<bool> >(theBoolList, theDefVal, additive));
+	this->RegisterKeyValue(theKey, new ConfigListValue<std::list<bool> >(theBoolList, theDefVal, additive));
 }
 
 void ConfigObject::RegisterIntListValue(const char *theKey, std::list<int> &theIntList, const char *theDefVal, bool additive)
 {
-	RegisterKeyValue(theKey, new ConfigListValue<std::list<int> >(theIntList, theDefVal, additive));
+	this->RegisterKeyValue(theKey, new ConfigListValue<std::list<int> >(theIntList, theDefVal, additive));
 }
 
 void ConfigObject::RegisterWStringListValue(const char *theKey, std::list<std::wstring> &theStringList, const wchar_t *theDefVal, bool additive)
 {
-	RegisterKeyValue(theKey, new ConfigListValue<std::list<std::wstring> >(theStringList, theDefVal, additive));
+	this->RegisterKeyValue(theKey, new ConfigListValue<std::list<std::wstring> >(theStringList, theDefVal, additive));
 }
 
 void ConfigObject::RegisterBoolListListValue(const char *theKey, std::list<std::list<bool> > &theBoolListList, const char *theDefVal, bool additive)
 {
-	RegisterKeyValue(theKey, new ConfigListValue<std::list<std::list<bool> > >(theBoolListList, theDefVal, additive));
+	this->RegisterKeyValue(theKey, new ConfigListValue<std::list<std::list<bool> > >(theBoolListList, theDefVal, additive));
 }
 
 void ConfigObject::RegisterIntListListValue(const char *theKey, std::list<std::list<int> > &theIntListList, const char *theDefVal, bool additive)
 {
-	RegisterKeyValue(theKey, new ConfigListValue<std::list<std::list<int> > >(theIntListList, theDefVal, additive));
+	this->RegisterKeyValue(theKey, new ConfigListValue<std::list<std::list<int> > >(theIntListList, theDefVal, additive));
 }
 
 void ConfigObject::RegisterStringListListValue(const char *theKey, std::list<std::list<std::string> > &theStringListList, const char *theDefVal, bool additive)
 {
-	RegisterKeyValue(theKey, new ConfigListValue<std::list<std::list<std::string> > >(theStringListList, theDefVal, additive));
+	this->RegisterKeyValue(theKey, new ConfigListValue<std::list<std::list<std::string> > >(theStringListList, theDefVal, additive));
 }
 
 void ConfigObject::RegisterWStringListListValue(const char *theKey, std::list<std::list<std::wstring> > &theStringListList, const wchar_t *theDefVal, bool additive)
 {
-	RegisterKeyValue(theKey, new ConfigListValue<std::list<std::list<std::wstring> > >(theStringListList, theDefVal, additive));
+	this->RegisterKeyValue(theKey, new ConfigListValue<std::list<std::list<std::wstring> > >(theStringListList, theDefVal, additive));
 }
 }
 

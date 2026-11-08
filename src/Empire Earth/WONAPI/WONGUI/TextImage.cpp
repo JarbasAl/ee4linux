@@ -1,5 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: same-SDK inline text image selection/render/copy behavior.
+// Inline image segment of a text area: painting, size and copy text (not identified in the original exe)
 #include <windows.h>
 #include <string>
 #include <list>
@@ -15,29 +15,28 @@
 namespace WONAPI {
 void TextImage::Paint(Graphics &g, TextArea *theTextArea)
 {
-	if(theTextArea->mSelStartChar<=mAbsStartChar && theTextArea->mSelEndChar>=mAbsEndChar)
+	if(theTextArea->mSelStartChar<=this->mAbsStartChar && theTextArea->mSelEndChar>=this->mAbsEndChar)
 	{
 		g.SetColor(theTextArea->mSelColor.GetBackgroundColor(g));
-		g.FillRect(mx,0,mWidth,mLine->mHeight);
+		g.FillRect(this->mx,0,this->mWidth,this->mLine->mHeight);
 	}
 
-	g.DrawImage(mImage,mx,my);
+	g.DrawImage(this->mImage,this->mx,this->my);
 }
 
 void TextImage::CalcDimensions()
 {
-	mWidth = mImage->mWidth;
-	mHeight = mImage->mHeight;
-	mAscent = mHeight;
+	this->mWidth = this->mImage->mWidth;
+	this->mHeight = this->mImage->mHeight;
+	this->mAscent = this->mHeight;
 }
 
 void TextImage::GetSelText(TextArea *theTextArea, GUIString &theStr)
 {
-	if(theTextArea->mSelStartChar<=mAbsStartChar && theTextArea->mSelEndChar>=mAbsEndChar)
-	{
-		theStr.append(mText);
-		if(mLineBreak && theTextArea->mSelEndChar>mAbsEndChar)
-			theStr.append("\r\n");
-	}
+	if(!(theTextArea->mSelStartChar<=this->mAbsStartChar) || !(theTextArea->mSelEndChar>=this->mAbsEndChar))
+		return;
+	theStr.append(this->mText);
+	if(this->mLineBreak && theTextArea->mSelEndChar>this->mAbsEndChar)
+		theStr.append("\r\n");
 }
 }

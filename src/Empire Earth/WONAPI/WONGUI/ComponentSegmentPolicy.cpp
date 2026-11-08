@@ -1,4 +1,4 @@
-// Native retained-owner HTML segment interaction policy.
+// ComponentLineSegment painting and viewport attachment (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,32 +11,35 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyHTMLImageSegments.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007098f0
+// Paints the hosted component at the segment's position, with the selection highlight around it
 void ComponentLineSegment::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInfo)
 {
-	bool selected = DrawSelection1(g,x,y,theInfo);
+	bool selected = this->DrawSelection1(g,x,y,theInfo);
 
-	mComponent->Virtual68();
+	this->mComponent->MarkInvalid();
 	g.Translate(x,y);
-	mComponent->Paint(g);
+	this->mComponent->Paint(g);
 	g.Translate(-x,-y);
 	if(selected)
-		DrawSelection2(g,x,y);
+		this->DrawSelection2(g,x,y);
 }
 
 // FUNCTION: WON 0x00709960
+// Attaches the hosted component to the viewport at the segment's position, turning off its background grab
 void ComponentLineSegment::SetViewport(ScrollAreaViewport *theViewport, int x, int y)
 {
 	LineSegment::SetViewport(theViewport,x,y);
-	if(mComponent->ComponentFlagSet(0x100))
-		mComponent->SetComponentFlags(0x100,false);
+	if(this->mComponent->ComponentFlagSet(ComponentFlag_GrabBG))
+		this->mComponent->SetComponentFlags(ComponentFlag_GrabBG,false);
 
-	mComponent->mParent=theViewport;	
+	this->mComponent->mParent=theViewport;	
 	if(theViewport!=NULL)
 	{
-		mComponent->Fn2F4B70(x,y);
-		mComponent->Virtual6C();	
+		this->mComponent->SetPos(x,y);
+		this->mComponent->AddedToParent();	
 	}
 }
 }

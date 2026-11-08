@@ -1,4 +1,4 @@
-// Skin list headers: sort indicator rendering and initial header-height policy.
+// Skinned list headers: sort arrow painting, column headers and the header height (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,6 +14,7 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x007193C0
+// Paints the header button plus a small up or down sort arrow after its text, shifted by one pixel while pressed
 void WONHeaderButton::Paint(Graphics &g)
 {
 	WONButton::Paint(g);
@@ -25,15 +26,15 @@ void WONHeaderButton::Paint(Graphics &g)
 	int aColor;
 	WrappedText *aText;
 
-	GetButtonState(g,&aColor, &aText);
+	this->GetButtonState(g,&aColor, &aText);
 	g.SetColor(aColor);
 	int x;
 	if(aText==NULL || aText->GetWidth()==0)
-		x = (Width()-4)/2;
+		x = (this->Width()-4)/2;
 	else
-		x = aText->GetWidth() + 10 + mLeftTextPad;
+		x = aText->GetWidth() + 10 + this->mLeftTextPad;
 	
-	int y = Height()/2-2;
+	int y = this->Height()/2-2;
 	int offset = ((mButtonFlags&0x20)!=0)?1:0;
 	x+=offset;
 	y+=offset;
@@ -54,64 +55,69 @@ void WONHeaderButton::Paint(Graphics &g)
 }
 
 // FUNCTION: WON 0x0071A450
+// Sets a column's header to a skinned text button and its width; the first header fixes the header height (15 if none)
 void WONListCtrl::SetStandarColumnHeader(int theCol, const GUIString &theTitle, int theWidth)
 {
 	int aDesiredHeight = 0;
-	mHeader->SetColumn(theCol,theTitle, &aDesiredHeight);
+	this->mHeader->SetColumn(theCol,theTitle, &aDesiredHeight);
 
-	if(mHeaderHeight==0)
+	if(this->mHeaderHeight==0)
 	{
 		if(aDesiredHeight>0)
-			mHeaderHeight = aDesiredHeight;
+			this->mHeaderHeight = aDesiredHeight;
 		else
-			mHeaderHeight = 15;
+			this->mHeaderHeight = 15;
 	}
 		
-	static_cast<MultiListArea*>(mScrollArea.get())->SetColumnWidth(theCol,theWidth,false);
+	static_cast<MultiListArea*>(this->mScrollArea.get())->SetColumnWidth(theCol,theWidth,false);
 }
 
 // FUNCTION: WON 0x0071A4C0
+// Sets a column's header to the given component and its width; the first header fixes the header height (15 if none)
 void WONListCtrl::SetColumnHeader(int theCol, Component *theHeader, int theWidth)
 {
-	if(mHeaderHeight==0)
+	if(this->mHeaderHeight==0)
 	{
 		if(theHeader->Height()>0)
-			mHeaderHeight = theHeader->Height();
+			this->mHeaderHeight = theHeader->Height();
 		else
-			mHeaderHeight = 15;
+			this->mHeaderHeight = 15;
 	}
 
-	mHeader->SetColumnItem(theCol,theHeader);
-	static_cast<MultiListArea*>(mScrollArea.get())->SetColumnWidth(theCol,theWidth,false);
+	this->mHeader->SetColumnItem(theCol,theHeader);
+	static_cast<MultiListArea*>(this->mScrollArea.get())->SetColumnWidth(theCol,theWidth,false);
 }
 
 
 // FUNCTION: WON 0x0071a580
+// Lays out the scroll container, then places the header strip directly above the list area
 void WONListCtrl::Virtual08()
 {
 	WONScrollContainer::Virtual08();
 
-	mHeader->Fn2F4BF0(mScrollArea->Left(),mScrollArea->Top()-mHeaderHeight,mScrollArea->Width(),mHeaderHeight);
+	this->mHeader->SetPosSize(this->mScrollArea->Left(),this->mScrollArea->Top()-this->mHeaderHeight,this->mScrollArea->Width(),this->mHeaderHeight);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x0071a060
+// Creates a skinned list header that takes its buttons from the given skin
 WONHeaderControl::WONHeaderControl(WONSkin* skin)
 {
-    mSkin=skin;
-    mTextLeftPad=0;
+    this->mSkin=skin;
+    this->mTextLeftPad=0;
 }
 // FUNCTION: WON 0x0071a1c0
+// Puts a new skinned header button with the title on a column, optionally returning its desired height
 void WONHeaderControl::SetColumn(int column,const GUIString& title,int* desiredHeight)
 {
-    SmartPtr<WONHeaderButton> button=mSkin->GetHeaderButton();
+    SmartPtr<WONHeaderButton> button=this->mSkin->GetHeaderButton();
     button->SetText(title,true);
     if(desiredHeight!=NULL) {
         int width;
-        button->Virtual0C(width,*desiredHeight);
+        button->GetDesiredSize(width,*desiredHeight);
     }
-    SetColumnItem(column,button.get());
+    this->SetColumnItem(column,button.get());
 }
 }
 

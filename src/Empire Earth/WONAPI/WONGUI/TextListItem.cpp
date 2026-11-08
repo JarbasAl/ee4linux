@@ -1,4 +1,4 @@
-// Original-backed TextListItem behavior; original historical TU grouping remains provisional.
+// Text list items: size, sort order and painting (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,52 +10,55 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x6fa2c0
-void TextListItem::Virtual08(ListArea* inList)
+// Sizes the item from its text and optional image, taking the list's font and text colour when unset
+void TextListItem::CalcDimensions(ListArea* inList)
 {
-    if(mFont.get()==NULL) mFont=inList->mFont;
-    if(mL1C==-1) mL1C=inList->GetTextColor();
-    mL10=mFont->GetStringWidth(mText)+2;
-    mHeight=mFont->GetHeight();
-    if(mImage.get()!=NULL) {
-        mL10+=mImage->mWidth+2;
-        if(mImage->mHeight>mHeight) mHeight=mImage->mHeight;
+    if(this->mFont.get()==NULL) this->mFont=inList->mFont;
+    if(this->mColor==-1) this->mColor=inList->GetTextColor();
+    this->mWidth=this->mFont->GetStringWidth(this->mText)+2;
+    this->mHeight=this->mFont->GetHeight();
+    if(this->mImage.get()!=NULL) {
+        this->mWidth+=this->mImage->mWidth+2;
+        if(this->mImage->mHeight>this->mHeight) this->mHeight=this->mImage->mHeight;
     }
 }
-// Native2fa360/19, pure case-insensitive compare forwarding support0.
 // FUNCTION: WON 0x006fa360
-int TextListItem::Virtual10(const ListItem* inOther,ListArea* inList) const
+// Orders two text items by their text, ignoring case
+int TextListItem::Compare(const ListItem* inOther,ListArea* inList) const
 {
-    return mText.CompareNoCase(static_cast<const TextListItem*>(inOther)->mText);
+    return this->mText.CompareNoCase(static_cast<const TextListItem*>(inOther)->mText);
 }
 // FUNCTION: WON 0x6fa380
-void TextListItem::Virtual04(Graphics& inGraphics,ListArea* inList)
+// Paints the item's image and vertically centred text, with the selection background behind a
+// selected item
+void TextListItem::Paint(Graphics& inGraphics,ListArea* inList)
 {
-    unsigned long aColor=mL1C;
-    if(mB08) {
+    unsigned long aColor=this->mColor;
+    if(this->mSelected) {
         const SelectionColor& aSelection=inList->GetSelColor();
         inGraphics.SetColor(aSelection.GetBackgroundColor(inGraphics));
-        int aWidth=inList->mL12C;
-        if(!inList->ListFlagSet(0x10)) aWidth=mL10;
+        int aWidth=inList->mPaintWidth;
+        if(!inList->ListFlagSet(0x10)) aWidth=this->mWidth;
         int aX=0;
-        Image* anImage=mImage.get();
+        Image* anImage=this->mImage.get();
         if(anImage!=NULL && !inList->ListFlagSet(0x20)) {
             int anImageWidth=anImage->mWidth;
             aX=anImageWidth+2;
             aWidth-=anImageWidth+2;
         }
-        inGraphics.FillRect(aX,0,aWidth,mHeight);
-        aColor=aSelection.GetForegroundColor(inGraphics,mL1C);
+        inGraphics.FillRect(aX,0,aWidth,this->mHeight);
+        aColor=aSelection.GetForegroundColor(inGraphics,this->mColor);
     }
     inGraphics.SetColor(aColor);
-    inGraphics.SetFont(mFont.get());
+    inGraphics.SetFont(this->mFont.get());
     int aTextX=2;
-    Image* anImage=mImage.get();
+    Image* anImage=this->mImage.get();
     if(anImage!=NULL) {
-        int anImageY=(mHeight-anImage->mHeight)/2;
+        int anImageY=(this->mHeight-anImage->mHeight)/2;
         if(anImageY<0) anImageY=0;
         inGraphics.DrawImage(anImage,2,anImageY);
-        aTextX=mImage->mWidth+4;
+        aTextX=this->mImage->mWidth+4;
     }
-    inGraphics.DrawString(mText,aTextX,(mHeight-mFont->GetHeight())/2);
+    inGraphics.DrawString(this->mText,aTextX,(this->mHeight-this->mFont->GetHeight())/2);
 }
 }

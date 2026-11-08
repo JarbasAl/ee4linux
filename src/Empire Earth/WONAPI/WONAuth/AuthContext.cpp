@@ -1,4 +1,4 @@
-// Original-backed borrowed AuthContext session cache; no complete object allocation/lifetime authority.
+// AuthContext: login credentials, communities, CD keys, login secrets, peer-session cache and certificate refresh
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -18,8 +18,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "LostDebug.h"
-// SUPPORT: EXE 0x006ddda0 (50B lazy critical-section getter, quota0)
-// Genuine file-local SDK identity; generated atexit cleanup2ddde0/12 also quota0.
+// File-local lazy critical section: the original's getter is 0x006ddda0 (50 bytes), its atexit cleanup 0x2ddde0
 static WONAPI::CriticalSection& GetVerifierCrit()
 {
     static WONAPI::CriticalSection verifierCritical;
@@ -68,58 +67,63 @@ static char VerifierKeyBuf[] =
 	"\x15\x2e\x39\x29\x6f\x95\x4b\xf4\x94\x74\xeb\xd8\xe3\x4a\xfb\x41\xa8\x4c\x5c\x3d\xb6"
 	"\x42\xc0\x15\x35\x9e\x1a\xe2\x54\x2c\x0c\x0b\x34\x5f\xe2\x35\x8d\x30\x73";
 namespace WONAPI {
-// Genuine existing class-static owners, native566018/1a8 and5661e1/1.
+// Class statics: the signing public key (0x566018, 0x1a8 bytes) and its file-checked flag (0x5661e1)
 ElGamal AuthContext::mVerifierKey(VerifierKeyBuf,sizeof(VerifierKeyBuf),false);
 bool AuthContext::mCheckedVerifierFile=false;
 
 // FUNCTION: WON 0x006ddb70
+// Sets up the peer data, login-secret file path and server context, and loads the key file once per process
 void AuthContext::Init()
 {
-    mSessionCleanItr=mSessionMap.begin();
-    mPeerData=new AuthPeerData;
-    mLoginSecretFile=WONAPICore::GetDefaultFileDirectory()+"_wonlogin.ks";
-    mServerContext=new ServerContext;
-    mDoAutoRefresh=false;
-    mRefreshStatus=0x186a4;
+    this->mSessionCleanItr=this->mSessionMap.begin();
+    this->mPeerData=new AuthPeerData;
+    this->mLoginSecretFile=WONAPICore::GetDefaultFileDirectory()+"_wonlogin.ks";
+    this->mServerContext=new ServerContext;
+    this->mDoAutoRefresh=false;
+    this->mRefreshStatus=0x186a4;
     AutoCrit lock(GetVerifierCrit());
-    if(mCheckedVerifierFile) return;
-    LoadVerifierKey(WONAPICore::GetDefaultFileDirectory()+"_wonkver.pub");
+    if(AuthContext::mCheckedVerifierFile) return;
+    AuthContext::LoadVerifierKey(WONAPICore::GetDefaultFileDirectory()+"_wonkver.pub");
 }
 // FUNCTION: WON 0x006dddf0
+// Creates an empty auth context
 AuthContext::AuthContext()
 {
-    Init();
+    this->Init();
 }
 // FUNCTION: WON 0x006de370
+// Destroys the auth context (members only)
 AuthContext::~AuthContext()
 {
 }
 
 // FUNCTION: WON 0x006deeb0
+// Caches a peer session for an address and drops up to five map entries unused for over 300 seconds
 void AuthContext::PutSession(const IPAddr& address,AuthSession* session)
 {
-    AutoCrit lock(mDataCrit);
+    AutoCrit lock(this->mDataCrit);
     if(session==NULL) return;
-    SessionStruct& record=mSessionMap[address];
+    SessionStruct& record=this->mSessionMap[address];
     time_t now=time(NULL);
     record.mLastUseTime=now;
     record.mSessionList.push_back(session);
     for(int i=0;i<5;++i) {
-        if(mSessionCleanItr==mSessionMap.end()) {
-            mSessionCleanItr=mSessionMap.begin();
+        if(this->mSessionCleanItr==this->mSessionMap.end()) {
+            this->mSessionCleanItr=this->mSessionMap.begin();
             break;
         }
-        if(now-mSessionCleanItr->second.mLastUseTime>300)
-            mSessionMap.erase(mSessionCleanItr++);
-        else ++mSessionCleanItr;
+        if(now-this->mSessionCleanItr->second.mLastUseTime>300)
+            this->mSessionMap.erase(this->mSessionCleanItr++);
+        else ++this->mSessionCleanItr;
     }
 }
 // FUNCTION: WON 0x006df080
+// Takes a session used within 300 seconds for the address out of the cache; NULL when none
 SmartPtr<AuthSession> AuthContext::GetSession(const IPAddr& address)
 {
-    AutoCrit lock(mDataCrit);
-    SessionMap::iterator found=mSessionMap.find(address);
-    if(found==mSessionMap.end()) return NULL;
+    AutoCrit lock(this->mDataCrit);
+    SessionMap::iterator found=this->mSessionMap.find(address);
+    if(found==this->mSessionMap.end()) return NULL;
     time_t now=time(NULL);
     SessionStruct& record=found->second;
     record.mLastUseTime=now;
@@ -132,63 +136,68 @@ SmartPtr<AuthSession> AuthContext::GetSession(const IPAddr& address)
     }
     return NULL;
 }
-// Additional bounded borrowed AuthContext lifecycle; no GetCertOp allocation.
 // FUNCTION: WON 0x006de7f0
+// Starts a certificate refresh when the current auto-refresh timer fires (not when killed)
 void AuthContext::AutoRefreshCallback(AsyncOp* op)
 {
-    AutoCrit lock(mDataCrit);
-    if(op!=mAutoRefreshOp.get()) return;
-    mAutoRefreshOp=NULL;
-    if(op->mB39) return;
-    RefreshAsync(NULL,INFINITE);
+    AutoCrit lock(this->mDataCrit);
+    if(op!=this->mAutoRefreshOp.get()) return;
+    this->mAutoRefreshOp=NULL;
+    if(op->mKilled) return;
+    this->RefreshAsync(NULL,INFINITE);
 }
 // FUNCTION: WON 0x006de8e0
+// Kills and drops the pending auto-refresh timer
 void AuthContext::StopAutoRefresh()
 {
-    AutoCrit lock(mDataCrit);
-    if(mAutoRefreshOp.get()!=NULL) {
-        mAutoRefreshOp->Kill(true);
-        mAutoRefreshOp=NULL;
+    AutoCrit lock(this->mDataCrit);
+    if(this->mAutoRefreshOp.get()!=NULL) {
+        this->mAutoRefreshOp->Kill(true);
+        this->mAutoRefreshOp=NULL;
     }
 }
 // FUNCTION: WON 0x006deb30
-void AuthContext::Fn2DEB30(bool enabled)
+// Turns certificate auto-refresh on or off and restarts the timer
+void AuthContext::SetDoAutoRefresh(bool enabled)
 {
-    AutoCrit lock(mDataCrit);
-    mDoAutoRefresh=enabled;
-    StartAutoRefresh(false);
+    AutoCrit lock(this->mDataCrit);
+    this->mDoAutoRefresh=enabled;
+    this->StartAutoRefresh(false);
 }
 // FUNCTION: WON 0x006df260
+// Kills the running certificate request and the auto-refresh timer
 void AuthContext::Kill()
 {
-    AutoCrit lock(mDataCrit);
-    if(mGetCertOp.get()!=NULL) mGetCertOp->Kill(true);
-    StopAutoRefresh();
+    AutoCrit lock(this->mDataCrit);
+    if(this->mGetCertOp.get()!=NULL) this->mGetCertOp->Kill(true);
+    this->StopAutoRefresh();
 }
 
 // FUNCTION: WON 0x006de760
+// Forwards the auto-refresh timer completion to its context
 void AuthContext::StaticAutoRefreshCallback(SmartPtr<AsyncOp> op,SmartPtr<RefCount> parameter)
 {
     static_cast<AuthContext*>(parameter.get())->AutoRefreshCallback(op.get());
 }
 // FUNCTION: WON 0x006de970
+// Restarts the auto-refresh timer: 2 minutes before the certificate expires (at least 2), or 5 when forced
 void AuthContext::StartAutoRefresh(bool force)
 {
-    AutoCrit lock(mDataCrit);
-    StopAutoRefresh();
-    if(mDoAutoRefresh) {
+    AutoCrit lock(this->mDataCrit);
+    this->StopAutoRefresh();
+    if(this->mDoAutoRefresh) {
         bool refreshTimer=force;
         time_t wait=300;
-        if(mPeerData->IsValid()) {
-            wait=mPeerData->GetExpireDelta()-120;
+        if(this->mPeerData->IsValid()) {
+            wait=this->mPeerData->GetExpireDelta()-120;
             if(wait<120) wait=120;
             refreshTimer=true;
         }
         if(refreshTimer) {
-            mAutoRefreshOp=new AsyncOp;
-            mAutoRefreshOp->mCompletion=
+            this->mAutoRefreshOp=new AsyncOp;
+            this->mAutoRefreshOp->mCompletion=
                 new ParamCompletion<SmartPtr<AsyncOp>,SmartPtr<RefCount> >(&AuthContext::StaticAutoRefreshCallback,this);
-            mAutoRefreshOp->Run(static_cast<long>(static_cast<unsigned long>(wait)*1000UL));
+            this->mAutoRefreshOp->RunAsync(static_cast<long>(static_cast<unsigned long>(wait)*1000UL));
         }
     }
 }
@@ -199,11 +208,12 @@ inline AuthContext::SecretData::SecretData(time_t expires,const ByteBuffer* secr
     : mExpireTime(expires),mSecret(secret) {}
 
 // FUNCTION: WON 0x006e1240
+// Reads the saved login secrets (expiry + 8 bytes each) from the secret file; false when it cannot open
 bool AuthContext::LoadSecretList()
 {
-    AutoCrit lock(mDataCrit);
-    mSecretList.clear();
-    FILE* file=fopen(mLoginSecretFile.c_str(),"rb");
+    AutoCrit lock(this->mDataCrit);
+    this->mSecretList.clear();
+    FILE* file=fopen(this->mLoginSecretFile.c_str(),"rb");
     if(file==NULL) return false;
     unsigned char count=static_cast<unsigned char>(fgetc(file));
     int i=0;
@@ -212,21 +222,22 @@ bool AuthContext::LoadSecretList()
         fread(&expires,sizeof(time_t),1,file);
         char* raw=new char[8];
         fread(raw,1,8,file);
-        mSecretList.push_back(SecretData(expires,new ByteBuffer(raw,8,true)));
+        this->mSecretList.push_back(SecretData(expires,new ByteBuffer(raw,8,true)));
         ++i;
     }
     fclose(file);
     return true;
 }
 // FUNCTION: WON 0x006e1460
+// Writes the login secrets to the secret file; false when it cannot be created
 bool AuthContext::SaveSecretList()
 {
-    AutoCrit lock(mDataCrit);
-    FILE* file=fopen(mLoginSecretFile.c_str(),"wb");
+    AutoCrit lock(this->mDataCrit);
+    FILE* file=fopen(this->mLoginSecretFile.c_str(),"wb");
     if(file==NULL) return false;
-    unsigned char count=static_cast<unsigned char>(mSecretList.size());
+    unsigned char count=static_cast<unsigned char>(this->mSecretList.size());
     fwrite(&count,1,1,file);
-    for(SecretList::iterator next=mSecretList.begin();next!=mSecretList.end();++next) {
+    for(SecretList::iterator next=this->mSecretList.begin();next!=this->mSecretList.end();++next) {
         fwrite(&next->mExpireTime,sizeof(time_t),1,file);
         fwrite(next->mSecret.get()!=NULL?next->mSecret->data():NULL,1,
                next->mSecret.get()!=NULL?next->mSecret->length():0,file);
@@ -235,14 +246,15 @@ bool AuthContext::SaveSecretList()
     return true;
 }
 // FUNCTION: WON 0x006e1560
+// Appends a count byte and every login secret to the login request
 void AuthContext::AppendLoginSecrets(WriteBuffer& output)
 {
-    AutoCrit lock(mDataCrit);
-    SecretList::iterator next=mSecretList.begin();
+    AutoCrit lock(this->mDataCrit);
+    SecretList::iterator next=this->mSecretList.begin();
     unsigned long countPosition=output.mLength;
     unsigned char count=0;
-    output.Fn2A8260(1);
-    while(next!=mSecretList.end() && count<256) {
+    output.SkipBytes(1);
+    while(next!=this->mSecretList.end() && count<256) {
         output.AppendBytes(next->mSecret.get()!=NULL?next->mSecret->data():NULL,
                            next->mSecret.get()!=NULL?next->mSecret->length():0);
         ++count;
@@ -251,23 +263,25 @@ void AuthContext::AppendLoginSecrets(WriteBuffer& output)
     output.SetByte(countPosition,count);
 }
 // FUNCTION: WON 0x006e1650
+// Adds a new uncommitted 8-byte login secret at the front and saves the list
 void AuthContext::AddSecret(const void* secret)
 {
-    AutoCrit lock(mDataCrit);
-    mSecretList.insert(mSecretList.begin(),SecretData(0,new ByteBuffer(secret,8,false)));
-    SaveSecretList();
+    AutoCrit lock(this->mDataCrit);
+    this->mSecretList.insert(this->mSecretList.begin(),SecretData(0,new ByteBuffer(secret,8,false)));
+    this->SaveSecretList();
 }
 // FUNCTION: WON 0x006e1790
+// Removes the matching uncommitted login secret and saves the list
 void AuthContext::RemoveSecret(const void* secret)
 {
-    AutoCrit lock(mDataCrit);
-    SecretList::iterator next=mSecretList.begin();
-    while(next!=mSecretList.end()) {
+    AutoCrit lock(this->mDataCrit);
+    SecretList::iterator next=this->mSecretList.begin();
+    while(next!=this->mSecretList.end()) {
         if(next->mExpireTime==0) {
             const ByteBuffer* buffer=next->mSecret.get();
             if(memcmp(buffer!=NULL?buffer->data():NULL,secret,8)==0) {
-                mSecretList.erase(next);
-                SaveSecretList();
+                this->mSecretList.erase(next);
+                this->SaveSecretList();
                 return;
             }
         }
@@ -275,52 +289,57 @@ void AuthContext::RemoveSecret(const void* secret)
     }
 }
 // FUNCTION: WON 0x006e1890
+// Gives uncommitted secrets an expiry, drops expired ones, caps the list below 256 entries and saves it
 void AuthContext::CommitSecrets(time_t authTime,time_t duration)
 {
-    AutoCrit lock(mDataCrit);
-    if(mSecretList.empty()) return;
-    SecretList::iterator next=mSecretList.begin();
-    while(next!=mSecretList.end()) {
+    AutoCrit lock(this->mDataCrit);
+    if(this->mSecretList.empty()) return;
+    SecretList::iterator next=this->mSecretList.begin();
+    while(next!=this->mSecretList.end()) {
         if(next->mExpireTime==0) {
             next->mExpireTime=static_cast<time_t>(static_cast<unsigned long>(authTime)+static_cast<unsigned long>(duration)+120UL);
             ++next;
-        } else if(next->mExpireTime<=authTime) mSecretList.erase(next++);
+        } else if(next->mExpireTime<=authTime) this->mSecretList.erase(next++);
         else ++next;
     }
-    while(mSecretList.size()>=256) mSecretList.pop_back();
-    SaveSecretList();
+    while(this->mSecretList.size()>=256) this->mSecretList.pop_back();
+    this->SaveSecretList();
 }
 // FUNCTION: WON 0x006e19e0
+// Returns the current peer data (certificate and keys) under the lock
 ConstSmartPtr<AuthPeerData> AuthContext::GetPeerData()
 {
-    AutoCrit lock(mDataCrit);
-    return mPeerData;
+    AutoCrit lock(this->mDataCrit);
+    return this->mPeerData;
 }
 // FUNCTION: WON 0x006e1a30
+// Returns whether the auth2 certificate expires within the given number of seconds
 bool AuthContext::IsExpired(time_t extra)
 {
-    AutoCrit lock(mDataCrit);
-    return mPeerData->Certificate2Expired(extra);
+    AutoCrit lock(this->mDataCrit);
+    return this->mPeerData->Certificate2Expired(extra);
 }
 // FUNCTION: WON 0x006e1aa0
+// Replaces the peer data and clears the peer-session cache
 void AuthContext::SetPeerData(const AuthPeerData* data)
 {
-    AutoCrit lock(mDataCrit);
-    mPeerData=data;
-    mSessionMap.clear();
-    mSessionCleanItr=mSessionMap.begin();
+    AutoCrit lock(this->mDataCrit);
+    this->mPeerData=data;
+    this->mSessionMap.clear();
+    this->mSessionCleanItr=this->mSessionMap.begin();
 }
 
 
 // FUNCTION: WON 0x006e0c50
+// Appends each hashed community's file hash and its hash keyed with the server challenge
 void AuthContext::AppendHashes(WriteBuffer& output,const RawBuffer& challenge)
 {
-    AutoCrit lock(mDataCrit);
+    AutoCrit lock(this->mDataCrit);
     int count=0;
     unsigned long countPosition=output.mLength;
-    output.Fn2A8260(1);
-    std::map<std::wstring,AuthLoginCommunityData>::iterator next=mCommunityMap.begin();
-    while(next!=mCommunityMap.end()) {
+    output.SkipBytes(1);
+    std::map<std::wstring,AuthLoginCommunityData>::iterator next=this->mCommunityMap.begin();
+    while(next!=this->mCommunityMap.end()) {
         AuthLoginCommunityData& data=next->second;
         if(!data.mSimpleHash.empty()) {
             MD5Digest keyedHash;
@@ -338,23 +357,24 @@ void AuthContext::AppendHashes(WriteBuffer& output,const RawBuffer& challenge)
     output.SetByte(countPosition,static_cast<unsigned char>(count));
 }
 // FUNCTION: WON 0x006e0e50
+// Appends the login's community names and typed records (CD keys, joins, user data, secrets, nicknames)
 void AuthContext::AppendCommunityData(WriteBuffer& output)
 {
-    AutoCrit lock(mDataCrit);
+    AutoCrit lock(this->mDataCrit);
     output.AppendByte(0);
-    output.AppendByte(static_cast<unsigned char>(mCommunityMap.size()));
-    std::map<std::wstring,AuthLoginCommunityData>::iterator community=mCommunityMap.begin();
-    while(community!=mCommunityMap.end()) {
+    output.AppendByte(static_cast<unsigned char>(this->mCommunityMap.size()));
+    std::map<std::wstring,AuthLoginCommunityData>::iterator community=this->mCommunityMap.begin();
+    while(community!=this->mCommunityMap.end()) {
         output.AppendWString(community->first,2);
         ++community;
     }
     unsigned long countPosition=output.length();
-    output.Fn2A8260(2);
+    output.SkipBytes(2);
     int count=0;
-    community=mCommunityMap.begin();
-    while(community!=mCommunityMap.end()) {
+    community=this->mCommunityMap.begin();
+    while(community!=this->mCommunityMap.end()) {
         if(community->second.mCDKey.mValid) {
-            ConstSmartPtr<ByteBuffer> key(community->second.mCDKey.mP14.get());
+            ConstSmartPtr<ByteBuffer> key(community->second.mCDKey.mKey.get());
             if(key.get()!=NULL) {
                 output.AppendByte(1);
                 output.AppendShort(static_cast<short>(community->first.length()*2+key->length()+2));
@@ -365,9 +385,9 @@ void AuthContext::AppendCommunityData(WriteBuffer& output)
         }
         ++community;
     }
-    std::map<std::wstring,CDKey>::iterator joined=mCDKeyCommunityJoinMap.begin();
-    while(joined!=mCDKeyCommunityJoinMap.end()) {
-        ConstSmartPtr<ByteBuffer> key(joined->second.mP14.get());
+    std::map<std::wstring,CDKey>::iterator joined=this->mCDKeyCommunityJoinMap.begin();
+    while(joined!=this->mCDKeyCommunityJoinMap.end()) {
+        ConstSmartPtr<ByteBuffer> key(joined->second.mKey.get());
         if(key.get()!=NULL) {
             output.AppendByte(7);
             output.AppendShort(static_cast<short>(joined->first.length()*2+6+key->length()));
@@ -376,10 +396,10 @@ void AuthContext::AppendCommunityData(WriteBuffer& output)
             output.AppendBytes(key->data(),key->length());
             ++count;
         }
-        ++joined; //Native advances tree iterator before the held key temporary is destroyed.
+        ++joined; //the original advances the iterator before the held key temporary is destroyed
     }
-    std::map<std::wstring,ConstSmartPtr<ByteBuffer> >::iterator userData=mSetCommunityUserDataMap.begin();
-    while(userData!=mSetCommunityUserDataMap.end()) {
+    std::map<std::wstring,ConstSmartPtr<ByteBuffer> >::iterator userData=this->mSetCommunityUserDataMap.begin();
+    while(userData!=this->mSetCommunityUserDataMap.end()) {
         const ByteBuffer* data=userData->second.get();
         if(data!=NULL) {
             output.AppendByte(8);
@@ -391,28 +411,28 @@ void AuthContext::AppendCommunityData(WriteBuffer& output)
         }
         ++userData;
     }
-    if(mSecretList.size()>0) {
+    if(this->mSecretList.size()>0) {
         output.AppendByte(6);
         unsigned long position=output.length();
-        output.Fn2A8260(2);
-        AppendLoginSecrets(output);
+        output.SkipBytes(2);
+        this->AppendLoginSecrets(output);
         output.SetShort(position,output.length()-position-2);
         ++count;
     }
-    std::map<std::wstring,std::wstring>::iterator nickname=mNicknameMap.begin();
-    while(nickname!=mNicknameMap.end()) {
+    std::map<std::wstring,std::wstring>::iterator nickname=this->mNicknameMap.begin();
+    while(nickname!=this->mNicknameMap.end()) {
         const std::wstring& key=nickname->first;
         const std::wstring& value=nickname->second;
         output.AppendByte(4);
         unsigned long position=output.length();
-        output.Fn2A8260(2);
+        output.SkipBytes(2);
         output.AppendWString(key,2);
         output.SetShort(position,output.length()-position-2);
         ++count;
         if(!value.empty()) {
             output.AppendByte(3);
             position=output.length();
-            output.Fn2A8260(2);
+            output.SkipBytes(2);
             output.AppendWString(key,2);
             output.AppendWString(value,2);
             output.SetShort(position,output.length()-position-2);
@@ -423,102 +443,112 @@ void AuthContext::AppendCommunityData(WriteBuffer& output)
     output.SetShort(countPosition,static_cast<short>(count));
 }
 
-// Bounded AuthContext refresh dispatch on actual GetCert11fc owner and borrowed LightGetCert48 prefix.
 // FUNCTION: WON 0x006de560
+// Forwards the certificate request completion to its context
 void AuthContext::StaticGetCertCallback(SmartPtr<AsyncOp> op,SmartPtr<RefCount> param)
 {
     static_cast<AuthContext*>(param.get())->GetCertCallback(static_cast<GetCertOp*>(op.get()));
 }
 // FUNCTION: WON 0x006de5f0
+// Hands the new peer data and status to every waiting refresh op, then restarts auto-refresh
 void AuthContext::GetCertCallback(GetCertOp* op)
 {
-    AutoCrit lock(mDataCrit);
-    if(op!=mGetCertOp.get()) return;
+    AutoCrit lock(this->mDataCrit);
+    if(op!=this->mGetCertOp.get()) return;
     ConstSmartPtr<AuthPeerData> peerData=op->GetPeerData();
-    std::set<SmartPtr<LightGetCertOp>,SmartPtr<LightGetCertOp>::Comp>::iterator next=mRefreshSet.begin();
-    while(next!=mRefreshSet.end()) {
+    std::set<SmartPtr<LightGetCertOp>,SmartPtr<LightGetCertOp>::Comp>::iterator next=this->mRefreshSet.begin();
+    while(next!=this->mRefreshSet.end()) {
         LightGetCertOp* waiting=next->get();
         waiting->SetPeerData(peerData);
-        waiting->Fn29F220(op->GetStatus());
+        waiting->Finish(op->GetStatus());
         ++next;
     }
-    mRefreshSet.clear();
-    mGetCertOp=NULL;
-    mRefreshStatus=op->GetStatus();
-    StartAutoRefresh(true);
+    this->mRefreshSet.clear();
+    this->mGetCertOp=NULL;
+    this->mRefreshStatus=op->GetStatus();
+    this->StartAutoRefresh(true);
 }
 // FUNCTION: WON 0x006deba0
+// Queues a refresh op and starts a certificate request when none is running
 void AuthContext::RefreshAsync(LightGetCertOp* op,DWORD timeout)
 {
-    AutoCrit lock(mDataCrit);
-    StopAutoRefresh();
+    AutoCrit lock(this->mDataCrit);
+    this->StopAutoRefresh();
     if(op!=NULL) {
-        mRefreshSet.insert(op);
-        op->Run((long)timeout);
+        this->mRefreshSet.insert(op);
+        op->RunAsync((long)timeout);
     }
-    if(mGetCertOp.get()==NULL) {
-        mGetCertOp=new GetCertOp(this);
-        mGetCertOp->mCompletion=new ParamCompletion<SmartPtr<AsyncOp>,SmartPtr<RefCount> >(StaticGetCertCallback,this);
-        mRefreshStatus=mGetCertOp->Fn29F500(1,60000);
+    if(this->mGetCertOp.get()==NULL) {
+        this->mGetCertOp=new GetCertOp(this);
+        this->mGetCertOp->mCompletion=new ParamCompletion<SmartPtr<AsyncOp>,SmartPtr<RefCount> >(AuthContext::StaticGetCertCallback,this);
+        this->mRefreshStatus=this->mGetCertOp->Run(1,60000);
     }
 }
 // FUNCTION: WON 0x006dedf0
+// Fetches a new certificate synchronously; restarts auto-refresh on success and returns the status
 WONStatus AuthContext::RefreshBlock(DWORD timeout)
 {
     SmartPtr<GetCertOp> op;
     op=new GetCertOp(this);
-    mRefreshStatus=op->Fn29F500(2,timeout);
-    if(mRefreshStatus==0) StartAutoRefresh(false);
-    WONStatus status=mRefreshStatus;
+    this->mRefreshStatus=op->Run(2,timeout);
+    if(this->mRefreshStatus==0) this->StartAutoRefresh(false);
+    WONStatus status=this->mRefreshStatus;
     return status;
 }
 
 
-// File hashing uses the real separate WONCommon MD558, never WONCrypt MD5Digest.
+// File hashing uses the WONCommon MD5 class (0x58 bytes), not WONCrypt MD5Digest
 // FUNCTION: WON 0x006e0380
+// Sets the CD key sent for a community
 void AuthContext::SetCDKey(const std::wstring& community,const CDKey& key)
 {
-    AutoCrit lock(mDataCrit);
-    mCommunityMap[community].mCDKey=key;
+    AutoCrit lock(this->mDataCrit);
+    this->mCommunityMap[community].mCDKey=key;
 }
 // FUNCTION: WON 0x006e0510
+// Clears the CD-key community joins
 void AuthContext::ClearCDKeyCommunityJoins()
 {
-    AutoCrit lock(mDataCrit);
-    mCDKeyCommunityJoinMap.clear();
+    AutoCrit lock(this->mDataCrit);
+    this->mCDKeyCommunityJoinMap.clear();
 }
 // FUNCTION: WON 0x006e05e0
+// Clears the per-community user data to set
 void AuthContext::ClearUserData()
 {
-    AutoCrit lock(mDataCrit);
-    mSetCommunityUserDataMap.clear();
+    AutoCrit lock(this->mDataCrit);
+    this->mSetCommunityUserDataMap.clear();
 }
 // FUNCTION: WON 0x006e06b0
+// Clears the one-time user data and CD-key joins
 void AuthContext::ClearOneTimeData()
 {
-    ClearUserData();
-    ClearCDKeyCommunityJoins();
+    this->ClearUserData();
+    this->ClearCDKeyCommunityJoins();
 }
 // FUNCTION: WON 0x006e06d0
+// Hashes the running executable for the community; false when its path is unavailable
 bool AuthContext::SetHashFile(const std::wstring& community)
 {
     char path[MAX_PATH];
     if(GetModuleFileNameA(GetModuleHandleA(NULL),path,MAX_PATH)>0)
-        return SetHashFile(community,path);
+        return this->SetHashFile(community,path);
     return false;
 }
 // FUNCTION: WON 0x006e07f0
+// Hashes one file for the community
 bool AuthContext::SetHashFile(const std::wstring& community,const std::string& file)
 {
     // LOST-DEBUG: none: exact only.
     EE_LOST_DEBUG(3);
-    return SetHashFileList(community,std::list<std::string>(1,file));
+    return this->SetHashFileList(community,std::list<std::string>(1,file));
 }
 // FUNCTION: WON 0x006e08e0
+// Computes the community's MD5 of the files plus one MD5 per 16 KB section; false when a file cannot open
 bool AuthContext::SetHashFileList(const std::wstring& community,const std::list<std::string>& files)
 {
-    AutoCrit lock(mDataCrit);
-    AuthLoginCommunityData& data=mCommunityMap[community];
+    AutoCrit lock(this->mDataCrit);
+    AuthLoginCommunityData& data=this->mCommunityMap[community];
     data.mSimpleHash.erase();
     data.mKeyedHashData.erase();
     MD5 simpleHash;
@@ -532,18 +562,18 @@ bool AuthContext::SetHashFileList(const std::wstring& community,const std::list<
         char buffer[16384];
         while(!feof(file)) {
             int count=fread(buffer,1,16384-sectionPosition,file);
-            if(count>0) {
-                sectionPosition+=count;
-                simpleHash.Update(buffer,count);
-                hashSection.Update(buffer,count);
-                unsigned char digest[16];
-                if(sectionPosition==16384 || (feof(file) && next==files.end())) {
-                    sectionPosition=0;
-                    hashSection.Digest(digest);
-                    data.mKeyedHashData.append(digest,16);
-                    hashSection.Reset();
-                }
-            }
+            if(count<=0)
+                continue;
+            sectionPosition+=count;
+            simpleHash.Update(buffer,count);
+            hashSection.Update(buffer,count);
+            unsigned char digest[16];
+            if(sectionPosition!=16384 && (!feof(file) || next!=files.end()))
+                continue;
+            sectionPosition=0;
+            hashSection.Digest(digest);
+            data.mKeyedHashData.append(digest,16);
+            hashSection.Reset();
         }
         fclose(file);
     }
@@ -554,53 +584,58 @@ bool AuthContext::SetHashFileList(const std::wstring& community,const std::list<
 }
 
 
-// Complete locked community selection plus actual SDK mutators used by login consumers.
 // FUNCTION: WON 0x006df620
+// Sets the login user name
 void AuthContext::SetUserName(const std::wstring& name)
 {
-    AutoCrit lock(mDataCrit);
-    mName=name;
+    AutoCrit lock(this->mDataCrit);
+    this->mName=name;
 }
 // FUNCTION: WON 0x006df760
+// Sets the login password
 void AuthContext::SetPassword(const std::wstring& password)
 {
-    AutoCrit lock(mDataCrit);
-    mPassword=password;
+    AutoCrit lock(this->mDataCrit);
+    this->mPassword=password;
 }
 // FUNCTION: WON 0x006df8a0
+// Adds a community to log in to (no change when already present)
 void AuthContext::AddCommunity(const std::wstring& community)
 {
-    AutoCrit lock(mDataCrit);
+    AutoCrit lock(this->mDataCrit);
     // LOST-DEBUG: none: exact only.
     EE_LOST_DEBUG(1);
-    mCommunityMap.insert(std::map<std::wstring,AuthLoginCommunityData>::value_type(community,AuthLoginCommunityData()));
+    this->mCommunityMap.insert(std::map<std::wstring,AuthLoginCommunityData>::value_type(community,AuthLoginCommunityData()));
 }
 // FUNCTION: WON 0x006dfcc0
+// Makes the given community the only one, keeping its data when it was already present
 void AuthContext::SetCommunity(const std::wstring& community)
 {
-    AutoCrit lock(mDataCrit);
-    std::map<std::wstring,AuthLoginCommunityData>::iterator found=mCommunityMap.find(community);
-    if(found!=mCommunityMap.end()) {
+    AutoCrit lock(this->mDataCrit);
+    std::map<std::wstring,AuthLoginCommunityData>::iterator found=this->mCommunityMap.find(community);
+    if(found!=this->mCommunityMap.end()) {
         AuthLoginCommunityData data=found->second;
-        mCommunityMap.clear();
-        mCommunityMap[community]=data;
+        this->mCommunityMap.clear();
+        this->mCommunityMap[community]=data;
     }
     else {
-        mCommunityMap.clear();
-        AddCommunity(community);
+        this->mCommunityMap.clear();
+        this->AddCommunity(community);
     }
 }
 // FUNCTION: WON 0x006e02d0
+// Removes a community from the login
 void AuthContext::RemoveCommunity(const std::wstring& community)
 {
-    AutoCrit lock(mDataCrit);
-    mCommunityMap.erase(community);
+    AutoCrit lock(this->mDataCrit);
+    this->mCommunityMap.erase(community);
 }
 
 // FUNCTION: WON 0x006df440
+// Loads the signing public key from a file; false when the file is missing or the key invalid
 bool AuthContext::LoadVerifierKey(const std::string& filename)
 {
-    mCheckedVerifierFile=true;
+    AuthContext::mCheckedVerifierFile=true;
     FILE* file=fopen(filename.c_str(),"rb");
     if(file==NULL) return false;
     unsigned char buffer[1024];
@@ -611,122 +646,123 @@ bool AuthContext::LoadVerifierKey(const std::string& filename)
     }
     fclose(file);
     AutoCrit lock(GetVerifierCrit());
-    return mVerifierKey.SetPublicKey(key.data(),key.length());
+    return AuthContext::mVerifierKey.SetPublicKey(key.data(),key.length());
 }
 
-// Actual Init operates on the borrowed prefixc0; no AuthContext allocation/lifetime authority.
 // FUNCTION: WON 0x006df330
+// Sets the auth server list
 void AuthContext::SetServerContext(ServerContext* context)
 {
-    AutoCrit lock(mDataCrit);
-    mServerContext=context;
+    AutoCrit lock(this->mDataCrit);
+    this->mServerContext=context;
 }
 // FUNCTION: WON 0x006df3e0
+// Returns the auth server list
 SmartPtr<ServerContext> AuthContext::GetServerContext()
 {
-    AutoCrit lock(mDataCrit);
-    return mServerContext;
+    AutoCrit lock(this->mDataCrit);
+    return this->mServerContext;
 }
 
 }
 
 namespace WONAPI {
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 AuthContext::AuthContext(const std::wstring &theUserName, const std::wstring& theCommunity,
 						 const std::wstring &thePassword) : 
 	mName(theUserName),  
 	mPassword(thePassword)
 {
-	Init();
-	AddCommunity(theCommunity);
+	this->Init();
+	this->AddCommunity(theCommunity);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 bool AuthContext::AddAddress(const IPAddr &theAddr)
 {
-	AutoCrit aCrit(mDataCrit);
-	return mServerContext->AddAddress(theAddr);
+	AutoCrit aCrit(this->mDataCrit);
+	return this->mServerContext->AddAddress(theAddr);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 bool AuthContext::AddAddressesFromDir(const DirEntityList &theDir, const wchar_t *theNameFilter)
 {
-	AutoCrit aCrit(mDataCrit);
-	return mServerContext->AddAddressesFromDir(theDir, theNameFilter);
+	AutoCrit aCrit(this->mDataCrit);
+	return this->mServerContext->AddAddressesFromDir(theDir, theNameFilter);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 void AuthContext::RemoveAllCommunity()
 {
-	AutoCrit aCrit(mDataCrit);
-	mCommunityMap.clear();
+	AutoCrit aCrit(this->mDataCrit);
+	this->mCommunityMap.clear();
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 void AuthContext::AddCDKeyCommunityJoin(const std::wstring &theCommunity, const CDKey &theKey)
 {
-	AutoCrit aCrit(mDataCrit);
-	mCDKeyCommunityJoinMap[theCommunity] = theKey;
+	AutoCrit aCrit(this->mDataCrit);
+	this->mCDKeyCommunityJoinMap[theCommunity] = theKey;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 void AuthContext::AddUserData(const std::wstring &theCommunity, const ByteBuffer *theData)
 {
-	AutoCrit aCrit(mDataCrit);
-	mSetCommunityUserDataMap[theCommunity] = theData;
+	AutoCrit aCrit(this->mDataCrit);
+	this->mSetCommunityUserDataMap[theCommunity] = theData;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 void AuthContext::SetLoginSecretFile(const std::string &theFile)
 {
-	AutoCrit aCrit(mDataCrit);
-	mLoginSecretFile = theFile;
+	AutoCrit aCrit(this->mDataCrit);
+	this->mLoginSecretFile = theFile;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 void AuthContext::AddNickname(const std::wstring &theKey)
 {
-	AutoCrit aCrit(mDataCrit);
-	mNicknameMap[theKey] = L""; 
+	AutoCrit aCrit(this->mDataCrit);
+	this->mNicknameMap[theKey] = L""; 
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 void AuthContext::SetNickname(const std::wstring &theKey, const std::wstring &theName)
 { 
-	AutoCrit aCrit(mDataCrit);
-	mNicknameMap[theKey] = theName; 
+	AutoCrit aCrit(this->mDataCrit);
+	this->mNicknameMap[theKey] = theName; 
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 void AuthContext::ClearNicknames()
 {
-	AutoCrit aCrit(mDataCrit);
-	mNicknameMap.clear();
+	AutoCrit aCrit(this->mDataCrit);
+	this->mNicknameMap.clear();
 }
 }
 
 namespace WONAPI {
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK locked server-context API.
+// No original address identified: WON SDK locked server-context API
 bool AuthContext::RemoveAddress(const IPAddr &theAddr)
 {
-	AutoCrit aCrit(mDataCrit);
-	return mServerContext->RemoveAddress(theAddr);
+	AutoCrit aCrit(this->mDataCrit);
+	return this->mServerContext->RemoveAddress(theAddr);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK locked server-context API.
+// No original address identified: WON SDK locked server-context API
 void AuthContext::RemoveAllAddresses()
 {
-	AutoCrit aCrit(mDataCrit);
-	mServerContext->RemoveAllAddresses();
+	AutoCrit aCrit(this->mDataCrit);
+	this->mServerContext->RemoveAllAddresses();
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK locked server-context API.
+// No original address identified: WON SDK locked server-context API
 bool AuthContext::AddAddressesFromDir(const DirEntityMap &theDir, const std::wstring &thePath, const wchar_t *theNameFilter)
 {
-	AutoCrit aCrit(mDataCrit);
-	return mServerContext->AddAddressesFromDir(theDir, thePath, theNameFilter);
+	AutoCrit aCrit(this->mDataCrit);
+	return this->mServerContext->AddAddressesFromDir(theDir, thePath, theNameFilter);
 }
 }
 

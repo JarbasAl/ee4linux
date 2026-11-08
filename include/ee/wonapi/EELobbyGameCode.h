@@ -1,20 +1,22 @@
-// The game's WON lobby classes (C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\; RECONSTRUCTION,
-//). Class names and bases from RTTI; sizes from EELobbyInit.cpp's factories; everything else
-// PROVISIONAL. Requires <string>, <list>, ee/EEWonNet.h, ee/wonapi/WONLobbyResource.h, ee/wonapi/WONLobbyGUI.h.
+// The game's WON lobby classes (C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\). Class names and
+// bases from RTTI; sizes from EELobbyInit.cpp's factories; everything else (inferred). Requires <string>, <list>,
+// ee/EEWonNet.h, ee/wonapi/WONLobbyResource.h, ee/wonapi/WONLobbyGUI.h.
 #ifndef EE_WONAPI_EELOBBYGAMECODE_H
 #define EE_WONAPI_EELOBBYGAMECODE_H
 
 #include <set>                              // EELobbyFileTransfer::mClients
-#include "ee/wonapi/WONLobbyEvents.h" // actual shared LobbyEvent base, size0x20
+#include "ee/wonapi/WONLobbyEvents.h" // the shared LobbyEvent base (0x20 bytes)
+#include "ee/wonapi/WONLobbyEventTypes.h"
 
 namespace WONAPI {
 
 class EELobbyPlayer;
 
-// one player slot of a lobby game (EELobbyPlayer.cpp, name PROVISIONAL; 0x18 bytes; EELobbyGame +0xc0, eight of
-// them; RTTI EELobbyPlayerSlot, vtable 0x84c6fc). Its six options (0x299910 reads them by index, the message
-// loops 0x2999f3/0x299a1e walk them): 0 state (3: a client's, 4: a computer's name), 1 team, 2 color, 3 citizen
-// (1-based), 4 observe, 5 file transfer percent (100: done).
+// one player slot of a lobby game (EELobbyPlayer.cpp; 0x18 bytes; EELobbyGame +0xc0, eight of them; RTTI
+// EELobbyPlayerSlot, vtable 0x84c6fc). Its six options (0x299910 reads them by index, the message loops
+// 0x2999f3/0x299a1e walk them): 0 state (0 open, 1 computer, 2 closed, 3 a client's, 4 reserved by name for a
+// human player of a saved game), 1 team, 2 color, 3 citizen (1-based), 4 observe, 5 file transfer percent
+// (100: done).
 class EELobbyPlayerSlot {
 public:
     EELobbyPlayerSlot();                    // 0x299838
@@ -25,14 +27,14 @@ public:
     unsigned char GetOption(int inOption);  // 0x299910
     void SetOption(int inOption, unsigned char inValue);   // 0x299928
     void ClearPlayer();                     // 0x29994f
-    void Fn299973();                        // 0x299973 (SetState(0))
-    void Fn29997B();                        // 0x29997b (SetState(2))
-    void Fn299983();                        // 0x299983 (SetState(1))
-    void SetName(const GUIString& inName);  // 0x29998b (a computer player)
+    void SetOpen();                         // 0x299973 (SetState(0))
+    void SetClosed();                       // 0x29997b (SetState(2))
+    void SetComputer();                     // 0x299983 (SetState(1))
+    void SetName(const GUIString& inName);  // 0x29998b (SetState(4): reserves the slot for a saved game's player)
     void SetPlayer(LobbyClient* inClient, EELobbyPlayer* inPlayer);   // 0x2999a7
     void ReadData(ReadBuffer& inBuffer);    // 0x2999f3
     void WriteData(WriteBuffer& outBuffer); // 0x299a1e
-    unsigned char GetIndex() { return mIndex; }   // inline (Virtual4C 0x293195: `mov al,[esi+4]; movzx eax,al`)
+    unsigned char GetIndex() { return this->mIndex; }  // inline (Virtual4C 0x293195: `mov al,[esi+4]; movzx eax,al`)
 
     unsigned char mIndex;                   // +0x04 (the slot's number; given to its player's +0x10)
     unsigned char mOptions[6];              // +0x05
@@ -41,8 +43,8 @@ public:
     GUIString mName;                        // +0x14
 };
 
-// a saved game's transfer between the host and the clients (EELobbyFileTransfer.cpp 0x291463.., name PROVISIONAL;
-// 0x68 bytes; vtable 0x84c440; methods PROVISIONAL)
+// a saved game's transfer between the host and the clients (EELobbyFileTransfer.cpp 0x291463..; 0x68 bytes;
+// vtable 0x84c440; method names inferred) (provisional name)
 class AsyncSocket;
 class QueueSocket;
 class AsyncOp;
@@ -58,13 +60,13 @@ public:
     void Stop();                            // 0x291b1e
     void CloseClients();                    // 0x291b40
     void Download();                        // 0x291b79
-    //: the completions' callbacks (LobbyCompletion<EELobbyFileTransfer>)
+    // the completions' callbacks (LobbyCompletion<EELobbyFileTransfer>)
     void OnClientClosed(AsyncOp* inOp);     // 0x291870 (a client's socket closed)
     void OnClientAccepted(AsyncOp* inOp);   // 0x2918b2 (a client connected: send it the file)
     void OnProgress(AsyncOp* inOp);         // 0x29199e
     void OnFileReceived(AsyncOp* inOp);     // 0x2919dc (the file arrived)
 
-    // (the ctor 0x2916b8 and the dtor 0x29175b give the members; names PROVISIONAL)
+    // (the constructor 0x2916b8 and the destructor 0x29175b give the members) (provisional names)
     SmartPtr<QueueSocket> mConnection;      // +0x08 the listening socket (Serve; Stop closes it)
     std::set<SmartPtr<AsyncSocket> > mClients;   // +0x0c the clients' sockets (CloseClients closes each)
     std::string mPath;                      // +0x18 (SetPath)
@@ -77,33 +79,33 @@ public:
     long mLastProgressTime;                 // +0x64
 };
 
-// the lobby's game (0x180 bytes; RTTI EELobbyGame > LobbyGame; EELobbyGame.cpp 0x29222b.., name PROVISIONAL)
+// the lobby's game (0x180 bytes; RTTI EELobbyGame > LobbyGame; EELobbyGame.cpp 0x29222b..) (provisional name)
 class EELobbyGame : public LobbyGame {
 public:
     EELobbyGame();                          // 0x29222b
     virtual ~EELobbyGame();                 // 0x2922b2
-    virtual void Virtual18();               // +0x18 0x292797 (ICF: +0x1c)
-    virtual void Virtual1C();
-    virtual bool Virtual20();               // +0x20 0x292719 (false: everyone is on one team)
+    virtual void PostNetLeaveGameHook();    // +0x18 0x292797 (ICF: +0x1c)
+    virtual void NotifyStartGameHook();
+    virtual bool TryStartGameHook();        // +0x20 0x292719 (false: everyone is on one team)
 #ifdef EE_DINKUM_SXL233
-    virtual bool Virtual24();
+    virtual bool CanStartGameHook();
 #else
-    virtual long Virtual24();               // +0x24 0x2926f9 (returns through eax: push 1/pop eax, xor eax, eax)
+    virtual long CanStartGameHook();        // +0x24 0x2926f9 (returns through eax: push 1/pop eax, xor eax, eax)
 #endif
-    virtual bool Virtual28();               // +0x28 0x2926df
-    virtual void Virtual30(LobbyClient* inClient);      // +0x30 0x292a23
-    virtual void Virtual34(WriteBuffer& outBuffer);     // +0x34 0x292e42
-    virtual short Virtual38(ReadBuffer& inBuffer, LobbyClient* inClient);   // +0x38 0x292e9f
-    virtual void Virtual3C(LobbyClient* inClient, WriteBuffer& outBuffer);  // +0x3c 0x293029
-    virtual void Virtual44(ReadBuffer& inBuffer);       // +0x44 0x2930b5
-    virtual void Virtual48(LobbyClient* inClient, LobbyPlayer* inPlayer);   // +0x48 0x29321e
-    virtual void Virtual4C(LobbyClient* inClient);      // +0x4c 0x293195
-    virtual void Virtual50(WriteBuffer& outBuffer);     // +0x50 0x292b57
-    virtual void Virtual54(WriteBuffer& outBuffer);     // +0x54 0x292be0
-    virtual bool Virtual58(ReadBuffer& inBuffer);       // +0x58 0x292b95
-    virtual bool Virtual5C(ReadBuffer& inBuffer);       // +0x5c 0x292c7e
-    virtual void Virtual60(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom);   // +0x60 0x2932d9
-    virtual GUIString Virtual64(short inStatus);        // +0x64 0x292df3
+    virtual bool CanReadyHook();            // +0x28 0x2926df
+    virtual void HandleHostGameHook(LobbyClient* inClient);  // +0x30 0x292a23
+    virtual void GetJoinGameRequestHook(WriteBuffer& outBuffer);  // +0x34 0x292e42
+    virtual short HandleJoinGameRequestHook(ReadBuffer& inBuffer, LobbyClient* inClient);  // +0x38 0x292e9f
+    virtual void GetJoinGameReplyHook(LobbyClient* inClient, WriteBuffer& outBuffer);  // +0x3c 0x293029
+    virtual void HandleJoinGameReplyHook(ReadBuffer& inBuffer);  // +0x44 0x2930b5
+    virtual void HandlePlayerLeftHook(LobbyClient* inClient, LobbyPlayer* inPlayer);  // +0x48 0x29321e
+    virtual void HandlePlayerJoinedHook(LobbyClient* inClient);  // +0x4c 0x293195
+    virtual void WriteSummaryHook(WriteBuffer& outBuffer);  // +0x50 0x292b57
+    virtual void WriteDetailsHook(WriteBuffer& outBuffer);  // +0x54 0x292be0
+    virtual bool ReadSummaryHook(ReadBuffer& inBuffer);  // +0x58 0x292b95
+    virtual bool ReadDetailsHook(ReadBuffer& inBuffer);  // +0x5c 0x292c7e
+    virtual void HandleGameMessageHook(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom);  // +0x60 0x2932d9
+    virtual GUIString GetStatusStringHook(short inStatus);  // +0x64 0x292df3
     int GetNumFiles();                      // 0x2922f2
     const GUIString& GetFile(int inIndex);  // 0x292305
     void WriteGameFile(WriteBuffer& outBuffer);  // 0x29247e (the saved game's details)
@@ -124,18 +126,18 @@ public:
     void ChangeOption(int inOption, unsigned long inValue, bool inFlag);  // 0x2938b8
     void SendGameState();                   // 0x293a8b
     void ChangePlayerOption(int inSlot, int inWhat, unsigned char inValue);  // 0x293b36 (a player option changed)
-    void Fn293437(bool inFlag);             // 0x293437
-    void Fn2934A0();                        // 0x2934a0
+    void SendConnectStatus(bool inConnected);  // 0x293437
+    void SendCancelConnect();               // 0x2934a0
     void SendOption(int inOption);          // 0x29382d
-    // (PROVISIONAL names): 0x292d71 a free colour for slot inExcept (inColor when free), 0x292daa the players'
+    // (provisional names): 0x292d71 a free colour for slot inExcept (inColor when free), 0x292daa the players'
     // colours made distinct, 0x293075 inClient into its player's slot (the slot, -1), 0x2933ce message 0x69
     unsigned char GetFreeColor(int inExcept, unsigned char inColor);
     void MakeColorsDistinct();
     int SeatClient(LobbyClient* inClient);
-    void Fn2933CE(unsigned char inSlot, bool inFlag);
-    //: the game messages of 0x2932d9 (0x6a, 0x68/0x69, 0x66, 0x64; PROVISIONAL names)
-    void Fn29334D(ReadBuffer& inBuffer, LobbyClient* inFrom);
-    void Fn293364(ReadBuffer& inBuffer, LobbyClient* inFrom, bool inFromClient);
+    void BroadcastConnectStatus(unsigned char inSlot, bool inConnected);
+    // the game messages of 0x2932d9 (0x6a, 0x68/0x69, 0x66, 0x64) (provisional names)
+    void HandleCancelConnect(ReadBuffer& inBuffer, LobbyClient* inFrom);
+    void HandleConnectStatus(ReadBuffer& inBuffer, LobbyClient* inFrom, bool inFromClient);
     void HandlePlayerOptionRequest(ReadBuffer& inBuffer, LobbyClient* inFrom);
     void HandleOptionChange(ReadBuffer& inBuffer, LobbyClient* inFrom);
     void HandlePlayerOptionChange(ReadBuffer& inBuffer, LobbyClient* inFrom);  // 0x65
@@ -151,8 +153,8 @@ public:
     SmartPtr<EELobbyFileTransfer> mFileTransfer;    // +0x78
     bool mHasFile;                          // +0x7c (the saved game is here)
     unsigned char mNumHumanPlayers;         // +0x7d (human players)
-    unsigned char mB7E;                     // +0x7e (state 1 slots)
-    unsigned char mNumComputerPlayers;      // +0x7f (computer players)
+    unsigned char mNumComputerSlots;        // +0x7e (computer players: state 1 slots)
+    unsigned char mNumReservedSlots;        // +0x7f (state 4 slots, not observing: saved-game players yet to join)
     long mOptions[16];                      // +0x80
     EELobbyPlayerSlot mSlots[8];            // +0xc0
 };
@@ -161,14 +163,14 @@ public:
 // player slot (type 100063) or a game option (100062) changed, its number in mParam
 class EELobbySyncPlayerEvent : public LobbyEvent {
 public:
-    EELobbySyncPlayerEvent(int inSlot) : LobbyEvent(100063), mParam(inSlot) {}
-    int mParam;                            // +0x20, actual event payload
+    EELobbySyncPlayerEvent(int inSlot) : LobbyEvent(LobbyEvent_EELobbySyncPlayer), mParam(inSlot) {}
+    int mParam;                            // +0x20 the slot number
 };
 
 class EELobbySyncOptionEvent : public LobbyEvent {
 public:
-    EELobbySyncOptionEvent(int inOption) : LobbyEvent(100062), mParam(inOption) {}
-    int mParam;                            // +0x20, actual event payload
+    EELobbySyncOptionEvent(int inOption) : LobbyEvent(LobbyEvent_EELobbySyncOption), mParam(inOption) {}
+    int mParam;                            // +0x20 the option number
 };
 
 class EELobbyPlayer : public LobbyPlayer {
@@ -185,8 +187,8 @@ public:
     unsigned char mSlot;                    // +0x10
 };
 
-// a player's colour button (EELobbyColorButton.cpp, name PROVISIONAL; 0x4c bytes; vtable 0x84c074): a click opens
-// the colour chooser popup
+// a player's colour button (EELobbyColorButton.cpp; 0x4c bytes; vtable 0x84c074): a click opens the colour
+// chooser popup (provisional name)
 class EELobbyColorChooser;
 
 class EELobbyColorButton : public Button {
@@ -195,7 +197,7 @@ public:
     virtual ~EELobbyColorButton();          // 0x2905ca
     bool SetColor(int inColor);             // 0x2905e8 (0..15)
     virtual void Paint(Graphics& inGraphics);                  // +0x18 0x29060b
-    virtual bool VirtualAC();               // +0xac 0x290669 (opens or closes the chooser)
+    virtual bool HandleActivate();          // +0xac 0x290669 (opens or closes the chooser)
     virtual void HandleComponentEvent(ComponentEvent* inEvent);    // +0x7c 0x290751
 
     int mColor;                             // +0x44
@@ -250,9 +252,9 @@ public:
     void UpdateOption(int inOption, EELobbyGame* inGame);      // 0x2946e5
     void UpdateOption(int inOption);        // 0x294788
     void UpdateAll();                       // 0x2947a0
-    void Fn29488A();                        // 0x29488a
-    void Fn2948E2();                        // 0x2948e2
-    void Fn2948F5();                        // 0x2948f5 (the game type changed)
+    void Activate();                        // 0x29488a
+    void Deactivate();                      // 0x2948e2
+    void ChangeGameType();                  // 0x2948f5 (the game type changed)
     void OptionChanged(int inOption);       // 0x294a77
     virtual void HandleComponentEvent(ComponentEvent* inEvent);    // +0x7c 0x294b57
     EELobbyGame* GetGame();                 // ICF-folded into 0x299dcd (jmp GetMyLobbyGame)
@@ -260,8 +262,8 @@ public:
     SmartPtr<Label> mCampaignInfoLabel;     // +0x84
     SmartPtr<Container> mCampaignInfoBox1;  // +0x88
     SmartPtr<Container> mCampaignInfoBox2;  // +0x8c
-    long mL90;                              // +0x90 (2; ORed with event 100054's parameter)
-    bool mB94;                              // +0x94
+    long mRoomSpec;                         // +0x90 (2; ORed with event 100054's parameter)
+    bool mIsActive;                         // +0x94
     SmartPtr<Component> mOptions[16];       // +0x98
 };
 
@@ -276,14 +278,14 @@ public:
     void UpdatePlayer(int inSlot, EELobbyGame* inGame);        // 0x299dd2
     void UpdatePlayer(int inSlot);          // 0x29a0f5
     void UpdateAll();                       // 0x29a10d
-    void Fn29A132();                        // 0x29a132
-    void Fn29A183();                        // 0x29a183
+    void Activate();                        // 0x29a132
+    void Deactivate();                      // 0x29a183
     void PlayerOptionChanged(int inSlot, int inWhat);          // 0x29a19f
-    void Fn29A240(ComponentEvent* inEvent); // 0x29a240
+    void HandlePlayerChanged(ComponentEvent* inEvent); // 0x29a240
     virtual void HandleComponentEvent(ComponentEvent* inEvent);    // +0x7c 0x29a27c
 
-    long mL84;                              // +0x84 (2; ORed with event 100054's parameter)
-    bool mB88;                              // +0x88
+    long mRoomSpec;                         // +0x84 (2; ORed with event 100054's parameter)
+    bool mIsActive;                         // +0x88
     long mMySlot;                           // +0x8c (-1)
     bool mIsHost;                           // +0x90
     SmartPtr<ComboBox> mUserNameCombo[8];   // +0x94
@@ -305,7 +307,7 @@ public:
 // a game of the server list (vtable 0x44c674; the inline ctor is the factory's)
 class EELobbyServerDetailsItem : public ServerDetailsItem {
 public:
-    EELobbyGame* GetGame() const { return static_cast<EELobbyGame*>(mGame.get()); }
+    EELobbyGame* GetGame() const { return static_cast<EELobbyGame*>(this->mGame.get()); }
     GUIString GetOptionText(int inOption, int inFirstString, unsigned long inCount);   // 0x294ebc
     GUIString GetNumberText(int inOption);  // 0x294f02
     GUIString GetWondersText();             // 0x294f39
@@ -319,9 +321,9 @@ public:
 }
 
 // EELobbyInit.cpp
-bool EELobbyFn295D52();                                     // 0x295d52
-void EELobbyFn295CAB(unsigned char inSlot, bool inConnected);   // 0x295cab
-void EELobbyFn295CC3();                                     // 0x295cc3
+bool EELobbyIsConnectDialogRunning();                       // 0x295d52
+void EELobbySetSlotConnected(unsigned char inSlot, bool inConnected);  // 0x295cab
+void EELobbyCancelConnectDialog();                          // 0x295cc3
 WONAPI::EELobbyFileDialog* EELobbyGetFileDialog();         // 0x295c0b
 WONAPI::EELobbyConnectDialog* EELobbyGetConnectDialog();   // 0x295c11
 
@@ -369,31 +371,31 @@ void EELobbySetupSavedGame(const EEGameOptions& inOptions, const char* inFile, c
 void EELobbySetSlot(WONAPI::EELobbyPlayerSlot* inSlot, const EEGameOptionsPlayer& inPlayer);   // 0x2984ca
 void EELobbySetGameOptions(const EEGameOptions& inOptions, WONAPI::EELobbyGame* inGame);       // 0x2985a8
 WONAPI::GUIString& EELobbyGetMapTypeName(int inMapType);    // 0x2986e9
-void EELobbyFn29876A(WONAPI::ComboBox* inCombo);            // 0x29876a (fills the map types)
-void EELobbyFn2987BD();                                     // 0x2987bd (the map types as "MapType" game options)
-unsigned long EELobbyFn298824();                            // 0x298824 (jmp EERMGetNumberOfGenerators)
-void EELobbyFn298829(unsigned long* outColors, int inCount);    // 0x298829 (the player colours, 0x00rrggbb)
-void EELobbyFn2988D8(WONAPI::EELobbyGame* inGame);          // 0x2988d8 (the preferences' last game options)
+void EELobbyFillMapTypeCombo(WONAPI::ComboBox* inCombo);    // 0x29876a (fills the map types)
+void EELobbyAddMapTypeOptions();                            // 0x2987bd (the map types as "MapType" game options)
+unsigned long EELobbyGetNumMapTypes();                      // 0x298824 (jmp EERMGetNumberOfGenerators)
+void EELobbyGetPlayerColors(unsigned long* outColors, int inCount);  // 0x298829 (the player colours, 0x00rrggbb)
+void EELobbySetDefaultGameOptions(WONAPI::EELobbyGame* inGame);  // 0x2988d8 (the preferences' last game options)
 const WONAPI::GUIString& EELobbyFn2988E9();                 // 0x2988e9 (a function-local static GUIString)
 void EELobbyGetVersion(WONAPI::GUIString& outVersion, unsigned long& outChecksum);    // 0x2989b8
-void EELobbyFn2989EF(WONAPI::ResourceConfigTable* inCollection);     // 0x2989ef
+void EELobbyAddResources(WONAPI::ResourceConfigTable* inCollection);  // 0x2989ef
 // the 0x296aaa unit
-void EELobbyFn297E51();                                     // 0x297e51
-bool EELobbyFn296D1E();                                     // 0x296d1e
+void EELobbyClose();                                        // 0x297e51
+bool EELobbyHostGame();                                     // 0x296d1e
 unsigned short EELobbyGetFileTransferPort();                // 0x295bf5 (EELobbyInit.cpp)
 // 0x8d01f4: the lobby's sixteen player colours (.data; filled by EELobbyInit through 0x298829; the colour button
-// and the connect dialog read it; defined in the 0x290514 range, name PROVISIONAL)
+// and the connect dialog read it; defined in the 0x290514 range) (provisional name)
 extern unsigned long gEELobbyColors[16];
 
-// WONAPI lobby functions the init calls (names PROVISIONAL)
+// WONAPI lobby functions the init calls (provisional names)
 namespace WONAPI {
-int LobbyDoDialog(Component* inDialog);     //0x358e50, genuine borrowed generic Component contract
+int LobbyDoDialog(Component* inDialog);     // 0x358e50
 // 0x358f20 (cdecl): a yes/no box
 int LobbyMessageBoxYesNo(const GUIString& inTitle, const GUIString& inText, bool inFlag);
 void LobbyMessageBox(const GUIString& inTitle, const GUIString& inText);   // 0x358eb0
-bool LobbyAddComponentLoader(ResourceConfigTable* inCollection, void (*inFunc)(ComponentConfig* inConfig)); //361fb0 actualnative boolean result; old caller ignores AL
+bool LobbyAddComponentLoader(ResourceConfigTable* inCollection, void (*inFunc)(ComponentConfig* inConfig)); // 0x361fb0 (the init ignores the result)
 void LobbyAddGameOption(const GUIString& inOption, const GUIString& inValue, bool inFlag);   // 0x35e040
-void LobbySetProductName(const std::wstring& inLoginCommunity, const char* inHashFileListStr); //362150 genuine WONLobby::InitAuth role; legacy spelling
+void LobbySetProductName(const std::wstring& inLoginCommunity, const char* inHashFileListStr); // 0x362150
 extern GUIString gEmptyGUIString;           // 0x966244
 }
 

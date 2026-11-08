@@ -1,4 +1,4 @@
-// Native-backed bounded BigInteger multiplication, modular and inverse algorithms.
+// BigInteger math: multiplication, division, modular exponentiation, gcd and modular inverse
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONArithmeticException.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007d4120
+// Sets r to a * b (schoolbook); throws when r aliases an operand
 void BigInteger::st_mul(BigInteger &r, const BigInteger &a, const BigInteger &b)
 {
     if (&r == &a || &r == &b)
@@ -21,21 +22,22 @@ void BigInteger::st_mul(BigInteger &r, const BigInteger &a, const BigInteger &b)
 
     if (a.len == 0 || b.len == 0)
     {
-        st_zero(r);
+        BigInteger::st_zero(r);
         return;
     }
 
     r.negative = a.negative ^ b.negative;
 
 
-    st_grow(r, a.len + b.len,false);
+    BigInteger::st_grow(r, a.len + b.len,false);
     r.len = a.len + b.len;
 
-	MultiplyWords(r.n,a.n,b.n,a.len,b.len);
-	r.len = FindSize(r.n,r.len);
+	BigInteger::MultiplyWords(r.n,a.n,b.n,a.len,b.len);
+	r.len = BigInteger::FindSize(r.n,r.len);
 }
 
 // FUNCTION: WON 0x007d4500
+// Sets r to a * b with Karatsuba multiplication, using the workspace or a temporary one
 void BigInteger::st_kmul(BigInteger &r, const BigInteger &a, const BigInteger &b, word *workspace)
 {
 	word *tn = workspace;
@@ -45,13 +47,13 @@ void BigInteger::st_kmul(BigInteger &r, const BigInteger &a, const BigInteger &b
 
     if (a.len == 0 || b.len == 0)
     {
-        st_mul(r,a,b);
+        BigInteger::st_mul(r,a,b);
         return;
     }
 
 	if(a.len<b.len)
 	{
-		st_kmul(r,b,a,tn);
+		BigInteger::st_kmul(r,b,a,tn);
 		return;
  	}
 
@@ -61,11 +63,11 @@ void BigInteger::st_kmul(BigInteger &r, const BigInteger &a, const BigInteger &b
 	if(tn==NULL)
 		tn = new word[aSize*3];
 
-	st_grow(a,aSize,true);
-	st_grow(b,aSize,true);
+	BigInteger::st_grow(a,aSize,true);
+	BigInteger::st_grow(b,aSize,true);
 
 
-	st_grow(r,aSize<<1,false);
+	BigInteger::st_grow(r,aSize<<1,false);
 	r.len = a.len+b.len;
 
 	word *an = a.n;
@@ -79,63 +81,65 @@ void BigInteger::st_kmul(BigInteger &r, const BigInteger &a, const BigInteger &b
 //	memcpy(bn,b.n,b.len*sizeof(word));
 
 
-	KaratsubaMultiplyWords(r.n,tn,an,bn,a.len,a.len,b.len);
-	r.len = FindSize(r.n,r.len);
+	BigInteger::KaratsubaMultiplyWords(r.n,tn,an,bn,a.len,a.len,b.len);
+	r.len = BigInteger::FindSize(r.n,r.len);
 		
 	if(workspace==NULL)
 		delete[] tn;
 }
 
 // FUNCTION: WON 0x007d4740
+// Sets r to m modulo d by shift-and-subtract (adds d back for a negative m); throws when r is m
 void BigInteger::st_mod(BigInteger &r, const BigInteger &m, const BigInteger &d)
 {
     if (&r == &m)
 		throw(ArithmeticException("Result must not be the same object as m"));
 
-    st_copy(r, m);
-    if (st_ucmp(m, d) < 0)
+    BigInteger::st_copy(r, m);
+    if (BigInteger::st_ucmp(m, d) < 0)
 	{
 		if(m.negative)
 		{
 			r.negative = true;
-			st_add(r,d,r);
+			BigInteger::st_add(r,d,r);
 		}
         return;
 	}
 
 	r.negative = false;
 	
-    int i = st_bitLength(m) - st_bitLength(d);
+    int i = BigInteger::st_bitLength(m) - BigInteger::st_bitLength(d);
 
     BigInteger ds;
-    st_shiftLeft(ds, d, i);
+    BigInteger::st_shiftLeft(ds, d, i);
 
     for (; i>= 0; --i)
     {
-        if (st_cmp(r, ds) >= 0)
-            st_sub(r, r, ds);
-        st_shiftRight(ds, ds, (short)1);
+        if (BigInteger::st_cmp(r, ds) >= 0)
+            BigInteger::st_sub(r, r, ds);
+        BigInteger::st_shiftRight(ds, ds, (short)1);
     }
 	
 	if(m.negative)
 	{
 		r.negative = true;
-		st_add(r,d,r);
+		BigInteger::st_add(r,d,r);
 	}
 }
 
 // FUNCTION: WON 0x007d4960
+// Divides m by d into an optional quotient and remainder; throws on division by zero
 void BigInteger::st_div(BigInteger *dvOrig, BigInteger *remOrig, const BigInteger &m, const BigInteger &d)
 {
     if (d.len == 0)
 		throw(ArithmeticException("div: Divide by zero"));
 
-    if (st_cmp(m, d) < 0)
+    if (BigInteger::st_cmp(m, d) < 0)
     {
         if (remOrig != NULL)
-            st_copy(*remOrig, m);
+            BigInteger::st_copy(*remOrig, m);
         if (dvOrig != NULL)
-            st_zero(*dvOrig);
+            BigInteger::st_zero(*dvOrig);
 
         return;
     }
@@ -158,48 +162,49 @@ void BigInteger::st_div(BigInteger *dvOrig, BigInteger *remOrig, const BigIntege
 	BigInteger &rem = *remPtr;
 
     BigInteger ds;
-    st_copy(rem, m);
-    st_zero(dv);
+    BigInteger::st_copy(rem, m);
+    BigInteger::st_zero(dv);
 
-    int i = st_bitLength(m) - st_bitLength(d);
-    st_shiftLeft(ds, d, i);
+    int i = BigInteger::st_bitLength(m) - BigInteger::st_bitLength(d);
+    BigInteger::st_shiftLeft(ds, d, i);
 
     for (; i >= 0; --i)
     {
         if (dv.len == 0)
         {
-            if (st_cmp(rem, ds) >= 0)
+            if (BigInteger::st_cmp(rem, ds) >= 0)
             {
-                st_one(dv);
-                st_sub(rem, rem, ds);
+                BigInteger::st_one(dv);
+                BigInteger::st_sub(rem, rem, ds);
             }
         }
         else
         {
-            st_shiftLeft(dv, dv, 1);
-            if (st_cmp(rem, ds) >= 0)
+            BigInteger::st_shiftLeft(dv, dv, 1);
+            if (BigInteger::st_cmp(rem, ds) >= 0)
             {
                 dv.n[0] |= 1;
-                st_sub(rem, rem, ds);
+                BigInteger::st_sub(rem, rem, ds);
             }
         }
-        st_shiftRight(ds, ds, 1);
+        BigInteger::st_shiftRight(ds, ds, 1);
     }
     dv.negative = m.negative ^ d.negative;
 }
 
 // FUNCTION: WON 0x007d4c90
+// Sets r to a to the power modulo m by square-and-multiply with reciprocal reduction
 void BigInteger::st_modExp(BigInteger &r, const BigInteger &a, const BigInteger &power, const BigInteger &modulo, const BigInteger &d, short nb)
 {
     BigInteger v;
 
-    st_mod(v, a, modulo);
-    int bits = st_bitLength(power);
+    BigInteger::st_mod(v, a, modulo);
+    int bits = BigInteger::st_bitLength(power);
 
     if ((power.n[0] & 1) != 0)
-        st_mod(r, a, modulo);
+        BigInteger::st_mod(r, a, modulo);
     else
-        st_one(r);
+        BigInteger::st_one(r);
 
 	int aSize = modulo.len;
 	word *workspace = new word[aSize*6];
@@ -222,15 +227,15 @@ void BigInteger::st_modExp(BigInteger &r, const BigInteger &a, const BigInteger 
      for (int i = 1; i < bits; i++)
     {
 
-        st_modMulRecip(v, v, v, modulo, d, nb,workspace);
+        BigInteger::st_modMulRecip(v, v, v, modulo, d, nb,workspace);
 
 //		kmul(temp1,vMontgomery,vMontgomery,workspace);
 //		MontgomeryReduce(vMontgomery,temp2,temp1,modulo,nbits,nprime,workspace);
 
 	
-        if (st_bit(power, i))
+        if (BigInteger::st_bit(power, i))
 		{
-			st_modMulRecip(r, r, v, modulo, d, (short)nb,workspace);
+			BigInteger::st_modMulRecip(r, r, v, modulo, d, (short)nb,workspace);
 			//kmul(temp1,rMontgomery,vMontgomery,workspace);
 			//MontgomeryReduce(rMontgomery,temp2,temp1,modulo,nbits,nprime,workspace);
 
@@ -241,30 +246,32 @@ void BigInteger::st_modExp(BigInteger &r, const BigInteger &a, const BigInteger 
 	delete[] workspace;
 
 	if(power.negative)
-		st_inverseModN(r,r,modulo);
+		BigInteger::st_inverseModN(r,r,modulo);
 }
 
 // FUNCTION: WON 0x007d4dd0
+// Sets r to the reciprocal 2^(2*bits)/m used for reduction; returns bits + 1
 int BigInteger::st_recip(BigInteger &r, const BigInteger &m)
 {
     BigInteger t;
-    st_one(t);
+    BigInteger::st_one(t);
 
-    int mbits = st_bitLength(m);
+    int mbits = BigInteger::st_bitLength(m);
 
-    st_shiftLeft(t, t, 2*mbits);
-    st_div(&r, NULL, t, m);
+    BigInteger::st_shiftLeft(t, t, 2*mbits);
+    BigInteger::st_div(&r, NULL, t, m);
     return mbits+1;
 }
 
 // FUNCTION: WON 0x007d4e60
+// Sets r to the greatest common divisor of x and y (binary gcd, x >= y)
 void BigInteger::st_euclid(BigInteger &r, const BigInteger &x, const BigInteger &y)
 {
     BigInteger aOrig;
     BigInteger bOrig;
 
-    st_copy(aOrig, x);
-    st_copy(bOrig, y);
+    BigInteger::st_copy(aOrig, x);
+    BigInteger::st_copy(bOrig, y);
 
 	BigInteger *a = &aOrig;
 	BigInteger *b = &bOrig;
@@ -276,9 +283,9 @@ void BigInteger::st_euclid(BigInteger &r, const BigInteger &x, const BigInteger 
         if ((a->n[0] & 1) != 0)    // a odd
             if ((b->n[0] & 1) != 0)    // b odd
             {
-                st_sub(*a, *a, *b);
-                st_shiftRight(*a, *a, 1);
-                if (st_cmp(*a, *b) < 0)
+                BigInteger::st_sub(*a, *a, *b);
+                BigInteger::st_shiftRight(*a, *a, 1);
+                if (BigInteger::st_cmp(*a, *b) < 0)
                 {
                     BigInteger *t = a;
                     a = b;
@@ -287,8 +294,8 @@ void BigInteger::st_euclid(BigInteger &r, const BigInteger &x, const BigInteger 
             }
             else
             {
-                st_shiftRight(*b, *b, 1);
-                if (st_cmp(*a, *b) < 0)
+                BigInteger::st_shiftRight(*b, *b, 1);
+                if (BigInteger::st_cmp(*a, *b) < 0)
                 {
                     BigInteger *t = a;
                     a = b;
@@ -298,8 +305,8 @@ void BigInteger::st_euclid(BigInteger &r, const BigInteger &x, const BigInteger 
         else
             if ((b->n[0] & 1) != 0)    // b odd
             {
-                st_shiftRight(*a, *a, 1);
-                if (st_cmp(*a, *b) < 0)
+                BigInteger::st_shiftRight(*a, *a, 1);
+                if (BigInteger::st_cmp(*a, *b) < 0)
                 {
                     BigInteger *t = a;
                     a = b;
@@ -308,18 +315,19 @@ void BigInteger::st_euclid(BigInteger &r, const BigInteger &x, const BigInteger 
             }
             else
             {
-                st_shiftRight(*a, *a, 1);
-                st_shiftRight(*b, *b, 1);
+                BigInteger::st_shiftRight(*a, *a, 1);
+                BigInteger::st_shiftRight(*b, *b, 1);
                 shifts++;
             }
     }
     if (shifts > 0)
-        st_shiftLeft(r, *a, shifts);
+        BigInteger::st_shiftLeft(r, *a, shifts);
     else
-        st_copy(r, *a);
+        BigInteger::st_copy(r, *a);
 }
 
 // FUNCTION: WON 0x007d4fe0
+// Sets r to x * y modulo m with Barrett reduction; throws when more than three corrections are needed
 void BigInteger::st_modMulRecip(BigInteger &r, const BigInteger &x, const BigInteger &y, const BigInteger &m, const BigInteger &i,short nb, word *t)
 {
     BigInteger a;
@@ -327,26 +335,27 @@ void BigInteger::st_modMulRecip(BigInteger &r, const BigInteger &x, const BigInt
     BigInteger c;
     BigInteger d;
 
-    st_kmul(a, x, y,t);			
-	st_shiftRight(d, a, nb-1);		
-    st_kmul(b, d, i,t);			
-    st_shiftRight(c, b, nb-1);	
-    st_kmul(b, m, c,t);		
-    st_sub(r, a, b);		
+    BigInteger::st_kmul(a, x, y,t);			
+	BigInteger::st_shiftRight(d, a, nb-1);		
+    BigInteger::st_kmul(b, d, i,t);			
+    BigInteger::st_shiftRight(c, b, nb-1);	
+    BigInteger::st_kmul(b, m, c,t);		
+    BigInteger::st_sub(r, a, b);		
 
     int j = 0;
-    while (st_cmp(r, m) >= 0)
+    while (BigInteger::st_cmp(r, m) >= 0)
     {
         if (j++ > 2)
 		{
 			throw ArithmeticException("modMulRecip");
 		}
 
-        st_sub(r, r, m);
+        BigInteger::st_sub(r, r, m);
     }
 }
 
 // FUNCTION: WON 0x007d5270
+// Sets r to the inverse of a modulo n (extended Euclid); throws on negative input
 void BigInteger::st_inverseModN(BigInteger &r, const BigInteger &a, const BigInteger &n)
 {
     if (a.negative || n.negative)
@@ -354,11 +363,11 @@ void BigInteger::st_inverseModN(BigInteger &r, const BigInteger &a, const BigInt
 
 	BigInteger x1orig;
 	BigInteger x2orig;
-	BigInteger x3orig; st_copy(x3orig,a);
+	BigInteger x3orig; BigInteger::st_copy(x3orig,a);
 
 	BigInteger y1orig;
 	BigInteger y2orig;
-	BigInteger y3orig; st_copy(y3orig,n);
+	BigInteger y3orig; BigInteger::st_copy(y3orig,n);
 
     BigInteger *x1 = &x1orig;
     BigInteger *x2 = &x2orig;
@@ -367,8 +376,8 @@ void BigInteger::st_inverseModN(BigInteger &r, const BigInteger &a, const BigInt
     BigInteger *y2 = &y2orig;
 	BigInteger *y3 = &y3orig;
 
-    st_one(*x1); st_one(*y2);
-    st_zero(*x2); st_zero(*y1);
+    BigInteger::st_one(*x1); BigInteger::st_one(*y2);
+    BigInteger::st_zero(*x2); BigInteger::st_zero(*y1);
 
 	BigInteger t1orig;
 	BigInteger t2orig;
@@ -385,11 +394,11 @@ void BigInteger::st_inverseModN(BigInteger &r, const BigInteger &a, const BigInt
 
     while (y3->len != 0)
     {
-        st_div(q, t3, *x3, *y3);
-        st_mul(*t1, *q, *y2);		
-        st_sub(*t2, *x2, *t1);
-        st_mul(*p, *q, *y1);
-        st_sub(*t1, *x1, *p);
+        BigInteger::st_div(q, t3, *x3, *y3);
+        BigInteger::st_mul(*t1, *q, *y2);		
+        BigInteger::st_sub(*t2, *x2, *t1);
+        BigInteger::st_mul(*p, *q, *y1);
+        BigInteger::st_sub(*t1, *x1, *p);
 
 		BigInteger *tt1 = x1;
 		BigInteger *tt2 = x2;
@@ -401,9 +410,9 @@ void BigInteger::st_inverseModN(BigInteger &r, const BigInteger &a, const BigInt
     }
 
     if (x1->negative)
-        st_add(*x1, *x1, n);
+        BigInteger::st_add(*x1, *x1, n);
 	
-    st_copy(r, *x1);
+    BigInteger::st_copy(r, *x1);
 }
 
 }
@@ -413,52 +422,52 @@ void BigInteger::st_inverseModN(BigInteger &r, const BigInteger &a, const BigInt
 #include <ctype.h>
 namespace WONAPI {
 using namespace std;
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 void BigInteger::st_exp(BigInteger &r, const BigInteger &a, const BigInteger &power)
 {
     BigInteger v1Orig;
 	BigInteger v2Orig;
 
-	st_copy(v1Orig,a);
+	BigInteger::st_copy(v1Orig,a);
 
 	BigInteger *v1 = &v1Orig;
 	BigInteger *v2 = &v2Orig;
 	BigInteger *temp;
     
-	int bits = st_bitLength(power);
+	int bits = BigInteger::st_bitLength(power);
 
     if ((power.n[0] & 1) != 0)
-        st_copy(r,a);
+        BigInteger::st_copy(r,a);
     else
-        st_one(r);
+        BigInteger::st_one(r);
 
 
     for (int i = 1; i < bits; i++)
     {
-        st_mul(*v2, *v1, *v1);
+        BigInteger::st_mul(*v2, *v1, *v1);
 		temp = v1; v1 = v2; v2 = temp;
 
-        if (st_bit(power, i))
+        if (BigInteger::st_bit(power, i))
 		{
-			st_copy(*v2,r);
-			st_mul(r, *v1, *v2);
+			BigInteger::st_copy(*v2,r);
+			BigInteger::st_mul(r, *v1, *v2);
 		}
     }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 void BigInteger::st_modExp(BigInteger &r, const BigInteger &a, const BigInteger &power, const BigInteger &modulo)
 {
     BigInteger d;
-	int nb = st_recip(d, modulo);
+	int nb = BigInteger::st_recip(d, modulo);
 
-	st_modExp(r,a,power,modulo,d,nb);
+	BigInteger::st_modExp(r,a,power,modulo,d,nb);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 void BigInteger::st_div(BigInteger &dv, const BigInteger &m, const BigInteger &d)
 {
-	st_div(&dv, NULL, m, d);
+	BigInteger::st_div(&dv, NULL, m, d);
 }
 }
 

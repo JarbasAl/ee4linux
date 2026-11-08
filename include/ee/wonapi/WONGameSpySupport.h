@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK GameSpySupport owner.
+// No original address identified: WON SDK GameSpySupport
 #ifndef EE_WONAPI_WONGAMESPYSUPPORT_H
 #define EE_WONAPI_WONGAMESPYSUPPORT_H
 #include <time.h>
@@ -72,13 +72,13 @@ public:
 	void	  Shutdown();	// sends status update with "gamemode" as "exiting"
 
 	// Error codes
-	WONStatus	GetStatus()			{ return mStatus;		 }
-	int					GetGameSpyStatus()  { return mGameSpyStatus; }
+	WONStatus	GetStatus()			{ return this->mStatus;		 }
+	int					GetGameSpyStatus()  { return this->mGameSpyStatus; }
 
 	// Pump & Auto pump (calls process_queries)
 	void	Pump();
 	void	SetAutoPumpTime(unsigned long theMilliseconds);
-	bool	IsAutoPumping()	{ return ( mInitialized == true && mAutoPumpTime != 0); }
+	bool	IsAutoPumping()	{ return ( this->mInitialized == true && this->mAutoPumpTime != 0); }
 
 	// Key Value accessors
 	void SetKeyValue(GameSpyQueryType theType, const char* theKey, const char* theValue);

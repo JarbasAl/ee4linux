@@ -1,5 +1,4 @@
-// Original-backed blocking operation family; source only, no runtime authority.
-// Const send APIs use the finite reviewed legacy-operation constructor boundary bridge.
+// WONAPI BlockingSocket: socket calls that run a socket op and wait for it (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,6 +9,7 @@
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006b1c10
+// Connects to an address, waiting up to the timeout; returns the connect status
 WONStatus BlockingSocket::Connect(const IPAddr& inAddress,unsigned long inTimeout)
 {
     SmartPtr<ConnectOp> op=new ConnectOp(inAddress,this);
@@ -18,6 +18,7 @@ WONStatus BlockingSocket::Connect(const IPAddr& inAddress,unsigned long inTimeou
 }
 
 // FUNCTION: WON 0x006b1f10
+// Waits up to the timeout for one length-prefixed message; returns it and the receive status
 WONStatus BlockingSocket::RecvMsg(ByteBufferPtr& outMessage,unsigned long inTimeout)
 {
     SmartPtr<RecvMsgOp> op=new RecvMsgOp(this);
@@ -26,15 +27,16 @@ WONStatus BlockingSocket::RecvMsg(ByteBufferPtr& outMessage,unsigned long inTime
 }
 
 // FUNCTION: WON 0x006b2040
+// Waits up to the timeout for one CR-LF terminated line; returns it and the receive status
 WONStatus BlockingSocket::RecvCRMsg(ByteBufferPtr& outMessage,unsigned long inTimeout)
 {
     SmartPtr<RecvCRMsgOp> op=new RecvCRMsgOp(this);
     if (op->RunBlock(inTimeout)) outMessage=op->GetMsg();
     return op->mStatus;
 }
-// Genuine SDK const payload APIs adapted only at existing legacy ctor boundary.
-// Native2b1d00/228, operation-run/status adapter, support0.
+// 2b1d00, 0x228 bytes in the original
 // FUNCTION: WON 0x006b1d00
+// Sends raw bytes, waiting up to the timeout; returns the send status
 WONStatus BlockingSocket::SendBytes(const ByteBuffer* bytes,unsigned long timeout)
 {
     SmartPtr<SendBytesOp> op=new SendBytesOp(bytes,this);
@@ -42,8 +44,9 @@ WONStatus BlockingSocket::SendBytes(const ByteBuffer* bytes,unsigned long timeou
     return op->GetStatus();
 }
 
-// Native2b1e30/219, same accepted SendMsgOp const ownership bridge, support0.
+// 2b1e30, 0x219 bytes in the original
 // FUNCTION: WON 0x006b1e30
+// Sends one length-prefixed message, waiting up to the timeout; returns the send status
 WONStatus BlockingSocket::SendMsg(const ByteBuffer* message,unsigned long timeout)
 {
     SmartPtr<SendMsgOp> op=new SendMsgOp(message,this);
@@ -55,15 +58,17 @@ WONStatus BlockingSocket::SendMsg(const ByteBuffer* message,unsigned long timeou
 
 namespace WONAPI {
 // FUNCTION: WON 0x006b1bd0
+// Creates a blocking socket of the given type (stream or datagram)
 BlockingSocket::BlockingSocket(int type) : QueueSocket(type) {}
 // FUNCTION: WON 0x006aab50
+// Returns a new, unopened blocking socket of the same type
 AsyncSocket* BlockingSocket::Duplicate()
 {
-    return new BlockingSocket(mType);
+    return new BlockingSocket(this->mType);
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine missing datagram operation runners.
+// No original address identified: WON SDK datagram send/receive calls
 namespace WONAPI {
 WONStatus BlockingSocket::SendBytesTo(const ByteBuffer *theBytes, const IPAddr &theAddr, DWORD theTimeout)
 {
@@ -85,7 +90,7 @@ WONStatus BlockingSocket::RecvBytesFrom(ByteBufferPtr &theBytes, unsigned short 
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine blocking byte receive prerequisite.
+// No original address identified: WON SDK blocking byte receive
 namespace WONAPI {
 WONStatus BlockingSocket::RecvBytes(ByteBufferPtr &theBytes, DWORD theNumBytes, DWORD theTimeout)
 {

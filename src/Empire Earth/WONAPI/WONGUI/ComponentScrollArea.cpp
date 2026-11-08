@@ -10,50 +10,50 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK algorithms, no Native/primary/physical claim.
+// Creates a scroll area around one component, centred both ways (not identified in the original exe)
 ComponentScrollArea::ComponentScrollArea(Component *theComponent)
 {
-	mComponent = theComponent;
-	GetViewport()->Fn2F6A60(mComponent.get());
-	mVertCenter = true;
-	mHorzCenter = true;
-	UpdateComponentSize();
+	this->mComponent = theComponent;
+	this->GetViewport()->AddChild(this->mComponent.get());
+	this->mVertCenter = true;
+	this->mHorzCenter = true;
+	this->UpdateComponentSize();
 }
 
 void ComponentScrollArea::Virtual08()
 {
 	ScrollArea::Virtual08();
-	PositionComponent();
+	this->PositionComponent();
 }
 
 void ComponentScrollArea::PositionComponent()
 {
 	int x = 0, y = 0;
-	if(mHorzCenter)
+	if(this->mHorzCenter)
 	{
-		if(mComponent->Width() < mScrollArea.width)
-			x = (mScrollArea.width - mComponent->Width())/2;
+		if(this->mComponent->Width() < this->mScrollArea.width)
+			x = (this->mScrollArea.width - this->mComponent->Width())/2;
 	}
 
-	if(mVertCenter)
+	if(this->mVertCenter)
 	{
-		if(mComponent->Height() < mScrollArea.height)
-			y = (mScrollArea.height - mComponent->Height())/2;
+		if(this->mComponent->Height() < this->mScrollArea.height)
+			y = (this->mScrollArea.height - this->mComponent->Height())/2;
 	}
 
-	mComponent->Fn2F4B70(x,y);
-	Invalidate();
+	this->mComponent->SetPos(x,y);
+	this->Invalidate();
 }
 
 void ComponentScrollArea::SetComponentSize(int theWidth, int theHeight)
 {
-	SetScrollDimension(theWidth,theHeight);
-	mComponent->Fn2F4B90(theWidth,theHeight);
-	PositionComponent();
+	this->SetScrollDimension(theWidth,theHeight);
+	this->mComponent->SetSize(theWidth,theHeight);
+	this->PositionComponent();
 }
 
 void ComponentScrollArea::UpdateComponentSize()
 {
-	SetComponentSize(mComponent->Width(), mComponent->Height());
+	this->SetComponentSize(this->mComponent->Width(), this->mComponent->Height());
 }
 }

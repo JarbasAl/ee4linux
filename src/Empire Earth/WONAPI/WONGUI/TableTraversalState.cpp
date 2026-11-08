@@ -1,4 +1,4 @@
-// Genuine current table traversal state and row/column policy, support only.
+// Table element construction cursor state and current row and column attributes (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,28 +13,33 @@
 #include "ee/wonapi/WONLobbyTableElement.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0070dfe0
-void TableElement::StartTraversal() { mCurRow=mCurCol=-1; mCurCell=NULL; }
+// Resets the build cursor to before the first row, with no current cell
+void TableElement::StartTraversal() { this->mCurRow=this->mCurCol=-1; this->mCurCell=NULL; }
 // FUNCTION: WON 0x0070e070
-HorzAlign TableElement::GetCurRowAlign() { return (HorzAlign)mRowVector[mCurRow].mHAlign; }
+// Returns the current row's horizontal alignment
+HorzAlign TableElement::GetCurRowAlign() { return (HorzAlign)this->mRowVector[this->mCurRow].mHAlign; }
 // FUNCTION: WON 0x0070e240
+// Sets the current row's background color (ignored when there is no current row)
 void TableElement::SetRowBGColor(int color)
 {
-    if(mCurRow<0 || mCurRow>=mRowVector.size()) return;
-    mRowVector[mCurRow].mBGColor=color;
+    if(this->mCurRow<0 || this->mCurRow>=this->mRowVector.size()) return;
+    this->mRowVector[this->mCurRow].mBGColor=color;
 }
 // FUNCTION: WON 0x0070e280
+// Sets the current row's horizontal and vertical alignment (ignored when there is no current row)
 void TableElement::SetRowAlign(int horizontal,int vertical)
 {
-    if(mCurRow<0 || mCurRow>=mRowVector.size()) return;
-    RowInfo& row=mRowVector[mCurRow];
+    if(this->mCurRow<0 || this->mCurRow>=this->mRowVector.size()) return;
+    RowInfo& row=this->mRowVector[this->mCurRow];
     row.mHAlign=horizontal;
     row.mVAlign=vertical;
 }
 // FUNCTION: WON 0x0070e2d0
+// Lowers the current column's width weight to the given value when it is smaller (percentages are negative)
 void TableElement::SetColumnWidth(int width)
 {
-    if(mCurCol<0 || mCurCol>=mColumnVector.size()) return;
-    ColumnInfo& column=mColumnVector[mCurCol];
+    if(this->mCurCol<0 || this->mCurCol>=this->mColumnVector.size()) return;
+    ColumnInfo& column=this->mColumnVector[this->mCurCol];
     if(width<column.mWeight) column.mWeight=width;
 }
 }

@@ -16,9 +16,11 @@
 #include "ee/wonapi/WONLobbyModel.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075b0f0
+// Creates the notice that the whole game list was rebuilt, holding the list
 SyncGameListEvent::SyncGameListEvent(LobbyGameList* games)
-    : LobbyEvent(100057),mGames(games) {}
+    : LobbyEvent(LobbyEvent_SyncGameList),mGames(games) {}
 // FUNCTION: WON 0x0075b160
+// Destroys the notice, releasing the game list
 SyncGameListEvent::~SyncGameListEvent() {}
 }
 

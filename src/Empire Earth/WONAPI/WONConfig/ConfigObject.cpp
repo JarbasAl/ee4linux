@@ -1,4 +1,4 @@
-// Native configuration object and parsing family; source only.
+// ConfigObject: a config group with registered key values and child groups, parsed from config files
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,30 +14,33 @@ namespace WONAPI {
 class ConfigDefineScope {
     ConfigParser& mParser;
 public:
-    ConfigDefineScope(ConfigParser& parser):mParser(parser) {mParser.PushDefineStack();}
-    ~ConfigDefineScope() {mParser.PopDefineStack();}
+    ConfigDefineScope(ConfigParser& parser):mParser(parser) {this->mParser.PushDefineStack();}
+    ~ConfigDefineScope() {this->mParser.PopDefineStack();}
 };
 // FUNCTION: WON 0x007aea90
-ConfigObject::ConfigObject() { Rewind(); mL38=NULL; }
+// Creates an empty config group with no parent
+ConfigObject::ConfigObject() { this->Rewind(); this->mParent=NULL; }
 // FUNCTION: WON 0x007aec60
-void ConfigObject::Virtual18(bool resetName)
+// Drops the children, optionally the names, resets every key to its default and clears group pointers
+void ConfigObject::Reset(bool resetName)
 {
-    Clear();
-    if(resetName) {mS18.erase();mS28.erase();}
-    KeyValMap::iterator i=mKeyMap.begin();
-    while(i!=mKeyMap.end()) {
+    this->Clear();
+    if(resetName) {this->mName.erase();this->mBaseName.erase();}
+    KeyValMap::iterator i=this->mKeyMap.begin();
+    while(i!=this->mKeyMap.end()) {
         ConfigValueBase* value=i->second.get();
         value->InitializeDefaultHook();
         value->mIsDefault=true;
         ++i;
     }
-    KeyGroupMap::iterator j=mM48.begin();
-    while(j!=mM48.end()) {
-        if(j->second.mL04!=NULL) *j->second.mL04=NULL;
+    KeyGroupMap::iterator j=this->mKeyGroupMap.begin();
+    while(j!=this->mKeyGroupMap.end()) {
+        if(j->second.mGroupPtr!=NULL) *j->second.mGroupPtr=NULL;
         ++j;
     }
 }
 // FUNCTION: WON 0x007aedf0
+// Appends the key's value as text, marked "[DEF]" when it is still the default; always true
 bool ConfigObject::QueryValue(KeyValMap::const_iterator itr,std::string& outValue)
 {
     ConfigValueBase* value=itr->second.get();
@@ -46,32 +49,35 @@ bool ConfigObject::QueryValue(KeyValMap::const_iterator itr,std::string& outValu
     return true;
 }
 // FUNCTION: WON 0x007aefd0
-bool ConfigObject::Virtual14(const std::string& key,std::string& outValue)
+// Appends the named key's value as text; returns false for an unknown key
+bool ConfigObject::GetKeyValue(const std::string& key,std::string& outValue)
 {
-    KeyValMap::const_iterator itr=mKeyMap.find(key);
-    if(itr!=mKeyMap.end())
-        return QueryValue(itr,outValue);
+    KeyValMap::const_iterator itr=this->mKeyMap.find(key);
+    if(itr!=this->mKeyMap.end())
+        return this->QueryValue(itr,outValue);
     return false;
 }
 // FUNCTION: WON 0x007af040
-void ConfigObject::Virtual1C(std::string& outValues)
+// Appends one "key: value" line per registered key
+void ConfigObject::GetAllKeyValues(std::string& outValues)
 {
-    const KeyValMap& aMap=mKeyMap;
-    KeyValMap::const_iterator itr=mKeyMap.begin();
+    const KeyValMap& aMap=this->mKeyMap;
+    KeyValMap::const_iterator itr=this->mKeyMap.begin();
     while(true) {
         if(itr==aMap.end()) break;
         outValues+=itr->first;
         outValues+=": ";
-        QueryValue(itr,outValues);
+        this->QueryValue(itr,outValues);
         outValues+="\n";
         ++itr;
     }
 }
 // FUNCTION: WON 0x007af280
-int ConfigObject::Virtual20(const std::string& key,StringParser& parser)
+// Parses a new value for the named key; returns 0 on success, 2 on a parse error, 1 for an unknown key
+int ConfigObject::SetKeyValue(const std::string& key,StringParser& parser)
 {
-    KeyValMap::iterator itr=mKeyMap.find(key);
-    if(itr!=mKeyMap.end()) {
+    KeyValMap::iterator itr=this->mKeyMap.find(key);
+    if(itr!=this->mKeyMap.end()) {
         ConfigValueBase* value=itr->second.get();
         if(value->ReadValue(parser)) {
             value->mIsDefault=false;
@@ -82,17 +88,20 @@ int ConfigObject::Virtual20(const std::string& key,StringParser& parser)
     return 1;
 }
 // FUNCTION: WON 0x007af310
-void ConfigObject::Clear() {mL08.clear();Rewind();}
-// Original3af370/17 is pure iterator initialization, support0.
+// Drops every child group
+void ConfigObject::Clear() {this->mChildList.clear();this->Rewind();}
 // FUNCTION: WON 0x007af370
-void ConfigObject::Rewind() {mL14=mL08.begin();}
+// Restarts the child iteration
+void ConfigObject::Rewind() {this->mChildItr=this->mChildList.begin();}
 // FUNCTION: WON 0x007af390
+// Appends a child group and makes this group its parent
 void ConfigObject::AddChild(ConfigObject* child)
 {
-    child->mL38=this;
-    mL08.push_back(child);
+    child->mParent=this;
+    this->mChildList.push_back(child);
 }
 // FUNCTION: WON 0x007af4c0
+// Reads a group header "[name] [: base] {"; sets a parse error unless it ends in '{'
 bool ConfigObject::ReadGroupStart(ConfigParser& parser,std::string& name,std::string& inherited)
 {
     std::string token;
@@ -114,10 +123,11 @@ bool ConfigObject::ReadGroupStart(ConfigParser& parser,std::string& name,std::st
     if(token!="{") {parser.SetError("Expecting '{' but got "+token,false);return false;}
     return true;
 }
-// Default parser hooks3099f0/5 share a real always-true native function, zeroquota.
-bool ConfigObject::Virtual0C(ConfigParser*) {return true;}
-bool ConfigObject::Virtual10(ConfigParser*) {return true;}
+// The default parse hooks share one always-true function in the original (0x7099f0)
+bool ConfigObject::PreParse(ConfigParser*) {return true;}
+bool ConfigObject::PostParse(ConfigParser*) {return true;}
 // FUNCTION: WON 0x007af7a0
+// Opens the config file (if given), resets the group and parses its whole contents; returns success
 bool ConfigObject::ParseTopLevel(ConfigParser& parser,const char* filePath)
 {
     if(filePath!=NULL && !parser.OpenFile(std::string(filePath))) {
@@ -127,15 +137,16 @@ bool ConfigObject::ParseTopLevel(ConfigParser& parser,const char* filePath)
         return false;
     }
     ConfigDefineScope scope(parser);
-    Virtual18(true);
-    return ParseGroup(parser,false,false,true,true);
+    this->Reset(true);
+    return this->ParseGroup(parser,false,false,true,true);
 }
 // FUNCTION: WON 0x007afa60
+// Parses key values and child groups up to the closing brace (or the end), skipping unknown ones with a warning
 bool ConfigObject::ParseGroup(ConfigParser& parser,bool checkBraces,bool skip,bool prePost,bool readStart)
 {
     try {
-        if(checkBraces && readStart && !ReadGroupStart(parser,mS18,mS28)) return false;
-        if(prePost && !skip && !Virtual0C(&parser)) return false;
+        if(checkBraces && readStart && !this->ReadGroupStart(parser,this->mName,this->mBaseName)) return false;
+        if(prePost && !skip && !this->PreParse(&parser)) return false;
         while(parser.mAbortReason.empty() && !parser.mStopped) {
             std::string token;
             if(!parser.ReadToken(token,false,false)) {
@@ -159,18 +170,18 @@ bool ConfigObject::ParseGroup(ConfigParser& parser,bool checkBraces,bool skip,bo
                     if(!parser.ReadToken(value,true,skip)) return false;
                     valueParser.Set(value.c_str());
                 }
-                if(!skip && !Virtual08(&parser,token,valueParser))
+                if(!skip && !this->HandleValueInstruction(&parser,token,valueParser))
                     parser.AddWarning("Unexpected key/val: "+token+" "+value);
             } else {
                 if(!skip) {
-                    if(!Virtual04(&parser,token)) {
+                    if(!this->HandleInstruction(&parser,token)) {
                         parser.AddWarning("Unexpected child group: "+token);
-                        SkipGroup(parser,true,true);
+                        this->SkipGroup(parser,true,true);
                     }
-                } else SkipGroup(parser,true,true);
+                } else this->SkipGroup(parser,true,true);
             }
         }
-        if(prePost && !skip && !Virtual10(&parser)) return false;
+        if(prePost && !skip && !this->PostParse(&parser)) return false;
     } catch(ConfigObjectException& exception) {
         if(exception.mFlag) parser.SetError(exception.mText,false);
         else parser.AddWarning(exception.mText);
@@ -178,37 +189,41 @@ bool ConfigObject::ParseGroup(ConfigParser& parser,bool checkBraces,bool skip,bo
     return parser.mAbortReason.empty();
 }
 // FUNCTION: WON 0x007b0000
+// Reads past a group without applying it
 bool ConfigObject::SkipGroup(ConfigParser& parser,bool checkBraces,bool readStart)
 {
     SmartPtr<ConfigObject> child=new ConfigObject;
     return child->ParseGroup(parser,checkBraces,true,false,readStart);
 }
 // FUNCTION: WON 0x007b06f0
+// Parses a group into the given child in its own define scope and optionally adds it as a child
 bool ConfigObject::ParseChild(ConfigParser& parser,ConfigObject* child,bool addChild,bool readStart)
 {
     ConfigDefineScope scope(parser);
-    child->mL38=this;
-    child->Virtual18(readStart);
+    child->mParent=this;
+    child->Reset(readStart);
     if(!child->ParseGroup(parser,true,false,true,readStart)) return false;
-    if(addChild) AddChild(child);
+    if(addChild) this->AddChild(child);
     return true;
 }
 // FUNCTION: WON 0x007b07a0
+// Parses a registered child group (new from its factory or the fixed object) and stores or adds it
 bool ConfigObject::HandleChildGroup(ConfigParser& parser,KeyGroupMap::iterator& itr)
 {
     ConfigDefineScope scope(parser);
     ConfigObjectEntry& group=itr->second;
     SmartPtr<ConfigObject> child;
-    if(group.mL00!=NULL) child=group.mL00();
+    if(group.mFactory!=NULL) child=group.mFactory();
     else child=group.mObject.get();
-    child->Virtual18(true);
-    child->mL38=this;
+    child->Reset(true);
+    child->mParent=this;
     if(!child->ParseGroup(parser,true,false,true,true)) return false;
-    if(group.mL04!=NULL) *group.mL04=child;
-    else if(group.mObject.get()==NULL) AddChild(child.get());
+    if(group.mGroupPtr!=NULL) *group.mGroupPtr=child;
+    else if(group.mObject.get()==NULL) this->AddChild(child.get());
     return true;
 }
 // FUNCTION: WON 0x007b1120
+// Parses a value for a registered key, warning when it fails; always true
 bool ConfigObject::HandleKeyVal(ConfigParser& parser,StringParser& value,KeyValMap::iterator& itr)
 {
     ConfigValueBase* config=itr->second.get();
@@ -217,12 +232,14 @@ bool ConfigObject::HandleKeyVal(ConfigParser& parser,StringParser& value,KeyValM
     return true;
 }
 // FUNCTION: WON 0x007b18e0
+// Registers a value under a key name; an existing registration is kept
 void ConfigObject::RegisterKeyValue(const char* key,ConfigValueBase* value)
 {
-    if(!mKeyMap.insert(KeyValMap::value_type(std::string(key),value)).second) {
+    if(!this->mKeyMap.insert(KeyValMap::value_type(std::string(key),value)).second) {
     }
 }
 // FUNCTION: WON 0x007b00b0
+// Parses another config file (relative to this one) into this group; a missing required file is an error
 bool ConfigObject::IncludeFile(ConfigParser& parser,const std::string& path,bool required)
 {
     std::string file=path;
@@ -234,7 +251,7 @@ bool ConfigObject::IncludeFile(ConfigParser& parser,const std::string& path,bool
     ConfigParser included;
     included.SetParent(&parser);
     if(included.OpenFile(file)) {
-        bool result=ParseGroup(included,false,false,false,true);
+        bool result=this->ParseGroup(included,false,false,false,true);
         parser.CopyWarnings(included);
         if(!result) {parser.SetError(included.GetAbortReason(),false);return false;}
         if(included.IsStopped()) parser.Stop();
@@ -242,6 +259,7 @@ bool ConfigObject::IncludeFile(ConfigParser& parser,const std::string& path,bool
     return true;
 }
 // FUNCTION: WON 0x007b03c0
+// Parses a group recorded by GROUPDEFINE into this group, restoring the parser position afterwards
 bool ConfigObject::IncludeGroup(ConfigParser& parser,const std::string& name,bool required)
 {
     ConfigParserState defined;
@@ -252,30 +270,31 @@ bool ConfigObject::IncludeGroup(ConfigParser& parser,const std::string& name,boo
     ConfigParserState saved;
     parser.GetState(saved);
     parser.SetState(defined);
-    bool result=ParseGroup(parser,true,false,false,false);
+    bool result=this->ParseGroup(parser,true,false,false,false);
     parser.SetState(saved);
     if(!parser.mAbortReason.empty()) parser.SetError("IncludeGroup Error",true);
     return result;
 }
 
 // FUNCTION: WON 0x007b0910
-bool ConfigObject::Virtual04(ConfigParser* parser,const std::string& instruction)
+// Handles GROUPDEFINE, IFDEFINED/IFNOTDEFINED ... else blocks and registered child groups; false when unknown
+bool ConfigObject::HandleInstruction(ConfigParser* parser,const std::string& instruction)
 {
     if(instruction=="GROUPDEFINE") {
         std::string name,inherited;
-        if(!ReadGroupStart(*parser,name,inherited)) return false;
+        if(!this->ReadGroupStart(*parser,name,inherited)) return false;
         parser->AddGroupDefine(name,NULL);
-        return SkipGroup(*parser,true,false);
+        return this->SkipGroup(*parser,true,false);
     }
     if(instruction=="IFDEFINED") {
         std::string name,expected;
-        if(!ReadGroupStart(*parser,name,expected)) return true;
+        if(!this->ReadGroupStart(*parser,name,expected)) return true;
         std::string actual;
         bool selected=false;
         if(parser->GetDefine(name,actual) && (expected.empty() || StringCompareNoCase(expected,actual)==0)) {
             selected=true;
-            ParseGroup(*parser,true,false,false,false);
-        } else SkipGroup(*parser,true,false);
+            this->ParseGroup(*parser,true,false,false,false);
+        } else this->SkipGroup(*parser,true,false);
         std::string token;
         parser->ReadToken(token,false,false);
         if(_stricmp(token.c_str(),"else")!=0) {
@@ -287,19 +306,19 @@ bool ConfigObject::Virtual04(ConfigParser* parser,const std::string& instruction
             parser->SetError("Expecting '{'",false);
             return true;
         }
-        if(selected) SkipGroup(*parser,true,false);
-        else ParseGroup(*parser,true,false,false,false);
+        if(selected) this->SkipGroup(*parser,true,false);
+        else this->ParseGroup(*parser,true,false,false,false);
         return true;
     }
     if(instruction=="IFNOTDEFINED") {
         std::string name,expected;
-        if(!ReadGroupStart(*parser,name,expected)) return true;
+        if(!this->ReadGroupStart(*parser,name,expected)) return true;
         std::string actual;
         bool selected=false;
         if(parser->GetDefine(name,actual) && (expected.empty() || StringCompareNoCase(expected,actual)==0)) {
             selected=true;
-            SkipGroup(*parser,true,false);
-        } else ParseGroup(*parser,true,false,false,false);
+            this->SkipGroup(*parser,true,false);
+        } else this->ParseGroup(*parser,true,false,false,false);
         std::string token;
         parser->ReadToken(token,false,false);
         if(_stricmp(token.c_str(),"else")!=0) {
@@ -311,16 +330,17 @@ bool ConfigObject::Virtual04(ConfigParser* parser,const std::string& instruction
             parser->SetError("Expecting '{'",false);
             return true;
         }
-        if(selected) ParseGroup(*parser,true,false,false,false);
-        else SkipGroup(*parser,true,false);
+        if(selected) this->ParseGroup(*parser,true,false,false,false);
+        else this->SkipGroup(*parser,true,false);
         return true;
     }
-    KeyGroupMap::iterator itr=mM48.find(instruction);
-    if(itr!=mM48.end()) return HandleChildGroup(*parser,itr);
+    KeyGroupMap::iterator itr=this->mKeyGroupMap.find(instruction);
+    if(itr!=this->mKeyGroupMap.end()) return this->HandleChildGroup(*parser,itr);
     else return false;
 }
 // FUNCTION: WON 0x007b11d0
-bool ConfigObject::Virtual08(ConfigParser* parser,const std::string& instruction,StringParser& value)
+// Handles DEFINE/REDEFINE, INCLUDEGROUP, INCLUDEFILE and registered keys; false for an unknown key
+bool ConfigObject::HandleValueInstruction(ConfigParser* parser,const std::string& instruction,StringParser& value)
 {
     if(instruction=="DEFINE" || instruction=="REDEFINE") {
         std::string name;
@@ -347,7 +367,7 @@ bool ConfigObject::Virtual08(ConfigParser* parser,const std::string& instruction
                 parser->AddWarning("Expecting string: optional after include group, include is required.");
             else required=false;
         }
-        IncludeGroup(*parser,name,required);
+        this->IncludeGroup(*parser,name,required);
         return true;
     }
     if(instruction=="INCLUDEFILE") {
@@ -362,21 +382,21 @@ bool ConfigObject::Virtual08(ConfigParser* parser,const std::string& instruction
                 parser->AddWarning("Expecting string: optional after include file, include is required.");
             else required=false;
         }
-        IncludeFile(*parser,path,required);
+        this->IncludeFile(*parser,path,required);
         return true;
     }
-    KeyValMap::iterator itr=mKeyMap.find(instruction);
-    if(itr!=mKeyMap.end()) return HandleKeyVal(*parser,value,itr);
+    KeyValMap::iterator itr=this->mKeyMap.find(instruction);
+    if(itr!=this->mKeyMap.end()) return this->HandleKeyVal(*parser,value,itr);
     else return false;
 }
 
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: same-snapshot SDK configuration merge/copy and group APIs.
+// No original address identified: WON SDK config copy, iteration and group registration
 void ConfigObject::CopyKeyValsFrom(ConfigObject* theCopyFrom)
 {
-    KeyValMap& aMap1 = mKeyMap;
+    KeyValMap& aMap1 = this->mKeyMap;
     KeyValMap& aMap2 = theCopyFrom->mKeyMap;
     KeyValMap::iterator anItr1 = aMap1.begin();
     KeyValMap::iterator anItr2 = aMap2.begin();
@@ -399,24 +419,24 @@ void ConfigObject::CopyKeyValsFrom(ConfigObject* theCopyFrom)
 }
 ConfigObject* ConfigObject::NextChild()
 {
-    if(mL14==mL08.end())
+    if(this->mChildItr==this->mChildList.end())
         return NULL;
-    return (*mL14++).get();
+    return (*this->mChildItr++).get();
 }
 bool ConfigObject::HasMoreChildren()
 {
-    return mL14!=mL08.end();
+    return this->mChildItr!=this->mChildList.end();
 }
 void ConfigObject::RegisterKeyGroup(const char* theKey, ConfigObjectFactory theFactory, SmartPtr<ConfigObject>* theGroup)
 {
-    if(mM48.insert(KeyGroupMap::value_type(theKey,ConfigObjectEntry(theFactory,theGroup))).second==false)
+    if(this->mKeyGroupMap.insert(KeyGroupMap::value_type(theKey,ConfigObjectEntry(theFactory,theGroup))).second==false)
     {
         // Insert failed: preserve the existing registration, as the original SDK does.
     }
 }
 void ConfigObject::RegisterKeyGroup(const char* theKey, ConfigObject* theGroup)
 {
-    if(mM48.insert(KeyGroupMap::value_type(theKey,ConfigObjectEntry(theGroup))).second==false)
+    if(this->mKeyGroupMap.insert(KeyGroupMap::value_type(theKey,ConfigObjectEntry(theGroup))).second==false)
     {
         // Insert failed: preserve the existing registration, as the original SDK does.
     }

@@ -1,4 +1,4 @@
-// RoomDialog original family; pending canonical RoomCtrl class from room owner.
+// Room dialog: a dialog that holds one room control (RoomCtrl); its InitComponent does nothing
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,9 +11,9 @@
 #include "ee/wonapi/WONLobbyRoomServer.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
 namespace WONAPI {
-// Empty constructor, automatic owner initialization, zero credit.
 RoomDialog::RoomDialog() {}
 // FUNCTION: WON 0x7f9110
+// Destroys the room dialog (members only)
 RoomDialog::~RoomDialog() {}
 
 void RoomDialog::InitComponent(ComponentInit&) {}

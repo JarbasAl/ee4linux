@@ -2,25 +2,25 @@
 #define EE_WONAPI_WONLOBBYCOMPONENTLISTITEM_H
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Complete native20, VT44df70: ListItem18 +ownedComponent18 +sizable1c/padding.
+// 0x20 bytes, vtable 0x0084df70: ListItem (0x18) + owned component at +0x18 + sizable flag at +0x1c.
 class ComponentListItem : public ListItem {
 protected:
-    virtual ~ComponentListItem(); //2fdaa0 actualexplicit normal; originalexternal
+    virtual ~ComponentListItem(); // explicit destructor, at 0x006fdaa0
 public:
     ComponentListItem(Component* component,bool sizable=false,bool selectable=false)
-        :mComponent(component),mIsSizable(sizable) { mB09=selectable; }
-    void CheckInvalid(ListArea*); //2fa500 genuine SDK nonvirtual empty policy, nativeRET4
-    virtual void Virtual04(Graphics&,ListArea*); //2fa510 actualPaint
-    virtual void Virtual08(ListArea*); //2fa480 originalexternal dimensionsgetter
-    virtual void Virtual0C(ListArea*,Container*); //2fa4a0 originalexternal viewport
-    virtual void Virtual18(int,int); //2fa4c0 originalexternal position
-    virtual bool Virtual1C(int,int); //2fa4e0 originalexternal contains
-    virtual void Virtual20(ListArea*,int,int); //2fd970 originalexternal enter
-    virtual void Virtual24(ListArea*); //2fd9a0 originalexternal exit
-    virtual void Virtual28(ListArea*,int,int); //2fd9c0 originalexternal move
-    virtual void Virtual2C(ListArea*,int,int); //2fd9f0 originalexternal drag
-    virtual void Virtual30(ListArea*,int,int,int); //2fda20 originalexternal down
-    virtual void Virtual34(ListArea*,int,int,int); //2fda50 originalexternal up
+        :mComponent(component),mIsSizable(sizable) { this->mSelectable=selectable; }
+    void CheckInvalid(ListArea*); // empty, at 0x006fa500
+    virtual void Paint(Graphics&,ListArea*);     // at 0x006fa510
+    virtual void CalcDimensions(ListArea*); // at 0x006fa480
+    virtual void SetViewport(ListArea*,Container*); // at 0x006fa4a0
+    virtual void SetPos(int,int);    // at 0x006fa4c0
+    virtual bool Contains(int,int);  // at 0x006fa4e0
+    virtual void MouseEnter(ListArea*,int,int); // at 0x006fd970
+    virtual void MouseExit(ListArea*); // at 0x006fd9a0
+    virtual void MouseMove(ListArea*,int,int); // at 0x006fd9c0
+    virtual void MouseDrag(ListArea*,int,int); // at 0x006fd9f0
+    virtual void MouseDown(ListArea*,int,int,int); // at 0x006fda20
+    virtual void MouseUp(ListArea*,int,int,int);   // at 0x006fda50
     SmartPtr<Component> mComponent; //18
     bool mIsSizable; //1c, natural1d..1f padding
 };

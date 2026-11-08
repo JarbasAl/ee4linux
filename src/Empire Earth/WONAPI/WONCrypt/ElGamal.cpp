@@ -1,4 +1,4 @@
-// Original-backed public ElGamal block envelopes and MD5 signature verification.
+// ElGamal: block encryption/decryption envelopes and MD5 signature checks
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -18,19 +18,20 @@
 #include "ee/wonapi/WONArithmeticException.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007d7b50
+// Returns the data encrypted in modulus-sized blocks behind a block count; NULL without a public key
 ByteBufferPtr ElGamal::Encrypt(const void *thePlainText, int thePlainTextLen) const
 {
-	if(!IsPublic())
+	if(!this->IsPublic())
 		return NULL;
 
-	const unsigned char *aPlainText = (const unsigned char*)thePlainText;
+	const unsigned char *aPlainText = static_cast<const unsigned char*>(thePlainText);
 
-	int aBlockLen = modulusLen - 3;
+	int aBlockLen = this->modulusLen - 3;
 	int aNumBlock = thePlainTextLen / aBlockLen;
 	if ((thePlainTextLen % aBlockLen) != 0) aNumBlock++;
 
 	WriteBuffer anEncrypt(0,true);
-	anEncrypt.Reserve(4+modulusLen*2*aNumBlock);
+	anEncrypt.Reserve(4+this->modulusLen*2*aNumBlock);
 
 	int anOffset = 0;
 
@@ -43,17 +44,17 @@ ByteBufferPtr ElGamal::Encrypt(const void *thePlainText, int thePlainTextLen) co
 		if(thePlainTextLen - anOffset < aBlockLen)
 			thisBlockLen = thePlainTextLen - anOffset;
 		
-		RawBuffer anEncryptBlock(modulusLen-1,(unsigned char)0);
+		RawBuffer anEncryptBlock(this->modulusLen-1,(unsigned char)0);
 
-		for(int k=0,j=modulusLen-2-thisBlockLen; j<modulusLen-2; j++,k++)
+		for(int k=0,j=this->modulusLen-2-thisBlockLen; j<this->modulusLen-2; j++,k++)
 			anEncryptBlock[j] = aPlainText[anOffset+k];
 
-		anEncryptBlock[modulusLen - 2] = (unsigned char)thisBlockLen;
+		anEncryptBlock[this->modulusLen - 2] = (unsigned char)thisBlockLen;
 
 
 		BigInteger ab[2];
 		
-		if(!encrypt(BigInteger(anEncryptBlock),ab))
+		if(!this->encrypt(BigInteger(anEncryptBlock),ab))
 			return NULL;
 
 
@@ -61,26 +62,26 @@ ByteBufferPtr ElGamal::Encrypt(const void *thePlainText, int thePlainTextLen) co
 		ab[0].toBinary(aa);
 		ab[1].toBinary(bb);
 		
-		if(aa.length()==modulusLen)
+		if(aa.length()==this->modulusLen)
 			anEncrypt.AppendBytes(aa.data(),aa.length());
-		else if(aa.length()>modulusLen)
-			anEncrypt.AppendBytes(aa.data()+aa.length()-modulusLen,modulusLen);
+		else if(aa.length()>this->modulusLen)
+			anEncrypt.AppendBytes(aa.data()+aa.length()-this->modulusLen,this->modulusLen);
 		else
 		{
-			for(int i=aa.length(); i<modulusLen; i++)
+			for(int i=aa.length(); i<this->modulusLen; i++)
 				anEncrypt.AppendByte(0);
 			
 			anEncrypt.AppendBytes(aa.data(),aa.length());
 		}
 		
 
-		if(bb.length()==modulusLen)
+		if(bb.length()==this->modulusLen)
 			anEncrypt.AppendBytes(bb.data(),bb.length());
-		else if(bb.length()>modulusLen)
-			anEncrypt.AppendBytes(bb.data()+bb.length()-modulusLen,modulusLen);
+		else if(bb.length()>this->modulusLen)
+			anEncrypt.AppendBytes(bb.data()+bb.length()-this->modulusLen,this->modulusLen);
 		else
 		{
-			for(int i=bb.length(); i<modulusLen; i++)
+			for(int i=bb.length(); i<this->modulusLen; i++)
 				anEncrypt.AppendByte(0);
 			
 			anEncrypt.AppendBytes(bb.data(),bb.length());
@@ -91,22 +92,23 @@ ByteBufferPtr ElGamal::Encrypt(const void *thePlainText, int thePlainTextLen) co
 	return anEncrypt.ToByteBuffer(true);
 }
 // FUNCTION: WON 0x007d7fc0
+// Returns the decrypted data of a block envelope; NULL without a private key or on bad input
 ByteBufferPtr ElGamal::Decrypt(const void *theCipherText, int theCipherTextLen) const
 {
-	if(!IsPrivate())
+	if(!this->IsPrivate())
 		return NULL;
 
-	const unsigned char *in = (const unsigned char*)theCipherText;
+	const unsigned char *in = static_cast<const unsigned char*>(theCipherText);
 	int inOffset = 0;
 
 	if(theCipherTextLen-inOffset<4) return NULL;
-	int aNumBlocks = *(const int*)in; inOffset+=4;
+	int aNumBlocks = *reinterpret_cast<const int*>(in); inOffset+=4;
 
-	if(theCipherTextLen-inOffset < aNumBlocks*modulusLen*2-inOffset)
+	if(theCipherTextLen-inOffset < aNumBlocks*this->modulusLen*2-inOffset)
 		return NULL;
 
-	RawBuffer aBuf(modulusLen,(unsigned char)0);
-	RawBuffer bBuf(modulusLen,(unsigned char)0);
+	RawBuffer aBuf(this->modulusLen,(unsigned char)0);
+	RawBuffer bBuf(this->modulusLen,(unsigned char)0);
 
 	WriteBuffer aDecrypt(0,true);
 
@@ -117,13 +119,13 @@ ByteBufferPtr ElGamal::Decrypt(const void *theCipherText, int theCipherTextLen) 
 
 	for(int i=0; i<aNumBlocks; i++)
 	{
-		aBuf.assign(in+inOffset,modulusLen); inOffset+=modulusLen;
-		bBuf.assign(in+inOffset,modulusLen); inOffset+=modulusLen;
+		aBuf.assign(in+inOffset,this->modulusLen); inOffset+=this->modulusLen;
+		bBuf.assign(in+inOffset,this->modulusLen); inOffset+=this->modulusLen;
 		
 		a.fromBinary(aBuf);
 		b.fromBinary(bBuf);
 
-		if(!decrypt(a,b,aPlainText))
+		if(!this->decrypt(a,b,aPlainText))
 			return NULL;
 		
 		RawBuffer aBigIntArray;
@@ -133,7 +135,7 @@ ByteBufferPtr ElGamal::Decrypt(const void *theCipherText, int theCipherTextLen) 
 		if(aBigIntArray.length()==0) return NULL;
 		int aPlainLen = aBigIntArray[aBigIntArray.length() - 1];
 		
-		if(aPlainLen>modulusLen - 3)
+		if(aPlainLen>this->modulusLen - 3)
 			return NULL;
 		
 		aDecrypt.AppendBytes(aBigIntArray.data()+aBigIntArray.length()-1-aPlainLen,aPlainLen);
@@ -142,31 +144,33 @@ ByteBufferPtr ElGamal::Decrypt(const void *theCipherText, int theCipherTextLen) 
 	return aDecrypt.ToByteBuffer(true);
 }
 // FUNCTION: WON 0x007d84a0
+// Converts a digest to the integer signed with q, truncated to q's bit length
 bool ElGamal::EncodeDigest(const RawBuffer& digest, BigInteger &h) const
 {
 	IntegerExtractor aDecoder(digest.data(),digest.length(),false);
-	if(digest.length()*8 < q.bitLength())
+	if(digest.length()*8 < this->q.bitLength())
 	{
 		if(!aDecoder.Decode(digest.length(),h))
 			return false;
 	}
 	else
 	{
-		if(!aDecoder.Decode(q.byteLength(),h))
+		if(!aDecoder.Decode(this->q.byteLength(),h))
 			return false;
 
-		h = h.shiftRight(q.byteLength()*8 - q.bitLength() + 1);
+		h = h.shiftRight(this->q.byteLength()*8 - this->q.bitLength() + 1);
 	}
 
 	return true;
 }
 // FUNCTION: WON 0x007d8620
+// Checks an ElGamal signature over the message's MD5 digest with the public key
 bool ElGamal::Verify(const void *theMessage, int theMessageLen, const void *theSignature, int theSignatureLen) const
 {
-	if(!IsPublic())
+	if(!this->IsPublic())
 		return false;
 
-	if(theSignatureLen!=q.byteLength()*2)
+	if(theSignatureLen!=this->q.byteLength()*2)
 		return false;
 	
 	
@@ -176,13 +180,13 @@ bool ElGamal::Verify(const void *theMessage, int theMessageLen, const void *theS
 			
 
 	BigInteger M;
-	if(!EncodeDigest(aDigest,M))
+	if(!this->EncodeDigest(aDigest,M))
 		return false;
 
-	const unsigned char *in = (const unsigned char*)theSignature;
+	const unsigned char *in = static_cast<const unsigned char*>(theSignature);
 
-	RawBuffer aBuf(q.byteLength(),(unsigned char)0);
-	RawBuffer bBuf(q.byteLength(),(unsigned char)0);
+	RawBuffer aBuf(this->q.byteLength(),(unsigned char)0);
+	RawBuffer bBuf(this->q.byteLength(),(unsigned char)0);
 
 	aBuf.assign(in,aBuf.length());
 	bBuf.assign(in+aBuf.length(),bBuf.length());
@@ -190,15 +194,15 @@ bool ElGamal::Verify(const void *theMessage, int theMessageLen, const void *theS
 	BigInteger a(aBuf);
 	BigInteger b(bBuf);
 	
-	return BogusVerify(M,a,b);	
+	return this->BogusVerify(M,a,b);	
 }
 
 
 using namespace std;
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 ByteBufferPtr ElGamal::Sign(const void* theMessage, int theMessageLen) const
 {		
-	if(!IsPrivate())
+	if(!this->IsPrivate())
 		return NULL;
 
 	MD5Digest anMD5;
@@ -206,17 +210,17 @@ ByteBufferPtr ElGamal::Sign(const void* theMessage, int theMessageLen) const
 	RawBuffer aDigest = anMD5.digest();
 	
 	BigInteger M;
-	if(!EncodeDigest(aDigest,M))
+	if(!this->EncodeDigest(aDigest,M))
 		return NULL;
 	
 	BigInteger ab[2];
 	
-	if(!BogusSign(M,ab))
+	if(!this->BogusSign(M,ab))
 		return NULL;
 
 	WriteBuffer aSignature(0,true);
 		
-	int qLen = q.byteLength();
+	int qLen = this->q.byteLength();
 	RawBuffer a,b;
 	ab[0].toBinary(a);
 	ab[1].toBinary(b);
@@ -249,23 +253,24 @@ ByteBufferPtr ElGamal::Sign(const void* theMessage, int theMessageLen) const
 	return aSignature.ToByteBuffer(true);
 }
 // FUNCTION: WON 0x007d8990
+// Encrypts one block value with a random odd k coprime to p-1; false on an arithmetic error
 bool ElGamal::encrypt(const BigInteger &M, BigInteger ab[]) const
 {
 	try
 	{
-		BigInteger p_minus_1 = p.sub(BigInteger::ONE);
+		BigInteger p_minus_1 = this->p.sub(BigInteger::ONE);
 		// choose a random k, relatively prime to p-1.
 		BigInteger k;
 		do {
 			// values of k with the same number of bits as p won't be chosen, but
 			// that shouldn't be a problem.
-			k = BigInteger(p.bitLength()-1, mRandom);
+			k = BigInteger(this->p.bitLength()-1, this->mRandom);
 			if (!(k.testBit(0)))
 				k = k.setBit(0); // make sure k is odd
 		} while (!(k.gcd(p_minus_1).equals(BigInteger::ONE)));
 
-		ab[0] /* a */ = g.modExp(k, p, recip, nb);
-		ab[1] /* b */ = y.modExp(k, p, recip, nb).modMulRecip(M,p,recip,nb);
+		ab[0] /* a */ = this->g.modExp(k, this->p, this->recip, this->nb);
+		ab[1] /* b */ = this->y.modExp(k, this->p, this->recip, this->nb).modMulRecip(M,this->p,this->recip,this->nb);
 
 		return true;
 	}
@@ -276,11 +281,12 @@ bool ElGamal::encrypt(const BigInteger &M, BigInteger ab[]) const
 	return false;
 }
 // FUNCTION: WON 0x007d8b70
+// Decrypts one (a, b) block pair with the private key; false on an arithmetic error
 bool ElGamal::decrypt(const BigInteger &a, const BigInteger &b, BigInteger &out) const
 {
     try 
 	{
-		out = b.modMulRecip(a.modExp(x, p, recip, nb).inverseModN(p), p, recip, nb);
+		out = b.modMulRecip(a.modExp(this->x, this->p, this->recip, this->nb).inverseModN(this->p), this->p, this->recip, this->nb);
 		return true;
     } 
 	catch (ArithmeticException &) 
@@ -290,6 +296,7 @@ bool ElGamal::decrypt(const BigInteger &a, const BigInteger &b, BigInteger &out)
 	return false;
 }
 // FUNCTION: WON 0x007d8c50
+// Checks the signature equation a == (g^b * y^a + M) mod q with a non-zero; false otherwise
 bool ElGamal::BogusVerify(const BigInteger &M, const BigInteger &a, const BigInteger &b) const 
 {
 
@@ -303,8 +310,8 @@ bool ElGamal::BogusVerify(const BigInteger &M, const BigInteger &a, const BigInt
 //		BigInteger a1 = a.mod(q);
 //		BigInteger b1 = b.mod(q);
 		
-		BigInteger gbq = g.modExp(b,p,recip,nb);
-		BigInteger yaq = y.modExp(a,p,recip,nb);
+		BigInteger gbq = this->g.modExp(b,this->p,this->recip,this->nb);
+		BigInteger yaq = this->y.modExp(a,this->p,this->recip,this->nb);
 
 	/*
 		cout << "p = " << p << endl;
@@ -318,11 +325,11 @@ bool ElGamal::BogusVerify(const BigInteger &M, const BigInteger &a, const BigInt
 		
 		BigInteger result;
 
-		result = gbq.modMulRecip(yaq,p,recip,nb);
+		result = gbq.modMulRecip(yaq,this->p,this->recip,this->nb);
 //		result = gbq.mul(yaq);
 		result = result.add(M);
 //		result = result.mod(p);
-		result = result.mod(q);
+		result = result.mod(this->q);
 		
 		if(a.cmp(result)==0)
 			return true;
@@ -338,7 +345,7 @@ bool ElGamal::BogusVerify(const BigInteger &M, const BigInteger &a, const BigInt
 
 
 using namespace std;
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 BigInteger ElGamal::GetRandBetween(Random &rng, const BigInteger &min, const BigInteger &max)
 {
 	BigInteger range = max.sub(min);
@@ -355,7 +362,7 @@ BigInteger ElGamal::GetRandBetween(Random &rng, const BigInteger &min, const Big
 	return anInt;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 bool ElGamal::BogusSign(const BigInteger &M, BigInteger ab[]) const
 {
 	try 
@@ -365,20 +372,20 @@ bool ElGamal::BogusSign(const BigInteger &M, BigInteger ab[]) const
 		
 		do
 		{
-			k = GetRandBetween(mRandom, TWO, q.sub(TWO));			
-			ab[0] = g.modExp(k,p);
+			k = ElGamal::GetRandBetween(this->mRandom, TWO, this->q.sub(TWO));			
+			ab[0] = this->g.modExp(k,this->p);
 			
 			
 			ab[0] = ab[0].add(M);
 			
-			ab[0] = ab[0].mod(p);
+			ab[0] = ab[0].mod(this->p);
 			
-			ab[0] = ab[0].mod(q);
+			ab[0] = ab[0].mod(this->q);
 			
-			ab[1] = k.sub(x.mul(ab[0]));
+			ab[1] = k.sub(this->x.mul(ab[0]));
 
 			
-			ab[1] = ab[1].mod(q);
+			ab[1] = ab[1].mod(this->q);
 			
 			
 			//r = (gpc.Exponentiate(k) + m) % q;

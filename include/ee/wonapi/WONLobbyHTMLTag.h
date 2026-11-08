@@ -1,7 +1,7 @@
 #ifndef EE_WONAPI_WONLOBBYHTMLTAG_H
 #define EE_WONAPI_WONLOBBYHTMLTAG_H
 #include "ee/wonapi/WONStringCompare.h"
-#include "ee/wonapi/WONLobbyAnimation.h" //complete genuine owner required by inline HTMLImageTag cleanup
+#include "ee/wonapi/WONLobbyAnimation.h" // full definition needed by the inline HTMLImageTag cleanup
 
 
 
@@ -91,7 +91,7 @@ enum HTMLInputType
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// HTMLListType actual enum shared from WONLobbyGUI.h.
+// HTMLListType is defined in WONLobbyGUI.h.
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -109,7 +109,7 @@ class HTMLTagAttributes
 {
 protected:
     typedef std::map<GUIString,GUIString,StringLessNoCase> AttributeMap;
-    AttributeMap mAttributeMap; //complete0c map; native34b1f0 narrows both GUIString keys then StringCompareNoCase
+    AttributeMap mAttributeMap; // 0x0c-byte map; 0x0074b1f0 narrows both GUIString keys, then compares them with StringCompareNoCase
 public:
 	void Clear();
 	void AddAttribute(const GUIString &theKey, const GUIString &theValue);
@@ -141,19 +141,19 @@ protected:
 
 public:
 	HTMLTag(HTMLTagType theType = HTMLTagType_None, unsigned short theFlags = 0);
-	HTMLTagType GetType() { return mType; }
+	HTMLTagType GetType() { return this->mType; }
 	
-	bool FlagSet(unsigned short theFlags) { return mFlags&theFlags?true:false; }
-	void SetFlags(unsigned short theFlags, bool on) { if(on) mFlags |= theFlags; else mFlags &= ~theFlags; }
+	bool FlagSet(unsigned short theFlags) { return this->mFlags&theFlags?true:false; }
+	void SetFlags(unsigned short theFlags, bool on) { if(on) this->mFlags |= theFlags; else this->mFlags &= ~theFlags; }
 
-	bool IsStart() { return !IsEnd(); }
-	bool IsEnd() { return FlagSet(HTMLTagFlag_IsEndTag); }
+	bool IsStart() { return !this->IsEnd(); }
+	bool IsEnd() { return this->FlagSet(HTMLTagFlag_IsEndTag); }
 
-	bool InducesLineBreak() { return FlagSet(HTMLTagFlag_InducesLineBreak | HTMLTagFlag_IsBlockElement); }
-	bool IsBlockElement() { return FlagSet(HTMLTagFlag_IsBlockElement); }
+	bool InducesLineBreak() { return this->FlagSet(HTMLTagFlag_InducesLineBreak | HTMLTagFlag_IsBlockElement); }
+	bool IsBlockElement() { return this->FlagSet(HTMLTagFlag_IsBlockElement); }
 	
-	void SetLineNum(int theLineNum) { mLineNum = theLineNum; }
-	int GetLineNum() { return mLineNum; }
+	void SetLineNum(int theLineNum) { this->mLineNum = theLineNum; }
+	int GetLineNum() { return this->mLineNum; }
 
 	virtual void ParseAttributes(HTMLTagAttributes &theAttributes) { }
 };
@@ -291,7 +291,7 @@ public:
 	int mWidth, mHeight;
 	int mBorder;
 
-	HTMLImageTag() : HTMLTag(HTMLTagType_Image) { } // genuine SDK inline; complete40 owner and member construction proved by3422e0
+	HTMLImageTag() : HTMLTag(HTMLTagType_Image) { } // inline; 0x40 bytes, members constructed as at 0x007422e0
 	virtual void ParseAttributes(HTMLTagAttributes &theAttributes);
 };
 
@@ -400,7 +400,7 @@ protected:
 public:
 	HTMLTextTag(const GUIString &theText) : HTMLTag(HTMLTagType_Text), mText(theText) { }
 
-	const GUIString& GetText() { return mText; }
+	const GUIString& GetText() { return this->mText; }
 };
 typedef SmartPtr<HTMLTextTag> HTMLTextTagPtr;
 

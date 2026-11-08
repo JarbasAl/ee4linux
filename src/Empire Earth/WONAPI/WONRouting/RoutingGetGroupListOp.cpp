@@ -1,4 +1,4 @@
-// Native group/member list request and response behavior.
+// WONAPI routing op that fetches the group list (optionally with each group's members)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,54 +8,58 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x6c5980
-void RoutingGetGroupListOp::Virtual0C()
+// Clears the group map and asks the routing server for the groups under a parent, with the fields the flags select
+void RoutingGetGroupListOp::SendRequest()
 {
-    mGroupMap.clear();
-    InitSendMsg(26);
-    mSendMsg.AppendShort(mFlags);
-    mSendMsg.AppendShort(mParentGroupId);
-    SendMsg();
-    AddOp();
+    this->mGroupMap.clear();
+    this->InitSendMsg(26);
+    this->mSendMsg.AppendShort(this->mFlags);
+    this->mSendMsg.AppendShort(this->mParentGroupId);
+    this->SendMsg();
+    this->AddOp();
 }
 
 // FUNCTION: WON 0x6c5bd0
-WONStatus RoutingGetGroupListOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
+// Accepts the group list reply, parses it into the group map on success and returns its status
+WONStatus RoutingGetGroupListOp::HandleReply(unsigned char inMsgType, ReadBuffer& inMsg)
 {
-    if (inMsgType != 25) return (WONStatus)100104;
+    if (inMsgType != 25) return (WONStatus)WS_RoutingOp_DontWantReply;
     WONStatus status = inMsg.ReadShort();
-    if (status == 0) ParseReplyExceptForStatus(inMsg);
+    if (status == 0) this->ParseReplyExceptForStatus(inMsg);
     return status;
 }
 
 // FUNCTION: WON 0x6c5c10
+// Rebuilds the group map from a group list body, reading only the fields the reply's flags include
 void RoutingGetGroupListOp::ParseReplyExceptForStatus(ReadBuffer& inMsg)
 {
-    mGroupMap.clear();
-    mFlags = inMsg.ReadShort();
+    this->mGroupMap.clear();
+    this->mFlags = inMsg.ReadShort();
     int count = (unsigned short)inMsg.ReadShort();
     for (int i = 0; i < count; ++i) {
         unsigned short length = inMsg.ReadShort();
         long start = inMsg.pos();
-        RoutingGroupInfoPtr group = GetNewGroupInfo();
+        RoutingGroupInfoPtr group = this->GetNewGroupInfo();
         group->mId = inMsg.ReadShort();
-        if (IncludeName()) inMsg.ReadWString(group->mName, 2);
-        if (IncludeCaptain()) group->mCaptainId = inMsg.ReadShort();
-        if (IncludeMaxPlayers()) group->mMaxClients = inMsg.ReadShort();
-        if (IncludeFlags()) group->mFlags = inMsg.ReadLong();
-        if (IncludeAsyncFlags()) group->mAsyncFlags = inMsg.ReadLong();
-        if (IncludeObserverCount()) group->mObserverCount = inMsg.ReadShort();
-        if (IncludeMemberCount()) group->mMaxPlayers = inMsg.ReadShort(); // canonical2a spelling, actual membercount
-        if (IncludeMembers()) {
+        if (this->IncludeName()) inMsg.ReadWString(group->mName, 2);
+        if (this->IncludeCaptain()) group->mCaptainId = inMsg.ReadShort();
+        if (this->IncludeMaxPlayers()) group->mMaxClients = inMsg.ReadShort();
+        if (this->IncludeFlags()) group->mFlags = inMsg.ReadLong();
+        if (this->IncludeAsyncFlags()) group->mAsyncFlags = inMsg.ReadLong();
+        if (this->IncludeObserverCount()) group->mObserverCount = inMsg.ReadShort();
+        if (this->IncludeMemberCount()) group->mMaxPlayers = inMsg.ReadShort(); // holds the member count
+        if (this->IncludeMembers()) {
             for (int j = 0; j < group->mMaxPlayers; ++j) {
-                RoutingMemberInfoPtr member = GetNewMemberInfo();
+                RoutingMemberInfoPtr member = this->GetNewMemberInfo();
                 member->mClientId = inMsg.ReadShort();
-                member->mFlags = inMsg.ReadByte(); // BYTE+a type gate
+                member->mFlags = inMsg.ReadByte(); // read as a byte
                 group->mMembers[member->mClientId] = member;
             }
         }
-        mGroupMap[group->mId] = group;
+        this->mGroupMap[group->mId] = group;
         inMsg.ReadBytes(length - inMsg.pos() + start);
     }
 }
@@ -63,23 +67,26 @@ void RoutingGetGroupListOp::ParseReplyExceptForStatus(ReadBuffer& inMsg)
 
 namespace WONAPI {
 // FUNCTION: WON 0x006c5a60
+// Returns a new member record, from the connection's factory when the op has a connection
 RoutingMemberInfoPtr RoutingGetGroupListOp::GetNewMemberInfo()
 {
-    if(mConnection.get()!=NULL) return RoutingOp::GetNewMemberInfo();
+    if(this->mConnection.get()!=NULL) return RoutingOp::GetNewMemberInfo();
     return new RoutingMemberInfo;
 }
 // FUNCTION: WON 0x006c5ad0
+// Returns a new group record, from the connection's factory when the op has a connection
 RoutingGroupInfoPtr RoutingGetGroupListOp::GetNewGroupInfo()
 {
-    if(mConnection.get()!=NULL) return RoutingOp::GetNewGroupInfo();
+    if(this->mConnection.get()!=NULL) return RoutingOp::GetNewGroupInfo();
     return new RoutingGroupInfo;
 }
 // FUNCTION: WON 0x006c5f70
+// Parses a group list from a raw buffer into the group map; returns false when the buffer runs short
 bool RoutingGetGroupListOp::ParseGroupListObj(const void* data,unsigned long size)
 {
     try {
         ReadBuffer msg(data,size);
-        ParseReplyExceptForStatus(msg);
+        this->ParseReplyExceptForStatus(msg);
         return true;
     } catch(ReadBufferException&) {}
     return false;

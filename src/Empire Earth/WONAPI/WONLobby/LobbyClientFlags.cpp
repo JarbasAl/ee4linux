@@ -1,4 +1,4 @@
-// Original-backed config-gated client flag transition/event; no partial private object allocation.
+// Blocks or ignores players in the lobby lists
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,25 +14,27 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyConfig.h"
 namespace WONAPI {
-// Existing ordinary persistence function, native35d100/cdecl.
-void LobbyFn35D100(const GUIString&,bool);
+// Saves a player name's ignored state in the persistent settings (0x75d100)
+void LobbySetNameIgnored(const GUIString&,bool);
 // FUNCTION: WON 0x0075b850
-void LobbyFn35B850(LobbyClient* client,bool flag,unsigned int roomSpec)
+// Blocks or unblocks a player and refreshes the player lists; does nothing unless the config's mCDKeyCheck is set
+void LobbySetClientBlocked(LobbyClient* client,bool inBlocked,unsigned int roomSpec)
 {
     WONLobbyPrv* data=gLobbyData.get();
     if(data==NULL || !data->mConfig->mCDKeyCheck) return;
-    if(client->GetB23()==flag) return;
-    client->mB23=flag;
-    LobbyFn359100(new ClientChangedEvent(client,roomSpec,2),true);
+    if(client->IsBlocked()==inBlocked) return;
+    client->mBlocked=inBlocked;
+    LobbyBroadcastEvent(new ClientChangedEvent(client,roomSpec,2),true);
 }
 // FUNCTION: WON 0x0075b7b0
-void LobbyFn35B7B0(LobbyClient* client,bool flag,unsigned int roomSpec)
+// Ignores or unignores a player, remembers the name in the settings and refreshes the player lists
+void LobbySetClientIgnored(LobbyClient* client,bool inIgnored,unsigned int roomSpec)
 {
     if(gLobbyData.get()==NULL) return;
-    if(client->GetB22()==flag) return;
-    client->mB22=flag;
-    LobbyFn35D100(client->mName,flag);
-    LobbyFn359100(new ClientChangedEvent(client,roomSpec,2),true);
+    if(client->IsIgnored()==inIgnored) return;
+    client->mIgnored=inIgnored;
+    LobbySetNameIgnored(client->mName,inIgnored);
+    LobbyBroadcastEvent(new ClientChangedEvent(client,roomSpec,2),true);
 }
 
 }

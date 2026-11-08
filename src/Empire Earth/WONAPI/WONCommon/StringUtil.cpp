@@ -1,6 +1,5 @@
-// C:\EEX\Empire Earth\WONAPI\WONCommon\StringUtil.cpp (RECONSTRUCTION).
-// Original conversion family; exact historical TU grouping provisional. No new object layout.
-// Source-only, helpers/library support and other near code remain original-carved; no runtime authority.
+// C:\EEX\Empire Earth\WONAPI\WONCommon\StringUtil.cpp
+// Narrow/wide string conversion and case helpers (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -16,7 +15,7 @@
 #include "ee/wonapi/WONLobbyConfig.h"
 #include "LostDebug.h"
 namespace WONAPI {
-// Actual565ef0 zero-filled cache, data0quota. No invalidation/thread policy invented.
+// RVA 565ef0: cached default code page, 0 until first computed
 static int gStringUtilDefaultCodePage=0;
 std::string StringToUpperCase(const std::string& theStr)
 {
@@ -28,7 +27,7 @@ std::string StringToUpperCase(const std::string& theStr)
 	return aNewStr;
 }
 // FUNCTION: WON 0x006a63e0
-// the code page is the CRT LC_CTYPE locale's suffix (not GetACP/GetLocaleInfo)
+// Returns the code page named by the CRT LC_CTYPE locale's suffix (not GetACP), 0 when there is none
 static int StringUtilLocaleCodePage()
 {
     const char* locale=setlocale(LC_CTYPE,NULL);
@@ -37,13 +36,13 @@ static int StringUtilLocaleCodePage()
     if(dot==NULL) return 0;
     return atoi(dot+1);
 }
-// Actual2a6570/20, lazy cache helper0; zero result causes retry on the next call.
+// 0x6a6570: caches the locale code page; a 0 result is retried on the next call
 static int StringUtilDefaultCodePage()
 {
     if(gStringUtilDefaultCodePage==0) gStringUtilDefaultCodePage=StringUtilLocaleCodePage();
     return gStringUtilDefaultCodePage;
 }
-// Actual2a6250/48, native fixed-capacity ACP helper0. Initial terminator/failure behavior deliberate.
+// 0x6a6250: converts at most count characters with the ANSI code page into a fixed buffer
 static wchar_t* StringUtilToWideBuffer(wchar_t* out,const char* in,int count)
 {
     if(out==NULL) return NULL;
@@ -51,7 +50,7 @@ static wchar_t* StringUtilToWideBuffer(wchar_t* out,const char* in,int count)
     if(in!=NULL) MultiByteToWideChar(0,0,in,count,out,count);
     return out;
 }
-// Actual2a63a0/50, native fixed-capacity ACP helper0, not a byte truncation loop.
+// 0x6a63a0: converts at most count characters to the ANSI code page into a fixed buffer
 static char* StringUtilToNarrowBuffer(char* out,const wchar_t* in,int count)
 {
     if(out==NULL) return NULL;
@@ -60,7 +59,8 @@ static char* StringUtilToNarrowBuffer(char* out,const wchar_t* in,int count)
     return out;
 }
 // FUNCTION: WON 0x006a6130
-// Original2a6130/286. Raw array deliberately unguarded across output string construction.
+// Converts a string to wide with the ANSI code page, stopping at the first NUL
+// The raw buffer is not guarded while the result string is built
 std::wstring StringToWString(const std::string& in)
 {
     int length=in.length();
@@ -73,7 +73,8 @@ std::wstring StringToWString(const std::string& in)
     return result;
 }
 // FUNCTION: WON 0x006a6280
-// Original2a6280/287; fixed-size ACP conversion can fail/partially mutate, result code ignored as original.
+// Converts a wide string to narrow with the ANSI code page into a buffer of one byte per character
+// The fixed-size conversion can fail or stop part way; the original ignores the result
 std::string WStringToString(const std::wstring& in)
 {
     unsigned int length=in.length();
@@ -86,7 +87,7 @@ std::string WStringToString(const std::wstring& in)
     return result;
 }
 // FUNCTION: WON 0x006a6410
-// Original2a6410/352. Length-based conversion preserves embedded NULs, unlike the one-argument overload.
+// Converts a wide string to narrow with the given code page (negative: the locale's), keeping embedded NULs
 std::string WStringToString(const std::wstring& in,int codePage)
 {
     if(codePage<0) codePage=StringUtilDefaultCodePage();
@@ -100,7 +101,8 @@ std::string WStringToString(const std::wstring& in,int codePage)
     return result;
 }
 // FUNCTION: WON 0x006a6590
-// Original2a6590/350. Both API calls occur even for zero/failure output length.
+// Converts a string to wide with the given code page (negative: the locale's), keeping embedded NULs
+// Both API calls happen even when the output length is 0
 std::wstring StringToWString(const std::string& in,int codePage)
 {
     if(codePage<0) codePage=StringUtilDefaultCodePage();
@@ -117,10 +119,10 @@ std::wstring StringToWString(const std::string& in,int codePage)
 
 #include <ctype.h>
 #include <wctype.h>
-// Next original StringUtil algorithms; no new standard-library implementation.
 namespace WONAPI {
-// Native2a66f0/342: signed-char CRT input and counted length, not NUL traversal.
+// tolower gets the signed char; the loop runs over the counted length, not to a NUL
 // FUNCTION: WON 0x6a66f0
+// Returns a lower-case copy of the string
 std::string StringToLowerCase(const std::string& text)
 {
     std::string result;
@@ -129,8 +131,8 @@ std::string StringToLowerCase(const std::string& text)
         result+=static_cast<char>(tolower(text[i]));
     return result;
 }
-// Native2a6850/323: original upper-case conversion only; no invented lower variant.
 // FUNCTION: WON 0x6a6850
+// Returns an upper-case copy of the wide string
 std::wstring WStringToUpperCase(const std::wstring& text)
 {
     std::wstring result;
@@ -139,15 +141,17 @@ std::wstring WStringToUpperCase(const std::wstring& text)
         result+=static_cast<wchar_t>(towupper(text[i]));
     return result;
 }
-// Native2a69a0/268: both indexed accesses are mutable and preserve COW/freeze behavior.
+// Both indexed accesses are non-const (each unshares the copy-on-write string)
 // FUNCTION: WON 0x6a69a0
+// Upper-cases the string in place
 void StringToUpperCaseInPlace(std::string& text)
 {
     for(std::string::size_type i=0;i<text.length();++i)
         text[i]=static_cast<char>(toupper(text[i]));
 }
-// Native2a6ab0/176: mismatch branch deliberately calls toupper again.
+// The mismatch branch calls toupper again
 // FUNCTION: WON 0x6a6ab0
+// Compares two strings ignoring case; returns -1, 0 or 1, the shorter string first on a common prefix
 int StringCompareNoCase(const std::string& first,const std::string& second)
 {
     std::string::const_iterator a=first.begin();
@@ -162,8 +166,9 @@ int StringCompareNoCase(const std::string& first,const std::string& second)
         return 0;
     return first.length()<second.length()?-1:1;
 }
-// Native2a6b60/163: towupper results compared at actual unsigned16-bit width.
+// towupper results are compared as 16-bit values
 // FUNCTION: WON 0x6a6b60
+// Compares two wide strings ignoring case; returns -1, 0 or 1, the shorter string first on a common prefix
 int WStringCompareNoCase(const std::wstring& first,const std::wstring& second)
 {
     std::wstring::const_iterator a=first.begin();
@@ -181,7 +186,7 @@ int WStringCompareNoCase(const std::wstring& first,const std::wstring& second)
 }
 
 namespace WONAPI {
-// SUPPORT-ONLY: genuine SDK CPP WONAPI::GetEmptyStr; actual native69B, zero primary.
+// WON SDK GetEmptyStr (emitted from the list below)
 const std::string& GetEmptyStr()
 {
     static std::string anEmptyStr;
@@ -191,6 +196,7 @@ const std::string& GetEmptyStr()
 
 namespace WONAPI {
 // FUNCTION: WON 0x006a6090
+// Returns a shared empty wide string
 const std::wstring& GetEmptyWStr()
 {
 	static std::wstring anEmptyWStr;
@@ -199,7 +205,7 @@ const std::wstring& GetEmptyWStr()
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK case transformation loops; no Native identity claimed.
+// No original address identified: WON SDK case conversion loops
 
 std::wstring WStringToLowerCase(const std::wstring& theStr)
 {

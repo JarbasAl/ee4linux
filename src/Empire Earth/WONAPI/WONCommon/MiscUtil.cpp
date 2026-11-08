@@ -1,20 +1,20 @@
-// Native browser registry/process utilities. Source only; no runtime execution authority.
+// Browser launch helpers: find the default browser in the registry and start it
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
 #include <string.h>
+#include "ee/wonapi/WONCommonMiscUtil.h"
 namespace WONAPI {
-typedef void (*BrowseCallback)(const std::string&,void*);
 
 BrowseCallback gPreBrowseCallback = NULL;
 void* gPreBrowseData = NULL;
-bool GetBrowserCommandLineFromRegistry(std::string& browser);
 void SetPreBrowseCallback(BrowseCallback pCallback, void* pData)
 {
     gPreBrowseCallback = pCallback;
     gPreBrowseData = pData;
 }
 // FUNCTION: WON 0x006a30e0
+// Opens the URL in the default browser after the pre-browse callback; returns whether the process started
 bool Browse(const std::string& url)
 {
     std::string browser;
@@ -36,6 +36,7 @@ bool Browse(const std::string& url)
     return result==TRUE;
 }
 // FUNCTION: WON 0x006a32b0
+// Reads the .html open command from the registry and extracts the browser's executable path
 bool GetBrowserCommandLineFromRegistry(std::string& browser)
 {
     char value[260];
@@ -45,7 +46,7 @@ bool GetBrowserCommandLineFromRegistry(std::string& browser)
     browser="";
     if(RegOpenKeyExA(HKEY_CLASSES_ROOT,".html",0,KEY_QUERY_VALUE,&key)!=ERROR_SUCCESS)
         return false;
-    LONG status=RegQueryValueExA(key,"",NULL,NULL,(BYTE*)value,&length);
+    LONG status=RegQueryValueExA(key,"",NULL,NULL,reinterpret_cast<BYTE*>(value),&length);
     RegCloseKey(key);
     if(status!=ERROR_SUCCESS) return false;
     std::string command=value;
@@ -53,7 +54,7 @@ bool GetBrowserCommandLineFromRegistry(std::string& browser)
     if(RegOpenKeyExA(HKEY_CLASSES_ROOT,command.c_str(),0,KEY_QUERY_VALUE,&key)!=ERROR_SUCCESS)
         return false;
     length=260;
-    status=RegQueryValueExA(key,"",NULL,NULL,(BYTE*)value,&length);
+    status=RegQueryValueExA(key,"",NULL,NULL,reinterpret_cast<BYTE*>(value),&length);
     RegCloseKey(key);
     if(status!=ERROR_SUCCESS) return false;
     command=value;
@@ -82,7 +83,7 @@ bool GetBrowserCommandLineFromRegistry(std::string& browser)
 }
 }
 
-// Genuine same-library SDK implementations. Native entries remain unidentified.
+// No original address identified: WON SDK SierraUp launcher
 namespace WONAPI {
 DWORD LaunchSierraUp(const char* thePath)
 {

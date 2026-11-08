@@ -3,57 +3,57 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyRoomServer.h"
 namespace WONAPI {
-// Complete native RectangleComponent38, genuine SDK two-color scalar owner.
+// RectangleComponent (0x38 bytes): solid and outline colours.
 class RectangleComponent : public Component {
-    int mSolidColor; //30, genuine SDK own scalar
-    int mOutlineColor; //34, genuine SDK own scalar
+    int mSolidColor; // offset 0x30
+    int mOutlineColor; // offset 0x34
 public:
-    RectangleComponent(); //306840 actual default ctor, real Component base
-    void SetSolidColor(int); //306870 actual external setter
-    void SetOutlineColor(int); //306880 actual external setter
+    RectangleComponent(); // at 0x00706840
+    void SetSolidColor(int); // at 0x00706870
+    void SetOutlineColor(int); // at 0x00706880
     virtual void Paint(Graphics&); //original external override
 };
 class RectangleComponentConfig : public ComponentConfig {
 public:
-    static ComponentConfig* CfgFactory(); //39b090 genuine SDK static API, original external provider only
-    static Component* CompFactory(); //39b030 genuine SDK static API, original external provider only
+    static ComponentConfig* CfgFactory(); // at 0x0079b090
+    static Component* CompFactory(); // at 0x0079b030
     virtual bool Virtual24(const std::string&);
-    virtual void Virtual34(Component*); //original external SetComponent
+    virtual void SetComponent(Component*); //original external SetComponent
     RectangleComponent* mRectangleComponent; //78 borrowed
 };
 class RectangleComponent3DConfig : public ComponentConfig {
 public:
-    static ComponentConfig* CfgFactory(); //39b140 genuine SDK static API, original external provider only
-    static Component* CompFactory(); //39b0e0 genuine SDK static API, original external provider only
+    static ComponentConfig* CfgFactory(); // at 0x0079b140
+    static Component* CompFactory(); // at 0x0079b0e0
     virtual bool Virtual24(const std::string&);
-    virtual void Virtual34(Component*); //original external SetComponent
+    virtual void SetComponent(Component*); //original external SetComponent
     RectangleComponent3D* mRectangleComponent3D; //78 borrowed
 };
 class ImageComponentConfig : public ComponentConfig {
 public:
-    static ComponentConfig* CfgFactory(); //39b1f0 genuine SDK static API, original external provider only
-    static Component* CompFactory(); //39b190 genuine SDK static API, original external provider only
+    static ComponentConfig* CfgFactory(); // at 0x0079b1f0
+    static Component* CompFactory(); // at 0x0079b190
     virtual bool Virtual24(const std::string&);
-    virtual void Virtual34(Component*); //original external SetComponent
+    virtual void SetComponent(Component*); //original external SetComponent
     ImageComponent* mImageComponent; //78 borrowed
 };
-// Genuine SDK borrowed AnimationComponentConfig7c: RTTI4deb80/VT452a94,
-// factory39b2a0 new7c -> external ComponentConfig3825b0 -> ownVT. No construction authority.
+// AnimationComponentConfig (0x7c bytes), RTTI 0x008deb80, vtable 0x00852a94: the factory 0x0079b2a0
+// allocates 0x7c bytes, calls ComponentConfig's constructor (0x007825b0), then sets its own vtable.
 class AnimationComponent;
 class AnimationComponentConfig : public ComponentConfig {
 public:
-    virtual bool Virtual24(const std::string&); //394e10 actual18B external base-dispatch/bool normalization
-    virtual void Virtual34(Component*); //38f8d0 actual22B shared typed78 store; external
-    static ComponentConfig* CfgFactory(); //39b2a0 genuine SDK, original external only
-    static Component* CompFactory(); //39b240 genuine SDK, original external only
-    AnimationComponent* mAnimationComponent; //78 borrowed; complete7c; implicit lifetime remains original
+    virtual bool Virtual24(const std::string&); // at 0x00794e10: calls the base and normalizes the bool
+    virtual void SetComponent(Component*); // at 0x0078f8d0 (shared body; stores the typed pointer at +0x78)
+    static ComponentConfig* CfgFactory(); // at 0x0079b2a0
+    static Component* CompFactory(); // at 0x0079b240
+    AnimationComponent* mAnimationComponent; // offset 0x78, borrowed; class size 0x7c; implicit destructor
 };
 class ScreenContainerConfig : public ContainerConfig {
 public:
-    static ComponentConfig* CfgFactory(); //39b350 genuine SDK static API, original external provider only
-    static Component* CompFactory(); //39b2f0 genuine SDK static API, original external provider only
+    static ComponentConfig* CfgFactory(); // at 0x0079b350
+    static Component* CompFactory(); // at 0x0079b2f0
     virtual bool Virtual24(const std::string&);
-    virtual void Virtual34(Component*); //original external SetComponent
+    virtual void SetComponent(Component*); //original external SetComponent
     ScreenContainer* mScreenContainer; //98 borrowed
 };
 }

@@ -1,4 +1,4 @@
-// Complete ImageDecoder8 and MultiImageDecoder34 target owner contracts.
+// ImageDecoder (8 bytes) and MultiImageDecoder (0x34 bytes).
 #ifndef EE_WONAPI_WONLOBBYIMAGEDECODER_H
 #define EE_WONAPI_WONLOBBYIMAGEDECODER_H
 #include <set>
@@ -17,11 +17,11 @@ class Animation;
 class ImageAttributes {
 public:
     int mWidth,mHeight;
-    ImageAttributes(); //3478f0 support0
+    ImageAttributes(); // at 0x007478f0
 };
 class ImageDecoder {
 protected:
-    FileReader* mFileReader; //04; native complete08, no RefCount base
+    FileReader* mFileReader; // offset 0x04; class size 0x08, no RefCount base
     virtual SmartPtr<NativeImage> DoDecode(DisplayContext*); //slot00 347940
     virtual SmartPtr<RawImage> DoDecodeRaw()=0; //04
     virtual bool DoGetAttrib(ImageAttributes&)=0; //08
@@ -29,7 +29,7 @@ protected:
     SmartPtr<RawImage32> CreateRawImage32(int,int);
 public:
     ImageDecoder(); //347900
-    virtual ~ImageDecoder(); //slot0c, normal347930/deleting347910
+    virtual ~ImageDecoder(); // slot 0x0c; complete 0x00747930, deleting 0x00747910
     SmartPtr<NativeImage> Decode(DisplayContext*,const char*); //3479f0
     SmartPtr<NativeImage> Decode(DisplayContext*,const void*,unsigned long);
     SmartPtr<NativeImage> Decode(DisplayContext*,FileReader&); //347a70
@@ -39,7 +39,7 @@ public:
     bool GetImageAttributes(const char*,ImageAttributes&); //347b70
     bool GetImageAttributes(const void*,unsigned long,ImageAttributes&);
     bool GetImageAttributes(FileReader&,ImageAttributes&); //347be0
-    virtual SmartPtr<Animation> GetAnimation(); //slot10 32b9d0 support0
+    virtual SmartPtr<Animation> GetAnimation(); // slot 0x10, at 0x0072b9d0
     virtual ImageDecoder* Duplicate()=0; //slot14
 };
 class MultiImageDecoder : public ImageDecoder {
@@ -49,15 +49,15 @@ protected:
     DecoderSet mDecoderSet; //08..13, sole ownership set
     DecoderMap mDecoderMap; //14..1f, borrowed decoder pointers
     SmartPtr<Animation> mAnimation; //20
-    std::string mCurExtension; //24..33, complete34
+    std::string mCurExtension; // offsets 0x24..0x33; class size 0x34
     virtual SmartPtr<NativeImage> DoDecode(DisplayContext*); //00 3484e0
     virtual SmartPtr<RawImage> DoDecodeRaw(); //04 348670
     virtual bool DoGetAttrib(ImageAttributes&); //08 3487f0
 public:
     MultiImageDecoder(); //347c50
-    virtual ~MultiImageDecoder(); //0c, normal347eb0/deleting347d20
-    void AddDecoder(ImageDecoder*,const char*); //348080 takes ownership
-    void SetCurExtension(const char* s) { mCurExtension=s; } //actual SDK inline helper0
+    virtual ~MultiImageDecoder(); // slot 0x0c; complete 0x00747eb0, deleting 0x00747d20
+    void AddDecoder(ImageDecoder*,const char*); // at 0x00748080; takes ownership
+    void SetCurExtension(const char* s) { this->mCurExtension=s; } // inline
     void SetFileName(const char*); //348270
     SmartPtr<NativeImage> Decode(DisplayContext*,const char*); //348450
     SmartPtr<RawImage> DecodeRaw(const char*); //348490
@@ -71,32 +71,32 @@ protected:
     virtual SmartPtr<RawImage> DoDecodeRaw(); //04 336720
     virtual bool DoGetAttrib(ImageAttributes&); //08 336690
 public:
-    virtual ImageDecoder* Duplicate(); //14 32b9f0, full08 allocation
+    virtual ImageDecoder* Duplicate(); // slot 0x14, at 0x0072b9f0 (allocates 8 bytes)
 };
 class WIMDecoder : public ImageDecoder {
 protected:
     virtual SmartPtr<RawImage> DoDecodeRaw(); //04 34a600
     virtual bool DoGetAttrib(ImageAttributes&); //08 34a560
 public:
-    virtual ImageDecoder* Duplicate(); //14 32ba40, full08 allocation
+    virtual ImageDecoder* Duplicate(); // slot 0x14, at 0x0072ba40 (allocates 8 bytes)
 };
-// Actual fieldless PNG/JPG subclasses: completeImageDecoder08, true six slots.
-// Native RTTI/VT4547c8 and4547e4; inheritedslot00/0c/10 unchanged, no new fields.
+// Fieldless PNG/JPG decoders: ImageDecoder (8 bytes), six slots; vtables 0x008547c8 and 0x008547e4.
+// The inherited slots 0x00/0x0c/0x10 are unchanged.
 class PNGDecoder : public ImageDecoder {
 protected:
-    virtual SmartPtr<RawImage> DoDecodeRaw(); //04 native3d2660
-    virtual bool DoGetAttrib(ImageAttributes&); //08 native3d2550
+    virtual SmartPtr<RawImage> DoDecodeRaw(); // slot 0x04, 0x007d2660
+    virtual bool DoGetAttrib(ImageAttributes&); // slot 0x08, 0x007d2550
 public:
-    static void Add(MultiImageDecoder*); //3d24e0, true107B body
-    virtual ImageDecoder* Duplicate(); //14 native3d29d0
+    static void Add(MultiImageDecoder*); // at 0x007d24e0
+    virtual ImageDecoder* Duplicate(); // slot 0x14, 0x007d29d0
 };
 class JPGDecoder : public ImageDecoder {
 protected:
-    virtual SmartPtr<RawImage> DoDecodeRaw(); //04 native3d2cd0
-    virtual bool DoGetAttrib(ImageAttributes&); //08 native3d2bf0
+    virtual SmartPtr<RawImage> DoDecodeRaw(); // slot 0x04, 0x007d2cd0
+    virtual bool DoGetAttrib(ImageAttributes&); // slot 0x08, 0x007d2bf0
 public:
     static void Add(MultiImageDecoder*); //3d2a20
-    virtual ImageDecoder* Duplicate(); //14 native3d2f50
+    virtual ImageDecoder* Duplicate(); // slot 0x14, 0x007d2f50
 };
 }
 #endif

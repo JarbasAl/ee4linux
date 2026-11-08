@@ -5,59 +5,59 @@ namespace WONAPI {
 class JoinedRoomEvent;
 class LeftRoomEvent;
 class ClientChangedEvent;
-// Full30: actual new30/ctor3ca6a0, TextListItem28 plus client28/sort2c/show2d.
+// UserListItem (0x30 bytes, constructor 0x7ca6a0): one user in the room's user list.
 class UserListItem : public TextListItem {
 public:
     UserListItem();
-    virtual void Virtual04(Graphics&,ListArea*);
-    virtual void Virtual08(ListArea*);
-    virtual int Virtual10(const ListItem*,ListArea*) const;
-    SmartPtr<LobbyClient> mClient; //28
-    signed char mSortKey; //2c: actual comparison uses MOVSX
-    bool mShowSeparator; //2d; ctor true, visibility updates strict0/1
+    virtual void Paint(Graphics&,ListArea*);
+    virtual void CalcDimensions(ListArea*);
+    virtual int Compare(const ListItem*,ListArea*) const;
+    SmartPtr<LobbyClient> mClient; // 0x28
+    signed char mSortKey; // 0x2c, signed (compared sign-extended)
+    bool mShowSeparator; // 0x2d; true from the constructor
 };
-// Fulla0 member ownership matches original ctor3ca8f0/cleanup3ca960.
+// UserListCtrl (0xa0 bytes, constructor 0x7ca8f0): the room's user list with Whisper and Ignore buttons.
 class UserListCtrl : public Container {
 public:
     UserListCtrl();
-    virtual ~UserListCtrl(); // normal3ca960 actual own-vptr store3ca97f,264B
-    virtual void InitComponent(ComponentInit&); //3cadf0
-    virtual void HandleComponentEvent(ComponentEvent*); //3cb4d0
-    void UpdateItem(LobbyClient*,UserListItem*); //3caa70
-    void RefreshSeparators(); //3cacf0
-    UserListItem* FindItem(LobbyClient*); //3cb0e0
-    UserListItem* GetSelectedItem(); //3cb130
-    LobbyClient* GetSelectedClient(); //3cb140
-    void UpdateButtons(); //3cb160
-    void JoinedRoom(JoinedRoomEvent*); //3cb200
-    void LeftRoom(LeftRoomEvent*); //3cb360
-    void ClientChanged(ClientChangedEvent*); //3cb3a0
-    bool mUpdating; //84
-    int GetRoomSpecFlags() const { return mModeFlags; }
-    int mModeFlags; //88, ctor5; pinned nominal UserListCtrl.h room-spec flags
-    SmartPtr<ListArea> mUserList; //8c
-    SmartPtr<UserListItem> mFirstSeparator; //90
-    SmartPtr<UserListItem> mSecondSeparator; //94
-    SmartPtr<Button> mWhisperButton; //98
-    SmartPtr<Button> mIgnoreButton; //9c
+    virtual ~UserListCtrl(); // 0x7ca960; writes its own vtable pointer
+    virtual void InitComponent(ComponentInit&); // 0x7cadf0
+    virtual void HandleComponentEvent(ComponentEvent*); // 0x7cb4d0
+    void UpdateItem(LobbyClient*,UserListItem*); // 0x7caa70
+    void RefreshSeparators(); // 0x7cacf0
+    UserListItem* FindItem(LobbyClient*); // 0x7cb0e0
+    UserListItem* GetSelectedItem(); // 0x7cb130
+    LobbyClient* GetSelectedClient(); // 0x7cb140
+    void UpdateButtons(); // 0x7cb160
+    void JoinedRoom(JoinedRoomEvent*); // 0x7cb200
+    void LeftRoom(LeftRoomEvent*); // 0x7cb360
+    void ClientChanged(ClientChangedEvent*); // 0x7cb3a0
+    bool mUpdating; // 0x84
+    int GetRoomSpecFlags() const { return this->mModeFlags; }
+    int mModeFlags; // 0x88, room-spec flags; 5 from the constructor
+    SmartPtr<ListArea> mUserList; // 0x8c
+    SmartPtr<UserListItem> mFirstSeparator; // 0x90
+    SmartPtr<UserListItem> mSecondSeparator; // 0x94
+    SmartPtr<Button> mWhisperButton; // 0x98
+    SmartPtr<Button> mIgnoreButton; // 0x9c
 };
-Image* GetLobbyClientIcon(LobbyClient*,bool); //3cac50, substantive cdecl selection
-// Full QuickPlayCtrl b0: original ctor3c14e0/baseDialog2f7910, VT453bf0
-// has51 slots; six owning members98..ac, original normalcleanup3c1540.
+Image* GetLobbyClientIcon(LobbyClient*,bool); // 0x7cac50; picks a client's icon
+// QuickPlayCtrl (0xb0 bytes, constructor 0x7c14e0, vtable 0x853bf0 with 51 slots): pick a skill level and
+// play; six owned widgets at 0x98..0xac, destructor 0x7c1540.
 class QuickPlayCtrl : public Dialog {
 public:
     QuickPlayCtrl();
     virtual void InitComponent(ComponentInit&);
     virtual void HandleComponentEvent(ComponentEvent*);
     void RefreshUserName();
-    SmartPtr<Label> mWelcomeLabel; //98
-    SmartPtr<Button> mNoviceRadio; //9c
-    SmartPtr<Button> mIntermediateRadio; //a0
-    SmartPtr<Button> mAdvancedRadio; //a4
-    SmartPtr<Button> mExpertRadio; //a8
-    SmartPtr<Button> mPlayButton; //ac
+    SmartPtr<Label> mWelcomeLabel; // 0x98
+    SmartPtr<Button> mNoviceRadio; // 0x9c
+    SmartPtr<Button> mIntermediateRadio; // 0xa0
+    SmartPtr<Button> mAdvancedRadio; // 0xa4
+    SmartPtr<Button> mExpertRadio; // 0xa8
+    SmartPtr<Button> mPlayButton; // 0xac
 };
-// Complete GameBrowserCtrl b8: native new36539d, ctor3bbdc0, implicit normal cleanup0.
+// GameBrowserCtrl (0xb8 bytes, constructor 0x7bbdc0): an HTML browser with navigation and find.
 class BrowserComponent;
 class GameBrowserCtrl : public Container {
 public:
@@ -67,10 +67,10 @@ public:
     virtual void Paint(Graphics&);
     void EnableButtons();
     void DoFind(bool);
-    void Fn3BC2F0();
+    void ResetBrowser();
     void GoHomeIfReset();
     void GoHome();
-    void SetHomeLocation(const GUIString& theLocation) { mHomeLocation=theLocation; } //genuine SDK inline; actualownedGUIStringb4
+    void SetHomeLocation(const GUIString& theLocation) { this->mHomeLocation=theLocation; } // 0xb4
     SmartPtr<BrowserComponent> mBrowser;
     SmartPtr<Button> mBackButton,mForwardButton,mStopButton,mHomeButton,mRefreshButton;
     SmartPtr<InputBox> mFindInput;
@@ -79,16 +79,15 @@ public:
     bool mIsReset;
     GUIString mHomeLocation;
 };
-// Root D: independently source/ABI-reviewed GameUser and UpdateAccount families.
 class QueryAccountResultEvent;
-void DrawLobbyPing(Graphics*,unsigned short,int,int,int); // native3c12b0 call-only, no body credit
-// Full24 item: ListItem18 plus three owned pointer fields.
+void DrawLobbyPing(Graphics*,unsigned short,int,int,int); // 0x7c12b0; draws a ping indicator
+// GameUserListItem (0x24 bytes): one player in the staged game; ListItem (0x18) plus three owned pointers.
 class GameUserListItem : public ListItem {
 public:
     GameUserListItem(LobbyClient*);
-    virtual void Virtual04(Graphics&,ListArea*);
-    virtual void Virtual08(ListArea*);
-    virtual int Virtual10(const ListItem*,ListArea*) const;
+    virtual void Paint(Graphics&,ListArea*);
+    virtual void CalcDimensions(ListArea*);
+    virtual int Compare(const ListItem*,ListArea*) const;
     void UpdateIcon();
     SmartPtr<LobbyClient> mClient;
     SmartPtr<Image> mImage;
@@ -96,7 +95,7 @@ public:
 };
 class MultiListArea;
 class PlayerChangedEvent;
-// Full94: Container84, two owned pointers, room flags8c and active90.
+// GameUserListCtrl (0x94 bytes): the staged game's players; room flags at 0x8c, in-game flag at 0x90.
 class GameUserListCtrl : public Container {
 public:
     GameUserListCtrl();
@@ -112,12 +111,12 @@ public:
     void HandleLeftGame();
     SmartPtr<MultiListArea> mUserList;
     SmartPtr<Button> mKickButton;
-    int GetRoomSpecFlags() const { return mRoomSpecFlags; }
+    int GetRoomSpecFlags() const { return this->mRoomSpecFlags; }
     int mRoomSpecFlags;
     bool mInGame;
 };
 
-// Fullbc original-backed external-base reconstruction: Container84 +13 owning controls +GUIStringb8.
+// UpdateAccountCtrl (0xbc bytes): Container (0x84), 13 owned controls and the old password at 0xb8.
 class UpdateAccountCtrl : public Container {
 public:
     UpdateAccountCtrl();
@@ -134,7 +133,7 @@ public:
     SmartPtr<Button> mQueryButton,mUpdateButton;
     GUIString mActualOldPassword;
 };
-// Complete screen consumers; actual external GUI bases and Browser lifetime remain owner-managed.
+// Login screen and its panels.
 class GetHTTPDocumentOp;
 class LoginScreen : public Container {
 public:
@@ -145,12 +144,12 @@ public:
     void ShowCreateAccountCtrl();
     void ShowLostPasswordCtrl();
     void ShowLostUsernameCtrl();
-    SmartPtr<ScreenContainer> mRightPanel; //84
-    SmartPtr<Component> mMOTDCtrl; //88
-    SmartPtr<Component> mCreateAccountCtrl; //8c
-    SmartPtr<Component> mLostUserNameCtrl; //90
-    SmartPtr<Component> mLostPasswordCtrl; //94
-    SmartPtr<Component> mLoginHelpCtrl; //98
+    SmartPtr<ScreenContainer> mRightPanel; // 0x84
+    SmartPtr<Component> mMOTDCtrl; // 0x88
+    SmartPtr<Component> mCreateAccountCtrl; // 0x8c
+    SmartPtr<Component> mLostUserNameCtrl; // 0x90
+    SmartPtr<Component> mLostPasswordCtrl; // 0x94
+    SmartPtr<Component> mLoginHelpCtrl; // 0x98
 };
 
 class BrowserComponent;
@@ -159,8 +158,8 @@ public:
     LoginHelpCtrl();
     virtual void InitComponent(ComponentInit&);
     virtual void Paint(Graphics&);
-    SmartPtr<BrowserComponent> mBrowser; //84
-    bool mHaveLoadedHelp; //88, full8c
+    SmartPtr<BrowserComponent> mBrowser; // 0x84
+    bool mHaveLoadedHelp; // 0x88; 0x8c bytes
 };
 
 class BrowserComponent;
@@ -172,13 +171,14 @@ public:
     virtual void HandleComponentEvent(ComponentEvent*);
     virtual void Paint(Graphics&);
     void ShowMessage(GetHTTPDocumentOp*);
-    SmartPtr<BrowserComponent> mBrowser; //84
-    std::string mGameMOTDPath; //88
-    std::string mSysMOTDPath; //98
-    bool mNeedGenHTML; //a8, fullac
+    SmartPtr<BrowserComponent> mBrowser; // 0x84
+    std::string mGameMOTDPath; // 0x88
+    std::string mSysMOTDPath; // 0x98
+    bool mNeedGenHTML; // 0xa8; 0xac bytes
 };
 
-// Complete LobbyContainer94; RootScreen remains forward-only to avoid include cycle.
+// LobbyContainer (0x94 bytes): switches between the login, internet and LAN screens.
+// RootScreen is only forward-declared here (WONLobbyRoomServer.h includes this header).
 class RootScreen;
 class LobbyContainer : public ScreenContainer {
 public:
@@ -192,9 +192,9 @@ public:
     bool OnLanScreen();
     bool OnLoginScreen();
     int GetGameScreenType();
-    SmartPtr<RootScreen> mInternetScreen; //88
-    SmartPtr<RootScreen> mLanScreen; //8c
-    SmartPtr<LoginScreen> mLoginScreen; //90; full94
+    SmartPtr<RootScreen> mInternetScreen; // 0x88
+    SmartPtr<RootScreen> mLanScreen; // 0x8c
+    SmartPtr<LoginScreen> mLoginScreen; // 0x90; 0x94 bytes
 };
 
 }

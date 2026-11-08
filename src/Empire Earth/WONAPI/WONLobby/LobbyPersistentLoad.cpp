@@ -1,4 +1,3 @@
-// Complete native singleton orchestration; genuine external lifetime providers.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -25,9 +24,10 @@
 #include "ee/wonapi/WONCRC16.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075e640
-void LobbyFn35E640()
+// Loads the login users and global lobby settings from _wonlobbypersistent.dat
+void LobbyLoadGlobalPrefs()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL) data->Fn35F7B0();
+    if(data!=NULL) data->LoadGlobalPrefs();
 }
 }

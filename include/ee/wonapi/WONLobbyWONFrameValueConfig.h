@@ -4,21 +4,21 @@
 #include "ee/wonapi/WONLobbyComboBoxConfig.h"
 #include "ee/wonapi/WONLobbyTabCtrlConfig.h"
 #include "ee/wonapi/WONLobbySkinTab.h"
-#include "ee/wonapi/WONLobbySkinnedContainers.h" //genuine complete WONComboBoxbc for typed SDK inline binding
+#include "ee/wonapi/WONLobbySkinnedContainers.h" // full WONComboBox (0xbc) for the inline binding
 namespace WONAPI {
-// Original-owned borrowed config prefixes; no allocation/lifetime/copy authority.
+// Config classes: only their base parts are declared.
 class WONComboBoxConfig : public ComboBoxConfig {
 public:
-    static ComponentConfig* CfgFactory() { return new WONComboBoxConfig; } //genuine SDK inline, native396a90/83 completea0
+    static ComponentConfig* CfgFactory() { return new WONComboBoxConfig; } // inline (body at 0x00796a90, 0xa0 bytes)
     virtual bool Virtual24(const std::string&); //397f70
-    virtual void Virtual34(Component* component) { mComboBox=static_cast<WONComboBox*>(component); ComboBoxConfig::Virtual34(component); } //genuine SDK derived9c beforebase, native38e7d0/19
+    virtual void SetComponent(Component* component) { this->mComboBox=static_cast<WONComboBox*>(component); ComboBoxConfig::SetComponent(component); } // stores the derived pointer (+0x9c) before calling the base (body at 0x0078e7d0)
     WONComboBox* mComboBox; //9c
 };
 class WONTabCtrlConfig : public TabCtrlConfig {
 public:
-    static ComponentConfig* CfgFactory() { return new WONTabCtrlConfig; } //genuine SDK inline, native396af0/83 completea0
+    static ComponentConfig* CfgFactory() { return new WONTabCtrlConfig; } // inline (body at 0x00796af0, 0xa0 bytes)
     virtual bool Virtual24(const std::string&); //3981f0
-    virtual void Virtual34(Component* component) { TabCtrlConfig::Virtual34(component); mTabCtrl=static_cast<WONTabCtrl*>(component); } //genuine SDK basefirst thenderived9c, native38f100/25
+    virtual void SetComponent(Component* component) { TabCtrlConfig::SetComponent(component); this->mTabCtrl=static_cast<WONTabCtrl*>(component); } // calls the base first, then stores +0x9c (body at 0x0078f100)
     WONTabCtrl* mTabCtrl; //9c
 };
 }

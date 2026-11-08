@@ -1,4 +1,4 @@
-// Existing typed Component defaults and adapters; all support0.
+// Component default virtual hooks (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,51 +10,58 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
-// SUPPORT: EXE 0x008142a0; actual Component slot04 folded empty PosChanged.
-void Component::Virtual04() {}
+// Does nothing when the position changes (the linker folds this body into the identical one at 0x008142a0)
+void Component::PositionChanged() {}
 // FUNCTION: WON 0x006f5050
-bool Component::Virtual20(int,int)
+// Reports a hit when the component is visible and does not ignore input (flag 0x800)
+bool Component::HitTest(int,int)
 {
-    return IsVisible() && !ComponentFlagSet(0x800);
+    return this->IsVisible() && !this->ComponentFlagSet(ComponentFlag_NoInput);
 }
-// SUPPORT: EXE 0x004ac9c8; actual slot38 empty MouseDrag.
-void Component::Virtual38(int,int) {}
-// SUPPORT: EXE 0x00620a18; actual TimerEvent always true.
-bool Component::Virtual44(int) { return true; }
-// SUPPORT: EXE 0x00418aa9; actual AllowWindowClose always true.
-bool Component::Virtual5C() { return true; }
-// SUPPORT: EXE 0x00556dd8; actual EnableHook empty bool hook.
-void Component::Virtual74(bool) {}
+// Ignores mouse drags (the linker folds this body into the identical one at 0x004ac9c8)
+void Component::MouseDrag(int,int) {}
+// Reports timer events as handled (the linker folds this body into the identical one at 0x00620a18)
+bool Component::TimerEvent(int) { return true; }
+// Allows the window to close (the linker folds this body into the identical one at 0x00418aa9)
+bool Component::CanClose() { return true; }
+// Does nothing when the enabled state changes (the linker folds this body into the identical one at 0x00556dd8)
+void Component::EnabledChanged(bool) {}
 // FUNCTION: WON 0x006f4c40
-void Component::Virtual78(Cursor* cursor)
+// Passes the cursor request up to the parent
+void Component::SetCursor(Cursor* cursor)
 {
-    if(mParent!=NULL) mParent->Virtual78(cursor);
+    if(this->mParent!=NULL) this->mParent->SetCursor(cursor);
 }
 // FUNCTION: WON 0x006f52c0
-void Component::Virtual80(ComponentEvent* event)
+// Handles a broadcast event like any component event
+void Component::HandleBroadcastEvent(ComponentEvent* event)
 {
-    HandleComponentEvent(event);
+    this->HandleComponentEvent(event);
 }
-// SUPPORT: EXE 0x005ad67e; genuine GetMouseChild null default.
-Component* Component::Virtual98() { return NULL; }
+// Returns no mouse child (the linker folds this body into the identical one at 0x005ad67e)
+Component* Component::GetMouseChild() { return NULL; }
 // FUNCTION: WON 0x006f52a0
-void Component::Fn2F52A0(ComponentEvent* event,bool sendNow)
+// Marks the event as a broadcast and delivers it, now or queued
+void Component::FireBroadcastEvent(ComponentEvent* event,bool sendNow)
 {
     event->mBroadcast=true;
-    Fn2F53F0(event,sendNow);
+    this->DeliverEvent(event,sendNow);
 }
 // FUNCTION: WON 0x006f4c20
+// Asks the parent to stack this component above the sibling
 void Component::EnsureOnTopOf(Component* sibling)
 {
-    if(mParent!=NULL) mParent->EnsureOnTopOf(sibling,this);
+    if(this->mParent!=NULL) this->mParent->EnsureOnTopOf(sibling,this);
 }
 // FUNCTION: WON 0x006f4fb0
+// Makes the component translucent with the given color and level, through its background grabber
 void Component::SetTranslucentColor(int color,int level)
 {
-    SetComponentFlags(0x200,true);
-    if(!CheckGrabBG()) return;
-    mExtraStuff->mGrabBG->SetTranslucentColor(color,level);
+    this->SetComponentFlags(ComponentFlag_Translucent,true);
+    if(!this->CheckGrabBG()) return;
+    this->mExtraStuff->mGrabBG->SetTranslucentColor(color,level);
 }
 
 }

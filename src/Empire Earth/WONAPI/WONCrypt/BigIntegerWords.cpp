@@ -1,4 +1,4 @@
-// Native-backed unsigned-limb arithmetic and Karatsuba product combination.
+// BigInteger word arrays: unsigned add, subtract, multiply, compare and Karatsuba multiplication
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,11 +14,12 @@
 #define HIGH_WORD(x) ((word)(x>>32))
 namespace WONAPI {
 // FUNCTION: WON 0x007d3650
+// Adds two word arrays into r; returns the result length including a final carry word
 int BigInteger::AddWords(word *r, const word *a, const word *b, int NA, int NB)
 {
 	if(NA<NB) 
 	{
-		return AddWords(r,b,a,NB,NA);
+		return BigInteger::AddWords(r,b,a,NB,NA);
 	}
 
 	word carry = 0;
@@ -52,9 +53,10 @@ int BigInteger::AddWords(word *r, const word *a, const word *b, int NA, int NB)
 }
 
 // FUNCTION: WON 0x007d3710
+// Subtracts the shorter word array from the longer into r; returns the final borrow
 BigInteger::word BigInteger::SubWords(word *r, const word *a, const word *b, int NA, int NB)
 {
-	if(NA<NB) return SubWords(r,b,a,NB,NA);
+	if(NA<NB) return BigInteger::SubWords(r,b,a,NB,NA);
 
 	word borrow = 0;
 	int i;
@@ -80,6 +82,7 @@ BigInteger::word BigInteger::SubWords(word *r, const word *a, const word *b, int
 }
 
 // FUNCTION: WON 0x007d37c0
+// Multiplies two word arrays into r (NA + NB words, schoolbook)
 void BigInteger::MultiplyWords(word *r, const word *a, const word *b, int NA, int NB)
 {
 	memset(r,0,(NA+NB)*sizeof(word));
@@ -104,6 +107,7 @@ void BigInteger::MultiplyWords(word *r, const word *a, const word *b, int NA, in
 }
 
 // FUNCTION: WON 0x007d38c0
+// Multiplies a word array by one word into r (NA + 1 words)
 void BigInteger::MultiplyWord(word *r, const word *a, const word b, int NA)
 {
 	word carry = 0;
@@ -124,6 +128,7 @@ void BigInteger::MultiplyWord(word *r, const word *a, const word b, int NA)
 }
 
 // FUNCTION: WON 0x007d3920
+// Compares two word arrays by length, then from the top word; returns -1, 0 or 1
 int BigInteger::CompareWords(const word *a, const word *b, int NA, int NB)
 {
 	if(NA!=NB)
@@ -139,12 +144,13 @@ int BigInteger::CompareWords(const word *a, const word *b, int NA, int NB)
 }
 
 // FUNCTION: WON 0x007d3990
+// Multiplies two N-word arrays into r with Karatsuba recursion (schoolbook up to 16 words)
 void BigInteger::KaratsubaMultiplyWords(word *r, word *workspace, const word *a, const word *b, int N, int /*aLen*/, int bLen)
 {
 
 	if(N<=16)
 	{
-		MultiplyWords(r,a,b,N,N);
+		BigInteger::MultiplyWords(r,a,b,N,N);
 		return;
 	}
 
@@ -165,69 +171,69 @@ void BigInteger::KaratsubaMultiplyWords(word *r, word *workspace, const word *a,
 	if(bLen<=N2)
 	{
 		memset(r,0,sizeof(word)*TwoN);
-		KaratsubaMultiplyWords(r+N2,t,a1,b0,N2,N2,bLen);
-		KaratsubaMultiplyWords(c1,t,a0,b0,N2,N2,bLen);
-		AddWords(r,r,c1,N+N2,N);
+		BigInteger::KaratsubaMultiplyWords(r+N2,t,a1,b0,N2,N2,bLen);
+		BigInteger::KaratsubaMultiplyWords(c1,t,a0,b0,N2,N2,bLen);
+		BigInteger::AddWords(r,r,c1,N+N2,N);
 	}
 	else
 	{
 		bool needSubtract = false;
-		if(CompareWords(a1,a0,N2,N2)>0)
+		if(BigInteger::CompareWords(a1,a0,N2,N2)>0)
 		{
-			SubWords(c0,a1,a0,N2,N2);
+			BigInteger::SubWords(c0,a1,a0,N2,N2);
 		}
 		else
 		{
-			SubWords(c0,a0,a1,N2,N2);
+			BigInteger::SubWords(c0,a0,a1,N2,N2);
 			needSubtract = !needSubtract;
 		}
 
-		if(CompareWords(b1,b0,N2,N2)>0)
+		if(BigInteger::CompareWords(b1,b0,N2,N2)>0)
 		{
-			SubWords(c2,b1,b0,N2,N2);
+			BigInteger::SubWords(c2,b1,b0,N2,N2);
 			needSubtract = !needSubtract;
 		}
 		else
 		{
-			SubWords(c2,b0,b1,N2,N2);
+			BigInteger::SubWords(c2,b0,b1,N2,N2);
 		}
 
-		KaratsubaMultiplyWords(c1,t,c0,c2,N2,N2,N2);
-		KaratsubaMultiplyWords(c0,t,a0,b0,N2,N2,N2);		
-		KaratsubaMultiplyWords(c2,t,a1,b1,N2,N2,N2);
+		BigInteger::KaratsubaMultiplyWords(c1,t,c0,c2,N2,N2,N2);
+		BigInteger::KaratsubaMultiplyWords(c0,t,a0,b0,N2,N2,N2);		
+		BigInteger::KaratsubaMultiplyWords(c2,t,a1,b1,N2,N2,N2);
 
-		int tSize = AddWords(t,c0,c2,TwoN2,TwoN2);
+		int tSize = BigInteger::AddWords(t,c0,c2,TwoN2,TwoN2);
 
 		if(needSubtract)
 		{
-			SubWords(t,t,c1,tSize,TwoN2);
+			BigInteger::SubWords(t,t,c1,tSize,TwoN2);
 		}
 		else
 		{
-			tSize = AddWords(t,t,c1,tSize,TwoN2);
+			tSize = BigInteger::AddWords(t,t,c1,tSize,TwoN2);
 		}
 
-		AddWords(r+N2,r+N2,t,N+N2,tSize);
+		BigInteger::AddWords(r+N2,r+N2,t,N+N2,tSize);
 	}
 
-	if(N&1)
-	{	
-		if(b[N-1]!=0)
-		{
-			MultiplyWord(c1,a,b[N-1],N-1);
-			AddWords(r+N-1,r+N-1,c1,N,N);
-		}
-
-		MultiplyWord(t,b,a[N-1],N-1);
-		AddWords(r+N-1,r+N-1,t,N,N);
-
-		dword result = a[N-1]*b[N-1] + r[TwoN-2];
-		r[TwoN-2] = LOW_WORD(result);
-		r[TwoN-1] = HIGH_WORD(result);
+	if(!(N&1))
+		return;
+	if(b[N-1]!=0)
+	{
+		BigInteger::MultiplyWord(c1,a,b[N-1],N-1);
+		BigInteger::AddWords(r+N-1,r+N-1,c1,N,N);
 	}
+
+	BigInteger::MultiplyWord(t,b,a[N-1],N-1);
+	BigInteger::AddWords(r+N-1,r+N-1,t,N,N);
+
+	dword result = a[N-1]*b[N-1] + r[TwoN-2];
+	r[TwoN-2] = LOW_WORD(result);
+	r[TwoN-1] = HIGH_WORD(result);
 }
 
 // FUNCTION: WON 0x007d3c10
+// Returns the word count without leading zero words
 int BigInteger::FindSize(const word *r, int size)
 {
 	while(size>0 && r[size-1]==0)

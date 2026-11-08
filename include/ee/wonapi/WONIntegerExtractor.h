@@ -1,4 +1,4 @@
-// Complete native IntegerExtractor18; RawBuffer0/offset10/valid14, nonvirtual.
+// IntegerExtractor (0x18 bytes): RawBuffer at 0, offset at 10, valid flag at 14; no vtable
 #ifndef EE_WONAPI_WONINTEGEREXTRACTOR_H
 #define EE_WONAPI_WONINTEGEREXTRACTOR_H
 #include "ee/wonapi/WONBigInteger.h"
@@ -15,9 +15,9 @@ public:
     IntegerExtractor(const void*,unsigned long,bool isBufferedTransform=true); //3d8e10
     bool Decode(int,BigInteger&); //3d9100
     bool Extract(BigInteger&); //3d92a0
-    // Implicit destructor releases real RawBuffer; no vtable or explicit native destructor.
+    // Implicit destructor releases the RawBuffer; no vtable or explicit destructor
 };
-// Genuine same-SDK complete nonvirtual owner; only owned RawBuffer out, extent10.
+// WON SDK class without a vtable; its only member is the RawBuffer out (size 10)
 class IntegerInserter {
     RawBuffer out;
 public:

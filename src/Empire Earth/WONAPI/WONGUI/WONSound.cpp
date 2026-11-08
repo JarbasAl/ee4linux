@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK software audio mixing and channel scheduling.
-// No backend factory is selected or thread/device operation executed by this restoration.
+// Software audio mixing and sound channel scheduling of the WON sound thread (not identified in the original exe)
 #include <windows.h>
 #include <string>
 #include <list>
@@ -22,7 +21,7 @@ static int gMaxSoundChannels = 2;
 ///////////////////////////////////////////////////////////////////////////////
 WONSoundData::WONSoundData()
 {
-	mDataPos = mDataLen = 0;
+	this->mDataPos = this->mDataLen = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,44 +34,44 @@ WONSoundData::~WONSoundData()
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundData::SetDataPos(int thePos, int theLen)
 {
-	mDataPos = thePos;
-	mDataLen = theLen;
+	this->mDataPos = thePos;
+	this->mDataLen = theLen;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 const char* WONSoundData::GetData(int &theLen)
 {
-	if(!mReader.IsOpen())
+	if(!this->mReader.IsOpen())
 		return NULL;
 
-	int aBytesLeft = mDataPos + mDataLen - mReader.pos();
+	int aBytesLeft = this->mDataPos + this->mDataLen - this->mReader.pos();
 	if(aBytesLeft<=0)
 		return NULL;
 
-	if(mReader.mBuffer!=NULL)
+	if(this->mReader.mBuffer!=NULL)
 	{
-		const char *aData = mReader.mBuffer + mReader.pos();
+		const char *aData = this->mReader.mBuffer + this->mReader.pos();
 		theLen = aBytesLeft;
-		mReader.SkipBytes(theLen);
+		this->mReader.SkipBytes(theLen);
 		return aData;
 	}
 
 	int aNumToRead = aBytesLeft>BUF_SIZE ? BUF_SIZE : aBytesLeft;
-	theLen = mReader.ReadMaxBytes(mFileBuf,aNumToRead);
-	return mFileBuf;
+	theLen = this->mReader.ReadMaxBytes(this->mFileBuf,aNumToRead);
+	return this->mFileBuf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundData::Rewind()
 {
-	if(mDataLen==0)
+	if(this->mDataLen==0)
 		return;
 
 	try
 	{
-		mReader.SetPos(mDataPos);
+		this->mReader.SetPos(this->mDataPos);
 	}
 	catch(FileReaderException&)
 	{
@@ -83,12 +82,12 @@ void WONSoundData::Rewind()
 ///////////////////////////////////////////////////////////////////////////////
 void WONSound::Init()
 {
-	mNumLoops = 0;
-	mLoopCount = 0;
+	this->mNumLoops = 0;
+	this->mLoopCount = 0;
 
-	mCurData = NULL;
-	mCurDataLen = 0;
-	mIsPlaying = false;
+	this->mCurData = NULL;
+	this->mCurDataLen = 0;
+	this->mIsPlaying = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,22 +95,22 @@ void WONSound::Init()
 WONSound::WONSound(WONSoundDataBase* theDataSource, int theFrequency, int theFlags, const SoundDescriptor &theDesc) : 
 	Sound(theDesc)
 {
-	Init();
-	mFrequency = theFrequency;
-	mSoundFlags = theFlags;
-	mDataSource = theDataSource;
+	this->Init();
+	this->mFrequency = theFrequency;
+	this->mSoundFlags = theFlags;
+	this->mDataSource = theDataSource;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void WONSound::PlayHook()
 {
-	if(mIsPlaying)
-		Stop();
+	if(this->mIsPlaying)
+		this->Stop();
 
-	RewindHook();
-	mNumLoops = mIsLooping?0:1;
-	mIsPlaying = true;
+	this->RewindHook();
+	this->mNumLoops = this->mIsLooping?0:1;
+	this->mIsPlaying = true;
 	WONSoundThread::AddSound(this);
 }
 
@@ -119,7 +118,7 @@ void WONSound::PlayHook()
 ///////////////////////////////////////////////////////////////////////////////
 void WONSound::ResumeHook()
 {
-	mIsPlaying = true;
+	this->mIsPlaying = true;
 	WONSoundThread::AddSound(this);
 }
 
@@ -231,19 +230,19 @@ void WONSound::Mix(char *theBuf, int theNumBytes, int theFreq, int theFlags)
 {
 	while(true)
 	{
-		if(mCurDataLen<=0)
+		if(this->mCurDataLen<=0)
 		{
-			mCurData = mDataSource->GetData(mCurDataLen);
-			if(mCurData==NULL || mCurDataLen==0) // should we loop?
+			this->mCurData = this->mDataSource->GetData(this->mCurDataLen);
+			if(this->mCurData==NULL || this->mCurDataLen==0) // should we loop?
 			{
-				if(mNumLoops<=0 || ++mLoopCount<mNumLoops)
+				if(this->mNumLoops<=0 || ++this->mLoopCount<this->mNumLoops)
 				{
-					RewindPrv(false);
+					this->RewindPrv(false);
 					continue;
 				}
 				else
 				{
-					mIsPlaying = false;
+					this->mIsPlaying = false;
 					break;
 				}
 			
@@ -251,9 +250,9 @@ void WONSound::Mix(char *theBuf, int theNumBytes, int theFreq, int theFlags)
 		}
 
 		int mix1, mix2;
-		MixPrv(mCurData, mCurDataLen, mFrequency, mSoundFlags,theBuf,theNumBytes,theFreq,theFlags,mix1,mix2);		
-		mCurData += mix1;
-		mCurDataLen -= mix1;
+		WONSound::MixPrv(this->mCurData, this->mCurDataLen, this->mFrequency, this->mSoundFlags,theBuf,theNumBytes,theFreq,theFlags,mix1,mix2);		
+		this->mCurData += mix1;
+		this->mCurDataLen -= mix1;
 		if(mix2<theNumBytes)
 		{
 			theBuf+=mix2;
@@ -269,9 +268,9 @@ void WONSound::Mix(char *theBuf, int theNumBytes, int theFreq, int theFlags)
 ///////////////////////////////////////////////////////////////////////////////
 void WONSound::StopHook()
 {
-	if(mIsPlaying)
+	if(this->mIsPlaying)
 	{
-		mIsPlaying = false;
+		this->mIsPlaying = false;
 		WONSoundThread::RemoveSound(this);
 	}
 }
@@ -280,56 +279,56 @@ void WONSound::StopHook()
 ///////////////////////////////////////////////////////////////////////////////
 void WONSound::RewindPrv(bool resetLoopCount)
 {
-	mCurData = NULL;
-	mCurDataLen = 0;
-	mDataSource->Rewind();
+	this->mCurData = NULL;
+	this->mCurDataLen = 0;
+	this->mDataSource->Rewind();
 
 	if(resetLoopCount)
-		mLoopCount = 0;
+		this->mLoopCount = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void WONSound::RewindHook()
 {
-	RewindPrv(true);
+	this->RewindPrv(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 WONSoundChannel::WONSoundChannel()
 {
-	mBufferFree = NULL;
-	mBufferSilent = NULL;
-	mSoundBuffer = NULL;
+	this->mBufferFree = NULL;
+	this->mBufferSilent = NULL;
+	this->mSoundBuffer = NULL;
 
-	mIsMusic = false;
-	mStopped = false;
-	mIsStereo = false;
-	NUM_BUFFERS = 0;
-	mBufferDuration = 0;
+	this->mIsMusic = false;
+	this->mStopped = false;
+	this->mIsStereo = false;
+	this->NUM_BUFFERS = 0;
+	this->mBufferDuration = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundChannel::SetIsMusic()
 {
-	mIsMusic = true;
+	this->mIsMusic = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 WONSoundChannel::~WONSoundChannel()
 {
-	delete [] mBufferFree;
-	delete [] mBufferSilent;
+	delete [] this->mBufferFree;
+	delete [] this->mBufferSilent;
 	
-	if(mSoundBuffer!=NULL)
+	if(this->mSoundBuffer!=NULL)
 	{
-		for(int i=0; i<NUM_BUFFERS; i++)
-			delete [] mSoundBuffer[i];
+		for(int i=0; i<this->NUM_BUFFERS; i++)
+			delete [] this->mSoundBuffer[i];
 
-		delete [] mSoundBuffer;
+		delete [] this->mSoundBuffer;
 	}
 }
 
@@ -338,27 +337,27 @@ WONSoundChannel::~WONSoundChannel()
 bool WONSoundChannel::Open()
 {
 
-	return OpenHook();
+	return this->OpenHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundChannel::SetBuffers(int theNumBuffers, int theBufferDuration)
 {
-	NUM_BUFFERS = theNumBuffers;
-	mBufferDuration = theBufferDuration;
+	this->NUM_BUFFERS = theNumBuffers;
+	this->mBufferDuration = theBufferDuration;
 
-	mBufferFree = new bool[NUM_BUFFERS]; 
-	mBufferSilent = new bool[NUM_BUFFERS];
-	mSoundBuffer = new char*[NUM_BUFFERS];
-	for(int i=0; i<NUM_BUFFERS; i++)
+	this->mBufferFree = new bool[this->NUM_BUFFERS]; 
+	this->mBufferSilent = new bool[this->NUM_BUFFERS];
+	this->mSoundBuffer = new char*[this->NUM_BUFFERS];
+	for(int i=0; i<this->NUM_BUFFERS; i++)
 	{
-		mBufferFree[i] = true;
-		mBufferSilent[i] = false;
-		mSoundBuffer[i] = NULL;
+		this->mBufferFree[i] = true;
+		this->mBufferSilent[i] = false;
+		this->mSoundBuffer[i] = NULL;
 	}
 
-	SetBuffersHook();
+	this->SetBuffersHook();
 }
 
 
@@ -366,21 +365,21 @@ void WONSoundChannel::SetBuffers(int theNumBuffers, int theBufferDuration)
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundChannel::SetVolume(unsigned char theVolume)
 {
-	SetVolumeHook(theVolume);
+	this->SetVolumeHook(theVolume);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundChannel::Stop()
 {
-	mStopped = true;
-	mSoundSet.clear();
-	StopHook();
+	this->mStopped = true;
+	this->mSoundSet.clear();
+	this->StopHook();
 
-	for(int i=0; i<NUM_BUFFERS; i++)
+	for(int i=0; i<this->NUM_BUFFERS; i++)
 	{
-		mBufferFree[i] = true;
-		mBufferSilent[i] = false;
+		this->mBufferFree[i] = true;
+		this->mBufferSilent[i] = false;
 	}
 }
 
@@ -388,37 +387,36 @@ void WONSoundChannel::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 bool WONSoundChannel::Reset()
 {
-	CheckFreeBuffers();
-	if(NeedPlaySilence())
+	this->CheckFreeBuffers();
+	if(this->NeedPlaySilence())
 	{
-		if(AllBuffersFreeOrSilent())
+		if(this->AllBuffersFreeOrSilent())
 		{
-			Stop();
-			mStopped = false; 
+			this->Stop();
+			this->mStopped = false; 
 			return true;
 		}
 
-		for(int i=0; i<NUM_BUFFERS; i++)
+		for(int i=0; i<this->NUM_BUFFERS; i++)
 		{
-			if(mBufferFree[i])
-			{
-				if(mSoundFlags&WONSoundFlag_IsSixteenBit)
-					memset(mSoundBuffer[i],0,mBufferSize);
-				else
-					memset(mSoundBuffer[i],128,mBufferSize);
+			if(!this->mBufferFree[i])
+				continue;
+			if(this->mSoundFlags&WONSoundFlag_IsSixteenBit)
+				memset(this->mSoundBuffer[i],0,this->mBufferSize);
+			else
+				memset(this->mSoundBuffer[i],128,this->mBufferSize);
 
-				mBufferFree[i] = false;
-				mBufferSilent[i] = true;
-				PlaySoundsHook(i);
-			}
+			this->mBufferFree[i] = false;
+			this->mBufferSilent[i] = true;
+			this->PlaySoundsHook(i);
 		}
 	}
 	else
 	{
-		if(AllBuffersFree())
+		if(this->AllBuffersFree())
 		{
-			mSoundSet.clear();
-			mStopped = false;
+			this->mSoundSet.clear();
+			this->mStopped = false;
 			return true;
 		}
 	}
@@ -431,30 +429,30 @@ bool WONSoundChannel::Reset()
 bool WONSoundChannel::PlaySounds(int theBuf)
 {
 	// Send the buffer the the WaveOut queue
-	SoundSet::iterator anItr = mSoundSet.begin();
-	if(mSoundFlags&WONSoundFlag_IsSixteenBit)
-		memset(mSoundBuffer[theBuf],0,mBufferSize);
+	SoundSet::iterator anItr = this->mSoundSet.begin();
+	if(this->mSoundFlags&WONSoundFlag_IsSixteenBit)
+		memset(this->mSoundBuffer[theBuf],0,this->mBufferSize);
 	else
-		memset(mSoundBuffer[theBuf],128,mBufferSize);
+		memset(this->mSoundBuffer[theBuf],128,this->mBufferSize);
 
 	bool playing = false;
-	while(anItr!=mSoundSet.end())
+	while(anItr!=this->mSoundSet.end())
 	{
 		WONSound *aSound = *anItr;
-		if(!mStopped && aSound->IsPlaying())
+		if(!this->mStopped && aSound->IsPlaying())
 		{
 			playing = true;
-			aSound->Mix(mSoundBuffer[theBuf],mBufferSize,mFrequency,mSoundFlags);
+			aSound->Mix(this->mSoundBuffer[theBuf],this->mBufferSize,this->mFrequency,this->mSoundFlags);
 			++anItr;
 		}
 		else
-			mSoundSet.erase(anItr++);
+			this->mSoundSet.erase(anItr++);
 	}
 
 	if(playing)
 	{
-		mBufferFree[theBuf] = false;
-		PlaySoundsHook(theBuf);
+		this->mBufferFree[theBuf] = false;
+		this->PlaySoundsHook(theBuf);
 	}
 
 	return playing;
@@ -465,18 +463,17 @@ bool WONSoundChannel::PlaySounds(int theBuf)
 ///////////////////////////////////////////////////////////////////////////////
 bool WONSoundChannel::PlaySounds()
 {
-	CheckFreeBuffers();
+	this->CheckFreeBuffers();
 
 	bool playing = false;
 	bool channelFree = false;
-	for(int i=0; i<NUM_BUFFERS; i++)
+	for(int i=0; i<this->NUM_BUFFERS; i++)
 	{
-		if(mBufferFree[i])
-		{
-			channelFree = true;
-			if(PlaySounds(i))
-				playing = true;
-		}
+		if(!this->mBufferFree[i])
+			continue;
+		channelFree = true;
+		if(this->PlaySounds(i))
+			playing = true;
 	}
 
 	return playing || !channelFree;
@@ -486,16 +483,16 @@ bool WONSoundChannel::PlaySounds()
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundChannel::AddSound(WONSound *theSound)
 {
-	mSoundSet.insert(theSound);
+	this->mSoundSet.insert(theSound);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool WONSoundChannel::AllBuffersFree()
 {
-	for(int i=0; i<NUM_BUFFERS; i++)
+	for(int i=0; i<this->NUM_BUFFERS; i++)
 	{
-		if(!mBufferFree[i])
+		if(!this->mBufferFree[i])
 			return false;
 	}
 	return true;
@@ -505,9 +502,9 @@ bool WONSoundChannel::AllBuffersFree()
 ///////////////////////////////////////////////////////////////////////////////
 bool WONSoundChannel::AllBuffersFreeOrSilent()
 {
-	for(int i=0; i<NUM_BUFFERS; i++)
+	for(int i=0; i<this->NUM_BUFFERS; i++)
 	{
-		if(!mBufferFree[i] && !mBufferSilent[i])
+		if(!this->mBufferFree[i] && !this->mBufferSilent[i])
 			return false;
 	}
 	return true;
@@ -517,22 +514,22 @@ bool WONSoundChannel::AllBuffersFreeOrSilent()
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundChannel::ClearSilentFlags()
 {
-	for(int i=0; i<NUM_BUFFERS; i++)
-		mBufferSilent[i] = false;
+	for(int i=0; i<this->NUM_BUFFERS; i++)
+		this->mBufferSilent[i] = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool WONSoundChannel::HasSound(WONSound *theSound)
 {
-	return mSoundSet.find(theSound)!=mSoundSet.end();
+	return this->mSoundSet.find(theSound)!=this->mSoundSet.end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 int WONSoundChannel::GetNumSounds()
 {
-	return mSoundSet.size();
+	return this->mSoundSet.size();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -540,35 +537,35 @@ int WONSoundChannel::GetNumSounds()
 WONSoundThread::WONSoundThread()
 {
 	int aNumChannels = gMaxSoundChannels;
-	mHaveMusicChannel = false;
-	mNumChannels = 0;
+	this->mHaveMusicChannel = false;
+	this->mNumChannels = 0;
 	for(int i=0; i<aNumChannels; i++)
 	{
-		WONSoundChannelPtr aChannel = mChannelFactory();
+		WONSoundChannelPtr aChannel = WONSoundThread::mChannelFactory();
 		if(aChannel->Open())
 		{
-			mNumChannels++;
-			if(mNumChannels==2) // make the second channel a music channel
+			this->mNumChannels++;
+			if(this->mNumChannels==2) // make the second channel a music channel
 			{
 				aChannel->SetIsMusic();
 		//		aChannel->SetVolume(20);
-				mHaveMusicChannel = true;
+				this->mHaveMusicChannel = true;
 			}
 
-			mFreeChannels.insert(aChannel);
+			this->mFreeChannels.insert(aChannel);
 		}
 		else
 			break;
 	}
 
 
-	for(ChannelSet::iterator anItr = mFreeChannels.begin(); anItr!=mFreeChannels.end(); ++anItr)
+	for(ChannelSet::iterator anItr = this->mFreeChannels.begin(); anItr!=this->mFreeChannels.end(); ++anItr)
 	{
 		WONSoundChannel *aChannel = *anItr;
-		if(mNumChannels==1)
+		if(this->mNumChannels==1)
 		{
 			aChannel->SetBuffers(2,200);
-			SetPriority(ThreadPriority_High);
+			this->SetPriority(ThreadPriority_High);
 		}
 		else if(aChannel->IsMusic())
 			aChannel->SetBuffers(2,500); 
@@ -581,16 +578,16 @@ WONSoundThread::WONSoundThread()
 ///////////////////////////////////////////////////////////////////////////////
 WONSoundThread::~WONSoundThread()
 {
-	Stop();
+	this->Stop();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundThread::PlaySounds()
 {
-	AutoCrit aCrit(mDataCrit);
-	ChannelSet::iterator anItr = mBusyChannels.begin();
-	while(anItr!=mBusyChannels.end())
+	AutoCrit aCrit(this->mDataCrit);
+	ChannelSet::iterator anItr = this->mBusyChannels.begin();
+	while(anItr!=this->mBusyChannels.end())
 	{
 		WONSoundChannel *aChannel = *anItr;
 
@@ -600,19 +597,19 @@ void WONSoundThread::PlaySounds()
 		}
 		else
 		{
-			mPendingFreeChannels.insert(aChannel);
-			mBusyChannels.erase(anItr++);
+			this->mPendingFreeChannels.insert(aChannel);
+			this->mBusyChannels.erase(anItr++);
 		}
 	}
 
-	anItr = mPendingFreeChannels.begin();
-	while(anItr!=mPendingFreeChannels.end())
+	anItr = this->mPendingFreeChannels.begin();
+	while(anItr!=this->mPendingFreeChannels.end())
 	{
 		WONSoundChannel *aChannel = *anItr;
 		if(aChannel->Reset())
 		{
-			mFreeChannels.insert(aChannel);
-			mPendingFreeChannels.erase(anItr++);
+			this->mFreeChannels.insert(aChannel);
+			this->mPendingFreeChannels.erase(anItr++);
 		}
 		else
 			++anItr;
@@ -623,9 +620,9 @@ void WONSoundThread::PlaySounds()
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundThread::StopSounds()
 {
-	AutoCrit aCrit(mDataCrit);
-	ChannelSet::iterator anItr = mBusyChannels.begin();
-	while(anItr!=mBusyChannels.end())
+	AutoCrit aCrit(this->mDataCrit);
+	ChannelSet::iterator anItr = this->mBusyChannels.begin();
+	while(anItr!=this->mBusyChannels.end())
 	{
 		WONSoundChannel *aChannel = *anItr;
 		aChannel->Stop();
@@ -638,20 +635,20 @@ void WONSoundThread::StopSounds()
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundThread::ThreadFunc()
 {
-	while(!mStopped)
+	while(!this->mStopped)
 	{
-		mSignalEvent.WaitFor(50);
-		if(mStopped)
+		this->mSignalEvent.WaitFor(50);
+		if(this->mStopped)
 			break;
 
-		PlaySounds();
+		this->PlaySounds();
 	}
 
-	StopSounds();
-	while(!mBusyChannels.empty())
+	this->StopSounds();
+	while(!this->mBusyChannels.empty())
 	{
-		mSignalEvent.WaitFor(50);
-		PlaySounds();
+		this->mSignalEvent.WaitFor(50);
+		this->PlaySounds();
 	}
 }
 
@@ -660,7 +657,7 @@ void WONSoundThread::ThreadFunc()
 bool WONSoundThread::PutSoundInChannel(WONSound *theSound, ChannelSet &theSet)
 {
 	// Should already be in DataCrit
-	bool isMusic = (theSound->mDescriptor.mL00 & 0x0002)!=0;
+	bool isMusic = (theSound->mDescriptor.mSoundFlags & 0x0002)!=0;
 
 //	if(isMusic && theSet==mBusyChannels) // can't add music to an already playing channel
 //		return false;
@@ -668,18 +665,17 @@ bool WONSoundThread::PutSoundInChannel(WONSound *theSound, ChannelSet &theSet)
 	for(ChannelSet::iterator anItr = theSet.begin(); anItr!=theSet.end(); ++anItr)
 	{
 		WONSoundChannel *aChannel = *anItr;
-		if(!mHaveMusicChannel || aChannel->IsMusic()==isMusic)
+		if(this->mHaveMusicChannel && aChannel->IsMusic()!=isMusic)
+			continue;
+		if(theSet!=this->mBusyChannels)
 		{
-			if(theSet!=mBusyChannels)
-			{
-				mBusyChannels.insert(aChannel);
-				theSet.erase(aChannel);
+			this->mBusyChannels.insert(aChannel);
+			theSet.erase(aChannel);
 
-				aChannel->ClearSilentFlags();
-			}
-			aChannel->AddSound(theSound);
-			return true;
+			aChannel->ClearSilentFlags();
 		}
+		aChannel->AddSound(theSound);
+		return true;
 	}
 
 	return false;
@@ -689,19 +685,19 @@ bool WONSoundThread::PutSoundInChannel(WONSound *theSound, ChannelSet &theSet)
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundThread::AddSoundPrv(WONSound *theSound)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 	bool needSignal = false;
-	if(PutSoundInChannel(theSound,mFreeChannels))
+	if(this->PutSoundInChannel(theSound,this->mFreeChannels))
 	{
 		aCrit.Leave();
-		Signal(); // wake up, we can play it right now
+		this->Signal(); // wake up, we can play it right now
 		return;
 	}
 	
-	if(PutSoundInChannel(theSound,mPendingFreeChannels))
+	if(this->PutSoundInChannel(theSound,this->mPendingFreeChannels))
 		return;
 	
-	if(PutSoundInChannel(theSound,mBusyChannels))
+	if(this->PutSoundInChannel(theSound,this->mBusyChannels))
 		return;
 }
 
@@ -709,9 +705,9 @@ void WONSoundThread::AddSoundPrv(WONSound *theSound)
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundThread::RemoveSoundPrv(WONSound *theSound)
 {
-	AutoCrit aCrit(mDataCrit);
-	ChannelSet::iterator anItr = mBusyChannels.begin();
-	while(anItr!=mBusyChannels.end())
+	AutoCrit aCrit(this->mDataCrit);
+	ChannelSet::iterator anItr = this->mBusyChannels.begin();
+	while(anItr!=this->mBusyChannels.end())
 	{
 		WONSoundChannel *aChannel = *anItr;
 		if(aChannel->HasSound(theSound))
@@ -759,7 +755,7 @@ void WONSoundThread::Init(ChannelFactory theFactory, int theMaxChannels)
 	assert(gWONSoundThread==NULL);
 
 	gMaxSoundChannels = theMaxChannels;
-	mChannelFactory = theFactory;
+	WONSoundThread::mChannelFactory = theFactory;
 	gWONSoundThread = new WONSoundThread;
 	gWONSoundThread->SetPriority(ThreadPriority_High);
 	gWONSoundThread->Start();
@@ -769,12 +765,11 @@ void WONSoundThread::Init(ChannelFactory theFactory, int theMaxChannels)
 ///////////////////////////////////////////////////////////////////////////////
 void WONSoundThread::Destroy()
 {
-	if(gWONSoundThread!=NULL)
-	{
-		gWONSoundThread->Stop(true);
-		delete gWONSoundThread;
-		gWONSoundThread = NULL;
-	}
+	if(gWONSoundThread==NULL)
+		return;
+	gWONSoundThread->Stop(true);
+	delete gWONSoundThread;
+	gWONSoundThread = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

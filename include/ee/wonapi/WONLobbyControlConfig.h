@@ -1,5 +1,4 @@
-// Proposed shared true SDK config contracts; call/reference use only.
-// No allocation, implicit lifetime provider or fake fieldless class is introduced here.
+// SDK config classes (declarations only).
 #ifndef EE_WONAPI_WONLOBBYCONTROLCONFIG_H
 #define EE_WONAPI_WONLOBBYCONTROLCONFIG_H
 #include "ee/wonapi/WONLobbyControls.h"
@@ -15,10 +14,10 @@ class MaxSplitterButton;
 class MultiListHeader;
 class DirectConnectCtrl : public Container {
 public:
-    DirectConnectCtrl(); //3bada0,38B emptyctor candidate,zeroquota
-    virtual ~DirectConnectCtrl(); //actualownVTstore3bae0f; emptybodycandidatezeroquota
-    virtual void InitComponent(ComponentInit& inInit); //3baeb0..3baf1c,108B
-    virtual void HandleComponentEvent(ComponentEvent* inEvent); //3baf20..3baffe,222B
+    DirectConnectCtrl(); // empty, at 0x007bada0
+    virtual ~DirectConnectCtrl(); // empty; stores its own vptr (0x007bae0f)
+    virtual void InitComponent(ComponentInit& inInit); // at 0x007baeb0
+    virtual void HandleComponentEvent(ComponentEvent* inEvent); // at 0x007baf20
     SmartPtr<ServerListCtrl> mConnectionList; //84
     SmartPtr<Button> mAddButton; //88
     SmartPtr<Button> mRemoveButton; //8c
@@ -29,8 +28,8 @@ public:
     static ComponentConfig* CfgFactory();
     static Component* CompFactory() { return new ChatCtrl; }
     virtual bool Virtual24(const std::string&); //3b9e10
-    virtual void Virtual34(Component*); //3c8380..399, support zeroquota
-    ChatCtrl* mChatCtrl; //98, borrowed actual writer3c838e
+    virtual void SetComponent(Component*); // at 0x007c8380
+    ChatCtrl* mChatCtrl; // offset 0x98, borrowed (written at 0x007c838e)
 };
 
 class RoomLabelCtrlConfig : public ContainerConfig {
@@ -38,18 +37,18 @@ public:
     static ComponentConfig* CfgFactory();
     static Component* CompFactory() { return new RoomLabelCtrl; }
     virtual bool Virtual24(const std::string&);
-    virtual void Virtual34(Component*);
-    RoomLabelCtrl* mRoomLabel; //98 borrowed, writer39afb0 beforeContainerConfig34
+    virtual void SetComponent(Component*);
+    RoomLabelCtrl* mRoomLabel; // offset 0x98, borrowed; 0x0079afb0 writes it before calling ContainerConfig
 };
 
 class ServerListCtrlConfig : public ContainerConfig {
 public:
-    ServerListCtrlConfig(); //3c8360 genuine SDK external constructor, not implemented here
+    ServerListCtrlConfig(); // at 0x007c8360 (defined out of line)
     static ComponentConfig* CfgFactory();
     static Component* CompFactory() { return new ServerListCtrl; }
     virtual bool Virtual24(const std::string&);
-    virtual bool Virtual2C(const std::string&,int&);
-    virtual void Virtual34(Component*);
+    virtual bool GetNamedValue(const std::string&,int&);
+    virtual void SetComponent(Component*);
     void HandleAddColumn();
     ServerListCtrl* mServerList; //98 borrowed
     MultiListHeader* mHeader; //9c borrowed
@@ -61,8 +60,8 @@ public:
     static ComponentConfig* CfgFactory();
     static Component* CompFactory() { return new ImageTextButton; }
     virtual bool Virtual24(const std::string&);
-    virtual void Virtual34(Component*);
-    ImageTextButton* mImageTextButton; //7c borrowed, actual RTTI451d64
+    virtual void SetComponent(Component*);
+    ImageTextButton* mImageTextButton; // offset 0x7c, borrowed (RTTI 0x00851d64)
 };
 
 class CrossPromotionButtonConfig : public ImageButtonConfig {
@@ -70,7 +69,7 @@ public:
     static ComponentConfig* CfgFactory();
     static Component* CompFactory() { return new CrossPromotionButton; }
     virtual bool Virtual24(const std::string&);
-    virtual void Virtual34(Component*);
+    virtual void SetComponent(Component*);
     CrossPromotionButton* mCrossPromotionButton; //7c borrowed
 };
 
@@ -78,8 +77,8 @@ class GameBrowserCtrlConfig : public ContainerConfig {
 public:
     static ComponentConfig* CfgFactory();
     static Component* CompFactory() { return new GameBrowserCtrl; }
-    virtual bool Virtual24(const std::string&); //3bc450, actual SDK HandleInstruction
-    virtual void Virtual34(Component* component) { ContainerConfig::Virtual34(component); mBrowser=static_cast<GameBrowserCtrl*>(component); } //genuine SDK inline SetComponent
+    virtual bool Virtual24(const std::string&); // HandleInstruction at 0x007bc450
+    virtual void SetComponent(Component* component) { ContainerConfig::SetComponent(component); this->mBrowser=static_cast<GameBrowserCtrl*>(component); } // inline
     GameBrowserCtrl* mBrowser; //98, borrowed
 };
 
@@ -87,8 +86,8 @@ class GameUserListCtrlConfig : public ContainerConfig {
 public:
     static ComponentConfig* CfgFactory();
     static Component* CompFactory() { return new GameUserListCtrl; }
-    virtual bool Virtual24(const std::string&); //3bda70, actual SDK HandleInstruction
-    virtual void Virtual34(Component* component) { ContainerConfig::Virtual34(component); mUserList=static_cast<GameUserListCtrl*>(component); } //genuine SDK inline SetComponent
+    virtual bool Virtual24(const std::string&); // HandleInstruction at 0x007bda70
+    virtual void SetComponent(Component* component) { ContainerConfig::SetComponent(component); this->mUserList=static_cast<GameUserListCtrl*>(component); } // inline
     GameUserListCtrl* mUserList; //98, borrowed
 };
 
@@ -96,8 +95,8 @@ class UserListCtrlConfig : public ContainerConfig {
 public:
     static ComponentConfig* CfgFactory();
     static Component* CompFactory() { return new UserListCtrl; }
-    virtual bool Virtual24(const std::string&); //3cb770, actual SDK HandleInstruction
-    virtual void Virtual34(Component* component) { ContainerConfig::Virtual34(component); mUserList=static_cast<UserListCtrl*>(component); } //genuine SDK inline SetComponent
+    virtual bool Virtual24(const std::string&); // HandleInstruction at 0x007cb770
+    virtual void SetComponent(Component* component) { ContainerConfig::SetComponent(component); this->mUserList=static_cast<UserListCtrl*>(component); } // inline
     UserListCtrl* mUserList; //98, borrowed
 };
 
@@ -105,19 +104,19 @@ class MaxSplitterButtonConfig : public MSArrowButtonConfig {
 public:
     static ComponentConfig* CfgFactory();
     static Component* CompFactory();
-    virtual bool Virtual24(const std::string&); //3c9680, actual SDK HandleInstruction
-    virtual void Virtual34(Component*); //3658a0, actual SDK SetComponent
+    virtual bool Virtual24(const std::string&); // HandleInstruction at 0x007c9680
+    virtual void SetComponent(Component*); // at 0x007658a0
     MaxSplitterButton* mButton; //80, borrowed
 };
 
 class BrowserComponentConfig : public ContainerConfig {
 public:
-    static void Init(ResourceConfigTable*); //3fab70, external true SDK setup provider
-    static ComponentConfig* CfgFactory(); //3facb0, external provider only
-    static Component* CompFactory(); //3fac50, external provider only; no BrowserComponent allocation authority
-    virtual bool Virtual24(const std::string&); //3fa8a0, actual SDK HandleInstruction
-    virtual bool Virtual28(const std::string&,ComponentConfig*&,Component*&); //3fa7e0, GetPredefinedComponent
-    virtual void Virtual34(Component*); //38f960, actual SetComponent
+    static void Init(ResourceConfigTable*); // SDK setup, at 0x007fab70
+    static ComponentConfig* CfgFactory(); // at 0x007facb0
+    static Component* CompFactory(); // at 0x007fac50
+    virtual bool Virtual24(const std::string&); // HandleInstruction at 0x007fa8a0
+    virtual bool GetPredefinedComponent(const std::string&,ComponentConfig*&,Component*&); //3fa7e0, GetPredefinedComponent
+    virtual void SetComponent(Component*); // at 0x0078f960
     BrowserComponent* mBrowserComponent; //98, borrowed; complete config9c, no lifetime implementation
 };
 }

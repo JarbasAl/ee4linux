@@ -1,5 +1,4 @@
-// Verbatim established ConfigObject54/ConfigValueBase12 declarations moved from GUI.
-// No fields, slots, inline bodies or owner semantics altered.
+// ConfigObject (0x54 bytes) and ConfigValueBase (12 bytes) declarations, moved from GUI.
 #ifndef EE_WONAPI_WONCONFIGOBJECT_H
 #define EE_WONAPI_WONCONFIGOBJECT_H
 #include <string>
@@ -12,50 +11,50 @@ class ConfigParser;
 class StringParser;
 class ConfigObject;
 typedef ConfigObject* (*ConfigObjectFactory)();
-struct ConfigObjectEntry {                  // established complete0c; genuine SDK GroupType constructors below
+struct ConfigObjectEntry {                  // size 0c; SDK GroupType constructors below
     ConfigObjectEntry(ConfigObjectFactory=NULL,SmartPtr<ConfigObject>* =NULL);
     ConfigObjectEntry(ConfigObject*);
-    ConfigObjectFactory mL00;
-    SmartPtr<ConfigObject>* mL04;
+    ConfigObjectFactory mFactory;
+    SmartPtr<ConfigObject>* mGroupPtr;
     SmartPtr<ConfigObject> mObject;             // +0x08 (released by the node dtor 0x296a8f)
 };
-// Full12-byte abstract base, nativeInitialize/Read/Write/default flag accessed byConfigObject.
+// 12-byte abstract base; ConfigObject uses Initialize/Read/Write and the default flag.
 class ConfigValueBase : public RefCount {
 public:
     virtual void InitializeDefaultHook()=0; //slot04
     virtual bool CopyValueHook(ConfigValueBase*)=0; //slot08
     virtual bool ReadValue(StringParser&)=0; //slot0c
     virtual void WriteValue(std::string&)=0; //slot10
-    void CopyValue(ConfigValueBase* source) { if(CopyValueHook(source)) mIsDefault=source->mIsDefault; } //genuine SDK inline; preserves defaultflag only after successful typedcopy
+    void CopyValue(ConfigValueBase* source) { if(this->CopyValueHook(source)) this->mIsDefault=source->mIsDefault; } //SDK inline; keeps the default flag only after a successful typed copy
     ConfigValueBase():mIsDefault(false) {}
-    bool mIsDefault; //08; native3aed47/3b1149/3af2de, natural09..0b padding
+    bool mIsDefault; //08; 3aed47/3b1149/3af2de, 09..0b padding
 };
 typedef SmartPtr<ConfigValueBase> ConfigValueBasePtr;
 
 // a configuration object (0x54 bytes: LobbyConfig's members start at +0x54). Layout from its implicit dtor 0x294e83
-//; member names PROVISIONAL.
+// (provisional member names)
 class ConfigObject : public RefCount {
 public:
     typedef std::list<SmartPtr<ConfigObject> > ChildList;
     typedef std::map<std::string,ConfigValueBasePtr,StringLessNoCase> KeyValMap;
     typedef std::map<std::string,ConfigObjectEntry,StringLessNoCase> KeyGroupMap;
     ConfigObject();                        // 0x3aea90
-    // Original ConfigObject vtable has these eight slots after its implicit virtual destructor.
-    virtual bool Virtual04(ConfigParser* inParser, const std::string& inInstruction);
-    virtual bool Virtual08(ConfigParser* inParser, const std::string& inKey, StringParser& inValue);
-    virtual bool Virtual0C(ConfigParser* inParser);
-    virtual bool Virtual10(ConfigParser* inParser);
-    virtual bool Virtual14(const std::string& inKey, std::string& outValue);
-    virtual void Virtual18(bool inFlag);
-    virtual void Virtual1C(std::string& outValues);
-    virtual int Virtual20(const std::string& inKey, StringParser& inValue);
+    // The original ConfigObject vtable has these eight slots after its implicit virtual destructor.
+    virtual bool HandleInstruction(ConfigParser* inParser, const std::string& inInstruction);
+    virtual bool HandleValueInstruction(ConfigParser* inParser, const std::string& inKey, StringParser& inValue);
+    virtual bool PreParse(ConfigParser* inParser);
+    virtual bool PostParse(ConfigParser* inParser);
+    virtual bool GetKeyValue(const std::string& inKey, std::string& outValue);
+    virtual void Reset(bool inFlag);
+    virtual void GetAllKeyValues(std::string& outValues);
+    virtual int SetKeyValue(const std::string& inKey, StringParser& inValue);
     void KeyAdd(const char* inKey, unsigned short& ioValue, unsigned short inDefault);   // 0x3b1ba0
     void KeyAdd(const char* inKey, bool& ioValue, bool inDefault); // 0x3b1b40
     void KeyAdd(const char* inKey, std::string& ioValue, const char* inDefault); // 0x3b1c00
     void KeyAdd(const char* inKey, std::wstring& ioValue, const wchar_t* inDefault); // 0x3b1c60
     void KeyAdd(const char* inKey, std::list<std::string>& ioValue, const char* inDefault, bool inFlag); // 0x3b1cc0
 
-    void CopyKeyValsFrom(ConfigObject*); //genuine SDK ordered case-insensitive merge/copy, SOURCE_ONLY_NO_NATIVE_ID
+    void CopyKeyValsFrom(ConfigObject*); //SDK ordered case-insensitive merge/copy; no original address identified
     ConfigObject* NextChild();
     bool HasMoreChildren();
     void RegisterKeyGroup(const char*,ConfigObjectFactory,SmartPtr<ConfigObject>* =NULL);
@@ -88,19 +87,19 @@ public:
     void RegisterStringListListValue(const char *theKey, std::list<std::list<std::string> > &theStringListList, const char *theDefVal = NULL, bool additive = false);
     void RegisterWStringListListValue(const char *theKey, std::list<std::list<std::wstring> > &theStringListList, const wchar_t *theDefVal = NULL, bool additive = false);
 
-    ChildList mL08;    // +0x08 (dtor ICF 0xd17ea, list<SmartPtr<..>>)
-    ChildList::iterator mL14;                              // +0x14
-    std::string mS18;                       // +0x18
-    std::string mS28;                       // +0x28
-    ConfigObject* GetParentObject() { return mL38; }
-    ConfigObject* mL38;                              // +0x38
+    ChildList mChildList;  // +0x08 (dtor ICF 0xd17ea, list<SmartPtr<..>>)
+    ChildList::iterator mChildItr;                         // +0x14
+    std::string mName;                      // +0x18
+    std::string mBaseName;                  // +0x28
+    ConfigObject* GetParentObject() { return this->mParent; }
+    ConfigObject* mParent;                           // +0x38
     KeyValMap mKeyMap;     // +0x3c (KeyAdd 0x3b18e0 inserts at +0x3c; node value 0x14)
-    KeyGroupMap mM48;         // +0x48 (node value 0x1c: SmartPtr at value +0x18)
+    KeyGroupMap mKeyGroupMap;  // +0x48 (node value 0x1c: SmartPtr at value +0x18)
 };
 
 inline ConfigObjectEntry::ConfigObjectEntry(ConfigObjectFactory factory,SmartPtr<ConfigObject>* group)
-    : mL00(factory),mL04(group) {}
+    : mFactory(factory),mGroupPtr(group) {}
 inline ConfigObjectEntry::ConfigObjectEntry(ConfigObject* group)
-    : mL00(NULL),mL04(NULL),mObject(group) {}
+    : mFactory(NULL),mGroupPtr(NULL),mObject(group) {}
 }
 #endif

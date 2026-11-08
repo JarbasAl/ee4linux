@@ -14,7 +14,8 @@
 #include "ee/wonapi/WONLobbyCore.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075cde0
-LobbyUserInfo* LobbyFn35CDE0()
+// Returns the saved entry of the logged-in user, or NULL for the LAN user or an unknown id
+LobbyUserInfo* LobbyGetCurrentUser()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data==NULL || data->mCurrentUserId==0)
@@ -28,6 +29,7 @@ LobbyUserInfo* LobbyFn35CDE0()
     return NULL;
 }
 // FUNCTION: WON 0x0075ce60
+// Returns all saved login users by name (an empty map without lobby data)
 const LobbyUserInfoMap& LobbyFn35CE60()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
@@ -37,14 +39,16 @@ const LobbyUserInfoMap& LobbyFn35CE60()
     return empty;
 }
 // FUNCTION: WON 0x0075cec0
-GUIString LobbyFn35CEC0(const GUIString& name)
+// Returns the saved password of a login user, or an empty string if the user is unknown
+GUIString LobbyGetUserPassword(const GUIString& name)
 {
-    LobbyUserInfo* info=LobbyFn35CF20(name);
+    LobbyUserInfo* info=LobbyFindUser(name);
     if(info!=NULL) return info->mPassword;
     return gEmptyGUIString;
 }
 // FUNCTION: WON 0x0075cf20
-LobbyUserInfo* LobbyFn35CF20(const GUIString& name)
+// Returns the saved login user with the given name, or NULL
+LobbyUserInfo* LobbyFindUser(const GUIString& name)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data==NULL)
@@ -54,6 +58,7 @@ LobbyUserInfo* LobbyFn35CF20(const GUIString& name)
     return &it->second;
 }
 // FUNCTION: WON 0x0075d660
+// Returns the recent LAN names with their last use times (an empty map without lobby data)
 const LobbyLanNameInfoMap& LobbyFn35D660()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
@@ -63,6 +68,7 @@ const LobbyLanNameInfoMap& LobbyFn35D660()
     return empty;
 }
 // FUNCTION: WON 0x0075d8e0
+// Returns the saved direct-connect addresses and names (an empty map without lobby data)
 const LobbyDirectConnectMap& LobbyFn35D8E0()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
@@ -72,6 +78,7 @@ const LobbyDirectConnectMap& LobbyFn35D8E0()
     return empty;
 }
 // FUNCTION: WON 0x0075dc80
+// Returns the user's filter values for a game list column (an empty set if the column has none)
 const LobbyOptionSet& LobbyFn35DC80(const GUIString& column)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
@@ -84,11 +91,12 @@ const LobbyOptionSet& LobbyFn35DC80(const GUIString& column)
     return empty;
 }
 // FUNCTION: WON 0x0075e470
-void LobbyFn35E470(const GUIString& name)
+// Sets the lobby tab to open at start, marking the user's preferences changed
+void LobbySetTabSelect(const GUIString& name)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && name!=data->mS58) {
-        data->mS58=name;
+    if(data!=NULL && name!=data->mTabSelect) {
+        data->mTabSelect=name;
         data->mUserDirty=true;
     }
 }

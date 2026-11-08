@@ -1,4 +1,4 @@
-// Original-backed AuthBase owned raw bytes, unpack dispatch and expiry.
+// Auth2Certificate: version 2 auth certificate (user, key, community trust, user data, nicknames, key ids)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,9 +10,10 @@
 #include "ee/wonapi/WONAuthCertificate.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006dd1d0
+// Destroys the certificate, releasing its key and maps
 Auth2Certificate::~Auth2Certificate() {}
-// Original code2dd6b0..2dda46 =918B; movedi,edi padding2 and switchtable16 excluded.
 // FUNCTION: WON 0x006dd6b0
+// Reads the certificate's typed fields (user and key, community user data, nicknames, key ids); false on a bad key
 bool Auth2Certificate::UnpackHook(ReadBuffer& input)
 {
     if (!AuthBase::UnpackHook(input))
@@ -24,35 +25,35 @@ bool Auth2Certificate::UnpackHook(ReadBuffer& input)
         int start = input.pos();
         switch (type) {
         case 0: {
-            mUserId = input.ReadLong();
+            this->mUserId = input.ReadLong();
             unsigned short keyLength = input.ReadShort();
-            if (!mPubKey.SetPublicKey(input.ReadBytes(keyLength), keyLength))
+            if (!this->mPubKey.SetPublicKey(input.ReadBytes(keyLength), keyLength))
                 return false;
-            input.ReadWString(mUserName, 2);
+            input.ReadWString(this->mUserName, 2);
             unsigned char communities = input.ReadByte();
             for (int j=0; j<communities; ++j) {
                 DWORD id = input.ReadLong();
-                unsigned short& trust = mCommunityTrustMap[id];
+                unsigned short& trust = this->mCommunityTrustMap[id];
                 trust = input.ReadShort();
             }
             break;
         }
         case 1: {
             DWORD id = input.ReadLong();
-            mUserDataMap[id] = input.ReadBuf(2);
+            this->mUserDataMap[id] = input.ReadBuf(2);
             break;
         }
         case 2: {
             std::wstring key, value;
             input.ReadWString(key, 2);
             input.ReadWString(value, 2);
-            mNicknameMap[key] = value;
+            this->mNicknameMap[key] = value;
             break;
         }
         case 3: {
             DWORD id = input.ReadLong();
             DWORD keyId = input.ReadLong();
-            mKeyIdMap[id] = keyId;
+            this->mKeyIdMap[id] = keyId;
             break;
         }
         }
@@ -61,18 +62,19 @@ bool Auth2Certificate::UnpackHook(ReadBuffer& input)
     return true;
 }
 // FUNCTION: WON 0x006dda60
+// Checks the user id and that the given community (or any community) grants at least the given trust
 bool Auth2Certificate::VerifyPermissions(DWORD userId, DWORD community, unsigned short minTrust) const
 {
-    if (userId != 0 && mUserId != userId)
+    if (userId != 0 && this->mUserId != userId)
         return false;
     if (community != 0) {
-        CommunityTrustMap::const_iterator found = mCommunityTrustMap.find(community);
-        if (found == mCommunityTrustMap.end())
+        CommunityTrustMap::const_iterator found = this->mCommunityTrustMap.find(community);
+        if (found == this->mCommunityTrustMap.end())
             return false;
         return found->second >= minTrust;
     }
-    CommunityTrustMap::const_iterator next = mCommunityTrustMap.begin();
-    while (next != mCommunityTrustMap.end()) {
+    CommunityTrustMap::const_iterator next = this->mCommunityTrustMap.begin();
+    while (next != this->mCommunityTrustMap.end()) {
         if (next->second >= minTrust)
             return true;
         ++next;
@@ -80,70 +82,71 @@ bool Auth2Certificate::VerifyPermissions(DWORD userId, DWORD community, unsigned
     return false;
 }
 // FUNCTION: WON 0x006ddb50
+// Returns the first community id in the trust map, or 0 when there is none
 DWORD Auth2Certificate::GetFirstCommunity() const
 {
-    if(mCommunityTrustMap.empty()) return 0;
-    return mCommunityTrustMap.begin()->first;
+    if(this->mCommunityTrustMap.empty()) return 0;
+    return this->mCommunityTrustMap.begin()->first;
 }
 }
 
 namespace WONAPI {
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 std::wstring Auth2Certificate::GetNickname(const std::wstring &theKey) const
 {
-	NicknameMap::const_iterator anItr = mNicknameMap.find(theKey);
-	if(anItr==mNicknameMap.end())
+	NicknameMap::const_iterator anItr = this->mNicknameMap.find(theKey);
+	if(anItr==this->mNicknameMap.end())
 		return L"";
 	else
 		return anItr->second;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 ByteBufferPtr Auth2Certificate::GetUserData(DWORD theCommunityId) const
 {
-	UserDataMap::const_iterator anItr = mUserDataMap.find(theCommunityId);
-	if(anItr==mUserDataMap.end())
+	UserDataMap::const_iterator anItr = this->mUserDataMap.find(theCommunityId);
+	if(anItr==this->mUserDataMap.end())
 		return NULL;
 	else
 		return anItr->second;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 DWORD Auth2Certificate::GetKeyId(DWORD theCommunityId) const
 {
-	KeyIdMap::const_iterator anItr = mKeyIdMap.find(theCommunityId);
-	if(anItr==mKeyIdMap.end())
+	KeyIdMap::const_iterator anItr = this->mKeyIdMap.find(theCommunityId);
+	if(anItr==this->mKeyIdMap.end())
 		return 0;
 	else
 		return anItr->second;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 std::wstring Auth2Certificate::GetFirstNickname() const
 {
-	if (mNicknameMap.empty())
+	if (this->mNicknameMap.empty())
 		return L"";
 	else
-		return GetNickname(mNicknameMap.begin()->second);
+		return this->GetNickname(this->mNicknameMap.begin()->second);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 unsigned short Auth2Certificate::GetFirstCommunityTrust() const
 {
-	if (mCommunityTrustMap.empty())
+	if (this->mCommunityTrustMap.empty())
 		return 0;
 	else
-		return (mCommunityTrustMap.begin()->second);
+		return (this->mCommunityTrustMap.begin()->second);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent support body; no Native credit.
+// No original address identified: WON SDK support body
 ByteBufferPtr Auth2Certificate::GetFirstUserData() const
 {
-	if (mUserDataMap.empty())
+	if (this->mUserDataMap.empty())
 		return NULL;
 	else
-		return (mUserDataMap.begin()->second);
+		return (this->mUserDataMap.begin()->second);
 }
 }
 

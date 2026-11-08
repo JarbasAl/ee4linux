@@ -1,4 +1,4 @@
-// Complete original-backed GUI values; source-only, no runtime substitution.
+// Default (empty) platform hooks of the base window (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,31 +12,36 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00729e60
-SmartPtr<Font> Window::Virtual04(const FontDescriptor&) { return NULL; }
-// SUPPORT-ONLY: EXE 0x008142a0
-void Window::Virtual10() {}
-// SUPPORT-ONLY: EXE 0x008142a0
-void Window::Virtual14() {}
-// SUPPORT-ONLY: EXE 0x006fa500
-void Window::Virtual18(Cursor*) {}
-// SUPPORT-ONLY: EXE 0x006fa500
-void Window::Virtual1C(bool) {}
-// SUPPORT-ONLY: EXE 0x006fa500
-void Window::Virtual20(bool) {}
-// SUPPORT-ONLY: EXE 0x006fa500
-void Window::Virtual24(bool) {}
-// SUPPORT-ONLY: EXE 0x006fa500
-void Window::Virtual28(bool) {}
+// Returns no font (platform windows override this)
+SmartPtr<Font> Window::PlatformGetFont(const FontDescriptor&) { return NULL; }
+// Does nothing on the base window (the linker folds this empty body into the identical one at 0x008142a0)
+void Window::PlatformSetTitle() {}
+// Does nothing on the base window (the linker folds this empty body into the identical one at 0x008142a0)
+void Window::PlatformSetIcon() {}
+// Ignores the cursor on the base window (the linker folds this empty body into the identical one at 0x006fa500)
+void Window::PlatformSetCursor(Cursor*) {}
+// Ignores the request on the base window (the linker folds this empty body into the identical one at 0x006fa500)
+void Window::PlatformShowNativeCursor(bool) {}
+// Ignores the request on the base window (the linker folds this empty body into the identical one at 0x006fa500)
+void Window::PlatformShow(bool) {}
+// Ignores the request on the base window (the linker folds this empty body into the identical one at 0x006fa500)
+void Window::PlatformMinimize(bool) {}
+// Ignores the request on the base window (the linker folds this empty body into the identical one at 0x006fa500)
+void Window::PlatformSetTopMost(bool) {}
 // FUNCTION: WON 0x007272f0
+// Does nothing on the base window (platform windows move and resize)
 void Window::SetPosSize(int,int,int,int) {}
 // FUNCTION: WON 0x00727440
+// Leaves the rectangle unchanged on the base window
 void Window::GetRect(WONRectangle&,bool) {}
-// SUPPORT-ONLY: EXE 0x008142a0
-void Window::Virtual3C() {}
-// SUPPORT-ONLY: EXE 0x006fa500
-void Window::Virtual44(bool) {}
+// Does nothing on the base window (the linker folds this empty body into the identical one at 0x008142a0)
+void Window::PlatformSetFocus() {}
+// Ignores the request on the base window (the linker folds this empty body into the identical one at 0x006fa500)
+void Window::PlatformSetMouseCapture(bool) {}
 // FUNCTION: WON 0x0072b0f0
-void Window::Virtual48(WindowEventBase* event) { event->mWindow=this; mManager->PostEvent(event); }
+// Tags the event with this window and posts it to the window manager's queue
+void Window::QueueEvent(WindowEventBase* event) { event->mWindow=this; this->mManager->PostEvent(event); }
 // FUNCTION: WON 0x00729e80
-bool Window::Virtual4C() { return mIsShowing; }
+// Returns whether the window was last shown
+bool Window::PlatformIsVisible() { return this->mIsShowing; }
 }

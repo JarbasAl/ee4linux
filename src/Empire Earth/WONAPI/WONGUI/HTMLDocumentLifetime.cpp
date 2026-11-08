@@ -1,4 +1,4 @@
-// Genuine authored virtual lifetime; automatic complete-owner cleanup, support only.
+// HTML document destructor and tag iteration (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,33 +15,34 @@
 #include "ee/wonapi/WONLobbyAnimation.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0073c9e0
+// Destroys an HTML document, releasing its tags, images and image maps
 HTMLDocument::~HTMLDocument() {}
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable API body, zero Native/primary/physical credit.
+// Restarts tag iteration at the body start or the first tag (not identified in the original exe)
 void HTMLDocument::Rewind(bool beginAtBodyStart)
 {
 	if(beginAtBodyStart)
-		mTagItr = GetBodyStart();
+		this->mTagItr = this->GetBodyStart();
 	else
-		mTagItr = mTagList.begin();
+		this->mTagItr = this->mTagList.begin();
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable API body, zero Native/primary/physical credit.
+// Returns the next tag and advances, or NULL at the body end or list end (not identified in the original exe)
 HTMLTag* HTMLDocument::GetNextTag(bool stopAtBodyEnd)
 {
 	if(stopAtBodyEnd)
 	{
-		if(mTagItr==mBodyEnd)
+		if(this->mTagItr==this->mBodyEnd)
 			return NULL;
 	}
 	else 
 	{
-		if(mTagItr==mTagList.end())
+		if(this->mTagItr==this->mTagList.end())
 			return NULL;
 	}
 
-	return *mTagItr++;
+	return *this->mTagItr++;
 }
 }

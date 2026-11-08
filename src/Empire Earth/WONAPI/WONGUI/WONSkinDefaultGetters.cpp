@@ -1,4 +1,4 @@
-// Genuine SDK default skin selectors and frame-copy factories.
+// Skin getters that duplicate the template controls and backgrounds (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,45 +14,53 @@
 #include "ee/wonapi/WONLobbySkinListControls.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00715540
+// Returns a copy of the skin's close button
 WONSimpleButton* WONSkin::GetCloseButton()
 {
-    return mCloseButton->Duplicate();
+    return this->mCloseButton->Duplicate();
 }
 // FUNCTION: WON 0x00715890
+// Returns a copy of the skin's input box
 WONInputBox* WONSkin::GetInputBox()
 {
-    return mInputBox->Duplicate();
+    return this->mInputBox->Duplicate();
 }
 // FUNCTION: WON 0x007154f0
+// Returns a copy of the skin's push button
 WONButton* WONSkin::GetPushButton()
 {
-    return mPushButton->Duplicate();
+    return this->mPushButton->Duplicate();
 }
 // FUNCTION: WON 0x00715500
+// Returns a copy of the skin's checkbox
 WONButton* WONSkin::GetCheckbox()
 {
-    return mCheckbox->Duplicate();
+    return this->mCheckbox->Duplicate();
 }
 // FUNCTION: WON 0x00715510
+// Returns a copy of the skin's radio button
 WONButton* WONSkin::GetRadioButton()
 {
-    return mRadioButton->Duplicate();
+    return this->mRadioButton->Duplicate();
 }
 // FUNCTION: WON 0x00715520
+// Returns a copy of the skin's list header button
 WONHeaderButton* WONSkin::GetHeaderButton()
 {
-    return mHeaderButton->Duplicate();
+    return this->mHeaderButton->Duplicate();
 }
 // FUNCTION: WON 0x00715580
+// Returns a new frame component with a copy of the skin's popup background frame
 WONFrameComponent* WONSkin::GetPopupBack()
 {
-    WONFrameComponent* component=new WONFrameComponent(mPopupBack->GetFrame());
+    WONFrameComponent* component=new WONFrameComponent(this->mPopupBack->GetFrame());
     return component;
 }
 // FUNCTION: WON 0x007155f0
+// Returns a new frame component with a copy of the skin's dialog background frame
 WONFrameComponent* WONSkin::GetDialogBack()
 {
-    WONFrameComponent* component=new WONFrameComponent(mDialogBack->GetFrame());
+    WONFrameComponent* component=new WONFrameComponent(this->mDialogBack->GetFrame());
     return component;
 }
 }
@@ -61,6 +69,7 @@ WONFrameComponent* WONSkin::GetDialogBack()
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007152d0
+// Destroys the skin, releasing its template controls and button type maps
 WONSkin::~WONSkin() {}
 }
 

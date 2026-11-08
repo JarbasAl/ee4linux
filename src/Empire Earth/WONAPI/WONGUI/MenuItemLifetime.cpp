@@ -1,4 +1,4 @@
-// Complete original-backed Component source completion; all selected methods support0.
+// Menu item construction, popup menu reset and the text-only AddItem overloads (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,30 +12,32 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006fcd30
+// Creates an enabled menu item with the given text and listener and menu id 0
 MenuItem::MenuItem(const GUIString& text,ComponentListener* listener)
     :TextListItem(text),mListener(listener)
 {
-    mDisabled=false;
-    mMenuId=0;
+    this->mDisabled=false;
+    this->mMenuId=0;
 }
-// Genuine SDK implicit destructor supplied by actual complete class/real constructor; no authored body.
-// Genuine SDK implicit destructor supplied by actual complete class/real constructor; no authored body.
 // FUNCTION: WON 0x006fd400
+// Closes the open submenu and clears the selection
 void PopupMenu::Reset()
 {
-    mCurSubMenu=(PopupMenu*)NULL;
-    SetSelItem(-1,true);
+    this->mCurSubMenu=(PopupMenu*)NULL;
+    this->SetSelItem(-1,true);
 }
 // FUNCTION: WON 0x006fd440
 // FUNCTION: WON 0x006fd460
+// Adds a text item with a menu id and no listener (this overload is 0x006fd440; the listener overload
+// below is 0x006fd460)
 MenuItem* PopupMenu::AddItem(const GUIString& text,int id)
 {
-    return AddItem(text,static_cast<ComponentListener*>(NULL),id);
+    return this->AddItem(text,static_cast<ComponentListener*>(NULL),id);
 }
-// SUPPORT: EXE 0x006fd460; native25B, true SDK listener overload.
+// Adds a text item with a listener and menu id and no icon (0x006fd460)
 MenuItem* PopupMenu::AddItem(const GUIString& text,ComponentListener* listener,int id)
 {
-    return AddItem(text,static_cast<NativeImage*>(NULL),listener,id);
+    return this->AddItem(text,static_cast<NativeImage*>(NULL),listener,id);
 }
 }
 

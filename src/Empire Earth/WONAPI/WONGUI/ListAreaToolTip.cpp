@@ -11,46 +11,52 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x006fb7b0
+// Creates the tooltip of a list box, showing no item
 ListAreaToolTip::ListAreaToolTip(ListArea* area) {
-    mListArea=area;
-    mItem=NULL;
+    this->mListArea=area;
+    this->mItem=NULL;
 }
 // FUNCTION: WON 0x006fb8d0
+// Draws the tipped list item in full on a tooltip background with a tooltip-coloured border, using the
+// list box's colour scheme unless the tooltip has its own
 void ListAreaToolTip::Paint(Graphics& g) {
     Component::Paint(g);
-    if(mItem.get()==NULL) return;
+    if(this->mItem.get()==NULL) return;
     ColorScheme* scheme=g.mColorScheme;
-    if(GetOwnColorScheme()==NULL) g.mColorScheme=mListArea->GetColorScheme();
-    int x=mListArea->mLeftPad,y=-mItem->mTop+2;
+    if(this->GetOwnColorScheme()==NULL) g.mColorScheme=this->mListArea->GetColorScheme();
+    int x=this->mListArea->mLeftPad,y=-this->mItem->mTop+2;
     g.SetSysColor(StandardColor_ToolTipBack);
-    g.FillRect(0,0,Width(),Height());
-    g.PushClipRect(0,2,Width(),Height()-4);
+    g.FillRect(0,0,this->Width(),this->Height());
+    g.PushClipRect(0,2,this->Width(),this->Height()-4);
     g.Translate(x,y);
-    mListArea->VirtualD4(g);
+    this->mListArea->ScrollPaint(g);
     g.Translate(-x,-y);
     g.PopClipRect();
     g.SetSysColor(StandardColor_ToolTipText);
-    g.DrawRect(0,0,Width(),Height());
+    g.DrawRect(0,0,this->Width(),this->Height());
     g.mColorScheme=scheme;
 }
 // FUNCTION: WON 0x006fb9b0
+// Opens the tooltip over a list item, at least as wide as the list box; closes the old tip first unless
+// the same item is already shown, and stops there for no item
 void ListAreaToolTip::DoTip(ListItem* item) {
-    if(mItem.get()==item && mItem.get()!=NULL && mParent!=NULL) return;
-    EndTip();
-    mItem=item;
-    if(mItem.get()==NULL) return;
-    int x=0,y=mListArea->mTopPad-mListArea->mVertOffset;
-    mListArea->Fn2F56D0(x,y);
-    y+=mItem->mTop-2;
-    PopupParams params(this,0x6247,mListArea,x,y);
-    int width=mItem->mL10+mListArea->mLeftPad+mListArea->mRightPad;
-    if(width<mListArea->Width()) width=mListArea->Width();
-    Fn2F4B90(width,mItem->mHeight+4);
-    mListArea->GetRoot()->OpenPopup(params);
+    if(this->mItem.get()==item && this->mItem.get()!=NULL && this->mParent!=NULL) return;
+    this->EndTip();
+    this->mItem=item;
+    if(this->mItem.get()==NULL) return;
+    int x=0,y=this->mListArea->mTopPad-this->mListArea->mVertOffset;
+    this->mListArea->LocalToRoot(x,y);
+    y+=this->mItem->mTop-2;
+    PopupParams params(this,0x6247,this->mListArea,x,y);
+    int width=this->mItem->mWidth+this->mListArea->mLeftPad+this->mListArea->mRightPad;
+    if(width<this->mListArea->Width()) width=this->mListArea->Width();
+    this->SetSize(width,this->mItem->mHeight+4);
+    this->mListArea->GetRoot()->OpenPopup(params);
 }
 // FUNCTION: WON 0x006fbab0
+// Closes the tooltip popup if it is open
 void ListAreaToolTip::EndTip() {
-    if(mParent!=NULL) mListArea->GetRoot()->ClosePopup(this);
+    if(this->mParent!=NULL) this->mListArea->GetRoot()->ClosePopup(this);
 }
 
 // Compiler-generated and header-inline functions this unit emits:

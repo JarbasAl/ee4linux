@@ -1,4 +1,4 @@
-// New native ProfileData family; original source filename/grouping provisional.
+// WONAPI account profile data: newsletters, custom action and birth date (file grouping inferred)
 
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
@@ -12,41 +12,47 @@
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006cd770
+// Creates an empty profile (no birth date, no custom action)
 ProfileData::ProfileData()
     : mBirthMonth(0),mBirthDay(0),mBirthYear(0),mCustomActionId(0)
 {
 }
 
 // FUNCTION: WON 0x006cd830
+// Destroys the profile, releasing its newsletter list and custom action data
 ProfileData::~ProfileData() {}
 
 // FUNCTION: WON 0x006cd9e0
+// Sets whether the account subscribes to a newsletter
 void ProfileData::AddNewsletterSub(unsigned short inId,bool inSubscribe)
 {
-    mNewsletterSubs[inId]=inSubscribe;
+    this->mNewsletterSubs[inId]=inSubscribe;
 }
 
 // FUNCTION: WON 0x006cdae0
+// Returns whether the account subscribes to a newsletter (false if unknown)
 bool ProfileData::GetNewsletterSub(unsigned short inId)
 {
-    if (mNewsletterSubs.find(inId)==mNewsletterSubs.end()) return false;
-    return mNewsletterSubs[inId];
+    if (this->mNewsletterSubs.find(inId)==this->mNewsletterSubs.end()) return false;
+    return this->mNewsletterSubs[inId];
 }
 
 // FUNCTION: WON 0x006cdc20
+// Forgets every newsletter subscription
 void ProfileData::ClearNewsletterSubs()
 {
-    mNewsletterSubs.clear();
+    this->mNewsletterSubs.clear();
 }
 
 // FUNCTION: WON 0x006cdcc0
+// Appends the profile fields to a request (newsletters as set or get, custom action, birth date)
 void ProfileData::PackRequestData(WriteBuffer& inMsg,bool inIsSet)
 {
     unsigned short fieldCount=0;
     unsigned long fieldCountPos=inMsg.mLength;
     inMsg.AppendShort(0);
-    std::map<unsigned short,bool>::iterator it=mNewsletterSubs.begin();
-    while (it!=mNewsletterSubs.end()) {
+    std::map<unsigned short,bool>::iterator it=this->mNewsletterSubs.begin();
+    while (it!=this->mNewsletterSubs.end()) {
         inMsg.AppendShort(1);
         inMsg.AppendShort(inIsSet ? 3 : 2);
         inMsg.AppendShort(it->first);
@@ -54,27 +60,26 @@ void ProfileData::PackRequestData(WriteBuffer& inMsg,bool inIsSet)
         ++fieldCount;
         ++it;
     }
-    if (mCustomActionId!=0) {
+    if (this->mCustomActionId!=0) {
         inMsg.AppendShort(2);
         unsigned long dataLen=0;
-        if (mCustomActionData.get()!=NULL) dataLen=mCustomActionData->length();
+        if (this->mCustomActionData.get()!=NULL) dataLen=this->mCustomActionData->length();
         inMsg.AppendShort(dataLen+2);
-        inMsg.AppendShort(mCustomActionId);
-        inMsg.AppendBuffer(mCustomActionData.get(),0);
+        inMsg.AppendShort(this->mCustomActionId);
+        inMsg.AppendBuffer(this->mCustomActionData.get(),0);
         ++fieldCount;
     }
     inMsg.AppendShort(3);
     inMsg.AppendShort(4);
-    inMsg.AppendByte(mBirthMonth);
-    inMsg.AppendByte(mBirthDay);
-    inMsg.AppendShort(mBirthYear);
+    inMsg.AppendByte(this->mBirthMonth);
+    inMsg.AppendByte(this->mBirthDay);
+    inMsg.AppendShort(this->mBirthYear);
     ++fieldCount;
     inMsg.SetShort(fieldCountPos,fieldCount);
 }
 
 // FUNCTION: WON 0x006cde20
-// Native hot owner ranges2cde20..2ce051 +2ce057..2ce06a =580B.
-// Catch6B at2ce051 is support0; metadata/ranges/nativeinstructions retained separately.
+// Reads newsletter, custom action and birth date fields from a reply; stops quietly when it runs short
 void ProfileData::UnpackGetData(ReadBuffer& inMsg)
 {
     try {
@@ -85,21 +90,21 @@ void ProfileData::UnpackGetData(ReadBuffer& inMsg)
             switch (field) {
             case 1: {
                 unsigned short id=static_cast<unsigned short>(inMsg.ReadShort());
-                bool& subscription=mNewsletterSubs[id];
+                bool& subscription=this->mNewsletterSubs[id];
                 subscription=inMsg.ReadBool();
                 break;
             }
             case 2:
-                inMsg.ReadShort(); // Native consumes/discards returned action id, leaves mCustomActionId unchanged.
-                mCustomActionData=new ByteBuffer(inMsg.ReadBytes(static_cast<unsigned long>(length)-2),static_cast<unsigned long>(length)-2,false);
+                inMsg.ReadShort(); // the original discards the action id; mCustomActionId stays unchanged
+                this->mCustomActionData=new ByteBuffer(inMsg.ReadBytes(static_cast<unsigned long>(length)-2),static_cast<unsigned long>(length)-2,false);
                 break;
             case 3:
-                mBirthMonth=inMsg.ReadByte();
-                mBirthDay=inMsg.ReadByte();
-                mBirthYear=inMsg.ReadShort();
+                this->mBirthMonth=inMsg.ReadByte();
+                this->mBirthDay=inMsg.ReadByte();
+                this->mBirthYear=inMsg.ReadShort();
                 break;
             default:
-                break; // Native ignores unknown field, including its length; no invented payload skipping.
+                break; // the original ignores an unknown field without skipping its payload
             }
         }
     }
@@ -108,36 +113,37 @@ void ProfileData::UnpackGetData(ReadBuffer& inMsg)
 }
 
 // FUNCTION: WON 0x006ce070
+// Sets the birth month, day and year
 void ProfileData::SetBirthDate(unsigned char inMonth,unsigned char inDay,unsigned short inYear)
 {
-    mBirthMonth=inMonth;
-    mBirthDay=inDay;
-    mBirthYear=inYear;
+    this->mBirthMonth=inMonth;
+    this->mBirthDay=inDay;
+    this->mBirthYear=inYear;
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine missing session/profile/operation methods.
+// No original address identified: WON SDK profile methods
 namespace WONAPI {
 void ProfileData::ClearNewsletterSub(unsigned short theId)
 {
-	mNewsletterSubs.erase(theId);
+	this->mNewsletterSubs.erase(theId);
 }
 
 void ProfileData::SetCustomAction(unsigned short theActionId, const ByteBuffer *theData)
 {
-	mCustomActionId = theActionId;
-	mCustomActionData = theData;
+	this->mCustomActionId = theActionId;
+	this->mCustomActionData = theData;
 }
 
 void ProfileData::ClearCustomAction()
 {
-	mCustomActionId = 0;
-	mCustomActionData = NULL;
+	this->mCustomActionId = 0;
+	this->mCustomActionData = NULL;
 }
 
 unsigned long ProfileData::GetBirthDate()
 {
-	return (mBirthMonth) | (mBirthDay<<8) | (mBirthYear<<16);
+	return (this->mBirthMonth) | (this->mBirthDay<<8) | (this->mBirthYear<<16);
 }
 }
 

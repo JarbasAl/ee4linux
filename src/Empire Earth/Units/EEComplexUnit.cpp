@@ -507,7 +507,7 @@ bool gSightUpdatesEnabled = true;           // 0x4c76ec (.data = 1; just before 
 // Refunds part of the unit's cost as insurance and tells the local player when a refund threshold is passed
 // Original 0x4c76f0: the notification thresholds, used in ascending order.
 static const long kResourceRefundThresholds[11] = {100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000, 10000};
-extern char gU4E5B98[];
+extern char gEmptyString[];
 
 void EEComplexUnit::PayInsurance(float inFraction)
 {
@@ -556,7 +556,7 @@ void EEComplexUnit::PayInsurance(float inFraction)
         theText += thePart;
         gResource->GetString(IDS_IN_INSURANCE, thePart);
         theText += thePart;
-        gUserInterface->AddChatLogEntry(thePlayer->mColor, UWideString(gU4E5B98), theText, 5000, 2);
+        gUserInterface->AddChatLogEntry(thePlayer->mColor, UWideString(gEmptyString), theText, 5000, 2);
         EESoundObject* theSound = EESoundObject::Get(kSoundInsuranceCollected);
         if (theSound != NULL)
             theSound->Play(theSound->GetVolume(), 0.0f, 1.0f);

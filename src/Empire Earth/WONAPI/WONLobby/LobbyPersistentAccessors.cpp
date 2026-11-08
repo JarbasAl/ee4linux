@@ -14,17 +14,19 @@
 #include "ee/wonapi/WONLobbyCore.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075cf90
-void LobbyFn35CF90(LobbyUserInfo* user)
+// Makes the given saved user (or the LAN user for NULL) current and loads that user's preferences
+void LobbySetCurrentUser(LobbyUserInfo* user)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL) {
-        if(user==NULL) data->mCurrentUserId=0;
-        else data->mCurrentUserId=user->mUserId;
-        data->Fn35FC70();
-    }
+    if(data==NULL)
+        return;
+    if(user==NULL) data->mCurrentUserId=0;
+    else data->mCurrentUserId=user->mUserId;
+    data->LoadUserPrefs();
 }
 
 // FUNCTION: WON 0x0075cfc0
+// Returns the current user's ignored player names (an empty set without lobby data)
 const LobbyIgnoredNameSet& LobbyFn35CFC0()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
@@ -34,7 +36,8 @@ const LobbyIgnoredNameSet& LobbyFn35CFC0()
 }
 
 // FUNCTION: WON 0x0075d010
-bool LobbyFn35D010(const GUIString& name)
+// Returns whether a player name is on the current user's ignore list
+bool LobbyIsNameIgnored(const GUIString& name)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data==NULL) return false;
@@ -43,15 +46,17 @@ bool LobbyFn35D010(const GUIString& name)
 }
 
 // FUNCTION: WON 0x0075d090
-bool LobbyFn35D090(unsigned long id)
+// Returns whether a CD key id is in the saved blocked set (loaded and saved but never filled by the lobby)
+bool LobbyIsCDKeyBlocked(unsigned long id)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data==NULL) return false;
-    std::set<unsigned long>::iterator it=data->mIgnoredUserIds.find(id);
-    return it!=data->mIgnoredUserIds.end();
+    std::set<unsigned long>::iterator it=data->mBlockedCDKeyIds.find(id);
+    return it!=data->mBlockedCDKeyIds.end();
 }
 
 // FUNCTION: WON 0x0075d270
+// Returns the current user's friend list (an empty map without lobby data)
 const LobbyFriendMap& LobbyFn35D270()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
@@ -61,7 +66,8 @@ const LobbyFriendMap& LobbyFn35D270()
 }
 
 // FUNCTION: WON 0x0075d3f0
-LobbyFriend* LobbyFn35D3F0(unsigned long id)
+// Returns the friend entry for a user id, or NULL if that user is not a friend
+LobbyFriend* LobbyFindFriend(unsigned long id)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data==NULL) return NULL;
@@ -71,131 +77,149 @@ LobbyFriend* LobbyFn35D3F0(unsigned long id)
 }
 
 // FUNCTION: WON 0x0075d640
-const GUIString& LobbyFn35D640()
+// Returns the current LAN player name
+const GUIString& LobbyGetLanName()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mS68:gEmptyGUIString;
+    return data!=NULL?data->mLanName:gEmptyGUIString;
 }
 
 // FUNCTION: WON 0x0075dc40
-const GUIString& LobbyFn35DC40()
+// Returns the name of the server the user last joined
+const GUIString& LobbyGetLastServerName()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mS74:gEmptyGUIString;
+    return data!=NULL?data->mLastServerName:gEmptyGUIString;
 }
 
 // FUNCTION: WON 0x0075dc60
-const GUIString& LobbyFn35DC60()
+// Returns the name of the room the user last joined
+const GUIString& LobbyGetLastRoomName()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mS78:gEmptyGUIString;
+    return data!=NULL?data->mLastRoomName:gEmptyGUIString;
 }
 
 // FUNCTION: WON 0x0075e2d0
-const GUIString& LobbyFn35E2D0()
+// Returns the name of the lobby tab to open at start (Quick Play, LAN ...)
+const GUIString& LobbyGetTabSelect()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mS58:gEmptyGUIString;
+    return data!=NULL?data->mTabSelect:gEmptyGUIString;
 }
 
 // FUNCTION: WON 0x0075e2f0
-bool LobbyFn35E2F0()
+// Returns whether chat profanity filtering is on
+bool LobbyGetFilterDirtyWords()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB54:false;
+    return data!=NULL?data->mFilterDirtyWords:false;
 }
 
 // FUNCTION: WON 0x0075e300
-bool LobbyFn35E300()
+// Returns whether the user is marked away automatically when idle
+bool LobbyGetDoAutoAFK()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB55:false;
+    return data!=NULL?data->mDoAutoAFK:false;
 }
 
 // FUNCTION: WON 0x0075e310
-bool LobbyFn35E310()
+// Returns whether cross-promotion messages are shown
+bool LobbyGetCrossPromotion()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB56:false;
+    return data!=NULL?data->mCrossPromotion:false;
 }
 
 // FUNCTION: WON 0x0075e320
-bool LobbyFn35E320()
+// Returns whether lobby sound effects are on
+bool LobbyGetLobbySoundEffects()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB5C:false;
+    return data!=NULL?data->mLobbySoundEffects:false;
 }
 
 // FUNCTION: WON 0x0075e330
-bool LobbyFn35E330()
+// Returns whether chat sound effects are on
+bool LobbyGetChatSoundEffects()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB5E:false;
+    return data!=NULL?data->mChatSoundEffects:false;
 }
 
 // FUNCTION: WON 0x0075e340
-bool LobbyFn35E340()
+// Returns whether staging-room sound effects are on
+bool LobbyGetStagingSoundEffects()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB5F:false;
+    return data!=NULL?data->mStagingSoundEffects:false;
 }
 
 // FUNCTION: WON 0x0075e350
-bool LobbyFn35E350()
+// Returns whether lobby music is on
+bool LobbyGetLobbyMusic()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB5D:false;
+    return data!=NULL?data->mLobbyMusic:false;
 }
 
 // FUNCTION: WON 0x0075e360
-bool LobbyFn35E360()
+// Returns whether confirmation dialogs are shown
+bool LobbyGetShowConfirmations()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB60:false;
+    return data!=NULL?data->mShowConfirmations:false;
 }
 
 // FUNCTION: WON 0x0075e370
-bool LobbyFn35E370()
+// Returns whether listed games are pinged automatically
+bool LobbyGetAutoPingGames()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB61:false;
+    return data!=NULL?data->mAutoPingGames:false;
 }
 
 // FUNCTION: WON 0x0075e380
-bool LobbyFn35E380()
+// Returns whether games already in progress appear in the game list
+bool LobbyGetShowGamesInProgress()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB62:false;
+    return data!=NULL?data->mShowGamesInProgress:false;
 }
 
 // FUNCTION: WON 0x0075e390
-bool LobbyFn35E390()
+// Returns whether the user hides their location from friends
+bool LobbyGetAnonymousToFriends()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mB63:false;
+    return data!=NULL?data->mAnonymousToFriends:false;
 }
 
 // FUNCTION: WON 0x0075e3a0
-unsigned short LobbyFn35E3A0()
+// Returns the user's connection speed setting (50 without lobby data)
+unsigned short LobbyGetConnectionSpeed()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL) return data->mShort64;
+    if(data!=NULL) return data->mConnectionSpeed;
     return 50;
 }
 
 // FUNCTION: WON 0x0075e3c0
-unsigned short LobbyFn35E3C0()
+// Returns the LAN broadcast port (8585 without lobby data)
+unsigned short LobbyGetLanBroadcastPort()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL) return data->mPort66;
+    if(data!=NULL) return data->mLanBroadcastPort;
     return 8585;
 }
 
 // FUNCTION: WON 0x0075e3e0
-long LobbyFn35E3E0()
+// Returns the saved network adapter's IPv4 address (0 for the default)
+long LobbyGetNetworkAdapter()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    return data!=NULL?data->mNetworkHandle:0;
+    return data!=NULL?data->mNetworkAdapter:0;
 }
 }
 

@@ -1,5 +1,4 @@
-// Genuine SDK optional GIF decoder implementation; SOURCE_ONLY_NO_NATIVE_ID.
-// No native/primary/physical credit or runtime substitution authority.
+// GIF image decoder (not identified in the original exe)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <cstring>
@@ -25,8 +24,8 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 GIFDecoder::GIFDecoder()
 {
-	mGlobalColorMap = NULL;
-	mNumLoops = 0;
+	this->mGlobalColorMap = NULL;
+	this->mNumLoops = 0;
 }
 	
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,10 +42,10 @@ void GIFDecoder::InitStringTable()
 {
 	for(int i=0; i<256; i++)
 	{
-		mStringTable[i].mData = i;
-		mStringTable[i].mRootData = i;
-		mStringTable[i].mLen = 1;
-		mStringTable[i].mPrev = NULL;
+		this->mStringTable[i].mData = i;
+		this->mStringTable[i].mRootData = i;
+		this->mStringTable[i].mLen = 1;
+		this->mStringTable[i].mPrev = NULL;
 	}
 }
 
@@ -63,9 +62,9 @@ static unsigned long GetBits(unsigned long &theVal, unsigned char theNumBits)
 ///////////////////////////////////////////////////////////////////////////////
 bool GIFDecoder::ReadSignature()
 {
-	mSignature.resize(6);
-	mFileReader->ReadBytes((void*)mSignature.data(),mSignature.size());
-	string aSub = mSignature.substr(3);
+	this->mSignature.resize(6);
+	this->mFileReader->ReadBytes((void*)this->mSignature.data(),this->mSignature.size());
+	string aSub = this->mSignature.substr(3);
 
 	return StringCompareNoCase(aSub,"GIF")!=0;
 }
@@ -74,20 +73,20 @@ bool GIFDecoder::ReadSignature()
 ///////////////////////////////////////////////////////////////////////////////
 void GIFDecoder::ReadScreenDescriptor()
 {
-	mScreenWidth = mFileReader->ReadShort();
-	mScreenHeight = mFileReader->ReadShort();
+	this->mScreenWidth = this->mFileReader->ReadShort();
+	this->mScreenHeight = this->mFileReader->ReadShort();
 
-	unsigned long aVal = mFileReader->ReadByte();
-	mNumBitsPerPixel = GetBits(aVal,3)+1;
+	unsigned long aVal = this->mFileReader->ReadByte();
+	this->mNumBitsPerPixel = GetBits(aVal,3)+1;
 	GetBits(aVal,1); // should be zero
-	mNumBitsOfColorResolution = GetBits(aVal,3)+1;
-	mHaveGlobalColorMap = GetBits(aVal,1)?true:false;
+	this->mNumBitsOfColorResolution = GetBits(aVal,3)+1;
+	this->mHaveGlobalColorMap = GetBits(aVal,1)?true:false;
 
-	mBackgroundColorIndex = mFileReader->ReadByte();
-	aVal = mFileReader->ReadByte(); // should be zero
+	this->mBackgroundColorIndex = this->mFileReader->ReadByte();
+	aVal = this->mFileReader->ReadByte(); // should be zero
 	
-	if(mHaveGlobalColorMap)
-		mGlobalColorMap = ReadColorMap(1<<mNumBitsPerPixel);
+	if(this->mHaveGlobalColorMap)
+		this->mGlobalColorMap = this->ReadColorMap(1<<this->mNumBitsPerPixel);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,9 +96,9 @@ SmartPtr<Palette> GIFDecoder::ReadColorMap(int theNumColors)
 	Palette* aColorMap = new Palette(theNumColors);
 	for(int i=0; i<theNumColors; i++)
 	{
-		unsigned char r = mFileReader->ReadByte();
-		unsigned char g = mFileReader->ReadByte();
-		unsigned char b = mFileReader->ReadByte();
+		unsigned char r = this->mFileReader->ReadByte();
+		unsigned char g = this->mFileReader->ReadByte();
+		unsigned char b = this->mFileReader->ReadByte();
 		aColorMap->SetColor(i, (r<<16) | (g<<8) | b);
 	}
 
@@ -111,34 +110,34 @@ SmartPtr<Palette> GIFDecoder::ReadColorMap(int theNumColors)
 ///////////////////////////////////////////////////////////////////////////////
 void GIFDecoder::ReadExtension()
 {
-	unsigned char aFunctionCode = mFileReader->ReadByte();
-	unsigned char aByteCount = mFileReader->ReadByte();
+	unsigned char aFunctionCode = this->mFileReader->ReadByte();
+	unsigned char aByteCount = this->mFileReader->ReadByte();
 	switch(aFunctionCode)
 	{
 		case 0xf9: // graphics control extension
 		{
-			unsigned long aVal = mFileReader->ReadByte();
+			unsigned long aVal = this->mFileReader->ReadByte();
 			bool transparentColor = GetBits(aVal,1)?true:false;
 			bool userInput = GetBits(aVal,1)?true:false;
 			unsigned char aDisposalMethod = GetBits(aVal,3); // 0 - Not Specified, 1 - Leave, 2 - Restore BG Color, 3 - Restore what was there before
-			unsigned short aDelayTime = mFileReader->ReadShort();
-			unsigned char aTransparentColorIndex = mFileReader->ReadByte();
+			unsigned short aDelayTime = this->mFileReader->ReadShort();
+			unsigned char aTransparentColorIndex = this->mFileReader->ReadByte();
 
 			if(aDisposalMethod < AnimationFrame::DisposalMethod_Max)
-				mCurFrame->mDisposalMethod = (AnimationFrame::DisposalMethod)aDisposalMethod;
+				this->mCurFrame->mDisposalMethod = (AnimationFrame::DisposalMethod)aDisposalMethod;
 			else
-				mCurFrame->mDisposalMethod = AnimationFrame::DisposalMethod_None;
+				this->mCurFrame->mDisposalMethod = AnimationFrame::DisposalMethod_None;
 
 			if(aDelayTime==0)
-				mNumLoops = 1;
+				this->mNumLoops = 1;
 
-			mCurFrame->mDelayTime = aDelayTime*10;
+			this->mCurFrame->mDelayTime = aDelayTime*10;
 			if(transparentColor)
-				mCurImageTransparentColor = aTransparentColorIndex;
+				this->mCurImageTransparentColor = aTransparentColorIndex;
 			else
-				mCurImageTransparentColor = -1;
+				this->mCurImageTransparentColor = -1;
 
-			aByteCount = mFileReader->ReadByte();
+			aByteCount = this->mFileReader->ReadByte();
 		}
 		break;
 
@@ -146,15 +145,15 @@ void GIFDecoder::ReadExtension()
 		{
 			string anIdentifier;
 			anIdentifier.resize(11);
-			mFileReader->ReadBytes((void*)anIdentifier.data(),anIdentifier.size());
-			aByteCount = mFileReader->ReadByte();
+			this->mFileReader->ReadBytes((void*)anIdentifier.data(),anIdentifier.size());
+			aByteCount = this->mFileReader->ReadByte();
 			if(anIdentifier=="NETSCAPE2.0")
 			{
-				unsigned char aByte = mFileReader->ReadByte();
-				unsigned short aNumLoops = mFileReader->ReadShort();
-				aByteCount = mFileReader->ReadByte();
+				unsigned char aByte = this->mFileReader->ReadByte();
+				unsigned short aNumLoops = this->mFileReader->ReadShort();
+				aByteCount = this->mFileReader->ReadByte();
 
-				mNumLoops = aNumLoops;
+				this->mNumLoops = aNumLoops;
 			}
 		}
 		break;
@@ -162,8 +161,8 @@ void GIFDecoder::ReadExtension()
 	
 	while(aByteCount!=0)
 	{
-		mFileReader->SkipBytes(aByteCount);
-		aByteCount = mFileReader->ReadByte();
+		this->mFileReader->SkipBytes(aByteCount);
+		aByteCount = this->mFileReader->ReadByte();
 	}
 }
 
@@ -172,8 +171,8 @@ void GIFDecoder::ReadExtension()
 ///////////////////////////////////////////////////////////////////////////////
 void GIFDecoder::ReadImageData()
 {
-	unsigned char aCodeSize = mFileReader->ReadByte();
-	unsigned char aByteCount = mFileReader->ReadByte();
+	unsigned char aCodeSize = this->mFileReader->ReadByte();
+	unsigned char aByteCount = this->mFileReader->ReadByte();
 
 	unsigned char aCompressionSize = aCodeSize+1;
 	int aCompressionMask = (1<<aCompressionSize)-1;
@@ -182,9 +181,9 @@ void GIFDecoder::ReadImageData()
 	unsigned short anEndCode = aClearCode+1;
 	unsigned short nextCode = aClearCode+2;
 	
-	SmartPtr<RawImage8> anImage = new RawImage8(mCurImageWidth,mCurImageHeight,mCurImagePalette.get());
-	int anImageSize = mCurImageWidth*mCurImageHeight;
-	int aRowPad = anImage->mBytesPerRow - mCurImageWidth;
+	SmartPtr<RawImage8> anImage = new RawImage8(this->mCurImageWidth,this->mCurImageHeight,this->mCurImagePalette.get());
+	int anImageSize = this->mCurImageWidth*this->mCurImageHeight;
+	int aRowPad = anImage->mBytesPerRow - this->mCurImageWidth;
 
 	unsigned long anImagePos = 0;
 
@@ -202,11 +201,11 @@ void GIFDecoder::ReadImageData()
 		{
 			if(aBytesLeft==0)
 			{
-				aByteCount = aBytesLeft = mFileReader->ReadByte();
+				aByteCount = aBytesLeft = this->mFileReader->ReadByte();
 				continue;
 			}
 
-			aData |= (mFileReader->ReadByte()<<aBitCount);
+			aData |= (this->mFileReader->ReadByte()<<aBitCount);
 			aBitCount+=8;
 			aBytesLeft--;
 			continue;
@@ -231,10 +230,10 @@ void GIFDecoder::ReadImageData()
 		else 
 		{
 			if(code<nextCode)
-				newString = mStringTable + code;
+				newString = this->mStringTable + code;
 			else
 			{
-				newString = mStringTable + nextCode;
+				newString = this->mStringTable + nextCode;
 				newString->Init(oldString, oldString->mRootData);
 			}
 
@@ -245,8 +244,8 @@ void GIFDecoder::ReadImageData()
 			if(anImagePos >= anImageSize) // keep from crashing with corrupt image
 				break;
 
-			int aRow = anImagePos/mCurImageWidth;
-			int aCol = anImagePos%mCurImageWidth;
+			int aRow = anImagePos/this->mCurImageWidth;
+			int aCol = anImagePos%this->mCurImageWidth;
 			unsigned char *anImageData = anImage->StartRowTraversal(aRow)+aCol;
 			while(aLen--)
 			{
@@ -257,7 +256,7 @@ void GIFDecoder::ReadImageData()
 				if(aCol<0)
 				{
 					anImageData-=aRowPad;
-					aCol = mCurImageWidth-1;
+					aCol = this->mCurImageWidth-1;
 				}
 			}
 			anImagePos++;
@@ -265,7 +264,7 @@ void GIFDecoder::ReadImageData()
 
 			if(oldCode!=-1)
 			{
-				mStringTable[nextCode++].Init(oldString,newString->mRootData);
+				this->mStringTable[nextCode++].Init(oldString,newString->mRootData);
 				if(nextCode > aCompressionMask && nextCode<4096)
 				{
 					aCompressionSize++;
@@ -278,13 +277,13 @@ void GIFDecoder::ReadImageData()
 		}
 	}
 	
-	unsigned long aVal = mFileReader->ReadByte(); // should be zero
+	unsigned long aVal = this->mFileReader->ReadByte(); // should be zero
 
 	// Handle interlaced image
-	if(mCurImageIsInterlaced)
+	if(this->mCurImageIsInterlaced)
 	{
 		SmartPtr<RawImage8> anInterlacedImage = anImage;
-		anImage = new RawImage8(mCurImageWidth,mCurImageHeight,mCurImagePalette.get());
+		anImage = new RawImage8(this->mCurImageWidth,this->mCurImageHeight,this->mCurImagePalette.get());
 		
 		static const int dy[] = {8, 8, 4, 2};
 		static const int yoff[] = {0, 4, 2, 1};
@@ -294,7 +293,7 @@ void GIFDecoder::ReadImageData()
 		for(int i = 0; i<4; i++)
 		{
 			int y = yoff[i];
-			while(y < mCurImageHeight)
+			while(y < this->mCurImageHeight)
 			{
 				memcpy(anImage->mImageData + y*aWidth, anInterlacedImage->mImageData + y_interlaced*aWidth, aWidth);
 				y+=dy[i];
@@ -303,67 +302,67 @@ void GIFDecoder::ReadImageData()
 		}
 	}
 		
-	anImage->mTransparentColor = mCurImageTransparentColor;
-	if(mIsRawDecode)
-		mCurFrame->mImage = anImage;
+	anImage->mTransparentColor = this->mCurImageTransparentColor;
+	if(this->mIsRawDecode)
+		this->mCurFrame->mImage = anImage;
 	else
-		mCurFrame->mImage = anImage->GetNative(mContext);
+		this->mCurFrame->mImage = anImage->GetNative(this->mContext);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GIFDecoder::ReadImage()
 {
-	mCurFrame->mLeft = mFileReader->ReadShort();
-	mCurFrame->mTop = mFileReader->ReadShort();
-	mCurImageWidth = mFileReader->ReadShort();
-	mCurImageHeight = mFileReader->ReadShort();
-	if(mCurImageWidth*mCurImageHeight>3000*3000)
+	this->mCurFrame->mLeft = this->mFileReader->ReadShort();
+	this->mCurFrame->mTop = this->mFileReader->ReadShort();
+	this->mCurImageWidth = this->mFileReader->ReadShort();
+	this->mCurImageHeight = this->mFileReader->ReadShort();
+	if(this->mCurImageWidth*this->mCurImageHeight>3000*3000)
 		throw FileReaderException("Image too big.");
-	else if(mCurImageWidth<=0 || mCurImageHeight<=0)
+	else if(this->mCurImageWidth<=0 || this->mCurImageHeight<=0)
 		throw FileReaderException("Image too small.");
 
-	unsigned long aVal = mFileReader->ReadByte();
+	unsigned long aVal = this->mFileReader->ReadByte();
 	int aNumBitsPerPixel =  GetBits(aVal,3)+1;
 	GetBits(aVal,3); // should be 0
-	mCurImageIsInterlaced = GetBits(aVal,1)?true:false;
+	this->mCurImageIsInterlaced = GetBits(aVal,1)?true:false;
 
 	bool haveLocalColorMap = GetBits(aVal,1)?true:false;
 	if(haveLocalColorMap)
-		mCurImagePalette = ReadColorMap(1<<aNumBitsPerPixel);
+		this->mCurImagePalette = this->ReadColorMap(1<<aNumBitsPerPixel);
 	else
-		mCurImagePalette = mGlobalColorMap;
+		this->mCurImagePalette = this->mGlobalColorMap;
 
-	ReadImageData();
+	this->ReadImageData();
 
-	Image *anImage = (Image*)mCurFrame->mImage;
-	if(anImage->mWidth!=mScreenWidth || anImage->mHeight!=mScreenHeight)
-		mNeedAccumulate = true;
+	Image *anImage = (Image*)this->mCurFrame->mImage;
+	if(anImage->mWidth!=this->mScreenWidth || anImage->mHeight!=this->mScreenHeight)
+		this->mNeedAccumulate = true;
 
-	mFrameList.push_back(mCurFrame);
-	NextImage();
+	this->mFrameList.push_back(this->mCurFrame);
+	this->NextImage();
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GIFDecoder::NextImage()
 {
-	mCurImageWidth = mCurImageHeight = 0;
-	mCurImageTransparentColor = -1;
-	mCurImageIsInterlaced = false;
-	mCurImagePalette = NULL;
-	mCurFrame = new AnimationFrame;
+	this->mCurImageWidth = this->mCurImageHeight = 0;
+	this->mCurImageTransparentColor = -1;
+	this->mCurImageIsInterlaced = false;
+	this->mCurImagePalette = NULL;
+	this->mCurFrame = new AnimationFrame;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool GIFDecoder::DoGetAttrib(ImageAttributes &theAttrib)
 {
-	if(!ReadSignature())
+	if(!this->ReadSignature())
 		return false;
 
-	ReadScreenDescriptor();
-	theAttrib.mWidth = mScreenWidth;
-	theAttrib.mHeight = mScreenHeight;
+	this->ReadScreenDescriptor();
+	theAttrib.mWidth = this->mScreenWidth;
+	theAttrib.mHeight = this->mScreenHeight;
 	return true;
 }
 
@@ -371,34 +370,34 @@ bool GIFDecoder::DoGetAttrib(ImageAttributes &theAttrib)
 ///////////////////////////////////////////////////////////////////////////////
 SmartPtr<Image> GIFDecoder::BaseDecode()
 {
-	InitStringTable();
+	this->InitStringTable();
 
 	bool success = false;
-	mImage = NULL;
-	mAnimation = NULL;
+	this->mImage = NULL;
+	this->mAnimation = NULL;
 
-	mNeedAccumulate = false;
+	this->mNeedAccumulate = false;
 
-	mFrameList.clear();
+	this->mFrameList.clear();
 
 	try
 	{
-		ReadSignature();
-		ReadScreenDescriptor();
+		this->ReadSignature();
+		this->ReadScreenDescriptor();
 
-		NextImage();
+		this->NextImage();
 		bool done = false;
 		while(!success)
 		{
-			char aChar = mFileReader->ReadByte();
+			char aChar = this->mFileReader->ReadByte();
 			switch(aChar)
 			{
 				case '!': 
-					ReadExtension(); 
+					this->ReadExtension(); 
 					break;
 
 				case ',': 
-					ReadImage(); 
+					this->ReadImage(); 
 					break;
 
 				case ';': 
@@ -411,23 +410,23 @@ SmartPtr<Image> GIFDecoder::BaseDecode()
 	{
 	}
 
-	if(!mFrameList.empty())
+	if(!this->mFrameList.empty())
 	{
-		SmartPtr<Image> anImage = mFrameList.front()->mImage.get();
+		SmartPtr<Image> anImage = this->mFrameList.front()->mImage.get();
 
-		mAnimation = new Animation(mFrameList, mScreenWidth, mScreenHeight);
-		mAnimation->SetNumLoops(mNumLoops);
-		mAnimation->SetNeedAccumulate(mNeedAccumulate);
-		if(mIsRawDecode)
+		this->mAnimation = new Animation(this->mFrameList, this->mScreenWidth, this->mScreenHeight);
+		this->mAnimation->SetNumLoops(this->mNumLoops);
+		this->mAnimation->SetNeedAccumulate(this->mNeedAccumulate);
+		if(this->mIsRawDecode)
 		{
 			RawImage8 *aRawImage = (RawImage8*)anImage.get();
-			mAnimation->SetCopyFirstImageToAccumulate(aRawImage->mTransparentColor>=0);
+			this->mAnimation->SetCopyFirstImageToAccumulate(aRawImage->mTransparentColor>=0);
 		}
 		else
 		{
 			NativeImage *aNativeImage = (NativeImage*)anImage.get();
-			mAnimation->SetCopyFirstImageToAccumulate((aNativeImage->mTransparentMask.get()!=NULL));
-			mAnimation->RealizeNative(mContext);
+			this->mAnimation->SetCopyFirstImageToAccumulate((aNativeImage->mTransparentMask.get()!=NULL));
+			this->mAnimation->RealizeNative(this->mContext);
 		}				
 
 		return anImage;
@@ -440,16 +439,16 @@ SmartPtr<Image> GIFDecoder::BaseDecode()
 ///////////////////////////////////////////////////////////////////////////////
 SmartPtr<NativeImage> GIFDecoder::DoDecode(DisplayContext *theContext)
 {
-	mIsRawDecode = false;
-	mContext = theContext;
-	mImage = (NativeImage*)BaseDecode().get();
-	return mImage;
+	this->mIsRawDecode = false;
+	this->mContext = theContext;
+	this->mImage = (NativeImage*)this->BaseDecode().get();
+	return this->mImage;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 SmartPtr<RawImage> GIFDecoder::DoDecodeRaw()
 {
-	mIsRawDecode = true;
-	return (RawImage*)BaseDecode().get();
+	this->mIsRawDecode = true;
+	return (RawImage*)this->BaseDecode().get();
 }

@@ -14,50 +14,49 @@
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
-// Semantically empty constructor56 and implicit normalcleanup335 are zero
 
 QuickPlayCtrl::QuickPlayCtrl() {}
-// Original3c1690..3c174e,190B; actual typed resource names and lines29..34.
 // FUNCTION: WON 0x007c1690
+// Finds the welcome label, the four skill radios and the play button in the layout
 void QuickPlayCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2) {
-        ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(config,mWelcomeLabel,"WelcomeLabel",__FILE__,29);
-        SafeGetComponent(config,mNoviceRadio,"NoviceRadio",__FILE__,30);
-        SafeGetComponent(config,mIntermediateRadio,"IntermediateRadio",__FILE__,31);
-        SafeGetComponent(config,mAdvancedRadio,"AdvancedRadio",__FILE__,32);
-        SafeGetComponent(config,mExpertRadio,"ExpertRadio",__FILE__,33);
-        SafeGetComponent(config,mPlayButton,"PlayButton",__FILE__,34);
-        Fn2F5360(1);
-    }
+    if(inInit.mType!=2)
+        return;
+    ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(config,this->mWelcomeLabel,"WelcomeLabel",__FILE__,29);
+    SafeGetComponent(config,this->mNoviceRadio,"NoviceRadio",__FILE__,30);
+    SafeGetComponent(config,this->mIntermediateRadio,"IntermediateRadio",__FILE__,31);
+    SafeGetComponent(config,this->mAdvancedRadio,"AdvancedRadio",__FILE__,32);
+    SafeGetComponent(config,this->mExpertRadio,"ExpertRadio",__FILE__,33);
+    SafeGetComponent(config,this->mPlayButton,"PlayButton",__FILE__,34);
+    this->SubscribeToBroadcast(1);
 }
-// Original3c1750..3c17fc,172B. Borrowed mutable current user record.
 // FUNCTION: WON 0x007c1750
+// Welcomes the logged-in user by name, or shows the plain welcome text
 void QuickPlayCtrl::RefreshUserName()
 {
-    LobbyUserInfo* user=LobbyFn35CDE0();
+    LobbyUserInfo* user=LobbyGetCurrentUser();
     if(user!=NULL)
-        mWelcomeLabel->SetText(LobbyFormatString(::InternetQuickPlay_UserWelcome_String,user->mUserName),true);
+        this->mWelcomeLabel->SetText(LobbyFormatString(::InternetQuickPlay_UserWelcome_String,user->mUserName),true);
     else
-        mWelcomeLabel->SetText(::InternetQuickPlay_Welcome_String,true);
+        this->mWelcomeLabel->SetText(::InternetQuickPlay_Welcome_String,true);
 }
-// Original missing scan entry3c1800..3c1911,273B. Event24 allocation guard.
 // FUNCTION: WON 0x007c1800
+// Refreshes the welcome on entering the screen; Play sends a quick-play request for the chosen skill (1-4)
 void QuickPlayCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType) {
     case 100014:
-        RefreshUserName();
+        this->RefreshUserName();
         return;
-    case 15:
-      if(inEvent->mComponent==mPlayButton.get()) {
+    case ComponentEvent_ButtonPressed:
+      if(inEvent->mComponent==this->mPlayButton.get()) {
         int gameType=0;
-        if(mNoviceRadio->IsChecked()) gameType=1;
-        else if(mIntermediateRadio->IsChecked()) gameType=2;
-        else if(mAdvancedRadio->IsChecked()) gameType=3;
-        else if(mExpertRadio->IsChecked()) gameType=4;
-        Fn2F53F0(new QuickPlayEvent(gameType),false);
+        if(this->mNoviceRadio->IsChecked()) gameType=1;
+        else if(this->mIntermediateRadio->IsChecked()) gameType=2;
+        else if(this->mAdvancedRadio->IsChecked()) gameType=3;
+        else if(this->mExpertRadio->IsChecked()) gameType=4;
+        this->DeliverEvent(new QuickPlayEvent(gameType),false);
       }
       break;
     }

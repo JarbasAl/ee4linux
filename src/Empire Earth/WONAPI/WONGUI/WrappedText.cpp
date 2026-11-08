@@ -1,4 +1,4 @@
-// Source-only reconstructed WONGUI WrappedText; no runtime substitution authority.
+// Word-wrapped text: line breaking to a maximum width, plain or rich, and painting
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,19 +15,21 @@
 using namespace WONAPI;
 
 // FUNCTION: WON 0x0074a7c0
+// Resets the text to wrapping, left-aligned and zero size with no maximum width
 void WrappedText::Init()
 {
-	mWrap = true;
-	mIsCentered = false;
-	mWidth = mHeight = mMaxWidth = 0;
+	this->mWrap = true;
+	this->mIsCentered = false;
+	this->mWidth = this->mHeight = this->mMaxWidth = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x0074a7e0
+// Creates empty wrapped text with the default settings
 WrappedText::WrappedText()
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,54 +37,58 @@ WrappedText::WrappedText()
 
 
 // FUNCTION: WON 0x0074a880
+// Destroys the wrapped text and frees it when asked (scalar deleting destructor)
 // (??_GWrappedText@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x0074a8a0
+// Destroys the wrapped text, releasing its string, font, rich text and line breaks
 // (??1WrappedText@WONAPI@@UAE@XZ)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x0074a9b0
+// Recomputes the line breaks and the text's width and height for the font and maximum width
+// (rich text without wrapping grows its maximum width by 10 on every call)
 void WrappedText::CalcWrap()
 {
-	if(mFont.get()==NULL)
+	if(this->mFont.get()==NULL)
 		return;
 
-	if(mRichText.get()!=NULL)
+	if(this->mRichText.get()!=NULL)
 	{
-		if(mWrap)
+		if(this->mWrap)
 		{
-			if(mMaxWidth==0)
+			if(this->mMaxWidth==0)
 				return;
 
-			mRichText->SetMaxWidth(mMaxWidth);
+			this->mRichText->SetMaxWidth(this->mMaxWidth);
 		}
 		else
-			mRichText->SetMaxWidth(mRichText->GetMaxWidth()+10);
+			this->mRichText->SetMaxWidth(this->mRichText->GetMaxWidth()+10);
 
-		mWidth = mRichText->GetWidth();
-		mHeight = mRichText->GetHeight();
+		this->mWidth = this->mRichText->GetWidth();
+		this->mHeight = this->mRichText->GetHeight();
 		return;
 	}
 
-	if(!mWrap)
+	if(!this->mWrap)
 	{
-		mWidth = mFont->GetStringWidth(mText,0,mText.length());
-		mHeight = mFont->GetHeight();
+		this->mWidth = this->mFont->GetStringWidth(this->mText,0,this->mText.length());
+		this->mHeight = this->mFont->GetHeight();
 		return;
 	}
 
-	if(mMaxWidth==0)
+	if(this->mMaxWidth==0)
 		return;
 
-	mBreakList.clear();
+	this->mBreakList.clear();
 
 	int aBreakPos = -1, aBreakWidth = 0;
 	int aPos = 0, aWidth = 0, aMaxWidth = 0;
-	while(aPos<mText.length())
+	while(aPos<this->mText.length())
 	{
-		int aChar = mText[aPos];
-		int aCharWidth = mFont->Virtual10(aChar);
+		int aChar = this->mText[aPos];
+		int aCharWidth = this->mFont->GetCharacterWidth(aChar);
 		if(aChar==' ')
 		{
 			aBreakPos = aPos;
@@ -92,11 +98,11 @@ void WrappedText::CalcWrap()
 		{
 			aBreakPos = aPos;
 			aBreakWidth = aWidth;
-			if(aChar=='\r' && mText[aPos+1]=='\n')
+			if(aChar=='\r' && this->mText[aPos+1]=='\n')
 				aPos++;
 
 			aPos++;
-			mBreakList.push_back(BreakInfo(aBreakPos,aPos,aBreakWidth));
+			this->mBreakList.push_back(BreakInfo(aBreakPos,aPos,aBreakWidth));
 			if(aBreakWidth > aMaxWidth)
 				aMaxWidth = aBreakWidth;
 
@@ -106,18 +112,18 @@ void WrappedText::CalcWrap()
 			continue;
 		}
 
-		if(aWidth+aCharWidth>mMaxWidth)
+		if(aWidth+aCharWidth>this->mMaxWidth)
 		{
 			if(aBreakPos!=-1)
 			{
-				mBreakList.push_back(BreakInfo(aBreakPos,aBreakPos+1,aBreakWidth));
+				this->mBreakList.push_back(BreakInfo(aBreakPos,aBreakPos+1,aBreakWidth));
 				aPos = aBreakPos;
 				if(aBreakWidth > aMaxWidth)
 					aMaxWidth = aBreakWidth;
 			}
 			else
 			{
-				mBreakList.push_back(BreakInfo(aPos,aPos,aWidth));
+				this->mBreakList.push_back(BreakInfo(aPos,aPos,aWidth));
 				if(aWidth > aMaxWidth)
 					aMaxWidth = aWidth;
 	
@@ -138,136 +144,140 @@ void WrappedText::CalcWrap()
 		aMaxWidth = aWidth;
 
 	if(aMaxWidth==0)
-		mWidth = aWidth;
+		this->mWidth = aWidth;
 	else
-		mWidth = aMaxWidth;
+		this->mWidth = aMaxWidth;
 
-	mHeight = (mBreakList.size() + 1)*mFont->GetHeight();
+	this->mHeight = (this->mBreakList.size() + 1)*this->mFont->GetHeight();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x0074acc0
+// Sets the text and rewraps it
 void WrappedText::SetText(const GUIString &theText)
 {
-	mText = theText;
-	CalcWrap();
+	this->mText = theText;
+	this->CalcWrap();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// SetRichText archive body is deferred/commented; no source credit.
+// SetRichText is not defined in this file
 
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x0074ad20
+// Turns wrapping on or off, rewrapping when it changes
 void WrappedText::SetWrap(bool wrap)
 {
-	if(wrap!=mWrap)
+	if(wrap!=this->mWrap)
 	{
-		mWrap = wrap;
-		CalcWrap();
+		this->mWrap = wrap;
+		this->CalcWrap();
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x0074ad40
+// Sets whether each line is centred
 void WrappedText::SetCentered(bool isCentered)
 {
-	mIsCentered = isCentered;
+	this->mIsCentered = isCentered;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x0074ad50
+// Sets the font and rewraps the text
 void WrappedText::SetFont(Font *theFont)
 {
-	mFont = theFont;
-	CalcWrap();
+	this->mFont = theFont;
+	this->CalcWrap();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x0074adb0
+// Sets the maximum line width (at least 0), rewrapping only when the new width can change the breaks
 void WrappedText::SetMaxWidth(int theMaxWidth)
 {
 	if(theMaxWidth<0)
 		theMaxWidth = 0;
 
-	if(theMaxWidth!=mMaxWidth)
-	{
-		int anOldMax = mMaxWidth;
-		mMaxWidth = theMaxWidth;
-		if(!mWrap)
-			return;
+	if(theMaxWidth==this->mMaxWidth)
+		return;
+	int anOldMax = this->mMaxWidth;
+	this->mMaxWidth = theMaxWidth;
+	if(!this->mWrap)
+		return;
 
-		bool needCalc = mRichText.get() || anOldMax==0 || !mBreakList.empty() || mMaxWidth<anOldMax;
-		if(needCalc)
-			CalcWrap();
-	}
+	bool needCalc = this->mRichText.get() || anOldMax==0 || !this->mBreakList.empty() || this->mMaxWidth<anOldMax;
+	if(needCalc)
+		this->CalcWrap();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x0074adf0
+// Draws the rich text, or each wrapped line of plain text (centred if set) from the given top-left point
 void WrappedText::Paint(Graphics &g, int x, int y)
 {
-	if(mRichText.get()!=NULL)
+	if(this->mRichText.get()!=NULL)
 	{
 		ElementPaintInfo anInfo;
 		anInfo.mClipX = x;
 		anInfo.mClipY = y;
-		anInfo.mClipWidth = GetWidth();
-		anInfo.mClipHeight = mHeight==0 ? mFont->GetHeight() : mHeight;
+		anInfo.mClipWidth = this->GetWidth();
+		anInfo.mClipHeight = this->mHeight==0 ? this->mFont->GetHeight() : this->mHeight;
 		anInfo.mStartSelSegment = anInfo.mEndSelSegment = -1;
-		mRichText->Paint(g,x,y,anInfo);
+		this->mRichText->Paint(g,x,y,anInfo);
 		return;
 	}
 
-	if(mFont.get()==NULL)
+	if(this->mFont.get()==NULL)
 		return;
 
-	g.SetFont(mFont.get());
+	g.SetFont(this->mFont.get());
 
 	int aYPos = y;
 	int aStrPos = 0;
-	for(BreakList::iterator anItr = mBreakList.begin(); anItr!=mBreakList.end(); ++anItr)
+	for(BreakList::iterator anItr = this->mBreakList.begin(); anItr!=this->mBreakList.end(); ++anItr)
 	{
-		if(aStrPos>=mText.length())
+		if(aStrPos>=this->mText.length())
 			break;
 
 		int aBreakPos = anItr->mBreakPos;
 		int anXPos = x;
-		if(mIsCentered)
-			anXPos += (mWidth - anItr->mWidth)/2;
+		if(this->mIsCentered)
+			anXPos += (this->mWidth - anItr->mWidth)/2;
 
-		g.DrawString(mText, aStrPos, aBreakPos - aStrPos, anXPos, aYPos);
-		aYPos += mFont->GetHeight();
+		g.DrawString(this->mText, aStrPos, aBreakPos - aStrPos, anXPos, aYPos);
+		aYPos += this->mFont->GetHeight();
 		aStrPos = anItr->mNextStartPos;
 	}
-	if(aStrPos<mText.length())
+	if(!(aStrPos<this->mText.length()))
+		return;
+	if(this->mIsCentered && !this->mBreakList.empty())
 	{
-		if(mIsCentered && !mBreakList.empty())
-		{
-			int aWidth = mFont->GetStringWidth(mText,aStrPos,mText.length()-aStrPos);
-			int anXPos = x + (mWidth - aWidth)/2;
-			g.DrawString(mText, aStrPos, mText.length()-aStrPos, anXPos, aYPos);
-		}
-		else
-			g.DrawString(mText, aStrPos, mText.length()-aStrPos, x, aYPos);
+		int aWidth = this->mFont->GetStringWidth(this->mText,aStrPos,this->mText.length()-aStrPos);
+		int anXPos = x + (this->mWidth - aWidth)/2;
+		g.DrawString(this->mText, aStrPos, this->mText.length()-aStrPos, anXPos, aYPos);
 	}
+	else
+		g.DrawString(this->mText, aStrPos, this->mText.length()-aStrPos, x, aYPos);
 }	
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable body; zero Native/primary/physical credit.
+// Creates wrapped text holding the given string (not identified in the original exe)
 
 WrappedText::WrappedText(const GUIString &theText)
 {
-	Init();
-	mText = theText;
+	this->Init();
+	this->mText = theText;
 }
 }
 

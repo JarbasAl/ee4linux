@@ -1,4 +1,4 @@
-// TOUDialog original-backed source intent; pending GUI reference/HTML generator contracts.
+// The terms of use dialog: system and game terms in one page, accepted only after ticking the agree box
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -16,51 +16,55 @@ namespace WONAPI {
 
 TOUDialog::TOUDialog() : mNeedGenHTML(false) {}
 
-// Shared13B delegating Paint support, zero substantive credit.
+// Paint has no address of its own: the original uses a shared 13-byte forwarding body
 void TOUDialog::Paint(Graphics& inGraphics) { Container::Paint(inGraphics); }
 // FUNCTION: WON 0x7f9910
+// Finds the browser, agree box and accept/reject buttons in the layout and resets the dialog
 void TOUDialog::InitComponent(ComponentInit& inInit)
 {
     if(inInit.mType!=2) return;
     ComponentConfig* aConfig=static_cast<ComponentConfigInit&>(inInit).mConfig;
-    SafeGetComponent(aConfig,mBrowser,"Browser",__FILE__,30);
-    SafeGetComponent(aConfig,mAgreeCheck,"AgreeCheck",__FILE__,31);
-    SafeGetComponent(aConfig,mAcceptButton,"AcceptButton",__FILE__,32);
-    SafeGetComponent(aConfig,mRejectButton,"RejectButton",__FILE__,33);
-    mAcceptButton->mControlId=1;
-    mRejectButton->mControlId=-1;
-    Reset();
-    Fn2F5360(1);
+    SafeGetComponent(aConfig,this->mBrowser,"Browser",__FILE__,30);
+    SafeGetComponent(aConfig,this->mAgreeCheck,"AgreeCheck",__FILE__,31);
+    SafeGetComponent(aConfig,this->mAcceptButton,"AcceptButton",__FILE__,32);
+    SafeGetComponent(aConfig,this->mRejectButton,"RejectButton",__FILE__,33);
+    this->mAcceptButton->mControlId=1;
+    this->mRejectButton->mControlId=-1;
+    this->Reset();
+    this->SubscribeToBroadcast(1);
 }
 // FUNCTION: WON 0x7f99c0
+// Rebuilds the terms page if new terms arrived, scrolls to the top and unticks agree, disabling accept
 void TOUDialog::Reset()
 {
-    if(mNeedGenHTML) {
-        mNeedGenHTML=false;
+    if(this->mNeedGenHTML) {
+        this->mNeedGenHTML=false;
         HTMLDocumentGen aGenerator(NULL);
-        aGenerator.AddDocParam(GUIString(LobbyFn35B630()),6);
-        aGenerator.AddDocParam(GUIString(LobbyFn35B650()),6);
+        aGenerator.AddDocParam(GUIString(LobbyGetSysTOUPath()),6);
+        aGenerator.AddDocParam(GUIString(LobbyGetGameTOUPath()),6);
         aGenerator.printf(GUIString(new GUIStringData("<body>%1%<br><br>%2%</body>")));
-        mBrowser->Go(aGenerator.GetDocument());
+        this->mBrowser->Go(aGenerator.GetDocument());
     }
-    mBrowser->GetHTMLView()->SetOffsets(0,0);
-    mAgreeCheck->SetCheck(false,false);
-    mAcceptButton->SetEnabled(false);
+    this->mBrowser->GetHTMLView()->SetOffsets(0,0);
+    this->mAgreeCheck->SetCheck(false,false);
+    this->mAcceptButton->SetEnabled(false);
 }
 // FUNCTION: WON 0x7f9b90
+// Marks the terms page for rebuilding when a terms of use download finished
 void TOUDialog::HandleHTTPDocEvent(GotHTTPDocumentEvent* inEvent)
 {
-    if(inEvent->mOp->mDocumentType==HTTPDocType_TOU) mNeedGenHTML=true;
+    if(inEvent->mOp->mDocumentType==HTTPDocType_TOU) this->mNeedGenHTML=true;
 }
 // FUNCTION: WON 0x7f9bb0
+// Handles terms downloads and enables accept only while the agree box is ticked
 void TOUDialog::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if(inEvent->mType==100024) {
-        HandleHTTPDocEvent(static_cast<GotHTTPDocumentEvent*>(inEvent));
+    if(inEvent->mType==LobbyEvent_GotHTTPDocument) {
+        this->HandleHTTPDocEvent(static_cast<GotHTTPDocumentEvent*>(inEvent));
         return;
     }
-    if(inEvent->mType==15 && inEvent->mComponent==mAgreeCheck.get()) {
-        mAcceptButton->SetEnabled(mAgreeCheck->mChecked!=0);
+    if(inEvent->mType==ComponentEvent_ButtonPressed && inEvent->mComponent==this->mAgreeCheck.get()) {
+        this->mAcceptButton->SetEnabled(this->mAgreeCheck->mChecked!=0);
         return;
     }
     Dialog::HandleComponentEvent(inEvent);

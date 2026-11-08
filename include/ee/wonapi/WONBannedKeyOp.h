@@ -1,4 +1,4 @@
-// Literal complete same-SDK key-server operation owners. SOURCE_ONLY_NO_NATIVE_ID.
+// WON SDK key-server operations. No original address identified
 #include <winsock2.h>
 #include <windows.h>
 #include <time.h>
@@ -39,9 +39,9 @@ public:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 20 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18();
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset();
 
 	// Destructor
 protected:
@@ -68,9 +68,9 @@ public:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 32 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18(){}
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset(){}
 
 	// Destructor
 protected:
@@ -98,9 +98,9 @@ public:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 34 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18(){}
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset(){}
 
 	// Destructor
 protected:
@@ -126,9 +126,9 @@ public:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 30 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18();
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset();
 
 	// Destructor
 protected:

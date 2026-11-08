@@ -1,7 +1,7 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK complete key-server request/response algorithms.
+// No original address identified: WON SDK key-server requests and replies
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing-unit proposed DBProxy-family profile; no Native/primary/physical attribution.
 #include "ee/wonapi/WONBannedKeyOp.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 using namespace WONAPI;
@@ -19,63 +19,63 @@ InsertBannedKeyOp::InsertBannedKeyOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void InsertBannedKeyOp::Virtual18()
+void InsertBannedKeyOp::Reset()
 {
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void InsertBannedKeyOp::Virtual04()
+void InsertBannedKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
-	mStatusList.clear();
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
+	this->mStatusList.clear();
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendString(mProductName);
-	requestData.AppendLong(mBannedUntil);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendString(this->mProductName);
+	requestData.AppendLong(this->mBannedUntil);
 
-	requestData.AppendShort(mKeyList.size());
-	for(std::list<std::string>::const_iterator anItr = mKeyList.begin(); anItr != mKeyList.end(); ++anItr)
+	requestData.AppendShort(this->mKeyList.size());
+	for(std::list<std::string>::const_iterator anItr = this->mKeyList.begin(); anItr != this->mKeyList.end(); ++anItr)
 		requestData.AppendString(*anItr,1);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus InsertBannedKeyOp::Virtual14()
+WONStatus InsertBannedKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 	try
 	{
 		unsigned short aListSize = theData.ReadShort();
 		for(unsigned short i = 0; i < aListSize; i++)
-			mStatusList.push_back(theData.ReadShort());
+			this->mStatusList.push_back(theData.ReadShort());
 	}
 	catch (ReadBufferException&)
 	{
-		return (WONStatus)100006;
+		return (WONStatus)WS_InvalidMessage;
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,38 +90,38 @@ QueryBannedKeyOp::QueryBannedKeyOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void QueryBannedKeyOp::Virtual04()
+void QueryBannedKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
-	mKeyList.clear();
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
+	this->mKeyList.clear();
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendString(mProductName);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendString(this->mProductName);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus QueryBannedKeyOp::Virtual14()
+WONStatus QueryBannedKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 	try
 	{
 		unsigned short aListSize = theData.ReadShort();
@@ -130,16 +130,16 @@ WONStatus QueryBannedKeyOp::Virtual14()
 		{
 			theData.ReadString(aBannedKey.first,1);
 			aBannedKey.second = theData.ReadLong();
-			mKeyList.push_back(aBannedKey);
+			this->mKeyList.push_back(aBannedKey);
 		}
 	}
 	catch (ReadBufferException&)
 	{
-		return (WONStatus)100006;
+		return (WONStatus)WS_InvalidMessage;
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,42 +154,42 @@ QueryListBannedKeyOp::QueryListBannedKeyOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void QueryListBannedKeyOp::Virtual04()
+void QueryListBannedKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
-	mKeyDataList.clear();
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
+	this->mKeyDataList.clear();
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendString(mProductName);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendString(this->mProductName);
 
-	requestData.AppendShort(mKeyList.size());
-	for(std::list<std::string>::const_iterator anItr = mKeyList.begin(); anItr != mKeyList.end(); ++anItr)
+	requestData.AppendShort(this->mKeyList.size());
+	for(std::list<std::string>::const_iterator anItr = this->mKeyList.begin(); anItr != this->mKeyList.end(); ++anItr)
 		requestData.AppendString(*anItr,1);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus QueryListBannedKeyOp::Virtual14()
+WONStatus QueryListBannedKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 	try
 	{
 		unsigned short aListSize = theData.ReadShort();
@@ -198,16 +198,16 @@ WONStatus QueryListBannedKeyOp::Virtual14()
 		{
 			aBannedKey.first = theData.ReadLong();
 			aBannedKey.second = theData.ReadShort();
-			mKeyDataList.push_back(aBannedKey);
+			this->mKeyDataList.push_back(aBannedKey);
 		}
 	}
 	catch (ReadBufferException&)
 	{
-		return (WONStatus)100006;
+		return (WONStatus)WS_InvalidMessage;
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,60 +222,60 @@ RemoveBannedKeyOp::RemoveBannedKeyOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void RemoveBannedKeyOp::Virtual18()
+void RemoveBannedKeyOp::Reset()
 {
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void RemoveBannedKeyOp::Virtual04()
+void RemoveBannedKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
-	mStatusList.clear();
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
+	this->mStatusList.clear();
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendString(mProductName);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendString(this->mProductName);
 
-	requestData.AppendShort(mKeyList.size());
-	for(std::list<std::string>::const_iterator anItr = mKeyList.begin(); anItr != mKeyList.end(); ++anItr)
+	requestData.AppendShort(this->mKeyList.size());
+	for(std::list<std::string>::const_iterator anItr = this->mKeyList.begin(); anItr != this->mKeyList.end(); ++anItr)
 		requestData.AppendString(*anItr,1);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus RemoveBannedKeyOp::Virtual14()
+WONStatus RemoveBannedKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 	try
 	{
 		unsigned short aListSize = theData.ReadShort();
 		for(unsigned short i = 0; i < aListSize; i++)
-			mStatusList.push_back(theData.ReadShort());
+			this->mStatusList.push_back(theData.ReadShort());
 	}
 	catch (ReadBufferException&)
 	{
-		return (WONStatus)100006;
+		return (WONStatus)WS_InvalidMessage;
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }

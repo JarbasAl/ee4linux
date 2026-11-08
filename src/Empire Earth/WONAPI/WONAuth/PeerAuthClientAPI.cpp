@@ -1,2 +1,2 @@
-// Actual complete peer-authentication client protocol and original typed owners.
+// PeerAuthClientAPI: peer authentication client API (no code in this file)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233

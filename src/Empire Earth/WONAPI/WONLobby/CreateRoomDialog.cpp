@@ -9,72 +9,77 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
 namespace WONAPI {
-// Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
 CreateRoomDialog::CreateRoomDialog() {}
 
 // FUNCTION: WON 0x7f6bc0
+// Finds the name, password and create controls in the layout and checks the form
 void CreateRoomDialog::InitComponent(ComponentInit& inInit)
 {
-    if (inInit.mType == 2) {
-        ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(aConfig, mNameInput, "RoomNameInput", __FILE__, 25);
-        SafeGetComponent(aConfig, mPasswordInput, "PasswordInput", __FILE__, 26);
-        SafeGetComponent(aConfig, mPasswordLabel, "PasswordLabel", __FILE__, 27);
-        SafeGetComponent(aConfig, mPasswordCheck, "PasswordCheck", __FILE__, 28);
-        SafeGetComponent(aConfig, mCreateButton, "CreateButton", __FILE__, 29);
-        CheckInput();
-    }
+    if (inInit.mType != 2)
+        return;
+    ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(aConfig, this->mNameInput, "RoomNameInput", __FILE__, 25);
+    SafeGetComponent(aConfig, this->mPasswordInput, "PasswordInput", __FILE__, 26);
+    SafeGetComponent(aConfig, this->mPasswordLabel, "PasswordLabel", __FILE__, 27);
+    SafeGetComponent(aConfig, this->mPasswordCheck, "PasswordCheck", __FILE__, 28);
+    SafeGetComponent(aConfig, this->mCreateButton, "CreateButton", __FILE__, 29);
+    this->CheckInput();
 }
 // FUNCTION: WON 0x7f6c70
+// Focuses the room name; when asked, clears the form to an open room
 void CreateRoomDialog::Reset(bool inClear)
 {
-    mNameInput->Fn2F5890();
+    this->mNameInput->RequestFocus();
     if (inClear) {
-        mNameInput->Clear(false);
-        mPasswordInput->Clear(false);
-        mPasswordCheck->SetCheck(false, false);
-        UpdatePasswordVisibility();
+        this->mNameInput->Clear(false);
+        this->mPasswordInput->Clear(false);
+        this->mPasswordCheck->SetCheck(false, false);
+        this->UpdatePasswordVisibility();
     }
-    CheckInput();
+    this->CheckInput();
 }
 // FUNCTION: WON 0x7f6cd0
+// Shows the password field only while the password box is checked
 void CreateRoomDialog::UpdatePasswordVisibility()
 {
-    mPasswordInput->SetVisible(mPasswordCheck->mChecked);
-    mPasswordLabel->SetVisible(mPasswordCheck->mChecked);
-    CheckInput();
+    this->mPasswordInput->SetVisible(this->mPasswordCheck->mChecked);
+    this->mPasswordLabel->SetVisible(this->mPasswordCheck->mChecked);
+    this->CheckInput();
 }
 // FUNCTION: WON 0x7f6d20
+// Enables the create button only with a room name and, when shown, a password
 void CreateRoomDialog::CheckInput()
 {
     bool aEnable = true;
-    if (mNameInput->mText.length() == 0)
+    if (this->mNameInput->mText.length() == 0)
         aEnable = false;
-    else if (mPasswordInput->IsVisible() && mPasswordInput->mText.length() == 0)
+    else if (this->mPasswordInput->IsVisible() && this->mPasswordInput->mText.length() == 0)
         aEnable = false;
-    mCreateButton->SetEnabled(aEnable);
+    this->mCreateButton->SetEnabled(aEnable);
 }
 // FUNCTION: WON 0x7f6d70
+// Returns the typed password, or an empty string when the room has no password
 const GUIString& CreateRoomDialog::GetPassword()
 {
-    if (mPasswordCheck->IsChecked())
-        return mPasswordInput->GetText();
+    if (this->mPasswordCheck->IsChecked())
+        return this->mPasswordInput->GetText();
     return gEmptyGUIString;
 }
 // FUNCTION: WON 0x7f6da0
+// Updates the password field when its box is clicked and rechecks the form on text changes
 void CreateRoomDialog::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if (inEvent->mType == 15 && inEvent->mComponent == mPasswordCheck.get())
-        UpdatePasswordVisibility();
-    else if (inEvent->mType == 21)
-        CheckInput();
+    if (inEvent->mType == ComponentEvent_ButtonPressed && inEvent->mComponent == this->mPasswordCheck.get())
+        this->UpdatePasswordVisibility();
+    else if (inEvent->mType == ComponentEvent_InputTextChanged)
+        this->CheckInput();
     else
         Dialog::HandleComponentEvent(inEvent);
 }
-// Natural ordinary shared getter; no duplicate physical body credit or marker. Root alias gate pending.
+// Returns the typed room name; its body is identical to another getter's, so it has no address of its own
 const GUIString& CreateRoomDialog::GetRoomName()
 {
-    return mNameInput->GetText();
+    return this->mNameInput->GetText();
 }
 
 }

@@ -1,7 +1,5 @@
-// C:\EEX\Empire Earth\WONAPI\WONCommon\StringParser.cpp (RECONSTRUCTION).
-// Original coherent scanner family; exact historical TU grouping provisional. Complete12B already canonical.
-// Actual API names retained where canonical (ReadString); added method names primary-header correlated.
-// Source only; near/helper/table support remains original-carved, without runtime authority.
+// C:\EEX\Empire Earth\WONAPI\WONCommon\StringParser.cpp
+// StringParser: a cursor over a narrow or wide string for config/resource scanning (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <set>
 #include <windows.h>
@@ -18,40 +16,45 @@
 #include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006a48c0
+// Returns the character at the given offset from the cursor; wide characters above 255 read as 0xff
 unsigned char StringParser::GetChar(int offset)
 {
-    if(mWide) {
-        wchar_t ch=mWideText[mPos+offset];
+    if(this->mWide) {
+        wchar_t ch=mWideText[this->mPos+offset];
         return ch<256 ? (unsigned char)ch : (unsigned char)0xff;
     }
-    return (unsigned char)(mNarrow+mPos)[offset];
+    return (unsigned char)(mNarrow+this->mPos)[offset];
 }
 // FUNCTION: WON 0x006a4910
+// Returns the wide character at the given offset from the cursor
 wchar_t StringParser::GetWChar(int offset)
-{ return mWide ? mWideText[mPos+offset] : (unsigned char)mNarrow[mPos+offset]; }
+{ return this->mWide ? mWideText[this->mPos+offset] : (unsigned char)mNarrow[this->mPos+offset]; }
 // FUNCTION: WON 0x006a4900
-void StringParser::IncrementPos(int amount) { mPos+=amount; }
+// Moves the cursor by the given amount
+void StringParser::IncrementPos(int amount) { this->mPos+=amount; }
 // FUNCTION: WON 0x006a4940
+// Returns true when the cursor is on the terminator
 bool StringParser::EndOfString()
 {
-    if(mWide) return mWideText[mPos]==0;
-    return mNarrow[mPos]==0;
+    if(this->mWide) return mWideText[this->mPos]==0;
+    return mNarrow[this->mPos]==0;
 }
 // FUNCTION: WON 0x006a4970
+// Moves the cursor past whitespace
 void StringParser::SkipWhitespace()
 {
-    while(!EndOfString()) {
-        if(!isspace(GetChar(0))) break;
-        ++mPos;
+    while(!this->EndOfString()) {
+        if(!isspace(this->GetChar(0))) break;
+        ++this->mPos;
     }
 }
 // FUNCTION: WON 0x006a49b0
-// consumes leading whitespace even on a mismatch
+// Skips whitespace and consumes the next character if it matches; whitespace stays consumed on a mismatch
 bool StringParser::CheckNextChar(int ch)
 {
-    SkipWhitespace();
-    if(ch==GetChar(0)) {
-        ++mPos;
+    this->SkipWhitespace();
+    if(ch==this->GetChar(0)) {
+        ++this->mPos;
         return true;
     }
     return false;
@@ -126,12 +129,13 @@ inline bool ScannerReadString(StringParser& p,std::string& out,bool stopAtWhites
     return true;
 }
 // FUNCTION: WON 0x006a49f0
+// Reads a bare or quoted (escapes, L"...", "a"+"b") string token, trimming trailing whitespace; always true
 bool StringParser::ReadString(std::string& out,bool stopAtWhitespace)
 { return ScannerReadString(*this,out,stopAtWhitespace); }
 static int ScannerHexValue(char ch)
 { return isdigit(ch) ? ch-'0' : toupper(ch)-'A'+10; }
 // FUNCTION: WON 0x006a4da0
-// appends the two bytes of the wide character (not UTF-8)
+// Appends the two raw bytes of a wide character to a narrow string (not UTF-8)
 static void ScannerAppend(std::string& out,wchar_t ch)
 {
     wchar_t c=ch;
@@ -200,68 +204,72 @@ inline bool ScannerReadString(StringParser& p,std::wstring& out,bool stopAtWhite
     return true;
 }
 // FUNCTION: WON 0x006a4ff0
+// Reads a bare or quoted string token into a wide string, trimming trailing whitespace; always true
 bool StringParser::ReadString(std::wstring& out,bool stopAtWhitespace)
 { return ScannerReadString(*this,out,stopAtWhitespace); }
 static void ScannerAppend(std::wstring& out,wchar_t ch) { out+=ch; }
 // FUNCTION: WON 0x006a53d0
-// Original2a53d0/380; success means cursor moved, including '-' or '0x' without digits.
+// Reads a decimal or 0x hex integer with optional '-'; returns true when the cursor moved
+// A lone '-' or '0x' without digits still counts as success
 bool StringParser::ReadValue(int& out)
 {
-    SkipWhitespace();
-    int start=mPos;
+    this->SkipWhitespace();
+    int start=this->mPos;
     int value=0;
     bool negative=false;
-    if(GetChar(0)=='-') {negative=true;IncrementPos(1);}
-    if(GetChar(0)=='0' && tolower(GetChar(1))=='x') {
-        IncrementPos(2);
-        while(isxdigit(GetChar(0))) {
+    if(this->GetChar(0)=='-') {negative=true;this->IncrementPos(1);}
+    if(this->GetChar(0)=='0' && tolower(this->GetChar(1))=='x') {
+        this->IncrementPos(2);
+        while(isxdigit(this->GetChar(0))) {
             value<<=4;
-            char ch=toupper(GetChar(0));
+            char ch=toupper(this->GetChar(0));
             if(ch>='0' && ch<='9') value+=ch-'0';
             else if(ch>='A' && ch<='F') value+=ch-'A'+10;
             else break;
-            IncrementPos(1);
+            this->IncrementPos(1);
         }
     } else {
-        while(isdigit(GetChar(0))) {
-            value=value*10+GetChar(0)-'0';
-            IncrementPos(1);
+        while(isdigit(this->GetChar(0))) {
+            value=value*10+this->GetChar(0)-'0';
+            this->IncrementPos(1);
         }
     }
     if(negative) value=-value;
-    if(mPos!=start) {
+    if(this->mPos!=start) {
         out=value;
         return true;
     }
     return false;
 }
 // FUNCTION: WON 0x006a5550
-// Original2a5550/648. Invalid token is consumed but leaves output unchanged.
+// Reads a true/yes/on/y/t/1 or false/no/off/n/f/0 word; returns false for any other word
+// An invalid word is consumed but leaves the output unchanged
 bool StringParser::ReadValue(bool& out)
 {
-    SkipWhitespace();
+    this->SkipWhitespace();
     std::string token;
-    while(!EndOfString()) {
-        char ch=toupper(GetChar(0));
+    while(!this->EndOfString()) {
+        char ch=toupper(this->GetChar(0));
         if(!isalnum(ch)) break;
         token+=ch;
-        ++mPos;
+        ++this->mPos;
     }
     if(token=="TRUE" || token=="YES" || token=="ON" || token=="Y" || token=="T" || token=="1") out=true;
     else if(token=="FALSE" || token=="NO" || token=="OFF" || token=="N" || token=="F" || token=="0") out=false;
     else return false;
     return true;
 }
-// New static formatting family; all old scanner bodies remain unchanged.
-// One-argument conversion is the already-proved canonical StringUtil2a6280 contract.
+// WStringToString is defined in StringUtil.cpp (0x6a6280)
 std::string WStringToString(const std::wstring&);
 // FUNCTION: WON 0x006a5820
+// Appends True or False
 void StringParser::ValueToString(const bool& value,std::string& out)
 {
     if(value) out+="True";
     else out+="False";
 }
 // FUNCTION: WON 0x006a5a70
+// Appends the integer in decimal
 void StringParser::ValueToString(const int& value,std::string& out)
 {
     char buffer[50];
@@ -269,21 +277,25 @@ void StringParser::ValueToString(const int& value,std::string& out)
     out+=buffer;
 }
 // FUNCTION: WON 0x006a5c40
+// Appends the 16-bit value in decimal
 void StringParser::ValueToString(const unsigned short& value,std::string& out)
 {
     int integer=value;
-    ValueToString(integer,out);
+    StringParser::ValueToString(integer,out);
 }
 // FUNCTION: WON 0x006a5c60
+// Appends the string
 void StringParser::ValueToString(const std::string& value,std::string& out) {out+=value;}
 // FUNCTION: WON 0x006a5d70
+// Appends the wide string converted to narrow
 void StringParser::ValueToString(const std::wstring& value,std::string& out) {out+=WStringToString(value);}
 // FUNCTION: WON 0x006a5e70
+// Appends the strings separated by ", "
 void StringParser::ValueToString(const std::list<std::string>& values,std::string& out)
 {
     std::list<std::string>::const_iterator i=values.begin();
     while(i!=values.end()) {
-        ValueToString(*i,out);
+        StringParser::ValueToString(*i,out);
         i++;
         if(i!=values.end()) out+=", ";
     }
@@ -291,41 +303,41 @@ void StringParser::ValueToString(const std::list<std::string>& values,std::strin
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK cursor-matching algorithm. Native entry unlocated.
+// No original address identified: WON SDK cursor matching
 bool StringParser::StartsWith(const char *theStr)
 {
-    int originalPos = mPos;
-    const unsigned char *p = (const unsigned char*)theStr;
-    while(*p!='\0' && !EndOfString())
+    int originalPos = this->mPos;
+    const unsigned char *p = reinterpret_cast<const unsigned char*>(theStr);
+    while(*p!='\0' && !this->EndOfString())
     {
-        if(*p!=GetChar(0))
+        if(*p!=this->GetChar(0))
         {
-            mPos = originalPos;
+            this->mPos = originalPos;
             return false;
         }
         p++;
-        mPos++;
+        this->mPos++;
     }
-    if(EndOfString() && *p!='\0')
+    if(this->EndOfString() && *p!='\0')
     {
-        mPos = originalPos;
+        this->mPos = originalPos;
         return false;
     }
     return true;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: exact SDK composition; a successful prefix is not rewound on trailing input.
+// No original address identified; a matched prefix is not rewound when input follows it
 bool StringParser::Is(const char *theStr)
 {
-    bool startsWith = StartsWith(theStr);
-    return startsWith && EndOfString();
+    bool startsWith = this->StartsWith(theStr);
+    return startsWith && this->EndOfString();
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK whitespace scanner, using existing target12B owner.
+// No original address identified: WON SDK whitespace scanner
 void StringParser::SkipNonWhitespace()
 {
-    while(!EndOfString() && !isspace(GetChar(0)))
-        mPos++;
+    while(!this->EndOfString() && !isspace(this->GetChar(0)))
+        this->mPos++;
 }
 }
 

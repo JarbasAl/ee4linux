@@ -1,6 +1,5 @@
-// C:\EEX\Empire Earth\WONAPI\WONCommon\FileWriter.cpp (RECONSTRUCTION).
-// Original bounded FileWriter family2a1e10..2a26a5; nextMD5family2a26b0 excluded.
-// Full actual4B storage; filename/TU boundary provisional; source-only no runtimeauthority.
+// C:\EEX\Empire Earth\WONAPI\WONCommon\FileWriter.cpp
+// FileWriter 0x6a1e10..0x6a26a5: binary writes to a file (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,105 +12,116 @@ namespace WONAPI {
 
 FileWriter::FileWriter() : mFile(NULL) {}
 
-FileWriter::~FileWriter() { Close(); }
+FileWriter::~FileWriter() { this->Close(); }
 // FUNCTION: WON 0x006a1e30
+// Opens the given file for binary writing, clearing its read-only flag and retrying when asked
 bool FileWriter::Open(const char* inPath, bool inOpenIfReadOnly)
 {
-    Close();
+    this->Close();
     if (inPath[0] == 0)
         return false;
-    mFile = fopen(inPath, "wb");
-    if (mFile == NULL && inOpenIfReadOnly) {
+    this->mFile = fopen(inPath, "wb");
+    if (this->mFile == NULL && inOpenIfReadOnly) {
         WONFile file(inPath);
         file.SetReadOnly(false);
-        mFile = fopen(inPath, "wb");
+        this->mFile = fopen(inPath, "wb");
     }
-    return mFile != NULL;
+    return this->mFile != NULL;
 }
 // FUNCTION: WON 0x006a2060
+// Closes the file
 void FileWriter::Close()
 {
-    if (mFile != NULL) {
-        fclose(mFile);
-        mFile = NULL;
+    if (this->mFile != NULL) {
+        fclose(this->mFile);
+        this->mFile = NULL;
     }
 }
 
 // FUNCTION: WON 0x006a2080
+// Returns the current write position, 0 with no file open
 unsigned long FileWriter::pos()
 {
-    return mFile != NULL ? ftell(mFile) : 0;
+    return this->mFile != NULL ? ftell(this->mFile) : 0;
 }
 // FUNCTION: WON 0x006a20a0
+// Moves the write position; throws FileWriterException when the seek fails
 void FileWriter::SetPos(unsigned long inPos)
 {
-    if (mFile != NULL && fseek(mFile, inPos, SEEK_SET) != 0)
+    if (this->mFile != NULL && fseek(this->mFile, inPos, SEEK_SET) != 0)
         throw FileWriterException("Attempt to setpos past end of file.");
 }
 // FUNCTION: WON 0x006a2400
+// Writes the given bytes; throws FileWriterException with no file or on a short write
 void FileWriter::WriteBytes(const void* inData, unsigned long inLength)
 {
-    if (mFile == NULL)
+    if (this->mFile == NULL)
         throw FileWriterException("NULL File.");
-    if (fwrite(inData, 1, inLength, mFile) != inLength)
+    if (fwrite(inData, 1, inLength, this->mFile) != inLength)
         throw FileWriterException("fwrite failed (disk full)");
 }
 
 // FUNCTION: WON 0x006a25f0
-void FileWriter::WriteByte(unsigned char inValue) { WriteBytes(&inValue, 1); }
+// Writes one byte
+void FileWriter::WriteByte(unsigned char inValue) { this->WriteBytes(&inValue, 1); }
 
 // FUNCTION: WON 0x006a2600
-void FileWriter::WriteShort(unsigned short inValue) { WriteBytes(&inValue, 2); }
+// Writes a 16-bit value
+void FileWriter::WriteShort(unsigned short inValue) { this->WriteBytes(&inValue, 2); }
 
 // FUNCTION: WON 0x006a2610
-void FileWriter::WriteLong(long inValue) { WriteBytes(&inValue, 4); }
+// Writes a 32-bit value
+void FileWriter::WriteLong(long inValue) { this->WriteBytes(&inValue, 4); }
 // FUNCTION: WON 0x006a2620
+// Writes a length as a 1, 2 or 4 byte field; writes nothing for any other size
 void FileWriter::WriteLength(unsigned long inLength, unsigned char inFieldSize)
 {
     switch (inFieldSize) {
-    case 1: WriteByte((unsigned char)inLength); break;
-    case 2: WriteShort((unsigned short)inLength); break;
-    case 4: WriteLong((long)inLength); break;
+    case 1: this->WriteByte((unsigned char)inLength); break;
+    case 2: this->WriteShort((unsigned short)inLength); break;
+    case 4: this->WriteLong((long)inLength); break;
     }
 }
 
 // FUNCTION: WON 0x006a2660
+// Writes the string's characters without a length or terminator
 void FileWriter::WriteRawString(const std::string& inString)
 {
-    WriteBytes(inString.c_str(), inString.length());
+    this->WriteBytes(inString.c_str(), inString.length());
 }
 // FUNCTION: WON 0x006a2680
+// Writes a length-prefixed string with the given length field size
 void FileWriter::WriteString(const std::string& inString, unsigned char inFieldSize)
 {
-    WriteLength(inString.length(), inFieldSize);
-    WriteRawString(inString);
+    this->WriteLength(inString.length(), inFieldSize);
+    this->WriteRawString(inString);
 }
 }
 
 namespace WONAPI {
-// Genuine SDK required byte-order helper; no forced emission or new Native claim.
+// WON SDK byte-order helper
 inline bool IsLittleEndian()
 {
 	short aTest = 1;
-	return ((*(char*)&aTest)&1)?true:false;
+	return ((*reinterpret_cast<char*>(&aTest))&1)?true:false;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK wide string serialization.
+// No original address identified: WON SDK wide string serialization
 void FileWriter::WriteRawWString(const std::wstring &theWStr)
 {
 	if(IsLittleEndian() && sizeof(wchar_t)==2)
-		WriteBytes(theWStr.data(),theWStr.length()*2);
+		this->WriteBytes(theWStr.data(),theWStr.length()*2);
 	else
 	{
 		for(int i=0; i<theWStr.length(); i++)
-			WriteShort(theWStr[i]);
+			this->WriteShort(theWStr[i]);
 	}
 }
 
 void FileWriter::WriteWString(const std::wstring &theWStr, unsigned char theLengthFieldSize)
 {
-	WriteLength(theWStr.length(),theLengthFieldSize);
-	WriteRawWString(theWStr);
+	this->WriteLength(theWStr.length(),theLengthFieldSize);
+	this->WriteRawWString(theWStr);
 }
 }
 

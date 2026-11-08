@@ -3,26 +3,24 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 class StretchImage;
-// Complete WONFrame14 declaration is provided by the included WONLobbyGUI.h.
-// Actual58 original-owned simple button, target vtable450614. No new/sizeof/
-// ctor/copy/delete authority; retained images use genuine existing Image owner.
+// WONFrame (0x14) is declared in WONLobbyGUI.h.
+// WONSimpleButton (0x58 bytes), vtable 0x00850614; the images are retained Image pointers.
 class WONSimpleButton : public Button {
 public:
-    WONSimpleButton(); //317990 external full58, bounded F allocation
-    WONSimpleButton* Duplicate(); //317ae0 actual raw result, original external
-    virtual void Virtual0C(int&,int&); //317a90 actual SDK GetDesiredSize slot0c
-    virtual void Paint(Graphics&); //317bd0 actual18
-    void SetImage(int state,Image* image) { mImages[state]=image; }
-    void SetScaleImage(bool v) { mScaleImage=v; }
-    void SetCheckMouseButtonDown(bool v) { mCheckMouseButtonDown=v; }
+    WONSimpleButton(); // at 0x00717990 (0x58 bytes)
+    WONSimpleButton* Duplicate(); // at 0x00717ae0
+    virtual void GetDesiredSize(int&,int&); // GetDesiredSize (slot 0x0c), at 0x00717a90
+    virtual void Paint(Graphics&); // slot 0x18, at 0x00717bd0
+    void SetImage(int state,Image* image) { this->mImages[state]=image; }
+    void SetScaleImage(bool v) { this->mScaleImage=v; }
+    void SetCheckMouseButtonDown(bool v) { this->mCheckMouseButtonDown=v; }
     SmartPtr<Image> mImages[4]; //44..53
     bool mScaleImage,mCheckMouseButtonDown; //54,55
 };
-// Actual fieldless WONSimpleButton58 descendant, VT45085c/47slots.
-// Bounded F new authority solely original3194a0 constructor from reviewed skin composition.
+// WONScrollThumb: fieldless WONSimpleButton (0x58), vtable 0x0085085c (47 slots), constructed at 0x007194a0.
 class WONScrollThumb : public WONSimpleButton {
 public:
-    WONScrollThumb(); //3194a0 original external
+    WONScrollThumb(); // at 0x007194a0
 };
 }
 #endif

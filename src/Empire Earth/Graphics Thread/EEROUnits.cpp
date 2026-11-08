@@ -62,7 +62,7 @@ extern bool gUnitPanelActive;               // 0x5297a0 (EEROUserInterface.cpp)
 extern GEFont* gU531994;                    // 0x531994 (the labels' default font; before gFontTahoma10; provisional name)
 // 0x4e5b98: an empty string (EEHumanPlayer's ctors assign it too); zero bytes in the original's initialised .data.
 // Size: one dword (the next named datum is 8 bytes on, 0x4e5ba0; the dword between is unreferenced)
-char gU4E5B98[4] = "";
+char gEmptyString[4] = "";
 extern EERenderUnit* gU529044;              // 0x529044 (the unit with the debug label; EERenderObject.cpp; provisional name)
 extern UWideString gU529030;                // 0x529030 (that label; EERenderObject.cpp; provisional name)
 
@@ -918,7 +918,7 @@ void EEROUnits::DrawLabels(EERenderUnit* inUnits, unsigned long inCount)
         EERenderUnit* theUnit = &inUnits[i];
         if (theUnit->mCommandType != 0) {
             theString = theUnit->mName;
-            if (theString != gU4E5B98 && theString[0] == ' ') {
+            if (theString != gEmptyString && theString[0] == ' ') {
                 theText.SetText(theString);
                 theOffset.SetX(theUnit->mTransformation.GetX());
                 theOffset.SetY(theUnit->mTransformation.GetY());

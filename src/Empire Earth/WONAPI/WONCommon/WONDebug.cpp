@@ -1,4 +1,4 @@
-// Concrete original Win32 diagnostics algorithms; no runtime invocation.
+// WONDebug: crash stack dump to a log file through DbgHelp (WON SDK)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <imagehlp.h>
@@ -16,6 +16,7 @@ using namespace WONAPI;
 static std::string gStackFileName;
 
 // FUNCTION: WON 0x006a6dc0
+// Returns the name of the stack dump file (empty: no dump)
 const std::string& WONDebug::GetStackFileName()
 {
 	return gStackFileName;
@@ -76,6 +77,7 @@ static bool GetWinDebugFunc(HMODULE theModule, const char *theName, T &theFunc)
 }
 
 // FUNCTION: WON 0x006a71b0
+// Loads DbgHelp.dll and looks up the stack-walk and symbol functions; returns false when any is missing
 static bool TryLoadWinDebugFunctions()
 {
 	struct AutoUnloadLibrary
@@ -128,12 +130,14 @@ struct MY_SYMBOL_INFO
 };
 
 // FUNCTION: WON 0x006a72f0
+// Stack-walk callback: forwards to SymFunctionTableAccess
 static LPVOID __stdcall FunctionTableAccess(HANDLE hProcess, DWORD dwPCAddress)
 {
 	return gSymFunctionTableAccessFunc(hProcess, dwPCAddress);
 }
 
 // FUNCTION: WON 0x006a7310
+// Stack-walk callback: returns the module base of an address, loading the module's symbols when unknown
 static DWORD __stdcall GetModuleBase(HANDLE hProcess, DWORD dwReturnAddress)
 {
 	IMAGEHLP_MODULE moduleInfo;
@@ -171,6 +175,7 @@ static DWORD __stdcall GetModuleBase(HANDLE hProcess, DWORD dwReturnAddress)
 }
 
 // FUNCTION: WON 0x006a73d0
+// Fills in the module name and undecorated symbol (+ offset) for a code address; always TRUE
 static BOOL ResolveSymbol(HANDLE hProcess, DWORD dwAddress,
 	MY_SYMBOL_INFO &siSymbol)
 {
@@ -252,36 +257,37 @@ protected:
 	FILE *mFile;
 
 public:
-	CTraceClipboardData() { mFile = NULL; }
-	virtual ~CTraceClipboardData() { Close(); }
+	CTraceClipboardData() { this->mFile = NULL; }
+	virtual ~CTraceClipboardData() { this->Close(); }
 
 	bool Open(const std::string &theFileName) 
 	{ 
-		Close();
+		this->Close();
 		if(!theFileName.empty())
-			mFile = fopen(theFileName.c_str(),"a+");
+			this->mFile = fopen(theFileName.c_str(),"a+");
 
-		return mFile!=NULL;
+		return this->mFile!=NULL;
 	}
 
 	void Close() 
 	{ 
-		if(mFile!=NULL) 
-			fclose(mFile);
+		if(this->mFile!=NULL) 
+			fclose(this->mFile);
 
-		mFile = NULL;
+		this->mFile = NULL;
 	}
 
 	void SendOut(const char *theStr) 
 	{ 
-		if(mFile!=NULL) 
-			fprintf(mFile,theStr); 
+		if(this->mFile!=NULL) 
+			fprintf(this->mFile,theStr); 
 	}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x006a6df0
+// Appends a timestamped stack trace of the faulting (or current) thread to the stack dump file
 static void MyDumpStack(LPEXCEPTION_POINTERS pInfo)
 {
 	CTraceClipboardData clipboardData;
@@ -399,6 +405,7 @@ static void MyDumpStack(LPEXCEPTION_POINTERS pInfo)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x006a6de0
+// Exception filter: dumps the stack to the dump file and continues the search
 int WONDebug::DumpStackToFile(void *theInfo)
 {
 	MyDumpStack((LPEXCEPTION_POINTERS)theInfo);

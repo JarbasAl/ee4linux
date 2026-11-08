@@ -1,4 +1,4 @@
-// Skinned button text/image states, layout and painting on actual original owners.
+// Skinned button: per-state images, colours and fonts, text layout and painting
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,62 +10,67 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyWONButton.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x00718060
-void WONButton::VirtualB0(const GUIString &theText)
+// Sets the button text in every font's wrapped text and refits the height
+void WONButton::SetTextHook(const GUIString &theText)
 {
-	FontTextMap::iterator anItr = mFontTextMap.begin();
-	while(anItr!=mFontTextMap.end())
+	FontTextMap::iterator anItr = this->mFontTextMap.begin();
+	while(anItr!=this->mFontTextMap.end())
 	{
 		WrappedText *aText = anItr->second.get();
 		aText->SetText(theText);
 		++anItr;
 	}
 
-	AdjustHeightToFitText(); 
+	this->AdjustHeightToFitText(); 
 }
 
 // FUNCTION: WON 0x00718100
+// After the base handling, re-wraps every font's text to the inner width (when wrapping) and refits the height
 void WONButton::Virtual08()
 {
 	Button::Virtual08();
-	if(!mWrapText)
+	if(!this->mWrapText)
 		return;
 
-	FontTextMap::iterator anItr = mFontTextMap.begin();
-	while(anItr!=mFontTextMap.end())
+	FontTextMap::iterator anItr = this->mFontTextMap.begin();
+	while(anItr!=this->mFontTextMap.end())
 	{
 		WrappedText *aText = anItr->second.get();
-		aText->SetMaxWidth(Width()-mLeftTextPad-mRightTextPad);
+		aText->SetMaxWidth(this->Width()-this->mLeftTextPad-this->mRightTextPad);
 		++anItr;
 	}
 
-	AdjustHeightToFitText();
+	this->AdjustHeightToFitText();
 }
 
 // FUNCTION: WON 0x007181A0
+// Resizes the button to the text height plus padding, when height fitting is on
 void WONButton::AdjustHeightToFitText()
 {
-	if(!mAdjustHeightToFitText)
+	if(!this->mAdjustHeightToFitText)
 		return;
 
 	int width,height;
-	GetTextSize(width,height);
+	this->GetTextSize(width,height);
 
-	if(Height()-mTopTextPad-mBottomTextPad!=height)
-		Fn2F4B90(Width(),height+mTopTextPad+mBottomTextPad);
+	if(this->Height()-this->mTopTextPad-this->mBottomTextPad!=height)
+		this->SetSize(this->Width(),height+this->mTopTextPad+this->mBottomTextPad);
 }
 
 // FUNCTION: WON 0x00718220
+// Turns text wrapping on or off for every font's wrapped text
 void WONButton::SetWrapText(bool wrap)
 {
-	if(mWrapText==wrap)
+	if(this->mWrapText==wrap)
 		return;
 
-	mWrapText = wrap;
-	FontTextMap::iterator anItr = mFontTextMap.begin();
-	while(anItr!=mFontTextMap.end())
+	this->mWrapText = wrap;
+	FontTextMap::iterator anItr = this->mFontTextMap.begin();
+	while(anItr!=this->mFontTextMap.end())
 	{
 		WrappedText *aText = anItr->second.get();
 		aText->SetWrap(wrap);
@@ -75,24 +80,26 @@ void WONButton::SetWrapText(bool wrap)
 }
 
 // FUNCTION: WON 0x007182C0
+// Sets the image, text colour and font of one button state (normal or checked); the first state without
+// a font gets the default font; one wrapped text is shared per font
 void WONButton::SetButtonState(int theState, Image *theImage, int theColor, Font *theFont, bool checked)
 {
 	int checkedIndex = checked?1:0;
-	ButtonState &aState = mStates[theState][checkedIndex];
+	ButtonState &aState = this->mStates[theState][checkedIndex];
 	if(checkedIndex)
-		mHasCheck = true;
+		this->mHasCheck = true;
 
 	SmartPtr<Font> aFont;
-	if(mFontTextMap.empty() && theFont==NULL)
+	if(this->mFontTextMap.empty() && theFont==NULL)
 		theFont = aFont = WONAPI::WindowManager::GetDefaultWindowManager()->GetDefaultFont();
 
 	if(theFont!=NULL)
 	{
-		FontTextMap::iterator anItr = mFontTextMap.insert(FontTextMap::value_type(theFont,NULL)).first;
+		FontTextMap::iterator anItr = this->mFontTextMap.insert(FontTextMap::value_type(theFont,NULL)).first;
 		if(anItr->second.get()==NULL)
 		{
 			SmartPtr<WrappedText> aText = new WrappedText;
-			aText->SetCentered(mHAlign==HorzAlign_Center);
+			aText->SetCentered(this->mHAlign==HorzAlign_Center);
 			aText->SetWrap(false);
 			aText->SetFont(theFont);
 			anItr->second = aText;
@@ -107,11 +114,12 @@ void WONButton::SetButtonState(int theState, Image *theImage, int theColor, Font
 }
 
 // FUNCTION: WON 0x00718580
+// Returns the largest width and height of the button text over all fonts
 void WONButton::GetTextSize(int &width, int &height)
 {
 	width = 0; height = 0;
-	FontTextMap::iterator anItr = mFontTextMap.begin();
-	while(anItr!=mFontTextMap.end())
+	FontTextMap::iterator anItr = this->mFontTextMap.begin();
+	while(anItr!=this->mFontTextMap.end())
 	{
 		WrappedText *aText = anItr->second.get();
 		if(aText->GetWidth() > width)
@@ -125,115 +133,120 @@ void WONButton::GetTextSize(int &width, int &height)
 }
 
 // FUNCTION: WON 0x00718640
-void WONButton::Virtual0C(int &width, int &height)
+// Returns the text size, grown to the largest state image unless images are scaled, plus the text padding
+void WONButton::GetDesiredSize(int &width, int &height)
 {
-	GetTextSize(width,height);
+	this->GetTextSize(width,height);
 	for(int i=0; i<5; i++)
 	{
 		for(int j=0; j<2; j++)
 		{
-			Image *anImage = mStates[i][j].mImage.get();
-			if(anImage!=NULL)
-			{
-				if(!mScaleImage && anImage->mWidth>width)
-					width = anImage->mWidth;
-			
-				if(!mScaleImage && anImage->mHeight > height)
-					height = anImage->mHeight;
-			}
+			Image *anImage = this->mStates[i][j].mImage.get();
+			if(anImage==NULL)
+				continue;
+			if(!this->mScaleImage && anImage->mWidth>width)
+				width = anImage->mWidth;
+
+			if(!this->mScaleImage && anImage->mHeight > height)
+				height = anImage->mHeight;
 		}
 	}
 
 
-	width += mLeftTextPad + mRightTextPad;
-	height += mTopTextPad + mBottomTextPad;
+	width += this->mLeftTextPad + this->mRightTextPad;
+	height += this->mTopTextPad + this->mBottomTextPad;
 }
 
 // FUNCTION: WON 0x007186E0
+// Sets the horizontal text alignment; only switches to or from centred (left <-> right is ignored)
 void WONButton::SetHorzAlign(HorzAlign theHorzAlign)
 {
-	if(theHorzAlign==mHAlign)
+	if(theHorzAlign==this->mHAlign)
 		return;
 
-	if(mHAlign!=HorzAlign_Center && theHorzAlign!=HorzAlign_Center)
+	if(this->mHAlign!=HorzAlign_Center && theHorzAlign!=HorzAlign_Center)
 		return;
 
-	mHAlign = theHorzAlign;
+	this->mHAlign = theHorzAlign;
 
-	FontTextMap::iterator anItr = mFontTextMap.begin();
-	while(anItr!=mFontTextMap.end())
+	FontTextMap::iterator anItr = this->mFontTextMap.begin();
+	while(anItr!=this->mFontTextMap.end())
 	{
 		WrappedText *aText = anItr->second.get();
-		aText->SetCentered(mHAlign==HorzAlign_Center); 
+		aText->SetCentered(this->mHAlign==HorzAlign_Center); 
 		++anItr;
 	}
 }
 
 // FUNCTION: WON 0x00718790
+// Sets the text colour of every state; with scaled images only of the normal and default states
 void WONButton::SetTextColor(int theColor)
 {
-	if(!mScaleImage)
+	if(!this->mScaleImage)
 	{
 		for(int i=0; i<5; i++)
 			for(int j=0; j<2; j++)
-				mStates[i][j].mColor = theColor;
+				this->mStates[i][j].mColor = theColor;
 	}
 	else
 	{
-		mStates[0][0].mColor = theColor;
-		mStates[0][1].mColor = theColor;
-		mStates[4][0].mColor = theColor;
-		mStates[4][1].mColor = theColor;
+		this->mStates[0][0].mColor = theColor;
+		this->mStates[0][1].mColor = theColor;
+		this->mStates[4][0].mColor = theColor;
+		this->mStates[4][1].mColor = theColor;
 	}
 }
 
 // FUNCTION: WON 0x007187E0
+// Makes every state use the normal state's wrapped text, set to the given font
 void WONButton::SetFont(Font *theFont)
 {
-	mFontTextMap.clear();
-	SmartPtr<WrappedText> aText = mStates[0][0].mText.get();
+	this->mFontTextMap.clear();
+	SmartPtr<WrappedText> aText = this->mStates[0][0].mText.get();
 	aText->SetFont(theFont);
-	mFontTextMap[theFont] = aText;
+	this->mFontTextMap[theFont] = aText;
 	
 	for(int i=0; i<5; i++)
 		for(int j=0; j<2; j++)
-			mStates[i][j].mText = aText;
+			this->mStates[i][j].mText = aText;
 }
 
 // FUNCTION: WON 0x00718970
+// Copies another button's padding, alignment, flags, colours and state images (duplicated when scaled),
+// with fresh wrapped texts per font
 void WONButton::CopyAttributes(WONButton *from)
 {
 	Button::CopyAttributes(from);
-	mLeftTextPad		= from->mLeftTextPad;
-	mTopTextPad			= from->mTopTextPad;
-	mRightTextPad		= from->mRightTextPad;
-	mBottomTextPad		= from->mBottomTextPad;
-	mLeftFocusPad		= from->mLeftFocusPad;
-	mTopFocusPad		= from->mTopFocusPad;
-	mRightFocusPad		= from->mRightFocusPad;
-	mBottomFocusPad		= from->mBottomFocusPad;
-	mPushDX				= from->mPushDX;
-	mPushDY				= from->mPushDY;
-	mHasCheck			= from->mHasCheck;
-	mScaleImage			= from->mScaleImage;
-	mHAlign				= from->mHAlign;
-	mVAlign				= from->mVAlign;
-	mDrawGrayText		= from->mDrawGrayText;
-	mIsTransparent		= from->mIsTransparent;
-	mFocusStyle			= from->mFocusStyle;
-	mDefaultTextColor	= from->mDefaultTextColor;
-	if(from->ComponentFlagSet(0x100))
-		SetComponentFlags(0x100,true);
-	if(from->ComponentFlagSet(0x200))
-		SetComponentFlags(0x200,true);
+	this->mLeftTextPad		= from->mLeftTextPad;
+	this->mTopTextPad			= from->mTopTextPad;
+	this->mRightTextPad		= from->mRightTextPad;
+	this->mBottomTextPad		= from->mBottomTextPad;
+	this->mLeftFocusPad		= from->mLeftFocusPad;
+	this->mTopFocusPad		= from->mTopFocusPad;
+	this->mRightFocusPad		= from->mRightFocusPad;
+	this->mBottomFocusPad		= from->mBottomFocusPad;
+	this->mPushDX				= from->mPushDX;
+	this->mPushDY				= from->mPushDY;
+	this->mHasCheck			= from->mHasCheck;
+	this->mScaleImage			= from->mScaleImage;
+	this->mHAlign				= from->mHAlign;
+	this->mVAlign				= from->mVAlign;
+	this->mDrawGrayText		= from->mDrawGrayText;
+	this->mIsTransparent		= from->mIsTransparent;
+	this->mFocusStyle			= from->mFocusStyle;
+	this->mDefaultTextColor	= from->mDefaultTextColor;
+	if(from->ComponentFlagSet(ComponentFlag_GrabBG))
+		this->SetComponentFlags(ComponentFlag_GrabBG,true);
+	if(from->ComponentFlagSet(ComponentFlag_Translucent))
+		this->SetComponentFlags(ComponentFlag_Translucent,true);
 
-	mFontTextMap = from->mFontTextMap;
-	FontTextMap::iterator anItr = mFontTextMap.begin();
-	while(anItr!=mFontTextMap.end())
+	this->mFontTextMap = from->mFontTextMap;
+	FontTextMap::iterator anItr = this->mFontTextMap.begin();
+	while(anItr!=this->mFontTextMap.end())
 	{
 		anItr->second = new WrappedText;
-		anItr->second->SetCentered(mHAlign==HorzAlign_Center);
-		anItr->second->SetWrap(mWrapText);
+		anItr->second->SetCentered(this->mHAlign==HorzAlign_Center);
+		anItr->second->SetWrap(this->mWrapText);
 		anItr->second->SetFont(anItr->first);
 		++anItr;
 	}
@@ -244,54 +257,56 @@ void WONButton::CopyAttributes(WONButton *from)
 		for(int j=0; j<2; j++)
 		{
 			ButtonState &src = from->mStates[i][j];
-			ButtonState &dst = mStates[i][j];
+			ButtonState &dst = this->mStates[i][j];
 
 			dst.mColor = src.mColor;
 
 			if(src.mImage.get()!=NULL)
 			{
-				if(mScaleImage)
+				if(this->mScaleImage)
 					dst.mImage = src.mImage->Duplicate();
 				else
 					dst.mImage = src.mImage;
 			}
 
 			if(src.mText.get()!=NULL)
-				dst.mText = mFontTextMap[src.mText->mFont.get()];
+				dst.mText = this->mFontTextMap[src.mText->mFont.get()];
 		}
 	}
 }
 
 // FUNCTION: WON 0x00718DB0
+// Draws the button text aligned and pushed when pressed, embossed grey when disabled, with a dotted focus
+// rectangle after dialog-key use
 void WONButton::DrawButtonText(Graphics &g, WrappedText *theText, int theColor)
 {
 	if(theText==NULL)
 		return;
 
 	int x,y;
-	if(mScaleImage)
+	if(this->mScaleImage)
 	{
-		switch(mHAlign)
+		switch(this->mHAlign)
 		{
-			case HorzAlign_Left: x = mLeftTextPad; break;
-			case HorzAlign_Center: x = (Width() - theText->GetWidth() - mLeftTextPad - mRightTextPad)/2 + mLeftTextPad; break;
-			case HorzAlign_Right: x = Width() - theText->GetWidth() - mRightTextPad; break;
+			case HorzAlign_Left: x = this->mLeftTextPad; break;
+			case HorzAlign_Center: x = (this->Width() - theText->GetWidth() - this->mLeftTextPad - this->mRightTextPad)/2 + this->mLeftTextPad; break;
+			case HorzAlign_Right: x = this->Width() - theText->GetWidth() - this->mRightTextPad; break;
 
 		}
-		y = (Height() - theText->GetHeight())/2;
-		if(IsPressed())
+		y = (this->Height() - theText->GetHeight())/2;
+		if(this->IsPressed())
 		{
-			x+=mPushDX;
-			y+=mPushDY;
+			x+=this->mPushDX;
+			y+=this->mPushDY;
 		}
 	}
 	else
 	{
-		x = mLeftTextPad;
-		y = (Height() - theText->GetHeight())/2;
+		x = this->mLeftTextPad;
+		y = (this->Height() - theText->GetHeight())/2;
 	}
 
-	if(IsDisabled() && mDrawGrayText)
+	if(this->IsDisabled() && this->mDrawGrayText)
 	{
 		g.SetSysColor(StandardColor_3DHilight);
 		theText->Paint(g,x+1,y+1);
@@ -302,51 +317,53 @@ void WONButton::DrawButtonText(Graphics &g, WrappedText *theText, int theColor)
 	{
 		g.SetColor(theColor);
 		theText->Paint(g,x,y);
-		if(mFocusStyle && HasFocus() && mParent->mHasUsedDialogKeys)
+		if(this->mFocusStyle && this->HasFocus() && this->mParent->mHasUsedDialogKeys)
 		{
-			if(mScaleImage)
-				g.DrawDottedRect(mLeftFocusPad,mTopFocusPad,Width()-mLeftFocusPad-mRightFocusPad,Height()-mTopFocusPad-mBottomFocusPad);
+			if(this->mScaleImage)
+				g.DrawDottedRect(this->mLeftFocusPad,this->mTopFocusPad,this->Width()-this->mLeftFocusPad-this->mRightFocusPad,this->Height()-this->mTopFocusPad-this->mBottomFocusPad);
 			else
-				g.DrawDottedRect(mLeftTextPad-1,y-1,theText->GetWidth()+2,theText->GetHeight()+2);
+				g.DrawDottedRect(this->mLeftTextPad-1,y-1,theText->GetWidth()+2,theText->GetHeight()+2);
 		}
 		
 	}
 }
 
 // FUNCTION: WON 0x00718F90
+// Picks the current state (disabled, pressed, mouse-over, default, normal; checked or not) and returns its
+// colour, text and image, falling back to the normal state and the default text colour
 void WONButton::GetButtonState(Graphics &g, int *theColor, WrappedText **theText, Image **theImage)
 {
 	int aState = 0;
-	if(IsDisabled())
+	if(this->IsDisabled())
 		aState = 2;
-	else if(IsPressed())
+	else if(this->IsPressed())
 		aState = 1;
-	else if(IsMouseOver() && ((mButtonFlags&1)!=0))
+	else if(this->IsMouseOver() && ((mButtonFlags&1)!=0))
 		aState = 3;
-	else if(IsDefaultButton())
+	else if(this->IsDefaultButton())
 		aState = 4;
 
-	int aCheckedIndex = (mHasCheck && IsChecked())?1:0;
+	int aCheckedIndex = (this->mHasCheck && this->IsChecked())?1:0;
 
-	ButtonState &aStateStruct = mStates[aState][aCheckedIndex];
+	ButtonState &aStateStruct = this->mStates[aState][aCheckedIndex];
 
 	Image *anImage = aStateStruct.mImage.get();
 	int aColor = aStateStruct.mColor;
 	WrappedText *aText = aStateStruct.mText.get();
 
-	if(anImage==NULL) anImage = mStates[0][aCheckedIndex].mImage.get();
-	if(aColor==-1) aColor = mStates[0][aCheckedIndex].mColor;
-	if(aText==NULL) aText = mStates[0][aCheckedIndex].mText.get();
+	if(anImage==NULL) anImage = this->mStates[0][aCheckedIndex].mImage.get();
+	if(aColor==-1) aColor = this->mStates[0][aCheckedIndex].mColor;
+	if(aText==NULL) aText = this->mStates[0][aCheckedIndex].mText.get();
 
 	if(aCheckedIndex==1)
 	{
-		if(anImage==NULL) anImage = mStates[0][0].mImage.get();
-		if(aColor==-1) aColor = mStates[0][0].mColor;
-		if(aText==NULL) aText = mStates[0][0].mText.get();
+		if(anImage==NULL) anImage = this->mStates[0][0].mImage.get();
+		if(aColor==-1) aColor = this->mStates[0][0].mColor;
+		if(aText==NULL) aText = this->mStates[0][0].mText.get();
 	}
 
 	if(aColor==-1)
-		aColor = mDefaultTextColor;
+		aColor = this->mDefaultTextColor;
 
 	if(theText) *theText = aText;
 	if(theColor) *theColor = aColor;
@@ -354,30 +371,31 @@ void WONButton::GetButtonState(Graphics &g, int *theColor, WrappedText **theText
 }
 
 // FUNCTION: WON 0x00719080
+// Paints the button: face colour unless transparent, the state image (scaled or vertically aligned), then the text
 void WONButton::Paint(Graphics &g)
 {
 	Button::Paint(g);
-	if(!mIsTransparent)
+	if(!this->mIsTransparent)
 	{
 		g.SetSysColor(StandardColor_3DFace);
-		g.FillRect(0,0,Width(),Height());
+		g.FillRect(0,0,this->Width(),this->Height());
 	}
 
 	Image *anImage; 
 	int aColor; 
 	WrappedText *aText; 
-	GetButtonState(g,&aColor,&aText,&anImage);
+	this->GetButtonState(g,&aColor,&aText,&anImage);
 
-	if(mScaleImage)
+	if(this->mScaleImage)
 	{
 		if(anImage!=NULL)
 		{
-			if(anImage->mWidth!=Width() || anImage->mHeight!=Height())
-				anImage->SetSize(Width(),Height());
+			if(anImage->mWidth!=this->Width() || anImage->mHeight!=this->Height())
+				anImage->SetSize(this->Width(),this->Height());
 
 			g.DrawImage(anImage,0,0);
 		}
-		DrawButtonText(g,aText,aColor);
+		this->DrawButtonText(g,aText,aColor);
 	}
 	else
 	{
@@ -386,50 +404,54 @@ void WONButton::Paint(Graphics &g)
 		if(anImage!=NULL)
 		{
 			int aHeight = anImage->mHeight;
-			if(mVAlign==HorzAlign_Center) y = (Height() - aHeight - mTopTextPad - mBottomTextPad)/2;
-			else if(mVAlign==VertAlign_Bottom) y = Height() - aHeight - mTopTextPad - mBottomTextPad;
+			if(this->mVAlign==HorzAlign_Center) y = (this->Height() - aHeight - this->mTopTextPad - this->mBottomTextPad)/2;
+			else if(this->mVAlign==VertAlign_Bottom) y = this->Height() - aHeight - this->mTopTextPad - this->mBottomTextPad;
 
-			g.DrawImage(anImage,0,y + mTopTextPad);
+			g.DrawImage(anImage,0,y + this->mTopTextPad);
 		}
-		DrawButtonText(g,aText,aColor);
+		this->DrawButtonText(g,aText,aColor);
 	}
 }
 
 
 // FUNCTION: WON 0x00718200
+// Turns height fitting on or off and refits the height when it changed
 void WONButton::SetAdjustHeightToFitText(bool adjust)
 {
-	if(adjust==mAdjustHeightToFitText)
+	if(adjust==this->mAdjustHeightToFitText)
 		return;
 
-	mAdjustHeightToFitText = adjust;
-	AdjustHeightToFitText();
+	this->mAdjustHeightToFitText = adjust;
+	this->AdjustHeightToFitText();
 }
 
 
 // FUNCTION: WON 0x007182a0
+// Sets whether the face is left unpainted; transparent buttons grab the background
 void WONButton::SetTransparent(bool isTransparent)
 {
-	mIsTransparent = isTransparent;
+	this->mIsTransparent = isTransparent;
 	if(isTransparent)
-		SetComponentFlags(0x100,true);
+		this->SetComponentFlags(ComponentFlag_GrabBG,true);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007180e0
+// Returns the button text, or an empty string when the button has no font yet
 const GUIString& WONButton::GetText()
 {
-    if(mFontTextMap.empty()) return gEmptyGUIString;
-    return mFontTextMap.begin()->second->GetText();
+    if(this->mFontTextMap.empty()) return gEmptyGUIString;
+    return this->mFontTextMap.begin()->second->GetText();
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x00718780
+// Sets the vertical alignment of the button image
 void WONButton::SetVertAlign(VertAlign align)
 {
-    mVAlign=align;
+    this->mVAlign=align;
 }
 }
 

@@ -1,4 +1,4 @@
-// Complete actual Component resource/input adapters; all helper/getter/setter quota0.
+// Component extra-state accessors, color schemes, fonts and mouse helpers (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,92 +11,92 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Original2f4af0/14, borrowed field accessor support0.
 // FUNCTION: WON 0x006f4af0
+// Returns the component's background grabber, or NULL
 BackgroundGrabber* Component::GetGrabBG()
 {
-    return mExtraStuff!=NULL ? mExtraStuff->mGrabBG : NULL;
+    return this->mExtraStuff!=NULL ? this->mExtraStuff->mGrabBG : NULL;
 }
-// Original2f4b00/14, borrowed field accessor support0.
 // FUNCTION: WON 0x006f4b00
-Cursor* Component::Fn2F4B00()
+// Returns the component's default cursor, or NULL
+Cursor* Component::GetDefaultCursor()
 {
-    return mExtraStuff!=NULL ? mExtraStuff->mDefaultCursor.get() : NULL;
+    return this->mExtraStuff!=NULL ? this->mExtraStuff->mDefaultCursor.get() : NULL;
 }
-// Original2f4b10/89, existing external Extra allocation plus true owning setter support0.
 // FUNCTION: WON 0x006f4b10
+// Sets the component's listener (one listener; a new one replaces the old)
 void Component::AddListener(ComponentListener* listener)
 {
-    AllocateExtraStuff();
-    mExtraStuff->mListener=listener;
+    this->AllocateExtraStuff();
+    this->mExtraStuff->mListener=listener;
 }
-// Original2f4c60/89, existing external Extra allocation plus true owning setter support0.
 // FUNCTION: WON 0x006f4c60
+// Sets the component's default cursor
 void Component::SetDefaultCursor(Cursor* cursor)
 {
-    AllocateExtraStuff();
-    mExtraStuff->mDefaultCursor=cursor;
+    this->AllocateExtraStuff();
+    this->mExtraStuff->mDefaultCursor=cursor;
 }
-// Original2f5360/28, manager forwarding support0.
 // FUNCTION: WON 0x006f5360
-void Component::Fn2F5360(bool subscribe)
+// Subscribes or unsubscribes the component to broadcast events
+void Component::SubscribeToBroadcast(bool subscribe)
 {
-    GetRoot()->GetWindowManager()->SubscribeToBroadcast(this,subscribe);
+    this->GetRoot()->GetWindowManager()->SubscribeToBroadcast(this,subscribe);
 }
-// Original2f5770/39, coordinate adapting helper support0.
 // FUNCTION: WON 0x006f5770
+// Returns the window's mouse position in this component's coordinates
 void Component::GetMousePos(int& x,int& y)
 {
-    Window* window=GetRoot();
+    Window* window=this->GetRoot();
     x=window->mMouseX;
     y=window->mMouseY;
-    RootToChild(x,y);
+    this->RootToChild(x,y);
 }
-// Original2f57a0/9, borrowed window scalar accessor support0.
 // FUNCTION: WON 0x006f57a0
+// Returns the window's current key modifiers
 int Component::GetKeyMod()
 {
-    return GetRoot()->mKeyMod;
+    return this->GetRoot()->mKeyMod;
 }
-// Original2f5960/14, borrowed own scheme getter support0.
 // FUNCTION: WON 0x006f5960
+// Returns the component's own color scheme, or NULL
 ColorScheme* Component::GetOwnColorScheme()
 {
-    return mExtraStuff!=NULL ? mExtraStuff->mColorScheme.get() : NULL;
+    return this->mExtraStuff!=NULL ? this->mExtraStuff->mColorScheme.get() : NULL;
 }
-// Original2f5970/44, inherited scheme getter support0.
 // FUNCTION: WON 0x006f5970
+// Returns the component's color scheme, else its parent's, else the window manager's
 ColorScheme* Component::GetColorScheme()
 {
-    if(mExtraStuff!=NULL && mExtraStuff->mColorScheme.get()!=NULL)
-        return mExtraStuff->mColorScheme.get();
-    if(mParent!=NULL) return mParent->GetColorScheme();
-    Window* w=GetRoot();
+    if(this->mExtraStuff!=NULL && this->mExtraStuff->mColorScheme.get()!=NULL)
+        return this->mExtraStuff->mColorScheme.get();
+    if(this->mParent!=NULL) return this->mParent->GetColorScheme();
+    Window* w=this->GetRoot();
     return w->GetWindowManager()->mColorScheme.get();
 }
-// Original2f59a0/89, existing external Extra allocation plus true owning setter support0.
 // FUNCTION: WON 0x006f59a0
-void Component::Fn2F59A0(ColorScheme* scheme)
+// Sets the component's own color scheme
+void Component::SetColorScheme(ColorScheme* scheme)
 {
-    AllocateExtraStuff();
-    mExtraStuff->mColorScheme=scheme;
+    this->AllocateExtraStuff();
+    this->mExtraStuff->mColorScheme=scheme;
 }
-// Original2f5b20/13, borrowed font forwarding support0.
 // FUNCTION: WON 0x006f5b20
-Font* Component::Fn2F5B20()
+// Returns the window manager's default font
+Font* Component::GetDefaultFont()
 {
-    return GetRoot()->mManager->GetDefaultFont();
+    return this->GetRoot()->mManager->GetDefaultFont();
 }
-// Original2f5b30/23, borrowed font forwarding support0.
 // FUNCTION: WON 0x006f5b30
+// Returns the window manager's font with the given name
 Font* Component::GetNamedFont(const std::string& name)
 {
-    return GetRoot()->GetWindowManager()->GetNamedFont(name);
+    return this->GetRoot()->GetWindowManager()->GetNamedFont(name);
 }
-// Original2f5b50/28, borrowed font forwarding support0.
 // FUNCTION: WON 0x006f5b50
-Font* Component::Fn2F5B50(int style,int size)
+// Returns the default font in another style and size
+Font* Component::GetDefaultFontMod(int style,int size)
 {
-    return GetRoot()->GetWindowManager()->GetDefaultFontMod(style,size);
+    return this->GetRoot()->GetWindowManager()->GetDefaultFontMod(style,size);
 }
 }

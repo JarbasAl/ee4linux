@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK patch/version DBProxy protocol unit.
-// Missing unit proposed existing DBProxy/patch-server family profile.
+// No original address identified: WON SDK patch/version DBProxy operation
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,6 +9,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONPatchAdmin.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 using namespace WONAPI;
@@ -21,7 +21,7 @@ AddVersionOp::AddVersionOp(ServerContext* theContext)
 	  mMsgType(3),
 	  mProductName("")
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,54 +31,54 @@ AddVersionOp::AddVersionOp(const IPAddr& theAddr)
 	  mMsgType(3),
 	  mProductName("")
 {
-	Init();
+	this->Init();
 } 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus AddVersionOp::Virtual14()
+WONStatus AddVersionOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
-	if (mSubMessageReplyType != mMsgType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mMsgType+1)
+		return this->InvalidReplyHeader();
 	
 	// Do extended unpack
 
 
 
 	// Finished
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void AddVersionOp::Virtual04()
+void AddVersionOp::RunHook()
 {
-	mMessageType=1004;
-	mSubMessageType=mMsgType;
+	this->mMessageType=1004;
+	this->mSubMessageType=this->mMsgType;
 
 	// Pack the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendString(mProductName);
+	requestData.AppendString(this->mProductName);
 
 	// Append the version data (don't include state);
-	mVersionData->WriteToBuffer(requestData, VersionData::WriteFlag_AppendDescripURL);
+	this->mVersionData->WriteToBuffer(requestData, VersionData::WriteFlag_AppendDescripURL);
 	
 	// Pack and call base class implementation
-	mRequestData=requestData.ToByteBuffer(true);
-	DBProxyOp::Virtual04();
+	this->mRequestData=requestData.ToByteBuffer(true);
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void AddVersionOp::Init()
 {
-	Virtual18();
+	this->Reset();
 	ServerRequestOp::mLengthFieldSize = 4;
-	mVersionData = new VersionData;
+	this->mVersionData = new VersionData;
 }

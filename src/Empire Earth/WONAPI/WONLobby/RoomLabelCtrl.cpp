@@ -1,4 +1,4 @@
-// Scratch entire RoomLabelCtrl family; generated implicit destructor0quota.
+// The label over a chat room or game: prefix, server, room name and user count
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <string>
 #include <list>
@@ -16,80 +16,81 @@
 #include "ee/wonapi/WONLobbyRoomServer.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007c32b0
-RoomLabelCtrl::RoomLabelCtrl() : mRoomSpecFlags(0),mUserCt(0) { mShowServer=true; }
-// No explicit destructor: original3c33a0 has only member/base destruction.
+// Creates the room label showing the server name, for no room kind yet
+RoomLabelCtrl::RoomLabelCtrl() : mRoomSpecFlags(0),mUserCt(0) { this->mShowServer=true; }
+// No explicit destructor: the original's (0x7c33a0) only destroys the members and the base
 // FUNCTION: WON 0x007c3480
+// Finds the text label in the layout, fills it and listens to lobby broadcasts
 void RoomLabelCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2)
-    {
-        ComponentConfig* aConfig=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(aConfig,mLabel,"Label",__FILE__,29);
-        CalcLabel();
-        Fn2F5360(1);
-    }
+    if(inInit.mType!=2)
+        return;
+    ComponentConfig* aConfig=static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(aConfig,this->mLabel,"Label",__FILE__,29);
+    this->CalcLabel();
+    this->SubscribeToBroadcast(1);
 }
-// Scratch only. Original RoomLabelCtrl::CalcLabel3c34c0..3c3716 (598 nominalB).
-// Needs canonical call-only four-argument formatter34a170, individually proved resources.
 // FUNCTION: WON 0x007c34c0
+// Builds the label text: disconnected, or prefix, server and room name with the user count
 void RoomLabelCtrl::CalcLabel()
 {
     GUIString aFormat;
     char aCount[33] = "";
-    if(mRoom.empty())
+    if(this->mRoom.empty())
         aFormat = ::RoomLabelCtrl_LabelDisconnected_String;
     else
     {
-        if(mPrefix.length()!=0) aFormat.append(::RoomLabelCtrl_LabelPrefix_String);
-        if(mShowServer && mServer.length()!=0) aFormat.append(::RoomLabelCtrl_LabelServer_String);
-        aFormat.append(mRoom);
-        if(mUserCt>0)
+        if(this->mPrefix.length()!=0) aFormat.append(::RoomLabelCtrl_LabelPrefix_String);
+        if(this->mShowServer && this->mServer.length()!=0) aFormat.append(::RoomLabelCtrl_LabelServer_String);
+        aFormat.append(this->mRoom);
+        if(this->mUserCt>0)
         {
-            sprintf(aCount,"%d",mUserCt);
-            const GUIString& aSuffix = mUserCt==1 ? ::RoomLabelCtrl_LabelUser_String : ::RoomLabelCtrl_LabelUsers_String;
+            sprintf(aCount,"%d",this->mUserCt);
+            const GUIString& aSuffix = this->mUserCt==1 ? ::RoomLabelCtrl_LabelUser_String : ::RoomLabelCtrl_LabelUsers_String;
             aFormat.append(aSuffix);
         }
     }
-    mLabel->SetText(LobbyFn34A170(aFormat,mPrefix,mServer,aCount),true);
+    this->mLabel->SetText(LobbyFormatString3(aFormat,this->mPrefix,this->mServer,aCount),true);
 }
 
 // FUNCTION: WON 0x007c3720
+// Tracks joining and leaving rooms of its kind and players coming and going, relabelling each time
 void RoomLabelCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType)
     {
-    case 100030:
+    case LobbyEvent_JoinedRoom:
         {
             JoinedRoomEvent* aEvent=static_cast<JoinedRoomEvent*>(inEvent);
-            if((mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
-            mServer=aEvent->mServerName;
-            mRoom=aEvent->mGroupName;
-            if(mUserCt>=0) mUserCt=aEvent->mClients->mClients.size();
-            CalcLabel();
+            if((this->mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
+            this->mServer=aEvent->mServerName;
+            this->mRoom=aEvent->mGroupName;
+            if(this->mUserCt>=0) this->mUserCt=aEvent->mClients->mClients.size();
+            this->CalcLabel();
         }
         return;
-    case 100033:
+    case LobbyEvent_LeftRoom:
         {
             LeftRoomEvent* aEvent=static_cast<LeftRoomEvent*>(inEvent);
-            if((mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
-            mServer.erase();
-            mRoom.erase();
-            if(mUserCt>0) mUserCt=0;
-            CalcLabel();
+            if((this->mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
+            this->mServer.erase();
+            this->mRoom.erase();
+            if(this->mUserCt>0) this->mUserCt=0;
+            this->CalcLabel();
         }
         return;
-    case 100006:
+    case LobbyEvent_ClientChanged:
         {
-            if(mUserCt<0) return;
+            if(this->mUserCt<0) return;
             ClientChangedEvent* aEvent=static_cast<ClientChangedEvent*>(inEvent);
-            if((mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
-            if(aEvent->IsAdd()) { ++mUserCt; CalcLabel(); return; }
-            if(mUserCt>0 && aEvent->IsDelete()) --mUserCt;
-            CalcLabel();
+            if((this->mRoomSpecFlags&aEvent->GetRoomSpec())!=aEvent->GetRoomSpec()) return;
+            if(aEvent->IsAdd()) { ++this->mUserCt; this->CalcLabel(); return; }
+            if(this->mUserCt>0 && aEvent->IsDelete()) --this->mUserCt;
+            this->CalcLabel();
         }
         return;
-    case 100054:
-        mRoomSpecFlags|=static_cast<SetRoomSpecFlagsEvent*>(inEvent)->mFlags;
+    case LobbyEvent_SetRoomSpecFlags:
+        this->mRoomSpecFlags|=static_cast<SetRoomSpecFlagsEvent*>(inEvent)->mFlags;
         return;
     default:
         Component::HandleComponentEvent(inEvent);
@@ -98,40 +99,38 @@ void RoomLabelCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 }
 
 
-// Source-local original RoomLabelCtrlConfig reference contract; no allocation authority.
 namespace WONAPI {
-// Reference-only source-local Config9c. No constructor/factory/new/byvalue/sizeof authority.
-// RoomLabelCtrlConfig declaration hoisted to WONLobbyControlConfig.h; existing bodies unchanged.
 // FUNCTION: WON 0x007c3930
+// Reads the PREFIX, GROUPTYPE (CHAT or GAME), SHOWUSERCOUNT and SHOWSERVER layout keys
 bool RoomLabelCtrlConfig::Virtual24(const std::string& inKey)
 {
     if(inKey=="PREFIX")
     {
-        mRoomLabel->SetPrefix(Fn3842F0(false));
+        this->mRoomLabel->SetPrefix(this->ReadString(false));
     }
     else if(inKey=="GROUPTYPE")
     {
-        GUIString aGroup=Fn3842F0(false);
-        if(aGroup.CompareNoCase("CHAT",0)==0) mRoomLabel->SetRoomSpecFlags(1);
-        else if(aGroup.CompareNoCase("GAME",0)==0) mRoomLabel->SetRoomSpecFlags(2);
+        GUIString aGroup=this->ReadString(false);
+        if(aGroup.CompareNoCase("CHAT",0)==0) this->mRoomLabel->SetRoomSpecFlags(1);
+        else if(aGroup.CompareNoCase("GAME",0)==0) this->mRoomLabel->SetRoomSpecFlags(2);
         else throw ConfigObjectException("Invalid Group Type: "+(std::string)aGroup);
     }
     else if(inKey=="SHOWUSERCOUNT")
     {
-        mRoomLabel->SetShowUserCount(Fn3837F0());
+        this->mRoomLabel->SetShowUserCount(this->ReadBool());
     }
     else if(inKey=="SHOWSERVER")
     {
-        mRoomLabel->SetShowServer(Fn3837F0());
+        this->mRoomLabel->SetShowServer(this->ReadBool());
     }
     else return ContainerConfig::Virtual24(inKey);
     return true;
 }
-// 39afb0 support ICF; source-only reference body, zero primary bytes.
-void RoomLabelCtrlConfig::Virtual34(Component* inComponent)
+// SetComponent has no address of its own: the linker folded it with the identical body at 0x79afb0
+void RoomLabelCtrlConfig::SetComponent(Component* inComponent)
 {
-    mRoomLabel=static_cast<RoomLabelCtrl*>(inComponent);
-    ContainerConfig::Virtual34(inComponent);
+    this->mRoomLabel=static_cast<RoomLabelCtrl*>(inComponent);
+    ContainerConfig::SetComponent(inComponent);
 }
 
 
@@ -139,6 +138,7 @@ void RoomLabelCtrlConfig::Virtual34(Component* inComponent)
 
 namespace WONAPI {
 // FUNCTION: WON 0x007655e0
+// Creates a config for a room label in the layout file
 ComponentConfig* RoomLabelCtrlConfig::CfgFactory()
 {
     return new RoomLabelCtrlConfig;

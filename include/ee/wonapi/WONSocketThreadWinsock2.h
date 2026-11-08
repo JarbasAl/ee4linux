@@ -1,4 +1,4 @@
-// Genuine same-SDK complete Windows Winsock2 backend owners. SOURCE_ONLY_NO_NATIVE_ID.
+// WON SDK Windows Winsock2 backends. No original address identified.
 #ifndef __WON_SocketThreadWinsock2_H__
 #define __WON_SocketThreadWinsock2_H__
 #include <winsock2.h>

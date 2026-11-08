@@ -1,4 +1,4 @@
-// Original-backed AuthBase owned raw bytes, unpack dispatch and expiry.
+// AuthBase: owned raw certificate bytes, unpack dispatch and expiry checks
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,53 +11,58 @@
 #include "ee/wonapi/WONElGamal.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006dcce0
+// Creates an unvalidated auth block, copying the raw bytes when any are given
 AuthBase::AuthBase(const void* data, unsigned long length)
 {
-    mIsValid = false;
+    this->mIsValid = false;
     if (data != NULL && length != 0)
-        mRawBuf = new ByteBuffer(data, length, false);
+        this->mRawBuf = new ByteBuffer(data, length, false);
 }
 // FUNCTION: WON 0x006dcdd0
+// Destroys the auth block (members only)
 AuthBase::~AuthBase() {}
-// Primary hot112+shared normal tail20; generatedcatch/restore12 excluded.
 // FUNCTION: WON 0x006dce40
+// Unpacks the raw bytes through UnpackHook and records whether a signature follows the data; returns validity
 bool AuthBase::Unpack()
 {
     bool valid = false;
-    if (mRawBuf.get() != NULL) {
+    if (this->mRawBuf.get() != NULL) {
         try {
-            ReadBuffer input(mRawBuf->data(), mRawBuf->length());
-            valid = UnpackHook(input);
+            ReadBuffer input(this->mRawBuf->data(), this->mRawBuf->length());
+            valid = this->UnpackHook(input);
             if (valid) {
-                mDataLen = static_cast<unsigned short>(input.mL00);
-                if (static_cast<unsigned long>(input.mL08) <= mDataLen)
+                this->mDataLen = static_cast<unsigned short>(input.mPos);
+                if (static_cast<unsigned long>(input.mLength) <= this->mDataLen)
                     valid = false;
             }
         }
         catch (ReadBufferException&) {}
     }
-    mIsValid = valid;
-    return mIsValid;
+    this->mIsValid = valid;
+    return this->mIsValid;
 }
 // FUNCTION: WON 0x006dcf40
+// Returns true when the block is invalid or expires within the given number of seconds
 bool AuthBase::IsExpired(time_t extra) const
 {
-    if (!mIsValid)
+    if (!this->mIsValid)
         return true;
-    return mExpireTime <= time(NULL) + extra;
+    return this->mExpireTime <= time(NULL) + extra;
 }
 // FUNCTION: WON 0x006dcf80
+// Reads the family, issue time and expiry time from the buffer
 bool AuthBase::UnpackHook(ReadBuffer& input)
 {
-    mFamily = input.ReadShort();
-    mIssueTime = input.ReadLong();
-    mExpireTime = input.ReadLong();
+    this->mFamily = input.ReadShort();
+    this->mIssueTime = input.ReadLong();
+    this->mExpireTime = input.ReadLong();
     return true;
 }
 // FUNCTION: WON 0x006dced0
+// Verifies the block's signature over its data with the given ElGamal key
 bool AuthBase::Verify(const ElGamal& key) const
 {
-    return key.Verify(GetData(), GetDataLen(), GetSig(), GetSigLen());
+    return key.Verify(this->GetData(), this->GetDataLen(), this->GetSig(), this->GetSigLen());
 }
 
 }

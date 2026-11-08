@@ -1,4 +1,4 @@
-// Complete native singleton orchestration; genuine external lifetime providers.
+// Free lobby functions that show login and Internet screen panels and report which lobby screen is shown
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -26,33 +26,45 @@
 #include "ee/wonapi/EELobbySound.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007610b0
-void LobbyFn3610B0() { if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->mInternetScreen->ShowLobbyTab(); }
+// Switches the Internet screen to its lobby (rooms) tab
+void LobbyShowLobbyTab() { if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->mInternetScreen->ShowLobbyTab(); }
 // FUNCTION: WON 0x007610d0
-void LobbyFn3610D0() { if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->mLoginScreen->ShowCreateAccountCtrl(); }
+// Shows the create-account panel of the login screen
+void LobbyShowCreateAccount() { if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->mLoginScreen->ShowCreateAccountCtrl(); }
 // FUNCTION: WON 0x007610f0
-void LobbyFn3610F0() { if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->mLoginScreen->ShowLostPasswordCtrl(); }
+// Shows the lost-password panel of the login screen
+void LobbyShowLostPassword() { if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->mLoginScreen->ShowLostPasswordCtrl(); }
 // FUNCTION: WON 0x00761110
-void LobbyFn361110() { if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->mLoginScreen->ShowLostUsernameCtrl(); }
+// Shows the lost-username panel of the login screen
+void LobbyShowLostUsername() { if(gLobbyData.get()!=NULL) gLobbyData->mLobbyContainer->mLoginScreen->ShowLostUsernameCtrl(); }
 // FUNCTION: WON 0x00761130
-bool LobbyFn361130() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->OnInternetScreen():false; }
+// Returns whether the lobby is showing the Internet screen
+bool LobbyOnInternetScreen() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->OnInternetScreen():false; }
 // FUNCTION: WON 0x00761150
-bool LobbyFn361150() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->OnLanScreen():false; }
+// Returns whether the lobby is showing the LAN screen
+bool LobbyOnLanScreen() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->OnLanScreen():false; }
 // FUNCTION: WON 0x00761170
-bool LobbyFn361170() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->OnLoginScreen():false; }
+// Returns whether the lobby is showing the login screen
+bool LobbyOnLoginScreen() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->OnLoginScreen():false; }
 // FUNCTION: WON 0x00761190
-int LobbyFn361190()
+// Returns the game type of the screen shown: Internet 2, LAN 1, direct connect 3, else 0
+int LobbyGetGameScreenType()
 {
     if(gLobbyData.get()==NULL) return 0;
     return gLobbyData->mLobbyContainer->GetGameScreenType();
 }
 // FUNCTION: WON 0x00761210
-ColorScheme* LobbyFn361210() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->GetColorScheme():NULL; }
+// Returns the lobby's color scheme, or NULL without a lobby
+ColorScheme* LobbyGetColorScheme() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->GetColorScheme():NULL; }
 // FUNCTION: WON 0x00761230
-Window* LobbyFn361230() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->GetRoot():NULL; }
+// Returns the lobby's root window, or NULL without a lobby
+Window* LobbyGetRootWindow() { return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer->GetRoot():NULL; }
 // FUNCTION: WON 0x00761250
+// Returns the default window manager
 WindowManager* GetLobbyWindow() { return WindowManager::GetDefaultWindowManager(); }
 // FUNCTION: WON 0x007628b0
-bool LobbyFn3628B0()
+// Returns whether the lobby is suspended; false without a lobby
+bool LobbyIsSuspended()
 {
     if(gLobbyData.get()==NULL) return false;
     return gLobbyData->mSuspended;

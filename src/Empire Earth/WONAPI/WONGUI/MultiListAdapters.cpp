@@ -1,4 +1,4 @@
-// Genuine SDK multilist bounds lookup and header base rendering adapter; support0.
+// Multi-column list item column lookup and list header pass-throughs (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,16 +12,18 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00702500
+// Returns the item in a column, or NULL when the column is out of range
 ListItem* MultiListItem::GetItem(int column) const
 {
-    if(column<0 || column>=mItems.size()) return NULL;
-    return mItems[column].get();
+    if(column<0 || column>=this->mItems.size()) return NULL;
+    return this->mItems[column].get();
 }
-// Shared original305e00/13B with ScrollAreaViewport::Paint; new nominal source only,0globalnative/0primary.
+// Paints the header's children (the linker folds this body into the identical ScrollAreaViewport::Paint at 0x00705e00)
 void MultiListHeader::Paint(Graphics& graphics) { Container::Paint(graphics); }
-// Shared original304710/18B with RootContainer::VirtualAC; nominal source completion only,0new globalnative.
-Component* MultiListHeader::VirtualAC(int x,int y)
+// Returns the child under a point (the linker folds this body into the identical RootContainer::FindChildAt
+// at 0x00704710)
+Component* MultiListHeader::FindChildAt(int x,int y)
 {
-    return Container::VirtualAC(x,y);
+    return Container::FindChildAt(x,y);
 }
 }

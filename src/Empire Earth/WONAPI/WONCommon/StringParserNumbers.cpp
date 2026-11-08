@@ -1,4 +1,5 @@
-// Same-snapshot SDK missing typed numeric scanner/formatting paths; no Native identity assigned.
+// StringParser 64-bit read and sized integer formatting from the WON SDK
+// No original address identified
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,7 +13,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyParser.h"
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID. Preserve SDK int32 accumulation even for __int64 output.
+// The SDK accumulates in an int even for __int64 output
 template<class IntType>
 static bool StringParser_ReadInt(StringParser *theParser, IntType &theInt)
 {
@@ -102,18 +103,18 @@ void StringParser::ValueToString(const long &theLong, std::string &theStr)
 void StringParser::ValueToString(const short &theShort, std::string &theStr)
 {
 	long aLong = theShort;
-	ValueToString(aLong, theStr);
+	StringParser::ValueToString(aLong, theStr);
 }
 
 void StringParser::ValueToString(const char &theByte, std::string &theStr)
 {
 	long aLong = theByte;
-	ValueToString(aLong, theStr);
+	StringParser::ValueToString(aLong, theStr);
 }
 
 void StringParser::ValueToString(const unsigned char &theByte, std::string &theStr)
 {
 	unsigned long aLong = theByte;
-	ValueToString(aLong, theStr);
+	StringParser::ValueToString(aLong, theStr);
 }
 }

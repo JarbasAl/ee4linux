@@ -12,76 +12,76 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyRoomServer.h"
 #include "ee/wonapi/WONLobbyPopupEvent.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-snapshot MenuBar.cpp methods.
-// Existing popup/window protocols retain their own inherited behavior and debts.
+// The menu bar, its items and the menu-item-selected event (not identified in the original exe)
 MenuBarItem::MenuBarItem()
 {
-	mState = MenuBarState_None;
-	mFont = GetNamedFont("Menu");
+	this->mState = MenuBarState_None;
+	this->mFont = this->GetNamedFont("Menu");
 }
 
 void MenuBarItem::SetMenuBarState(MenuBarState theState)
 {
-	mState = theState;
-	Invalidate();
+	this->mState = theState;
+	this->Invalidate();
 }
 
 void MenuBarItem::SetText(const GUIString &theText)
 {
-	mText = theText;
-	Fn2F4B90(mFont->GetStringWidth(mText)+10,mFont->GetHeight()+4);
+	this->mText = theText;
+	this->SetSize(this->mFont->GetStringWidth(this->mText)+10,this->mFont->GetHeight()+4);
 }
 
 void MenuBarItem::SetPopup(PopupMenu *thePopup)
 {
-	mPopup = thePopup;	
+	this->mPopup = thePopup;	
 }
 
 void MenuBarItem::Paint(Graphics &g)
 {
 	Component::Paint(g);
 
-	bool down = mState==MenuBarState_Down;
-	bool over = mState==MenuBarState_Up;
+	bool down = this->mState==MenuBarState_Down;
+	bool over = this->mState==MenuBarState_Up;
 	int offset = down?1:0;
 
 	g.SetSysColor(StandardColor_3DFace);
-	g.FillRect(0,0,Width(),Height());
+	g.FillRect(0,0,this->Width(),this->Height());
 
 	if(down || over)
 	{
-		g.SetColor(down?g.Fn326D20(StandardColor_3DShadow):g.Fn326D20(StandardColor_3DHilight));
-		g.DrawLine(0,0,Width()-1,0);
-		g.DrawLine(0,0,0,Height()-1);
+		g.SetColor(down?g.GetStandardColor(StandardColor_3DShadow):g.GetStandardColor(StandardColor_3DHilight));
+		g.DrawLine(0,0,this->Width()-1,0);
+		g.DrawLine(0,0,0,this->Height()-1);
 	
-		g.SetColor(over?g.Fn326D20(StandardColor_3DShadow):g.Fn326D20(StandardColor_3DHilight));
-		g.DrawLine(0,Height()-1,Width()-1,Height()-1);
-		g.DrawLine(Width()-1,0,Width()-1,Height()-1);
+		g.SetColor(over?g.GetStandardColor(StandardColor_3DShadow):g.GetStandardColor(StandardColor_3DHilight));
+		g.DrawLine(0,this->Height()-1,this->Width()-1,this->Height()-1);
+		g.DrawLine(this->Width()-1,0,this->Width()-1,this->Height()-1);
 	}
 
 	int x = 3;
-	int y = (Height() - mFont->GetHeight())/2;
-	g.SetFont(mFont);
-	g.SetColor(g.Fn326D20(StandardColor_ButtonText));
-	g.DrawString(mText,x,y);
+	int y = (this->Height() - this->mFont->GetHeight())/2;
+	g.SetFont(this->mFont);
+	g.SetColor(g.GetStandardColor(StandardColor_ButtonText));
+	g.DrawString(this->mText,x,y);
 }
 
 void MenuItemSelectedEvent::Deliver()
 {
-	if(mItem->mListener.get()!=NULL)
-		mItem->mListener->Virtual04(this);
+	if(this->mItem->mListener.get()!=NULL)
+		this->mItem->mListener->HandleComponentEvent(this);
 	else
 		ComponentEvent::Deliver();
 }
 
 MenuBar::MenuBar()
 {
-	mState = MenuBarState_None;
-	mCurItem = NULL;
-	mBackground.SetColor(ColorScheme::GetColorRef(StandardColor_3DFace));
+	this->mState = MenuBarState_None;
+	this->mCurItem = NULL;
+	this->mBackground.SetColor(ColorScheme::GetColorRef(StandardColor_3DFace));
 
-	SetComponentFlags(8,true);
+	this->SetComponentFlags(ComponentFlag_WantFocus,true);
 }
 
 void MenuBar::AddSeperator(Component *theComponent)
@@ -93,21 +93,21 @@ void MenuBar::AddSeperator(Component *theComponent)
 		theComponent = aSep;
 	}
 
-	Fn2F6140(theComponent,0x8001,this,0,0,0,0,0);
-	Fn2F6A60(theComponent);
+	this->Fn2F6140(theComponent,0x8001,this,0,0,0,0,0);
+	this->AddChild(theComponent);
 }
 
 void MenuBar::AddItem(const GUIString &theText, PopupMenu *thePopup)
 {
 	SmartPtr<MenuBarItem> anItem = new MenuBarItem;
-	int anId = mItemVector.size();
+	int anId = this->mItemVector.size();
 	if(anId > 0)
 	{
-		MenuBarItem *aPrev = mItemVector.back();
-		anItem->Fn2F4B70((aPrev->Left()+aPrev->Width())+1,aPrev->Top());
+		MenuBarItem *aPrev = this->mItemVector.back();
+		anItem->SetPos((aPrev->Left()+aPrev->Width())+1,aPrev->Top());
 	}
 	else
-		anItem->Fn2F4B70(2,2);
+		anItem->SetPos(2,2);
 
 	anItem->mControlId=anId;
 	anItem->SetText(theText);
@@ -118,45 +118,45 @@ void MenuBar::AddItem(const GUIString &theText, PopupMenu *thePopup)
 	if(thePopup!=NULL)
 		thePopup->AddListener(new ComponentListenerComp(this));
 
-	mItemVector.push_back(anItem);
-	Fn2F6A60(anItem);
+	this->mItemVector.push_back(anItem);
+	this->AddChild(anItem);
 }
 
 void MenuBar::CheckItem(Component *theCheck)
 {
-	if(mState==MenuBarState_None || mState==MenuBarState_Up)
+	if(this->mState==MenuBarState_None || this->mState==MenuBarState_Up)
 	{
-		if(mCurItem!=NULL && theCheck!=mCurItem)
-			mCurItem->SetMenuBarState(MenuBarState_None);
+		if(this->mCurItem!=NULL && theCheck!=this->mCurItem)
+			this->mCurItem->SetMenuBarState(MenuBarState_None);
 
 		if(theCheck==NULL)
 			return;
 
-		mCurItem = dynamic_cast<MenuBarItem*>(theCheck);
-		if(mCurItem!=NULL)
-			mCurItem->SetMenuBarState(MenuBarState_Up);
+		this->mCurItem = dynamic_cast<MenuBarItem*>(theCheck);
+		if(this->mCurItem!=NULL)
+			this->mCurItem->SetMenuBarState(MenuBarState_Up);
 	}
-	else if(mState==MenuBarState_Down)
+	else if(this->mState==MenuBarState_Down)
 	{
 		MenuBarItem *anItem = dynamic_cast<MenuBarItem*>(theCheck);
-		if(anItem!=NULL && anItem!=mCurItem)
+		if(anItem!=NULL && anItem!=this->mCurItem)
 		{
-			MenuBarItem *anOldCurItem = mCurItem;
-			mCurItem = anItem;
+			MenuBarItem *anOldCurItem = this->mCurItem;
+			this->mCurItem = anItem;
 			if(anOldCurItem!=NULL)
 			{
 				anOldCurItem->SetMenuBarState(MenuBarState_None);
 				if(anOldCurItem->GetPopup()!=NULL)
-					GetRoot()->ClosePopup(anOldCurItem->GetPopup());
+					this->GetRoot()->ClosePopup(anOldCurItem->GetPopup());
 			}
 
 			anItem->SetMenuBarState(MenuBarState_Down);
-			PopupMenu *aPopup = mCurItem->GetPopup();
+			PopupMenu *aPopup = this->mCurItem->GetPopup();
 			if(aPopup!=NULL)
 			{
-				int x = mCurItem->Left();
-				int y = (mCurItem->Top()+mCurItem->Height());
-				Fn2F56D0(x,y);
+				int x = this->mCurItem->Left();
+				int y = (this->mCurItem->Top()+this->mCurItem->Height());
+				this->LocalToRoot(x,y);
 
 //				SetComponentFlags(0x8000,true);
 				int aFlags = PopupFlag_StandardPopup;
@@ -166,9 +166,9 @@ void MenuBar::CheckItem(Component *theCheck)
 				aPopup->Reset();
 				PopupParams aParams(aPopup,aFlags,this,x,y);
 				aParams.mInputComponent = this;
-				aParams.mAvoidRect = WONRectangle(0,y-mCurItem->Height(),0,mCurItem->Height());
+				aParams.mAvoidRect = WONRectangle(0,y-this->mCurItem->Height(),0,this->mCurItem->Height());
 //				GetRoot()->DoPopup(aParams);
-				GetRoot()->Virtual48(new DoPopupEvent(aParams));
+				this->GetRoot()->QueueEvent(new DoPopupEvent(aParams));
 			}
 		}
 	}
@@ -177,153 +177,150 @@ void MenuBar::CheckItem(Component *theCheck)
 
 void MenuBar::HandleComponentEvent(ComponentEvent *theEvent)
 {
-	if(theEvent->mType==ComponentEvent_EndPopup && mState==MenuBarState_Down)
+	if(theEvent->mType==ComponentEvent_EndPopup && this->mState==MenuBarState_Down)
 	{
-		if(mCurItem!=NULL && mCurItem->GetPopup()==theEvent->mComponent)
+		if(this->mCurItem!=NULL && this->mCurItem->GetPopup()==theEvent->mComponent)
 		{
-			mState = MenuBarState_None;
-			if(GetRoot()->mMouseIsInClientArea)
-				MouseAt();
+			this->mState = MenuBarState_None;
+			if(this->GetRoot()->mMouseIsInClientArea)
+				this->MouseAt();
 			else
-				Virtual28();
+				this->MouseExit();
 		}		
 	}
 	else if(theEvent->mType==ComponentEvent_ListItemUpClicked)
 	{
-		ListItemClickedEvent *anEvent = (ListItemClickedEvent*)theEvent;
+		ListItemClickedEvent *anEvent = static_cast<ListItemClickedEvent*>(theEvent);
 		MenuItem *anItem = dynamic_cast<MenuItem*>(anEvent->mItem.get());
 		if(anItem!=NULL && anItem->mSubMenu.get()==NULL && !anItem->mDisabled)
 		{
-			Fn2F53F0(new MenuItemSelectedEvent(theEvent->mComponent,anItem),false);
-			GetRoot()->ClosePopup(NULL);
+			this->DeliverEvent(new MenuItemSelectedEvent(theEvent->mComponent,anItem),false);
+			this->GetRoot()->ClosePopup(NULL);
 		}
 	}
 	else
 		Container::HandleComponentEvent(theEvent);
 }
 
-void MenuBar::Virtual34(int x, int y)
+void MenuBar::MouseMove(int x, int y)
 {
-	Container::Virtual34(x,y);
-	if(x!=mLastX || y!=mLastY)
-	{
-		mLastX = x;
-		mLastY = y;
-		CheckItem(mMouseChild);
-	}
+	Container::MouseMove(x,y);
+	if(x==this->mLastX && y==this->mLastY)
+		return;
+	this->mLastX = x;
+	this->mLastY = y;
+	this->CheckItem(this->mMouseChild);
 }
 
-bool MenuBar::Virtual54(int theKey)
+bool MenuBar::KeyDown(int theKey)
 {
-	if(mCurItem==NULL)
+	if(this->mCurItem==NULL)
 		return false;
 
-	if(mState==MenuBarState_Down)
+	if(this->mState==MenuBarState_Down)
 	{
-		PopupMenu *aPopup = mCurItem->GetPopup();
+		PopupMenu *aPopup = this->mCurItem->GetPopup();
 		if(aPopup->TryKeyDown(theKey))
 			return true;
 	}
 	else 
-		mState = MenuBarState_Up;
+		this->mState = MenuBarState_Up;
 
-	int anId = mCurItem->mControlId;
+	int anId = this->mCurItem->mControlId;
 
 	if(theKey==VK_ESCAPE)
 	{
-		mState = MenuBarState_Up;
-		if(mCurItem!=NULL)
+		this->mState = MenuBarState_Up;
+		if(this->mCurItem!=NULL)
 		{
-			GetRoot()->ClosePopup(mCurItem->GetPopup());
-			CheckItem(mCurItem);
+			this->GetRoot()->ClosePopup(this->mCurItem->GetPopup());
+			this->CheckItem(this->mCurItem);
 		}
 	}
 	else if(theKey==VK_RIGHT)
 	{
 		anId++;
-		if(anId>=mItemVector.size())
+		if(anId>=this->mItemVector.size())
 			anId = 0;
 	}
 	else if(theKey==VK_LEFT)
 	{
 		anId--;
 		if(anId<0)
-			anId = mItemVector.size()-1;
+			anId = this->mItemVector.size()-1;
 	}
-	else if(mState==MenuBarState_Up && (theKey==VK_RETURN || theKey==VK_DOWN))
+	else if(this->mState==MenuBarState_Up && (theKey==VK_RETURN || theKey==VK_DOWN))
 	{
-		mCurItem = NULL;
-		mState = MenuBarState_Down;
+		this->mCurItem = NULL;
+		this->mState = MenuBarState_Down;
 	}
 
-	CheckItem(mItemVector[anId]);
-	if(mState==MenuBarState_Down && mCurItem!=NULL)
-	{
-		PopupMenu *aPopup = mCurItem->GetPopup();
-		if(aPopup!=NULL)
-			aPopup->SetSelItem(0);
-	}
+	this->CheckItem(this->mItemVector[anId]);
+	if(this->mState!=MenuBarState_Down || this->mCurItem==NULL)
+		return true;
+	PopupMenu *aPopup = this->mCurItem->GetPopup();
+	if(aPopup!=NULL)
+		aPopup->SetSelItem(0);
 
 	return true;
 }
 
-void MenuBar::Virtual2C(int x, int y, int theButton)
+void MenuBar::MouseDown(int x, int y, int theButton)
 {
-	Container::Virtual2C(x,y,theButton);
+	Container::MouseDown(x,y,theButton);
 	if(theButton!=0)
 		return;
 
-	Fn2F5890();
-	if(dynamic_cast<MenuBarItem*>(mMouseChild)!=NULL)
+	this->RequestFocus();
+	if(dynamic_cast<MenuBarItem*>(this->mMouseChild)==NULL)
+		return;
+	if(this->mState==MenuBarState_Down)
 	{
-		if(mState==MenuBarState_Down)
-		{
-			mState = MenuBarState_Up;
-			if(mCurItem!=NULL)
-				GetRoot()->ClosePopup(mCurItem->GetPopup());
-		}
-		else
-		{
-			mCurItem = NULL;
-			mState = MenuBarState_Down;
-			Window *aWindow = GetRoot();
-			Fn2F56D0(x,y);
-			aWindow->Virtual48(new MouseEvent(InputEvent_MouseUp,x,y,aWindow->GetKeyMod(),theButton));
-		}
-
-
-		CheckItem(mMouseChild);
-	}
-}
-
-void MenuBar::Virtual38(int x, int y)
-{
-	if(mState==MenuBarState_Down)
-	{
-		Fn2F6650(x,y);
-		CheckItem(mMouseChild);
+		this->mState = MenuBarState_Up;
+		if(this->mCurItem!=NULL)
+			this->GetRoot()->ClosePopup(this->mCurItem->GetPopup());
 	}
 	else
-		Container::Virtual38(x,y);
+	{
+		this->mCurItem = NULL;
+		this->mState = MenuBarState_Down;
+		Window *aWindow = this->GetRoot();
+		this->LocalToRoot(x,y);
+		aWindow->QueueEvent(new MouseEvent(InputEvent_MouseUp,x,y,aWindow->GetKeyMod(),theButton));
+	}
+
+
+	this->CheckItem(this->mMouseChild);
 }
 
-void MenuBar::Virtual30(int x, int y, int theButton)
+void MenuBar::MouseDrag(int x, int y)
 {
-	Container::Virtual30(x,y,theButton);
+	if(this->mState==MenuBarState_Down)
+	{
+		this->UpdateMouseChild(x,y);
+		this->CheckItem(this->mMouseChild);
+	}
+	else
+		Container::MouseDrag(x,y);
+}
+
+void MenuBar::MouseUp(int x, int y, int theButton)
+{
+	Container::MouseUp(x,y,theButton);
 	if(theButton!=0)
 		return;
 }
 
-void MenuBar::Virtual28()
+void MenuBar::MouseExit()
 {
-	Container::Virtual28();
-	CheckItem(NULL);
+	Container::MouseExit();
+	this->CheckItem(NULL);
 }
 
 void MenuBar::Paint(Graphics &g)
 {
-	if(mInvalidState>=2)
-		mBackground.Paint(g,0,0,Width(),Height(),0,0);
+	if(this->mInvalidState>=2)
+		this->mBackground.Paint(g,0,0,this->Width(),this->Height(),0,0);
 	
 	Container::Paint(g);
 }

@@ -14,150 +14,167 @@
 #include "ee/wonapi/WONLobbyCore.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075e3f0
-void LobbyFn35E3F0(unsigned short value)
+// Sets the LAN broadcast port, marking the user's preferences changed
+void LobbySetLanBroadcastPort(unsigned short value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mPort66) {
-        data->mPort66=value;
+    if(data!=NULL && value!=data->mLanBroadcastPort) {
+        data->mLanBroadcastPort=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e410
-void LobbyFn35E410(bool value)
+// Turns chat profanity filtering on or off, marking the user's preferences changed
+void LobbySetFilterDirtyWords(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB54) {
-        data->mB54=value;
+    if(data!=NULL && value!=data->mFilterDirtyWords) {
+        data->mFilterDirtyWords=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e430
-void LobbyFn35E430(bool value)
+// Turns automatic away-when-idle on or off, marking the user's preferences changed
+void LobbySetDoAutoAFK(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB55) {
-        data->mB55=value;
+    if(data!=NULL && value!=data->mDoAutoAFK) {
+        data->mDoAutoAFK=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e450
-void LobbyFn35E450(bool value)
+// Turns cross-promotion messages on or off, marking the user's preferences changed
+void LobbySetCrossPromotion(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB56) {
-        data->mB56=value;
+    if(data!=NULL && value!=data->mCrossPromotion) {
+        data->mCrossPromotion=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e4e0
-void LobbyFn35E4E0(bool value)
+// Turns lobby sound effects on or off; the global dirty flag is set to whether it now differs from the saved
+// state, which can clear an unrelated pending global change
+void LobbySetLobbySoundEffects(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB5C) {
-        data->mB5C=value;
-        data->mUserDirty=true;
-        data->mGlobalDirty=value!=data->mB6C;
-    }
+    if(data==NULL || value==data->mLobbySoundEffects)
+        return;
+    data->mLobbySoundEffects=value;
+    data->mUserDirty=true;
+    data->mGlobalDirty=value!=data->mSavedLobbySoundEffects;
 }
 
 // FUNCTION: WON 0x0075e510
-void LobbyFn35E510(bool value)
+// Turns chat sound effects on or off, marking the user's preferences changed
+void LobbySetChatSoundEffects(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB5E) {
-        data->mB5E=value;
+    if(data!=NULL && value!=data->mChatSoundEffects) {
+        data->mChatSoundEffects=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e530
-void LobbyFn35E530(bool value)
+// Turns staging-room sound effects on or off, marking the user's preferences changed
+void LobbySetStagingSoundEffects(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB5F) {
-        data->mB5F=value;
+    if(data!=NULL && value!=data->mStagingSoundEffects) {
+        data->mStagingSoundEffects=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e550
-void LobbyFn35E550(bool value)
+// Turns lobby music on or off; the global dirty flag is set to whether it now differs from the saved state,
+// which can clear an unrelated pending global change
+void LobbySetLobbyMusic(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB5D) {
-        data->mB5D=value;
-        data->mUserDirty=true;
-        data->mGlobalDirty=value!=data->mB6D;
-    }
+    if(data==NULL || value==data->mLobbyMusic)
+        return;
+    data->mLobbyMusic=value;
+    data->mUserDirty=true;
+    data->mGlobalDirty=value!=data->mSavedLobbyMusic;
 }
 
 // FUNCTION: WON 0x0075e580
-void LobbyFn35E580(bool value)
+// Turns confirmation dialogs on or off, marking the user's preferences changed
+void LobbySetShowConfirmations(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB60) {
-        data->mB60=value;
+    if(data!=NULL && value!=data->mShowConfirmations) {
+        data->mShowConfirmations=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e5a0
-void LobbyFn35E5A0(bool value)
+// Turns automatic pinging of listed games on or off, marking the user's preferences changed
+void LobbySetAutoPingGames(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB61) {
-        data->mB61=value;
+    if(data!=NULL && value!=data->mAutoPingGames) {
+        data->mAutoPingGames=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e5c0
-void LobbyFn35E5C0(bool value)
+// Shows or hides games in progress in the game list, marking the user's preferences changed
+void LobbySetShowGamesInProgress(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB62) {
-        data->mB62=value;
+    if(data!=NULL && value!=data->mShowGamesInProgress) {
+        data->mShowGamesInProgress=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e5e0
-void LobbyFn35E5E0(bool value)
+// Sets whether the user hides their location from friends, marking the user's preferences changed
+void LobbySetAnonymousToFriends(bool value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mB63) {
-        data->mB63=value;
+    if(data!=NULL && value!=data->mAnonymousToFriends) {
+        data->mAnonymousToFriends=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e600
-void LobbyFn35E600(unsigned short value)
+// Sets the user's connection speed, marking the user's preferences changed
+void LobbySetConnectionSpeed(unsigned short value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && value!=data->mShort64) {
-        data->mShort64=value;
+    if(data!=NULL && value!=data->mConnectionSpeed) {
+        data->mConnectionSpeed=value;
         data->mUserDirty=true;
     }
 }
 
 // FUNCTION: WON 0x0075e660
-void LobbyFn35E660(bool force)
+// Writes _wonlobbypersistent.dat when the global settings changed or when forced
+void LobbySaveGlobalPrefs(bool force)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data!=NULL && (force || data->mGlobalDirty))
-        data->Fn35FAF0();
+        data->SaveGlobalPrefs();
 }
 
 // FUNCTION: WON 0x0075e680
-void LobbyFn35E680(bool force)
+// Writes the current user's preferences file when they changed or when forced
+void LobbySaveUserPrefs(bool force)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data!=NULL && (force || data->mUserDirty))
-        data->Fn360770();
+        data->SaveUserPrefs();
 }
 }

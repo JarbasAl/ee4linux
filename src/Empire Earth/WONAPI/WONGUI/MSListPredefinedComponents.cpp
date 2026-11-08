@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// Predefined child components of the Windows-style list control config
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,15 +14,17 @@
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00790020
-bool MSListCtrlConfig::Virtual28(const std::string& name,ComponentConfig*& config,Component*& component)
+// Maps HEADER / MULTILISTAREA to the list control's header and list area with a new config for each;
+// other names go to the scroll container config
+bool MSListCtrlConfig::GetPredefinedComponent(const std::string& name,ComponentConfig*& config,Component*& component)
 {
     if(name=="HEADER") {
-        component=mListCtrl->GetHeader();
+        component=this->mListCtrl->GetHeader();
         config=new MSHeaderControlConfig;
     } else if(name=="MULTILISTAREA") {
-        component=mListCtrl->GetListArea();
+        component=this->mListCtrl->GetListArea();
         config=new MultiListAreaConfig;
-    } else return MSScrollContainerConfig::Virtual28(name,config,component);
+    } else return MSScrollContainerConfig::GetPredefinedComponent(name,config,component);
     return true;
 }
 }

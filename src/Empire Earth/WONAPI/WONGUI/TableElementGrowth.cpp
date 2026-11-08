@@ -1,4 +1,4 @@
-// Native table row/column growth; cell construction remains original-owned.
+// Table element row and column growth (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,20 +13,23 @@
 #include "ee/wonapi/WONLobbyTableElement.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0070d9c0
+// Grows the table to at least the given number of columns, numbering the new columns and adding empty
+// cells to every row
 void TableElement::EnsureNumCols(int numCols)
 {
-    int oldNumCols=mColumnVector.size();
+    int oldNumCols=this->mColumnVector.size();
     if(numCols<oldNumCols)
         return;
-    mColumnVector.resize(numCols);
+    this->mColumnVector.resize(numCols);
     int i;
     for(i=oldNumCols;i<numCols;++i)
-        mColumnVector[i].mColumnNum=i;
-    for(i=0;i<mRowVector.size();++i)
-        EnsureNumCols(mRowVector[i],numCols);
+        this->mColumnVector[i].mColumnNum=i;
+    for(i=0;i<this->mRowVector.size();++i)
+        this->EnsureNumCols(this->mRowVector[i],numCols);
 }
 
 // FUNCTION: WON 0x0070da90
+// Grows a row to at least the given number of cells by appending empty cells
 void TableElement::EnsureNumCols(RowInfo& row,int numCols)
 {
     int oldNumCols=row.mRow.size();
@@ -37,14 +40,15 @@ void TableElement::EnsureNumCols(RowInfo& row,int numCols)
 }
 
 // FUNCTION: WON 0x0070dd20
+// Grows the table to at least the given number of rows, each new row filled with empty cells
 void TableElement::EnsureNumRows(int numRows)
 {
-    int numCols=mColumnVector.size();
-    int oldNumRows=mRowVector.size();
+    int numCols=this->mColumnVector.size();
+    int oldNumRows=this->mRowVector.size();
     for(int i=oldNumRows;i<numRows;++i) {
-        mRowVector.push_back(RowInfo(i));
-        RowInfo& row=mRowVector.back();
-        EnsureNumCols(row,numCols);
+        this->mRowVector.push_back(RowInfo(i));
+        RowInfo& row=this->mRowVector.back();
+        this->EnsureNumCols(row,numCols);
     }
 }
 }

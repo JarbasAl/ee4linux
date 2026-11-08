@@ -1,4 +1,4 @@
-// Native dialog configuration instruction dispatch over the full borrowed DialogConfig9c.
+// Dialog configuration instructions
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,21 +13,23 @@
 #include "ee/wonapi/WONLobbyConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00789f80
+// Handles the dialog config instructions ALLOWDRAG, KEEPINROOT, ENDONESCAPE, DONTENDONESCAPE and
+// DEFAULTBUTTON; passes others to the container config
 bool DialogConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="ALLOWDRAG") {
-        bool value=Fn3837F0();
-        mDialog->mAllowDrag=value;
+        bool value=this->ReadBool();
+        this->mDialog->mAllowDrag=value;
     } else if(instruction=="KEEPINROOT") {
-        bool value=Fn3837F0();
-        mDialog->mKeepInRoot=value;
+        bool value=this->ReadBool();
+        this->mDialog->mKeepInRoot=value;
     } else if(instruction=="ENDONESCAPE") {
-        int id=ReadInt();
-        mDialog->SetEndOnEscape(id);
-    } else if(instruction=="DONTENDONESCAPE") mDialog->SetDontEndOnEscape();
+        int id=this->ReadInt();
+        this->mDialog->SetEndOnEscape(id);
+    } else if(instruction=="DONTENDONESCAPE") this->mDialog->SetDontEndOnEscape();
     else if(instruction=="DEFAULTBUTTON") {
-        Button* button=SafeConfigGetComponent<Button*>(ReadComponent(),"Button");
-        mDialog->SetDefaultButton(button);
+        Button* button=SafeConfigGetComponent<Button*>(this->ReadComponent(),"Button");
+        this->mDialog->SetDefaultButton(button);
     } else return ContainerConfig::Virtual24(instruction);
     return true;
 }

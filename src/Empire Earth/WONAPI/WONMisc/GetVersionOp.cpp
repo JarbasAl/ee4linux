@@ -1,7 +1,8 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK whole directory version/patch algorithm unit.
+// GetVersionOp: reads the valid product versions and their filters from the directory server (WON SDK)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing-unit proposed WONMisc family profile; no Native/primary/physical attribution.
+// No original address identified (file grouping inferred)
 #include "ee/wonapi/WONGetVersionOp.h"
+#include "ee/wonapi/WONStatus.h"
 
 using namespace WONAPI;
 using namespace std;
@@ -10,9 +11,9 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////////////////
 std::wstring VersionBaseOp::GetVersionDir()
 {
-	wstring aPath = L"/" + StringToWString(mProduct) + L"/Version";
-	if(!mExtraConfig.empty())
-		aPath += L"/" + StringToWString(mExtraConfig);
+	wstring aPath = L"/" + StringToWString(this->mProduct) + L"/Version";
+	if(!this->mExtraConfig.empty())
+		aPath += L"/" + StringToWString(this->mExtraConfig);
 
 	return aPath;
 }
@@ -77,7 +78,7 @@ bool VersionBaseOp::IsFiltered(const std::string &theVersion, const std::string&
 		return false;
 
 	// Use the key value to build a filter set
-	BuildVersionFilterSet(aKeyValue, aFilterSet);
+	this->BuildVersionFilterSet(aKeyValue, aFilterSet);
 	
 	// Is aFilter a subset of mFilterStringList?
 	FilterStringSet::const_iterator anItr = aFilterSet.begin();
@@ -87,7 +88,7 @@ bool VersionBaseOp::IsFiltered(const std::string &theVersion, const std::string&
 		if (*anItr == "")
 			continue;
 
-		if (mFilterStringSet.find( *anItr ) == mFilterStringSet.end())
+		if (this->mFilterStringSet.find( *anItr ) == this->mFilterStringSet.end())
 			return true;
 	}
 
@@ -98,9 +99,9 @@ bool VersionBaseOp::IsFiltered(const std::string &theVersion, const std::string&
 ///////////////////////////////////////////////////////////////////////////////
 void VersionBaseOp::BuildValidVersionSet(const DirEntity *theEntity)
 {
-	mValidVersionSet.clear();
-	mFilteredVersionSet.clear();
-	mHighestValidVersion.erase();
+	this->mValidVersionSet.clear();
+	this->mFilteredVersionSet.clear();
+	this->mHighestValidVersion.erase();
 
 	const DirDataObjectList &aList = theEntity->mDataObjects;
 	DirDataObjectList::const_iterator anItr = aList.begin();
@@ -109,23 +110,23 @@ void VersionBaseOp::BuildValidVersionSet(const DirEntity *theEntity)
 		const string &aVersion = anItr->mDataType;
 
 		// Does this version match our filter type?
-		if ((anItr->mData.get()==NULL) || !IsFiltered(aVersion, anItr->mData->data()))
+		if ((anItr->mData.get()==NULL) || !this->IsFiltered(aVersion, anItr->mData->data()))
 		{
 			// Is this a new highest version?
-			if(mHighestValidVersion.empty() || mVersionCompare(aVersion,mHighestValidVersion)>0)
-				mHighestValidVersion = aVersion;
+			if(this->mHighestValidVersion.empty() || this->mVersionCompare(aVersion,this->mHighestValidVersion)>0)
+				this->mHighestValidVersion = aVersion;
 
 			// Insert the version
-			mValidVersionSet.insert(aVersion);
-			std::string &aStr = mVersionDescriptionMap[aVersion];
+			this->mValidVersionSet.insert(aVersion);
+			std::string &aStr = this->mVersionDescriptionMap[aVersion];
 			if(anItr->mData.get()!=NULL)
 				aStr.assign(anItr->mData->data(), anItr->mData->length());
 		}
 		else	
 		{
 			// Store the version in the filtered list
-			mFilteredVersionSet.insert(aVersion);
-			std::string &aStr = mFilteredVersionDescriptionMap[aVersion];
+			this->mFilteredVersionSet.insert(aVersion);
+			std::string &aStr = this->mFilteredVersionDescriptionMap[aVersion];
 			if(anItr->mData.get()!=NULL)
 				aStr.assign(anItr->mData->data(), anItr->mData->length());
 		}
@@ -138,10 +139,10 @@ void VersionBaseOp::BuildValidVersionSet(const DirEntity *theEntity)
 ///////////////////////////////////////////////////////////////////////////////
 VersionResult VersionBaseOp::CheckVersion(const std::string &theVersionId)
 {
-	VersionSet::iterator anItr = mValidVersionSet.find(theVersionId);
-	if(anItr!=mValidVersionSet.end())
+	VersionSet::iterator anItr = this->mValidVersionSet.find(theVersionId);
+	if(anItr!=this->mValidVersionSet.end())
 	{
-		if(theVersionId==mHighestValidVersion)
+		if(theVersionId==this->mHighestValidVersion)
 			return Version_Valid_Latest;
 		else
 			return Version_Valid_NotLatest;
@@ -154,14 +155,14 @@ VersionResult VersionBaseOp::CheckVersion(const std::string &theVersionId)
 ///////////////////////////////////////////////////////////////////////////////
 bool VersionBaseOp::VersionIsLatest(const std::string &theVersionId)
 {
-	return CheckVersion(theVersionId)==Version_Valid_Latest;
+	return this->CheckVersion(theVersionId)==Version_Valid_Latest;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool VersionBaseOp::VersionIsValid(const std::string &theVersionId)
 {
-	return CheckVersion(theVersionId)!=Version_Invalid;
+	return this->CheckVersion(theVersionId)!=Version_Invalid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,15 +194,15 @@ void VersionBaseOp::SetFilterString(const std::string &theFilterString)
 	// "opt,res"
 	std::string aFilterString = StringToLowerCase(theFilterString);
 
-	BuildVersionFilterSet(aFilterString, mFilterStringSet);
+	this->BuildVersionFilterSet(aFilterString, this->mFilterStringSet);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 GetVersionOp::GetVersionOp(ServerContext *theDirServers, const std::string &theProduct)
 {
-	mDirServers = theDirServers;
-	mProduct = theProduct;
+	this->mDirServers = theDirServers;
+	this->mProduct = theProduct;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -210,48 +211,48 @@ void GetVersionOp::DoFinish(GetDirOp *theOp)
 {
 	if(!theOp->Succeeded())
 	{
-		Fn29F220(theOp->GetStatus());
+		this->Finish(theOp->GetStatus());
 		return;
 	}
 
 
 	DirEntityPtr anEntity = *(theOp->GetDirEntityList().begin());
-	BuildValidVersionSet(anEntity);
-	Fn29F220(0);
+	this->BuildValidVersionSet(anEntity);
+	this->Finish(WS_Success);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool GetVersionOp::CallbackHook(AsyncOp *theOp, int)
 {
-	DoFinish((GetDirOp*)theOp);
+	this->DoFinish(static_cast<GetDirOp*>(theOp));
 	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetVersionOp::Virtual04()
+void GetVersionOp::RunHook()
 {
-	mValidVersionSet.clear();
-	mFilteredVersionSet.clear();
-	mHighestValidVersion.erase();
+	this->mValidVersionSet.clear();
+	this->mFilteredVersionSet.clear();
+	this->mHighestValidVersion.erase();
 
-	SmartPtr<GetDirOp> anOp = new GetDirOp(mDirServers);
+	SmartPtr<GetDirOp> anOp = new GetDirOp(this->mDirServers);
 
-	anOp->SetPath(GetVersionDir());
+	anOp->SetPath(this->GetVersionDir());
 
 	DWORD aFlags = DIR_GF_DECOMPROOT | DIR_GF_ADDDATAOBJECTS | DIR_GF_ADDDOTYPE | DIR_GF_ADDDODATA;
 
 	anOp->SetFlags(aFlags);
-	if(mRunMode==OP_MODE_ASYNC)
+	if(this->mRunMode==OP_MODE_ASYNC)
 	{
-		Track(anOp,0);
-		anOp->Run(INFINITE);
+		this->Track(anOp,0);
+		anOp->RunAsync(INFINITE);
 		return;
 	}
 
-	anOp->RunBlock(TimeLeft());
-	DoFinish(anOp);
+	anOp->RunBlock(this->TimeLeft());
+	this->DoFinish(anOp);
 }
 
 

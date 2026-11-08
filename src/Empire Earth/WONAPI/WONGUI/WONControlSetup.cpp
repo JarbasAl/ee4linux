@@ -1,4 +1,4 @@
-// Existing complete typed control setup; conservative all-support source completion.
+// Multi-column list area and skinned combo box constructors (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,30 +12,32 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbySkinnedContainers.h"
 namespace WONAPI {
-// Original3033a0/378, existing column-view setup constructor; support0 provisionally.
+// Creates a multi-column list area with the given column count, room for 11000 items and no sort
+// function (emitted at 0x007033a0)
 MultiListArea::MultiListArea(int columns)
 {
-    mItems.reserve(11000);
-    mTotalColumnWidth=0;
-    mSortColumn=0;
-    mSortColumnPrev=0;
-    mListHeader=NULL;
-    mColumnBorderWidth=5;
-    mDynamicSizeColumn=-1;
-    mMaxTotalColumnWidth=0;
-    mMouseColItem=NULL;
-    mSortColFunc=NULL;
-    mAutoGrowColumns=false;
-    SetNumColumns(columns);
+    this->mItems.reserve(11000);
+    this->mTotalColumnWidth=0;
+    this->mSortColumn=0;
+    this->mSortColumnPrev=0;
+    this->mListHeader=NULL;
+    this->mColumnBorderWidth=5;
+    this->mDynamicSizeColumn=-1;
+    this->mMaxTotalColumnWidth=0;
+    this->mMouseColItem=NULL;
+    this->mSortColFunc=NULL;
+    this->mAutoGrowColumns=false;
+    this->SetNumColumns(columns);
 }
-// Original319800/328, two actual child allocations and native list defaults; support0 provisionally.
+// Creates a skinned combo box with a framed button, a new input box and a new list area (emitted at
+// 0x00719800)
 WONComboBox::WONComboBox()
 {
-    mDrawFrame=true;
-    mButtonInFrame=true;
-    mEdit=new InputBox;
-    mListArea=new ListArea;
-    mListArea->Fn2FB600(2,true);
+    this->mDrawFrame=true;
+    this->mButtonInFrame=true;
+    this->mEdit=new InputBox;
+    this->mListArea=new ListArea;
+    this->mListArea->SetListFlags(2,true);
 }
 }
 

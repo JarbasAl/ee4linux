@@ -24,15 +24,15 @@ public:
 	bool mIsAuth;
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
-	virtual void Virtual18();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
+	virtual void Reset();
 
 public:
 	PingOp(const IPAddr &theAddr, unsigned char theLengthFieldSize, bool extended = false);
 
-	void SetExtended(bool isExtended) { mExtended = isExtended; }
-	bool GetExtended() { return mExtended; }
+	void SetExtended(bool isExtended) { this->mExtended = isExtended; }
+	bool GetExtended() { return this->mExtended; }
 
 };
 
@@ -106,8 +106,8 @@ protected:
 	virtual ByteBufferPtr GetRequest(MultiPingStruct *theStruct);
 	virtual PingAction HandleResponse(MultiPingStruct *theStruct, const ByteBuffer *theResponse);
 
-	virtual void Virtual04();
-	virtual void Virtual08();
+	virtual void RunHook();
+	virtual void CleanupHook();
 
 public:
 	MultiPingOp();
@@ -116,12 +116,12 @@ public:
 	void AddServers(const DirEntityList &theDir, const wchar_t *theNameFilter = NULL);
 	void ClearServers();
 
-	const MultiPingList& GetPingList() const { return mFinishedList; }
+	const MultiPingList& GetPingList() const { return this->mFinishedList; }
 	SmartPtr<ServerContext> GetServerContext(bool discardNonResponsiveServers = true);
 
-	void SetBatchSize(unsigned short theSize) { mBatchSize = theSize; }
-	void SetMaxFailures(unsigned char theMaxFailures) { mMaxFailures = theMaxFailures; }
-	void SetMaxPingTime(DWORD theMilliseconds) { mMaxPingTime = theMilliseconds; }
+	void SetBatchSize(unsigned short theSize) { this->mBatchSize = theSize; }
+	void SetMaxFailures(unsigned char theMaxFailures) { this->mMaxFailures = theMaxFailures; }
+	void SetMaxPingTime(DWORD theMilliseconds) { this->mMaxPingTime = theMilliseconds; }
 };
 
 

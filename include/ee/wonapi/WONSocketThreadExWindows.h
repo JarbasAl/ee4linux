@@ -1,8 +1,8 @@
-// Genuine same-SDK Windows SocketThreadEx owner. SOURCE_ONLY_NO_NATIVE_ID.
+// WON SDK Windows SocketThreadEx. No original address identified.
 // No backend selection, base fields, or base virtual slots changed.
 #ifndef __WON_SOCKETTHREADEX_WINDOWS_H__
 #define __WON_SOCKETTHREADEX_WINDOWS_H__
-// Complete current base owner supplied by canonical WONRouting.
+// The base class comes from WONRouting.h.
 
 #include <set>
 #include <list>
@@ -27,45 +27,45 @@ private:
 
 public:
 	GrowVector() : mCapacity(0), mSize(0), mArray(NULL) {}
-	~GrowVector() { delete [] mArray; }
+	~GrowVector() { delete [] this->mArray; }
 
 	void push_back(const T& theElement)
 	{
-		if(mSize==mCapacity)
+		if(this->mSize==this->mCapacity)
 		{
-			int aNewCapacity = mCapacity*2;
+			int aNewCapacity = this->mCapacity*2;
 			if(aNewCapacity<32)
 				aNewCapacity = 32;
 
-			reserve(aNewCapacity);
+			this->reserve(aNewCapacity);
 		}
 
-		mArray[mSize++] = theElement;
+		this->mArray[this->mSize++] = theElement;
 	}
 
 	void reserve(int theCapacity)
 	{
-		if(theCapacity > mCapacity)
+		if(theCapacity > this->mCapacity)
 		{
-			T* oldArray = mArray;
-			mArray = new T[theCapacity];
-			if(mSize!=0)
-				memcpy(mArray, oldArray, sizeof(T)*mSize);		
+			T* oldArray = this->mArray;
+			this->mArray = new T[theCapacity];
+			if(this->mSize!=0)
+				memcpy(this->mArray, oldArray, sizeof(T)*this->mSize);		
 
 			delete [] oldArray;
-			mCapacity = theCapacity;
+			this->mCapacity = theCapacity;
 		}
 	}
 
-	void pop_back() { mSize--; }
+	void pop_back() { this->mSize--; }
 
-	T* data() { return mArray; }
-	int size() { return mSize; }
-	int capacity() { return mCapacity; }
-	void clear() { resize(0); }
-	void resize(int theSize) { reserve(theSize); mSize = theSize; }
+	T* data() { return this->mArray; }
+	int size() { return this->mSize; }
+	int capacity() { return this->mCapacity; }
+	void clear() { this->resize(0); }
+	void resize(int theSize) { this->reserve(theSize); this->mSize = theSize; }
 
-	T& operator [](int thePos) { return mArray[thePos]; }
+	T& operator [](int thePos) { return this->mArray[thePos]; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -86,22 +86,22 @@ private:
 		fd_set *mSet;
 
 		grow_fd_set() : mBuf(NULL), mCapacity(0), mSet(NULL) {}
-		~grow_fd_set() { delete mBuf; }
+		~grow_fd_set() { delete this->mBuf; }
 
 		void Copy(GrowVector<SOCKET> &theArray)
 		{
 			int aCapacity = theArray.capacity();
-			if(mCapacity < aCapacity)
+			if(this->mCapacity < aCapacity)
 			{
-				delete mBuf;
-				mBuf = new char[sizeof(u_int) + aCapacity*sizeof(SOCKET)];
-				mSet = (fd_set*)mBuf;
+				delete this->mBuf;
+				this->mBuf = new char[sizeof(u_int) + aCapacity*sizeof(SOCKET)];
+				this->mSet = (fd_set*)this->mBuf;
 
-				mCapacity = aCapacity;
+				this->mCapacity = aCapacity;
 			}
 
-			memcpy(mSet->fd_array,theArray.data(),theArray.size()*sizeof(SOCKET));
-			mSet->fd_count = theArray.size();
+			memcpy(this->mSet->fd_array,theArray.data(),theArray.size()*sizeof(SOCKET));
+			this->mSet->fd_count = theArray.size();
 		}
 	};
 		

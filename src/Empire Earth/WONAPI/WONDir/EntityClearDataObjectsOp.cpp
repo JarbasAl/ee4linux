@@ -1,6 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK directory executable implementation.
-// Missing-unit proposed family profile: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// No FUNCTION/Native address or primary/physical byte credit is claimed.
+// No original address identified: WON SDK directory server clear-data-objects request
+// Expected flags: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>
 #include <windows.h>
 #include <string>
@@ -11,6 +10,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONDirExtended.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace std;
 using namespace WONAPI;
 
@@ -18,7 +18,7 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 void EntityClearDataObjectsOp::Init()
 {
-	mLengthFieldSize = 4;
+	this->mLengthFieldSize = 4;
 }
 
 
@@ -26,57 +26,57 @@ void EntityClearDataObjectsOp::Init()
 ///////////////////////////////////////////////////////////////////////////////
 EntityClearDataObjectsOp::EntityClearDataObjectsOp(ServerContext *theDirContext, bool isService) : ServerRequestOp(theDirContext)
 {
-	mIsService = isService;
-	Init();
+	this->mIsService = isService;
+	this->Init();
 }
    
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 EntityClearDataObjectsOp::EntityClearDataObjectsOp(const IPAddr &theAddr, bool isService) : ServerRequestOp(theAddr)
 {
-	mIsService = isService;
-	Init();
+	this->mIsService = isService;
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus EntityClearDataObjectsOp::Virtual10()
+WONStatus EntityClearDataObjectsOp::GetNextRequest()
 {
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 	aMsg.AppendByte(5);						// Small message
 	aMsg.AppendShort(2);					// Directory Server
-	aMsg.AppendShort(mIsService?303:302);	// ServiceClearDataObjects : DirClearDataObjects
-	aMsg.AppendWString(mPath,2);				// Directory path
+	aMsg.AppendShort(this->mIsService?303:302);	// ServiceClearDataObjects : DirClearDataObjects
+	aMsg.AppendWString(this->mPath,2);				// Directory path
 
-	if(mIsService)
+	if(this->mIsService)
 	{
-		aMsg.AppendWString(mName,2);				// Entity name
-		aMsg.AppendBuffer(mNetAddr,1);
+		aMsg.AppendWString(this->mName,2);				// Entity name
+		aMsg.AppendBuffer(this->mNetAddr,1);
 	}
 
-	aMsg.AppendShort(mDataTypes.size());
-	DirDataTypeSet::iterator anItr = mDataTypes.begin();
-	while(anItr!=mDataTypes.end())
+	aMsg.AppendShort(this->mDataTypes.size());
+	DirDataTypeSet::iterator anItr = this->mDataTypes.begin();
+	while(anItr!=this->mDataTypes.end())
 	{
 		aMsg.AppendString(*anItr,1);
 		++anItr;
 	}
 
-	mRequest = aMsg.ToByteBuffer(true);
-	return (WONStatus)100059;
+	this->mRequest = aMsg.ToByteBuffer(true);
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus EntityClearDataObjectsOp::Virtual14()
+WONStatus EntityClearDataObjectsOp::CheckResponse()
 {
-	ReadBuffer aMsg(mResponse->data(),mResponse->length());
+	ReadBuffer aMsg(this->mResponse->data(),this->mResponse->length());
 	unsigned char aHeaderType = aMsg.ReadByte();
 	unsigned short aServiceType = aMsg.ReadShort();
 	unsigned short aMessageType = aMsg.ReadShort();
 
 	if(aHeaderType!=5 || aServiceType!=2 || aMessageType!=1)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 
 
 	short aStatus = aMsg.ReadShort();

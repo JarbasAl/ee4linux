@@ -1,4 +1,4 @@
-// Native patch-server value/serialization records. Source-only reconstruction.
+// VersionData and PatchData: patch server version and patch records and their wire format
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,34 +9,38 @@
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006d83a0
+// Creates empty version data in the invalid state
 VersionData::VersionData()
     : mConfigName(""),mVersion(""),mDescriptionURL(""),mState(VersionState_Invalid)
 {
-    mVersionTypeList.clear();
+    this->mVersionTypeList.clear();
 }
 // FUNCTION: WON 0x006d8510
+// Destroys the version data, clearing its version type list
 VersionData::~VersionData()
 {
-    mVersionTypeList.clear();
+    this->mVersionTypeList.clear();
 }
 // FUNCTION: WON 0x006d8660
+// Writes config name, version and version types, plus the description URL (flag 2) and state (flag 1)
 void VersionData::WriteToBuffer(WriteBuffer& outBuffer,DWORD inFlags)
 {
-    outBuffer.AppendString(mConfigName);
-    outBuffer.AppendString(mVersion);
-    outBuffer.AppendByte(mVersionTypeList.size());
-    if (!mVersionTypeList.empty()) {
-        VersionTypeList::const_iterator i=mVersionTypeList.begin();
+    outBuffer.AppendString(this->mConfigName);
+    outBuffer.AppendString(this->mVersion);
+    outBuffer.AppendByte(this->mVersionTypeList.size());
+    if (!this->mVersionTypeList.empty()) {
+        VersionTypeList::const_iterator i=this->mVersionTypeList.begin();
         while (true) {
-            if (i==mVersionTypeList.end()) break;
+            if (i==this->mVersionTypeList.end()) break;
             outBuffer.AppendString(*i);
             ++i;
         }
     }
-    if (inFlags&2) outBuffer.AppendString(mDescriptionURL);
-    if (inFlags&1) outBuffer.AppendByte(mState);
+    if (inFlags&2) outBuffer.AppendString(this->mDescriptionURL);
+    if (inFlags&1) outBuffer.AppendByte(this->mState);
 }
 // FUNCTION: WON 0x006d86f0
+// Creates an empty, inactive patch record
 PatchData::PatchData()
     : mConfigName(""),mFromVersion(""),mToVersion(""),mDisplayName(""),
       mNetAddress(""),mCheckSum(0),mPatchSize(0),mHostName(""),mHostURL(""),
@@ -44,31 +48,33 @@ PatchData::PatchData()
 {
 }
 // FUNCTION: WON 0x006d8a50
+// Destroys the patch record (members only)
 PatchData::~PatchData()
 {
 }
 // FUNCTION: WON 0x006d8bc0
+// Reads a patch record (with config and versions when from a patch list): name, URL, checksum, size, host info
 void PatchData::ReadFromBuffer(ReadBuffer& inBuffer,bool inGetPatchList)
 {
     if (inGetPatchList) {
-        inBuffer.ReadString(mConfigName);
-        inBuffer.ReadString(mFromVersion);
-        inBuffer.ReadString(mToVersion);
-        mIsActive=inBuffer.ReadBool();
+        inBuffer.ReadString(this->mConfigName);
+        inBuffer.ReadString(this->mFromVersion);
+        inBuffer.ReadString(this->mToVersion);
+        this->mIsActive=inBuffer.ReadBool();
     }
-    inBuffer.ReadString(mDisplayName);
-    inBuffer.ReadString(mNetAddress);
-    mCheckSum=inBuffer.ReadLong();
-    mPatchSize=inBuffer.ReadLong();
-    inBuffer.ReadString(mHostName);
-    inBuffer.ReadString(mHostURL);
-    inBuffer.ReadString(mHostText);
-    inBuffer.ReadString(mHostImageURL);
-    mMustVisitHost=inBuffer.ReadBool();
+    inBuffer.ReadString(this->mDisplayName);
+    inBuffer.ReadString(this->mNetAddress);
+    this->mCheckSum=inBuffer.ReadLong();
+    this->mPatchSize=inBuffer.ReadLong();
+    inBuffer.ReadString(this->mHostName);
+    inBuffer.ReadString(this->mHostURL);
+    inBuffer.ReadString(this->mHostText);
+    inBuffer.ReadString(this->mHostImageURL);
+    this->mMustVisitHost=inBuffer.ReadBool();
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine missing SDK version/patch value algorithms.
+// No original address identified: WON SDK version and patch record methods
 namespace WONAPI {
 void VersionData::AddVersionType(const std::string& theVersionType)
 { 
@@ -81,17 +87,17 @@ void VersionData::AddVersionType(const std::string& theVersionType)
 	{
 		versionString = theVersionType.substr(lastPos, aCommaPos-lastPos);
 		lastPos = aCommaPos+1;
-		mVersionTypeList.push_back(versionString);
+		this->mVersionTypeList.push_back(versionString);
 	}
 	
 	versionString = theVersionType.substr(lastPos, aCommaPos-lastPos);
-	mVersionTypeList.push_back(versionString);
+	this->mVersionTypeList.push_back(versionString);
 }
 
 void VersionData::ReadFromBuffer(ReadBuffer& theBuffer)
 {
-	theBuffer.ReadString(mConfigName);
-	theBuffer.ReadString(mVersion);
+	theBuffer.ReadString(this->mConfigName);
+	theBuffer.ReadString(this->mVersion);
 	
 	int numVersionTypeStrings = theBuffer.ReadByte();
 	std::string versionTypeString;
@@ -99,19 +105,19 @@ void VersionData::ReadFromBuffer(ReadBuffer& theBuffer)
 	for (int k=0; k < numVersionTypeStrings; ++k)
 	{
 		theBuffer.ReadString(versionTypeString);
-		AddVersionType(versionTypeString);
+		this->AddVersionType(versionTypeString);
 	}
-	theBuffer.ReadString(mDescriptionURL);
-	mState = (VersionState)theBuffer.ReadByte();
+	theBuffer.ReadString(this->mDescriptionURL);
+	this->mState = (VersionState)theBuffer.ReadByte();
 }
 
 bool VersionData::operator==(const VersionData& theVersion) const
 {
-	if (mVersion == theVersion.GetVersion() &&
-		mConfigName == theVersion.GetConfigName() &&
-		mDescriptionURL == theVersion.GetDescriptionURL() &&
-		mState == theVersion.GetState() &&
-		mVersionTypeList == theVersion.GetVersionTypeList())
+	if (this->mVersion == theVersion.GetVersion() &&
+		this->mConfigName == theVersion.GetConfigName() &&
+		this->mDescriptionURL == theVersion.GetDescriptionURL() &&
+		this->mState == theVersion.GetState() &&
+		this->mVersionTypeList == theVersion.GetVersionTypeList())
 	{
 		return true;
 	}
@@ -121,11 +127,11 @@ bool VersionData::operator==(const VersionData& theVersion) const
 
 bool VersionData::operator!=(const VersionData& theVersion) const
 {
-	if (mVersion		 != theVersion.GetVersion()			||
-		mConfigName		 != theVersion.GetConfigName()		||
-		mDescriptionURL  != theVersion.GetDescriptionURL()	||
-		mState			 != theVersion.GetState()			||
-		mVersionTypeList != theVersion.GetVersionTypeList()		)
+	if (this->mVersion		 != theVersion.GetVersion()			||
+		this->mConfigName		 != theVersion.GetConfigName()		||
+		this->mDescriptionURL  != theVersion.GetDescriptionURL()	||
+		this->mState			 != theVersion.GetState()			||
+		this->mVersionTypeList != theVersion.GetVersionTypeList()		)
 	{
 		return true;
 	}
@@ -135,37 +141,37 @@ bool VersionData::operator!=(const VersionData& theVersion) const
 
 void PatchData::WriteToBuffer(WriteBuffer& theWriteBuffer, bool bUpdateOnly)
 {
-	theWriteBuffer.AppendString(mConfigName);
-	theWriteBuffer.AppendString(mFromVersion);
-	theWriteBuffer.AppendString(mToVersion);
+	theWriteBuffer.AppendString(this->mConfigName);
+	theWriteBuffer.AppendString(this->mFromVersion);
+	theWriteBuffer.AppendString(this->mToVersion);
 	theWriteBuffer.AppendByte(bUpdateOnly);
-	theWriteBuffer.AppendString(mDisplayName);
-	theWriteBuffer.AppendString(mNetAddress);		// patch url
-	theWriteBuffer.AppendLong(mCheckSum);
-	theWriteBuffer.AppendLong(mPatchSize);
-	theWriteBuffer.AppendString(mHostName);
-	theWriteBuffer.AppendString(mHostURL);
-	theWriteBuffer.AppendString(mHostText);
-	theWriteBuffer.AppendString(mHostImageURL);
-	theWriteBuffer.AppendByte(mMustVisitHost);
-	theWriteBuffer.AppendByte(mIsActive);
+	theWriteBuffer.AppendString(this->mDisplayName);
+	theWriteBuffer.AppendString(this->mNetAddress);		// patch url
+	theWriteBuffer.AppendLong(this->mCheckSum);
+	theWriteBuffer.AppendLong(this->mPatchSize);
+	theWriteBuffer.AppendString(this->mHostName);
+	theWriteBuffer.AppendString(this->mHostURL);
+	theWriteBuffer.AppendString(this->mHostText);
+	theWriteBuffer.AppendString(this->mHostImageURL);
+	theWriteBuffer.AppendByte(this->mMustVisitHost);
+	theWriteBuffer.AppendByte(this->mIsActive);
 }
 
 bool PatchData::operator==(const PatchData& thePatchData) const
 {
-	if (mConfigName		== thePatchData.mConfigName		&&
-		mFromVersion	== thePatchData.mFromVersion	&&
-		mToVersion		== thePatchData.mToVersion		&&
-		mNetAddress		== thePatchData.mNetAddress		&&
-		mDisplayName	== thePatchData.mDisplayName	&&
-		mCheckSum		== thePatchData.mCheckSum		&&
-		mPatchSize		== thePatchData.mPatchSize		&&
-		mHostName		== thePatchData.mHostName		&&
-		mHostURL		== thePatchData.mHostURL		&&
-		mHostText		== thePatchData.mHostText		&&
-		mHostImageURL	== thePatchData.mHostImageURL	&&
-		mMustVisitHost	== thePatchData.mMustVisitHost	&&
-		mIsActive		== thePatchData.mIsActive			)
+	if (this->mConfigName		== thePatchData.mConfigName		&&
+		this->mFromVersion	== thePatchData.mFromVersion	&&
+		this->mToVersion		== thePatchData.mToVersion		&&
+		this->mNetAddress		== thePatchData.mNetAddress		&&
+		this->mDisplayName	== thePatchData.mDisplayName	&&
+		this->mCheckSum		== thePatchData.mCheckSum		&&
+		this->mPatchSize		== thePatchData.mPatchSize		&&
+		this->mHostName		== thePatchData.mHostName		&&
+		this->mHostURL		== thePatchData.mHostURL		&&
+		this->mHostText		== thePatchData.mHostText		&&
+		this->mHostImageURL	== thePatchData.mHostImageURL	&&
+		this->mMustVisitHost	== thePatchData.mMustVisitHost	&&
+		this->mIsActive		== thePatchData.mIsActive			)
 		return true;
 	else
 		return false;
@@ -173,19 +179,19 @@ bool PatchData::operator==(const PatchData& thePatchData) const
 
 bool PatchData::operator!=(const PatchData& thePatchData) const
 {
-	if (mConfigName		!= thePatchData.mConfigName		||
-		mFromVersion	!= thePatchData.mFromVersion	||
-		mToVersion		!= thePatchData.mToVersion		||
-		mNetAddress		!= thePatchData.mNetAddress		||
-		mDisplayName	!= thePatchData.mDisplayName	||
-		mCheckSum		!= thePatchData.mCheckSum		||
-		mPatchSize		!= thePatchData.mPatchSize		||
-		mHostName		!= thePatchData.mHostName		||
-		mHostURL		!= thePatchData.mHostURL		||
-		mHostText		!= thePatchData.mHostText		||
-		mHostImageURL	!= thePatchData.mHostImageURL	||
-		mMustVisitHost	!= thePatchData.mMustVisitHost	||
-		mIsActive		!= thePatchData.mIsActive			)
+	if (this->mConfigName		!= thePatchData.mConfigName		||
+		this->mFromVersion	!= thePatchData.mFromVersion	||
+		this->mToVersion		!= thePatchData.mToVersion		||
+		this->mNetAddress		!= thePatchData.mNetAddress		||
+		this->mDisplayName	!= thePatchData.mDisplayName	||
+		this->mCheckSum		!= thePatchData.mCheckSum		||
+		this->mPatchSize		!= thePatchData.mPatchSize		||
+		this->mHostName		!= thePatchData.mHostName		||
+		this->mHostURL		!= thePatchData.mHostURL		||
+		this->mHostText		!= thePatchData.mHostText		||
+		this->mHostImageURL	!= thePatchData.mHostImageURL	||
+		this->mMustVisitHost	!= thePatchData.mMustVisitHost	||
+		this->mIsActive		!= thePatchData.mIsActive			)
 		return true;
 	else
 		return false;

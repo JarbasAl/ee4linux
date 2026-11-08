@@ -1,4 +1,4 @@
-// Original authentication request operation; external protocol helpers retain their real contracts.
+// GetCertOp: logs in to the auth server and fetches the certificates, key block and private key
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <time.h>
@@ -11,86 +11,93 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONAuthPeerData.h"
+#include "ee/wonapi/WONStatus.h"
 
 namespace WONAPI {
 // FUNCTION: WON 0x006e3c30
+// Creates a certificate request on the auth context's server list
 GetCertOp::GetCertOp(AuthContext* context)
     :ServerRequestOp(context->GetServerContext().get()),mAuthContext(context)
 {
-    mCreateAccount=false;
+    this->mCreateAccount=false;
 }
 // FUNCTION: WON 0x006e3d90
+// Destroys the request (members only)
 GetCertOp::~GetCertOp()
 {
 }
 
 // FUNCTION: WON 0x006e3f40
-void GetCertOp::Virtual04()
+// Starts the request with the current key block and saved secrets; fails at once without a signing key
+void GetCertOp::RunHook()
 {
-    if(!mAuthContext->GetVerifierKey().IsPublic())
+    if(!this->mAuthContext->GetVerifierKey().IsPublic())
     {
-        Fn29F220(100070); // WS_GetCert_NeedVerifierKey
+        this->Finish(WS_GetCert_NeedVerifierKey);
         return;
     }
 
-    ConstSmartPtr<AuthPeerData> peerData=mAuthContext->GetPeerData();
-    mKeyBlock=peerData->GetPubKeyBlock();
-    mAuthDelta=peerData->GetAuthDelta();
-    mAuthContext->LoadSecretList();
-    ServerRequestOp::Virtual04();
+    ConstSmartPtr<AuthPeerData> peerData=this->mAuthContext->GetPeerData();
+    this->mKeyBlock=peerData->GetPubKeyBlock();
+    this->mAuthDelta=peerData->GetAuthDelta();
+    this->mAuthContext->LoadSecretList();
+    ServerRequestOp::RunHook();
 }
 
 // FUNCTION: WON 0x006e4270
+// Builds the request for the auth servers' public key block
 WONStatus GetCertOp::SendPubKeyRequest()
 {
-    mState=GETTING_PUB_KEYS;
+    this->mState=GETTING_PUB_KEYS;
     WriteBuffer msg(4,true);
     msg.AppendByte(5);
     msg.AppendShort(12);
     msg.AppendShort(1);
-    mRequest=msg.ToByteBuffer(true);
-    return 100059; // WS_ServerReq_Recv
+    this->mRequest=msg.ToByteBuffer(true);
+    return WS_ServerReq_Recv;
 }
 
 // FUNCTION: WON 0x006e4380
+// Builds the login request: a new session key encrypted with the server key, then the encrypted login data
 WONStatus GetCertOp::SendLoginRequest()
 {
     WriteBuffer msg(4,true);
     msg.AppendByte(5);
     msg.AppendShort(12);
     msg.AppendShort(3);
-    msg.AppendShort(mKeyBlock->GetId());
+    msg.AppendShort(this->mKeyBlock->GetId());
 
-    const ElGamal& pubKey=mKeyBlock->GetCurrentKey();
-    mSessionKey.Create(8);
-    ByteBufferPtr encryptedSessionKey=pubKey.Encrypt(mSessionKey.GetKey(),mSessionKey.GetKeyLen());
+    const ElGamal& pubKey=this->mKeyBlock->GetCurrentKey();
+    this->mSessionKey.Create(8);
+    ByteBufferPtr encryptedSessionKey=pubKey.Encrypt(this->mSessionKey.GetKey(),this->mSessionKey.GetKeyLen());
     if(encryptedSessionKey.get()==NULL)
-        return 100065; // WS_GetCert_PubKeyEncryptFailure
+        return WS_GetCert_PubKeyEncryptFailure;
 
     msg.AppendShort(encryptedSessionKey->length());
     msg.AppendBytes(encryptedSessionKey->data(),encryptedSessionKey->length());
 
     WriteBuffer loginData(0,true);
-    loginData.AppendBytes(mSessionKey.GetKey(),2);
-    loginData.AppendShort(mKeyBlock->GetId());
+    loginData.AppendBytes(this->mSessionKey.GetKey(),2);
+    loginData.AppendShort(this->mKeyBlock->GetId());
     int flags=0x0002|0x0004|0x0008;
-    if(mCreateAccount)
+    if(this->mCreateAccount)
         flags|=0x0001;
     loginData.AppendLong(flags);
-    loginData.AppendWString(mAuthContext->GetUserName(),2);
-    loginData.AppendWString(mAuthContext->GetPassword(),2);
-    loginData.AppendWString(mNewPassword,2);
-    mAuthContext->AppendCommunityData(loginData);
+    loginData.AppendWString(this->mAuthContext->GetUserName(),2);
+    loginData.AppendWString(this->mAuthContext->GetPassword(),2);
+    loginData.AppendWString(this->mNewPassword,2);
+    this->mAuthContext->AppendCommunityData(loginData);
 
-    ByteBufferPtr encryptedLoginData=mSessionKey.Encrypt(loginData.mData,loginData.mLength);
+    ByteBufferPtr encryptedLoginData=this->mSessionKey.Encrypt(loginData.mData,loginData.mLength);
     msg.AppendShort(encryptedLoginData->length());
     msg.AppendBytes(encryptedLoginData->data(),encryptedLoginData->length());
-    mRequest=msg.ToByteBuffer(true);
-    mState=GETTING_CHALLENGE;
-    return 100059; // WS_ServerReq_Recv
+    this->mRequest=msg.ToByteBuffer(true);
+    this->mState=GETTING_CHALLENGE;
+    return WS_ServerReq_Recv;
 }
 
 // FUNCTION: WON 0x006e46a0
+// Builds the login confirmation carrying the file hashes keyed with the challenge
 WONStatus GetCertOp::SendLoginConfirm()
 {
     WriteBuffer msg(4,true);
@@ -99,12 +106,12 @@ WONStatus GetCertOp::SendLoginConfirm()
     msg.AppendShort(5);
 
     WriteBuffer dataBlock(0,true);
-    mAuthContext->AppendHashes(dataBlock,mChallengeSeed);
-    ByteBufferPtr encrypted=mSessionKey.Encrypt(dataBlock.mData,dataBlock.mLength);
+    this->mAuthContext->AppendHashes(dataBlock,this->mChallengeSeed);
+    ByteBufferPtr encrypted=this->mSessionKey.Encrypt(dataBlock.mData,dataBlock.mLength);
     msg.AppendShort(encrypted->length());
     msg.AppendBytes(encrypted->data(),encrypted->length());
-    mRequest=msg.ToByteBuffer(true);
-    return 100059; // WS_ServerReq_Recv
+    this->mRequest=msg.ToByteBuffer(true);
+    return WS_ServerReq_Recv;
 }
 namespace {
 enum {
@@ -122,36 +129,40 @@ enum {
 }
 
 // FUNCTION: WON 0x006e4050
-void GetCertOp::Virtual08()
+// On failure hands a valid key block to the auth context when it has none, then cleans up the request
+void GetCertOp::CleanupHook()
 {
 	// Give the pub key block to the AuthContext if we managed to at least get that
-	if(mStatus!=0 && mKeyBlock->IsValid() && !mAuthContext->GetPeerData()->GetPubKeyBlock()->IsValid())
-		mAuthContext->SetPeerData(new AuthPeerData(mKeyBlock));
+	if(this->mStatus!=WS_Success && this->mKeyBlock->IsValid() && !this->mAuthContext->GetPeerData()->GetPubKeyBlock()->IsValid())
+		this->mAuthContext->SetPeerData(new AuthPeerData(this->mKeyBlock));
 
-	ServerRequestOp::Virtual08();
+	ServerRequestOp::CleanupHook();
 }
 
 // FUNCTION: WON 0x006e4130
-void GetCertOp::Virtual18()
+// Returns to the key-fetch state and clears the challenge, errors and community status list
+void GetCertOp::Reset()
 {
-	mState = GETTING_PUB_KEYS;
-	mChallengeSeed.erase();
-	mErrorList.clear();
-	mCommunityStatusList.clear();
+	this->mState = GETTING_PUB_KEYS;
+	this->mChallengeSeed.erase();
+	this->mErrorList.clear();
+	this->mCommunityStatusList.clear();
 }
 
 // FUNCTION: WON 0x006e4850
-WONStatus GetCertOp::Virtual10()
+// Picks the next message: key block request, login request or login confirmation
+WONStatus GetCertOp::GetNextRequest()
 {	
- 	if(!mKeyBlock->IsValid()) 
-		return SendPubKeyRequest();
-	else if(mState==GETTING_CHALLENGE)
-		return SendLoginConfirm();
+ 	if(!this->mKeyBlock->IsValid()) 
+		return this->SendPubKeyRequest();
+	else if(this->mState==GETTING_CHALLENGE)
+		return this->SendLoginConfirm();
 	else
-		return SendLoginRequest();
+		return this->SendLoginRequest();
 }
 
 // FUNCTION: WON 0x006e4880
+// Reads the login reply's errors, certificates and encrypted private key and installs the new peer data
 WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 {
 
@@ -163,12 +174,12 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 	WONStatus aStatus = (WONStatus)theMsg.ReadShort();
 	if(aStatus<0) // Failure status
 	{
-		if(!mChallengeSeed.empty())
-			mAuthContext->RemoveSecret(mChallengeSeed.data());
+		if(!this->mChallengeSeed.empty())
+			this->mAuthContext->RemoveSecret(this->mChallengeSeed.data());
 
 		if(aStatus==-1) // unknown auth error
 		{
-			SetLastServerError(aStatus);
+			this->SetLastServerError(aStatus);
 			return WS_ServerReq_TryNextServer;
 		}
 
@@ -182,7 +193,7 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 	{
 		std::string anErrorString;
 		theMsg.ReadString(anErrorString);
-		mErrorList.push_back(anErrorString);
+		this->mErrorList.push_back(anErrorString);
 	}
 	
 	unsigned char aNumClearEntries = theMsg.ReadByte();
@@ -192,15 +203,15 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 		unsigned char aType = theMsg.ReadByte();
 		unsigned short aLen = theMsg.ReadShort();
 		
-		data = (const char*)theMsg.ReadBytes(aLen);
+		data = static_cast<const char*>(theMsg.ReadBytes(aLen));
 		switch(aType)
 		{
 			case 1:	
 			{
 				aCert1 = new AuthCertificate(data,aLen);
-				if(!aCert1->IsValid() || !mKeyBlock->Verify(aCert1)) 
+				if(!aCert1->IsValid() || !this->mKeyBlock->Verify(aCert1)) 
 				{
-					SetLastServerError(WS_GetCert_InvalidCertificate);
+					this->SetLastServerError(WS_GetCert_InvalidCertificate);
 					return WS_ServerReq_TryNextServer; 
 				}
 				else
@@ -211,22 +222,22 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 			case 3: 
 			{
 				ConstSmartPtr<AuthPubKeyBlock> aKeyBlock = new AuthPubKeyBlock(data,aLen);
-				if(!aKeyBlock->IsValidAndVerified(mAuthContext->GetVerifierKey()))
+				if(!aKeyBlock->IsValidAndVerified(this->mAuthContext->GetVerifierKey()))
 				{
-					SetLastServerError(WS_GetCert_InvalidPubKeyBlock);
+					this->SetLastServerError(WS_GetCert_InvalidPubKeyBlock);
 					return WS_ServerReq_TryNextServer;
 				}
 				else
-					mKeyBlock = aKeyBlock;	
+					this->mKeyBlock = aKeyBlock;	
 			}
 			break;
 
 			case 6:
 			{
 				aCert2 = new Auth2Certificate(data,aLen);
-				if(!aCert2->IsValid() || !mKeyBlock->Verify(aCert2))
+				if(!aCert2->IsValid() || !this->mKeyBlock->Verify(aCert2))
 				{
-					SetLastServerError(WS_GetCert_InvalidCertificate);
+					this->SetLastServerError(WS_GetCert_InvalidCertificate);
 					return WS_ServerReq_TryNextServer; 
 				}
 				else
@@ -237,8 +248,8 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 			case 7:
 			{
 				ReadBuffer aSubMsg(data,aLen);
-				mCommunityStatusList.push_back(COMMUNITY_STATUS());
-				COMMUNITY_STATUS &aCommunityStatus = mCommunityStatusList.back();
+				this->mCommunityStatusList.push_back(COMMUNITY_STATUS());
+				COMMUNITY_STATUS &aCommunityStatus = this->mCommunityStatusList.back();
 
 				aCommunityStatus.mStatus = aSubMsg.ReadShort();
 				aCommunityStatus.mCommunityID = aSubMsg.ReadLong();
@@ -264,15 +275,15 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 		aCertDuration = aCert2->GetExpireTime() - aCert2->GetIssueTime();
 	}
 
-	mAuthContext->CommitSecrets(anAuthTime, aCertDuration);
+	this->mAuthContext->CommitSecrets(anAuthTime, aCertDuration);
 
 	
-	int aNumLeft = theMsg.length() - theMsg.mL00;
+	int aNumLeft = theMsg.length() - theMsg.mPos;
 
-	ByteBufferPtr aDecryptBuf = mSessionKey.Decrypt(theMsg.ReadBytes(aNumLeft),aNumLeft);
+	ByteBufferPtr aDecryptBuf = this->mSessionKey.Decrypt(theMsg.ReadBytes(aNumLeft),aNumLeft);
 	if(aDecryptBuf.get()==NULL)
 	{
-		SetLastServerError(WS_GetCert_DecryptFailure);
+		this->SetLastServerError(WS_GetCert_DecryptFailure);
 		return WS_ServerReq_TryNextServer;
 	}
 	
@@ -283,21 +294,21 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 	{
 		unsigned char aType = aDecrypt.ReadByte();
 		unsigned short aLen = aDecrypt.ReadShort();
-		data = (const char*)aDecrypt.ReadBytes(aLen);
+		data = static_cast<const char*>(aDecrypt.ReadBytes(aLen));
 		switch(aType)
 		{
 			case 2: 
 				if(!aPrivKey.SetPrivateKey(data,aLen))
 				{
-					SetLastServerError(WS_GetCert_InvalidPrivateKey);
+					this->SetLastServerError(WS_GetCert_InvalidPrivateKey);
 					return WS_ServerReq_TryNextServer;
 				}
 				break;
 
 			case 4:
-				if((aLen!=mSessionKey.GetKeyLen()+2) || memcmp(data+2,mSessionKey.GetKey(),aLen-2)!=0)
+				if((aLen!=this->mSessionKey.GetKeyLen()+2) || memcmp(data+2,this->mSessionKey.GetKey(),aLen-2)!=0)
 				{
-					SetLastServerError(WS_GetCert_InvalidSecretConfirm);
+					this->SetLastServerError(WS_GetCert_InvalidSecretConfirm);
 					return WS_ServerReq_TryNextServer;
 				}
 				break;
@@ -310,69 +321,71 @@ WONStatus GetCertOp::HandleLoginReply(ReadBuffer &theMsg)
 
 	if(aCert1.get()==NULL || aCert2.get()==NULL)
 	{
-		SetLastServerError(WS_GetCert_MissingCertificate);
+		this->SetLastServerError(WS_GetCert_MissingCertificate);
 		return WS_ServerReq_TryNextServer;
 	}
 
-	mPeerData = new AuthPeerData(aCert1, mKeyBlock, aPrivKey, anAuthDelta, aCert2);
-	if(!mNewPassword.empty())
-		mAuthContext->SetPassword(mNewPassword);
+	this->mPeerData = new AuthPeerData(aCert1, this->mKeyBlock, aPrivKey, anAuthDelta, aCert2);
+	if(!this->mNewPassword.empty())
+		this->mAuthContext->SetPassword(this->mNewPassword);
 
-	mAuthContext->SetPeerData(mPeerData.get());	
-	mAuthContext->ClearOneTimeData();
+	this->mAuthContext->SetPeerData(this->mPeerData.get());	
+	this->mAuthContext->ClearOneTimeData();
 	return WS_Success;
 }
 
 // FUNCTION: WON 0x006e5800
+// Decrypts the login challenge and stores its 16-byte seed as a new login secret
 WONStatus GetCertOp::HandleLoginChallenge(ReadBuffer &theMsg)
 {
 	unsigned short aLen = theMsg.ReadShort();
-	ByteBufferPtr aDecrypt = mSessionKey.Decrypt(theMsg.ReadBytes(aLen),aLen);
+	ByteBufferPtr aDecrypt = this->mSessionKey.Decrypt(theMsg.ReadBytes(aLen),aLen);
 	if(aDecrypt.get()==NULL)
 	{
-		SetLastServerError(WS_GetCert_DecryptFailure);
+		this->SetLastServerError(WS_GetCert_DecryptFailure);
 		return WS_ServerReq_TryNextServer;
 	}
 
 	ReadBuffer aBuf(aDecrypt->data(),aDecrypt->length());
-	mChallengeSeed.assign((const unsigned char*)aBuf.ReadBytes(16),16);
-	mAuthContext->AddSecret(mChallengeSeed.data());
+	this->mChallengeSeed.assign(static_cast<const unsigned char*>(aBuf.ReadBytes(16)),16);
+	this->mAuthContext->AddSecret(this->mChallengeSeed.data());
 	return WS_ServerReq_Send;
 }
 
 // FUNCTION: WON 0x006e5980
-WONStatus GetCertOp::Virtual14()
+// Checks the auth server reply and dispatches it to the key block, challenge or login reply handler
+WONStatus GetCertOp::CheckResponse()
 {
-	ReadBuffer aMsg(mResponse->data(),mResponse->length());
+	ReadBuffer aMsg(this->mResponse->data(),this->mResponse->length());
 	unsigned char aHeaderType = aMsg.ReadByte();
 	unsigned short aServiceType = aMsg.ReadShort();
 	unsigned short aMessageType = aMsg.ReadShort();
 
 	if(aHeaderType!=5 || aServiceType!=12)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 
-	if(mState==GETTING_PUB_KEYS)
+	if(this->mState==GETTING_PUB_KEYS)
 	{
 		if(aMessageType!=2) // GetPubKeysReply
-			return InvalidReplyHeader();
+			return this->InvalidReplyHeader();
 
 		WONStatus aStatus = (WONStatus)aMsg.ReadShort();
 		if(aStatus<0) // shouldn't get this
 		{
-			SetLastServerError(aStatus);
+			this->SetLastServerError(aStatus);
 			return WS_ServerReq_TryNextServer;
 		}
 
 		unsigned short aLen = aMsg.ReadShort();
 		ConstSmartPtr<AuthPubKeyBlock> aKeyBlock = new AuthPubKeyBlock(aMsg.ReadBytes(aLen),aLen);
-		if(!aKeyBlock->IsValidAndVerified(mAuthContext->GetVerifierKey()))
+		if(!aKeyBlock->IsValidAndVerified(this->mAuthContext->GetVerifierKey()))
 		{
-			SetLastServerError(WS_GetCert_InvalidPubKeyBlock);
+			this->SetLastServerError(WS_GetCert_InvalidPubKeyBlock);
 			return WS_ServerReq_TryNextServer;
 		}
 		else
 		{
-			mKeyBlock = aKeyBlock;
+			this->mKeyBlock = aKeyBlock;
 			return WS_ServerReq_Send;
 		}
 	}
@@ -380,18 +393,18 @@ WONStatus GetCertOp::Virtual14()
 	
 	
 	if(aMessageType==6)
-		return HandleLoginReply(aMsg);
+		return this->HandleLoginReply(aMsg);
 	
 	if(aMessageType!=4)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 
-	if(mState!=GETTING_CHALLENGE)
+	if(this->mState!=GETTING_CHALLENGE)
 	{
-		SetLastServerError(WS_GetCert_UnexpectedLoginChallenge);
+		this->SetLastServerError(WS_GetCert_UnexpectedLoginChallenge);
 		return WS_ServerReq_TryNextServer;
 	}
 
-	return HandleLoginChallenge(aMsg);
+	return this->HandleLoginChallenge(aMsg);
 }
 
 }

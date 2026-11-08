@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// Default component factory of the component configuration
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00796960
+// Creates a plain component for a configuration entry
 Component* ComponentConfig::CompFactory()
 {
     return new Component;

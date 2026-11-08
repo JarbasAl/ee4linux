@@ -1,4 +1,4 @@
-// Original-backed WONDir family; grouping provisional, no runtime substitution authority.
+// WONAPI directory entity request: one path's query and its reply (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,14 +11,16 @@
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONBuffer.h"
 namespace WONAPI {
-// Default protocol initialization is native-inline in AddPath/CheckResponse.
+// The original inlines the default constructor into AddPath and CheckResponse
 
 // FUNCTION: WON 0x6f0da0
+// Destroys the request, releasing its path, data types and entities
 GetEntityRequest::~GetEntityRequest() {}
 // FUNCTION: WON 0x6f0fa0
+// Appends the query (flags, path, data types) to a get-directory or multi-get message
 void GetEntityRequest::Pack(WriteBuffer* message,PACKFLAG mode)
 {
-    DWORD flags=mFlags;
+    DWORD flags=this->mFlags;
     bool aNoDirs=(flags&2)==0;
     if(!aNoDirs && (flags&5)!=0)
         flags|=0x10;
@@ -27,45 +29,42 @@ void GetEntityRequest::Pack(WriteBuffer* message,PACKFLAG mode)
         message->AppendShort(0);
     else if(mode==Pack_GetMultiDirOp)
         message->AppendByte(0x44);
-    message->AppendWString(mPath,2);
-    message->AppendShort(static_cast<short>(mDataTypes.size()));
-    for(DirDataTypeSet::iterator i=mDataTypes.begin();i!=mDataTypes.end();++i)
+    message->AppendWString(this->mPath,2);
+    message->AppendShort(static_cast<short>(this->mDataTypes.size()));
+    for(DirDataTypeSet::iterator i=this->mDataTypes.begin();i!=this->mDataTypes.end();++i)
         message->AppendString(*i,1);
 }
 // FUNCTION: WON 0x6f1070
+// Forgets the received entities and their per-path grouping
 void GetEntityRequest::Reset()
 {
-    mDirEntityList.clear();
-    mDirEntityMap.clear();
+    this->mDirEntityList.clear();
+    this->mDirEntityMap.clear();
 }
-/* DEFERRED ORIGINAL, ZERO CREDIT: ParseMultiEntityReply2f1160 and native parser
-   continuation2f1190 remain external. No partial DirEntity allocation/parser is
-   reconstructed here; no GetDirEntityMap lazy builder or single-entity parser.
-*/
 } // WONAPI
 
-// Previous deferred note records the earlier selection; real forwarding behavior now follows.
 namespace WONAPI {
 // FUNCTION: WON 0x006f1160
+// Parses a reply into the entity list and keeps its status
 WONStatus GetEntityRequest::ParseMultiEntityReply(const void* data,unsigned long length)
 {
-    mStatus=DirEntityReplyParser::ParseMultiEntityReply(data,length,mDirEntityList,NULL);
-    return mStatus;
+    this->mStatus=DirEntityReplyParser::ParseMultiEntityReply(data,length,this->mDirEntityList,NULL);
+    return this->mStatus;
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK lazy directory path grouping/cache builder.
+// No original address identified: WON SDK lazy grouping of the entities by directory path
 namespace WONAPI {
 const DirEntityMap& GetEntityRequest::GetDirEntityMap()
 {
-	if(!mDirEntityMap.empty())
-		return mDirEntityMap;
+	if(!this->mDirEntityMap.empty())
+		return this->mDirEntityMap;
 
-	DirEntityList::iterator aListItr = mDirEntityList.begin();
-	DirEntityMap::iterator aMapItr = mDirEntityMap.insert(DirEntityMap::value_type(mPath,DirEntityList())).first;
+	DirEntityList::iterator aListItr = this->mDirEntityList.begin();
+	DirEntityMap::iterator aMapItr = this->mDirEntityMap.insert(DirEntityMap::value_type(this->mPath,DirEntityList())).first;
 
-	std::wstring currentDir = mPath;
-	while(aListItr!=mDirEntityList.end())
+	std::wstring currentDir = this->mPath;
+	while(aListItr!=this->mDirEntityList.end())
 	{
 		DirEntity *anEntity = aListItr->get();
 		const std::wstring &aPath = anEntity->mPath;
@@ -74,7 +73,7 @@ const DirEntityMap& GetEntityRequest::GetDirEntityMap()
 		if((anEntity->mType=='D'))
 		{
 			if(aPath.empty())
-				currentDir = mPath;
+				currentDir = this->mPath;
 			else
 				currentDir = aPath;
 			
@@ -92,14 +91,14 @@ const DirEntityMap& GetEntityRequest::GetDirEntityMap()
 		}
 
 		if(mapInsert)
-			aMapItr = mDirEntityMap.insert(aMapItr,DirEntityMap::value_type(currentDir,DirEntityList()));
+			aMapItr = this->mDirEntityMap.insert(aMapItr,DirEntityMap::value_type(currentDir,DirEntityList()));
 
 		aMapItr->second.push_back(anEntity);
 
 		++aListItr;
 	}
 
-	return mDirEntityMap;
+	return this->mDirEntityMap;
 }
 }
 

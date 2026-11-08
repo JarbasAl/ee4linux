@@ -1,4 +1,4 @@
-// Native routing behavior; source-only reconstruction.
+// WONAPI SmartRoutingConnection: client, group and member tracking, ignore list and chat commands
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,217 +13,235 @@
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONRoutingOpTypes.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006bfb00
+// Creates the smart routing connection with the ignore file under the WON directory and the default chat commands
 SmartRoutingConnection::SmartRoutingConnection()
     : mClientItr(NULL), mGroupItr(NULL), mMemberItr(NULL)
 {
-    mDefaultGroupId = 0;
-    mClientId = 0;
-    mLastInputError = InputError_None;
-    mIgnoreFilePath = WONAPICore::GetDefaultFileDirectory() + "_wonignore.bin";
-    mDoColonEmote = true;
-    mReadClientCDKeyId = false;
-    AddDefaultUserCommandStrings();
-    AddDefaultModeratorCommandStrings();
-    SetAllowPartialNameMatch(true);
-    SetServerWideCommands(false);
+    this->mDefaultGroupId = 0;
+    this->mClientId = 0;
+    this->mLastInputError = InputError_None;
+    this->mIgnoreFilePath = WONAPICore::GetDefaultFileDirectory() + "_wonignore.bin";
+    this->mDoColonEmote = true;
+    this->mReadClientCDKeyId = false;
+    this->AddDefaultUserCommandStrings();
+    this->AddDefaultModeratorCommandStrings();
+    this->SetAllowPartialNameMatch(true);
+    this->SetServerWideCommands(false);
 }
 // FUNCTION: WON 0x006bfe60
-RoutingClientInfoPtr SmartRoutingConnection::Virtual1C()
+// Returns a new smart client record (group count and ignore flag)
+RoutingClientInfoPtr SmartRoutingConnection::GetNewClientInfo()
 {
     return new SmartRoutingClientInfo;
 }
 // FUNCTION: WON 0x006c0330
+// Returns the client with an id (the client being handled first), or NULL
 RoutingClientInfoPtr SmartRoutingConnection::GetClient(unsigned short id)
 {
-    AutoCrit crit(mDataCrit);
-    if(mHandlerClient.get()!=NULL && mHandlerClient->mClientId==id)
-        return mHandlerClient;
-    RoutingClientMap::iterator i=mClientMap.find(id);
-    if(i==mClientMap.end()) return NULL;
+    AutoCrit crit(this->mDataCrit);
+    if(this->mHandlerClient.get()!=NULL && this->mHandlerClient->mClientId==id)
+        return this->mHandlerClient;
+    RoutingClientMap::iterator i=this->mClientMap.find(id);
+    if(i==this->mClientMap.end()) return NULL;
     return i->second;
 }
 // FUNCTION: WON 0x006c0450
+// Returns the group with an id (the group being handled first), or NULL
 RoutingGroupInfoPtr SmartRoutingConnection::GetGroup(unsigned short id)
 {
-    AutoCrit crit(mDataCrit);
-    if(mHandlerGroup.get()!=NULL && mHandlerGroup->mId==id)
-        return mHandlerGroup;
-    RoutingGroupMap::iterator i=mGroupMap.find(id);
-    if(i==mGroupMap.end()) return NULL;
+    AutoCrit crit(this->mDataCrit);
+    if(this->mHandlerGroup.get()!=NULL && this->mHandlerGroup->mId==id)
+        return this->mHandlerGroup;
+    RoutingGroupMap::iterator i=this->mGroupMap.find(id);
+    if(i==this->mGroupMap.end()) return NULL;
     return i->second;
 }
 // FUNCTION: WON 0x6c0570
+// Removes a client from the client map, stepping the client iterator past it
 void SmartRoutingConnection::EraseClient(const RoutingClientMap::iterator &theItr)
 {
-	if(theItr==mClientItr)
-		++mClientItr;
+	if(theItr==this->mClientItr)
+		++this->mClientItr;
 
-	mClientMap.erase(theItr);
+	this->mClientMap.erase(theItr);
 }
 // FUNCTION: WON 0x6c0600
+// Removes the client with an id from the client map, if present
 void SmartRoutingConnection::EraseClient(unsigned short theId)
 {
-	RoutingClientMap::iterator anItr = mClientMap.find(theId);
-	if(anItr!=mClientMap.end())
-		EraseClient(anItr);
+	RoutingClientMap::iterator anItr = this->mClientMap.find(theId);
+	if(anItr!=this->mClientMap.end())
+		this->EraseClient(anItr);
 }
 // FUNCTION: WON 0x6c0670
+// Removes a group from the group map, resetting the member and group iterators that point into it
 void SmartRoutingConnection::EraseGroup(const RoutingGroupMap::iterator &theItr)
 {
-	if(theItr->second.get()==mMemberItrGroup.get())
-		mMemberItrGroup = NULL;
+	if(theItr->second.get()==this->mMemberItrGroup.get())
+		this->mMemberItrGroup = NULL;
 
-	if(theItr==mGroupItr)
-		++mGroupItr;
+	if(theItr==this->mGroupItr)
+		++this->mGroupItr;
 
-	mGroupMap.erase(theItr);
+	this->mGroupMap.erase(theItr);
 }
 // FUNCTION: WON 0x6c0740
+// Removes a member from a group's member map, stepping the member iterator past it
 void SmartRoutingConnection::EraseMember(RoutingMemberMap &theMap, const RoutingMemberMap::iterator &theItr)
 {
-	if(theItr==mMemberItr)
-		++mMemberItr;
+	if(theItr==this->mMemberItr)
+		++this->mMemberItr;
 
 	theMap.erase(theItr);
 }
 // FUNCTION: WON 0x6c07d0
+// Sets a client's name and marks it ignored when the name is in the ignore list
 void SmartRoutingConnection::SetClientName(RoutingClientInfo *theClient, const std::wstring &theName)
 {
-	SmartRoutingClientInfo *aClient = (SmartRoutingClientInfo*)theClient;
+	SmartRoutingClientInfo *aClient = static_cast<SmartRoutingClientInfo*>(theClient);
 	aClient->mName = theName;
-	aClient->mIgnored = mIgnoreSet.find(theName)!=mIgnoreSet.end();
+	aClient->mIgnored = this->mIgnoreSet.find(theName)!=this->mIgnoreSet.end();
 }
 // FUNCTION: WON 0x6c0860
+// Returns the client record for an id, creating and adding an empty one when missing
 SmartRoutingClientInfo* SmartRoutingConnection::EnsureInClientMap(unsigned short theClientId)
 {
-	RoutingClientMap::iterator anItr = mClientMap.insert(RoutingClientMap::value_type(theClientId, NULL)).first;
+	RoutingClientMap::iterator anItr = this->mClientMap.insert(RoutingClientMap::value_type(theClientId, NULL)).first;
 	if(anItr->second.get()==NULL)
 	{
-		anItr->second = Virtual1C();
+		anItr->second = this->GetNewClientInfo();
 		anItr->second->mClientId = theClientId;
 	}
 
 	return (SmartRoutingClientInfo*)anItr->second.get();
 }
 // FUNCTION: WON 0x006c0a10
+// Records the client a notification is about (no group or member)
 void SmartRoutingConnection::InitHandlerVariables(RoutingClientInfo* client)
 {
-    mHandlerClient=client;
-    mHandlerGroup=NULL;
-    mHandlerMember=NULL;
+    this->mHandlerClient=client;
+    this->mHandlerGroup=NULL;
+    this->mHandlerMember=NULL;
 }
 // FUNCTION: WON 0x006c0ac0
+// Records the group and member a notification is about, and the member's client
 void SmartRoutingConnection::InitHandlerVariables(RoutingGroupInfo* group,RoutingMemberInfo* member)
 {
-    mHandlerGroup=group;
-    mHandlerMember=member;
-    if(member!=NULL) mHandlerClient=member->mClientInfo;
-    else mHandlerClient=NULL;
+    this->mHandlerGroup=group;
+    this->mHandlerMember=member;
+    if(member!=NULL) this->mHandlerClient=member->mClientInfo;
+    else this->mHandlerClient=NULL;
 }
 // FUNCTION: WON 0x6c0be0
-void SmartRoutingConnection::Virtual2C(RoutingOp *theOp)
+// Updates the client, group and member maps from a finished routing op or notification, by op type
+void SmartRoutingConnection::RoutingOpCompleteHook(RoutingOp *theOp)
 {
-	AutoCrit aCrit(mDataCrit);
-	mHandlerClient = NULL;
-	mHandlerGroup = NULL;
-	mHandlerMember = NULL;
+	AutoCrit aCrit(this->mDataCrit);
+	this->mHandlerClient = NULL;
+	this->mHandlerGroup = NULL;
+	this->mHandlerMember = NULL;
 
 	switch(theOp->GetType())
 	{
-		case 6:		HandleClientFlagsChanged	((RoutingClientFlagsChangedOp*)	theOp);	break;
-		case 7:		HandleClientJoinedGroup		((RoutingClientJoinedGroupOp*)	theOp);	break;
-		case 8:		HandleClientJoinedServer	((RoutingClientJoinedServerOp*)	theOp);	break;
-		case 9:			HandleClientLeftGroup		((RoutingClientLeftGroupOp*)	theOp);	break;
-		case 10:		HandleClientLeftServer		((RoutingClientLeftServerOp*)	theOp);	break;
+		case RoutingOp_ClientFlagsChanged:		this->HandleClientFlagsChanged	(static_cast<RoutingClientFlagsChangedOp*>(theOp));	break;
+		case RoutingOp_ClientJoinedGroup:		this->HandleClientJoinedGroup		(static_cast<RoutingClientJoinedGroupOp*>(theOp));	break;
+		case RoutingOp_ClientJoinedServer:		this->HandleClientJoinedServer	(static_cast<RoutingClientJoinedServerOp*>(theOp));	break;
+		case RoutingOp_ClientLeftGroup:			this->HandleClientLeftGroup		(static_cast<RoutingClientLeftGroupOp*>(theOp));	break;
+		case RoutingOp_ClientLeftServer:		this->HandleClientLeftServer		(static_cast<RoutingClientLeftServerOp*>(theOp));	break;
 
-		case 20:			HandleGetClientList			((RoutingGetClientListOp*)		theOp); break;
-		case 21:			HandleGetGroupList			((RoutingGetGroupListOp*)		theOp); break;
-		case 22:		HandleGetMembersOfGroup		((RoutingGetMembersOfGroupOp*)	theOp); break;
+		case RoutingOp_GetClientList:			this->HandleGetClientList			(static_cast<RoutingGetClientListOp*>(theOp)); break;
+		case RoutingOp_GetGroupList:			this->HandleGetGroupList			(static_cast<RoutingGetGroupListOp*>(theOp)); break;
+		case RoutingOp_GetMembersOfGroup:		this->HandleGetMembersOfGroup		(static_cast<RoutingGetMembersOfGroupOp*>(theOp)); break;
 
-		case 23:		HandleGroupCaptainChanged	((RoutingGroupCaptainChangedOp*)	theOp); break;
-		case 24:			HandleGroupCreated			((RoutingGroupCreatedOp*)			theOp); break;
-		case 25:			HandleGroupDeleted			((RoutingGroupDeletedOp*)			theOp); break;
-		case 26:		HandleGroupFlagsChanged		((RoutingGroupFlagsChangedOp*)		theOp); break;
-		case 29:	HandleGroupMaxPlayersChanged((RoutingGroupMaxPlayersChangedOp*)	theOp); break;
-		case 31:		HandleGroupNameChanged		((RoutingGroupNameChangedOp*)		theOp); break;
-		case 32:		HandleGroupObserverCount	((RoutingGroupObserverCountOp*)		theOp); break;
+		case RoutingOp_GroupCaptainChanged:		this->HandleGroupCaptainChanged	(static_cast<RoutingGroupCaptainChangedOp*>(theOp)); break;
+		case RoutingOp_GroupCreated:			this->HandleGroupCreated			(static_cast<RoutingGroupCreatedOp*>(theOp)); break;
+		case RoutingOp_GroupDeleted:			this->HandleGroupDeleted			(static_cast<RoutingGroupDeletedOp*>(theOp)); break;
+		case RoutingOp_GroupFlagsChanged:		this->HandleGroupFlagsChanged		(static_cast<RoutingGroupFlagsChangedOp*>(theOp)); break;
+		case RoutingOp_GroupMaxPlayersChanged:	this->HandleGroupMaxPlayersChanged(static_cast<RoutingGroupMaxPlayersChangedOp*>(theOp)); break;
+		case RoutingOp_GroupNameChanged:		this->HandleGroupNameChanged		(static_cast<RoutingGroupNameChangedOp*>(theOp)); break;
+		case RoutingOp_GroupObserverCount:		this->HandleGroupObserverCount	(static_cast<RoutingGroupObserverCountOp*>(theOp)); break;
 
-		case 34:				HandleJoinGroup				((RoutingJoinGroupOp*)			theOp); break;
-		case 35:				HandleLeaveGroup			((RoutingLeaveGroupOp*)			theOp); break;
-		case 36:		HandleMemberFlagsChanged	((RoutingMemberFlagsChangedOp*)	theOp); break;
-		case 42:			HandleRegisterClient		((RoutingRegisterClientOp*)		theOp); break;
-		case 51:			HandleSetClientFlags		((RoutingSetClientFlagsOp*)		theOp); break;
+		case RoutingOp_JoinGroup:				this->HandleJoinGroup				(static_cast<RoutingJoinGroupOp*>(theOp)); break;
+		case RoutingOp_LeaveGroup:				this->HandleLeaveGroup			(static_cast<RoutingLeaveGroupOp*>(theOp)); break;
+		case RoutingOp_MemberFlagsChanged:		this->HandleMemberFlagsChanged	(static_cast<RoutingMemberFlagsChangedOp*>(theOp)); break;
+		case RoutingOp_RegisterClient:			this->HandleRegisterClient		(static_cast<RoutingRegisterClientOp*>(theOp)); break;
+		case RoutingOp_SetClientFlags:			this->HandleSetClientFlags		(static_cast<RoutingSetClientFlagsOp*>(theOp)); break;
 
-		case 41:			HandleReadDataObject		((RoutingReadDataObjectOp*)			theOp); break;
-		case 13:		HandleDataObjectCreated		((RoutingDataObjectCreatedOp*)		theOp); break;
-		case 15:		HandleDataObjectModified	((RoutingDataObjectModifiedOp*)		theOp); break;
-		case 14:		HandleDataObjectDeleted		((RoutingDataObjectDeletedOp*)		theOp); break;
+		case RoutingOp_ReadDataObject:			this->HandleReadDataObject		(static_cast<RoutingReadDataObjectOp*>(theOp)); break;
+		case RoutingOp_DataObjectCreated:		this->HandleDataObjectCreated		(static_cast<RoutingDataObjectCreatedOp*>(theOp)); break;
+		case RoutingOp_DataObjectModified:		this->HandleDataObjectModified	(static_cast<RoutingDataObjectModifiedOp*>(theOp)); break;
+		case RoutingOp_DataObjectDeleted:		this->HandleDataObjectDeleted		(static_cast<RoutingDataObjectDeletedOp*>(theOp)); break;
 
 
 
 		// For ignoring
-		case 27:			HandleGroupInvitation		((RoutingGroupInvitationOp*)	theOp); break;
-		case 28:		HandleGroupJoinAttempt		((RoutingGroupJoinAttemptOp*)	theOp); break;
-		case 39:				HandlePeerChat				((RoutingPeerChatOp*)			theOp); break;
+		case RoutingOp_GroupInvitation:			this->HandleGroupInvitation		(static_cast<RoutingGroupInvitationOp*>(theOp)); break;
+		case RoutingOp_GroupJoinAttempt:		this->HandleGroupJoinAttempt		(static_cast<RoutingGroupJoinAttemptOp*>(theOp)); break;
+		case RoutingOp_PeerChat:				this->HandlePeerChat				(static_cast<RoutingPeerChatOp*>(theOp)); break;
 
 	}	
 }
 // FUNCTION: WON 0x6c0ec0
+// After registering, loads the ignore list and takes over the client id, flags and client list (or just itself)
 void SmartRoutingConnection::HandleRegisterClient(RoutingRegisterClientOp *theOp)
 {
-	if(!(theOp->mStatus==0))
+	if(!(theOp->mStatus==WS_Success))
 		return;
 
-	LoadIgnoreSet();
+	this->LoadIgnoreSet();
 
-	mClientId = theOp->GetClientId();
-	mAsyncFlags = theOp->GetAsyncMessageFlags();
+	this->mClientId = theOp->GetClientId();
+	this->mAsyncFlags = theOp->GetAsyncMessageFlags();
 
-	mGroupMap.clear();
-	mClientMap = theOp->GetClientMap();
-	if(mClientMap.empty()) // didn't get client list (insert myself)
+	this->mGroupMap.clear();
+	this->mClientMap = theOp->GetClientMap();
+	if(this->mClientMap.empty()) // didn't get client list (insert myself)
 	{
-		mMyClient = Virtual1C();
-		mMyClient->mName = theOp->GetClientName();
-		mMyClient->mClientId = theOp->GetClientId();
-		mMyClient->mFlags = theOp->GetClientFlags();
-		mClientMap[mMyClient->mClientId] = mMyClient;
+		this->mMyClient = this->GetNewClientInfo();
+		this->mMyClient->mName = theOp->GetClientName();
+		this->mMyClient->mClientId = theOp->GetClientId();
+		this->mMyClient->mFlags = theOp->GetClientFlags();
+		this->mClientMap[this->mMyClient->mClientId] = this->mMyClient;
 	}
 	else
-		mMyClient = GetClient(mClientId);
+		this->mMyClient = this->GetClient(this->mClientId);
 
-	SyncClientMapWithIgnoreList();
+	this->SyncClientMapWithIgnoreList();
 }
 // FUNCTION: WON 0x6c1100
+// Applies a successful async-flags change to the connection's async message flags
 void SmartRoutingConnection::HandleSetClientFlags(RoutingSetClientFlagsOp *theOp)
 {
-	if(!(theOp->mStatus==0))
+	if(!(theOp->mStatus==WS_Success))
 		return;
 
 	unsigned long aMask = theOp->mAsyncMessageFlagMask;
 	unsigned long aNewFlags = theOp->mAsyncMessageFlags;
 
 	aNewFlags &= aMask;
-	mAsyncFlags &= ~aMask;
-	mAsyncFlags |= aNewFlags;
+	this->mAsyncFlags &= ~aMask;
+	this->mAsyncFlags |= aNewFlags;
 }
 // FUNCTION: WON 0x6c1130
+// Merges a fresh client list into the client map (drops gone clients, adds new, updates names and flags)
 void SmartRoutingConnection::HandleGetClientList(RoutingGetClientListOp *theOp)
 {
 	const RoutingClientMap &aMap = theOp->mClientMap;
 	RoutingClientMap::const_iterator aNewItr = aMap.begin();
-	RoutingClientMap::iterator anOldItr = mClientMap.begin();
+	RoutingClientMap::iterator anOldItr = this->mClientMap.begin();
 
-	while(anOldItr!=mClientMap.end() && aNewItr!=aMap.end())
+	while(anOldItr!=this->mClientMap.end() && aNewItr!=aMap.end())
 	{
 		if(anOldItr->first < aNewItr->first)
-			EraseClient(anOldItr++);
+			this->EraseClient(anOldItr++);
 		else 
 		{
 			if(aNewItr->first < anOldItr->first)
-				anOldItr = mClientMap.insert(anOldItr, *aNewItr);
+				anOldItr = this->mClientMap.insert(anOldItr, *aNewItr);
 			else
 			{
 				anOldItr->second->mName = aNewItr->second->mName;
@@ -235,20 +253,21 @@ void SmartRoutingConnection::HandleGetClientList(RoutingGetClientListOp *theOp)
 		}
 	}
 
-	while(anOldItr!=mClientMap.end())
-		EraseClient(anOldItr++);
+	while(anOldItr!=this->mClientMap.end())
+		this->EraseClient(anOldItr++);
 
 	while(aNewItr!=aMap.end())	
 	{
-		anOldItr = mClientMap.insert(anOldItr, *aNewItr);
+		anOldItr = this->mClientMap.insert(anOldItr, *aNewItr);
 		aNewItr++;
 	}
 
 
-	mMyClient = GetClient(mClientId);
-	SyncClientMapWithIgnoreList();
+	this->mMyClient = this->GetClient(this->mClientId);
+	this->SyncClientMapWithIgnoreList();
 }
 // FUNCTION: WON 0x6c1400
+// Takes each client's CD-key id from a read of the _KeyId data objects
 void SmartRoutingConnection::HandleReadDataObject(RoutingReadDataObjectOp *theOp)
 {
 	// return if not parsing client CDKey ID's
@@ -258,31 +277,34 @@ void SmartRoutingConnection::HandleReadDataObject(RoutingReadDataObjectOp *theOp
 	const RoutingReadDataObjectOp* aOp = theOp;
 	RoutingDataObjectList::const_iterator anItr = aOp->mDataObjects.begin();
 	for (; anItr != aOp->mDataObjects.end(); ++anItr)
-		SetClientCDKeyIdFromDataObject((*anItr)->mLinkId, (*anItr)->mData);
+		this->SetClientCDKeyIdFromDataObject((*anItr)->mLinkId, (*anItr)->mData);
 }
 // FUNCTION: WON 0x6c14e0
+// Takes a client's CD-key id from a new _KeyId data object
 void SmartRoutingConnection::HandleDataObjectCreated(RoutingDataObjectCreatedOp *theOp)
 {
 	if (theOp->mDataType != "_KeyId")
 		return;
 
-	SetClientCDKeyIdFromDataObject(theOp->GetLinkId(), theOp->GetData());
+	this->SetClientCDKeyIdFromDataObject(theOp->GetLinkId(), theOp->GetData());
 }
 // FUNCTION: WON 0x6c1560
+// Takes a client's CD-key id from a changed _KeyId data object
 void SmartRoutingConnection::HandleDataObjectModified(RoutingDataObjectModifiedOp *theOp)
 {
 	if (theOp->mDataType != "_KeyId")
 		return;
 
-	SetClientCDKeyIdFromDataObject(theOp->GetLinkId(), theOp->GetData());
+	this->SetClientCDKeyIdFromDataObject(theOp->GetLinkId(), theOp->GetData());
 }
 // FUNCTION: WON 0x6c15d0
+// Stores the CD-key id read from a _KeyId data object on the client (0 if the data is short)
 void SmartRoutingConnection::SetClientCDKeyIdFromDataObject(unsigned short theClientID, ByteBufferPtr theBuf)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
 	// Set the client key hash
-	RoutingClientInfoPtr theClientInfo = GetClient(theClientID);
+	RoutingClientInfoPtr theClientInfo = this->GetClient(theClientID);
 
 	if (theClientInfo.get() == NULL)
 		return;
@@ -303,22 +325,23 @@ void SmartRoutingConnection::SetClientCDKeyIdFromDataObject(unsigned short theCl
 	theSmartClientInfo->mAddress = anId;
 }
 // FUNCTION: WON 0x6c1770
+// Adds the joining client as a member of the group, creating or updating its client record
 void SmartRoutingConnection::HandleClientJoinedGroup(RoutingClientJoinedGroupOp *theOp)
 {
 	int aGroupId = theOp->GetGroupId();
-	RoutingGroupInfoPtr aGroup = GetGroup(aGroupId);
+	RoutingGroupInfoPtr aGroup = this->GetGroup(aGroupId);
 	if(aGroup.get()==NULL)
 		return;
 
-	RoutingMemberInfoPtr aMember = Virtual20();
+	RoutingMemberInfoPtr aMember = this->GetNewMemberInfo();
 	aMember->mClientId = theOp->GetClientId();
 	aMember->mFlags = theOp->GetMemberFlags();
 
-	SmartRoutingClientInfo *aClient = EnsureInClientMap(theOp->GetClientId());
+	SmartRoutingClientInfo *aClient = this->EnsureInClientMap(theOp->GetClientId());
 
 	aMember->mClientInfo = aClient;
 	if(!theOp->GetClientName().empty())
-		SetClientName(aClient, theOp->GetClientName());
+		this->SetClientName(aClient, theOp->GetClientName());
 
 	if(theOp->HasClientFlags())
 		aClient->mFlags = theOp->GetClientFlags();
@@ -328,13 +351,14 @@ void SmartRoutingConnection::HandleClientJoinedGroup(RoutingClientJoinedGroupOp 
 	if(aRet.second)
 		aClient->mNumGroups++;
 
-	InitHandlerVariables(aGroup.get(),aRet.first->second.get());
+	this->InitHandlerVariables(aGroup.get(),aRet.first->second.get());
 }
 // FUNCTION: WON 0x6c19f0
+// Removes the leaving member; drops the client too when it is in no group and only group clients are tracked
 void SmartRoutingConnection::HandleClientLeftGroup(RoutingClientLeftGroupOp *theOp)
 {
 	int aGroupId = theOp->GetGroupId();
-	RoutingGroupInfoPtr aGroup = GetGroup(aGroupId);
+	RoutingGroupInfoPtr aGroup = this->GetGroup(aGroupId);
 	if(aGroup.get()==NULL)
 		return;
 
@@ -345,28 +369,30 @@ void SmartRoutingConnection::HandleClientLeftGroup(RoutingClientLeftGroupOp *the
 	{
 		SmartRoutingClientInfo *aClient = (SmartRoutingClientInfo*)anItr->second->mClientInfo.get();
 		aClient->mNumGroups--;
-		if((mAsyncFlags & 2) && aClient->mClientId!=mClientId && aClient->mNumGroups==0)
-			EraseClient(aClient->mClientId);
+		if((this->mAsyncFlags & 2) && aClient->mClientId!=this->mClientId && aClient->mNumGroups==0)
+			this->EraseClient(aClient->mClientId);
 
-		InitHandlerVariables(aGroup.get(),anItr->second.get());
-		EraseMember(aGroup->mMembers, anItr);
+		this->InitHandlerVariables(aGroup.get(),anItr->second.get());
+		this->EraseMember(aGroup->mMembers, anItr);
 	}
 }
 // FUNCTION: WON 0x6c1b30
+// Updates a group's observer count and merges the fetched member list into it
 void SmartRoutingConnection::HandleGetMembersOfGroup(RoutingGetMembersOfGroupOp *theOp)
 {
 	int aGroupId = theOp->GetGroupId();
-	RoutingGroupInfoPtr aGroup = GetGroup(aGroupId);
+	RoutingGroupInfoPtr aGroup = this->GetGroup(aGroupId);
 	if(aGroup.get()==NULL)
 		return;
 
 	aGroup->mObserverCount = theOp->GetObserverCount();
-	SyncMemberMapWithClientMap(aGroup->mMembers, theOp->mMembers);
+	this->SyncMemberMapWithClientMap(aGroup->mMembers, theOp->mMembers);
 }
 // FUNCTION: WON 0x6c1bd0
+// Merges a new member list into a group's members, keeping client records and group counts in step
 void SmartRoutingConnection::SyncMemberMapWithClientMap(RoutingMemberMap &theOldMap, const RoutingMemberMap &theNewMap)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 	RoutingMemberMap::iterator anOldItr = theOldMap.begin();
 	RoutingMemberMap::const_iterator aNewItr = theNewMap.begin();
 
@@ -376,21 +402,21 @@ void SmartRoutingConnection::SyncMemberMapWithClientMap(RoutingMemberMap &theOld
 		{
 			SmartRoutingClientInfo *anOldClient = (SmartRoutingClientInfo*)anOldItr->second->mClientInfo.get();
 			anOldClient->mNumGroups--;
-			if((mAsyncFlags & 2) && anOldClient->mClientId!=mClientId && anOldClient->mNumGroups==0)
-				EraseClient(anOldClient->mClientId);
+			if((this->mAsyncFlags & 2) && anOldClient->mClientId!=this->mClientId && anOldClient->mNumGroups==0)
+				this->EraseClient(anOldClient->mClientId);
 			
-			EraseMember(theOldMap, anOldItr++);
+			this->EraseMember(theOldMap, anOldItr++);
 		}
 		else if(anOldItr==theOldMap.end() || aNewItr->first<anOldItr->first)
 		{
 			RoutingMemberInfo *aNewMember = aNewItr->second.get();
 
-			SmartRoutingClientInfo *anOldClient = EnsureInClientMap(aNewItr->first);
+			SmartRoutingClientInfo *anOldClient = this->EnsureInClientMap(aNewItr->first);
 			SmartRoutingClientInfo *aNewClient = (SmartRoutingClientInfo*)aNewMember->mClientInfo.get();
 			if(aNewClient!=NULL)
 			{
 				if(!aNewClient->mName.empty())
-					SetClientName(anOldClient, aNewClient->mName);
+					this->SetClientName(anOldClient, aNewClient->mName);
 
 				if(aNewClient->mFlags!=0)
 					anOldClient->mFlags = aNewClient->mFlags;
@@ -410,7 +436,7 @@ void SmartRoutingConnection::SyncMemberMapWithClientMap(RoutingMemberMap &theOld
 			{
 				RoutingClientInfo *anOldClient = anOldItr->second->mClientInfo.get();
 				if(!aNewClient->mName.empty())
-					SetClientName(anOldClient, aNewClient->mName);
+					this->SetClientName(anOldClient, aNewClient->mName);
 
 				if(aNewClient->mFlags!=0)
 					anOldClient->mFlags = aNewClient->mFlags;
@@ -422,21 +448,22 @@ void SmartRoutingConnection::SyncMemberMapWithClientMap(RoutingMemberMap &theOld
 	}
 }
 // FUNCTION: WON 0x6c1f20
+// Links every member of a new group to its shared client record, counting the group on each client
 void SmartRoutingConnection::SyncMemberMapWithClientMap(RoutingMemberMap &theMap)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 	RoutingMemberMap::iterator anItr = theMap.begin();
 
 	while(anItr!=theMap.end())
 	{
 		RoutingMemberInfo *aNewMember = anItr->second.get();
 
-		SmartRoutingClientInfo *anOldClient = EnsureInClientMap(anItr->first);
+		SmartRoutingClientInfo *anOldClient = this->EnsureInClientMap(anItr->first);
 		SmartRoutingClientInfo *aNewClient = (SmartRoutingClientInfo*)aNewMember->mClientInfo.get();
 		if(aNewClient!=NULL)
 		{
 			if(!aNewClient->mName.empty())
-				SetClientName(anOldClient, aNewClient->mName);
+				this->SetClientName(anOldClient, aNewClient->mName);
 
 			if(aNewClient->mFlags!=0)
 				anOldClient->mFlags = aNewClient->mFlags;
@@ -449,27 +476,28 @@ void SmartRoutingConnection::SyncMemberMapWithClientMap(RoutingMemberMap &theMap
 	}
 }
 // FUNCTION: WON 0x6c2070
+// Merges a fresh group list into the group map (drops gone groups, adds new, updates fields and members)
 void SmartRoutingConnection::HandleGetGroupList(RoutingGetGroupListOp *theOp)
 {
 	const RoutingGroupMap &aNewMap = theOp->GetGroupMap();
 	RoutingGroupMap::const_iterator aNewItr = aNewMap.begin();
-	RoutingGroupMap::iterator anOldItr = mGroupMap.begin();
+	RoutingGroupMap::iterator anOldItr = this->mGroupMap.begin();
 	RoutingMemberMap anEmptyMemberMap;
 	bool hasMembers = theOp->IncludeMembers();
 
-	while(anOldItr!=mGroupMap.end() || aNewItr!=aNewMap.end())
+	while(anOldItr!=this->mGroupMap.end() || aNewItr!=aNewMap.end())
 	{
-		if(aNewItr==aNewMap.end() || (anOldItr!=mGroupMap.end() && anOldItr->first<aNewItr->first))
+		if(aNewItr==aNewMap.end() || (anOldItr!=this->mGroupMap.end() && anOldItr->first<aNewItr->first))
 		{
-			SyncMemberMapWithClientMap(anOldItr->second->mMembers, anEmptyMemberMap);
-			EraseGroup(anOldItr++);
+			this->SyncMemberMapWithClientMap(anOldItr->second->mMembers, anEmptyMemberMap);
+			this->EraseGroup(anOldItr++);
 		}
-		else if(anOldItr==mGroupMap.end() || aNewItr->first<anOldItr->first)
+		else if(anOldItr==this->mGroupMap.end() || aNewItr->first<anOldItr->first)
 		{
 			if(hasMembers)
-				SyncMemberMapWithClientMap(aNewItr->second->mMembers);
+				this->SyncMemberMapWithClientMap(aNewItr->second->mMembers);
 			
-			mGroupMap.insert(*aNewItr);
+			this->mGroupMap.insert(*aNewItr);
 			++aNewItr;
 		}
 		else
@@ -487,7 +515,7 @@ void SmartRoutingConnection::HandleGetGroupList(RoutingGetGroupListOp *theOp)
 			if(hasMembers)
 			{
 				anOldGroup->mObserverCount = aNewGroup->mObserverCount;
-				SyncMemberMapWithClientMap(anOldGroup->mMembers, aNewGroup->mMembers);
+				this->SyncMemberMapWithClientMap(anOldGroup->mMembers, aNewGroup->mMembers);
 			}
 
 			anOldItr++;
@@ -496,88 +524,96 @@ void SmartRoutingConnection::HandleGetGroupList(RoutingGetGroupListOp *theOp)
 	}
 }
 // FUNCTION: WON 0x6c2430
+// After joining, makes the group the default and takes its member list when one came with the reply
 void SmartRoutingConnection::HandleJoinGroup(RoutingJoinGroupOp *theOp)
 {
-	if(!(theOp->mStatus==0))
+	if(!(theOp->mStatus==WS_Success))
 		return;
 
 	int aGroupId = theOp->GetGroupId();
-	if((theOp->mStatus==0))
-		mDefaultGroupId = aGroupId;
+	if((theOp->mStatus==WS_Success))
+		this->mDefaultGroupId = aGroupId;
 	
-	RoutingGroupInfoPtr aGroup = GetGroup(aGroupId);
+	RoutingGroupInfoPtr aGroup = this->GetGroup(aGroupId);
 	if(aGroup.get()==NULL)
 		return;
 
 	if(theOp->GetJoinFlags()&1)
-		SyncMemberMapWithClientMap(aGroup->mMembers, theOp->mMemberMap);
+		this->SyncMemberMapWithClientMap(aGroup->mMembers, theOp->mMemberMap);
 
-	InitHandlerVariables(aGroup.get());
+	this->InitHandlerVariables(aGroup.get());
 }
 // FUNCTION: WON 0x006c24f0
+// Stores a client's new flags
 void SmartRoutingConnection::HandleClientFlagsChanged(RoutingClientFlagsChangedOp* op)
 {
     int anId=op->GetClientId();
-    RoutingClientInfoPtr client=GetClient(anId);
+    RoutingClientInfoPtr client=this->GetClient(anId);
     if(client.get()==NULL) return;
     client->mFlags=op->GetClientFlags();
-    InitHandlerVariables(client.get());
+    this->InitHandlerVariables(client.get());
 }
 // FUNCTION: WON 0x6c2590
+// Adds the new client to the client map, applying the ignore list to its name
 void SmartRoutingConnection::HandleClientJoinedServer(RoutingClientJoinedServerOp *theOp)
 {
 	RoutingClientInfoPtr aClient = theOp->mClientInfo;
-	SetClientName(aClient.get(), theOp->GetClientName());
-	mClientMap[aClient->mClientId] = aClient;
+	this->SetClientName(aClient.get(), theOp->GetClientName());
+	this->mClientMap[aClient->mClientId] = aClient;
 
-	InitHandlerVariables(aClient.get());
+	this->InitHandlerVariables(aClient.get());
 }
 // FUNCTION: WON 0x6c26c0
+// Removes the departed client from the client map
 void SmartRoutingConnection::HandleClientLeftServer(RoutingClientLeftServerOp *theOp)
 {
 	int aClientId = theOp->mClientId;
 
-	RoutingClientMap::iterator anItr = mClientMap.find(aClientId);
-	if(anItr==mClientMap.end())
+	RoutingClientMap::iterator anItr = this->mClientMap.find(aClientId);
+	if(anItr==this->mClientMap.end())
 		return;
 
-	InitHandlerVariables(anItr->second.get());
-	EraseClient(anItr);
+	this->InitHandlerVariables(anItr->second.get());
+	this->EraseClient(anItr);
 }
 // FUNCTION: WON 0x6c2740
+// Re-marks every known client as ignored or not from the ignore list
 void SmartRoutingConnection::SyncClientMapWithIgnoreList()
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
-	RoutingClientMap::iterator aClientItr = mClientMap.begin();
-	while(aClientItr!=mClientMap.end())
+	RoutingClientMap::iterator aClientItr = this->mClientMap.begin();
+	while(aClientItr!=this->mClientMap.end())
 	{
-		((SmartRoutingClientInfo*)aClientItr->second.get())->mIgnored = (mIgnoreSet.find(aClientItr->second->mName)!=mIgnoreSet.end());
+		((SmartRoutingClientInfo*)aClientItr->second.get())->mIgnored = (this->mIgnoreSet.find(aClientItr->second->mName)!=this->mIgnoreSet.end());
 		++aClientItr;
 	}
 }
 // FUNCTION: WON 0x6c2860
+// Stores a group's new captain
 void SmartRoutingConnection::HandleGroupCaptainChanged(RoutingGroupCaptainChangedOp* op)
 {
     int anId=op->GetGroupId();
-    RoutingGroupInfoPtr group=GetGroup(anId);
+    RoutingGroupInfoPtr group=this->GetGroup(anId);
     if(group.get()==NULL) return;
     group->mCaptainId=op->GetCaptainId();
-    InitHandlerVariables(group.get());
+    this->InitHandlerVariables(group.get());
 }
 // FUNCTION: WON 0x6c2900
+// Stores a group's new player limit
 void SmartRoutingConnection::HandleGroupMaxPlayersChanged(RoutingGroupMaxPlayersChangedOp* op)
 {
     int anId=op->GetGroupId();
-    RoutingGroupInfoPtr group=GetGroup(anId);
+    RoutingGroupInfoPtr group=this->GetGroup(anId);
     if(group.get()==NULL) return;
     group->mMaxClients=op->GetMaxPlayers();
-    InitHandlerVariables(group.get());
+    this->InitHandlerVariables(group.get());
 }
 // FUNCTION: WON 0x6c29a0
+// Adds the new group (no captain yet) to the group map
 void SmartRoutingConnection::HandleGroupCreated(RoutingGroupCreatedOp *theOp)
 {
-	RoutingGroupInfoPtr aGroup = Virtual24();
+	RoutingGroupInfoPtr aGroup = this->GetNewGroupInfo();
 	aGroup->mCaptainId = 0xffff;
 	aGroup->mFlags = theOp->GetFlags();
 	aGroup->mAsyncFlags = theOp->GetAsyncFlags();
@@ -585,65 +621,70 @@ void SmartRoutingConnection::HandleGroupCreated(RoutingGroupCreatedOp *theOp)
 	aGroup->mMaxClients = theOp->GetMaxClients();
 	aGroup->mName = theOp->GetName();
 
-	mGroupMap[aGroup->mId] = aGroup;
-	InitHandlerVariables(aGroup.get());
+	this->mGroupMap[aGroup->mId] = aGroup;
+	this->InitHandlerVariables(aGroup.get());
 }
 // FUNCTION: WON 0x6c2b30
+// Removes the deleted group from the group map
 void SmartRoutingConnection::HandleGroupDeleted(RoutingGroupDeletedOp *theOp)
 {
 	int aGroupId = theOp->mGroupId;
-	RoutingGroupMap::iterator anItr = mGroupMap.find(aGroupId);
-	if(anItr==mGroupMap.end())
+	RoutingGroupMap::iterator anItr = this->mGroupMap.find(aGroupId);
+	if(anItr==this->mGroupMap.end())
 		return;
 		
-	InitHandlerVariables(anItr->second.get());
-	EraseGroup(anItr);
+	this->InitHandlerVariables(anItr->second.get());
+	this->EraseGroup(anItr);
 }
 // FUNCTION: WON 0x6c2bb0
+// Stores a group's new flags (its async flags are not updated)
 void SmartRoutingConnection::HandleGroupFlagsChanged(RoutingGroupFlagsChangedOp* op)
 {
     int anId=op->GetGroupId();
-    RoutingGroupInfoPtr group=GetGroup(anId);
+    RoutingGroupInfoPtr group=this->GetGroup(anId);
     if(group.get()==NULL) return;
     group->mFlags=op->GetGroupFlags();
-    InitHandlerVariables(group.get());
+    this->InitHandlerVariables(group.get());
 }
 // FUNCTION: WON 0x6c2c50
+// Stores a group's new name
 void SmartRoutingConnection::HandleGroupNameChanged(RoutingGroupNameChangedOp* op)
 {
     int anId=op->GetGroupId();
-    RoutingGroupInfoPtr group=GetGroup(anId);
+    RoutingGroupInfoPtr group=this->GetGroup(anId);
     if(group.get()==NULL) return;
     group->mName=op->mName;
-    InitHandlerVariables(group.get());
+    this->InitHandlerVariables(group.get());
 }
 // FUNCTION: WON 0x6c2d00
+// Stores a group's new observer count
 void SmartRoutingConnection::HandleGroupObserverCount(RoutingGroupObserverCountOp* op)
 {
     int anId=op->GetGroupId();
-    RoutingGroupInfoPtr group=GetGroup(anId);
+    RoutingGroupInfoPtr group=this->GetGroup(anId);
     if(group.get()==NULL) return;
     group->mObserverCount=op->GetObserverCount();
-    InitHandlerVariables(group.get());
+    this->InitHandlerVariables(group.get());
 }
 // FUNCTION: WON 0x006c2da0
+// Stores a group member's new member flags
 void SmartRoutingConnection::HandleMemberFlagsChanged(RoutingMemberFlagsChangedOp* op)
 {
     int anId=op->GetGroupId();
-    RoutingGroupInfoPtr group=GetGroup(anId);
+    RoutingGroupInfoPtr group=this->GetGroup(anId);
     if(group.get()==NULL) return;
     int aClientId=op->GetClientId();
     RoutingMemberMap::iterator i=group->mMembers.find(aClientId);
     if(i==group->mMembers.end()) return;
     i->second->mFlags=op->GetMemberFlags();
-    InitHandlerVariables(group.get(),i->second.get());
+    this->InitHandlerVariables(group.get(),i->second.get());
 }
 
-// Compiler-generated and header-inline functions this unit emits:
 // FUNCTION: WON 0x6c2ec0
+// Drops the op's completion when its sender is ignored, else records the sender as the handled client
 void SmartRoutingConnection::CheckIgnore(RoutingOp *theOp, unsigned short theSenderId)
 {
-	RoutingClientInfoPtr aClient = GetClient(theSenderId);
+	RoutingClientInfoPtr aClient = this->GetClient(theSenderId);
 	SmartRoutingClientInfo *aSmartClient = (SmartRoutingClientInfo*)aClient.get();
 	if(aSmartClient==NULL)
 		return;
@@ -651,53 +692,55 @@ void SmartRoutingConnection::CheckIgnore(RoutingOp *theOp, unsigned short theSen
 	if(aSmartClient->mIgnored)
 		theOp->mCompletion = NULL; // swallow the completion
 	else
-		InitHandlerVariables(aSmartClient);	
+		this->InitHandlerVariables(aSmartClient);	
 }
 // FUNCTION: WON 0x006c2f80
+// Suppresses group invitations from ignored clients
 void SmartRoutingConnection::HandleGroupInvitation(RoutingGroupInvitationOp *theOp)
 {
-	CheckIgnore(theOp, theOp->mClientId);
+	this->CheckIgnore(theOp, theOp->mClientId);
 }
 
 // (same code as HandlePeerChat; the linker folded the two at 0x006c2fa0)
 void SmartRoutingConnection::HandleGroupJoinAttempt(RoutingGroupJoinAttemptOp *theOp)
 {
-	CheckIgnore(theOp, theOp->mClientId);
+	this->CheckIgnore(theOp, theOp->mClientId);
 }
 
-// SUPPORT-ONLY: EXE 0x006fa500 (true SDK empty method, naturally folded original, zeroquota)
+// Same body as 0x6fa500 in the original (an empty method folded by the linker)
 void SmartRoutingConnection::HandleLeaveGroup(RoutingLeaveGroupOp *)
 {
 	// erase group from map or erase member list?
 }
 
-// SUPPORT-ONLY: EXE 0x006fa500 (true SDK empty method, naturally folded original, zeroquota)
+// Same body as 0x6fa500 in the original (an empty method folded by the linker)
 void SmartRoutingConnection::HandleDataObjectDeleted(RoutingDataObjectDeletedOp	*theOp)
 {
 	// client will be removed from the client map, no special processing needed
 }
 
 
-// Compiler-generated and header-inline functions this unit emits:
 // FUNCTION: WON 0x006c2fa0
+// Suppresses chat from ignored clients
 void SmartRoutingConnection::HandlePeerChat(RoutingPeerChatOp *theOp)
 {
-	CheckIgnore(theOp, theOp->mClientId);
+	this->CheckIgnore(theOp, theOp->mClientId);
 }
 // FUNCTION: WON 0x006c2fc0
+// Sets the path of the ignore list file
 void SmartRoutingConnection::SetProductName(const std::string &thePath)
 {
-	AutoCrit aCrit(mDataCrit);
-	mIgnoreFilePath = thePath;
+	AutoCrit aCrit(this->mDataCrit);
+	this->mIgnoreFilePath = thePath;
 }
 
-// Compiler-generated and header-inline functions this unit emits:
 // FUNCTION: WON 0x6c3110
+// Adds the names from the ignore list file (NUL-separated wide strings) to the ignore set
 void SmartRoutingConnection::LoadIgnoreSet()
 {
-    AutoCrit crit(mDataCrit);
-    if(mIgnoreFilePath.empty()) return;
-    FILE* file=fopen(mIgnoreFilePath.c_str(),"rb");
+    AutoCrit crit(this->mDataCrit);
+    if(this->mIgnoreFilePath.empty()) return;
+    FILE* file=fopen(this->mIgnoreFilePath.c_str(),"rb");
     if(file==NULL) return;
     std::wstring name;
     while(!feof(file)) {
@@ -705,21 +748,22 @@ void SmartRoutingConnection::LoadIgnoreSet()
         if(fread(&ch,sizeof(wchar_t),1,file)!=1) break;
         if(ch!=0) name+=ch;
         else {
-            mIgnoreSet.insert(name);
+            this->mIgnoreSet.insert(name);
             name.erase();
         }
     }
     fclose(file);
 }
 // FUNCTION: WON 0x6c3460
+// Writes the ignore set to the ignore list file as NUL-terminated wide strings
 void SmartRoutingConnection::SaveIgnoreSet()
 {
-    AutoCrit crit(mDataCrit);
-    if(mIgnoreFilePath.empty()) return;
-    FILE* file=fopen(mIgnoreFilePath.c_str(),"wb");
+    AutoCrit crit(this->mDataCrit);
+    if(this->mIgnoreFilePath.empty()) return;
+    FILE* file=fopen(this->mIgnoreFilePath.c_str(),"wb");
     if(file==NULL) return;
-    IgnoreSet::iterator i=mIgnoreSet.begin();
-    while(i!=mIgnoreSet.end()) {
+    IgnoreSet::iterator i=this->mIgnoreSet.begin();
+    while(i!=this->mIgnoreSet.end()) {
         fwrite(i->c_str(),sizeof(wchar_t),i->length(),file);
         wchar_t end=0;
         fwrite(&end,sizeof(wchar_t),1,file);
@@ -728,6 +772,7 @@ void SmartRoutingConnection::SaveIgnoreSet()
     fclose(file);
 }
 // FUNCTION: WON 0x6c3730
+// Compares a typed name with a client name ignoring case; true on an exact match, partial set on a prefix match
 static bool RoutingNamesMatch(const std::wstring& query,const std::wstring& name,bool& partial)
 {
     partial=false;
@@ -741,12 +786,13 @@ static bool RoutingNamesMatch(const std::wstring& query,const std::wstring& name
     return query.length()==name.length();
 }
 // FUNCTION: WON 0x6c35a0
+// Finds the client a typed name refers to: exact, unique prefix, ambiguous or not found
 SmartRoutingConnection::MatchResult SmartRoutingConnection::FindClient(
     const std::wstring& inName,RoutingClientInfoPtr& outClient)
 {
-    AutoCrit crit(mDataCrit);
+    AutoCrit crit(this->mDataCrit);
     MatchResult result=MatchResult_NotFound;
-    for(RoutingClientMap::iterator i=mClientMap.begin();i!=mClientMap.end();++i) {
+    for(RoutingClientMap::iterator i=this->mClientMap.begin();i!=this->mClientMap.end();++i) {
         const std::wstring& aName=i->second->mName;
         bool partial=false;
         if(RoutingNamesMatch(inName,aName,partial)) {
@@ -763,70 +809,77 @@ SmartRoutingConnection::MatchResult SmartRoutingConnection::FindClient(
     return result;
 }
 // FUNCTION: WON 0x006c37d0
+// Ignores or unignores a client by name and saves the ignore list
 void SmartRoutingConnection::IgnoreClient(RoutingClientInfo *theClient, bool on)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
-	((SmartRoutingClientInfo*)theClient)->mIgnored = on;
+	static_cast<SmartRoutingClientInfo*>(theClient)->mIgnored = on;
 	if(on)
-		mIgnoreSet.insert(theClient->mName);
+		this->mIgnoreSet.insert(theClient->mName);
 	else
-		mIgnoreSet.erase(theClient->mName);
+		this->mIgnoreSet.erase(theClient->mName);
 
-	SaveIgnoreSet();
+	this->SaveIgnoreSet();
 }
 // FUNCTION: WON 0x006c3970
+// Maps a chat command word (case-insensitive) to a command
 void SmartRoutingConnection::AddCommandString(const std::wstring& inText, InputCommand inCommand)
 {
-    AutoCrit crit(mDataCrit);
-    mCommandStringMap[WStringToUpperCase(inText)] = inCommand;
+    AutoCrit crit(this->mDataCrit);
+    this->mCommandStringMap[WStringToUpperCase(inText)] = inCommand;
 }
 // FUNCTION: WON 0x6c3a50
+// Registers the user chat commands (whisper, emote, ignore, away)
 void SmartRoutingConnection::AddDefaultUserCommandStrings()
 {
-    AutoCrit crit(mDataCrit);
-    AddCommandString(L"W", InputCommand_Whisper);
-    AddCommandString(L"WHISPER", InputCommand_Whisper);
-    AddCommandString(L"ME", InputCommand_Emote);
-    AddCommandString(L"EMOTE", InputCommand_Emote);
-    AddCommandString(L"I", InputCommand_Ignore);
-    AddCommandString(L"IGNORE", InputCommand_Ignore);
-    AddCommandString(L"AWAY", InputCommand_Away);
-    AddCommandString(L"AFK", InputCommand_Away);
+    AutoCrit crit(this->mDataCrit);
+    this->AddCommandString(L"W", InputCommand_Whisper);
+    this->AddCommandString(L"WHISPER", InputCommand_Whisper);
+    this->AddCommandString(L"ME", InputCommand_Emote);
+    this->AddCommandString(L"EMOTE", InputCommand_Emote);
+    this->AddCommandString(L"I", InputCommand_Ignore);
+    this->AddCommandString(L"IGNORE", InputCommand_Ignore);
+    this->AddCommandString(L"AWAY", InputCommand_Away);
+    this->AddCommandString(L"AFK", InputCommand_Away);
 }
 // FUNCTION: WON 0x6c3d90
+// Registers the moderator chat commands (moderator mode, mute, ban, unmute, server-wide forms)
 void SmartRoutingConnection::AddDefaultModeratorCommandStrings()
 {
-    AutoCrit crit(mDataCrit);
-    AddCommandString(L"MOD", InputCommand_BecomeModerator);
-    AddCommandString(L"SMUTE", InputCommand_ServerMute);
-    AddCommandString(L"SBAN", InputCommand_ServerBan);
-    AddCommandString(L"MUTE", InputCommand_Mute);
-    AddCommandString(L"BAN", InputCommand_Ban);
-    AddCommandString(L"UNMUTE", InputCommand_Unmute);
-    AddCommandString(L"SUNMUTE", InputCommand_ServerUnmute);
+    AutoCrit crit(this->mDataCrit);
+    this->AddCommandString(L"MOD", InputCommand_BecomeModerator);
+    this->AddCommandString(L"SMUTE", InputCommand_ServerMute);
+    this->AddCommandString(L"SBAN", InputCommand_ServerBan);
+    this->AddCommandString(L"MUTE", InputCommand_Mute);
+    this->AddCommandString(L"BAN", InputCommand_Ban);
+    this->AddCommandString(L"UNMUTE", InputCommand_Unmute);
+    this->AddCommandString(L"SUNMUTE", InputCommand_ServerUnmute);
 }
 // FUNCTION: WON 0x006c40a0
+// Sets whether chat commands accept a unique name prefix or only exact names
 void SmartRoutingConnection::SetAllowPartialNameMatch(bool inAllow)
 {
-    AutoCrit crit(mDataCrit);
+    AutoCrit crit(this->mDataCrit);
     if(inAllow)
-        mMatchTolerance = MatchResult_Partial;
+        this->mMatchTolerance = MatchResult_Partial;
     else
-        mMatchTolerance = MatchResult_Exact;
+        this->mMatchTolerance = MatchResult_Exact;
 }
 // FUNCTION: WON 0x006c40f0
+// Sets whether mute/ban commands apply server-wide
 void SmartRoutingConnection::SetServerWideCommands(bool inOn)
 {
-    AutoCrit crit(mDataCrit);
-    mServerWideCommands = inOn;
+    AutoCrit crit(this->mDataCrit);
+    this->mServerWideCommands = inOn;
 }
 // FUNCTION: WON 0x006c4120
-void SmartRoutingConnection::Virtual08()
+// Forgets this client's id and record, then closes the routing connection
+void SmartRoutingConnection::CloseHook()
 {
-    mClientId=0;
-    mMyClient=NULL;
-    RoutingConnection::Virtual08();
+    this->mClientId=0;
+    this->mMyClient=NULL;
+    RoutingConnection::CloseHook();
 }
 
 // Compiler-generated and header-inline functions this unit emits:

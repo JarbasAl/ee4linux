@@ -1,4 +1,4 @@
-// Actual Table display sizing, selection autoscroll and viewport painting.
+// Table display: content sizing, selection autoscroll, painting, anchors and text search (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,127 +12,137 @@
 #include "ee/wonapi/WONLobbyTextSegment.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00710450
-bool Table::Virtual44(int theDelta)
+// While a mouse selection is in progress and the mouse is outside the view, scrolls toward it and extends
+// the selection; returns whether the timer is still needed
+bool Table::TimerEvent(int theDelta)
 {
-	bool needTimer = ScrollArea::Virtual44(theDelta);
-	needTimer = needTimer || mSelecting;
+	bool needTimer = ScrollArea::TimerEvent(theDelta);
+	needTimer = needTimer || this->mSelecting;
 
-	if(!mSelecting)
+	if(!this->mSelecting)
 		return needTimer;
 
 	int x,y;
-	GetMousePos(x,y);
-	if(x>=0 && x<=Width() && y>=0 && y<=Height())
+	this->GetMousePos(x,y);
+	if(x>=0 && x<=this->Width() && y>=0 && y<=this->Height())
 		return true;
 
-	if(y>Height())
+	if(y>this->Height())
 	{
-		int aDelta = y-Height();
-		mVertOffset+=aDelta;
+		int aDelta = y-this->Height();
+		this->mVertOffset+=aDelta;
 	}
 	else if(y<0)
 	{
 		int aDelta = -y;
-		mVertOffset-=aDelta;
+		this->mVertOffset-=aDelta;
 	}
 
-	if(x>Width())
-		mHorzOffset+=(x-Width());
+	if(x>this->Width())
+		this->mHorzOffset+=(x-this->Width());
 	else if(x<0)
-		mHorzOffset+=x;
+		this->mHorzOffset+=x;
 		
-	VirtualCC(false);
-	Virtual38(x,y);
+	this->AdjustPosition(false);
+	this->MouseDrag(x,y);
 
 	return true;
 }
 // FUNCTION: WON 0x00710500
+// Replaces the table's contents, detaching the old ones, clearing the selection and recomputing the size
 void Table::SetContents(LineSegment *theContents)
 {
-	mViewport->Reset(); // this will end any popup being done by the contents
-	if(mContents.get()!=NULL)
+	this->mViewport->Reset(); // this will end any popup being done by the contents
+	if(this->mContents.get()!=NULL)
 	{
 		LineSegment::mTableContext = this;
 		LineSegment::mCounter = 0;
-		mContents->SetViewport(NULL,0,0);  // this will set the parents to null of any component line segment
+		this->mContents->SetViewport(NULL,0,0);  // this will set the parents to null of any component line segment
 	}
 
-	mContents = theContents;
-	mMouseSegment = NULL;
-	mStartSelSegment = mEndSelSegment = -1;
-	mSelecting = false;
-	SetMaxWidth();
+	this->mContents = theContents;
+	this->mMouseSegment = NULL;
+	this->mStartSelSegment = this->mEndSelSegment = -1;
+	this->mSelecting = false;
+	this->SetMaxWidth();
 }
 // FUNCTION: WON 0x007105b0
+// Lays the contents out to the view width, rebuilds the anchors and total size, and optionally clamps the
+// scroll position
 void Table::SetMaxWidth(bool adjustPosition)
 {
-	mMouseSegment = NULL;
-	mAnchorMap.clear();
-	if(mContents.get()!=NULL)
+	this->mMouseSegment = NULL;
+	this->mAnchorMap.clear();
+	if(this->mContents.get()!=NULL)
 	{
-		mContents->SetMaxWidth(mScrollArea.width);
+		this->mContents->SetMaxWidth(this->mScrollArea.width);
 
 		LineSegment::mTableContext = this;
 		LineSegment::mCounter = 0;
-		mContents->SetViewport(GetViewport(),0,0);
+		this->mContents->SetViewport(this->GetViewport(),0,0);
 
-		mL0A4 = mContents->GetWidth();
-		mTotalHeight = mContents->GetHeight();
+		this->mTotalWidth = this->mContents->GetWidth();
+		this->mTotalHeight = this->mContents->GetHeight();
 	}
 	else
 	{
-		mL0A4 = mTotalHeight = 0;
+		this->mTotalWidth = this->mTotalHeight = 0;
 	}
 	
 	if(adjustPosition)
-		VirtualCC(false);
+		this->AdjustPosition(false);
 }
 // FUNCTION: WON 0x00710660
-void Table::VirtualD0()
+// Lays the contents out again for the new view size, keeping the scroll position
+void Table::ScrollSizeChanged()
 {
-	SetMaxWidth(false);
+	this->SetMaxWidth(false);
 }
 // FUNCTION: WON 0x00710670
-void Table::VirtualD4(Graphics &g)
+// Paints the visible part of the contents with the current selection highlighted
+void Table::ScrollPaint(Graphics &g)
 {
-	if(mContents.get()==NULL)
+	if(this->mContents.get()==NULL)
 		return;
 
 	ElementPaintInfo anInfo;
-	anInfo.mClipX = mHorzOffset;
-	anInfo.mClipY = mVertOffset;
-	anInfo.mClipWidth = mScrollArea.width;
-	anInfo.mClipHeight = mScrollArea.height;
-	anInfo.mStartSelSegment = mStartSelSegment;
-	anInfo.mEndSelSegment = mEndSelSegment;
-	anInfo.mStartSelSegmentPos = mStartSelSegmentPos;
-	anInfo.mEndSelSegmentPos = mEndSelSegmentPos;
+	anInfo.mClipX = this->mHorzOffset;
+	anInfo.mClipY = this->mVertOffset;
+	anInfo.mClipWidth = this->mScrollArea.width;
+	anInfo.mClipHeight = this->mScrollArea.height;
+	anInfo.mStartSelSegment = this->mStartSelSegment;
+	anInfo.mEndSelSegment = this->mEndSelSegment;
+	anInfo.mStartSelSegmentPos = this->mStartSelSegmentPos;
+	anInfo.mEndSelSegmentPos = this->mEndSelSegmentPos;
 
-	mContents->Paint(g,0,0,anInfo);
+	this->mContents->Paint(g,0,0,anInfo);
 }
 // FUNCTION: WON 0x00710700
+// Records a named anchor position in the contents (replacing one of the same name)
 void Table::AddAnchor(const GUIString &theName, int x, int y)
 {
-	mAnchorMap[theName] = AnchorCoordinate(x,y);
+	this->mAnchorMap[theName] = AnchorCoordinate(x,y);
 }
 // FUNCTION: WON 0x00710730
+// Scrolls vertically to a named anchor; returns false when there is no such anchor
 bool Table::GotoAnchor(const GUIString &theName)
 {
-	AnchorMap::iterator anItr = mAnchorMap.find(theName);
-	if(anItr==mAnchorMap.end())
+	AnchorMap::iterator anItr = this->mAnchorMap.find(theName);
+	if(anItr==this->mAnchorMap.end())
 		return false;
 
 //	mHorzOffset = anItr->second.mx;
-	mVertOffset = anItr->second.my;
-	VirtualCC(false);
+	this->mVertOffset = anItr->second.my;
+	this->AdjustPosition(false);
 	return true;
 }
 
-// Compiler-generated and header-inline functions this unit emits:
 // FUNCTION: WON 0x007107b0
+// Finds the next or previous occurrence of a string from the current selection, selects it and scrolls it
+// into view when it lies outside the view or within 20 pixels of an edge; returns whether it was found
 bool Table::FindStr(const GUIString &theStr, bool next, bool caseSensitive)
 {
-	if(mContents.get()==NULL)
+	if(this->mContents.get()==NULL)
 		return false;
 
 	ElementFindInfo anInfo;
@@ -142,7 +152,7 @@ bool Table::FindStr(const GUIString &theStr, bool next, bool caseSensitive)
 	anInfo.mCaseSensitive = caseSensitive;
 	anInfo.mFindPrev = !next;
 
-	bool haveSel = mStartSelSegment>=0 && (mEndSelSegment>mStartSelSegment || mEndSelSegmentPos>mStartSelSegmentPos);
+	bool haveSel = this->mStartSelSegment>=0 && (this->mEndSelSegment>this->mStartSelSegment || this->mEndSelSegmentPos>this->mStartSelSegmentPos);
 	if(next)
 	{
 		anInfo.mEndSelSegment = 0x7ffffff;
@@ -154,8 +164,8 @@ bool Table::FindStr(const GUIString &theStr, bool next, bool caseSensitive)
 		}
 		else
 		{
-			anInfo.mStartSelSegment = mStartSelSegment;
-			anInfo.mStartSelSegmentPos = mStartSelSegmentPos+1;
+			anInfo.mStartSelSegment = this->mStartSelSegment;
+			anInfo.mStartSelSegmentPos = this->mStartSelSegmentPos+1;
 		}
 	}
 	else // find Prev
@@ -169,8 +179,8 @@ bool Table::FindStr(const GUIString &theStr, bool next, bool caseSensitive)
 		}
 		else
 		{
-			anInfo.mEndSelSegment = mEndSelSegment;
-			anInfo.mEndSelSegmentPos = mEndSelSegmentPos-1;
+			anInfo.mEndSelSegment = this->mEndSelSegment;
+			anInfo.mEndSelSegmentPos = this->mEndSelSegmentPos-1;
 		}
 	}
 
@@ -179,22 +189,22 @@ bool Table::FindStr(const GUIString &theStr, bool next, bool caseSensitive)
 	anInfo.mFoundX = 0;
 	anInfo.mFoundY = 0;
 
-	if(!mContents->FindStr(anInfo))
+	if(!this->mContents->FindStr(anInfo))
 		return false;
 
-	mStartSelSegment = anInfo.mFoundStartSegment;
-	mEndSelSegment = anInfo.mFoundEndSegment;
-	mStartSelSegmentPos = anInfo.mFoundStartChar;
-	mEndSelSegmentPos = anInfo.mFoundEndChar;
-	int horzOffset = mHorzOffset;
-	int vertOffset = mVertOffset;
-	if(anInfo.mFoundX > horzOffset + mScrollArea.width-20 || anInfo.mFoundX<horzOffset+20)
+	this->mStartSelSegment = anInfo.mFoundStartSegment;
+	this->mEndSelSegment = anInfo.mFoundEndSegment;
+	this->mStartSelSegmentPos = anInfo.mFoundStartChar;
+	this->mEndSelSegmentPos = anInfo.mFoundEndChar;
+	int horzOffset = this->mHorzOffset;
+	int vertOffset = this->mVertOffset;
+	if(anInfo.mFoundX > horzOffset + this->mScrollArea.width-20 || anInfo.mFoundX<horzOffset+20)
 		horzOffset = anInfo.mFoundX;
-	if(anInfo.mFoundY > vertOffset + mScrollArea.height-20 || anInfo.mFoundY<vertOffset+20)
+	if(anInfo.mFoundY > vertOffset + this->mScrollArea.height-20 || anInfo.mFoundY<vertOffset+20)
 		vertOffset = anInfo.mFoundY;
 
-	SetOffsets(horzOffset,vertOffset);
-	Invalidate();
+	this->SetOffsets(horzOffset,vertOffset);
+	this->Invalidate();
 	return true;
 }
 // TEMPLATE: WON 0x0071b510

@@ -1,4 +1,5 @@
-// Table geometry, spanning, painting, selection and search on original-owned records.
+// Table element (HTML-style table in a text view): column and row sizing, cell spans, painting, selection text
+// and search (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -17,6 +18,8 @@ namespace WONAPI {
 
 // FUNCTION: WON 0x0070dec0
 // FUNCTION: WON 0x0070df10
+// Returns the info of the cell in a column of a row record, or NULL when out of range; the second overload
+// below (0x0070dec0 and 0x0070df10 are the two) looks the row up by index
 TableElement::CellInfo* TableElement::GetCellInfoAt(RowInfo &theInfo, int theCol)
 {
 	if(theCol<0 || theCol>=theInfo.mRow.size())
@@ -28,10 +31,10 @@ TableElement::CellInfo* TableElement::GetCellInfoAt(RowInfo &theInfo, int theCol
 
 TableElement::CellInfo* TableElement::GetCellInfoAt(int theRow, int theCol)
 {
-	if(theRow<0 || theRow>=mRowVector.size() || theCol<0 || theCol>=mColumnVector.size())
+	if(theRow<0 || theRow>=this->mRowVector.size() || theCol<0 || theCol>=this->mColumnVector.size())
 		return NULL;
 	
-	RowInfo &anInfo = mRowVector[theRow];
+	RowInfo &anInfo = this->mRowVector[theRow];
 	if(theCol>=anInfo.mRow.size())
 		return NULL;
 
@@ -40,9 +43,10 @@ TableElement::CellInfo* TableElement::GetCellInfoAt(int theRow, int theCol)
 
 
 // FUNCTION: WON 0x0070dfc0
+// Returns the contents of the cell at a row and column, or NULL (an overload taking a row record follows)
 MultiLineElement* TableElement::GetCellAt(int theRow, int theCol)
 {
-	CellInfo *anInfo = GetCellInfoAt(theRow, theCol);
+	CellInfo *anInfo = this->GetCellInfoAt(theRow, theCol);
 	if(anInfo==NULL)
 		return NULL;
 
@@ -52,7 +56,7 @@ MultiLineElement* TableElement::GetCellAt(int theRow, int theCol)
 
 MultiLineElement* TableElement::GetCellAt(RowInfo &theInfo, int theCol)
 {
-	CellInfo *anInfo = GetCellInfoAt(theInfo,theCol);
+	CellInfo *anInfo = this->GetCellInfoAt(theInfo,theCol);
 	if(anInfo==NULL)
 		return NULL;
 	else
@@ -61,43 +65,47 @@ MultiLineElement* TableElement::GetCellAt(RowInfo &theInfo, int theCol)
 
 
 // FUNCTION: WON 0x0070e320
+// Returns the index of the row containing a vertical position (the last row starting above it)
 int TableElement::FindRowAt(int theYPos)
 {
-	mSearchRow.my = theYPos;
-	RowVector::iterator anItr = std::lower_bound(mRowVector.begin(), mRowVector.end(), mSearchRow, RowSearchPred());
-	if(anItr==mRowVector.end() || anItr->my>theYPos)
+	this->mSearchRow.my = theYPos;
+	RowVector::iterator anItr = std::lower_bound(this->mRowVector.begin(), this->mRowVector.end(), this->mSearchRow, RowSearchPred());
+	if(anItr==this->mRowVector.end() || anItr->my>theYPos)
 	{
-		if(anItr!=mRowVector.begin())
+		if(anItr!=this->mRowVector.begin())
 			--anItr;
 	}
 
-	return anItr - mRowVector.begin();
+	return anItr - this->mRowVector.begin();
 }
 
 
 // FUNCTION: WON 0x0070eca0
+// Returns the table's fixed width if set, otherwise its minimum width (computed on first use)
 int TableElement::GetMinWidth() 
 { 
-	if(mMinWidth==0)
-		CalcMinMaxWidths();
+	if(this->mMinWidth==0)
+		this->CalcMinMaxWidths();
 
-	if(mWidthSpec>0)
-		return mWidthSpec;
+	if(this->mWidthSpec>0)
+		return this->mWidthSpec;
 	else 
-		return mMinWidth; 
+		return this->mMinWidth; 
 }
 
 
 // FUNCTION: WON 0x0070ecc0
+// Returns the table's fixed width if set, otherwise its preferred maximum width (computed on first use); the
+// border drawing helper below draws a raised or sunken frame
 int TableElement::GetMaxWidth() 
 { 
-	if(mMaxWidth==0)
-		CalcMinMaxWidths();
+	if(this->mMaxWidth==0)
+		this->CalcMinMaxWidths();
 
-	if(mWidthSpec>0)
-		return mWidthSpec;
+	if(this->mWidthSpec>0)
+		return this->mWidthSpec;
 	else
-		return mMaxWidth; 
+		return this->mMaxWidth; 
 }
 
 
@@ -121,59 +129,59 @@ static void DrawShadedRect(Graphics &g, int x, int y, int width, int height, int
 }
 
 // FUNCTION: WON 0x0070E8C0
+// Computes each column's minimum and maximum width from its cells (single-column cells first, then spanning
+// cells spread their extra need across their columns) and the table's totals
 void TableElement::CalcMinMaxWidths()
 {
-	mMinWidth = mMaxWidth = 0;
-	int aNumColumns = mColumnVector.size();
-	int aNumRows = mRowVector.size();
+	this->mMinWidth = this->mMaxWidth = 0;
+	int aNumColumns = this->mColumnVector.size();
+	int aNumRows = this->mRowVector.size();
 	if(aNumRows==0 || aNumColumns==0)
 		return;	
 
 	int aRow, aCol;
-	int aPad = mCellPadding*2 + (mBorder?4:0);
+	int aPad = this->mCellPadding*2 + (this->mBorder?4:0);
 	for(aCol=0; aCol<aNumColumns; aCol++)
-		mColumnVector[aCol].mMinWidth = mColumnVector[aCol].mMaxWidth = 0;
+		this->mColumnVector[aCol].mMinWidth = this->mColumnVector[aCol].mMaxWidth = 0;
 
 	// first pass
 	for(aCol=0; aCol<aNumColumns; aCol++) 
 	{
-		ColumnInfo &aColumnInfo = mColumnVector[aCol];
+		ColumnInfo &aColumnInfo = this->mColumnVector[aCol];
 		int aMaxMinWidth = aColumnInfo.mMinWidth;
 		int aMaxMaxWidth = aColumnInfo.mMaxWidth;
 		for(aRow=0; aRow<aNumRows; aRow++)
 		{
-			CellInfo *aCellInfo = GetCellInfoAt(aRow,aCol);
-			if(aCellInfo!=NULL && aCellInfo->mColumnSpan==1)
+			CellInfo *aCellInfo = this->GetCellInfoAt(aRow,aCol);
+			if(aCellInfo==NULL || aCellInfo->mColumnSpan!=1)
+				continue;
+			MultiLineElement *aCell = aCellInfo->mContents.get();
+			if(aCell==NULL)
+				continue;
+			int aMinWidth = aCell->GetMinWidth();
+			int aMaxWidth = aCell->GetMaxWidth();
+			if(aCellInfo->mNoWrap)
+				aMinWidth = aMaxWidth; 
+
+			if(aCellInfo->mWidth > 0)
 			{
-				MultiLineElement *aCell = aCellInfo->mContents.get();
-				if(aCell!=NULL)
-				{
-					int aMinWidth = aCell->GetMinWidth();
-					int aMaxWidth = aCell->GetMaxWidth();
-					if(aCellInfo->mNoWrap)
-						aMinWidth = aMaxWidth; 
-
-					if(aCellInfo->mWidth > 0)
-					{
-						if(aMinWidth < aCellInfo->mWidth)
-							aMaxWidth = aCellInfo->mWidth;
-						else
-							aMaxWidth = aMinWidth;
-					}
-
-					if(aMinWidth > aMaxMinWidth)
-						aMaxMinWidth = aMinWidth;
-
-					if(aMaxWidth > aMaxMaxWidth)
-						aMaxMaxWidth = aMaxWidth;					
-				}
+				if(aMinWidth < aCellInfo->mWidth)
+					aMaxWidth = aCellInfo->mWidth;
+				else
+					aMaxWidth = aMinWidth;
 			}
+
+			if(aMinWidth > aMaxMinWidth)
+				aMaxMinWidth = aMinWidth;
+
+			if(aMaxWidth > aMaxMaxWidth)
+				aMaxMaxWidth = aMaxWidth;					
 		}
 
 		aColumnInfo.mMinWidth = aMaxMinWidth + aPad;
 		aColumnInfo.mMaxWidth = aMaxMaxWidth + aPad;
-		mMinWidth += aColumnInfo.mMinWidth;
-		mMaxWidth += aColumnInfo.mMaxWidth;
+		this->mMinWidth += aColumnInfo.mMinWidth;
+		this->mMaxWidth += aColumnInfo.mMaxWidth;
 	}
 
 	// second pass
@@ -181,199 +189,197 @@ void TableElement::CalcMinMaxWidths()
 	{
 		for(aRow=0; aRow<aNumRows; aRow++)
 		{
-			CellInfo *aCellInfo = GetCellInfoAt(aRow,aCol);
-			if(aCellInfo!=NULL && aCellInfo->mColumnSpan>1)
+			CellInfo *aCellInfo = this->GetCellInfoAt(aRow,aCol);
+			if(aCellInfo==NULL || !(aCellInfo->mColumnSpan>1))
+				continue;
+			MultiLineElement *aCell = aCellInfo->mContents.get();
+			if(aCell==NULL)
+				continue;
+			int aMinWidth = aCell->GetMinWidth();
+			int aMaxWidth = aCell->GetMaxWidth();
+			if(aCellInfo->mNoWrap)
+				aMinWidth = aMaxWidth; 
+
+			if(aCellInfo->mWidth > 0)
 			{
-				MultiLineElement *aCell = aCellInfo->mContents.get();
-				if(aCell!=NULL)
-				{
-					int aMinWidth = aCell->GetMinWidth();
-					int aMaxWidth = aCell->GetMaxWidth();
-					if(aCellInfo->mNoWrap)
-						aMinWidth = aMaxWidth; 
+				if(aMinWidth < aCellInfo->mWidth)
+					aMaxWidth = aCellInfo->mWidth;
+				else
+					aMaxWidth = aMinWidth;
+			}
 
-					if(aCellInfo->mWidth > 0)
+			// Figure out how much MinWidth and MaxWidth is available from all the columns
+			int i;
+			int anAvailableMinWidth = 0;
+			int aTotalMaxWidth = 0;
+			for(i=0; i<aCellInfo->mColumnSpan; i++)
+			{
+				anAvailableMinWidth += this->mColumnVector[aCol+i].mMinWidth;
+				aTotalMaxWidth += this->mColumnVector[aCol+i].mMaxWidth;
+			}
+			anAvailableMinWidth += (aCellInfo->mColumnSpan-1)*this->mCellSpacing - aPad;
+
+			// Need to distribute more MinWidth to the columns
+			int aNeededExtra = aMinWidth - anAvailableMinWidth;
+			if(aNeededExtra>0)
+			{
+				int aPool = aNeededExtra;
+				this->mMinWidth += aNeededExtra;
+				for(i=0; i<aCellInfo->mColumnSpan; i++)
+				{						
+					ColumnInfo &aColumnInfo = this->mColumnVector[aCol+i];
+					int anAmount;
+					if(i!=aCellInfo->mColumnSpan-1)
 					{
-						if(aMinWidth < aCellInfo->mWidth)
-							aMaxWidth = aCellInfo->mWidth;
+						if(aTotalMaxWidth>0)
+							anAmount = (aMinWidth - anAvailableMinWidth)*aColumnInfo.mMaxWidth/aTotalMaxWidth;
 						else
-							aMaxWidth = aMinWidth;
+							anAmount = (aMinWidth - anAvailableMinWidth)/aCellInfo->mColumnSpan;
+
+						aColumnInfo.mMinWidth += anAmount;
+						aPool -= anAmount;
 					}
-
-					// Figure out how much MinWidth and MaxWidth is available from all the columns
-					int i;
-					int anAvailableMinWidth = 0;
-					int aTotalMaxWidth = 0;
-					for(i=0; i<aCellInfo->mColumnSpan; i++)
-					{
-						anAvailableMinWidth += mColumnVector[aCol+i].mMinWidth;
-						aTotalMaxWidth += mColumnVector[aCol+i].mMaxWidth;
-					}
-					anAvailableMinWidth += (aCellInfo->mColumnSpan-1)*mCellSpacing - aPad;
-
-					// Need to distribute more MinWidth to the columns
-					int aNeededExtra = aMinWidth - anAvailableMinWidth;
-					if(aNeededExtra>0)
-					{
-						int aPool = aNeededExtra;
-						mMinWidth += aNeededExtra;
-						for(i=0; i<aCellInfo->mColumnSpan; i++)
-						{						
-							ColumnInfo &aColumnInfo = mColumnVector[aCol+i];
-							int anAmount;
-							if(i!=aCellInfo->mColumnSpan-1)
-							{
-								if(aTotalMaxWidth>0)
-									anAmount = (aMinWidth - anAvailableMinWidth)*aColumnInfo.mMaxWidth/aTotalMaxWidth;
-								else
-									anAmount = (aMinWidth - anAvailableMinWidth)/aCellInfo->mColumnSpan;
-
-								aColumnInfo.mMinWidth += anAmount;
-								aPool -= anAmount;
-							}
-							else
-								aColumnInfo.mMinWidth += aPool;
-						}
-					}
-
-					// Need to distribute more MaxWidth to the columns
-					aNeededExtra = aMaxWidth - aTotalMaxWidth;
-					if(aNeededExtra > 0)
-					{
-						int aPool = aNeededExtra;
-						mMaxWidth += aNeededExtra;
-						for(i=0; i<aCellInfo->mColumnSpan; i++)
-						{
-							ColumnInfo &aColumnInfo = mColumnVector[aCol+i];
-							int anAmount;
-							if(i!=aCellInfo->mColumnSpan-1)
-							{
-								if(aTotalMaxWidth>0)
-									anAmount = (aMaxWidth - aTotalMaxWidth)*aColumnInfo.mMaxWidth/aTotalMaxWidth;
-								else
-									anAmount = (aMaxWidth - aTotalMaxWidth)/aCellInfo->mColumnSpan;
-
-								aPool -= anAmount;
-							}
-							else
-								anAmount = aPool;
-
-							aColumnInfo.mMaxWidth += anAmount;
-						}
-					}
-
+					else
+						aColumnInfo.mMinWidth += aPool;
 				}
 			}
+
+			// Need to distribute more MaxWidth to the columns
+			aNeededExtra = aMaxWidth - aTotalMaxWidth;
+			if(!(aNeededExtra > 0))
+				continue;
+			int aPool = aNeededExtra;
+			this->mMaxWidth += aNeededExtra;
+			for(i=0; i<aCellInfo->mColumnSpan; i++)
+			{
+				ColumnInfo &aColumnInfo = this->mColumnVector[aCol+i];
+				int anAmount;
+				if(i!=aCellInfo->mColumnSpan-1)
+				{
+					if(aTotalMaxWidth>0)
+						anAmount = (aMaxWidth - aTotalMaxWidth)*aColumnInfo.mMaxWidth/aTotalMaxWidth;
+					else
+						anAmount = (aMaxWidth - aTotalMaxWidth)/aCellInfo->mColumnSpan;
+
+					aPool -= anAmount;
+				}
+				else
+					anAmount = aPool;
+
+				aColumnInfo.mMaxWidth += anAmount;
+			}
+
 		}
 	}
 
 
-	mMinWidth += mCellSpacing*(aNumColumns+1) + 2*mBorder;
-	mMaxWidth += mCellSpacing*(aNumColumns+1) + 2*mBorder;
-	if(mWidthSpec>0)
+	this->mMinWidth += this->mCellSpacing*(aNumColumns+1) + 2*this->mBorder;
+	this->mMaxWidth += this->mCellSpacing*(aNumColumns+1) + 2*this->mBorder;
+	if(this->mWidthSpec>0)
 	{
-		if(mWidthSpec<mMinWidth)
-			mWidthSpec = mMinWidth;
+		if(this->mWidthSpec<this->mMinWidth)
+			this->mWidthSpec = this->mMinWidth;
 	}
 }
 
 // FUNCTION: WON 0x0070ECE0
+// Lays out every cell to its column width and computes row positions and heights, growing a row so that
+// cells spanning several rows fit; sets the table height
 void TableElement::CalcRowHeights()
 {
 	int aRow, aCol;
-	int aNumRows = mRowVector.size(), aNumColumns = mColumnVector.size();
+	int aNumRows = this->mRowVector.size(), aNumColumns = this->mColumnVector.size();
 
 	// First pass
-	mHeight = mBorder + mCellSpacing;
+	this->mHeight = this->mBorder + this->mCellSpacing;
 	for(aRow=0; aRow<aNumRows; aRow++)
 	{
-		RowInfo &aRowInfo = mRowVector[aRow];
-		aRowInfo.my = mHeight;
+		RowInfo &aRowInfo = this->mRowVector[aRow];
+		aRowInfo.my = this->mHeight;
 		int aMaxHeight = 0;
 		for(aCol=0; aCol<aNumColumns; aCol++)
 		{
-			CellInfo *aCellInfo = GetCellInfoAt(aRowInfo,aCol);
+			CellInfo *aCellInfo = this->GetCellInfoAt(aRowInfo,aCol);
 			MultiLineElement *aCell = aCellInfo->mContents.get();
-			if(aCell!=NULL)
+			if(aCell==NULL)
+				continue;
+			ColumnInfo &aColumnInfo = this->mColumnVector[aCol];
+			int aColumnWidth = aColumnInfo.mWidth;
+			if(aCellInfo->mColumnSpan>1)
 			{
-				ColumnInfo &aColumnInfo = mColumnVector[aCol];
-				int aColumnWidth = aColumnInfo.mWidth;
-				if(aCellInfo->mColumnSpan>1)
-				{
-					ColumnInfo &anEndColumn = mColumnVector[aCol + aCellInfo->mColumnSpan - 1];
-					aColumnWidth = anEndColumn.mx + anEndColumn.mWidth - aColumnInfo.mx;
-				}
-
-				aCell->SetMaxWidth(aColumnWidth - mCellPadding*2);
-				if(aCellInfo->mRowSpan==1)
-				{
-					int aHeight = aCell->GetHeight();
-					if(aCellInfo->mHeight>aHeight)
-						aHeight = aCellInfo->mHeight;
-					if(aHeight>aMaxHeight)
-						aMaxHeight = aHeight;
-				}
+				ColumnInfo &anEndColumn = this->mColumnVector[aCol + aCellInfo->mColumnSpan - 1];
+				aColumnWidth = anEndColumn.mx + anEndColumn.mWidth - aColumnInfo.mx;
 			}
+
+			aCell->SetMaxWidth(aColumnWidth - this->mCellPadding*2);
+			if(aCellInfo->mRowSpan!=1)
+				continue;
+			int aHeight = aCell->GetHeight();
+			if(aCellInfo->mHeight>aHeight)
+				aHeight = aCellInfo->mHeight;
+			if(aHeight>aMaxHeight)
+				aMaxHeight = aHeight;
 		}
-		aRowInfo.mHeight = aMaxHeight+mCellPadding*2 + (mBorder?4:0);
-		mHeight += aRowInfo.mHeight + mCellSpacing;
+		aRowInfo.mHeight = aMaxHeight+this->mCellPadding*2 + (this->mBorder?4:0);
+		this->mHeight += aRowInfo.mHeight + this->mCellSpacing;
 	}
-	mHeight+=mBorder;
+	this->mHeight+=this->mBorder;
 
 	// Second pass
-	mHeight = mBorder + mCellSpacing;
+	this->mHeight = this->mBorder + this->mCellSpacing;
 	for(aRow=0; aRow<aNumRows; aRow++)
 	{
-		RowInfo &aRowInfo = mRowVector[aRow];
-		aRowInfo.my = mHeight;
-		int aMaxHeight = aRowInfo.mHeight-mCellPadding*2;
+		RowInfo &aRowInfo = this->mRowVector[aRow];
+		aRowInfo.my = this->mHeight;
+		int aMaxHeight = aRowInfo.mHeight-this->mCellPadding*2;
 		for(aCol=0; aCol<aNumColumns; aCol++)
 		{
-			CellInfo *aCellInfo = GetCellInfoAt(aRowInfo,aCol);
+			CellInfo *aCellInfo = this->GetCellInfoAt(aRowInfo,aCol);
 			MultiLineElement *aCell = aCellInfo->mContents.get();
-			if(aCell!=NULL && aCellInfo->mRowSpan>1)
-			{
-				int aHeight = aCell->GetHeight();
-				if(aCellInfo->mHeight>aHeight)
-					aHeight = aCellInfo->mHeight;
+			if(aCell==NULL || !(aCellInfo->mRowSpan>1))
+				continue;
+			int aHeight = aCell->GetHeight();
+			if(aCellInfo->mHeight>aHeight)
+				aHeight = aCellInfo->mHeight;
 
-				int i = 0;
-				int anAvailableHeight = 0;
-				for(i=0; i<aCellInfo->mRowSpan; i++)
-					anAvailableHeight += mRowVector[aRow+i].mHeight;
+			int i = 0;
+			int anAvailableHeight = 0;
+			for(i=0; i<aCellInfo->mRowSpan; i++)
+				anAvailableHeight += this->mRowVector[aRow+i].mHeight;
 
-				anAvailableHeight += mCellSpacing*(aCellInfo->mRowSpan-1);
-				anAvailableHeight -= mCellPadding*2;
-				
-				if(aHeight > anAvailableHeight)
-					aRowInfo.mHeight += aHeight - anAvailableHeight;
-			}
+			anAvailableHeight += this->mCellSpacing*(aCellInfo->mRowSpan-1);
+			anAvailableHeight -= this->mCellPadding*2;
+
+			if(aHeight > anAvailableHeight)
+				aRowInfo.mHeight += aHeight - anAvailableHeight;
 		}
-		mHeight += aRowInfo.mHeight + mCellSpacing;
+		this->mHeight += aRowInfo.mHeight + this->mCellSpacing;
 	}
 
-	mHeight+=mBorder;
+	this->mHeight+=this->mBorder;
 /**/
 }
 
 // FUNCTION: WON 0x0070EF50
+// Shares a table width between the columns: percentage columns first, then the others grow from their
+// minimum toward their maximum width; sets each column's position and the table width
 void TableElement::CalcColumnWidths(int theWidth)
 {
-	int aNumColumns = mColumnVector.size();
-	if(theWidth<mMinWidth)
-		theWidth = mMinWidth;
+	int aNumColumns = this->mColumnVector.size();
+	if(theWidth<this->mMinWidth)
+		theWidth = this->mMinWidth;
 
 	int aCol;
-	int anExtraSpace = theWidth-mMinWidth, aColumnWeight = 0;
+	int anExtraSpace = theWidth-this->mMinWidth, aColumnWeight = 0;
 	int anOriginalExtraSpace = anExtraSpace;
-	int anAvailableWidth = theWidth - 2*mBorder - (aNumColumns+1)*mCellSpacing;
+	int anAvailableWidth = theWidth - 2*this->mBorder - (aNumColumns+1)*this->mCellSpacing;
 	int aWidthForPercent = 0;
 	int aTotalPercent = 0;
-	int aNonPercentMaxWidth = mMaxWidth, aNonPercentMinWidth = mMinWidth;
+	int aNonPercentMaxWidth = this->mMaxWidth, aNonPercentMinWidth = this->mMinWidth;
 	bool allColumnsPercent = true;
 	for(aCol=0; aCol<aNumColumns; aCol++)
 	{
-		ColumnInfo &anInfo = mColumnVector[aCol];
+		ColumnInfo &anInfo = this->mColumnVector[aCol];
 		if(anInfo.mWeight < 0)
 		{
 			int aPercent = -anInfo.mWeight;
@@ -384,8 +390,8 @@ void TableElement::CalcColumnWidths(int theWidth)
 				aTotalPercent += aPercent;
 
 			aWidthForPercent += anInfo.mWidth - anInfo.mMinWidth;
-			aNonPercentMinWidth -= anInfo.mMinWidth - mCellSpacing;
-			aNonPercentMaxWidth -= anInfo.mMaxWidth - mCellSpacing;
+			aNonPercentMinWidth -= anInfo.mMinWidth - this->mCellSpacing;
+			aNonPercentMaxWidth -= anInfo.mMaxWidth - this->mCellSpacing;
 		}
 		else
 			allColumnsPercent = false;
@@ -397,7 +403,7 @@ void TableElement::CalcColumnWidths(int theWidth)
 		ColumnInfo *aLeftOverColumn = NULL;
 		for(aCol=0; aCol<aNumColumns; aCol++)
 		{
-			ColumnInfo &anInfo = mColumnVector[aCol];
+			ColumnInfo &anInfo = this->mColumnVector[aCol];
 			if(anInfo.mWeight<0 /*&& anInfo.mWidth>anInfo.mMinWidth*/)
 			{
 				int anAmount = anExtraSpace*-anInfo.mWeight/aTotalPercent;
@@ -417,20 +423,19 @@ void TableElement::CalcColumnWidths(int theWidth)
 
 	if(anExtraSpace>=aNonPercentMaxWidth-aNonPercentMinWidth)
 	{
-		if(mWidthSpec!=0)
+		if(this->mWidthSpec!=0)
 			anExtraSpace -= aNonPercentMaxWidth-aNonPercentMinWidth;
 		else
 			anExtraSpace = 0;
 
 		for(aCol=0; aCol<aNumColumns; aCol++)
 		{
-			ColumnInfo &anInfo = mColumnVector[aCol];
-			if(anInfo.mWeight>=0)
-			{
-				anInfo.SetWidthToMax();
-				anInfo.mWeight = anInfo.mMaxWidth;
-				aColumnWeight += anInfo.mWeight;
-			}
+			ColumnInfo &anInfo = this->mColumnVector[aCol];
+			if(!(anInfo.mWeight>=0))
+				continue;
+			anInfo.SetWidthToMax();
+			anInfo.mWeight = anInfo.mMaxWidth;
+			aColumnWeight += anInfo.mWeight;
 		}
 	}
 	else 
@@ -438,21 +443,20 @@ void TableElement::CalcColumnWidths(int theWidth)
 	//	anExtraSpace = theWidth-aNonPercentMinWidth;
 		for(aCol=0; aCol<aNumColumns; aCol++)
 		{
-			ColumnInfo &anInfo = mColumnVector[aCol];
-			if(anInfo.mWeight>=0)
-			{
-				anInfo.SetWidthToMin();
-				anInfo.mWeight = anInfo.mMaxWidth - anInfo.mMinWidth;
-				aColumnWeight += anInfo.mWeight;
-			}
+			ColumnInfo &anInfo = this->mColumnVector[aCol];
+			if(!(anInfo.mWeight>=0))
+				continue;
+			anInfo.SetWidthToMin();
+			anInfo.mWeight = anInfo.mMaxWidth - anInfo.mMinWidth;
+			aColumnWeight += anInfo.mWeight;
 		}
 	}
 
 	int aLeftOver = anExtraSpace;
-	mWidth = mBorder + mCellSpacing;
+	this->mWidth = this->mBorder + this->mCellSpacing;
 	for(aCol=0; aCol<aNumColumns; aCol++)
 	{
-		ColumnInfo &aColInfo = mColumnVector[aCol];
+		ColumnInfo &aColInfo = this->mColumnVector[aCol];
 		if(aColumnWeight>0 && aColInfo.mWeight>=0)
 		{
 			int anAmount = anExtraSpace*aColInfo.mWeight/aColumnWeight;
@@ -460,56 +464,57 @@ void TableElement::CalcColumnWidths(int theWidth)
 			aLeftOver -= anAmount;
 		}
 
-		aColInfo.mx = mWidth;
-		mWidth += aColInfo.mWidth + mCellSpacing;
+		aColInfo.mx = this->mWidth;
+		this->mWidth += aColInfo.mWidth + this->mCellSpacing;
 	}
-	mWidth+=mBorder;
-	if(aLeftOver>0 && aLeftOver!=anOriginalExtraSpace)
-	{
-		ColumnInfo &aColInfo = mColumnVector.back();
-		aColInfo.mWidth += aLeftOver;
-		mWidth += aLeftOver;
-	}
+	this->mWidth+=this->mBorder;
+	if(aLeftOver<=0 || aLeftOver==anOriginalExtraSpace)
+		return;
+	ColumnInfo &aColInfo = this->mColumnVector.back();
+	aColInfo.mWidth += aLeftOver;
+	this->mWidth += aLeftOver;
 }
 
 // FUNCTION: WON 0x0070F230
+// Lays the table out for an available width (or its fixed or percentage width): column widths, then rows
 void TableElement::SetMaxWidth(int theWidth)
 {
-	mWidth = 0;
-	mHeight = 0;
+	this->mWidth = 0;
+	this->mHeight = 0;
 		
-	int aNumColumns = mColumnVector.size();
-	int aNumRows = mRowVector.size();
+	int aNumColumns = this->mColumnVector.size();
+	int aNumRows = this->mRowVector.size();
 	if(aNumRows==0 || aNumColumns==0)
 		return;
 
-	if(mMinWidth==0)
-		CalcMinMaxWidths();
+	if(this->mMinWidth==0)
+		this->CalcMinMaxWidths();
 
-	if(mWidthSpec>0)
-		theWidth = mWidthSpec;
-	else if(mWidthSpec<0) // percentage
-		theWidth = (theWidth*-mWidthSpec)/100;
+	if(this->mWidthSpec>0)
+		theWidth = this->mWidthSpec;
+	else if(this->mWidthSpec<0) // percentage
+		theWidth = (theWidth*-this->mWidthSpec)/100;
 
-	CalcColumnWidths(theWidth);
-	CalcRowHeights();
+	this->CalcColumnWidths(theWidth);
+	this->CalcRowHeights();
 }
 
 // FUNCTION: WON 0x0070F2E0
+// Attaches the table and every cell's contents to a view at the cells' positions
 void TableElement::SetViewport(ScrollAreaViewport *theViewport, int x, int y)
 {
 	LineSegment::SetViewport(theViewport,x,y);
-	int aNumColumns = mColumnVector.size();
-	int aNumRows = mRowVector.size();
+	int aNumColumns = this->mColumnVector.size();
+	int aNumRows = this->mRowVector.size();
 	int aRow, aCol;
 	
 	for(aRow=0; aRow<aNumRows; aRow++)
 	{
-		RowInfo &aRowInfo = mRowVector[aRow];
+		RowInfo &aRowInfo = this->mRowVector[aRow];
 		for(aCol=0; aCol<aNumColumns; aCol++)
 		{
 			CellInfoEx aCellInfoEx;
-			if(GetCellInfoEx(aCellInfoEx,aRow,aCol,aRowInfo))
+			if(this->GetCellInfoEx(aCellInfoEx,aRow,aCol,aRowInfo))
 			{
 				MultiLineElement *aCell = aCellInfoEx.mCellInfo->mContents.get();
 				aCell->SetViewport(theViewport,x+aCellInfoEx.mCellX,y+aCellInfoEx.mCellY);
@@ -519,55 +524,58 @@ void TableElement::SetViewport(ScrollAreaViewport *theViewport, int x, int y)
 }
 
 // FUNCTION: WON 0x0070F3E0
+// Returns the text segment under a point, descending into the cell there and making the point cell-relative;
+// returns the table itself when no cell is hit (lenient picks the nearest row and last column)
 LineSegment* TableElement::GetSegmentAt(int &x, int &y, bool lenient)
 {
 
-	int aNumColumns = mColumnVector.size();
-	int aNumRows = mRowVector.size();
+	int aNumColumns = this->mColumnVector.size();
+	int aNumRows = this->mRowVector.size();
 
-	int aRow = FindRowAt(y);
+	int aRow = this->FindRowAt(y);
 	if(aRow>=aNumRows)
 		return this;
 
-	RowInfo &aRowInfo = mRowVector[aRow];
+	RowInfo &aRowInfo = this->mRowVector[aRow];
 	if(!lenient && (aRowInfo.my>y || aRowInfo.my+aRowInfo.mHeight<y))
 		return this;
 
 	CellInfoEx aCellInfoEx;
 	for(int aCol=0; aCol<aNumColumns; aCol++)
 	{
-		ColumnInfo &aColumnInfo = mColumnVector[aCol];
-		if(aColumnInfo.mx + aColumnInfo.mWidth > x || (lenient && aCol==aNumColumns-1))
+		ColumnInfo &aColumnInfo = this->mColumnVector[aCol];
+		if(!(aColumnInfo.mx + aColumnInfo.mWidth > x) && (!lenient || aCol!=aNumColumns-1))
+			continue;
+		if(this->GetCellInfoEx(aCellInfoEx,aRow,aCol,aRowInfo,true,true))
 		{
-			if(GetCellInfoEx(aCellInfoEx,aRow,aCol,aRowInfo,true,true))
-			{
-				x-=aCellInfoEx.mCellX;
-				y-=aCellInfoEx.mCellY;
-				return aCellInfoEx.mCellInfo->mContents->GetSegmentAt(x,y,lenient);
-			}
-			else
-				return this;
+			x-=aCellInfoEx.mCellX;
+			y-=aCellInfoEx.mCellY;
+			return aCellInfoEx.mCellInfo->mContents->GetSegmentAt(x,y,lenient);
 		}
+		else
+			return this;
 	}
 			
 	return this;
 }
 
 // FUNCTION: WON 0x0070F5D0
+// Appends the selected text of the cells inside the selection, separating cells with a space and rows with
+// a line break
 void TableElement::GetSelText(GUIString &theText, ElementSelectionInfo &theInfo)
 {
 
-	int aNumColumns = mColumnVector.size();
-	int aNumRows = mRowVector.size();
+	int aNumColumns = this->mColumnVector.size();
+	int aNumRows = this->mRowVector.size();
 	int aRow, aCol;
 	
 	bool done = false;
 	for(aRow=0; aRow<aNumRows; aRow++)
 	{
-		RowInfo &aRowInfo = mRowVector[aRow];
+		RowInfo &aRowInfo = this->mRowVector[aRow];
 		for(aCol=0; aCol<aNumColumns; aCol++)
 		{
-			MultiLineElement *aCell = GetCellAt(aRowInfo,aCol);
+			MultiLineElement *aCell = this->GetCellAt(aRowInfo,aCol);
 			if(aCell!=NULL && aCell->GetEndSelIndex()>=theInfo.mStartSelSegment)
 			{
 				done = true; 
@@ -582,22 +590,21 @@ void TableElement::GetSelText(GUIString &theText, ElementSelectionInfo &theInfo)
 	done = false;
 	for(; aRow<aNumRows; aRow++)
 	{
-		RowInfo &aRowInfo = mRowVector[aRow];
+		RowInfo &aRowInfo = this->mRowVector[aRow];
 		for(; aCol<aNumColumns && !done; aCol++)
 		{
-			MultiLineElement *aCell = GetCellAt(aRowInfo,aCol);
-			if(aCell!=NULL)
+			MultiLineElement *aCell = this->GetCellAt(aRowInfo,aCol);
+			if(aCell==NULL)
+				continue;
+			if(aCell->mStartSelIndex>=theInfo.mEndSelSegment)
 			{
-				if(aCell->mStartSelIndex>=theInfo.mEndSelSegment)
-				{
-					done = true;
-					break;
-				}
-				else
-				{
-					aCell->GetSelText(theText,theInfo);
-					theText.append(" ");
-				}
+				done = true;
+				break;
+			}
+			else
+			{
+				aCell->GetSelText(theText,theInfo);
+				theText.append(" ");
 			}
 		}
 		aCol = 0;
@@ -609,19 +616,20 @@ void TableElement::GetSelText(GUIString &theText, ElementSelectionInfo &theInfo)
 }
 
 // FUNCTION: WON 0x0070F880
+// Searches the cells from the search start for the text; returns whether a cell found it
 bool TableElement::FindStr(ElementFindInfo &theInfo)
 {
-	int aNumColumns = mColumnVector.size();
-	int aNumRows = mRowVector.size();
+	int aNumColumns = this->mColumnVector.size();
+	int aNumRows = this->mRowVector.size();
 	int aRow, aCol;
 	
 	bool done = false;
 	for(aRow=0; aRow<aNumRows; aRow++)
 	{
-		RowInfo &aRowInfo = mRowVector[aRow];
+		RowInfo &aRowInfo = this->mRowVector[aRow];
 		for(aCol=0; aCol<aNumColumns; aCol++)
 		{
-			MultiLineElement *aCell = GetCellAt(aRowInfo,aCol);
+			MultiLineElement *aCell = this->GetCellAt(aRowInfo,aCol);
 			if(aCell!=NULL && aCell->GetEndSelIndex()>=theInfo.mStartSelSegment)
 			{
 				done = true; 
@@ -636,18 +644,17 @@ bool TableElement::FindStr(ElementFindInfo &theInfo)
 	done = false;
 	for(; aRow<aNumRows; aRow++)
 	{
-		RowInfo &aRowInfo = mRowVector[aRow];
+		RowInfo &aRowInfo = this->mRowVector[aRow];
 		for(; aCol<aNumColumns && !done; aCol++)
 		{
-			MultiLineElement *aCell = GetCellAt(aRowInfo,aCol);
-			if(aCell!=NULL)
-			{
-				theInfo.mFoundStartSegment = -1;
-				if(aCell->mStartSelIndex>=theInfo.mEndSelSegment)
-					return false;
-				else if(aCell->FindStr(theInfo))
-						return true;
-			}
+			MultiLineElement *aCell = this->GetCellAt(aRowInfo,aCol);
+			if(aCell==NULL)
+				continue;
+			theInfo.mFoundStartSegment = -1;
+			if(aCell->mStartSelIndex>=theInfo.mEndSelSegment)
+				return false;
+			else if(aCell->FindStr(theInfo))
+					return true;
 		}
 		aCol = 0;
 	}
@@ -657,9 +664,11 @@ bool TableElement::FindStr(ElementFindInfo &theInfo)
 }
 
 // FUNCTION: WON 0x0070E3B0
+// Fills in a cell's border rectangle and its aligned contents position; for an empty cell covered by a span,
+// optionally looks up the spanning cell above or to the left; returns false when there is no cell
 bool TableElement::GetCellInfoEx(CellInfoEx &theInfo, int theRow, int theCol, RowInfo &theRowInfo, bool seekUp, bool seekLeft)
 {
-	CellInfo *aCellInfo = GetCellInfoAt(theRowInfo,theCol);
+	CellInfo *aCellInfo = this->GetCellInfoAt(theRowInfo,theCol);
 	if(aCellInfo==NULL)
 		return false;
 
@@ -672,7 +681,7 @@ bool TableElement::GetCellInfoEx(CellInfoEx &theInfo, int theRow, int theCol, Ro
 		if(seekUp && aCellInfo->mRowSpan<0)
 		{
 			theRow = theRow + aCellInfo->mRowSpan;
-			aRowInfo = &mRowVector[theRow];
+			aRowInfo = &this->mRowVector[theRow];
 			spanner = true;
 		}
 
@@ -685,10 +694,10 @@ bool TableElement::GetCellInfoEx(CellInfoEx &theInfo, int theRow, int theCol, Ro
 		if(!spanner)
 			return false;
 
-		return GetCellInfoEx(theInfo,theRow,theCol,*aRowInfo);
+		return this->GetCellInfoEx(theInfo,theRow,theCol,*aRowInfo);
 	}
 
-	ColumnInfo &aColumnInfo = mColumnVector[theCol];
+	ColumnInfo &aColumnInfo = this->mColumnVector[theCol];
 
 	int cellx = aColumnInfo.mx;
 	int celly = theRowInfo.my;
@@ -697,12 +706,12 @@ bool TableElement::GetCellInfoEx(CellInfoEx &theInfo, int theRow, int theCol, Ro
 
 	if(aCellInfo->mColumnSpan>1)
 	{
-		ColumnInfo &anEndColumn = mColumnVector[theCol + aCellInfo->mColumnSpan - 1];
+		ColumnInfo &anEndColumn = this->mColumnVector[theCol + aCellInfo->mColumnSpan - 1];
 		cellw = anEndColumn.mx + anEndColumn.mWidth - aColumnInfo.mx;
 	}
 	if(aCellInfo->mRowSpan>1)
 	{
-		RowInfo &anEndRow = mRowVector[theRow + aCellInfo->mRowSpan - 1];
+		RowInfo &anEndRow = this->mRowVector[theRow + aCellInfo->mRowSpan - 1];
 		cellh = anEndRow.my + anEndRow.mHeight - theRowInfo.my;
 	}
 
@@ -711,7 +720,7 @@ bool TableElement::GetCellInfoEx(CellInfoEx &theInfo, int theRow, int theCol, Ro
 	if(aVAlign==-1) aVAlign = theRowInfo.mVAlign;
 
 	int dx, dy;
-	int aPad = mCellPadding + (mBorder?2:0);
+	int aPad = this->mCellPadding + (this->mBorder?2:0);
 	switch(anHAlign)
 	{
 		case 1: dx = (cellw-aCell->GetWidth())/2; break;
@@ -743,10 +752,11 @@ bool TableElement::GetCellInfoEx(CellInfoEx &theInfo, int theRow, int theCol, Ro
 }
 
 // FUNCTION: WON 0x0070E590
+// Paints one cell: its (or its row's) background, a sunken border when the table has borders, and its contents
 void TableElement::PaintCell(Graphics &g, int x, int y, int theRow, int theCol, RowInfo &theRowInfo, ElementPaintInfo &thePaintInfo, bool seekUp)
 {
 	CellInfoEx aCellInfoEx;
-	if(!GetCellInfoEx(aCellInfoEx,theRow,theCol,theRowInfo,seekUp))
+	if(!this->GetCellInfoEx(aCellInfoEx,theRow,theCol,theRowInfo,seekUp))
 		return;
 
 	CellInfo *aCellInfo = aCellInfoEx.mCellInfo;
@@ -760,24 +770,25 @@ void TableElement::PaintCell(Graphics &g, int x, int y, int theRow, int theCol, 
 		g.FillRect(x + aCellInfoEx.mBorderX,y + aCellInfoEx.mBorderY,aCellInfoEx.mBorderWidth,aCellInfoEx.mBorderHeight);
 	}
 
-	if(mBorder)
+	if(this->mBorder)
 		DrawShadedRect(g,x + aCellInfoEx.mBorderX,y + aCellInfoEx.mBorderY,aCellInfoEx.mBorderWidth,aCellInfoEx.mBorderHeight,1,false);
 
 	aCell->Paint(g,x + aCellInfoEx.mCellX,y + aCellInfoEx.mCellY,thePaintInfo);
 }
 
 // FUNCTION: WON 0x0070E750
+// Paints the table background and raised border, then the cells of every row inside the clip area
 void TableElement::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInfo)
 {
-	if(mBGColor!=-1)
+	if(this->mBGColor!=-1)
 	{
-		g.SetColor(mBGColor);
-		g.FillRect(x,y,mWidth,mHeight);
+		g.SetColor(this->mBGColor);
+		g.FillRect(x,y,this->mWidth,this->mHeight);
 	}
-	DrawShadedRect(g,x,y,mWidth,mHeight,mBorder,true);
+	DrawShadedRect(g,x,y,this->mWidth,this->mHeight,this->mBorder,true);
 
-	int aNumColumns = mColumnVector.size();
-	int aNumRows = mRowVector.size();
+	int aNumColumns = this->mColumnVector.size();
+	int aNumRows = this->mRowVector.size();
 	int aRow, aCol;
 	int aBottom = (theInfo.mClipY+theInfo.mClipHeight) - y;
 
@@ -785,93 +796,93 @@ void TableElement::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInfo)
 	int aTop = theInfo.mClipY - y;
 	int aStartRow = 0;
 	if(aTop > 0)
-		aStartRow = FindRowAt(aTop);
+		aStartRow = this->FindRowAt(aTop);
 
 	for(aRow=aStartRow; aRow<aNumRows; aRow++)
 	{
-		RowInfo &aRowInfo = mRowVector[aRow];
+		RowInfo &aRowInfo = this->mRowVector[aRow];
 		if(aRowInfo.my > aBottom)
 			break;
 
 		for(aCol=0; aCol<aNumColumns; aCol++)
-			PaintCell(g,x,y,aRow,aCol,aRowInfo,theInfo,aRow==aStartRow);
+			this->PaintCell(g,x,y,aRow,aCol,aRowInfo,theInfo,aRow==aStartRow);
 	}
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable body; zero Native/primary/physical credit.
+// Moves to the next non-empty cell in row order; returns it, or NULL past the last row
+// (not identified in the original exe)
 
 MultiLineElement* TableElement::NextCell()
 {
-	if(mCurRow >= mRowVector.size())
+	if(this->mCurRow >= this->mRowVector.size())
 		return NULL;
 
 	while(true)
 	{
-		if(mCurCol < mColumnVector.size()-1)
-			mCurCol++;
+		if(this->mCurCol < this->mColumnVector.size()-1)
+			this->mCurCol++;
 		else
 		{
-			mCurRow++;
-			mCurCol = 0;
+			this->mCurRow++;
+			this->mCurCol = 0;
 		}
-		if(mCurRow >= mRowVector.size())
+		if(this->mCurRow >= this->mRowVector.size())
 			return NULL;
 
-		mCurCell = GetCellAt(mCurRow, mCurCol);
-		if(mCurCell!=NULL)
-			return mCurCell;
+		this->mCurCell = this->GetCellAt(this->mCurRow, this->mCurCol);
+		if(this->mCurCell!=NULL)
+			return this->mCurCell;
 	}
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable body; zero Native/primary/physical credit.
+// Sets the current cell's background color (not identified in the original exe)
 
 void TableElement::SetCellBGColor(int theColor)
 {
-	if(mCurCell!=NULL)
+	if(this->mCurCell!=NULL)
 	{
-		CellInfo *anInfo = GetCellInfoAt(mCurRow,mCurCol);
+		CellInfo *anInfo = this->GetCellInfoAt(this->mCurRow,this->mCurCol);
 		anInfo->mBGColor = theColor;
 	}
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable body; zero Native/primary/physical credit.
+// Sets the current cell's horizontal and vertical alignment (not identified in the original exe)
 
 void TableElement::SetCellAlign(int theHAlign, int theVAlign)
 {
-	if(mCurCell!=NULL)
-	{
-		CellInfo *anInfo = GetCellInfoAt(mCurRow,mCurCol);
-		anInfo->mHAlign = theHAlign;
-		anInfo->mVAlign = theVAlign;
-	}
+	if(this->mCurCell==NULL)
+		return;
+	CellInfo *anInfo = this->GetCellInfoAt(this->mCurRow,this->mCurCol);
+	anInfo->mHAlign = theHAlign;
+	anInfo->mVAlign = theVAlign;
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable API body, zero Native/primary/physical credit.
+// Empties the table and gives it the given number of rows and columns (not identified in the original exe)
 void TableElement::SetSize(int numRows, int numCols)
 {
-	mRowVector.clear();
-	mColumnVector.clear();
-	EnsureNumCols(numCols);
-	EnsureNumRows(numRows);
+	this->mRowVector.clear();
+	this->mColumnVector.clear();
+	this->EnsureNumCols(numCols);
+	this->EnsureNumRows(numRows);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable API body, zero Native/primary/physical credit.
+// Makes the top-left cell the current cell (not identified in the original exe)
 void TableElement::Rewind()
 {
-	mCurRow = mCurCol = 0;
-	mCurCell = GetCellAt(mCurRow, mCurCol);
+	this->mCurRow = this->mCurCol = 0;
+	this->mCurCell = this->GetCellAt(this->mCurRow, this->mCurCol);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable API body, zero Native/primary/physical credit.
+// Adds a text segment to the current cell (not identified in the original exe)
 void TableElement::AddSegment(LineSegment *theSegment, unsigned short theFlags)
 {
-	if(mCurCell!=NULL)
+	if(this->mCurCell!=NULL)
 	{
-		mCurCell->AddSegment(theSegment, theFlags);
+		this->mCurCell->AddSegment(theSegment, theFlags);
 	}
 }
 }

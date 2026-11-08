@@ -22,7 +22,7 @@ public:
     void Init(); //335cb0
     void SetColor(int); //335e50
     void Paint(Graphics&,int,int,int,int,int=0,int=0); //335e60
-    bool GetWantGrabBG() const { return mWantGrabBG; }
+    bool GetWantGrabBG() const { return this->mWantGrabBG; }
     // Actual implicit copy/assignment/destruction retain/release bothSmartPtrs.
 };
 }

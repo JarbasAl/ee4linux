@@ -1,4 +1,4 @@
-// Original retained clone path used by native skin frame deep copies.
+// Duplicate of a Windows-skin image, used when skin frames are deep-copied
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,9 +12,10 @@
 #include "ee/wonapi/WONLobbyMSSkinImage.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00715a10
+// Returns a new skin image of the same type, flags and size
 SmartPtr<Image> WONMSSkin::MSImage::Duplicate()
 {
-    return new MSImage(mImageType,mImageFlags,mWidth,mHeight);
+    return new MSImage(this->mImageType,this->mImageFlags,this->mWidth,this->mHeight);
 }
 }
 

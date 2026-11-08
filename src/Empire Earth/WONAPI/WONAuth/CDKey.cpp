@@ -1,4 +1,4 @@
-// Original-backed CDKey key validation, machine binding, decryption and registry input.
+// CDKey: CD key validation, machine-bound encryption and registry/file storage
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdlib.h>
@@ -16,29 +16,34 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x006e3090
-CDKey::CDKey() { mValid = false; }
+// Creates an empty, invalid CD key
+CDKey::CDKey() { this->mValid = false; }
 
 // FUNCTION: WON 0x006e30c0
-void CDKey::Invalidate() { mValid = false; }
+// Marks the key invalid
+void CDKey::Invalidate() { this->mValid = false; }
 // FUNCTION: WON 0x006e30d0
+// Sets the product name the key belongs to and invalidates the key
 void CDKey::SetProductString(const std::string& product)
 {
-    Invalidate();
-    mProduct = product;
+    this->Invalidate();
+    this->mProduct = product;
 }
 // FUNCTION: WON 0x006e3220
+// Takes 8 raw key bytes and validates their check byte against a CRC of the product and key
 bool CDKey::CalcKeyFromBuffer(const char* raw)
 {
-    mP14 = new ByteBuffer(raw, 8, false);
+    this->mKey = new ByteBuffer(raw, 8, false);
     CRC16 crc;
-    crc.Put(mProduct.data(), mProduct.length());
+    crc.Put(this->mProduct.data(), this->mProduct.length());
     crc.Put(raw, 3);
     crc.Put(raw+4, 4);
     char check = static_cast<char>((crc.Get() & 0x0fff) >> 4);
-    mValid = check == raw[3];
-    return mValid;
+    this->mValid = check == raw[3];
+    return this->mValid;
 }
 // FUNCTION: WON 0x006e3320
+// Returns the volume serial number of the Windows drive; reports failure when there is no drive letter
 DWORD CDKey::GetMachineId(bool* success)
 {
     if (success != NULL)
@@ -63,21 +68,22 @@ DWORD CDKey::GetMachineId(bool* success)
     return 0;
 }
 // FUNCTION: WON 0x006e35a0
+// Builds the Blowfish key from the product name CRCs, optionally prefixed with the machine id
 void CDKey::GetSymmetricKey(Blowfish& key, bool useMachine) const
 {
     CRC16 crc;
     RawBuffer bytes;
     if (useMachine) {
         bool gotId;
-        DWORD machineId = GetMachineId(&gotId);
+        DWORD machineId = CDKey::GetMachineId(&gotId);
         if (gotId)
             bytes.append(reinterpret_cast<const unsigned char*>(&machineId), 4);
     }
-    crc.Put(mProduct.data(), mProduct.length());
+    crc.Put(this->mProduct.data(), this->mProduct.length());
     unsigned short check = crc.Get();
     bytes.append(reinterpret_cast<const unsigned char*>(&check), 2);
-    for (int i=0; i<3 && i<mProduct.length(); ++i) {
-        char letter = mProduct[i];
+    for (int i=0; i<3 && i<this->mProduct.length(); ++i) {
+        char letter = this->mProduct[i];
         crc.Put(&letter, 1);
         check = crc.Get();
         bytes.append(reinterpret_cast<const unsigned char*>(&check), 2);
@@ -85,42 +91,44 @@ void CDKey::GetSymmetricKey(Blowfish& key, bool useMachine) const
     key.SetKey(bytes.data(), bytes.length());
 }
 // FUNCTION: WON 0x006e3880
+// Decrypts a stored key with the machine-bound or the old key (trying the other on failure); true when valid
 bool CDKey::InitEncrypted(const void* encrypted, unsigned long length)
 {
-    mValid = false;
-    mP14 = NULL;
+    this->mValid = false;
+    this->mKey = NULL;
     if (encrypted == NULL)
         return false;
     bool success = false;
-    bool useMachine = GetUseNewEncryptMethod();
+    bool useMachine = this->GetUseNewEncryptMethod();
     Blowfish key;
-    GetSymmetricKey(key, useMachine);
+    this->GetSymmetricKey(key, useMachine);
     ByteBufferPtr decoded = key.Decrypt(encrypted, length);
     if (decoded.get() != NULL)
-        success = CalcKeyFromBuffer(decoded->data());
+        success = this->CalcKeyFromBuffer(decoded->data());
     if (!success) {
         useMachine = !useMachine;
-        GetSymmetricKey(key, useMachine);
+        this->GetSymmetricKey(key, useMachine);
         decoded = key.Decrypt(encrypted, length);
         if (decoded.get() != NULL)
-            success = CalcKeyFromBuffer(decoded->data());
+            success = this->CalcKeyFromBuffer(decoded->data());
     }
     if (!useMachine)
-        NotifyUsedOldMethodToDecrypt();
+        this->NotifyUsedOldMethodToDecrypt();
     return success;
 }
 // FUNCTION: WON 0x006e3ac0
+// Loads and decrypts the product's key from a registry value; false when absent or invalid
 bool CDKey::LoadFromRegistry(long root, const char* path)
 {
-    if (mProduct.empty())
+    if (this->mProduct.empty())
         return false;
     RegKey key(root, std::string(path), false, true);
     if (!key.mIsOpen)
         return false;
     ByteBufferPtr encrypted;
-    if (key.QueryBinary(mProduct, encrypted) != 0)
+    if (key.QueryBinary(this->mProduct, encrypted) != 0)
         return false;
-    return InitEncrypted(encrypted->data(), encrypted->length());
+    return this->InitEncrypted(encrypted->data(), encrypted->length());
 }
 }
 
@@ -137,7 +145,7 @@ const int DASH_OFFSET = 4;
 const unsigned char BETA_MASK = 0x01;
 const unsigned char FORCE_MASK = 0x80;
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK key codec helper.
+// No original address identified: WON SDK key codec helper
 static void AddBits(char *theBuf, int &theOffset, int theBits, int theNumBits)
 {
 	int aBytePos = theOffset/8;
@@ -156,7 +164,7 @@ static void AddBits(char *theBuf, int &theOffset, int theBits, int theNumBits)
 	theOffset+=theNumBits;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK key codec helper.
+// No original address identified: WON SDK key codec helper
 static bool ProcessCChar(char *theBuf, int& theOffset, char theChar)
 {
 	int aVal = 0;
@@ -204,7 +212,7 @@ static bool ProcessCChar(char *theBuf, int& theOffset, char theChar)
 	return true;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK key codec helper.
+// No original address identified: WON SDK key codec helper
 static bool ProcessVChar(char *theBuf, int& theOffset, char theChar)
 {
 	int aVal = 0;
@@ -228,7 +236,7 @@ static bool ProcessVChar(char *theBuf, int& theOffset, char theChar)
 	return true;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK key codec helper.
+// No original address identified: WON SDK key codec helper
 static bool ProcessNChar(char *theBuf, int& theOffset, char theChar)
 {
 	if(!isdigit(theChar) || theChar<='1') // has to be '2'-'9'
@@ -239,7 +247,7 @@ static bool ProcessNChar(char *theBuf, int& theOffset, char theChar)
 	return true;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK key codec helper.
+// No original address identified: WON SDK key codec helper
 static int ValFromBits(const char *theBuf, int &theOffset, int theNumBits)
 {
 	int aBytePos = theOffset/8;
@@ -259,7 +267,7 @@ static int ValFromBits(const char *theBuf, int &theOffset, int theNumBits)
 	return aVal;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK key codec helper.
+// No original address identified: WON SDK key codec helper
 static char BuildCChar(const char *theBuf, int& theOffset) 
 {
 	char aChar = 0;
@@ -304,7 +312,7 @@ static char BuildCChar(const char *theBuf, int& theOffset)
 	return aChar;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK key codec helper.
+// No original address identified: WON SDK key codec helper
 static char BuildVChar(const char *theBuf, int& theOffset) 
 {
 	char aChar = 0;
@@ -325,24 +333,24 @@ static char BuildVChar(const char *theBuf, int& theOffset)
 	return aChar;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK key codec helper.
+// No original address identified: WON SDK key codec helper
 static char BuildNChar(const char *theBuf, int& theOffset)
 {
 	return ValFromBits(theBuf, theOffset, 3) + '0' + 2;
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 CDKey::CDKey(const string& theProduct) : mProduct(theProduct)
 {
-	mValid = false;
+	this->mValid = false;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 bool CDKey::Init(const string& theKey)
 {
-	mValid = false;
-	mP14 = NULL;
+	this->mValid = false;
+	this->mKey = NULL;
 
 	// remove skip chars such as dashes
 	string aKey;
@@ -359,7 +367,7 @@ bool CDKey::Init(const string& theKey)
 	// Validate length
 	if (aKey.size() != STRINGKEY_LEN)
 	{
-		mValid = false;
+		this->mValid = false;
 		return false;
 	}
 
@@ -382,21 +390,21 @@ bool CDKey::Init(const string& theKey)
 
 		if (! aTst)
 		{
-			mValid = false;
+			this->mValid = false;
 			return false;
 		}
 	}
 
-	return CalcKeyFromBuffer(aBuf);
+	return this->CalcKeyFromBuffer(aBuf);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 string CDKey::GetString() const
 {
-	if(mP14.get()==NULL)
+	if(this->mKey.get()==NULL)
 		return "";
 
-	const char *aBuf = mP14->data();
+	const char *aBuf = this->mKey->data();
 	int anOffset = 0;
 	string aKey = "";
 
@@ -420,37 +428,37 @@ string CDKey::GetString() const
 	return aKey;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 ByteBufferPtr CDKey::GetEncrypted() const
 {
 
-	if(!IsValid())
+	if(!this->IsValid())
 		return NULL;
 
 	Blowfish aSymKey;
-	GetSymmetricKey(aSymKey, GetUseNewEncryptMethod());
-	return aSymKey.Encrypt(mP14->data(),mP14->length());
+	this->GetSymmetricKey(aSymKey, this->GetUseNewEncryptMethod());
+	return aSymKey.Encrypt(this->mKey->data(),this->mKey->length());
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 bool CDKey::InitRaw(const void* theRawKey)
 {
-	mValid = false;
-	mP14 = NULL;
-	return CalcKeyFromBuffer((const char*)theRawKey);
+	this->mValid = false;
+	this->mKey = NULL;
+	return this->CalcKeyFromBuffer(static_cast<const char*>(theRawKey));
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 bool CDKey::SaveToFile(const std::string &theFileName)
 {
-	if(!IsValid())
+	if(!this->IsValid())
 		return false;
 	
 	FILE *aFile = fopen(theFileName.c_str(),"wb");
 	if(aFile==NULL)
 		return false;
 
-	ByteBufferPtr anEncrypt = GetEncrypted();	
+	ByteBufferPtr anEncrypt = this->GetEncrypted();	
 	if(anEncrypt.get()==NULL)
 		return false;
 
@@ -461,7 +469,7 @@ bool CDKey::SaveToFile(const std::string &theFileName)
 	return true;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 bool CDKey::LoadFromFile(const std::string &theFileName)
 {
 	FILE *aFile = fopen(theFileName.c_str(),"rb");
@@ -472,56 +480,56 @@ bool CDKey::LoadFromFile(const std::string &theFileName)
 	int aReadLen = fread(aBuf,1,2048,aFile);
 	fclose(aFile);
 	
-	return InitEncrypted(aBuf,aReadLen);
+	return this->InitEncrypted(aBuf,aReadLen);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 bool CDKey::IsBeta() const
 {
-	if(mP14.get()==NULL)
+	if(this->mKey.get()==NULL)
 		return false;
 	else
-		return (*(mP14->data()) & BETA_MASK);
+		return (*(this->mKey->data()) & BETA_MASK);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK absent method; no Native credit.
+// No original address identified: WON SDK method
 bool CDKey::IsForceCheck() const
 {
-	if(mP14->length()<3)
+	if(this->mKey->length()<3)
 		return false;
 	else
-		return ((mP14->data())[2] & FORCE_MASK ? true : false);
+		return ((this->mKey->data())[2] & FORCE_MASK ? true : false);
 }
 }
 
 namespace WONAPI {
-// Genuine SDK default registry path; source-only data, no Native identity.
+// WON SDK default registry path (no original address identified)
 const char* CDKey::mCDKeyPath = "SOFTWARE\\Sierra\\CDKeys";
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK registry persistence body.
+// No original address identified: WON SDK registry storage
 bool CDKey::SaveToRegistry(long theRoot, const char* thePath) 
 {
-	if(!IsValid())
+	if(!this->IsValid())
 		return false;
 
 	RegKey aKey(theRoot, thePath, true, true);
 	if(!aKey.IsOpen())
 		return false;
 
-	ByteBufferPtr anEncrypt = GetEncrypted();
+	ByteBufferPtr anEncrypt = this->GetEncrypted();
 	if(anEncrypt.get()==NULL)
 		return false;
 
-	return aKey.SetValue(mProduct,anEncrypt->data(),anEncrypt->length());
+	return aKey.SetValue(this->mProduct,anEncrypt->data(),anEncrypt->length());
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK registry persistence body.
+// No original address identified: WON SDK registry storage
 void CDKey::ClearFromRegistry(long theRoot, const char* thePath)
 {
-	if(mProduct.empty())
+	if(this->mProduct.empty())
 		return;
 
 	RegKey aKey(theRoot, thePath, false, true);
-	aKey.DeleteValue(mProduct);
+	aKey.DeleteValue(this->mProduct);
 }
 }

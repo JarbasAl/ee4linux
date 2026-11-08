@@ -1,4 +1,4 @@
-// Scratch whole MOTD consumer. Stack HTMLDocumentGen14 must be GUI-owned/full typed before compile.
+// The login screen's message of the day (system and game MOTD in one page) and the ping bar drawing helper
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,64 +12,66 @@
 #include "ee/wonapi/WONLobbyScreens.h"
 #include "ee/wonapi/WONLobbyEvents.h"
 namespace WONAPI {
-// Default constructor124/member-only setup0; ordinary generator dtor150/support0.
 MOTDCtrl::MOTDCtrl() : mNeedGenHTML(false) {}
-// Original3c0be0..3c0cc7,231B. Own-vptr3c0bff then two strings/browser/base cleanup.
+// The original stores its own vtable (0x7c0bff) before destroying the two paths, the browser and the base
 // FUNCTION: WON 0x007c0be0
+// Destroys the MOTD control, releasing both MOTD paths and the browser
 MOTDCtrl::~MOTDCtrl() {}
-// Original3c0cd0..3c0d13,67B.
 // FUNCTION: WON 0x007c0cd0
+// Finds the MOTD browser in the layout, makes its links open the web browser and listens to broadcasts
 void MOTDCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2) {
-        SafeGetComponent(static_cast<ComponentConfigInit&>(inInit).mConfig,mBrowser,"Browser",__FILE__,36);
-        mBrowser->SetLaunchBrowserOnLink(true);
-        Fn2F5360(1);
-    }
+    if(inInit.mType!=2)
+        return;
+    SafeGetComponent(static_cast<ComponentConfigInit&>(inInit).mConfig,this->mBrowser,"Browser",__FILE__,36);
+    this->mBrowser->SetLaunchBrowserOnLink(true);
+    this->SubscribeToBroadcast(1);
 }
-// Original3c0d20..3c0fae,654B. System first/game second; flags14 are native full int.
+// The document parameter flags (14) are a full int
 // FUNCTION: WON 0x007c0d20
+// Builds and shows the MOTD page (system MOTD, then game MOTD) once both documents have arrived
 void MOTDCtrl::Paint(Graphics& inGraphics)
 {
-    if(mNeedGenHTML) {
-        mNeedGenHTML=false;
-        if(!mSysMOTDPath.empty() && !mGameMOTDPath.empty()) {
+    if(this->mNeedGenHTML) {
+        this->mNeedGenHTML=false;
+        if(!this->mSysMOTDPath.empty() && !this->mGameMOTDPath.empty()) {
             HTMLDocumentGen generator(NULL);
-            generator.AddDocParam(GUIString(mSysMOTDPath),14);
-            generator.AddDocParam(GUIString(mGameMOTDPath),14);
-            mSysMOTDPath.erase();
-            mGameMOTDPath.erase();
+            generator.AddDocParam(GUIString(this->mSysMOTDPath),14);
+            generator.AddDocParam(GUIString(this->mGameMOTDPath),14);
+            this->mSysMOTDPath.erase();
+            this->mGameMOTDPath.erase();
             generator.printf(GUIString("<body>%1%<br><br>%2%</body>"));
-            mBrowser->Go(generator.GetDocument());
+            this->mBrowser->Go(generator.GetDocument());
         }
     }
     Container::Paint(inGraphics);
 }
-// Original3c1050..3c127b,555B. Document type gate, not AsyncOp success/status gate.
+// Only the document type is checked, not whether the download succeeded
 // FUNCTION: WON 0x007c1050
+// Takes the system and game MOTD file paths from a finished MOTD download and repaints
 void MOTDCtrl::ShowMessage(GetHTTPDocumentOp* inOp)
 {
-    if(inOp->GetDocType()!=0) return;
-    mNeedGenHTML=true;
-    mSysMOTDPath=inOp->GetDocumentPath(HTTPDocOwner_Sys);
-    mGameMOTDPath=inOp->GetDocumentPath(HTTPDocOwner_Game);
-    Invalidate();
+    if(inOp->GetDocType()!=HTTPDocType_MOTD) return;
+    this->mNeedGenHTML=true;
+    this->mSysMOTDPath=inOp->GetDocumentPath(HTTPDocOwner_Sys);
+    this->mGameMOTDPath=inOp->GetDocumentPath(HTTPDocOwner_Game);
+    this->Invalidate();
 }
-// Original3c1280..3c12a2,34B.
 // FUNCTION: WON 0x007c1280
+// Handles got-HTTP-document broadcasts; passes every other event to the base component
 void MOTDCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if(inEvent->mType==100024) {
-        ShowMessage(static_cast<GotHTTPDocumentEvent*>(inEvent)->mOp.get());
+    if(inEvent->mType==LobbyEvent_GotHTTPDocument) {
+        this->ShowMessage(static_cast<GotHTTPDocumentEvent*>(inEvent)->mOp.get());
         return;
     }
     Component::HandleComponentEvent(inEvent);
 }
-// Actual mutable DWORD4df4cc, initialized5000; native only refreshes when still5000.
-// Data ownership/binding must be independently reviewed before promotion.
+// The ping ceiling (0x8df4cc) starts at 5000 and is taken from the lobby config while it is still 5000
 static unsigned long sLobbyPingCeiling=5000;
-// Original3c12b0..3c14d2,546B. Five cdecl args; alignment/width are full int.
+// The text is always empty, so its branches never draw anything (as in the original)
 // FUNCTION: WON 0x007c12b0
+// Draws a ping as 1-10 green bars scaled by the config's ping ceiling, or the searching or failed icon
 void DrawLobbyPing(Graphics* inGraphics,unsigned short inPing,int inHeight,int inAlignment,int inWidth)
 {
     if(inPing==0xfffe) return;

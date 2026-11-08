@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete same-SDK authenticated file-push operation.
+// No original address identified: WON SDK authenticated file-push op
 #ifndef EE_WONAPI_WONFILEPUSH_H
 #define EE_WONAPI_WONFILEPUSH_H
 #include "ee/wonapi/WONRouting.h"
@@ -9,16 +9,16 @@ public:
 	FilePushOp(const IPAddr &theAddr);
 	virtual ~FilePushOp(void);
 
-	void SetFile(const std::string& theFileName) { mFileName = theFileName; }
-	void SetRemoteFile(const std::string& theRemoteFileName) { mRemoteFileName = theRemoteFileName; }
-	void SetCompress(bool isCompress) { mIsCompress = isCompress; }
-	void SetModifyTime(FILETIME theModifyTime) { mModifyTime = theModifyTime; }
-	void SetProgressCompletion(OpCompletionBasePtr theCompletion) { mProgressCompletion = theCompletion; }
-	void SetBlockTransferSize(DWORD theSize) { mBlockTransferSize = theSize; }
-	void SetComment(const std::string& theComment) { mComment = theComment; }
+	void SetFile(const std::string& theFileName) { this->mFileName = theFileName; }
+	void SetRemoteFile(const std::string& theRemoteFileName) { this->mRemoteFileName = theRemoteFileName; }
+	void SetCompress(bool isCompress) { this->mIsCompress = isCompress; }
+	void SetModifyTime(FILETIME theModifyTime) { this->mModifyTime = theModifyTime; }
+	void SetProgressCompletion(OpCompletionBasePtr theCompletion) { this->mProgressCompletion = theCompletion; }
+	void SetBlockTransferSize(DWORD theSize) { this->mBlockTransferSize = theSize; }
+	void SetComment(const std::string& theComment) { this->mComment = theComment; }
 
-	DWORD GetTotalBytesSent() const { return mTotalBytesSent; }
-	DWORD GetLastBytesSent() const { return mLastBytesSent; }
+	DWORD GetTotalBytesSent() const { return this->mTotalBytesSent; }
+	DWORD GetLastBytesSent() const { return this->mLastBytesSent; }
 private:
 	class AutoFile
 	{
@@ -27,11 +27,11 @@ private:
 		
 	public:
 		AutoFile() : mFileP(NULL) { }
-		~AutoFile() { Detach(); }
+		~AutoFile() { this->Detach(); }
 
-		void Attach(FILE *theFileP) { Detach(); mFileP = theFileP; }
-		void Detach() { if(mFileP) fclose(mFileP); mFileP = NULL; }
-		FILE* GetFile() { return mFileP; }
+		void Attach(FILE *theFileP) { this->Detach(); this->mFileP = theFileP; }
+		void Detach() { if(this->mFileP) fclose(this->mFileP); this->mFileP = NULL; }
+		FILE* GetFile() { return this->mFileP; }
 	};
 
 	AutoFile mFile;
@@ -73,8 +73,8 @@ protected:
 
 	bool SendStreamFileRequest();
 	
-	virtual void Virtual04(void);
-	virtual void Virtual08(void);
+	virtual void RunHook(void);
+	virtual void CleanupHook(void);
 
 };
 

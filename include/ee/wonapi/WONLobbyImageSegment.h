@@ -1,6 +1,6 @@
 #ifndef EE_WONAPI_WONLOBBYIMAGESEGMENT_H
 #define EE_WONAPI_WONLOBBYIMAGESEGMENT_H
-// Compatibility include: the sole actual ImageLineSegment2c owner is canonical here.
-// It inherits LineSegment::GetAscent (actual shared30b840); no duplicate override/type.
+// Compatibility include: ImageLineSegment (0x2c bytes) is declared in WONLobbyHTMLImageSegments.h.
+// It inherits LineSegment::GetAscent (shared body at 0x0070b840).
 #include "ee/wonapi/WONLobbyHTMLImageSegments.h"
 #endif

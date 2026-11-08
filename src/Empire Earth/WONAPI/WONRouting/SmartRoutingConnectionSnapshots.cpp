@@ -1,5 +1,5 @@
-// Genuine SDK thread-safe snapshot copies and routing-map traversal.
-// SOURCE_ONLY_NO_NATIVE_ID; no Native/primary/physical credit.
+// WON SDK thread-safe snapshot copies and routing-map traversal
+// No original address identified
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,14 +13,14 @@
 namespace WONAPI {
 RoutingMemberInfoPtr SmartRoutingConnection::GetMemberRef(unsigned short theClientId, int theGroupId)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 	if(theGroupId==-1)
-		theGroupId = mDefaultGroupId;
+		theGroupId = this->mDefaultGroupId;
 
-	if(mHandlerMember.get()!=NULL && mHandlerMember->mClientId==theClientId && mHandlerGroup->mId==theGroupId)
-		return mHandlerMember;
+	if(this->mHandlerMember.get()!=NULL && this->mHandlerMember->mClientId==theClientId && this->mHandlerGroup->mId==theGroupId)
+		return this->mHandlerMember;
 
-	RoutingGroupInfoPtr aGroup = GetGroup(theGroupId);
+	RoutingGroupInfoPtr aGroup = this->GetGroup(theGroupId);
 	if(aGroup.get()==NULL)
 		return NULL;
 
@@ -40,7 +40,7 @@ static bool CopyClient(SmartRoutingConnection::ClientInfo &theClientCopy, Routin
 	theClientCopy.mId = theClient->mClientId;
 	theClientCopy.mName = theClient->mName;
 
-	SmartRoutingClientInfo* aSmartClient = (SmartRoutingClientInfo*)theClient;
+	SmartRoutingClientInfo* aSmartClient = static_cast<SmartRoutingClientInfo*>(theClient);
 	theClientCopy.mCDKeyId = aSmartClient->mAddress;
 	return true;
 }
@@ -79,94 +79,94 @@ static bool CopyMember(SmartRoutingConnection::MemberInfo &theMemberCopy, Routin
 
 bool SmartRoutingConnection::GetClient(unsigned short theClientId, ClientInfo &theClient)
 {
-	AutoCrit aCrit(mDataCrit);
-	RoutingClientInfoPtr aClient = GetClient(theClientId);
+	AutoCrit aCrit(this->mDataCrit);
+	RoutingClientInfoPtr aClient = this->GetClient(theClientId);
 	return CopyClient(theClient,aClient);
 }
 
 bool SmartRoutingConnection::GetGroup(unsigned short theGroupId, GroupInfo &theGroup)
 {
-	AutoCrit aCrit(mDataCrit);
-	RoutingGroupInfoPtr aGroup = GetGroup(theGroupId);
+	AutoCrit aCrit(this->mDataCrit);
+	RoutingGroupInfoPtr aGroup = this->GetGroup(theGroupId);
 	return CopyGroup(theGroup,aGroup);
 }
 
 bool SmartRoutingConnection::GetMember(unsigned short theGroupId, unsigned short theClientId, MemberInfo &theMember)
 {
-	AutoCrit aCrit(mDataCrit);
-	RoutingMemberInfoPtr aMember = GetMemberRef(theClientId,theGroupId);
+	AutoCrit aCrit(this->mDataCrit);
+	RoutingMemberInfoPtr aMember = this->GetMemberRef(theClientId,theGroupId);
 	return CopyMember(theMember,aMember);
 }
 
 void SmartRoutingConnection::StartClientItr()
 {
-	AutoCrit aCrit(mDataCrit);
-	mClientItr = mClientMap.begin();
+	AutoCrit aCrit(this->mDataCrit);
+	this->mClientItr = this->mClientMap.begin();
 }
 
 bool SmartRoutingConnection::GetNextClient(ClientInfo &theInfo)
 {
-	AutoCrit aCrit(mDataCrit);
-	if(mClientItr==mClientMap.end())
+	AutoCrit aCrit(this->mDataCrit);
+	if(this->mClientItr==this->mClientMap.end())
 		return false;
 
-	CopyClient(theInfo,mClientItr->second);
-	++mClientItr;
+	CopyClient(theInfo,this->mClientItr->second);
+	++this->mClientItr;
 	return true;
 }
 
 void SmartRoutingConnection::StartGroupItr()
 {
-	AutoCrit aCrit(mDataCrit);
-	mGroupItr = mGroupMap.begin();
+	AutoCrit aCrit(this->mDataCrit);
+	this->mGroupItr = this->mGroupMap.begin();
 }
 
 bool SmartRoutingConnection::GetNextGroup(GroupInfo &theInfo)
 {
-	AutoCrit aCrit(mDataCrit);
-	if(mGroupItr==mGroupMap.end())
+	AutoCrit aCrit(this->mDataCrit);
+	if(this->mGroupItr==this->mGroupMap.end())
 		return false;
 
-	CopyGroup(theInfo,mGroupItr->second);
-	++mGroupItr;
+	CopyGroup(theInfo,this->mGroupItr->second);
+	++this->mGroupItr;
 	return true;
 }
 
 bool SmartRoutingConnection::StartMemberItr(unsigned short theGroupId)
 {
-	AutoCrit aCrit(mDataCrit);
-	mMemberItrGroup = GetGroup(theGroupId);
+	AutoCrit aCrit(this->mDataCrit);
+	this->mMemberItrGroup = this->GetGroup(theGroupId);
 
-	if(mMemberItrGroup.get()==NULL)
+	if(this->mMemberItrGroup.get()==NULL)
 		return false;
 
-	mMemberItr = mMemberItrGroup->mMembers.begin();
+	this->mMemberItr = this->mMemberItrGroup->mMembers.begin();
 	return true;
 }
 
 bool SmartRoutingConnection::GetNextMember(MemberInfo &theMember)
 {
-	AutoCrit aCrit(mDataCrit);
-	if(mMemberItrGroup.get()==NULL)
+	AutoCrit aCrit(this->mDataCrit);
+	if(this->mMemberItrGroup.get()==NULL)
 		return false;
 
-	if(mMemberItr==mMemberItrGroup->mMembers.end())
+	if(this->mMemberItr==this->mMemberItrGroup->mMembers.end())
 		return false;
 
-	CopyMember(theMember,mMemberItr->second);
-	++mMemberItr;
+	CopyMember(theMember,this->mMemberItr->second);
+	++this->mMemberItr;
 	return true;
 }
 
 bool SmartRoutingConnection::GetLastTargetMember(MemberInfo &theMember)
 {
-	AutoCrit aCrit(mDataCrit);
-	return CopyMember(theMember,mLastTargetMember);
+	AutoCrit aCrit(this->mDataCrit);
+	return CopyMember(theMember,this->mLastTargetMember);
 }
 
 bool SmartRoutingConnection::GetLastTargetClient(ClientInfo &theClient)
 {
-	AutoCrit aCrit(mDataCrit);
-	return CopyClient(theClient, mLastTargetClient);
+	AutoCrit aCrit(this->mDataCrit);
+	return CopyClient(theClient, this->mLastTargetClient);
 }
 }

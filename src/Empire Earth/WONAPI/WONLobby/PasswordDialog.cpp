@@ -11,36 +11,38 @@
 
 namespace WONAPI {
 
-// Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
+// Password dialog: asks for the password of a protected room or game
 PasswordDialog::PasswordDialog() {}
 
 
 
 // FUNCTION: WON 0x7f9050
+// Looks up the password field and the OK and cancel buttons from the layout
 void PasswordDialog::InitComponent(ComponentInit& inInit)
 {
-    if (inInit.mType == 2) {
-        ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(aConfig, mPasswordInput, "PasswordInput", __FILE__, 24);
-        SafeGetComponent(aConfig, mOkButton, "OkButton", __FILE__, 25);
-        SafeGetComponent(aConfig, mCancelButton, "CancelButton", __FILE__, 26);
-    }
+    if (inInit.mType != 2)
+        return;
+    ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(aConfig, this->mPasswordInput, "PasswordInput", __FILE__, 24);
+    SafeGetComponent(aConfig, this->mOkButton, "OkButton", __FILE__, 25);
+    SafeGetComponent(aConfig, this->mCancelButton, "CancelButton", __FILE__, 26);
 }
 
 // FUNCTION: WON 0x7f90c0
+// Returns the entered password
 const GUIString& PasswordDialog::GetPassword()
 {
-    return mPasswordInput->GetText();
+    return this->mPasswordInput->GetText();
 }
 
 }
 
 namespace WONAPI {
-// SUPPORT-ONLY: genuine SDK explicit PasswordDialog::Reset; shared native physical body, zero new physical/primary credit.
+// Clears the password and focuses it (WON SDK function; its body is shared with an identical one elsewhere)
 void PasswordDialog::Reset()
 {
-    mPasswordInput->Clear(false);
-    mPasswordInput->Fn2F5890();
+    this->mPasswordInput->Clear(false);
+    this->mPasswordInput->RequestFocus();
 }
 }
 

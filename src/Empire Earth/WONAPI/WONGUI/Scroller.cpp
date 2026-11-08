@@ -10,29 +10,35 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x00705580
-void Scroller::SetScrollArea(ScrollArea* area) { mScrollArea=area; }
+// Sets the scroll area this scroller controls
+void Scroller::SetScrollArea(ScrollArea* area) { this->mScrollArea=area; }
 // FUNCTION: WON 0x007055e0
+// Scrolls the area to the given offsets (counted as a user scroll); no-op if unchanged
 void Scroller::SetOffsets(int horizontal,int vertical) {
-    if(mScrollArea->mHorzOffset==horizontal && mScrollArea->mVertOffset==vertical) return;
-    mScrollArea->mHorzOffset=horizontal;
-    mScrollArea->mVertOffset=vertical;
-    mScrollArea->VirtualCC(true);
+    if(this->mScrollArea->mHorzOffset==horizontal && this->mScrollArea->mVertOffset==vertical) return;
+    this->mScrollArea->mHorzOffset=horizontal;
+    this->mScrollArea->mVertOffset=vertical;
+    this->mScrollArea->AdjustPosition(true);
 }
 // FUNCTION: WON 0x00705630
-void Scroller::SetVertOffset(int vertical) { SetOffsets(mScrollArea->mHorzOffset,vertical); }
+// Scrolls the area to a vertical offset, keeping the horizontal one
+void Scroller::SetVertOffset(int vertical) { this->SetOffsets(this->mScrollArea->mHorzOffset,vertical); }
 // FUNCTION: WON 0x00705650
-void Scroller::SetHorzOffset(int horizontal) { SetOffsets(horizontal,mScrollArea->mVertOffset); }
+// Scrolls the area to a horizontal offset, keeping the vertical one
+void Scroller::SetHorzOffset(int horizontal) { this->SetOffsets(horizontal,this->mScrollArea->mVertOffset); }
 // FUNCTION: WON 0x00705670
-void Scroller::Virtual2C(int x,int y,int button) {
-    Container::Virtual2C(x,y,button);
+// On a left press, gives focus to the scroll area, or to the scroller when one of its children has focus
+void Scroller::MouseDown(int x,int y,int button) {
+    Container::MouseDown(x,y,button);
     if(button==0) {
-        if(mFocusChild==NULL) mScrollArea->Fn2F5890();
-        else Fn2F5890();
+        if(this->mFocusChild==NULL) this->mScrollArea->RequestFocus();
+        else this->RequestFocus();
     }
 }
 // FUNCTION: WON 0x007056c0
-bool Scroller::Virtual3C(int amount) {
-    if(Container::Virtual3C(amount)) return true;
-    if(mScrollArea.get()!=NULL) return mScrollArea->Virtual3C(amount);
+// Passes the wheel to the children, then to the scroll area; true if either handled it
+bool Scroller::MouseWheel(int amount) {
+    if(Container::MouseWheel(amount)) return true;
+    if(this->mScrollArea.get()!=NULL) return this->mScrollArea->MouseWheel(amount);
     return false;
 }

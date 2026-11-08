@@ -14,70 +14,75 @@
 using namespace WONAPI;
 
 // FUNCTION: WON 0x00706e10
+// Creates a component that plays an animation, sized to it and optionally started at once
 AnimationComponent::AnimationComponent(Animation* animation,bool startNow)
     :mAnimation(animation)
 {
-    mDelayAcc=0;
-    mStarted=false;
-    SetAnimation(animation);
-    if(animation!=NULL)
-    {
-        Fn2F4B90(animation->GetWidth(),animation->GetHeight());
-        if(startNow)
-            Start();
-    }
+    this->mDelayAcc=0;
+    this->mStarted=false;
+    this->SetAnimation(animation);
+    if(animation==NULL)
+        return;
+    this->SetSize(animation->GetWidth(),animation->GetHeight());
+    if(startNow)
+        this->Start();
 }
 
 // FUNCTION: WON 0x00706f40
+// Sets the animation the component plays
 void AnimationComponent::SetAnimation(Animation* animation)
 {
-    mAnimation=animation;
+    this->mAnimation=animation;
 }
 
 // FUNCTION: WON 0x00706fa0
+// Starts playback (optionally from the first frame) and requests timer ticks
 void AnimationComponent::Start(bool restart)
 {
     if(restart)
     {
-        mAnimation->Rewind();
-        mDelayAcc=0;
+        this->mAnimation->Rewind();
+        this->mDelayAcc=0;
     }
-    mStarted=true;
-    Fn2F57D0(true);
+    this->mStarted=true;
+    this->RequestTimer(true);
 }
 
 // FUNCTION: WON 0x00706fd0
-void AnimationComponent::Virtual6C()
+// Re-requests timer ticks when the component joins a parent while playing
+void AnimationComponent::AddedToParent()
 {
-    Component::Virtual6C();
-    if(mStarted)
-        Fn2F57D0(true);
+    Component::AddedToParent();
+    if(this->mStarted)
+        this->RequestTimer(true);
 }
 
 // FUNCTION: WON 0x00706ff0
+// Forwards to the base component's handler with no extra behaviour
 void AnimationComponent::Virtual08()
 {
     Component::Virtual08();
 }
 
 // FUNCTION: WON 0x00707000
+// Paints the component, then the animation's current frame at its top left
 void AnimationComponent::Paint(Graphics& g)
 {
     Component::Paint(g);
-    mAnimation->Draw(g,0,0);
+    this->mAnimation->Draw(g,0,0);
 }
 
 // FUNCTION: WON 0x00707020
-bool AnimationComponent::Virtual44(int delta)
+// Advances the animation once the current frame's delay has passed; returns false when it has finished
+bool AnimationComponent::TimerEvent(int delta)
 {
-    mDelayAcc+=delta;
-    if(mDelayAcc>mAnimation->GetFrameDelayTime())
-    {
-        if(!mAnimation->NextFrame())
-            return false;
-        mDelayAcc=0;
-        Invalidate();
-    }
+    this->mDelayAcc+=delta;
+    if(!(this->mDelayAcc>this->mAnimation->GetFrameDelayTime()))
+        return true;
+    if(!this->mAnimation->NextFrame())
+        return false;
+    this->mDelayAcc=0;
+    this->Invalidate();
     return true;
 }
 

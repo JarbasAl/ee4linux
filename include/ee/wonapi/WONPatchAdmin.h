@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine same-SDK patch/version administration operations.
+// No original address identified: WON SDK patch/version administration operations
 #ifndef EE_WONAPI_WONPATCHADMIN_H
 #define EE_WONAPI_WONPATCHADMIN_H
 #include "ee/wonapi/WONRouting.h"
@@ -35,27 +35,27 @@ public:
 
 
 	// Accessors
-	void SetProductName(const std::string& theProductName)	{ mProductName = theProductName;	}
-	void SetConfigName(const std::string& theConfigName)	{ mConfigName = theConfigName;		}
-	void SetFromVersion(const std::string& theFromVersion)	{ mFromVersion = theFromVersion;	}
-	void SetToVersion(const std::string& theToVersion)		{ mToVersion = theToVersion;		}
-	void SetNetAddress(const std::string& theNetAddress)	{ mNetAddress = theNetAddress;		}		// patch url
-	void SetIsActive(BOOL theIsActive)						{ mIsActive = theIsActive;			}
+	void SetProductName(const std::string& theProductName)	{ this->mProductName = theProductName;	}
+	void SetConfigName(const std::string& theConfigName)	{ this->mConfigName = theConfigName;		}
+	void SetFromVersion(const std::string& theFromVersion)	{ this->mFromVersion = theFromVersion;	}
+	void SetToVersion(const std::string& theToVersion)		{ this->mToVersion = theToVersion;		}
+	void SetNetAddress(const std::string& theNetAddress)	{ this->mNetAddress = theNetAddress;		}		// patch url
+	void SetIsActive(BOOL theIsActive)						{ this->mIsActive = theIsActive;			}
 
-	const std::string&  GetProductName()		{ return mProductName;	}
-	const std::string&  GetConfigName()			{ return mConfigName;	}
-	const std::string&  GetFromVersion()		{ return mFromVersion;	}
-	const std::string&  GetToVersion()			{ return mToVersion;	}
-	const std::string&  GetNetAddress()			{ return mNetAddress;	}		// patch url
-	BOOL  GetIsActive()							{ return mIsActive;		}
+	const std::string&  GetProductName()		{ return this->mProductName;	}
+	const std::string&  GetConfigName()			{ return this->mConfigName;	}
+	const std::string&  GetFromVersion()		{ return this->mFromVersion;	}
+	const std::string&  GetToVersion()			{ return this->mToVersion;	}
+	const std::string&  GetNetAddress()			{ return this->mNetAddress;	}		// patch url
+	BOOL  GetIsActive()							{ return this->mIsActive;		}
 
 protected:
 	void Init();
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:
@@ -97,47 +97,47 @@ protected:
 public:
 
 	// Accessors
-	void SetPatchData	(PatchData* thePatchData)			{ mPatchData = thePatchData;					}
-	void SetProductName (const std::string& theProductName)	{ mProductName = theProductName;				}
-	void SetConfigName	(const std::string& theConfigName)	{ mPatchData->SetConfigName(theConfigName);		}
-	void SetFromVersion	(const std::string& theFromVersion)	{ mPatchData->SetFromVersion(theFromVersion);	}
-	void SetToVersion	(const std::string& theToVersion)	{ mPatchData->SetToVersion(theToVersion);		}
-	void SetDisplayName	(const std::string& theDisplayName)	{ mPatchData->SetDisplayName(theDisplayName);	}
-	void SetNetAddress	(const std::string& theNetAddress)	{ mPatchData->SetNetAddress(theNetAddress);		}
-	void SetCheckSum	(unsigned long theCheckSum)			{ mPatchData->SetCheckSum(theCheckSum);			}
-	void SetPatchSize	(unsigned long thePatchSize)		{ mPatchData->SetPatchSize(thePatchSize);		}
-	void SetHostName	(const std::string& theHostName)	{ mPatchData->SetHostName(theHostName);			}
-	void SetHostURL		(const std::string& theHostURL)		{ mPatchData->SetHostURL(theHostURL);			}
-	void SetHostText	(const std::string& theHostText)	{ mPatchData->SetHostText(theHostText);			}
-	void SetHostImageURL(const std::string& theHostImageURL){ mPatchData->SetHostImageURL(theHostImageURL);	}
-	void SetMustVisitHost(bool theMustVisitHost)			{ mPatchData->SetMustVisitHost(theMustVisitHost);}
-	void SetIsActive	(bool theIsActive)					{ mPatchData->SetIsActive(theIsActive);			}
-	void SetIsUpdate	(bool theIsUpdate)					{ mIsUpdate = theIsUpdate; }
+	void SetPatchData	(PatchData* thePatchData)			{ this->mPatchData = thePatchData;					}
+	void SetProductName (const std::string& theProductName)	{ this->mProductName = theProductName;				}
+	void SetConfigName	(const std::string& theConfigName)	{ this->mPatchData->SetConfigName(theConfigName);		}
+	void SetFromVersion	(const std::string& theFromVersion)	{ this->mPatchData->SetFromVersion(theFromVersion);	}
+	void SetToVersion	(const std::string& theToVersion)	{ this->mPatchData->SetToVersion(theToVersion);		}
+	void SetDisplayName	(const std::string& theDisplayName)	{ this->mPatchData->SetDisplayName(theDisplayName);	}
+	void SetNetAddress	(const std::string& theNetAddress)	{ this->mPatchData->SetNetAddress(theNetAddress);		}
+	void SetCheckSum	(unsigned long theCheckSum)			{ this->mPatchData->SetCheckSum(theCheckSum);			}
+	void SetPatchSize	(unsigned long thePatchSize)		{ this->mPatchData->SetPatchSize(thePatchSize);		}
+	void SetHostName	(const std::string& theHostName)	{ this->mPatchData->SetHostName(theHostName);			}
+	void SetHostURL		(const std::string& theHostURL)		{ this->mPatchData->SetHostURL(theHostURL);			}
+	void SetHostText	(const std::string& theHostText)	{ this->mPatchData->SetHostText(theHostText);			}
+	void SetHostImageURL(const std::string& theHostImageURL){ this->mPatchData->SetHostImageURL(theHostImageURL);	}
+	void SetMustVisitHost(bool theMustVisitHost)			{ this->mPatchData->SetMustVisitHost(theMustVisitHost);}
+	void SetIsActive	(bool theIsActive)					{ this->mPatchData->SetIsActive(theIsActive);			}
+	void SetIsUpdate	(bool theIsUpdate)					{ this->mIsUpdate = theIsUpdate; }
 
-	SmartPtr<PatchData>		GetPatchData()			{ return mPatchData;					}
-	const std::string&  GetProductName()		{ return mProductName;					}
-	const std::string&  GetConfigName()			{ return mPatchData->GetConfigName();	}
-	const std::string&  GetFromVersion()		{ return mPatchData->GetFromVersion();	}
-	const std::string&  GetToVersion()			{ return mPatchData->GetToVersion();	}
-	const std::string&  GetDisplayName()		{ return mPatchData->GetDisplayName();	}
-	const std::string&  GetNetAddress()			{ return mPatchData->GetNetAddress();	}
-	const unsigned long GetCheckSum()			{ return mPatchData->GetCheckSum();		}
-	const unsigned long GetPatchSize()			{ return mPatchData->GetPatchSize();	}
-	const std::string&  GetHostName()			{ return mPatchData->GetHostName();		}
-	const std::string&  GetHostURL()			{ return mPatchData->GetHostURL();		}
-	const std::string&  GetHostText()			{ return mPatchData->GetHostText();		}
-	const std::string&  GetHostImageURL()		{ return mPatchData->GetHostImageURL(); }
-	bool  GetMustVisitHost()					{ return mPatchData->GetMustVisitHost();}
-	bool  GetIsActive()							{ return mPatchData->GetIsActive();		}
-	bool  GetIsUpdate()							{ return mIsUpdate;						}
+	SmartPtr<PatchData>		GetPatchData()			{ return this->mPatchData;					}
+	const std::string&  GetProductName()		{ return this->mProductName;					}
+	const std::string&  GetConfigName()			{ return this->mPatchData->GetConfigName();	}
+	const std::string&  GetFromVersion()		{ return this->mPatchData->GetFromVersion();	}
+	const std::string&  GetToVersion()			{ return this->mPatchData->GetToVersion();	}
+	const std::string&  GetDisplayName()		{ return this->mPatchData->GetDisplayName();	}
+	const std::string&  GetNetAddress()			{ return this->mPatchData->GetNetAddress();	}
+	const unsigned long GetCheckSum()			{ return this->mPatchData->GetCheckSum();		}
+	const unsigned long GetPatchSize()			{ return this->mPatchData->GetPatchSize();	}
+	const std::string&  GetHostName()			{ return this->mPatchData->GetHostName();		}
+	const std::string&  GetHostURL()			{ return this->mPatchData->GetHostURL();		}
+	const std::string&  GetHostText()			{ return this->mPatchData->GetHostText();		}
+	const std::string&  GetHostImageURL()		{ return this->mPatchData->GetHostImageURL(); }
+	bool  GetMustVisitHost()					{ return this->mPatchData->GetMustVisitHost();}
+	bool  GetIsActive()							{ return this->mPatchData->GetIsActive();		}
+	bool  GetIsUpdate()							{ return this->mIsUpdate;						}
 
 protected:
 	void Init();
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:
@@ -179,25 +179,25 @@ protected:
 public:
 
 	// Accessors
-	void SetProductName		(const std::string& theProductName)		{ mProductName		= theProductName;					}
-	void SetConfigName		(const std::string& theConfigName)		{ mVersionData->SetConfigName		(theConfigName);	}
-	void SetVersion			(const std::string& theVersion)			{ mVersionData->SetVersion			(theVersion);		}
-	void SetDescriptionURL	(const std::string& theDescriptionURL)	{ mVersionData->SetDescriptionURL	(theDescriptionURL);}
-	void AddVersionType		(const std::string& theVersionType)		{ mVersionData->AddVersionType		(theVersionType);	}
+	void SetProductName		(const std::string& theProductName)		{ this->mProductName		= theProductName;					}
+	void SetConfigName		(const std::string& theConfigName)		{ this->mVersionData->SetConfigName		(theConfigName);	}
+	void SetVersion			(const std::string& theVersion)			{ this->mVersionData->SetVersion			(theVersion);		}
+	void SetDescriptionURL	(const std::string& theDescriptionURL)	{ this->mVersionData->SetDescriptionURL	(theDescriptionURL);}
+	void AddVersionType		(const std::string& theVersionType)		{ this->mVersionData->AddVersionType		(theVersionType);	}
 
-	const std::string& GetProductName()		{ return mProductName;		}
-	const std::string& GetConfigName()		{ return mVersionData->GetConfigName();		}
-	const std::string& GetVersion()			{ return mVersionData->GetVersion();		}
-	const std::string& GetDescriptionURL()	{ return mVersionData->GetDescriptionURL();	}
-	const VersionTypeList& GetVersionTypeList() { return mVersionData->GetVersionTypeList(); }
+	const std::string& GetProductName()		{ return this->mProductName;		}
+	const std::string& GetConfigName()		{ return this->mVersionData->GetConfigName();		}
+	const std::string& GetVersion()			{ return this->mVersionData->GetVersion();		}
+	const std::string& GetDescriptionURL()	{ return this->mVersionData->GetDescriptionURL();	}
+	const VersionTypeList& GetVersionTypeList() { return this->mVersionData->GetVersionTypeList(); }
 
 protected:
 	void Init();
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:
@@ -240,22 +240,22 @@ protected:
 public:
 
 	// Accessors
-	void SetProductName		(const std::string& theProductName)		{ mProductName		= theProductName;	}
-	void SetConfigName		(const std::string& theConfigName)		{ mConfigName		= theConfigName;	}
-	void SetStateFilter		(VersionState		theStateFilter)		{ mStateFilter		= theStateFilter;	}
+	void SetProductName		(const std::string& theProductName)		{ this->mProductName		= theProductName;	}
+	void SetConfigName		(const std::string& theConfigName)		{ this->mConfigName		= theConfigName;	}
+	void SetStateFilter		(VersionState		theStateFilter)		{ this->mStateFilter		= theStateFilter;	}
 
-	const std::string& GetProductName()		{ return mProductName;	}
-	const std::string& GetConfigName()		{ return mConfigName;	}
-	VersionState	   GetStateFilter()		{ return mStateFilter;	}
-	const VersionDataList&	GetVersionDataList()	{ return mVersionDataList; }
+	const std::string& GetProductName()		{ return this->mProductName;	}
+	const std::string& GetConfigName()		{ return this->mConfigName;	}
+	VersionState	   GetStateFilter()		{ return this->mStateFilter;	}
+	const VersionDataList&	GetVersionDataList()	{ return this->mVersionDataList; }
 
 protected:
 	void Init();
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:
@@ -293,8 +293,8 @@ protected:
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:
@@ -340,25 +340,25 @@ protected:
 public:
 
 	// Accessors
-	void SetProductName	(const std::string& theProductName)	{ mProductName	= theProductName;	}
-	void SetConfigName	(const std::string& theConfigName)	{ mConfigName	= theConfigName;	}
-	void SetFromVersion	(const std::string& theFromVersion)	{ mFromVersion	= theFromVersion;	}
-	void SetToVersion	(const std::string& theToVersion)	{ mToVersion	= theToVersion;		}
-	void SetNetAddress	(const std::string& theNetAddress)	{ mNetAddress	= theNetAddress;	}
+	void SetProductName	(const std::string& theProductName)	{ this->mProductName	= theProductName;	}
+	void SetConfigName	(const std::string& theConfigName)	{ this->mConfigName	= theConfigName;	}
+	void SetFromVersion	(const std::string& theFromVersion)	{ this->mFromVersion	= theFromVersion;	}
+	void SetToVersion	(const std::string& theToVersion)	{ this->mToVersion	= theToVersion;		}
+	void SetNetAddress	(const std::string& theNetAddress)	{ this->mNetAddress	= theNetAddress;	}
 	
-	const std::string&  GetProductName()		{ return mProductName;	}
-	const std::string&  GetConfigName()			{ return mConfigName;	}
-	const std::string&  GetFromVersion()		{ return mFromVersion;	}
-	const std::string&  GetToVersion()			{ return mToVersion;	}
-	const std::string&  GetNetAddress()			{ return mNetAddress;	}		// patch url
+	const std::string&  GetProductName()		{ return this->mProductName;	}
+	const std::string&  GetConfigName()			{ return this->mConfigName;	}
+	const std::string&  GetFromVersion()		{ return this->mFromVersion;	}
+	const std::string&  GetToVersion()			{ return this->mToVersion;	}
+	const std::string&  GetNetAddress()			{ return this->mNetAddress;	}		// patch url
 
 protected:
 	void Init();
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:
@@ -401,21 +401,21 @@ protected:
 public:
 
 	// Accessors
-	void SetProductName		(const std::string& theProductName)		{ mProductName		= theProductName;	}
-	void SetConfigName		(const std::string& theConfigName)		{ mConfigName		= theConfigName;	}
-	void SetVersion			(const std::string& theVersion)			{ mVersion			= theVersion;		}	
+	void SetProductName		(const std::string& theProductName)		{ this->mProductName		= theProductName;	}
+	void SetConfigName		(const std::string& theConfigName)		{ this->mConfigName		= theConfigName;	}
+	void SetVersion			(const std::string& theVersion)			{ this->mVersion			= theVersion;		}	
 
-	const std::string& GetProductName()		{ return mProductName;		}
-	const std::string& GetConfigName()		{ return mConfigName;		}
-	const std::string& GetVersion()			{ return mVersion;			}
+	const std::string& GetProductName()		{ return this->mProductName;		}
+	const std::string& GetConfigName()		{ return this->mConfigName;		}
+	const std::string& GetVersion()			{ return this->mVersion;			}
 
 protected:
 	void Init();
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:
@@ -456,27 +456,27 @@ protected:
 public:
 
 	// Accessors
-	void SetProductName		(const std::string& theProductName)		{ mProductName		= theProductName;					}
-	void SetConfigName		(const std::string& theConfigName)		{ mVersionData->SetConfigName		(theConfigName);	}
-	void SetVersion			(const std::string& theVersion)			{ mVersionData->SetVersion			(theVersion);		}
-	void SetDescriptionURL	(const std::string& theDescriptionURL)	{ mVersionData->SetDescriptionURL	(theDescriptionURL);}
-	void AddVersionType		(const std::string& theVersionType)		{ mVersionData->AddVersionType		(theVersionType);	}
-	void SetState	(VersionState theVersionState)					{ mVersionData->SetState			(theVersionState);	}
+	void SetProductName		(const std::string& theProductName)		{ this->mProductName		= theProductName;					}
+	void SetConfigName		(const std::string& theConfigName)		{ this->mVersionData->SetConfigName		(theConfigName);	}
+	void SetVersion			(const std::string& theVersion)			{ this->mVersionData->SetVersion			(theVersion);		}
+	void SetDescriptionURL	(const std::string& theDescriptionURL)	{ this->mVersionData->SetDescriptionURL	(theDescriptionURL);}
+	void AddVersionType		(const std::string& theVersionType)		{ this->mVersionData->AddVersionType		(theVersionType);	}
+	void SetState	(VersionState theVersionState)					{ this->mVersionData->SetState			(theVersionState);	}
 
-	const std::string&		GetProductName()	{ return mProductName;						}
-	const std::string&		GetConfigName()		{ return mVersionData->GetConfigName();		}
-	const std::string&		GetVersion()		{ return mVersionData->GetVersion();		}
-	const std::string&		GetDescriptionURL()	{ return mVersionData->GetDescriptionURL();	}
-	const VersionTypeList&	GetVersionTypeList(){ return mVersionData->GetVersionTypeList();}
-	VersionState			GetState()			{ return mVersionData->GetState();			}
+	const std::string&		GetProductName()	{ return this->mProductName;						}
+	const std::string&		GetConfigName()		{ return this->mVersionData->GetConfigName();		}
+	const std::string&		GetVersion()		{ return this->mVersionData->GetVersion();		}
+	const std::string&		GetDescriptionURL()	{ return this->mVersionData->GetDescriptionURL();	}
+	const VersionTypeList&	GetVersionTypeList(){ return this->mVersionData->GetVersionTypeList();}
+	VersionState			GetState()			{ return this->mVersionData->GetState();			}
 
 protected:
 	void Init();
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:
@@ -524,8 +524,8 @@ protected:
 
 	// Overrides
 public:
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void	  Virtual04();				// Send - For Extended Pack
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void	  RunHook();				// Send - For Extended Pack
 
 	// Constructor
 public:

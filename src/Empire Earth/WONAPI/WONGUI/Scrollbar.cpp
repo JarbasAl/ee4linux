@@ -9,204 +9,209 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Native305fa0 support0, noquota.
 // FUNCTION: WON 0x00705fa0
+// Copies line scroll steps, thumb resizing and minimum thumb size from another scrollbar
 void Scrollbar::CopyAttributes(Scrollbar *theCopyFrom)
 {
-	mLineUpScrollSize =  theCopyFrom->mLineUpScrollSize;
-	mLineDownScrollSize =  theCopyFrom->mLineDownScrollSize;
-	mResizeThumb = theCopyFrom->mResizeThumb;
-	mMinThumbSize = theCopyFrom->mMinThumbSize;
+	this->mLineUpScrollSize =  theCopyFrom->mLineUpScrollSize;
+	this->mLineDownScrollSize =  theCopyFrom->mLineDownScrollSize;
+	this->mResizeThumb = theCopyFrom->mResizeThumb;
+	this->mMinThumbSize = theCopyFrom->mMinThumbSize;
 }
 
-// Native305fe0 support0, noquota.
 // FUNCTION: WON 0x00705fe0
-void Scrollbar::Virtual6C()
+// Adds the arrow, thumb and track controls the first time the scrollbar gets a parent
+void Scrollbar::AddedToParent()
 {
-	if(mUpArrow->mParent!=this)
-		AddControls();
+	if(this->mUpArrow->mParent!=this)
+		this->AddControls();
 
-	Container::Virtual6C();
+	Container::AddedToParent();
 }
 
 // FUNCTION: WON 0x00706000
+// Creates the track button if missing, sets button flag 2 on both arrows and the track, and adds all four controls
 void Scrollbar::AddControls()
 {
-	if(mScrollRect.get()==NULL)
-		mScrollRect = new Button;
+	if(this->mScrollRect.get()==NULL)
+		this->mScrollRect = new Button;
 
-	mUpArrow->Fn2F3370(2,true);
-	mDownArrow->Fn2F3370(2,true);	
-	mScrollRect->Fn2F3370(2,true);
+	this->mUpArrow->SetButtonFlags(2,true);
+	this->mDownArrow->SetButtonFlags(2,true);	
+	this->mScrollRect->SetButtonFlags(2,true);
 
-	Fn2F6A60(mScrollRect.get());
-	Fn2F6A60(mThumb.get());
-	Fn2F6A60(mUpArrow.get());
-	Fn2F6A60(mDownArrow.get());
+	this->AddChild(this->mScrollRect.get());
+	this->AddChild(this->mThumb.get());
+	this->AddChild(this->mUpArrow.get());
+	this->AddChild(this->mDownArrow.get());
 }
 
-// Native306100 support0, noquota.
 // FUNCTION: WON 0x00706100
+// Positions a control along/across the scrollbar (x and y swapped when horizontal)
 void Scrollbar::S_SetPos(Component *theComponent, int x, int y)
 {
-	if(mVertical)
-		theComponent->Fn2F4B70(x,y);
+	if(this->mVertical)
+		theComponent->SetPos(x,y);
 	else
-		theComponent->Fn2F4B70(y,x);
+		theComponent->SetPos(y,x);
 }
 
-// Native306140 support0, noquota.
 // FUNCTION: WON 0x00706140
+// Sizes a control across/along the scrollbar (width and height swapped when horizontal)
 void Scrollbar::S_SetSize(Component *theComponent, int width, int height)
 {
-	if(mVertical)
-		theComponent->Fn2F4B90(width,height);
+	if(this->mVertical)
+		theComponent->SetSize(width,height);
 	else
-		theComponent->Fn2F4B90(height,width);
+		theComponent->SetSize(height,width);
 }
 
-// Native306180 support0, noquota.
 // FUNCTION: WON 0x00706180
+// Positions and sizes a control in scrollbar orientation (swapped when horizontal)
 void Scrollbar::S_SetPosSize(Component *theComponent, int x, int y, int width, int height)
 {
-	if(mVertical)
-		theComponent->Fn2F4BF0(x,y,width,height);
+	if(this->mVertical)
+		theComponent->SetPosSize(x,y,width,height);
 	else
-		theComponent->Fn2F4BF0(y,x,height,width);
+		theComponent->SetPosSize(y,x,height,width);
 }
 
 // FUNCTION: WON 0x007061d0
+// Sizes and places the thumb for the page and total size (hidden when everything fits), kept inside the track
 void Scrollbar::LayoutThumb(bool changePos)
 {
-	if(mPageSize >= mTotalSize)
+	if(this->mPageSize >= this->mTotalSize)
 	{
-		mThumb->SetVisible(false);
+		this->mThumb->SetVisible(false);
 		return;
 	}
 
-	mThumb->SetVisible(!IsDisabled());
+	this->mThumb->SetVisible(!this->IsDisabled());
 
-	int aScrollHeight = S_Height(mScrollRect.get());
-	int aThumbSize = S_Height(mThumb.get());
-	if(mResizeThumb)
+	int aScrollHeight = this->S_Height(this->mScrollRect.get());
+	int aThumbSize = this->S_Height(this->mThumb.get());
+	if(this->mResizeThumb)
 	{
-		aThumbSize = aScrollHeight*mPageSize/mTotalSize;
-		if(aThumbSize<mMinThumbSize)
-			aThumbSize = mMinThumbSize;
+		aThumbSize = aScrollHeight*this->mPageSize/this->mTotalSize;
+		if(aThumbSize<this->mMinThumbSize)
+			aThumbSize = this->mMinThumbSize;
 	}
 
-	int aThumbPos = S_Top(mThumb.get());
+	int aThumbPos = this->S_Top(this->mThumb.get());
 	if(changePos)
-		aThumbPos = S_Top(mScrollRect.get())+(aScrollHeight-aThumbSize)*mPosition/(mTotalSize-mPageSize);
+		aThumbPos = this->S_Top(this->mScrollRect.get())+(aScrollHeight-aThumbSize)*this->mPosition/(this->mTotalSize-this->mPageSize);
 
-	if(aThumbPos<S_Top(mScrollRect.get()))
+	if(aThumbPos<this->S_Top(this->mScrollRect.get()))
 	{
-		if(mVertical) aThumbPos = mScrollRect->Top(); else aThumbPos = mScrollRect->Left();
+		if(this->mVertical) aThumbPos = this->mScrollRect->Top(); else aThumbPos = this->mScrollRect->Left();
 		changePos = true;
 	}
-	if(aThumbPos+aThumbSize >= S_Bottom(mScrollRect.get()))
+	if(aThumbPos+aThumbSize >= this->S_Bottom(this->mScrollRect.get()))
 	{
-		aThumbPos = S_Bottom(mScrollRect.get())-aThumbSize;
+		aThumbPos = this->S_Bottom(this->mScrollRect.get())-aThumbSize;
 		changePos = true;
 	}
 
-	int aThumbWidth = S_Width(mThumb.get());
+	int aThumbWidth = this->S_Width(this->mThumb.get());
 	if(aThumbWidth==0)
-		aThumbWidth = S_Width(this);
+		aThumbWidth = this->S_Width(this);
 
 	if(changePos)
-		S_SetPosSize(mThumb.get(),S_Left(mThumb.get()),aThumbPos,aThumbWidth,aThumbSize);
+		this->S_SetPosSize(this->mThumb.get(),this->S_Left(this->mThumb.get()),aThumbPos,aThumbWidth,aThumbSize);
 	else
-		S_SetSize(mThumb.get(),aThumbWidth,aThumbSize);
+		this->S_SetSize(this->mThumb.get(),aThumbWidth,aThumbSize);
 }
 
 // FUNCTION: WON 0x00706380
+// Lays out the scrollbar: square arrows when unsized, down arrow at the end, track between, then the thumb
 void Scrollbar::Virtual08()
 {
 	Container::Virtual08();
 
-	if(S_Height(mUpArrow.get())==0)
-		S_SetSize(mUpArrow.get(), S_Width(this),S_Width(this));
-	if(S_Height(mDownArrow.get())==0)
-		S_SetSize(mDownArrow.get(),S_Width(this),S_Width(this));
+	if(this->S_Height(this->mUpArrow.get())==0)
+		this->S_SetSize(this->mUpArrow.get(), this->S_Width(this),this->S_Width(this));
+	if(this->S_Height(this->mDownArrow.get())==0)
+		this->S_SetSize(this->mDownArrow.get(),this->S_Width(this),this->S_Width(this));
 
-	S_SetPos(mDownArrow.get(),0,S_Height(this)-S_Height(mDownArrow.get()));
-	S_SetPosSize(mScrollRect.get(),0,S_Bottom(mUpArrow.get()),S_Width(this),S_Height(this)-S_Height(mUpArrow.get())-S_Height(mDownArrow.get()));
-	LayoutThumb(false);
+	this->S_SetPos(this->mDownArrow.get(),0,this->S_Height(this)-this->S_Height(this->mDownArrow.get()));
+	this->S_SetPosSize(this->mScrollRect.get(),0,this->S_Bottom(this->mUpArrow.get()),this->S_Width(this),this->S_Height(this)-this->S_Height(this->mUpArrow.get())-this->S_Height(this->mDownArrow.get()));
+	this->LayoutThumb(false);
 }
 
 // FUNCTION: WON 0x007064c0
-void Scrollbar::Virtual2C(int x, int y, int theButton)
+// On a left press on the thumb, remembers where in the thumb it was grabbed
+void Scrollbar::MouseDown(int x, int y, int theButton)
 {
-	Container::Virtual2C(x,y,theButton);
-	if(theButton==0 && mMouseChild==mThumb.get())
+	Container::MouseDown(x,y,theButton);
+	if(theButton==0 && this->mMouseChild==this->mThumb.get())
 	{
-		mDragX = x-mThumb->Left();
-		mDragY = y-mThumb->Top();
+		this->mDragX = x-this->mThumb->Left();
+		this->mDragY = y-this->mThumb->Top();
 	}
 }
 
 // FUNCTION: WON 0x00706510
-void Scrollbar::Virtual38(int x, int y)
+// Drags the thumb inside the track, updates the position and fires a scroll event when it changed
+void Scrollbar::MouseDrag(int x, int y)
 {
-	Container::Virtual38(x,y);
-	if(mMouseChild==mThumb.get())
+	Container::MouseDrag(x,y);
+	if(this->mMouseChild!=this->mThumb.get())
+		return;
+	int dx = (x-this->mThumb->Left())-this->mDragX;
+	int dy = (y-this->mThumb->Top())-this->mDragY;
+
+	int aNewY = this->mVertical? (this->mThumb->Top() + dy) : (this->mThumb->Left() + dx);
+
+	if(aNewY<this->S_Top(this->mScrollRect.get()))
+		if(this->mVertical) aNewY = this->mScrollRect->Top(); else aNewY = this->mScrollRect->Left();
+	if(aNewY+this->S_Height(this->mThumb.get()) > this->S_Bottom(this->mScrollRect.get()))
+		aNewY = this->S_Bottom(this->mScrollRect.get())-this->S_Height(this->mThumb.get());
+
+	int oldPosition = this->mPosition;
+	int aHeightDiff = this->S_Height(this->mScrollRect.get()) - this->S_Height(this->mThumb.get());
+	if(aHeightDiff<=0)
+		this->mPosition = 0;
+	else
+		this->mPosition = (this->mTotalSize-this->mPageSize)*(aNewY-this->S_Top(this->mScrollRect.get()))/aHeightDiff;
+
+	if(aNewY!=this->S_Top(this->mThumb.get()))
 	{
-		int dx = (x-mThumb->Left())-mDragX;
-		int dy = (y-mThumb->Top())-mDragY;
-
-		int aNewY = mVertical? (mThumb->Top() + dy) : (mThumb->Left() + dx);
-
-		if(aNewY<S_Top(mScrollRect.get()))
-			if(mVertical) aNewY = mScrollRect->Top(); else aNewY = mScrollRect->Left();
-		if(aNewY+S_Height(mThumb.get()) > S_Bottom(mScrollRect.get()))
-			aNewY = S_Bottom(mScrollRect.get())-S_Height(mThumb.get());
-
-		int oldPosition = mPosition;
-		int aHeightDiff = S_Height(mScrollRect.get()) - S_Height(mThumb.get());
-		if(aHeightDiff<=0)
-			mPosition = 0;
-		else
-			mPosition = (mTotalSize-mPageSize)*(aNewY-S_Top(mScrollRect.get()))/aHeightDiff;
-
-		if(aNewY!=S_Top(mThumb.get()))
-		{
-			S_SetPos(mThumb.get(),S_Left(mThumb.get()),aNewY);
-			mScrollRect->Invalidate();
-		}
-		if(mPosition!=oldPosition)
-		{
-			Fn2F5380(16,0);
-		}
-
+		this->S_SetPos(this->mThumb.get(),this->S_Left(this->mThumb.get()),aNewY);
+		this->mScrollRect->Invalidate();
 	}
+	if(this->mPosition!=oldPosition)
+	{
+		this->Fn2F5380(ComponentEvent_Scroll,0);
+	}
+
 }
 
 // FUNCTION: WON 0x00706690
+// Scrolls by a line for the arrows or a page for a track click, clamps, then relayouts and fires a scroll event
 void Scrollbar::HandleComponentEvent(ComponentEvent *theEvent)
 {
-	if(theEvent->mType!=15)
+	if(theEvent->mType!=ComponentEvent_ButtonPressed)
 	{
 		Container::HandleComponentEvent(theEvent);
 		return;
 	}
 
-	int anOldPosition = mPosition;
-	if(theEvent->mComponent==mUpArrow.get())
-		mPosition-=mLineUpScrollSize;
-	else if(theEvent->mComponent==mDownArrow.get())
-		mPosition+=mLineDownScrollSize;
-	else if(theEvent->mComponent==mScrollRect.get())
+	int anOldPosition = this->mPosition;
+	if(theEvent->mComponent==this->mUpArrow.get())
+		this->mPosition-=this->mLineUpScrollSize;
+	else if(theEvent->mComponent==this->mDownArrow.get())
+		this->mPosition+=this->mLineDownScrollSize;
+	else if(theEvent->mComponent==this->mScrollRect.get())
 	{
 		int aMouseX, aMouseY;
-		GetMousePos(aMouseX, aMouseY);
-		if(!mVertical)
+		this->GetMousePos(aMouseX, aMouseY);
+		if(!this->mVertical)
 			aMouseY = aMouseX;
 
-		if(aMouseY < S_Top(mThumb.get()))
-			mPosition-=mPageScrollSize;
-		else if(aMouseY >= S_Bottom(mThumb.get()))
-			mPosition+=mPageScrollSize;
+		if(aMouseY < this->S_Top(this->mThumb.get()))
+			this->mPosition-=this->mPageScrollSize;
+		else if(aMouseY >= this->S_Bottom(this->mThumb.get()))
+			this->mPosition+=this->mPageScrollSize;
 	}
 	else
 	{
@@ -215,31 +220,31 @@ void Scrollbar::HandleComponentEvent(ComponentEvent *theEvent)
 	}
 
 
-	int aMaxPos = mTotalSize - mPageSize;
-	if(mPosition>aMaxPos)
-		mPosition = aMaxPos;
-	if(mPosition<0)
-		mPosition = 0;
+	int aMaxPos = this->mTotalSize - this->mPageSize;
+	if(this->mPosition>aMaxPos)
+		this->mPosition = aMaxPos;
+	if(this->mPosition<0)
+		this->mPosition = 0;
 
-	if(mPosition!=anOldPosition)
-	{
-		LayoutThumb(true);
-		mScrollRect->Invalidate();
-		Fn2F5380(16,0);
-	}
+	if(this->mPosition==anOldPosition)
+		return;
+	this->LayoutThumb(true);
+	this->mScrollRect->Invalidate();
+	this->Fn2F5380(ComponentEvent_Scroll,0);
 }
 
 // FUNCTION: WON 0x007067e0
+// Enables or disables the scrollbar and its arrows; the thumb shows only when enabled and content overflows
 void Scrollbar::SetEnabled(bool isEnabled)
 {
-	if(isEnabled==!IsDisabled())
+	if(isEnabled==!this->IsDisabled())
 		return;
 
 	Component::SetEnabled(isEnabled);
-	mUpArrow->SetEnabled(isEnabled);
-	mDownArrow->SetEnabled(isEnabled);
-	if(mTotalSize > mPageSize)
-		mThumb->SetVisible(isEnabled);
+	this->mUpArrow->SetEnabled(isEnabled);
+	this->mDownArrow->SetEnabled(isEnabled);
+	if(this->mTotalSize > this->mPageSize)
+		this->mThumb->SetVisible(isEnabled);
 }
 
 }

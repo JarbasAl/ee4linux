@@ -1,4 +1,4 @@
-// Complete genuine rich-text owner construction; lifecycle support only.
+// Rich-text line builder constructor (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,7 +12,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyLineLayout.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x0070bd60
+// Creates an empty line builder (members only; emitted at 0x0070bd60)
 MultiLineBuilder::MultiLineBuilder() {}
 }
 

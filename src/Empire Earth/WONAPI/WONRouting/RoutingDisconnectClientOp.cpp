@@ -1,5 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: missing SDK disconnect request, proposed routing family profile.
+// No original address identified: WON SDK disconnect request
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,9 +10,9 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRoutingDisconnectClientOp.h"
 namespace WONAPI {
-void RoutingDisconnectClientOp::Virtual0C()
+void RoutingDisconnectClientOp::SendRequest()
 {
-	InitSendMsg(20);
-	SendMsg();
+	this->InitSendMsg(20);
+	this->SendMsg();
 }
 }

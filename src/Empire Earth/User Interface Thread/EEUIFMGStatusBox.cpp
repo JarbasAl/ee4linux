@@ -368,7 +368,7 @@ void EEUIFMGStatusBox::FillArmorAttributes(EEUnit* inUnit)
 }
 
 // Existing pooled empty byte string, original reference26b6d9; no equal-content alias.
-extern char gU4E5B98[];
+extern char gEmptyString[];
 
 // FUNCTION: EXE 0x66b593
 // Fills the status box for a unit: name (gate lock state), civilization, hit point / power / flight / garrison
@@ -415,7 +415,7 @@ void EEUIFMGStatusBox::Fill(EEUnit* inUnit)
     if (inUnit != NULL) {
         EEUnitClass* theClass = inUnit->GetUnitClass();
         EEUnitClassUpgrade* theStats = inUnit->mStats;
-        if (theStats->mName == gU4E5B98)
+        if (theStats->mName == gEmptyString)
             gResource->GetString(theClass->mNameStringID, theText);
         else
             theText = inUnit->mStats->mName;

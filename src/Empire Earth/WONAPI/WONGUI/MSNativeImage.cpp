@@ -1,4 +1,4 @@
-// WONGUI native bitmap/DC/mask/icon ownership and GDI drawing.
+// Win32 bitmap images, masks and icons: ownership, drawing and conversion
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,28 +11,29 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007cfe50
+// Returns a 32-bit raw copy of the bitmap; with a transparency mask, opaque pixels get alpha 0xff
 SmartPtr<RawImage32> MSNativeImage::GetRaw() {
-    SmartPtr<RawImage32> image=new RawImage32(GetWidth(),GetHeight());
-    SelectBitmap(false);
+    SmartPtr<RawImage32> image=new RawImage32(this->GetWidth(),this->GetHeight());
+    this->SelectBitmap(false);
     char infoBuffer[sizeof(BITMAPINFOHEADER)+12];
-    BITMAPINFO& info=*(BITMAPINFO*)infoBuffer;
+    BITMAPINFO& info=*reinterpret_cast<BITMAPINFO*>(infoBuffer);
     BITMAPINFOHEADER& header=info.bmiHeader;
     header.biSize=sizeof(BITMAPINFOHEADER);
-    header.biWidth=GetWidth();
-    header.biHeight=-GetHeight();
+    header.biWidth=this->GetWidth();
+    header.biHeight=-this->GetHeight();
     header.biPlanes=1;
     header.biBitCount=32;
     header.biCompression=BI_RGB;
-    GetDIBits(mDC,mBitmap,0,GetHeight(),image->GetImageData(),&info,DIB_RGB_COLORS);
-    if(mTransparentMask.get()!=NULL) {
+    GetDIBits(this->mDC,this->mBitmap,0,this->GetHeight(),image->GetImageData(),&info,DIB_RGB_COLORS);
+    if(this->mTransparentMask.get()!=NULL) {
         image->mDoTransparency=true;
-        SmartPtr<RawImage1> mask=new RawImage1(GetWidth(),GetHeight());
+        SmartPtr<RawImage1> mask=new RawImage1(this->GetWidth(),this->GetHeight());
         header.biBitCount=1;
-        GetDIBits(mDC,((MSNativeMask*)mTransparentMask.get())->GetMask(),0,GetHeight(),
+        GetDIBits(this->mDC,((MSNativeMask*)this->mTransparentMask.get())->GetMask(),0,this->GetHeight(),
             mask->GetImageData(),&info,DIB_RGB_COLORS);
         mask->StartRowTraversal(0);
         image->StartRowTraversal(0);
-        for(int row=0;row<mHeight;++row) {
+        for(int row=0;row<this->mHeight;++row) {
             while(image->HasMoreRowPixels()) {
                 bool transparent=mask->GetRowPixel();
                 if(!transparent) image->SetRowPixel(image->GetRowPixel()|0xff000000);
@@ -43,102 +44,113 @@ SmartPtr<RawImage32> MSNativeImage::GetRaw() {
             mask->NextRow();
         }
     }
-    SelectBitmap(true);
+    this->SelectBitmap(true);
     return image.get();
 }
 
 // FUNCTION: WON 0x007cf9b0
+// Destroys the mask, deleting its bitmap
 MSNativeMask::~MSNativeMask()
 {
-	DeleteObject(mMask); 
+	DeleteObject(this->mMask); 
 }
 
 // FUNCTION: WON 0x007cf9f0
+// Destroys the icon, releasing its Win32 icon
 MSNativeIcon::~MSNativeIcon()
 {
-	DestroyIcon(mIcon);
+	DestroyIcon(this->mIcon);
 }
 
 // FUNCTION: WON 0x007cfa10
+// Selects the bitmap into the image's memory DC or restores the previous bitmap, if not already so
 void MSNativeImage::SelectBitmap(bool select)
 {
-	if(mBitmapIsSelected==select)
+	if(this->mBitmapIsSelected==select)
 		return;
 
 	if(select)
-		mOldBitmap = (HBITMAP)SelectObject(mDC, mBitmap);
+		this->mOldBitmap = (HBITMAP)SelectObject(this->mDC, this->mBitmap);
 	else
-		SelectObject(mDC,mOldBitmap);
+		SelectObject(this->mDC,this->mOldBitmap);
 
-	mBitmapIsSelected = select;
+	this->mBitmapIsSelected = select;
 }
 
 // FUNCTION: WON 0x007cfa50
+// Takes ownership of the bitmap and mask, creates a memory DC compatible with the context, selects the
+// bitmap and reads its size
 void MSNativeImage::Init(DisplayContext *theContext, HBITMAP theBitmap, MSNativeMask *theTransparentMask)
 {	
-	mBitmap = theBitmap;
-	mTransparentMask = theTransparentMask;
-	mBitmapIsSelected = false;
+	this->mBitmap = theBitmap;
+	this->mTransparentMask = theTransparentMask;
+	this->mBitmapIsSelected = false;
 
-	mDC = CreateCompatibleDC(theContext->mDC);
-	mDisplayContext = new DisplayContext(mDC);
+	this->mDC = CreateCompatibleDC(theContext->mDC);
+	this->mDisplayContext = new DisplayContext(this->mDC);
 
-	SelectBitmap(true);
+	this->SelectBitmap(true);
 
 	BITMAP     bm;
 	POINT      size;
-	GetObject(mBitmap, sizeof(BITMAP), (LPSTR)&bm);
+	GetObject(this->mBitmap, sizeof(BITMAP), (LPSTR)&bm);
 	
 	size.x = bm.bmWidth;            // Get width of bitmap
 	size.y = bm.bmHeight;           // Get height of bitmap
-	DPtoLP(mDC, &size, 1);			// Convert from
-	mWidth = size.x;
-	mHeight = size.y;
+	DPtoLP(this->mDC, &size, 1);			// Convert from
+	this->mWidth = size.x;
+	this->mHeight = size.y;
 }
 
 // FUNCTION: WON 0x007cfb70
+// Creates a native image owning the given bitmap and optional transparency mask
 MSNativeImage::MSNativeImage(DisplayContext *theContext, HBITMAP theBitmap, MSNativeMask *theTransparentMask) : NativeImage(theContext)
 {
-	Init(theContext, theBitmap, theTransparentMask);
+	this->Init(theContext, theBitmap, theTransparentMask);
 }
 
 // FUNCTION: WON 0x007cfbf0
+// Creates a native image with a new bitmap of the given size, compatible with the context
 MSNativeImage::MSNativeImage(DisplayContext* context,int width,int height) : NativeImage(context) {
-    Init(context,CreateCompatibleBitmap(context->mDC,width,height),NULL);
+    this->Init(context,CreateCompatibleBitmap(context->mDC,width,height),NULL);
 }
 
 // FUNCTION: WON 0x007cfc60
+// Destroys the image: its graphics, memory DC and bitmap
 MSNativeImage::~MSNativeImage()
 {
-	delete mGraphics;
-	mGraphics = NULL;
-	DeleteDC(mDC);
-	DeleteObject(mBitmap);
+	delete this->mGraphics;
+	this->mGraphics = NULL;
+	DeleteDC(this->mDC);
+	DeleteObject(this->mBitmap);
 }
 
 // FUNCTION: WON 0x007cfce0
-Graphics* MSNativeImage::Virtual14()
+// Returns a new GDI graphics context for drawing into the image
+Graphics* MSNativeImage::PlatformGetGraphics()
 {
 	return new MSGraphics;
 }
 
 // FUNCTION: WON 0x007cfd40
+// Copies part of the image to the context; with a mask, masks the destination first so masked pixels stay
+// transparent
 void MSNativeImage::Draw(DisplayContext *theContext, int x, int y, int left, int top, int width, int height)
 {
-	if(!mBitmapIsSelected)
-		SelectBitmap(true);
+	if(!this->mBitmapIsSelected)
+		this->SelectBitmap(true);
 
 	HDC theDC = theContext->mDC;
-	if(mTransparentMask.get()!=NULL)
+	if(this->mTransparentMask.get()!=NULL)
 	{
 		HDC aMaskDC = CreateCompatibleDC(theDC);
-		SelectObject(aMaskDC,((MSNativeMask*)mTransparentMask.get())->mMask);
+		SelectObject(aMaskDC,((MSNativeMask*)this->mTransparentMask.get())->mMask);
 
 		DWORD aTextColor = SetTextColor(theDC,0x000000); //off/non-transparent pixels -> black
 		DWORD aBackColor = SetBkColor(theDC,0xFFFFFF);	// on/transparent pixels -> white
 		
 		BitBlt(theDC,x,y,width,height,aMaskDC,left,top,SRCAND);
-		BitBlt(theDC,x,y,width,height,mDC,left,top,SRCPAINT);
+		BitBlt(theDC,x,y,width,height,this->mDC,left,top,SRCPAINT);
 
 		SetBkColor(theDC, aBackColor);
 		SetTextColor(theDC, aTextColor);
@@ -146,23 +158,25 @@ void MSNativeImage::Draw(DisplayContext *theContext, int x, int y, int left, int
 		DeleteDC(aMaskDC);
 	}
 	else
-		BitBlt(theDC, x, y, width, height, mDC, left, top, SRCCOPY);
+		BitBlt(theDC, x, y, width, height, this->mDC, left, top, SRCCOPY);
 }
 
 // FUNCTION: WON 0x007d0130
+// Returns a copy of the image with a new bitmap, sharing the same transparency mask
 SmartPtr<Image> MSNativeImage::Duplicate()
 {
-	SelectBitmap(true);
-	HDC aCopyDC = CreateCompatibleDC(mDC);
-	HBITMAP aBitmap = CreateCompatibleBitmap(mDC,mWidth,mHeight);
+	this->SelectBitmap(true);
+	HDC aCopyDC = CreateCompatibleDC(this->mDC);
+	HBITMAP aBitmap = CreateCompatibleBitmap(this->mDC,this->mWidth,this->mHeight);
 	SelectObject(aCopyDC,aBitmap);
-	BitBlt(aCopyDC,0,0,mWidth,mHeight,mDC,0,0,SRCCOPY);
+	BitBlt(aCopyDC,0,0,this->mWidth,this->mHeight,this->mDC,0,0,SRCCOPY);
 	DeleteDC(aCopyDC);
 
-	return new MSNativeImage(mDisplayContext.get(), aBitmap, (MSNativeMask*)mTransparentMask.get());
+	return new MSNativeImage(this->mDisplayContext.get(), aBitmap, (MSNativeMask*)this->mTransparentMask.get());
 }
 
 // FUNCTION: WON 0x007d0350
+// Returns a new icon made from the bitmap and its mask
 SmartPtr<NativeIcon> MSNativeImage::GetIcon()
 {
 	ICONINFO anInfo;
@@ -170,25 +184,27 @@ SmartPtr<NativeIcon> MSNativeImage::GetIcon()
 	anInfo.xHotspot = 0; 
 	anInfo.yHotspot = 0; 
 	anInfo.hbmMask = NULL;
-	if(mTransparentMask.get()!=NULL)
-		anInfo.hbmMask = ((MSNativeMask*)mTransparentMask.get())->GetMask();
+	if(this->mTransparentMask.get()!=NULL)
+		anInfo.hbmMask = ((MSNativeMask*)this->mTransparentMask.get())->GetMask();
    
-	anInfo.hbmColor = mBitmap; 
+	anInfo.hbmColor = this->mBitmap; 
 
 	HICON anIcon = CreateIconIndirect(&anInfo);
-	return new MSNativeIcon(mDisplayContext.get(), anIcon);
+	return new MSNativeIcon(this->mDisplayContext.get(), anIcon);
 }
 
 // FUNCTION: WON 0x007d0230
+// Returns a new cursor made from the bitmap and its mask; the hotspot is always (0, 0), the requested
+// one is ignored
 SmartPtr<Cursor> MSNativeImage::GetCursor(int hotX,int hotY) {
     ICONINFO info;
     info.fIcon=FALSE;
     info.xHotspot=0;
     info.yHotspot=0;
     info.hbmMask=NULL;
-    if(mTransparentMask.get()!=NULL)
-        info.hbmMask=((MSNativeMask*)mTransparentMask.get())->GetMask();
-    info.hbmColor=mBitmap;
+    if(this->mTransparentMask.get()!=NULL)
+        info.hbmMask=((MSNativeMask*)this->mTransparentMask.get())->GetMask();
+    info.hbmColor=this->mBitmap;
     return new MSCursor((HCURSOR)CreateIconIndirect(&info),true);
 }
 

@@ -1,4 +1,4 @@
-// Genuine namespace shutdown; original globals retain their sole providers.
+// Lobby shutdown (WON SDK entry point); the failure globals are defined elsewhere
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,21 +14,22 @@
 #include "ee/wonapi/WONLobbyCore.h"
 
 namespace WONAPI {
-extern SmartPtr<Dialog> gLobbyFailureDialog5662F4;
-extern GUIString gLobbyInitError5662FC;
-extern bool gLobbyInitFailed56633C;
+extern SmartPtr<Dialog> gLobbyFailureDialog;
+extern GUIString gLobbyInitError;
+extern bool gLobbyInitFailed;
 
 // FUNCTION: WON 0x00762170
-void LobbyFn362170()
+// Clears the start-up failure state, then logs out, destroys the lobby, stops its music and unloads its resources
+void LobbyShutdown()
 {
-    gLobbyFailureDialog5662F4=NULL;
-    gLobbyInitFailed56633C=false;
-    gLobbyInitError5662FC=GetEmptyGUIStringData();
+    gLobbyFailureDialog=NULL;
+    gLobbyInitFailed=false;
+    gLobbyInitError=GetEmptyGUIStringData();
     if(gLobbyData.get()==NULL)
         return;
-    LobbyFn361330(false);
+    LobbyLogout(false);
     gLobbyData->Destroy();
-    LobbyFn359040();
+    LobbyRemoveEventHooks();
     ::LobbyGlobal_LobbyMusic_Sound->Stop();
     LobbyResource_UnloadResources();
     gLobbyData=NULL;

@@ -1,4 +1,4 @@
-// Native-authoritative InputBox editing/selection/history; SDK semantic reference.
+// Single-line input box: editing, selection, clipboard, password masking, input history and painting
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include "LostDebug.h"
@@ -15,6 +15,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f7f70
+// Input filter that accepts only digits, with a leading minus sign allowed at the start of the box
 bool InputBox::NumericFilter(InputBox *theInputBox, GUIString &theStr)
 {
 	int aPos = 0;
@@ -34,98 +35,106 @@ bool InputBox::NumericFilter(InputBox *theInputBox, GUIString &theStr)
 }
 
 // FUNCTION: WON 0x006f8400
+// Recomputes the text area from the box size and paddings, leaving room for the icon
 void InputBox::AdjustTextRect()
 {
-	int aLeftPad = mLeftPad;
-	int aRightPad = mRightPad;
-	int aTopPad = mTopPad;
-	int aBottomPad = mBottomPad;
+	int aLeftPad = this->mLeftPad;
+	int aRightPad = this->mRightPad;
+	int aTopPad = this->mTopPad;
+	int aBottomPad = this->mBottomPad;
 
-	if(mIcon.get()!=NULL)
-		aLeftPad += mIcon->mWidth+2;
+	if(this->mIcon.get()!=NULL)
+		aLeftPad += this->mIcon->mWidth+2;
 
-	mTextRect.x = aLeftPad;
-	mTextRect.width = Width() - aLeftPad-aRightPad;
+	this->mTextRect.x = aLeftPad;
+	this->mTextRect.width = this->Width() - aLeftPad-aRightPad;
 
-	mTextRect.y = aTopPad;
-	mTextRect.height = Height() - aTopPad-aBottomPad;
+	this->mTextRect.y = aTopPad;
+	this->mTextRect.height = this->Height() - aTopPad-aBottomPad;
 }
 
 
 // FUNCTION: WON 0x006f8450
+// Sets the icon drawn at the left of the box and re-lays out and repaints the text
 void InputBox::SetIcon(Image *theIcon)
 {
-	mIcon = theIcon;
-	AdjustTextRect();
-	AdjustPosition();
-	Invalidate();
+	this->mIcon = theIcon;
+	this->AdjustTextRect();
+	this->AdjustPosition();
+	this->Invalidate();
 }
 
 
 // FUNCTION: WON 0x006f8510
+// Runs the base component handler, then recomputes the text area
 void InputBox::Virtual08()
 {
 	Component::Virtual08();
-	AdjustTextRect();
+	this->AdjustTextRect();
 }
 
 
 // FUNCTION: WON 0x006f8530
-void InputBox::Virtual0C(int &width, int &height)
+// Returns the preferred size: 100 pixels wide, font height plus 6 high
+void InputBox::GetDesiredSize(int &width, int &height)
 {
 	width = 100;
-	height = mFont->GetHeight() + 6;
+	height = this->mFont->GetHeight() + 6;
 }
 
 
 // FUNCTION: WON 0x006f8560
+// Resizes the box to fit the given number of 'M' characters (plus 8 pixels), keeping its height
 void InputBox::SetCharWidth(int theEm)
 {
-	Fn2F4B90(mFont->Virtual10('M')*theEm + 8,Height());
+	this->SetSize(this->mFont->GetCharacterWidth('M')*theEm + 8,this->Height());
 }
 
 // FUNCTION: WON 0x006f8590
-void InputBox::Virtual48()
+// On focus, shows the cursor, starts the blink timer and selects all text if select-on-focus is set
+void InputBox::GotFocus()
 {
-	Component::Virtual48();
-	mCursorDelay = 0;
-	mCursorOn = true;
-	Fn2F57D0(true);
-	if(mSelectOnFocus)
-		SelectRange(0,-1);
+	Component::GotFocus();
+	this->mCursorDelay = 0;
+	this->mCursorOn = true;
+	this->RequestTimer(true);
+	if(this->mSelectOnFocus)
+		this->SelectRange(0,-1);
 
-	Invalidate();
+	this->Invalidate();
 }
 
 // FUNCTION: WON 0x006f85d0
-void InputBox::Virtual4C()
+// On focus loss, hides the cursor and stops the blink timer
+void InputBox::LostFocus()
 {
-	Component::Virtual4C();
-	mCursorOn = false;
-	Fn2F57D0(false);
-	Invalidate();
+	Component::LostFocus();
+	this->mCursorOn = false;
+	this->RequestTimer(false);
+	this->Invalidate();
 }
 
 // FUNCTION: WON 0x006f8600
+// Maps a mouse x position to a character and starts a new selection there or extends the current one
 void InputBox::CheckSel(int x, int y, bool newStart)
 {
-	if(!mAllowSelection)
+	if(!this->mAllowSelection)
 		return;
 
 	if(x<0) x = 0;
-	else if(x>Width()) x = Width();
+	else if(x>this->Width()) x = this->Width();
 	
-	x += mHorzOffset - mTextRect.x;
+	x += this->mHorzOffset - this->mTextRect.x;
 
-	Font* aFM = mFont.get();
-	int aSelChar = mBackwardsSel?mSelStartChar:mSelEndChar;
-	int aWidth = aFM->GetStringWidth(mText, 0, aSelChar);
+	Font* aFM = this->mFont.get();
+	int aSelChar = this->mBackwardsSel?this->mSelStartChar:this->mSelEndChar;
+	int aWidth = aFM->GetStringWidth(this->mText, 0, aSelChar);
 	if(aWidth >= x)
 	{
 		aSelChar--;
 		while(aSelChar>=0 && aWidth>=x)
 		{
-			aWidth-=aFM->Virtual10(mText[aSelChar]);
+			aWidth-=aFM->GetCharacterWidth(this->mText[aSelChar]);
 			if(aWidth>=x)
 				aSelChar--;
 		}
@@ -133,190 +142,197 @@ void InputBox::CheckSel(int x, int y, bool newStart)
 	}
 	else
 	{
-		while(aSelChar<mText.length() && aWidth<x)
+		while(aSelChar<this->mText.length() && aWidth<x)
 		{
-			aWidth+=aFM->Virtual10(mText[aSelChar]);
+			aWidth+=aFM->GetCharacterWidth(this->mText[aSelChar]);
 
 				aSelChar++;
 		}
 	}
 	if(aSelChar<0)
 		aSelChar=0;
-	if(aSelChar>mText.length())
-		aSelChar = mText.length();
+	if(aSelChar>this->mText.length())
+		aSelChar = this->mText.length();
 
 	if(newStart)
 	{
-		mSelStartChar = mSelEndChar = aSelChar;
-		mBackwardsSel = false;
+		this->mSelStartChar = this->mSelEndChar = aSelChar;
+		this->mBackwardsSel = false;
 	}
 	else
 	{
-		if(mBackwardsSel)
-			mSelStartChar = aSelChar;
+		if(this->mBackwardsSel)
+			this->mSelStartChar = aSelChar;
 		else
-			mSelEndChar = aSelChar;
+			this->mSelEndChar = aSelChar;
 
-		if(mSelStartChar > mSelEndChar)
+		if(this->mSelStartChar > this->mSelEndChar)
 		{
-			mBackwardsSel = !mBackwardsSel;
-			std::swap(mSelStartChar,mSelEndChar);
+			this->mBackwardsSel = !this->mBackwardsSel;
+			std::swap(this->mSelStartChar,this->mSelEndChar);
 		}
 	}
 	
-	Invalidate();
+	this->Invalidate();
 }
 
 // FUNCTION: WON 0x006f8750
-void InputBox::Virtual2C(int x, int y, int theButton)
+// On a left click, places the cursor (shift extends the selection), starts drag selection and takes focus
+void InputBox::MouseDown(int x, int y, int theButton)
 {
 	
-	if(theButton==0)
-	{
-		CheckSel(x,y,(GetKeyMod() & 1)?false:true);
+	if(theButton!=0)
+		return;
+	this->CheckSel(x,y,(this->GetKeyMod() & 1)?false:true);
 
-		if(mAllowSelection)
-			mSelecting = true;
+	if(this->mAllowSelection)
+		this->mSelecting = true;
 
-		Fn2F5890();	
-	}
+	this->RequestFocus();	
 }
 
 
 // FUNCTION: WON 0x006f8790
-void InputBox::Virtual30(int x, int y, int theButton)
+// Ends drag selection on a left-button release
+void InputBox::MouseUp(int x, int y, int theButton)
 {
 
 	if(theButton==0)
-		mSelecting = false;
+		this->mSelecting = false;
 }
 
 
 // FUNCTION: WON 0x006f87a0
-void InputBox::Virtual28()
+// Ends drag selection when the mouse leaves the box
+void InputBox::MouseExit()
 {
-	Component::Virtual28();
-	mSelecting = false;
+	Component::MouseExit();
+	this->mSelecting = false;
 }
 
 
 // FUNCTION: WON 0x006f87b0
-void InputBox::Virtual38(int x, int y)
+// Extends the selection to the dragged mouse position
+void InputBox::MouseDrag(int x, int y)
 {
-	CheckSel(x,y,false);
+	this->CheckSel(x,y,false);
 }
 
 
 // FUNCTION: WON 0x006f87d0
+// Sets the cursor's on and off blink times (off defaults to on when not positive)
 void InputBox::SetCursorBlinkRate(int theOnTime, int theOffTime) 
 {
 	if(theOffTime<=0)
 		theOffTime = theOnTime;
 
-	mCursorOnTime = theOnTime;
-	mCursorOffTime = theOffTime;
+	this->mCursorOnTime = theOnTime;
+	this->mCursorOffTime = theOffTime;
 }
 
 // FUNCTION: WON 0x006f8800
-bool InputBox::Virtual44(int theDelta)
+// Blinks the cursor and, while drag-selecting outside the box, scrolls the text and extends the selection
+bool InputBox::TimerEvent(int theDelta)
 {
-	mCursorDelay+=theDelta;
-	if(mCursorOn && mCursorDelay>mCursorOnTime)
+	this->mCursorDelay+=theDelta;
+	if(this->mCursorOn && this->mCursorDelay>this->mCursorOnTime)
 	{
-		mCursorDelay%=mCursorOnTime;
-		mCursorOn = false;
-		Invalidate();
+		this->mCursorDelay%=this->mCursorOnTime;
+		this->mCursorOn = false;
+		this->Invalidate();
 	}
-	else if(!mCursorOn && mCursorDelay>mCursorOffTime)
+	else if(!this->mCursorOn && this->mCursorDelay>this->mCursorOffTime)
 	{
-		mCursorDelay%=mCursorOffTime;
-		mCursorOn = true;
-		Invalidate();		
+		this->mCursorDelay%=this->mCursorOffTime;
+		this->mCursorOn = true;
+		this->Invalidate();		
 	}
 
-	if(mSelecting)
+	if(!this->mSelecting)
+		return true;
+	int x,y;
+	this->GetMousePos(x,y);
+	if((x>=0 && x<=this->Width() && y>=0 && y<=this->Height()))
+		return true;
+	int aCharPos = this->mBackwardsSel?this->mSelStartChar:this->mSelEndChar;
+
+	if(x>this->Width() && aCharPos!=this->mText.length())
 	{
-		int x,y;
-		GetMousePos(x,y);
-		if(!(x>=0 && x<=Width() && y>=0 && y<=Height()))
-		{
-			int aCharPos = mBackwardsSel?mSelStartChar:mSelEndChar;
-
-			if(x>Width() && aCharPos!=mText.length())
-			{
-				mHorzOffset += x-Width();
-				if(mHorzOffset<0)
-					mHorzOffset = 0;
-			}
-			else if(x<0 && aCharPos!=0)
-				mHorzOffset += x;
-
-			CheckSel(x,y,false);
-
-			aCharPos = mBackwardsSel?mSelStartChar:mSelEndChar;
-			if(aCharPos==mText.length())
-			{
-				int aTextWidth = mFont->GetStringWidth(mText);
-				if(aTextWidth + mHorzOffset > mTextRect.width)
-					mHorzOffset = aTextWidth-mTextRect.width+mFont->GetStringWidth(GUIString("M"));
-			}
-			if(aCharPos==0)
-				mHorzOffset = 0;
-
-			if(mHorzOffset<0)
-				mHorzOffset = 0;
-
-		}
+		this->mHorzOffset += x-this->Width();
+		if(this->mHorzOffset<0)
+			this->mHorzOffset = 0;
 	}
+	else if(x<0 && aCharPos!=0)
+		this->mHorzOffset += x;
+
+	this->CheckSel(x,y,false);
+
+	aCharPos = this->mBackwardsSel?this->mSelStartChar:this->mSelEndChar;
+	if(aCharPos==this->mText.length())
+	{
+		int aTextWidth = this->mFont->GetStringWidth(this->mText);
+		if(aTextWidth + this->mHorzOffset > this->mTextRect.width)
+			this->mHorzOffset = aTextWidth-this->mTextRect.width+this->mFont->GetStringWidth(GUIString("M"));
+	}
+	if(aCharPos==0)
+		this->mHorzOffset = 0;
+
+	if(this->mHorzOffset<0)
+		this->mHorzOffset = 0;
+
 	return true;
 }
 
 // FUNCTION: WON 0x006f8a20
+// Scrolls the text horizontally so the cursor stays inside the text area
 void InputBox::AdjustPosition()
 {
-	Font* aFM = mFont.get();
-	int aCursorPos = mBackwardsSel?mSelStartChar:mSelEndChar;
+	Font* aFM = this->mFont.get();
+	int aCursorPos = this->mBackwardsSel?this->mSelStartChar:this->mSelEndChar;
 
-	int aPreWidth = aFM->GetStringWidth(mText, 0, aCursorPos);
-	int anM = aFM->Virtual10('M');
+	int aPreWidth = aFM->GetStringWidth(this->mText, 0, aCursorPos);
+	int anM = aFM->GetCharacterWidth('M');
 
-	if(aPreWidth - mHorzOffset < 0)
+	if(aPreWidth - this->mHorzOffset < 0)
 	{
-		mHorzOffset = aPreWidth - 10*anM;
-		if(mHorzOffset<0)
-			mHorzOffset = 0;
+		this->mHorzOffset = aPreWidth - 10*anM;
+		if(this->mHorzOffset<0)
+			this->mHorzOffset = 0;
 	}
 
-	if(aPreWidth - mHorzOffset >= mTextRect.width)
+	if(aPreWidth - this->mHorzOffset >= this->mTextRect.width)
 	{
-		if(mTextRect.width!=0 && aPreWidth-mHorzOffset!=0)
-			mHorzOffset = aPreWidth - mTextRect.width + anM;
+		if(this->mTextRect.width!=0 && aPreWidth-this->mHorzOffset!=0)
+			this->mHorzOffset = aPreWidth - this->mTextRect.width + anM;
 	}
 }
 
 // FUNCTION: WON 0x006f8aa0
+// Selects a character range (negative or too large = end of text; reversed ranges select backwards)
 void InputBox::SelectRange(int theStartPos, int theEndPos)
 {
 
-	if(theStartPos<0) theStartPos = mText.length();
-	if(theEndPos<0) theEndPos = mText.length();
-	if(theStartPos>mText.length()) theStartPos = mText.length();
-	if(theEndPos>mText.length()) theEndPos = mText.length();
+	if(theStartPos<0) theStartPos = this->mText.length();
+	if(theEndPos<0) theEndPos = this->mText.length();
+	if(theStartPos>this->mText.length()) theStartPos = this->mText.length();
+	if(theEndPos>this->mText.length()) theEndPos = this->mText.length();
 
-	mBackwardsSel = theStartPos>theEndPos;
-	if(mBackwardsSel)
+	this->mBackwardsSel = theStartPos>theEndPos;
+	if(this->mBackwardsSel)
 		std::swap(theStartPos,theEndPos);
 
-	mSelStartChar = theStartPos;
-	mSelEndChar = theEndPos;
-	AdjustPosition();
-	Invalidate();
+	this->mSelStartChar = theStartPos;
+	this->mSelEndChar = theEndPos;
+	this->AdjustPosition();
+	this->Invalidate();
 }
 
 // FUNCTION: WON 0x006f8e10
+// Replaces the selection with text cut at the first control character, checked by the input filter and
+// trimmed to the max length; leaves the cursor after it
 void InputBox::SetSelText(const GUIString &theText, bool sendEvent)
 {	
-	const GUIString &aText = GetText();
+	const GUIString &aText = this->GetText();
 	GUIString aPasteStr = theText;
 	
 	for(int i=0; i<aPasteStr.length(); i++)
@@ -328,37 +344,38 @@ void InputBox::SetSelText(const GUIString &theText, bool sendEvent)
 			break; 
 		}
 	}
-	if(mInputFilter && !mInputFilter(this,aPasteStr))
+	if(this->mInputFilter && !this->mInputFilter(this,aPasteStr))
 		return;
 
-	if(mMaxChars>0 && aText.length()+aPasteStr.length()-(mSelEndChar-mSelStartChar)>mMaxChars)
+	if(this->mMaxChars>0 && aText.length()+aPasteStr.length()-(this->mSelEndChar-this->mSelStartChar)>this->mMaxChars)
 	{
-		int aNumCharsAllowed = mMaxChars-aText.length()+(mSelEndChar-mSelStartChar);
+		int aNumCharsAllowed = this->mMaxChars-aText.length()+(this->mSelEndChar-this->mSelStartChar);
 		if(aNumCharsAllowed<0)
 			aNumCharsAllowed = 0;
 
 		aPasteStr.resize(aNumCharsAllowed);
 	}
 
-	if(aPasteStr.length()>0 || mSelStartChar!=mSelEndChar)
+	if(aPasteStr.length()>0 || this->mSelStartChar!=this->mSelEndChar)
 	{
-		int aSelStartChar = mSelStartChar, aSelEndChar = mSelEndChar;
-		mSelStartChar+=aPasteStr.length();
-		mSelEndChar = mSelStartChar;
+		int aSelStartChar = this->mSelStartChar, aSelEndChar = this->mSelEndChar;
+		this->mSelStartChar+=aPasteStr.length();
+		this->mSelEndChar = this->mSelStartChar;
 		GUIString aNewStr;
 		aNewStr.append(aText,0,aSelStartChar);
 		aNewStr.append(aPasteStr);
 		aNewStr.append(aText,aSelEndChar,aText.length()-aSelEndChar);
-		SetTextPrv(aNewStr, sendEvent);
+		this->SetTextPrv(aNewStr, sendEvent);
 	}
 	
-	mCursorDelay = 0;
-	mCursorOn = true;
-	AdjustPosition();
-	Invalidate();
+	this->mCursorDelay = 0;
+	this->mCursorOn = true;
+	this->AdjustPosition();
+	this->Invalidate();
 }
 
 // FUNCTION: WON 0x006f90c0
+// Returns the cursor position one character (or one word) to the left or right, clamped to the text
 int InputBox::MoveCursor(bool left, bool wholeWord, const GUIString &theStr, int thePos)
 {			
 	int dx = left ? -1 : 1;
@@ -395,63 +412,69 @@ int InputBox::MoveCursor(bool left, bool wholeWord, const GUIString &theStr, int
 }
 
 // FUNCTION: WON 0x006f9140
-void InputBox::Fn2F9140(const GUIString &theText, bool clearTraversalState)
+// Appends non-empty text to the input history unless it repeats the last entry, dropping the oldest
+// entries over the limit, and updates the history position
+void InputBox::AddInputHistory(const GUIString &theText, bool clearTraversalState)
 {
 	if(theText.length()==0)
 		return;
 
-	int aHistoryPos = mInputHistoryPos;
-	while(mInputHistory.size()>=mMaxInputHistory)
+	int aHistoryPos = this->mInputHistoryPos;
+	while(this->mInputHistory.size()>=this->mMaxInputHistory)
 	{
-		mInputHistory.pop_front();
+		this->mInputHistory.pop_front();
 		aHistoryPos--;
 	}
 		
-	if(theText.length()>0 && mMaxInputHistory>0)
+	if(theText.length()>0 && this->mMaxInputHistory>0)
 	{
-		if(mInputHistory.empty() || mInputHistory.back()!=theText) 
-			mInputHistory.push_back(theText);
+		if(this->mInputHistory.empty() || this->mInputHistory.back()!=theText) 
+			this->mInputHistory.push_back(theText);
 	}
-	if(aHistoryPos>=0 && aHistoryPos<mInputHistory.size() && mInputHistory[aHistoryPos]==theText)
-		mInputHistoryPos = aHistoryPos;
+	if(aHistoryPos>=0 && aHistoryPos<this->mInputHistory.size() && this->mInputHistory[aHistoryPos]==theText)
+		this->mInputHistoryPos = aHistoryPos;
 	else
-		mInputHistoryPos = mInputHistory.size();
+		this->mInputHistoryPos = this->mInputHistory.size();
 
 	if(clearTraversalState)
-		mHaveTraversedHistory = false;
+		this->mHaveTraversedHistory = false;
 
 }
 
 // FUNCTION: WON 0x006f92f0
+// Overwrites the current history entry with non-empty text, or appends it when the position is past the
+// end
 void InputBox::SetInputHistory(const GUIString &theText, bool clearTraversalState)
 {
 	if(theText.length()==0)
 		return;
 
-	int aPos = mInputHistoryPos;
-	if(aPos>=0 && aPos<mInputHistory.size())
-		mInputHistory[aPos] = theText;
+	int aPos = this->mInputHistoryPos;
+	if(aPos>=0 && aPos<this->mInputHistory.size())
+		this->mInputHistory[aPos] = theText;
 	else
 	{
-		Fn2F9140(theText, clearTraversalState);
-		mInputHistoryPos = aPos;
+		this->AddInputHistory(theText, clearTraversalState);
+		this->mInputHistoryPos = aPos;
 	}
 
 	if(clearTraversalState)
-		mHaveTraversedHistory = false;
+		this->mHaveTraversedHistory = false;
 }
 
 static int SmallerOf(int a,int b);
 // FUNCTION: WON 0x006f93b0
-bool InputBox::Virtual54(int theKey)
+// Handles Enter (input-return event), Up/Down (history), Backspace/Delete, Home/End and Left/Right
+// (Ctrl = word, Shift = select); returns false for other keys
+bool InputBox::KeyDown(int theKey)
 {
-	const GUIString &aText = GetText();
+	const GUIString &aText = this->GetText();
 
-	int aKeyMod = GetKeyMod();
+	int aKeyMod = this->GetKeyMod();
 	bool shift = (aKeyMod & 1)?true:false;
 	bool ctrl = (aKeyMod & 4)?true:false; 
 
-	if(!mAllowSelection)
+	if(!this->mAllowSelection)
 		shift = false;
 	
 	switch(theKey)
@@ -460,40 +483,40 @@ bool InputBox::Virtual54(int theKey)
 
 			
 			if(aText.length()>0)
-				Fn2F5380(20,0);
+				this->Fn2F5380(ComponentEvent_InputReturn,0);
 			return true;
 
 		case 38:	
 		case 40:
 		{
 
-			int aSize=SmallerOf(mMaxInputHistory,mInputHistory.size());
+			int aSize=SmallerOf(this->mMaxInputHistory,this->mInputHistory.size());
 			if(aSize>0)
 			{
-				if(!mHaveTraversedHistory && mInputHistoryPos<mInputHistory.size())
-					mHaveTraversedHistory = true;
+				if(!this->mHaveTraversedHistory && this->mInputHistoryPos<this->mInputHistory.size())
+					this->mHaveTraversedHistory = true;
 				else
 				{
-					mHaveTraversedHistory = true;
-					SetInputHistory(GetText());
+					this->mHaveTraversedHistory = true;
+					this->SetInputHistory(this->GetText());
 					if(theKey==38)
-						mInputHistoryPos--;
+						this->mInputHistoryPos--;
 					else
-						mInputHistoryPos++;
+						this->mInputHistoryPos++;
 				}
 				
-				if(mInputHistoryPos<0)
-					mInputHistoryPos = 0;
+				if(this->mInputHistoryPos<0)
+					this->mInputHistoryPos = 0;
 			
-				if(mInputHistoryPos>=aSize)
+				if(this->mInputHistoryPos>=aSize)
 				{
-					SetText(GUIString(""),true);
-					mInputHistoryPos = mInputHistory.size();
+					this->SetText(GUIString(""),true);
+					this->mInputHistoryPos = this->mInputHistory.size();
 				}
 				else
 				{
-					SetText(mInputHistory[mInputHistoryPos],true);
-					SelectRange(GetText().length(),-1);
+					this->SetText(this->mInputHistory[this->mInputHistoryPos],true);
+					this->SelectRange(this->GetText().length(),-1);
 				}
 			}
 		}
@@ -503,87 +526,87 @@ bool InputBox::Virtual54(int theKey)
 		case 46:  
 		{
 			GUIString left, right;
-			if(mSelStartChar!=mSelEndChar) 
+			if(this->mSelStartChar!=this->mSelEndChar) 
 			{
-				left.assign(aText,0,mSelStartChar);
-				right.assign(aText,mSelEndChar);
+				left.assign(aText,0,this->mSelStartChar);
+				right.assign(aText,this->mSelEndChar);
 			}
 			else 
 			{
 				if(theKey==8) 
 				{
-					if(mSelStartChar>0)
-						left.assign(aText,0,mSelStartChar-1);
+					if(this->mSelStartChar>0)
+						left.assign(aText,0,this->mSelStartChar-1);
 
-					right.assign(aText,mSelEndChar);
+					right.assign(aText,this->mSelEndChar);
 				}
 				else  
 				{
-					left.assign(aText,0,mSelStartChar);
+					left.assign(aText,0,this->mSelStartChar);
 					
-					if(mSelEndChar<aText.length())
-						right.assign(aText,mSelEndChar+1);
+					if(this->mSelEndChar<aText.length())
+						right.assign(aText,this->mSelEndChar+1);
 				}
 			}	
 								
-			mSelStartChar = mSelEndChar = left.length();
+			this->mSelStartChar = this->mSelEndChar = left.length();
 			GUIString total = left;
 			total.append(right);
-			SetTextPrv(total);
+			this->SetTextPrv(total);
 		}
 		break;
 
 		case 36: 
 			if(!shift)
-				mSelEndChar = 0;
-			else if(!mBackwardsSel)
-				mSelEndChar = mSelStartChar;				
+				this->mSelEndChar = 0;
+			else if(!this->mBackwardsSel)
+				this->mSelEndChar = this->mSelStartChar;				
 			
-			mSelStartChar = 0;
-			mBackwardsSel =  mSelStartChar!=mSelEndChar;				
+			this->mSelStartChar = 0;
+			this->mBackwardsSel =  this->mSelStartChar!=this->mSelEndChar;				
 			break;
 			
 		case 35: 
 			if(!shift)
-				mSelStartChar = aText.length();
-			else if(mBackwardsSel)
-				mSelStartChar = mSelEndChar;
+				this->mSelStartChar = aText.length();
+			else if(this->mBackwardsSel)
+				this->mSelStartChar = this->mSelEndChar;
 
-			mBackwardsSel = false;
-			mSelEndChar = aText.length();
+			this->mBackwardsSel = false;
+			this->mSelEndChar = aText.length();
 			break;
 
 		case 37:
 		case 39: 
-			if(!shift && mSelStartChar!=mSelEndChar) 
+			if(!shift && this->mSelStartChar!=this->mSelEndChar) 
 			{
 				if(theKey==37)
-					mSelEndChar = mSelStartChar;
+					this->mSelEndChar = this->mSelStartChar;
 				else
-					mSelStartChar = mSelEndChar;
+					this->mSelStartChar = this->mSelEndChar;
 			}
-			else if(mBackwardsSel)
+			else if(this->mBackwardsSel)
 			{
-				mSelStartChar = MoveCursor(theKey==37,ctrl,mText,mSelStartChar);
+				this->mSelStartChar = this->MoveCursor(theKey==37,ctrl,this->mText,this->mSelStartChar);
 				
 				if(!shift)
-					mSelEndChar = mSelStartChar;
+					this->mSelEndChar = this->mSelStartChar;
 			}
 			else
 			{
-				mSelEndChar = MoveCursor(theKey==37,ctrl,mText,mSelEndChar);
+				this->mSelEndChar = this->MoveCursor(theKey==37,ctrl,this->mText,this->mSelEndChar);
 				
 				if(!shift)
-					mSelStartChar = mSelEndChar;					
+					this->mSelStartChar = this->mSelEndChar;					
 			}						
 
-			if(mSelStartChar>mSelEndChar)
+			if(this->mSelStartChar>this->mSelEndChar)
 			{
-				mBackwardsSel = !mBackwardsSel;
-				std::swap(mSelStartChar, mSelEndChar);
+				this->mBackwardsSel = !this->mBackwardsSel;
+				std::swap(this->mSelStartChar, this->mSelEndChar);
 			}
-			else if(mSelStartChar==mSelEndChar)
-				mBackwardsSel = false;
+			else if(this->mSelStartChar==this->mSelEndChar)
+				this->mBackwardsSel = false;
 			
 			break;
 							
@@ -591,14 +614,15 @@ bool InputBox::Virtual54(int theKey)
 			return false;
 	}
 	
-	mCursorDelay = 0;
-	mCursorOn = true;
-	AdjustPosition();
-	Invalidate();	
+	this->mCursorDelay = 0;
+	this->mCursorOn = true;
+	this->AdjustPosition();
+	this->Invalidate();	
 	return true;
 }
 
 // FUNCTION: WON 0x006f9950
+// Returns the smaller of two integers
 static int SmallerOf(int a,int b)
 {
 	return a>b ? b : a;
@@ -606,153 +630,161 @@ static int SmallerOf(int a,int b)
 
 
 // FUNCTION: WON 0x006f9960
+// Returns the box's real text (the unmasked text for a password box)
 const GUIString& InputBox::GetText() const
 {
-	if(mPassword==0)
-		return mText;
+	if(this->mPassword==0)
+		return this->mText;
 	else
-		return mPasswordText;
+		return this->mPasswordText;
 }
 
 
 // FUNCTION: WON 0x006f9970
+// Sets the password mask character (0 = none) and re-applies the text
 void InputBox::SetPasswordChar(char theChar)
 {
-	mPassword = theChar;
-	SetText(mText,false);
+	this->mPassword = theChar;
+	this->SetText(this->mText,false);
 }
 
 
 // FUNCTION: WON 0x006f9990
+// Sets the text, moves the cursor to the start and repaints; optionally sends a text-changed event
 void InputBox::SetText(const GUIString &theText, bool sendEvent)
 {
-	SetTextPrv(theText,sendEvent);
-	mSelStartChar = mSelEndChar = 0;
-	AdjustPosition();
-	Invalidate();
+	this->SetTextPrv(theText,sendEvent);
+	this->mSelStartChar = this->mSelEndChar = 0;
+	this->AdjustPosition();
+	this->Invalidate();
 }
 
 
 // FUNCTION: WON 0x006f99c0
+// Empties the box; optionally sends a text-changed event
 void InputBox::Clear(bool sendEvent)
 {
-	SetText(gEmptyGUIString,sendEvent);
+	this->SetText(gEmptyGUIString,sendEvent);
 }
 }
 
-// Build-only next complete InputBox functions; canonical unchanged until C release.
 namespace WONAPI {
 // FUNCTION: WON 0x006f8b10
+// Copies the selected text to the clipboard (the mask characters for a password box)
 void InputBox::CopySelection()
 {
-	Clipboard::Set(mText.substr(mSelStartChar,mSelEndChar - mSelStartChar));	
+	Clipboard::Set(this->mText.substr(this->mSelStartChar,this->mSelEndChar - this->mSelStartChar));	
 }
 
 // FUNCTION: WON 0x006f8c30
-bool InputBox::Virtual50(int theKey)
+// Handles typed characters and Ctrl-V/C/X (paste, copy, cut) by replacing the selection; other control
+// characters are ignored
+bool InputBox::KeyChar(int theKey)
 {
-	const GUIString &aText = GetText();
+	const GUIString &aText = this->GetText();
 	GUIString aPasteStr;
 
 	if(theKey==22) 	// CTRL-V
 		aPasteStr = Clipboard::Get();
 	else if(theKey==3)	// CTRL-C
 	{
-		CopySelection();
+		this->CopySelection();
 		return true;
 	}
 	else if(theKey==24)	// CTRL-X
 	{
-		CopySelection();
+		this->CopySelection();
 	}
 	else if(theKey>31)
 		aPasteStr.Fill(theKey,0,1);
 	else
 		return true;
 	
-	SetSelText(aPasteStr);
+	this->SetSelText(aPasteStr);
 	return true;
 }
 
 // FUNCTION: WON 0x006f99e0
+// Stores the text (masked copy plus real text for a password box); optionally sends a text-changed event
 void InputBox::SetTextPrv(const GUIString &theText, bool sendEvent)
 {
-	if(mPassword==0)
-		mText = theText;
+	if(this->mPassword==0)
+		this->mText = theText;
 	else
 	{
-		mPasswordText = theText;
-		mText.Fill(mPassword,0,theText.length());
+		this->mPasswordText = theText;
+		this->mText.Fill(this->mPassword,0,theText.length());
 	}
 
 
 
 	if(sendEvent)
-		Fn2F5380(21,0);
+		this->Fn2F5380(ComponentEvent_InputTextChanged,0);
 }
 
 // FUNCTION: WON 0x006f9ac0
+// Draws the background (disabled look when disabled), icon, scrolled text, selection highlight and cursor
 void InputBox::Paint(Graphics &g)
 {
 	Component::Paint(g);
 
 	int aTextColor;
-	if(IsDisabled() && mUseDisabledColors)
+	if(this->IsDisabled() && this->mUseDisabledColors)
 	{
-		mDisabledBackground.Paint(g,0,0,Width(),Height(),mHorzOffset,0);
-		aTextColor = mDisabledTextColor;
+		this->mDisabledBackground.Paint(g,0,0,this->Width(),this->Height(),this->mHorzOffset,0);
+		aTextColor = this->mDisabledTextColor;
 	}
 	else
 	{
-		mBackground.Paint(g,0,0,Width(),Height(),mHorzOffset,0);
-		aTextColor = mTextColor;
+		this->mBackground.Paint(g,0,0,this->Width(),this->Height(),this->mHorzOffset,0);
+		aTextColor = this->mTextColor;
 	}
 
-	if(mIcon.get()!=NULL)
-		g.DrawImage(mIcon.get(),4,(Height()-mIcon->mHeight)/2);
+	if(this->mIcon.get()!=NULL)
+		g.DrawImage(this->mIcon.get(),4,(this->Height()-this->mIcon->mHeight)/2);
 
-	g.Translate(mTextRect.x , mTextRect.y);
-	g.PushClipRect(0,0,mTextRect.width, mTextRect.height);
-	g.Translate(-mHorzOffset,0);
+	g.Translate(this->mTextRect.x , this->mTextRect.y);
+	g.PushClipRect(0,0,this->mTextRect.width, this->mTextRect.height);
+	g.Translate(-this->mHorzOffset,0);
 	
-	g.SetFont(mFont.get());
+	g.SetFont(this->mFont.get());
 	g.SetColor(aTextColor);
-	g.DrawString(mText, 0, 0);
-	int aCursorHeight = mFont->GetHeight();//mTextRect.height;
+	g.DrawString(this->mText, 0, 0);
+	int aCursorHeight = this->mFont->GetHeight();//mTextRect.height;
 
-	if(HasFocus())
+	if(this->HasFocus())
 	{
-		if(mSelStartChar!=mSelEndChar)
+		if(this->mSelStartChar!=this->mSelEndChar)
 		{
-			Font *aFM = mFont.get();
-			int x = aFM->GetStringWidth(mText, 0, mSelStartChar);
-			int aWidth = aFM->GetStringWidth(mText, mSelStartChar, mSelEndChar - mSelStartChar);
-			g.SetColor(mSelColor.GetBackgroundColor(g));
+			Font *aFM = this->mFont.get();
+			int x = aFM->GetStringWidth(this->mText, 0, this->mSelStartChar);
+			int aWidth = aFM->GetStringWidth(this->mText, this->mSelStartChar, this->mSelEndChar - this->mSelStartChar);
+			g.SetColor(this->mSelColor.GetBackgroundColor(g));
 			g.FillRect(x, 0, aWidth, aCursorHeight);
-			g.SetColor(mSelColor.GetForegroundColor(g,aTextColor));
+			g.SetColor(this->mSelColor.GetForegroundColor(g,aTextColor));
 			g.PushClipRect(x, 0, aWidth, aCursorHeight);
-			g.DrawString(mText, 0, 0);
+			g.DrawString(this->mText, 0, 0);
 			g.PopClipRect();
-			if(mCursorOn && !mUnderlineCursor)
+			if(this->mCursorOn && !this->mUnderlineCursor)
 			{
-				if(mBackwardsSel)
+				if(this->mBackwardsSel)
 					g.DrawLine(x,0,x,aCursorHeight);
 				else
 					g.DrawLine(x+aWidth-1,0,x+aWidth-1,aCursorHeight);
 			}
 		}
-		else if(mCursorOn)
+		else if(this->mCursorOn)
 		{
-			int aCursorPos = mSelStartChar;
-			Font *aFM = mFont.get();
-			int anXPos = aFM->GetStringWidth(mText, 0, aCursorPos);
-			if(mUnderlineCursor)
+			int aCursorPos = this->mSelStartChar;
+			Font *aFM = this->mFont.get();
+			int anXPos = aFM->GetStringWidth(this->mText, 0, aCursorPos);
+			if(this->mUnderlineCursor)
 			{
 				int aWidth;
-				if(aCursorPos < mText.length())
-					aWidth = mFont->Virtual10(mText[aCursorPos]);
+				if(aCursorPos < this->mText.length())
+					aWidth = this->mFont->GetCharacterWidth(this->mText[aCursorPos]);
 				else
-					aWidth = mFont->Virtual10('M');
+					aWidth = this->mFont->GetCharacterWidth('M');
 				g.DrawLine(anXPos, aCursorHeight-1, anXPos+aWidth-1, aCursorHeight-1);
 			}
 			else
@@ -760,43 +792,44 @@ void InputBox::Paint(Graphics &g)
 		}
 	}
 	
-	g.Translate(mHorzOffset,0);
+	g.Translate(this->mHorzOffset,0);
 	g.PopClipRect();
-	g.Translate(-mTextRect.x, -mTextRect.y);
+	g.Translate(-this->mTextRect.x, -this->mTextRect.y);
 
 }
 
 }
 
 namespace WONAPI {
-// Native2f7fd0..2f81c9: font/cursor/flags/background and input state setup,505B.
 // FUNCTION: WON 0x006f7fd0
+// Creates an empty input box with the InputBox font, system colours, I-beam cursor, 500 ms blink and a
+// 100-entry input history
 InputBox::InputBox()
 {
-    mSelStartChar=mSelEndChar=0;
-    mBackwardsSel=false;
-    mSelecting=false;
-    mHorzOffset=0;
-    mCursorOn=false;
-    mUnderlineCursor=false;
-    mSelectOnFocus=false;
-    mCursorOffTime=mCursorOnTime=500;
-    mFont=GetNamedFont("InputBox");
-    SetComponentFlags(0x4008,true);
-    mTextColor=0x8000000e;
-    mDisabledTextColor=(int)0x80000006;
-    mDisabledBackground.SetColor((int)0x80000001);
-    mUseDisabledColors=true;
-    mPassword=0;
-    mAllowSelection=true;
-    mMaxChars=0;
-    SetDefaultCursor(Cursor::GetStandardCursor(StandardCursor_IBeam));
-    mRightPad=mLeftPad=4;
-    mBottomPad=mTopPad=3;
-    mInputHistoryPos=0;
-    mMaxInputHistory=100;
-    mHaveTraversedHistory=false;
-    mInputFilter=NULL;
+    this->mSelStartChar=this->mSelEndChar=0;
+    this->mBackwardsSel=false;
+    this->mSelecting=false;
+    this->mHorzOffset=0;
+    this->mCursorOn=false;
+    this->mUnderlineCursor=false;
+    this->mSelectOnFocus=false;
+    this->mCursorOffTime=this->mCursorOnTime=500;
+    this->mFont=this->GetNamedFont("InputBox");
+    this->SetComponentFlags(0x4008,true);
+    this->mTextColor=0x8000000e;
+    this->mDisabledTextColor=(int)0x80000006;
+    this->mDisabledBackground.SetColor((int)0x80000001);
+    this->mUseDisabledColors=true;
+    this->mPassword=0;
+    this->mAllowSelection=true;
+    this->mMaxChars=0;
+    this->SetDefaultCursor(Cursor::GetStandardCursor(StandardCursor_IBeam));
+    this->mRightPad=this->mLeftPad=4;
+    this->mBottomPad=this->mTopPad=3;
+    this->mInputHistoryPos=0;
+    this->mMaxInputHistory=100;
+    this->mHaveTraversedHistory=false;
+    this->mInputFilter=NULL;
     // LOST-DEBUG: none: exact only (string and SmartPtr ctors stay out of line).
     EE_LOST_DEBUG(4);
 }

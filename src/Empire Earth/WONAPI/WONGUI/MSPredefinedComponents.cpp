@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// Predefined child components of the Windows-style scroll container config
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,15 +14,17 @@
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0078fdd0
-bool MSScrollContainerConfig::Virtual28(const std::string& name,ComponentConfig*& config,Component*& component)
+// Maps HORZSCROLLBAR / VERTSCROLLBAR to the scroll container's scrollbars with a new scrollbar config;
+// other names go to the scroller config base
+bool MSScrollContainerConfig::GetPredefinedComponent(const std::string& name,ComponentConfig*& config,Component*& component)
 {
     if(name=="HORZSCROLLBAR") {
         config=new MSScrollbarConfig;
-        component=mScrollContainer->mHorzScrollbar;
+        component=this->mScrollContainer->mHorzScrollbar;
     } else if(name=="VERTSCROLLBAR") {
         config=new MSScrollbarConfig;
-        component=mScrollContainer->mVertScrollbar;
-    } else return ScrollbarScrollerConfig::Virtual28(name,config,component);
+        component=this->mScrollContainer->mVertScrollbar;
+    } else return ScrollbarScrollerConfig::GetPredefinedComponent(name,config,component);
     return true;
 }
 }

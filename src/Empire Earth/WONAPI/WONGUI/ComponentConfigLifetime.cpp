@@ -12,26 +12,29 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007825b0
+// Creates a component configuration with no width or height set and no children initialised
 ComponentConfig::ComponentConfig()
 {
-    mHasSetWidth=false;
-    mHasSetHeight=false;
-    mHaveInitedComponents=false;
+    this->mHasSetWidth=false;
+    this->mHasSetHeight=false;
+    this->mHaveInitedComponents=false;
 }
 // FUNCTION: WON 0x00782690
+// Destroys the component configuration (members only)
 ComponentConfig::~ComponentConfig()
 {
 }
 // FUNCTION: WON 0x00787f90
+// Creates a container configuration with no layout reference and layout id 0
 ContainerConfig::ContainerConfig()
 {
-    mLayoutRef=NULL;
-    mCurLayoutId=0;
+    this->mLayoutRef=NULL;
+    this->mCurLayoutId=0;
 }
 }
 
 namespace WONAPI {
-// Genuine original SDK class-static object definitions; data only, zero authored CPP function bodies.
+// Class statics: the shared resource configuration table and the resource folder
 SmartPtr<ResourceConfigTable> ComponentConfig::mResourceConfigTable;
 std::string ComponentConfig::mResourceFolder;
 }

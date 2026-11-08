@@ -1,5 +1,6 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK spinner value/event/control family.
+// Spinner: a numeric input box with up/down arrows, range, wrap-around and change events
+// (not identified in the original exe)
 #include <windows.h>
 #include <string>
 #include <list>
@@ -13,20 +14,21 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyMSBorderPainters.h"
 #include "ee/wonapi/WONLobbySpinner.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 Spinner::Spinner()
 {
-	mMinValue   = 0;
-	mMaxValue   = 1000;
+	this->mMinValue   = 0;
+	this->mMaxValue   = 1000;
 
-	mValue = 0;
-	mValueIsValid = true;
-	mWrapAround = false;
+	this->mValue = 0;
+	this->mValueIsValid = true;
+	this->mWrapAround = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Spinner::Virtual0C(int &width, int &height)
+void Spinner::GetDesiredSize(int &width, int &height)
 {
 	width = 40;
 	height = 22;
@@ -34,157 +36,156 @@ void Spinner::Virtual0C(int &width, int &height)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Spinner::Virtual6C()
+void Spinner::AddedToParent()
 {
-	if(mUpArrow->mParent!=this)
-		AddControls();
+	if(this->mUpArrow->mParent!=this)
+		this->AddControls();
 
-	Container::Virtual6C();
+	Container::AddedToParent();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::AddControls()
 {
-	mUpArrow->Fn2F3370(0x0002,true);
-	mDownArrow->Fn2F3370(0x0002,true);	
+	this->mUpArrow->SetButtonFlags(0x0002,true);
+	this->mDownArrow->SetButtonFlags(0x0002,true);	
 
-	Fn2F6A60(mInputBox);
-	Fn2F6A60(mUpArrow);
-	Fn2F6A60(mDownArrow);
+	this->AddChild(this->mInputBox);
+	this->AddChild(this->mUpArrow);
+	this->AddChild(this->mDownArrow);
 
-	SetRange(mMinValue,mMaxValue,false);
+	this->SetRange(this->mMinValue,this->mMaxValue,false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::SetTextToValue()
 {
-	if(!mValueIsValid)
+	if(!this->mValueIsValid)
 	{
-		mInputBox->Clear(true);
+		this->mInputBox->Clear(true);
 		return;
 	}
 
 	char aBuf[32];
-	sprintf(aBuf,"%d",mValue);
-	mInputBox->SetText(aBuf,false);
-	mInputBox->SelectRange(-1,-1);
+	sprintf(aBuf,"%d",this->mValue);
+	this->mInputBox->SetText(aBuf,false);
+	this->mInputBox->SelectRange(-1,-1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool Spinner::Virtual54(int theKey)
+bool Spinner::KeyDown(int theKey)
 {
 	if(theKey==VK_UP)
-		IncrementValue();
+		this->IncrementValue();
 	else if(theKey==VK_DOWN)
-		DecrementValue();
+		this->DecrementValue();
 	else
-		return Container::Virtual54(theKey);
+		return Container::KeyDown(theKey);
 
 	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Spinner::Virtual74(bool isEnabled)
+void Spinner::EnabledChanged(bool isEnabled)
 {
-	Container::Virtual74(isEnabled);
+	Container::EnabledChanged(isEnabled);
 
-	mInputBox->SetEnabled(isEnabled);
-	mUpArrow->SetEnabled(isEnabled);
-	mDownArrow->SetEnabled(isEnabled);
+	this->mInputBox->SetEnabled(isEnabled);
+	this->mUpArrow->SetEnabled(isEnabled);
+	this->mDownArrow->SetEnabled(isEnabled);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::IncrementValue(int theAmount)
 {
-	bool oldValid = mValueIsValid;
-	int oldValue = mValue;
+	bool oldValid = this->mValueIsValid;
+	int oldValue = this->mValue;
 
-	mValue += theAmount;
-	if(mWrapAround)
+	this->mValue += theAmount;
+	if(this->mWrapAround)
 	{
-		if(mValue > mMaxValue)
-			mValue = mMinValue;
-		else if(mValue < mMinValue)
-			mValue = mMaxValue;
+		if(this->mValue > this->mMaxValue)
+			this->mValue = this->mMinValue;
+		else if(this->mValue < this->mMinValue)
+			this->mValue = this->mMaxValue;
 	}
 	else
-		ForceValueCompliance();
+		this->ForceValueCompliance();
 	
-	SetTextToValue();
+	this->SetTextToValue();
 
-	CheckValueChanged(oldValid,oldValue);
+	this->CheckValueChanged(oldValid,oldValue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::DecrementValue(int theAmount)
 {
-	IncrementValue(-theAmount);
+	this->IncrementValue(-theAmount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::SetMax(int theMax) 
 { 
-	SetRange(mMinValue, theMax);
+	this->SetRange(this->mMinValue, theMax);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::SetMin(int theMin) 
 { 
-	SetRange(theMin, mMaxValue);
+	this->SetRange(theMin, this->mMaxValue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::SetRange(int theMin, int theMax, bool sendEvent) 
 { 
-	bool oldValid = mValueIsValid;
-	int oldValue = mValue;
+	bool oldValid = this->mValueIsValid;
+	int oldValue = this->mValue;
 
-	mMinValue = theMin;
-	mMaxValue = theMax;
-	ForceValueCompliance();
-	SetTextToValue();
+	this->mMinValue = theMin;
+	this->mMaxValue = theMax;
+	this->ForceValueCompliance();
+	this->SetTextToValue();
 
 	int maxDigits = 0;
-	int aNum = mMaxValue;
+	int aNum = this->mMaxValue;
 	do
 	{
 		maxDigits++;
 		aNum/=10;
 	} while(aNum>0);
 
-	if(mMinValue<0)
+	if(this->mMinValue<0)
 		maxDigits++;
 
-	mInputBox->mMaxChars=maxDigits;
+	this->mInputBox->mMaxChars=maxDigits;
 
 	if(sendEvent)
-		CheckValueChanged(oldValid,oldValue);
+		this->CheckValueChanged(oldValid,oldValue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::SetValue(int theValue, bool sendEvent)
 {
-	bool oldValid = mValueIsValid;
-	int oldValue = mValue;
+	bool oldValid = this->mValueIsValid;
+	int oldValue = this->mValue;
 
-	if(theValue>=mMinValue && theValue<=mMaxValue)
-	{
-		mValue = theValue;
-		mValueIsValid = true;
-		SetTextToValue();
-		if(sendEvent)
-			CheckValueChanged(oldValid,oldValue);
-	}
+	if(!(theValue>=this->mMinValue) || !(theValue<=this->mMaxValue))
+		return;
+	this->mValue = theValue;
+	this->mValueIsValid = true;
+	this->SetTextToValue();
+	if(sendEvent)
+		this->CheckValueChanged(oldValid,oldValue);
 
 
 }
@@ -193,67 +194,67 @@ void Spinner::SetValue(int theValue, bool sendEvent)
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::ForceValueCompliance()
 {
-	if(mMaxValue < mMinValue)
+	if(this->mMaxValue < this->mMinValue)
 	{
-		mValueIsValid = false;
+		this->mValueIsValid = false;
 		return;
 	}
 	
-	if(mValue > mMaxValue)
-		mValue = mMaxValue;
-	else if(mValue < mMinValue)
-		mValue = mMinValue;
+	if(this->mValue > this->mMaxValue)
+		this->mValue = this->mMaxValue;
+	else if(this->mValue < this->mMinValue)
+		this->mValue = this->mMinValue;
 
-	mValueIsValid = true;
+	this->mValueIsValid = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::SetWrapAround(bool wrap)
 {
-	mWrapAround = wrap;
+	this->mWrapAround = wrap;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::SetNoType(bool noType)
 {
-	mInputBox->SetComponentFlags(0x000008,!noType);
-	mInputBox->Fn2F84B0(!noType);
-	if(noType && mFocusChild==mInputBox.get())
-		VirtualB4(NULL);
+	this->mInputBox->SetComponentFlags(ComponentFlag_WantFocus,!noType);
+	this->mInputBox->SetAllowSelection(!noType);
+	if(noType && this->mFocusChild==this->mInputBox.get())
+		this->SetFocusChild(NULL);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Spinner::CalcValueFromText()
 {
-	bool oldValid = mValueIsValid;
-	int oldValue = mValue;
+	bool oldValid = this->mValueIsValid;
+	int oldValue = this->mValue;
 
-	if(mInputBox->GetText().length()==0)
-		mValueIsValid = false;
+	if(this->mInputBox->GetText().length()==0)
+		this->mValueIsValid = false;
 	else
 	{
-		mValue = mInputBox->GetText().mData->ToInt(0);
-		mValueIsValid = mValue>=mMinValue && mValue<=mMaxValue;
+		this->mValue = this->mInputBox->GetText().mData->ToInt(0);
+		this->mValueIsValid = this->mValue>=this->mMinValue && this->mValue<=this->mMaxValue;
 	}
 
-	CheckValueChanged(oldValid, oldValue);
+	this->CheckValueChanged(oldValid, oldValue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 int Spinner::GetValue()
 {
-	return mValue;
+	return this->mValue;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool Spinner::IsValueValid()
 {
-	return mValueIsValid;
+	return this->mValueIsValid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -261,13 +262,13 @@ bool Spinner::IsValueValid()
 void Spinner::CheckValueChanged(bool oldValid, int oldValue)
 {
 	bool changed = false;
-	if(oldValid!=mValueIsValid)
+	if(oldValid!=this->mValueIsValid)
 		changed = true;
-	else if(mValueIsValid && oldValue!=mValue)
+	else if(this->mValueIsValid && oldValue!=this->mValue)
 		changed = true;
 
 	if(changed)
-		FireEvent(ComponentEvent_SpinnerValueChanged);
+		this->FireEvent(ComponentEvent_SpinnerValueChanged);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -277,25 +278,25 @@ void Spinner::HandleComponentEvent(ComponentEvent* pRawEvent)
 	if (pRawEvent->mType == ComponentEvent_ButtonPressed)
 	{
 		int nAdj = 1;
-		if ((GetKeyMod() & KEYMOD_SHIFT) != 0)
+		if ((this->GetKeyMod() & KEYMOD_SHIFT) != 0)
 			nAdj = 10;
-		if ((GetKeyMod() & KEYMOD_CTRL) != 0)
+		if ((this->GetKeyMod() & KEYMOD_CTRL) != 0)
 			nAdj = 100;
 
-		if (pRawEvent->mComponent == mUpArrow)
+		if (pRawEvent->mComponent == this->mUpArrow)
 		{
-			IncrementValue(nAdj);
+			this->IncrementValue(nAdj);
 			return;
 		}
-		else if (pRawEvent->mComponent == mDownArrow)
+		else if (pRawEvent->mComponent == this->mDownArrow)
 		{
-			DecrementValue(nAdj);
+			this->DecrementValue(nAdj);
 			return;
 		}
 	}
 	else if (pRawEvent->mType == ComponentEvent_InputTextChanged)
 	{
-		CalcValueFromText();
+		this->CalcValueFromText();
 		return;
 	}
 

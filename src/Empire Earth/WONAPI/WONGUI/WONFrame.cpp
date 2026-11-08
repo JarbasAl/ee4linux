@@ -1,4 +1,4 @@
-// Original skin frame and simple image button behavior on borrowed owners.
+// Skin frame painting and the frame component's image and border accessors (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,75 +13,90 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x007177C0
+// Copies another frame's borders and a private duplicate of its image (none when it has no image)
 void WONFrame::Copy(const WONFrame &from)
 {
 	if(from.mImage.get()==NULL)
-		mImage = NULL;
+		this->mImage = NULL;
 	else
-		mImage = from.mImage->Duplicate();
+		this->mImage = from.mImage->Duplicate();
 
-	mLeft = from.mLeft;
-	mTop = from.mTop;
-	mRight = from.mRight;
-	mBottom = from.mBottom;
+	this->mLeft = from.mLeft;
+	this->mTop = from.mTop;
+	this->mRight = from.mRight;
+	this->mBottom = from.mBottom;
 }
 
 // FUNCTION: WON 0x007178C0
+// Stretches the frame image to the component's full size when needed and draws it at the top-left corner
 void WONFrame::Paint(Graphics &g, Component *theComponent)
 {
-	if(mImage.get()==NULL)
+	if(this->mImage.get()==NULL)
 		return;
 
-	if(mImage->mWidth!=theComponent->Width() || mImage->mHeight!=theComponent->Height())
-		mImage->SetSize(theComponent->Width(),theComponent->Height());
+	if(this->mImage->mWidth!=theComponent->Width() || this->mImage->mHeight!=theComponent->Height())
+		this->mImage->SetSize(theComponent->Width(),theComponent->Height());
 
-	g.DrawImage(mImage.get(),0,0);
+	g.DrawImage(this->mImage.get(),0,0);
 }
 
 // FUNCTION: WON 0x00717910
+// Stretches the frame image to the component's size less the given paddings and draws it inside them
 void WONFrame::Paint(Graphics &g, Component *theComponent, int lp, int tp, int rp, int bp)
 {
-	if(mImage.get()==NULL)
+	if(this->mImage.get()==NULL)
 		return;
 
-	if(mImage->mWidth!=theComponent->Width()-lp-rp || mImage->mHeight!=theComponent->Height()-tp-bp)
-		mImage->SetSize(theComponent->Width()-lp-rp,theComponent->Height()-tp-bp);
+	if(this->mImage->mWidth!=theComponent->Width()-lp-rp || this->mImage->mHeight!=theComponent->Height()-tp-bp)
+		this->mImage->SetSize(theComponent->Width()-lp-rp,theComponent->Height()-tp-bp);
 
-	g.DrawImage(mImage.get(),lp,tp);
+	g.DrawImage(this->mImage.get(),lp,tp);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x0071a7c0
-void WONFrameComponent::VirtualAC(Image* image,int left,int top,int right,int bottom) { mFrame.SetImage(image,left,top,right,bottom); }
+// Sets the frame image and its four border widths
+void WONFrameComponent::SetFrameImageAndBorders(Image* image,int left,int top,int right,int bottom) { this->mFrame.SetImage(image,left,top,right,bottom); }
 // FUNCTION: WON 0x0071a7b0
-void WONFrameComponent::VirtualB0(Image* image) { mFrame.SetImage(image); }
+// Sets the frame image, keeping the borders
+void WONFrameComponent::SetFrameImage(Image* image) { this->mFrame.SetImage(image); }
 // FUNCTION: WON 0x0071a7f0
-void WONFrameComponent::VirtualB4(int left,int top,int right,int bottom) { mFrame.mLeft=left; mFrame.mTop=top; mFrame.mRight=right; mFrame.mBottom=bottom; }
+// Sets the frame's four border widths
+void WONFrameComponent::SetFrameBorders(int left,int top,int right,int bottom) { this->mFrame.mLeft=left; this->mFrame.mTop=top; this->mFrame.mRight=right; this->mFrame.mBottom=bottom; }
 // FUNCTION: WON 0x0071a630
-void WONFrameComponent::VirtualB8(int value) { mFrame.mLeft=value; }
+// Sets the frame's left border width
+void WONFrameComponent::SetFrameLeft(int value) { this->mFrame.mLeft=value; }
 // FUNCTION: WON 0x0071a640
-void WONFrameComponent::VirtualBC(int value) { mFrame.mTop=value; }
+// Sets the frame's top border width
+void WONFrameComponent::SetFrameTop(int value) { this->mFrame.mTop=value; }
 // FUNCTION: WON 0x0071a650
-void WONFrameComponent::VirtualC0(int value) { mFrame.mRight=value; }
+// Sets the frame's right border width
+void WONFrameComponent::SetFrameRight(int value) { this->mFrame.mRight=value; }
 // FUNCTION: WON 0x0071a660
-void WONFrameComponent::VirtualC4(int value) { mFrame.mBottom=value; }
-// SUPPORT: EXE 0x0071a670; genuine SDK frame component behavior,4B.
-int WONFrameComponent::VirtualC8() { return mFrame.mLeft; }
+// Sets the frame's bottom border width
+void WONFrameComponent::SetFrameBottom(int value) { this->mFrame.mBottom=value; }
+// Returns the frame's left border width (the linker folds this body into the identical one at 0x0071a670)
+int WONFrameComponent::GetFrameLeft() { return this->mFrame.mLeft; }
 // FUNCTION: WON 0x0071a680
-int WONFrameComponent::VirtualCC() { return mFrame.mTop; }
+// Returns the frame's top border width
+int WONFrameComponent::GetFrameTop() { return this->mFrame.mTop; }
 // FUNCTION: WON 0x0071a690
-int WONFrameComponent::VirtualD0() { return mFrame.mRight; }
+// Returns the frame's right border width
+int WONFrameComponent::GetFrameRight() { return this->mFrame.mRight; }
 // FUNCTION: WON 0x0071a6a0
-int WONFrameComponent::VirtualD4() { return mFrame.mBottom; }
+// Returns the frame's bottom border width
+int WONFrameComponent::GetFrameBottom() { return this->mFrame.mBottom; }
 // FUNCTION: WON 0x0071a810
-void WONFrameComponent::Paint(Graphics& g) { Component::Paint(g); mFrame.Paint(g,this); }
-// Genuine SDK image assignment API; native shared349ab0 already mapped StretchImage, zero new physical credit.
+// Paints the component, then its frame image over its full size
+void WONFrameComponent::Paint(Graphics& g) { Component::Paint(g); this->mFrame.Paint(g,this); }
+// The linker folds this body into the identical StretchImage::SetImage at 0x00749ab0
+// Sets the frame image, keeping the borders
+void WONFrame::SetImage(Image* image) { this->mImage=image; }
 // FUNCTION: WON 0x00717730
-void WONFrame::SetImage(Image* image) { mImage=image; }
-// SUPPORT: EXE 0x00717730; genuine SDK image and borders assignment, native102B.
+// Sets the frame image and its four border widths
 void WONFrame::SetImage(Image* image,int left,int top,int right,int bottom)
 {
-    mImage=image; mLeft=left; mTop=top; mRight=right; mBottom=bottom;
+    this->mImage=image; this->mLeft=left; this->mTop=top; this->mRight=right; this->mBottom=bottom;
 }
 }

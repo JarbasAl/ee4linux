@@ -1,6 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK ping family; no Native/primary/physical claim.
+// No original address identified: WON SDK ping operations
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing unit: proposed existing server-operation family profile.
 #include <windows.h>
 #include <time.h>
 #include <stdlib.h>
@@ -12,6 +11,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONPing.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace WONAPI;
 using namespace std;
 
@@ -19,11 +19,11 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////////////////
 MultiPingOp::MultiPingOp()
 {
-	mBatchSize = 20;
-	mMaxFailures = 3;
-	mMaxPingTime = 3000;
-	mMaxPingReplySize = 2048;
-	mOrderListByPingTime = true;
+	this->mBatchSize = 20;
+	this->mMaxFailures = 3;
+	this->mMaxPingTime = 3000;
+	this->mMaxPingReplySize = 2048;
+	this->mOrderListByPingTime = true;
 
 }
 
@@ -31,7 +31,7 @@ MultiPingOp::MultiPingOp()
 ///////////////////////////////////////////////////////////////////////////////
 void MultiPingOp::AddServer(const IPAddr &theAddr)
 {
-	mPingList.push_back(new MultiPingStruct(theAddr));
+	this->mPingList.push_back(new MultiPingStruct(theAddr));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,7 +52,7 @@ void MultiPingOp::AddServers(const DirEntityList &theDir, const wchar_t *theName
 			{
 				IPAddr anAddr = anEntity->GetNetAddrAsIP();
 				if(anAddr.IsValid())
-					mPingList.push_back(new MultiPingStruct(anAddr,anEntity));
+					this->mPingList.push_back(new MultiPingStruct(anAddr,anEntity));
 			}
 		}
 
@@ -65,7 +65,7 @@ void MultiPingOp::AddServers(const DirEntityList &theDir, const wchar_t *theName
 ///////////////////////////////////////////////////////////////////////////////
 void MultiPingOp::ClearServers()
 {
-	mPingList.clear();
+	this->mPingList.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,19 +125,18 @@ void MultiPingOp::StaticRecvCallback(AsyncOpPtr theOp, SmartPtr<RefCount> thePar
 ///////////////////////////////////////////////////////////////////////////////
 void MultiPingOp::RecvCallback(RecvBytesFromOp *theOp)
 {
-	if(mStatus!=100000 || theOp->GetSocket()!=mSocket.get())
+	if(this->mStatus!=WS_Pending || theOp->GetSocket()!=this->mSocket.get())
 		return;
 
-	if(!HandleResponsePrv(theOp->GetStatus(),theOp->GetBytes(),theOp->GetAddr()))
-		Fn29F220(theOp->GetStatus());
+	if(!this->HandleResponsePrv(theOp->GetStatus(),theOp->GetBytes(),theOp->GetAddr()))
+		this->Finish(theOp->GetStatus());
 
-	if(mPingMap.size()==0)
-	{
-		if(mPingList.size()==0)
-			Fn29F220((WONStatus)0);
-		else
-			PingBatchAsync();
-	}
+	if(this->mPingMap.size()!=0)
+		return;
+	if(this->mPingList.size()==0)
+		this->Finish((WONStatus)WS_Success);
+	else
+		this->PingBatchAsync();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,12 +151,12 @@ void MultiPingOp::StaticTimeoutCallback(AsyncOpPtr theOp, SmartPtr<RefCount> the
 ///////////////////////////////////////////////////////////////////////////////
 void MultiPingOp::TimeoutCallback(AsyncOp *theOp)
 {
-	if(mStatus!=100000 || theOp!=mRecvTimeoutOp.get())
+	if(this->mStatus!=WS_Pending || theOp!=this->mRecvTimeoutOp.get())
 		return;
 
-	mRecvTimeoutOp = NULL;
-	FinishBatch();
-	PingBatchAsync();
+	this->mRecvTimeoutOp = NULL;
+	this->FinishBatch();
+	this->PingBatchAsync();
 }
 
 
@@ -165,15 +164,15 @@ void MultiPingOp::TimeoutCallback(AsyncOp *theOp)
 ///////////////////////////////////////////////////////////////////////////////
 void MultiPingOp::PrepareBatch()
 {
-	mPingMap.clear();
+	this->mPingMap.clear();
 
-	MultiPingList::iterator anItr = mPingList.begin();
+	MultiPingList::iterator anItr = this->mPingList.begin();
 	int aCount = 0;
 
-	while(anItr!=mPingList.end() && aCount<mBatchSize)
+	while(anItr!=this->mPingList.end() && aCount<this->mBatchSize)
 	{
-		mPingMap[(*anItr)->mAddr] = *anItr;
-		mPingList.erase(anItr++);
+		this->mPingMap[(*anItr)->mAddr] = *anItr;
+		this->mPingList.erase(anItr++);
 		aCount++;
 	}
 }
@@ -182,20 +181,20 @@ void MultiPingOp::PrepareBatch()
 ///////////////////////////////////////////////////////////////////////////////
 void MultiPingOp::FinishBatch()
 {
-	MultiPingMap::iterator anItr = mPingMap.begin();
-	while(anItr!=mPingMap.end())
+	MultiPingMap::iterator anItr = this->mPingMap.begin();
+	while(anItr!=this->mPingMap.end())
 	{
 		MultiPingStruct *aStruct = anItr->second;
 		aStruct->mNumFailures++;
-		if(aStruct->mNumFailures >= mMaxFailures)
-			mFinishedList.push_back(aStruct);
+		if(aStruct->mNumFailures >= this->mMaxFailures)
+			this->mFinishedList.push_back(aStruct);
 		else
-			mPingList.push_back(aStruct);
+			this->mPingList.push_back(aStruct);
 
 		++anItr;
 	}
 
-	mPingMap.clear();
+	this->mPingMap.clear();
 }
 
 
@@ -203,24 +202,24 @@ void MultiPingOp::FinishBatch()
 ///////////////////////////////////////////////////////////////////////////////
 void MultiPingOp::PingBatchAsync()
 {
-	if(mRecvTimeoutOp.get()!=NULL)
+	if(this->mRecvTimeoutOp.get()!=NULL)
 	{
-		mRecvTimeoutOp->Kill(true);
-		mRecvTimeoutOp = NULL;
+		this->mRecvTimeoutOp->Kill(true);
+		this->mRecvTimeoutOp = NULL;
 	}
 
-	PrepareBatch();
-	MultiPingMap::iterator anItr = mPingMap.begin();
-	while(anItr!=mPingMap.end())
+	this->PrepareBatch();
+	MultiPingMap::iterator anItr = this->mPingMap.begin();
+	while(anItr!=this->mPingMap.end())
 	{
-		ByteBufferPtr aPing = GetRequest(anItr->second);
-		mSocket->Fn2B4740(new SendBytesToOp(aPing,anItr->first), 0xffffffff);
+		ByteBufferPtr aPing = this->GetRequest(anItr->second);
+		this->mSocket->QueueOp(new SendBytesToOp(aPing,anItr->first), 0xffffffff);
 		++anItr;
 	}
 
-	mRecvTimeoutOp = new AsyncOp;
-	mRecvTimeoutOp->mCompletion = new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(StaticTimeoutCallback,this);
-	mRecvTimeoutOp->Run(mMaxPingTime);
+	this->mRecvTimeoutOp = new AsyncOp;
+	this->mRecvTimeoutOp->mCompletion = new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(MultiPingOp::StaticTimeoutCallback,this);
+	this->mRecvTimeoutOp->RunAsync(this->mMaxPingTime);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -228,12 +227,12 @@ void MultiPingOp::PingBatchAsync()
 DWORD MultiPingOp::ResponseTimeLeft(DWORD theStartTick)
 {
 	DWORD anElapsed = GetTickCount() - theStartTick;
-	if(anElapsed > mMaxPingTime)
+	if(anElapsed > this->mMaxPingTime)
 		return 0;
 
 
-	DWORD anAbsTimeLeft = TimeLeft();
-	DWORD aTimeLeft = mMaxPingTime - anElapsed;
+	DWORD anAbsTimeLeft = this->TimeLeft();
+	DWORD aTimeLeft = this->mMaxPingTime - anElapsed;
 
 	if(aTimeLeft < anAbsTimeLeft)
 		return aTimeLeft;
@@ -245,24 +244,24 @@ DWORD MultiPingOp::ResponseTimeLeft(DWORD theStartTick)
 ///////////////////////////////////////////////////////////////////////////////
 bool MultiPingOp::HandleResponsePrv(WONStatus theStatus, const ByteBuffer *theResponse, const IPAddr &theAddr)
 {
-	if(theStatus!=(WONStatus)0 && theStatus!=(WONStatus)10040)
+	if(theStatus!=(WONStatus)WS_Success && theStatus!=(WONStatus)WS_WSAEMSGSIZE)
 		return false;
 
-	if(theStatus==(WONStatus)0)
+	if(theStatus==(WONStatus)WS_Success)
 	{
-		MultiPingMap::iterator anItr = mPingMap.find(theAddr);
-		if(anItr!=mPingMap.end())
+		MultiPingMap::iterator anItr = this->mPingMap.find(theAddr);
+		if(anItr!=this->mPingMap.end())
 		{
-			PingAction anAction = HandleResponse(anItr->second,theResponse);
+			PingAction anAction = this->HandleResponse(anItr->second,theResponse);
 			if(anAction==PingAction_Done)
 			{
-				mFinishedList.push_back(anItr->second);
-				mPingMap.erase(anItr);
+				this->mFinishedList.push_back(anItr->second);
+				this->mPingMap.erase(anItr);
 			}
 			else if(anAction==PingAction_More)
 			{
-				mPingList.push_back(anItr->second);
-				mPingMap.erase(anItr);
+				this->mPingList.push_back(anItr->second);
+				this->mPingMap.erase(anItr);
 			}
 		}
 	}
@@ -274,14 +273,14 @@ bool MultiPingOp::HandleResponsePrv(WONStatus theStatus, const ByteBuffer *theRe
 ///////////////////////////////////////////////////////////////////////////////
 WONStatus MultiPingOp::PingBatchBlock()
 {
-	PrepareBatch();
+	this->PrepareBatch();
 
-	MultiPingMap::iterator anItr = mPingMap.begin();
+	MultiPingMap::iterator anItr = this->mPingMap.begin();
 	WONStatus aStatus;
-	while(TimeLeft()>0 && anItr!=mPingMap.end())
+	while(this->TimeLeft()>0 && anItr!=this->mPingMap.end())
 	{
-		ByteBufferPtr aPing = GetRequest(anItr->second);
-		aStatus = mSocket->SendBytesTo(aPing, anItr->first, TimeLeft());
+		ByteBufferPtr aPing = this->GetRequest(anItr->second);
+		aStatus = this->mSocket->SendBytesTo(aPing, anItr->first, this->TimeLeft());
 		if(aStatus!=(WONStatus)0)
 			return aStatus;
 
@@ -289,12 +288,12 @@ WONStatus MultiPingOp::PingBatchBlock()
 	}
 
 	DWORD aStartTick = GetTickCount();
-	while(ResponseTimeLeft(aStartTick)>0 && !mPingMap.empty())
+	while(this->ResponseTimeLeft(aStartTick)>0 && !this->mPingMap.empty())
 	{
 		ByteBufferPtr aReply;
 		IPAddr anAddr;
-		aStatus = mSocket->RecvBytesFrom(aReply,mMaxPingReplySize,anAddr,ResponseTimeLeft(aStartTick));
-		if(!HandleResponsePrv(aStatus,aReply,anAddr))
+		aStatus = this->mSocket->RecvBytesFrom(aReply,this->mMaxPingReplySize,anAddr,this->ResponseTimeLeft(aStartTick));
+		if(!this->HandleResponsePrv(aStatus,aReply,anAddr))
 			return aStatus;
 
 	}
@@ -304,81 +303,80 @@ WONStatus MultiPingOp::PingBatchBlock()
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void MultiPingOp::Virtual04()
+void MultiPingOp::RunHook()
 {
 	srand(time(NULL));
-	mSocket = new BlockingSocket(AsyncSocket::UDP);
-	mSocket->Fn2B0D90(0,false);
-	mFinishedList.clear();
+	this->mSocket = new BlockingSocket(AsyncSocket::UDP);
+	this->mSocket->Fn2B0D90(0,false);
+	this->mFinishedList.clear();
 
-	if(mRunMode==OP_MODE_ASYNC)
+	if(this->mRunMode==OP_MODE_ASYNC)
 	{
-		mSocket->Fn2B3BF0(new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(StaticRecvCallback,this));
-		mSocket->Fn2B4500(new RecvBytesFromOp(mMaxPingReplySize));
-		PingBatchAsync();
+		this->mSocket->SetRepeatCompletion(new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(MultiPingOp::StaticRecvCallback,this));
+		this->mSocket->SetRepeatOp(new RecvBytesFromOp(this->mMaxPingReplySize));
+		this->PingBatchAsync();
 		return;
 	}
 
 	WONStatus aStatus;
-	while(TimeLeft()>0 && !mPingList.empty())
+	while(this->TimeLeft()>0 && !this->mPingList.empty())
 	{
-		aStatus = PingBatchBlock();
-		FinishBatch();
+		aStatus = this->PingBatchBlock();
+		this->FinishBatch();
 		if(aStatus!=(WONStatus)0 && aStatus!=(WONStatus)100001)
 		{
-			Fn29F220(aStatus);
+			this->Finish(aStatus);
 			return; 
 		}
 	}
 
-	Fn29F220((WONStatus)0);
+	this->Finish((WONStatus)WS_Success);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void MultiPingOp::Virtual08()
+void MultiPingOp::CleanupHook()
 {
-	if(mSocket.get()!=NULL)
+	if(this->mSocket.get()!=NULL)
 	{
-		mSocket->Fn2B1AD0();
-		mSocket = NULL;
+		this->mSocket->Close();
+		this->mSocket = NULL;
 	}
 
-	if(mRecvTimeoutOp.get()!=NULL)
+	if(this->mRecvTimeoutOp.get()!=NULL)
 	{
-		mRecvTimeoutOp->Kill(true);
-		mRecvTimeoutOp = NULL;
+		this->mRecvTimeoutOp->Kill(true);
+		this->mRecvTimeoutOp = NULL;
 	}
 
-	FinishBatch();
+	this->FinishBatch();
 
-	MultiPingList::iterator aListItr = mPingList.begin();
-	while(aListItr!=mPingList.end())
+	MultiPingList::iterator aListItr = this->mPingList.begin();
+	while(aListItr!=this->mPingList.end())
 	{
-		mFinishedList.push_back(*aListItr);
+		this->mFinishedList.push_back(*aListItr);
 		++aListItr;
 	}
-	mPingList.clear();
+	this->mPingList.clear();
 
-	if(mOrderListByPingTime)
+	if(!this->mOrderListByPingTime)
+		return;
+	typedef std::multimap<DWORD,MultiPingStructPtr> SortMap;
+	SortMap aMap;
+	aListItr = this->mFinishedList.begin();
+	while(aListItr!=this->mFinishedList.end())
 	{
-		typedef std::multimap<DWORD,MultiPingStructPtr> SortMap;
-		SortMap aMap;
-		aListItr = mFinishedList.begin();
-		while(aListItr!=mFinishedList.end())
-		{
-			aMap.insert(SortMap::value_type((*aListItr)->mPingTime,*aListItr));
-			++aListItr;
-		}
+		aMap.insert(SortMap::value_type((*aListItr)->mPingTime,*aListItr));
+		++aListItr;
+	}
 
-		mFinishedList.clear();
+	this->mFinishedList.clear();
 
-		SortMap::iterator aMapItr = aMap.begin();
-		while(aMapItr!=aMap.end())
-		{
-			mFinishedList.push_back(aMapItr->second);
-			aMapItr++;
-		}
+	SortMap::iterator aMapItr = aMap.begin();
+	while(aMapItr!=aMap.end())
+	{
+		this->mFinishedList.push_back(aMapItr->second);
+		aMapItr++;
 	}
 
 }
@@ -388,8 +386,8 @@ void MultiPingOp::Virtual08()
 SmartPtr<ServerContext> MultiPingOp::GetServerContext(bool discardNonResponsiveServers)
 {
 	SmartPtr<ServerContext> aContext = new ServerContext;
-	MultiPingList::iterator anItr = mFinishedList.begin();
-	while(anItr!=mFinishedList.end())
+	MultiPingList::iterator anItr = this->mFinishedList.begin();
+	while(anItr!=this->mFinishedList.end())
 	{
 		MultiPingStruct *aStruct = *anItr;
 		if(aStruct->mPingTime!=-1 || !discardNonResponsiveServers)
@@ -398,6 +396,6 @@ SmartPtr<ServerContext> MultiPingOp::GetServerContext(bool discardNonResponsiveS
 		++anItr;
 	}
 
-	aContext->mB08 = false;
+	aContext->mShuffleAddresses = false;
 	return aContext;
 }

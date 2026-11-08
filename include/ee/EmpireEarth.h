@@ -60,7 +60,7 @@ extern bool gFreeCamera;
 extern UWideString gPlayerName;            // 0x530768 the single player's name (the SP screen's edit box 8; provisional name)
 extern UWideString gGameVersion;           // 0x529a08 (the version a client sends with its connection request; provisional name)
 extern unsigned long gBinaryChecksum;      // 0x5319e4 (likewise, the binary checksum; provisional name)
-extern unsigned long gU5308A0;             // 0x5308a0 (passed to the local server's ctor by the SP random map; provisional name)
+extern unsigned long gNetworkAdapter;      // 0x5308a0 (passed to the local server's ctor by the SP random map; provisional name)
 extern long gDifficultyLevel2;             // 0x530704 (likewise; provisional name)
 extern unsigned long gStartTime;           // 0x5318d0 (EEClient 0xb80ef/EEServer 0xcc34e: NEMStartGame's offset start time; provisional name)
 

@@ -1,4 +1,4 @@
-// Genuine explicit SDK image configuration constructors; support0 only.
+// Image configuration constructors
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,14 +13,16 @@
 #include "ee/wonapi/WONLobbyConfigImages.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0078b2b0
+// Creates an image configuration, marked as having no child components to create
 ImageConfig::ImageConfig()
 {
-    mHaveInitedComponents=true;
+    this->mHaveInitedComponents=true;
 }
 // FUNCTION: WON 0x0078c260
+// Creates an image filter configuration with no pending raw image
 ImageFilterConfig::ImageFilterConfig()
 {
-    mImageIsRawImage=false;
+    this->mImageIsRawImage=false;
 }
 }
 

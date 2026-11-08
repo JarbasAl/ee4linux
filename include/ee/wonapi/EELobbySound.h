@@ -1,21 +1,21 @@
 // The lobby's sounds: WONAPI's Sound / SoundDecoder bases (RTTI
 // WONAPI::Sound vtable 0x4510fc, WONAPI::SoundDecoder vtable 0x451a88) and the game's implementations, which play
 // through the engine's sound manager (EELobbyMusic vtable 0x44c7e8, EELobbySound 0x44c800, EELobbySoundDecoder
-// 0x44c6dc). Names PROVISIONAL (by behaviour) unless RTTI gives them. Requires <string>, lle/LowLevelEngine.h,
-// ee/EEWonNet.h.
+// 0x44c6dc). Names RTTI does not give are inferred from behaviour (provisional names). Requires <string>,
+// lle/LowLevelEngine.h, ee/EEWonNet.h.
 #ifndef EE_WONAPI_EELOBBYSOUND_H
 #define EE_WONAPI_EELOBBYSOUND_H
 
 namespace WONAPI {
 
-// what a sound is made from (Sound's ctor copies mL00 to +0x08 and mPath to +0x0c; the decoder loads mPath)
+// what a sound is made from (Sound's ctor copies mSoundFlags to +0x08 and mPath to +0x0c; the decoder loads mPath)
 struct SoundDescriptor {
-    SoundDescriptor(); //329810 actual default, native flags0 and empty path
+    SoundDescriptor(); // 0x329810 (no flags, empty path)
     SoundDescriptor(const char*);
-    void SetSoundFlags(int,bool); //329990 actual native bit update
+    void SetSoundFlags(int,bool); // 0x329990 (sets or clears one flag bit)
     SoundDescriptor(const std::string& inPath, long inType);    // 0x329830
 
-    long mL00;                              // +0x00
+    long mSoundFlags;                       // +0x00
     std::string mPath;                      // +0x04
 };
 
@@ -23,20 +23,20 @@ class Sound : public RefCount {
 public:
     Sound(const SoundDescriptor& inDescriptor);     // 0x3299c0 (WONAPI, /GX)
     // no user dtor: EELobbyMusic's ??_G 0x29ce1e destroys mPath and stores RefCount's vptr only
-    virtual void PlayHook() {}              // +0x04 genuine SDK empty hook; native326b60
-    virtual void StopHook() {}              // +0x08, genuine SDK empty hook; native326b60
-    virtual void ResumeHook() {}            // +0x0c, genuine SDK empty hook; native326b60
-    virtual void RewindHook() {}            // +0x10 genuine SDK empty hook; native326b60
-    void Fn329BD0();                        // 0x329bd0, actual public Play wrapper (call-only)
-    void Stop();                           // genuine SDK public CPP API, native3a6db0
-    void Resume();                         // genuine SDK public CPP API, native3a6dc0
+    virtual void PlayHook() {}              // +0x04 (empty; shared body 0x326b60)
+    virtual void StopHook() {}              // +0x08 (empty; shared body 0x326b60)
+    virtual void ResumeHook() {}            // +0x0c (empty; shared body 0x326b60)
+    virtual void RewindHook() {}            // +0x10 (empty; shared body 0x326b60)
+    void Play();                            // 0x329bd0
+    void Stop();                           // 0x3a6db0
+    void Resume();                         // 0x3a6dc0
     void Rewind();
-    void SetLooping(bool inLooping) { mIsLooping = inLooping; }
-    void Fn329BF0(bool inMuted);            // 0x329bf0: toggles descriptor flag4; call-only provisional name
-    bool GetMuted();                       //genuine SDK CPP, native329c20/9
+    void SetLooping(bool inLooping) { this->mIsLooping = inLooping; }
+    void SetMuted(bool inMuted);            // 0x329bf0: sets or clears the descriptor's flag 4 (provisional name)
+    bool GetMuted();                       // 0x329c20
 
     SoundDescriptor mDescriptor;            // +0x08
-    bool mIsLooping;                        // +0x1c; natural padding through1f, actual ctor byte store
+    bool mIsLooping;                        // +0x1c (padding to 0x1f; the constructor stores a byte)
 };
 
 typedef SmartPtr<Sound> SoundPtr;
@@ -45,7 +45,7 @@ class SoundDecoder : public RefCount {
 public:
     SoundDecoder();                         // 0x34a530
     virtual ~SoundDecoder();                // 0x328590 (ICF: ~LobbyPlayer; ??_GEELobbySoundDecoder 0x297dc5 calls it)
-    SoundPtr DecodeDescriptor(const SoundDescriptor& inDescriptor); // 0x34a540, forwards to Decode
+    SoundPtr DecodeDescriptor(const SoundDescriptor& inDescriptor); // 0x34a540 (forwards to Decode)
     virtual SoundPtr Decode(const SoundDescriptor& inDescriptor) = 0;   // +0x04
 };
 

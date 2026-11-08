@@ -1,6 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK directory executable implementation.
-// Missing-unit proposed family profile: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// No FUNCTION/Native address or primary/physical byte credit is claimed.
+// No original address identified: WON SDK directory server get-service request
+// Expected flags: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>
 #include <windows.h>
 #include <string>
@@ -11,6 +10,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONDirExtended.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace std;
 using namespace WONAPI;
 
@@ -18,9 +18,9 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 void GetServiceOp::Init()
 {
-	mLengthFieldSize = 4;
+	this->mLengthFieldSize = 4;
 
-	mFlags = DIR_GF_DECOMPSERVICES | DIR_GF_ADDDISPLAYNAME | DIR_GF_ADDDATAOBJECTS | 
+	this->mFlags = DIR_GF_DECOMPSERVICES | DIR_GF_ADDDISPLAYNAME | DIR_GF_ADDDATAOBJECTS | 
 		DIR_GF_SERVADDNAME | DIR_GF_SERVADDNETADDR;
 }
 
@@ -29,57 +29,57 @@ void GetServiceOp::Init()
 
 GetServiceOp::GetServiceOp(ServerContext *theDirContext) : ServerRequestOp(theDirContext)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 GetServiceOp::GetServiceOp(const IPAddr &theAddr) : ServerRequestOp(theAddr)
 {
-	Init();
+	this->Init();
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetServiceOp::Virtual18()
+void GetServiceOp::Reset()
 {
-	mService = NULL;
+	this->mService = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus GetServiceOp::Virtual10()
+WONStatus GetServiceOp::GetNextRequest()
 {
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 	aMsg.AppendByte(5);						// Small Header
 	aMsg.AppendShort(2);					// DirServer
 	aMsg.AppendShort(105);					// GetServiceEx
 
-	aMsg.AppendLong(mFlags);				// GetFlags
-	aMsg.AppendWString(mPath,2);				// Directory Path
-	aMsg.AppendWString(mName,2);				// Name of service
-	aMsg.AppendBuffer(mNetAddr,1);			// Net address
-	aMsg.AppendShort(mDataTypes.size());	// Number of data types requested
+	aMsg.AppendLong(this->mFlags);				// GetFlags
+	aMsg.AppendWString(this->mPath,2);				// Directory Path
+	aMsg.AppendWString(this->mName,2);				// Name of service
+	aMsg.AppendBuffer(this->mNetAddr,1);			// Net address
+	aMsg.AppendShort(this->mDataTypes.size());	// Number of data types requested
 	
-	DirDataTypeSet::iterator anItr = mDataTypes.begin();
-	while(anItr!=mDataTypes.end())
+	DirDataTypeSet::iterator anItr = this->mDataTypes.begin();
+	while(anItr!=this->mDataTypes.end())
 	{
 		aMsg.AppendString(*anItr,1);
 		++anItr;
 	}
 
-	mRequest = aMsg.ToByteBuffer(true);
-	return (WONStatus)100059;
+	this->mRequest = aMsg.ToByteBuffer(true);
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus GetServiceOp::Virtual14()
+WONStatus GetServiceOp::CheckResponse()
 {
-	WONStatus aStatus = DirEntityReplyParser::ParseSingleEntityReply(mResponse->data(),mResponse->length(),mService);
-	if(aStatus==(WONStatus)100063)
-		return InvalidReplyHeader();
+	WONStatus aStatus = DirEntityReplyParser::ParseSingleEntityReply(this->mResponse->data(),this->mResponse->length(),this->mService);
+	if(aStatus==(WONStatus)WS_ServerReq_InvalidReplyHeader)
+		return this->InvalidReplyHeader();
 	else
 		return aStatus;
 }

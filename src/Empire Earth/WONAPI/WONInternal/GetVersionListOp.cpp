@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK patch/version DBProxy protocol unit.
-// Missing unit proposed existing DBProxy/patch-server family profile.
+// No original address identified: WON SDK patch/version DBProxy operation
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,6 +9,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONPatchAdmin.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 using namespace WONAPI;
@@ -22,7 +22,7 @@ GetVersionListOp::GetVersionListOp(const std::string& theProductName, ServerCont
 	  mProductName(theProductName),
 	  mStateFilter(VersionState_BadState)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,24 +32,24 @@ GetVersionListOp::GetVersionListOp(const std::string& theProductName, const IPAd
 	  mMsgType(9),
 	  mProductName(theProductName)
 {
-	Init();
+	this->Init();
 } 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Exceptions handled by ServerRequestOp
-WONStatus GetVersionListOp::Virtual14()
+WONStatus GetVersionListOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
-	if (mSubMessageReplyType != mMsgType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mMsgType+1)
+		return this->InvalidReplyHeader();
 	
 	// Do extended unpack
-	ReadBuffer aReadBuf(mReplyData->data(), mReplyData->length());
+	ReadBuffer aReadBuf(this->mReplyData->data(), this->mReplyData->length());
 	unsigned short numVersions = aReadBuf.ReadShort();
 
 	// Read in each version
@@ -60,41 +60,41 @@ WONStatus GetVersionListOp::Virtual14()
 		unsigned short versionDataSize = aReadBuf.ReadShort(); // record size for expandability
 
 		versionData->ReadFromBuffer(ReadBuffer(aReadBuf.ReadBytes(versionDataSize), versionDataSize));
-		mVersionDataList.push_back(versionData);
+		this->mVersionDataList.push_back(versionData);
 	}
 
 	// Finished
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetVersionListOp::Virtual04()
+void GetVersionListOp::RunHook()
 {
-	mMessageType=1004;
-	mSubMessageType=mMsgType;
+	this->mMessageType=1004;
+	this->mSubMessageType=this->mMsgType;
 
 	// Pack the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendString(mProductName);
-	requestData.AppendString(mConfigName);
-	requestData.AppendByte(mStateFilter);
+	requestData.AppendString(this->mProductName);
+	requestData.AppendString(this->mConfigName);
+	requestData.AppendByte(this->mStateFilter);
 	
 
 	// Pack and call base class implementation
-	mRequestData=requestData.ToByteBuffer(true);
-	DBProxyOp::Virtual04();
+	this->mRequestData=requestData.ToByteBuffer(true);
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GetVersionListOp::Init()
 {
-	Virtual18();
+	this->Reset();
 	ServerRequestOp::mLengthFieldSize = 4;
 
-	mConfigName = "%";	// % means get every config
-	mStateFilter = VersionState_BadState;
+	this->mConfigName = "%";	// % means get every config
+	this->mStateFilter = VersionState_BadState;
 
 }

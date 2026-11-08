@@ -1,5 +1,4 @@
-// RECONSTRUCTION: new native WONAPI class family; exact original filename/grouping unproved.
-// Unmatched code/support remains original-carved; no runtime authority.
+// DNSTestOp: resolves a host name on a helper thread (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,34 +9,37 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
-// SCRATCH ONLY. Original DNSTestOp explicit constructor/destructor family.
-// Constructor defaults host+address BEFORE assigning host in body, as2d95a0.
+// The original default-constructs the host string and address before assigning the host in the body
 // FUNCTION: WON 0x006d95a0
+// Creates a DNS test op for the given host name
 DNSTestOp::DNSTestOp(const std::string& inHost)
 {
-    mHostString = inHost;
+    this->mHostString = inHost;
 }
 // FUNCTION: WON 0x006d9740
+// Destroys the op (members only)
 DNSTestOp::~DNSTestOp() {}
-// RunHook2d97f0 remains native until actualThread1c/DNSThread20 fullgate.
 
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x006d97f0
-void DNSTestOp::Virtual04()
+// Starts a self-deleting thread that resolves the host
+void DNSTestOp::RunHook()
 {
     DNSTestThread* thread=new DNSTestThread(this);
     thread->SetAutoDelete(true);
     thread->Start();
 }
 // FUNCTION: WON 0x006d9920
+// Resolves the op's host and finishes it with success or the host-lookup failure status
 void DNSTestThread::ThreadFunc()
 {
-    mOp->mHostAddr.SetWithDefaultPort(mOp->mHostString,0);
-    if (mOp->mHostAddr.IsValid()) mOp->Fn29F220(0);
-    else mOp->Fn29F220(100014);
+    this->mOp->mHostAddr.SetWithDefaultPort(this->mOp->mHostString,0);
+    if (this->mOp->mHostAddr.IsValid()) this->mOp->Finish(WS_Success);
+    else this->mOp->Finish(WS_InvalidAddress);
 }
 }
 

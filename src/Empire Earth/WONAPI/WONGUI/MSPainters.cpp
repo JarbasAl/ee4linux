@@ -1,4 +1,4 @@
-// Source-only standard MS popup/dialog background paint; no runtime authority.
+// Windows-style popup and dialog background painting
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,26 +12,29 @@
 #include "ee/wonapi/WONLobbyMSPainters.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00700450
+// Paints a popup menu background in the menu colour with a raised 3D border (highlight top and left, dark
+// shadow and shadow on the right and bottom)
 void MSPopup::Paint(Graphics& g)
 {
     Component::Paint(g);
-    g.SetSysColor(11);
-    g.FillRect(0,0,Width(),Height());
-    g.SetSysColor(2);
-    g.DrawLine(1,1,Width()-2,1);
-    g.DrawLine(1,1,1,Height()-2);
-    g.SetSysColor(0);
-    g.DrawLine(Width()-1,0,Width()-1,Height()-1);
-    g.DrawLine(1,Height()-1,Width()-1,Height()-1);
-    g.SetSysColor(3);
-    g.DrawLine(Width()-2,0,Width()-2,Height()-2);
-    g.DrawLine(2,Height()-2,Width()-2,Height()-2);
+    g.SetSysColor(StandardColor_MenuBack);
+    g.FillRect(0,0,this->Width(),this->Height());
+    g.SetSysColor(StandardColor_3DHilight);
+    g.DrawLine(1,1,this->Width()-2,1);
+    g.DrawLine(1,1,1,this->Height()-2);
+    g.SetSysColor(StandardColor_3DDarkShadow);
+    g.DrawLine(this->Width()-1,0,this->Width()-1,this->Height()-1);
+    g.DrawLine(1,this->Height()-1,this->Width()-1,this->Height()-1);
+    g.SetSysColor(StandardColor_3DShadow);
+    g.DrawLine(this->Width()-2,0,this->Width()-2,this->Height()-2);
+    g.DrawLine(2,this->Height()-2,this->Width()-2,this->Height()-2);
 }
 // FUNCTION: WON 0x00700520
+// Fills the whole component with the system 3D face colour (dialog background)
 void MSDlgBack::Paint(Graphics& g)
 {
     Component::Paint(g);
-    g.SetSysColor(1);
-    g.FillRect(0,0,Width(),Height());
+    g.SetSysColor(StandardColor_3DFace);
+    g.FillRect(0,0,this->Width(),this->Height());
 }
 }

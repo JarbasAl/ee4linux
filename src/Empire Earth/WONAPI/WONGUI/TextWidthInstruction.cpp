@@ -1,4 +1,4 @@
-// Genuine SDK width instruction; SOURCE_ONLY_NO_NATIVE_ID.
+// Pads a line to a minimum width when the layout reaches this instruction (not identified in the original exe)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,7 +13,7 @@
 namespace WONAPI {
 void TextWidthInstruction::PerformInstructions(TextArea *theTextArea)
 {
-	if(mLine->mWidth < mLineShouldBeAtLeastThisWidth)
-		mWidth = mLineShouldBeAtLeastThisWidth - mLine->mWidth;
+	if(this->mLine->mWidth < this->mLineShouldBeAtLeastThisWidth)
+		this->mWidth = this->mLineShouldBeAtLeastThisWidth - this->mLine->mWidth;
 }
 }

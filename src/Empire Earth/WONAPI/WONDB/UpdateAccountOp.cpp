@@ -1,4 +1,4 @@
-// New UpdateAccount operation family. Scratch source intent; no publication/CL lease.
+// WONAPI op that updates the logged-in user's password, email and profile
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -7,62 +7,67 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006ce840
+// Sets 4-byte length fields and creates an empty profile
 void UpdateAccountOp::Init()
 {
-    mLengthFieldSize=4;
-    mProfileData=new ProfileData;
+    this->mLengthFieldSize=4;
+    this->mProfileData=new ProfileData;
 }
 
 // FUNCTION: WON 0x006ce8f0
+// Creates an update-account request that authenticates with the session of an auth context
 UpdateAccountOp::UpdateAccountOp(ServerContext* inContext,AuthContext* inAuth)
     : ServerRequestOp(inContext)
 {
-    mAuthType=AUTH_TYPE_SESSION;
-    mAuthContext=inAuth;
-    Init();
+    this->mAuthType=AUTH_TYPE_SESSION;
+    this->mAuthContext=inAuth;
+    this->Init();
 }
 
 // FUNCTION: WON 0x006ceb30
-WONStatus UpdateAccountOp::Virtual10()
+// Builds the update message: new password, email and profile fields
+WONStatus UpdateAccountOp::GetNextRequest()
 {
-    WriteBuffer aRequest(mLengthFieldSize,true);
+    WriteBuffer aRequest(this->mLengthFieldSize,true);
     aRequest.AppendByte(5);
     aRequest.AppendShort(14);
     aRequest.AppendShort(1002);
     aRequest.AppendShort(4);
-    aRequest.AppendWString(mNewPassword,2);
-    aRequest.AppendString(mEmail,2);
-    mProfileData->PackRequestData(aRequest,true);
-    mRequest=aRequest.ToByteBuffer(true);
-    return 100059;
+    aRequest.AppendWString(this->mNewPassword,2);
+    aRequest.AppendString(this->mEmail,2);
+    this->mProfileData->PackRequestData(aRequest,true);
+    this->mRequest=aRequest.ToByteBuffer(true);
+    return WS_ServerReq_Recv;
 }
 
 // FUNCTION: WON 0x006cec80
-WONStatus UpdateAccountOp::Virtual14()
+// Checks the update reply; returns the status
+WONStatus UpdateAccountOp::CheckResponse()
 {
-    ReadBuffer aReply(mResponse->data(),mResponse->length());
+    ReadBuffer aReply(this->mResponse->data(),this->mResponse->length());
     unsigned char aHeader=aReply.ReadByte();
     unsigned short aService=aReply.ReadShort();
     unsigned short aMessage=aReply.ReadShort();
     unsigned short aSubMessage=aReply.ReadShort();
     WONStatus aStatus=aReply.ReadShort();
-    aReply.ReadString(mErrorString,2);
+    aReply.ReadString(this->mErrorString,2);
     aReply.ReadByte();
     if (aHeader!=5 || aService!=14)
-        return InvalidReplyHeader();
+        return this->InvalidReplyHeader();
     if (aStatus!=0)
         return aStatus;
     if (aMessage!=1002 || aSubMessage!=5)
-        return InvalidReplyHeader();
-    return 0;
+        return this->InvalidReplyHeader();
+    return WS_Success;
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: explicit empty SDK Reset override.
+// No original address identified: WON SDK empty Reset
 namespace WONAPI {
-void UpdateAccountOp::Virtual18()
+void UpdateAccountOp::Reset()
 {
 }
 }

@@ -1,6 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK directory executable implementation.
-// Missing-unit proposed family profile: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// No FUNCTION/Native address or primary/physical byte credit is claimed.
+// No original address identified: WON SDK directory server find-entity request
+// Expected flags: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>
 #include <windows.h>
 #include <string>
@@ -11,6 +10,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONDirExtended.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace std;
 using namespace WONAPI;
 
@@ -18,66 +18,66 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 void FindEntityOp::Init()
 {
-	mLengthFieldSize = 4;
-	mIsService = true;
+	this->mLengthFieldSize = 4;
+	this->mIsService = true;
 
-	mGetFlags = DIR_GF_DECOMPROOT | DIR_GF_DECOMPSERVICES | DIR_GF_DECOMPSUBDIRS | DIR_GF_ADDTYPE
+	this->mGetFlags = DIR_GF_DECOMPROOT | DIR_GF_DECOMPSERVICES | DIR_GF_DECOMPSUBDIRS | DIR_GF_ADDTYPE
 		| DIR_GF_ADDDISPLAYNAME | DIR_GF_ADDDATAOBJECTS | DIR_GF_SERVADDNAME | DIR_GF_SERVADDNETADDR 
 		| DIR_GF_DIRADDNAME;
 
-	mMatchMode = DIR_FMM_EXACT;
-	mFindFlags = 0;
+	this->mMatchMode = DIR_FMM_EXACT;
+	this->mFindFlags = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 FindEntityOp::FindEntityOp(ServerContext *theDirContext, bool isService) : ServerRequestOp(theDirContext)
 {
-	Init();
-	mIsService = isService;
+	this->Init();
+	this->mIsService = isService;
 }
    
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 FindEntityOp::FindEntityOp(const IPAddr &theAddr, bool isService) : ServerRequestOp(theAddr)
 {
-	Init();
-	mIsService = isService;
+	this->Init();
+	this->mIsService = isService;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void FindEntityOp::Virtual18()
+void FindEntityOp::Reset()
 {
-	mService = NULL;
-	mDirEntityList.clear();
+	this->mService = NULL;
+	this->mDirEntityList.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus FindEntityOp::Virtual10()
+WONStatus FindEntityOp::GetNextRequest()
 {
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 	aMsg.AppendByte(5);						// Small message
 	aMsg.AppendShort(2);					// Directory Server
-	aMsg.AppendShort(mIsService?109:107);	// FindServiceEx : FindDirectoryEx
+	aMsg.AppendShort(this->mIsService?109:107);	// FindServiceEx : FindDirectoryEx
 	
-	aMsg.AppendLong(mGetFlags);				
-	aMsg.AppendByte(mMatchMode);
-	aMsg.AppendByte(mFindFlags);
+	aMsg.AppendLong(this->mGetFlags);				
+	aMsg.AppendByte(this->mMatchMode);
+	aMsg.AppendByte(this->mFindFlags);
 	aMsg.AppendShort(0);					// MaxEntitiesPerReply
-	aMsg.AppendWString(mPath,2);				// Directory path
-	aMsg.AppendWString(mName,2);				// Match name
+	aMsg.AppendWString(this->mPath,2);				// Directory path
+	aMsg.AppendWString(this->mName,2);				// Match name
 
-	if(mIsService)
-		aMsg.AppendBuffer(mNetAddr,1);		// Match NetAddress
+	if(this->mIsService)
+		aMsg.AppendBuffer(this->mNetAddr,1);		// Match NetAddress
 
-	aMsg.AppendWString(mDisplayName,2);		// Match DisplayName
+	aMsg.AppendWString(this->mDisplayName,2);		// Match DisplayName
 
-	aMsg.AppendShort(mFindDataObjects.size());	// num data objects
+	aMsg.AppendShort(this->mFindDataObjects.size());	// num data objects
 	
-	DirDataObjectList::iterator aFindItr = mFindDataObjects.begin();
-	while(aFindItr!=mFindDataObjects.end())
+	DirDataObjectList::iterator aFindItr = this->mFindDataObjects.begin();
+	while(aFindItr!=this->mFindDataObjects.end())
 	{
 		DirDataObject &aDataObject = *aFindItr;
 		aMsg.AppendString(aDataObject.mDataType,1);
@@ -86,38 +86,38 @@ WONStatus FindEntityOp::Virtual10()
 		++aFindItr;
 	}
 
-	aMsg.AppendShort(mGetDataTypes.size()); // Num Get DataObjects
-	DirDataTypeSet::iterator aGetItr = mGetDataTypes.begin();
-	while(aGetItr!=mGetDataTypes.end())
+	aMsg.AppendShort(this->mGetDataTypes.size()); // Num Get DataObjects
+	DirDataTypeSet::iterator aGetItr = this->mGetDataTypes.begin();
+	while(aGetItr!=this->mGetDataTypes.end())
 	{
 		aMsg.AppendString(*aGetItr,1);
 		++aGetItr;
 	}
 
-	mRequest = aMsg.ToByteBuffer(true);
-	return (WONStatus)100059;
+	this->mRequest = aMsg.ToByteBuffer(true);
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus FindEntityOp::Virtual14()
+WONStatus FindEntityOp::CheckResponse()
 {
 	WONStatus aStatus;
-	if(mIsService && !(mFindFlags & DIR_FF_MATCHALL))
+	if(this->mIsService && !(this->mFindFlags & DIR_FF_MATCHALL))
 	{
-		aStatus = DirEntityReplyParser::ParseSingleEntityReply(mResponse->data(),mResponse->length(),mService);
+		aStatus = DirEntityReplyParser::ParseSingleEntityReply(this->mResponse->data(),this->mResponse->length(),this->mService);
 		if(aStatus==(WONStatus)0)
-			mDirEntityList.push_back(mService);
+			this->mDirEntityList.push_back(this->mService);
 	}
 	else
 	{
-		aStatus = DirEntityReplyParser::ParseMultiEntityReply(mResponse->data(),mResponse->length(),mDirEntityList);
-		if(aStatus==(WONStatus)0 && mIsService && !mDirEntityList.empty())
-			mService = mDirEntityList.front();
+		aStatus = DirEntityReplyParser::ParseMultiEntityReply(this->mResponse->data(),this->mResponse->length(),this->mDirEntityList);
+		if(aStatus==(WONStatus)0 && this->mIsService && !this->mDirEntityList.empty())
+			this->mService = this->mDirEntityList.front();
 	}
 
 	if(aStatus==(WONStatus)100063)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 	else
 		return aStatus;
 }

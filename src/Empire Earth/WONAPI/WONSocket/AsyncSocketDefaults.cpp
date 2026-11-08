@@ -1,5 +1,4 @@
-// Genuine original API definitions whose ICF native bodies are already represented.
-// Source completeness only: zero incremental unique native functions/bytes/primary.
+// AsyncSocket's empty default open/close/kill hooks; in the original they fold into a shared empty body
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,10 +8,10 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
-// SOURCE-ONLY original ICF 0x326b60; no new native credit.
-void AsyncSocket::Virtual04() {}
-// SOURCE-ONLY original ICF 0x326b60; no new native credit.
-void AsyncSocket::Virtual08() {}
-// SOURCE-ONLY original ICF 0x326b60; no new native credit.
-void AsyncSocket::Virtual0C() {}
+// Same body as 0x326b60 in the original (folded by the linker)
+void AsyncSocket::OpenHook() {}
+// Same body as 0x326b60 in the original (folded by the linker)
+void AsyncSocket::CloseHook() {}
+// Same body as 0x326b60 in the original (folded by the linker)
+void AsyncSocket::KillHook() {}
 }

@@ -1,4 +1,4 @@
-// Skinned combo and scroll-container geometry and frame painting on borrowed owners.
+// Skinned combo box and scroll container: layout and frame painting (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,11 +13,12 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x00719A70
-void WONComboBox::Virtual0C(int &width, int &height)
+// Returns the combo box's desired size: edit height + 2 (else 22), widest item + 10 + button (else 100) wide
+void WONComboBox::GetDesiredSize(int &width, int &height)
 {
-	if(mEdit.get()!=NULL)
+	if(this->mEdit.get()!=NULL)
 	{
-		mEdit->Virtual0C(width,height);
+		this->mEdit->GetDesiredSize(width,height);
 		height+=2;
 //		if(mDrawFrame)
 //			height+=mFrame.mTop + mFrame.mBottom;
@@ -25,112 +26,114 @@ void WONComboBox::Virtual0C(int &width, int &height)
 	else 
 		height = 22;
 
-	if(mListArea.get()!=NULL && mListArea->GetNumItems()>0)
+	if(this->mListArea.get()!=NULL && this->mListArea->GetNumItems()>0)
 	{
-		width = 10 + mListArea->GetTotalWidth();
-		if(mButton.get()!=NULL)
-			width += mButton->Width();
+		width = 10 + this->mListArea->GetTotalWidth();
+		if(this->mButton.get()!=NULL)
+			width += this->mButton->Width();
 	}
 	else
 		width = 100;
 }
 
 // FUNCTION: WON 0x00719B00
+// Lays out the combo box: the edit fills the width left of the button, the button sits inside or beside the frame
 void WONComboBox::Virtual08()
 {
 	ComboBox::Virtual08();
 	int aTopPad = 0, aBottomPad = 0, aRightPad = 0, aLeftPad = 0;
-	if(mDrawFrame)
+	if(this->mDrawFrame)
 	{
-		aLeftPad = mFrame.mLeft;
-		aTopPad = mFrame.mTop;
-		aBottomPad = mFrame.mBottom;
-		aRightPad = mFrame.mRight;
+		aLeftPad = this->mFrame.mLeft;
+		aTopPad = this->mFrame.mTop;
+		aBottomPad = this->mFrame.mBottom;
+		aRightPad = this->mFrame.mRight;
 	}
 
-	int anInputBoxHeight = Height(); //mEdit->mHeight;
+	int anInputBoxHeight = this->Height(); //mEdit->mHeight;
 	int aButtonHeight = anInputBoxHeight-aBottomPad-aTopPad;
-	int aButtonWidth = mButton->Width();
-	if(!mButton->IsVisible())
+	int aButtonWidth = this->mButton->Width();
+	if(!this->mButton->IsVisible())
 		aButtonWidth = 0;
 //	if(aButtonWidth>aButtonHeight)
 //		aButtonWidth = aButtonHeight;
  
-	int anInputBoxWidth = Width()-aButtonWidth-aRightPad;
+	int anInputBoxWidth = this->Width()-aButtonWidth-aRightPad;
 
 
-	mEdit->mLeftPad = aLeftPad + 2;
-	mEdit->Fn2F4BF0(0,0,anInputBoxWidth,anInputBoxHeight);
+	this->mEdit->mLeftPad = aLeftPad + 2;
+	this->mEdit->SetPosSize(0,0,anInputBoxWidth,anInputBoxHeight);
 	
-	if(mButton->IsVisible())
-	{
-		if(mButtonInFrame)
-			mButton->Fn2F4BF0(mEdit->Right(),aTopPad,aButtonWidth,aButtonHeight);
-		else
-			mButton->Fn2F4BF0(Width()-aButtonWidth,0,aButtonWidth,Height());
-	}
+	if(!this->mButton->IsVisible())
+		return;
+	if(this->mButtonInFrame)
+		this->mButton->SetPosSize(this->mEdit->Right(),aTopPad,aButtonWidth,aButtonHeight);
+	else
+		this->mButton->SetPosSize(this->Width()-aButtonWidth,0,aButtonWidth,this->Height());
 
 }
 
 // FUNCTION: WON 0x00719BF0
+// Paints the combo box and its frame, leaving the button out of the frame when it sits outside it
 void WONComboBox::Paint(Graphics& g)
 {
 	ComboBox::Paint(g);
 
-	if(mDrawFrame)
-	{
-		if(mButtonInFrame || !mButton->IsVisible())
-			mFrame.Paint(g,this);
-		else
-			mFrame.Paint(g,this,0,0,mButton->Width(),0);
-	}
+	if(!this->mDrawFrame)
+		return;
+	if(this->mButtonInFrame || !this->mButton->IsVisible())
+		this->mFrame.Paint(g,this);
+	else
+		this->mFrame.Paint(g,this,0,0,this->mButton->Width(),0);
 }
 
 // FUNCTION: WON 0x00719DF0
+// Lays out the visible scrollbars inside the frame and gives the rest, below the header, to the scroll area
 void WONScrollContainer::Virtual08()
 {
 	Container::Virtual08();
-	if(mScrollArea.get()==NULL)
+	if(this->mScrollArea.get()==NULL)
 		return;
 
-	bool horzOn = mHorzScrollbar->IsVisible();
-	bool vertOn = mVertScrollbar->IsVisible();
+	bool horzOn = this->mHorzScrollbar->IsVisible();
+	bool vertOn = this->mVertScrollbar->IsVisible();
 
-	int left = mFrame.mLeft, right = mFrame.mRight, top = mFrame.mTop, bottom = mFrame.mBottom;
+	int left = this->mFrame.mLeft, right = this->mFrame.mRight, top = this->mFrame.mTop, bottom = this->mFrame.mBottom;
 
-	int aScrollbarWidth = mVertScrollbar->Width();
-	int aScrollbarHeight = mHorzScrollbar->Height();
+	int aScrollbarWidth = this->mVertScrollbar->Width();
+	int aScrollbarHeight = this->mHorzScrollbar->Height();
 
-	int aScrollWidth = Width() - left - right;
+	int aScrollWidth = this->Width() - left - right;
 	if(vertOn)
 		aScrollWidth -= aScrollbarWidth;
 
-	int aScrollHeight = Height() - top - bottom;
+	int aScrollHeight = this->Height() - top - bottom;
 	if(horzOn)
 		aScrollHeight -= aScrollbarHeight;
 
 	if(vertOn)
-		mVertScrollbar->Fn2F4BF0(Width()-aScrollbarWidth-right,top,aScrollbarWidth,aScrollHeight);
+		this->mVertScrollbar->SetPosSize(this->Width()-aScrollbarWidth-right,top,aScrollbarWidth,aScrollHeight);
 
 	if(horzOn)
-		mHorzScrollbar->Fn2F4BF0(left,Height()-aScrollbarHeight-bottom,aScrollWidth,aScrollbarHeight);
+		this->mHorzScrollbar->SetPosSize(left,this->Height()-aScrollbarHeight-bottom,aScrollWidth,aScrollbarHeight);
 
-	mScrollArea->Fn2F4BF0(left,mHeaderHeight+top,aScrollWidth,aScrollHeight-mHeaderHeight);
+	this->mScrollArea->SetPosSize(left,this->mHeaderHeight+top,aScrollWidth,aScrollHeight-this->mHeaderHeight);
 }
 
 // FUNCTION: WON 0x00719FF0
+// Paints the container, the corner image between two visible scrollbars (when opaque) and the frame
 void WONScrollContainer::Paint(Graphics &g)
 {
 	Container::Paint(g);
 
-	if(mVertScrollbar->IsVisible() && mHorzScrollbar->IsVisible() && !mTransparent && mCorner.get()!=NULL) // grey square in corner
+	if(this->mVertScrollbar->IsVisible() && this->mHorzScrollbar->IsVisible() && !this->mTransparent && this->mCorner.get()!=NULL) // grey square in corner
 	{
-		g.DrawImage(mCorner.get(),mVertScrollbar->Left(),(mVertScrollbar->Top()+mVertScrollbar->Height()));
+		g.DrawImage(this->mCorner.get(),this->mVertScrollbar->Left(),(this->mVertScrollbar->Top()+this->mVertScrollbar->Height()));
 
 //		g.ApplyColorSchemeColor(StandardColor_Scrollbar);
 //		g.FillRect(mVertScrollbar->mX,(mVertScrollbar->mY+mVertScrollbar->mHeight),mVertScrollbar->mWidth,mHorzScrollbar->mHeight);
 	}
 
-	mFrame.Paint(g,this);
+	this->mFrame.Paint(g,this);
 }
 }

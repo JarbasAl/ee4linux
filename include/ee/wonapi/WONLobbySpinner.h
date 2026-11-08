@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine same-SDK Spinner and MSSpinner owners.
+// Spinner and MSSpinner (not identified in the original exe).
 #ifndef EE_WONAPI_WONLOBBYSPINNER_H
 #define EE_WONAPI_WONLOBBYSPINNER_H
 #include "ee/wonapi/WONLobbyGUI.h"
@@ -18,10 +18,10 @@ protected:
 	bool mWrapAround;
 
 public:
-	virtual void Virtual6C();
-	virtual bool Virtual54(int theKey);
-	virtual void Virtual0C(int &width, int &height);
-	virtual void Virtual74(bool isEnabled);
+	virtual void AddedToParent();
+	virtual bool KeyDown(int theKey);
+	virtual void GetDesiredSize(int &width, int &height);
+	virtual void EnabledChanged(bool isEnabled);
 	virtual void HandleComponentEvent(ComponentEvent* pEvent);
 
 	void ForceValueCompliance();
@@ -55,7 +55,7 @@ class MSSpinner : public Spinner
 protected:
 	SmartPtr<Label> mLabel;
 
-	virtual void Virtual0C(int &width, int &height);
+	virtual void GetDesiredSize(int &width, int &height);
 	virtual void Virtual08();
 
 	void Init();
@@ -64,7 +64,7 @@ public:
 	MSSpinner(const GUIString &theText, int minValue, int maxValue);
 
 	void SetLabelText(const GUIString &theText);
-	Label* GetLabel() { return mLabel; }
+	Label* GetLabel() { return this->mLabel; }
 };
 typedef SmartPtr<MSSpinner> MSSpinnerPtr;
 }

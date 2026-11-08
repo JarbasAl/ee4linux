@@ -1,4 +1,4 @@
-// Native target local layout/color configuration readers; borrowed receivers only.
+// Percent layout and color scheme configuration readers (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,17 +14,20 @@
 #include "ee/wonapi/WONLayoutConfigs.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x00788000
-bool PercentLayoutConfig::Virtual0C(ConfigParser* parser)
+// Finds the component this config is named after in the parent config; reports an error if it is missing
+bool PercentLayoutConfig::PreParse(ConfigParser* parser)
 {
-    ComponentConfig* parent=static_cast<ComponentConfig*>(mL38);
-    target=parent->Fn386860(mS18);
-    if(target==NULL) {
-        parser->SetError("Component not found: "+mS18,false);
+    ComponentConfig* parent=static_cast<ComponentConfig*>(this->mParent);
+    this->target=parent->Fn386860(this->mName);
+    if(this->target==NULL) {
+        parser->SetError("Component not found: "+this->mName,false);
         return false;
     }
     return true;
 }
 // FUNCTION: WON 0x007880c0
+// Reads a percent layout instruction: a reference component per edge (REF = LEFT, RIGHT, TOP, BOTTOM)
+// or one of the percentages (PX, PY, PW, PH, LP, TP, RP, BP)
 bool PercentLayoutConfig::Virtual24(const std::string& instruction)
 {
     int ref=-1,param=-1;
@@ -42,30 +45,32 @@ bool PercentLayoutConfig::Virtual24(const std::string& instruction)
     else if(instruction=="RP") param=6;
     else if(instruction=="BP") param=7;
     else return false;
-    if(ref>=0) refs[ref]=ReadComponent();
-    else if(param>=0) params[param]=ReadInt();
+    if(ref>=0) this->refs[ref]=this->ReadComponent();
+    else if(param>=0) this->params[param]=this->ReadInt();
     return true;
 }
 // FUNCTION: WON 0x007883b0
-bool ColorSchemeConfig::Virtual0C(ConfigParser*)
+// Starts from the colors of the nearest parent component with its own scheme, else the window manager's
+bool ColorSchemeConfig::PreParse(ConfigParser*)
 {
-    ComponentConfig* parent=static_cast<ComponentConfig*>(mL38);
+    ComponentConfig* parent=static_cast<ComponentConfig*>(this->mParent);
     while(parent!=NULL) {
         Component* component=parent->mComponent.get();
         if(component!=NULL) {
             ColorScheme* scheme=component->GetOwnColorScheme();
             if(scheme!=NULL) {
-                memcpy(mColorScheme->mColors,scheme->mColors,sizeof(mColorScheme->mColors));
+                memcpy(this->mColorScheme->mColors,scheme->mColors,sizeof(this->mColorScheme->mColors));
                 return true;
             }
         }
-        parent=static_cast<ComponentConfig*>(parent->mL38);
+        parent=static_cast<ComponentConfig*>(parent->mParent);
     }
     ColorScheme* scheme=WONAPI::WindowManager::GetDefaultWindowManager()->mColorScheme.get();
-    memcpy(mColorScheme->mColors,scheme->mColors,sizeof(mColorScheme->mColors));
+    memcpy(this->mColorScheme->mColors,scheme->mColors,sizeof(this->mColorScheme->mColors));
     return true;
 }
 // FUNCTION: WON 0x00788410
+// Sets one standard color of the scheme from its instruction name (3DFACE, HILIGHT, LINK ...)
 bool ColorSchemeConfig::Virtual24(const std::string& instruction)
 {
     int color=0;
@@ -87,8 +92,8 @@ bool ColorSchemeConfig::Virtual24(const std::string& instruction)
     else if(instruction=="LINK") color=15;
     else if(instruction=="LINKDOWN") color=16;
     else return false;
-    ColorScheme* destination=mColorScheme.get();
-    DWORD value=Fn385510();
+    ColorScheme* destination=this->mColorScheme.get();
+    DWORD value=this->ReadColor();
     destination->SetStandardColor(color,value);
     return true;
 }

@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// The etched frame group's predefined child (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,12 +14,14 @@
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0078f980
-bool MSEtchedFrameGroupConfig::Virtual28(const std::string& name,ComponentConfig*& config,Component*& component)
+// Returns the group's title label and a label config for the name LABEL; other names go to the
+// container config
+bool MSEtchedFrameGroupConfig::GetPredefinedComponent(const std::string& name,ComponentConfig*& config,Component*& component)
 {
     if(name=="LABEL") {
         config=LabelConfig::CfgFactory();
-        component=mFrame->GetLabel();
-    } else return ContainerConfig::Virtual28(name,config,component);
+        component=this->mFrame->GetLabel();
+    } else return ContainerConfig::GetPredefinedComponent(name,config,component);
     return true;
 }
 }

@@ -4,7 +4,7 @@ namespace WONAPI {
 inline bool IsLittleEndian()
 {
 	short aTest = 1;
-	return ((*(char*)&aTest)&1)?true:false;
+	return ((*reinterpret_cast<char*>(&aTest))&1)?true:false;
 }
 
 inline unsigned long LongToLittleEndian(unsigned long theLong)

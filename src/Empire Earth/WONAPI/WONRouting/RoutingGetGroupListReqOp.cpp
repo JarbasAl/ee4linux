@@ -1,4 +1,4 @@
-// Original-backed routing group-list server request, complete f8 owner.
+// Connectionless server request that fetches a routing server's group list
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -7,40 +7,44 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006c5ff0
+// Creates a group list request to a routing server address with the given list flags
 RoutingGetGroupListReqOp::RoutingGetGroupListReqOp(const IPAddr& inAddress,unsigned char inFlags)
  : ServerRequestOp(inAddress),mOp(new RoutingGetGroupListOp)
 {
-    mLengthFieldSize=2;
-    mOp->SetFlags(inFlags);
+    this->mLengthFieldSize=2;
+    this->mOp->SetFlags(inFlags);
 }
 // FUNCTION: WON 0x006c6150
-WONStatus RoutingGetGroupListReqOp::Virtual10()
+// Builds the get-group-list request message and asks for the reply next
+WONStatus RoutingGetGroupListReqOp::GetNextRequest()
 {
-    WriteBuffer aRequest(mLengthFieldSize,true);
+    WriteBuffer aRequest(this->mLengthFieldSize,true);
     aRequest.AppendByte(3);
     aRequest.AppendByte(7);
     aRequest.AppendByte(26);
-    aRequest.AppendShort((unsigned char)mOp->mFlags);
-    mRequest=aRequest.ToByteBuffer(true);
-    return 100059;
+    aRequest.AppendShort((unsigned char)this->mOp->mFlags);
+    this->mRequest=aRequest.ToByteBuffer(true);
+    return WS_ServerReq_Recv;
 }
 // FUNCTION: WON 0x006c6270
-WONStatus RoutingGetGroupListReqOp::Virtual14()
+// Checks the reply header and status and parses the group list into the inner op; returns the status
+WONStatus RoutingGetGroupListReqOp::CheckResponse()
 {
-    ReadBuffer aMessage(mResponse->data(),mResponse->length());
+    ReadBuffer aMessage(this->mResponse->data(),this->mResponse->length());
     unsigned char aHeader=aMessage.ReadByte();
     unsigned char aService=aMessage.ReadByte();
     unsigned char aType=aMessage.ReadByte();
     if(aHeader!=3 || aService!=7 || aType!=25)
-        return InvalidReplyHeader();
+        return this->InvalidReplyHeader();
     WONStatus aStatus=aMessage.ReadShort();
     if(aStatus!=0)
         return aStatus;
-    if(!mOp->ParseGroupListObj(aMessage.data()+aMessage.pos(),aMessage.Available()))
-        return 100012;
-    return 0;
+    if(!this->mOp->ParseGroupListObj(aMessage.data()+aMessage.pos(),aMessage.Available()))
+        return WS_MessageUnpackFailure;
+    return WS_Success;
 }
 }
 

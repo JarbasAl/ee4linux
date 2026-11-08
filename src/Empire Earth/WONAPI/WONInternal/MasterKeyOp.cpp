@@ -1,7 +1,7 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK complete key-server request/response algorithms.
+// No original address identified: WON SDK key-server requests and replies
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing-unit proposed DBProxy-family profile; no Native/primary/physical attribution.
 #include "ee/wonapi/WONMasterKeyOp.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 using namespace WONAPI;
@@ -19,51 +19,51 @@ InsertMasterKeyOp::InsertMasterKeyOp(ServerContext* theContext)
 	  mKeyLength(0),
 	  mCDKeyFlags(0x0001)
 {
-	memset(mKeyP, '\0', 20);
+	memset(this->mKeyP, '\0', 20);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void InsertMasterKeyOp::Virtual04()
+void InsertMasterKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendString(mProductName);
-	requestData.AppendShort(mSequenceNumber);
-	requestData.AppendBool(mIsBeta);
-	requestData.AppendLong(mActivateTime);
-	requestData.AppendLong(mDeactivateTime);
-	requestData.AppendByte(mKeyLength);
-	requestData.AppendBytes(mKeyP, mKeyLength);
-	requestData.AppendLong(mCDKeyFlags);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendString(this->mProductName);
+	requestData.AppendShort(this->mSequenceNumber);
+	requestData.AppendBool(this->mIsBeta);
+	requestData.AppendLong(this->mActivateTime);
+	requestData.AppendLong(this->mDeactivateTime);
+	requestData.AppendByte(this->mKeyLength);
+	requestData.AppendBytes(this->mKeyP, this->mKeyLength);
+	requestData.AppendLong(this->mCDKeyFlags);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus InsertMasterKeyOp::Virtual14()
+WONStatus InsertMasterKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack: None
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,44 +82,44 @@ UpdateMasterKeyOp::UpdateMasterKeyOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void UpdateMasterKeyOp::Virtual04()
+void UpdateMasterKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendString(mProductName);
-	requestData.AppendShort(mSequenceNumber);
-	requestData.AppendBool(mIsBeta);
-	requestData.AppendLong(mActivateTime);
-	requestData.AppendLong(mDeactivateTime);
-	requestData.AppendLong(mCDKeyFlags);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendString(this->mProductName);
+	requestData.AppendShort(this->mSequenceNumber);
+	requestData.AppendBool(this->mIsBeta);
+	requestData.AppendLong(this->mActivateTime);
+	requestData.AppendLong(this->mDeactivateTime);
+	requestData.AppendLong(this->mCDKeyFlags);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus UpdateMasterKeyOp::Virtual14()
+WONStatus UpdateMasterKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack: None
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,40 +134,40 @@ DeleteMasterKeyOp::DeleteMasterKeyOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void DeleteMasterKeyOp::Virtual04()
+void DeleteMasterKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendString(mProductName);
-	requestData.AppendShort(mSequenceNumber);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendString(this->mProductName);
+	requestData.AppendShort(this->mSequenceNumber);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus DeleteMasterKeyOp::Virtual14()
+WONStatus DeleteMasterKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack: None
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,42 +181,42 @@ QueryMasterKeyOp::QueryMasterKeyOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void QueryMasterKeyOp::Virtual04()
+void QueryMasterKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendString(mProductName);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendString(this->mProductName);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus QueryMasterKeyOp::Virtual14()
+WONStatus QueryMasterKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 
 	try
 	{
 		MasterKey aKey;
-		mMasterKeyList.clear();
+		this->mMasterKeyList.clear();
 		short aCount = theData.ReadShort();
 		for(short i = 0; i < aCount; i++)
 		{
@@ -225,16 +225,16 @@ WONStatus QueryMasterKeyOp::Virtual14()
 			aKey.mDeactivateDate = theData.ReadLong();
 			aKey.mIsBeta = (theData.ReadByte() == 0) ? false : true;
 			aKey.mCDKeyFlags = theData.ReadLong();
-			mMasterKeyList.push_back(aKey);
+			this->mMasterKeyList.push_back(aKey);
 		}
 	}
 	catch (ReadBufferException&)
 	{
-		return (WONStatus)100006;
+		return (WONStatus)WS_InvalidMessage;
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -248,54 +248,54 @@ AuthCheckKeyOp::AuthCheckKeyOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void AuthCheckKeyOp::Virtual04()
+void AuthCheckKeyOp::RunHook()
 {
-	mMessageType = 1002;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1002;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendWString(mCommunityName, 1);
-	requestData.AppendString(mProductName, 1);
-	requestData.AppendShort(mKeyList.size());
+	requestData.AppendWString(this->mCommunityName, 1);
+	requestData.AppendString(this->mProductName, 1);
+	requestData.AppendShort(this->mKeyList.size());
 
-	for(KEY_LIST_CITR anItr = mKeyList.begin(); anItr != mKeyList.end(); ++anItr)
+	for(KEY_LIST_CITR anItr = this->mKeyList.begin(); anItr != this->mKeyList.end(); ++anItr)
 		requestData.AppendString(*anItr, 1);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus AuthCheckKeyOp::Virtual14()
+WONStatus AuthCheckKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 
 	try
 	{
-		mKeyStatusList.clear();
+		this->mKeyStatusList.clear();
 		short aCount = theData.ReadShort();
 		for(short i = 0; i < aCount; i++)
-			mKeyStatusList.push_back(theData.ReadShort());
+			this->mKeyStatusList.push_back(theData.ReadShort());
 	}
 	catch (ReadBufferException&)
 	{
-		return (WONStatus)100006;
+		return (WONStatus)WS_InvalidMessage;
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }

@@ -1,4 +1,4 @@
-// Native owning child-timer registration/dispatch and cursor propagation support.
+// Container child timers and cursor propagation (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include "LostDebug.h"
@@ -11,49 +11,55 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f70c0
-void Container::VirtualB8(Component* child)
+// Registers a child that wants timer events and requests timer events from the parent chain
+void Container::AddTimerChild(Component* child)
 {
     if(child->mTimerFlags!=0) {
-        mChildTimerSet.insert(child);
+        this->mChildTimerSet.insert(child);
         // LOST-DEBUG: none: exact only (keeps the last pair ctor out of line inside _Tree::insert).
         EE_LOST_DEBUG(1);
-        bool requestParent=mTimerFlags==0;
-        mTimerFlags|=1;
-        if(requestParent && mParent!=NULL) mParent->VirtualB8(this);
+        bool requestParent=this->mTimerFlags==0;
+        this->mTimerFlags|=1;
+        if(requestParent && this->mParent!=NULL) this->mParent->AddTimerChild(this);
     }
 }
 // FUNCTION: WON 0x006f7210
-bool Container::Virtual44(int elapsed)
+// Sends a timer tick to every registered child, dropping those that no longer want ticks; returns whether
+// the container still wants them
+bool Container::TimerEvent(int elapsed)
 {
     bool childNeeds=false;
-    ChildTimerSet::iterator i=mChildTimerSet.begin();
-    while(i!=mChildTimerSet.end()) {
+    ChildTimerSet::iterator i=this->mChildTimerSet.begin();
+    while(i!=this->mChildTimerSet.end()) {
         Component* child=i->get();
-        if(child->mTimerFlags!=0 && child->mParent==this && child->Virtual44(elapsed)) {
+        if(child->mTimerFlags!=0 && child->mParent==this && child->TimerEvent(elapsed)) {
             childNeeds=true;
             ++i;
         } else {
-            child->Fn2F57D0(false);
-            mChildTimerSet.erase(i++);
+            child->RequestTimer(false);
+            this->mChildTimerSet.erase(i++);
         }
     }
-    if(!childNeeds) mTimerFlags&=~1;
-    return mTimerFlags!=0;
+    if(!childNeeds) this->mTimerFlags&=~1;
+    return this->mTimerFlags!=0;
 }
 // FUNCTION: WON 0x006f7360
-void Container::Virtual78(Cursor* cursor)
+// Sets the cursor (the default one for NULL) and passes it up; a mouse child with the 0x40 flag forces
+// the default cursor
+void Container::SetCursor(Cursor* cursor)
 {
-    if(mMouseChild!=NULL && mMouseChild->ComponentFlagSet(0x40)) {
-        Cursor* fallback=Fn2F4B00();
-        if(mCurrentCursor.get()!=fallback) mParent->Virtual78(fallback);
+    if(this->mMouseChild!=NULL && this->mMouseChild->ComponentFlagSet(ComponentFlag_NoParentCursor)) {
+        Cursor* fallback=this->GetDefaultCursor();
+        if(this->mCurrentCursor.get()!=fallback) this->mParent->SetCursor(fallback);
         return;
     }
-    if(cursor==NULL) cursor=Fn2F4B00();
-    if(cursor!=mCurrentCursor.get()) {
-        mCurrentCursor=cursor;
-        if(mParent!=NULL) mParent->Virtual78(cursor);
+    if(cursor==NULL) cursor=this->GetDefaultCursor();
+    if(cursor!=this->mCurrentCursor.get()) {
+        this->mCurrentCursor=cursor;
+        if(this->mParent!=NULL) this->mParent->SetCursor(cursor);
     }
 }
 }

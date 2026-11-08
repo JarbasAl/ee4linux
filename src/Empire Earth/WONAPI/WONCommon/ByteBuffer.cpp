@@ -1,4 +1,4 @@
-// Original ByteBuffer family, owned allocation/copy and offset ownership. SCRATCH.
+// ByteBuffer and OffsetByteBuffer: ref-counted owned byte arrays
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,51 +10,51 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONBuffer.h"
 namespace WONAPI {
-// Native2a0a20/150, strlen includes the terminating byte. NULL input is distinct.
 // FUNCTION: WON 0x006a0a20
+// Creates a buffer holding a copy of the string including its terminator; NULL gives an empty buffer
 ByteBuffer::ByteBuffer(const char* text)
 {
     if(text==NULL) {
-        mData=NULL;
-        mDataLen=0;
+        this->mData=NULL;
+        this->mDataLen=0;
     } else {
-        mDataLen=static_cast<unsigned long>(strlen(text))+1;
-        mData=new char[mDataLen];
-        memcpy(mData,text,mDataLen);
+        this->mDataLen=static_cast<unsigned long>(strlen(text))+1;
+        this->mData=new char[this->mDataLen];
+        memcpy(this->mData,text,this->mDataLen);
     }
 }
-// Native2a0ac0/163. Zero-length copying still allocates new char[0].
+// Copying zero bytes still allocates new char[0]
 // FUNCTION: WON 0x006a0ac0
+// Creates a buffer that adopts the given bytes or holds a copy of them
 ByteBuffer::ByteBuffer(const void* data,unsigned long length,bool takeOwnership)
 {
     if(takeOwnership) {
-        mData=const_cast<char*>(static_cast<const char*>(data));
-        mDataLen=length;
+        this->mData=const_cast<char*>(static_cast<const char*>(data));
+        this->mDataLen=length;
     } else {
-        mData=new char[length];
-        mDataLen=length;
+        this->mData=new char[length];
+        this->mDataLen=length;
         if(length>0)
-            memcpy(mData,data,length);
+            memcpy(this->mData,data,length);
     }
 }
-// Native2a0b70/77, actual normal owned-array destruction then RefCount base.
 // FUNCTION: WON 0x006a0b70
+// Destroys the buffer, freeing its bytes
 ByteBuffer::~ByteBuffer()
 {
-    delete [] mData;
+    delete [] this->mData;
 }
-// Native2a0bc0/46, genuine complete OffsetByteBuffer20; requires canonical type proof.
-// Conservative constructor support0: forwards adoption plus offset/base-pointer storage.
+// 0x6a0bc0 (emitted from the list below): creates a view of allocation+offset that remembers the allocation
 OffsetByteBuffer::OffsetByteBuffer(char* allocation,unsigned long offset,unsigned long length)
     :ByteBuffer(allocation+offset,length,true),mAllocation(allocation)
 {
 }
-// Native2a0c10/93: free original allocation; prevent the base from deleting its view.
 // FUNCTION: WON 0x006a0c10
+// Destroys the view, freeing the whole underlying allocation instead of the view's bytes
 OffsetByteBuffer::~OffsetByteBuffer()
 {
-    delete [] mAllocation;
-    mData=NULL;
+    delete [] this->mAllocation;
+    this->mData=NULL;
 }
 }
 

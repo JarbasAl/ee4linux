@@ -1,4 +1,4 @@
-// Native AsyncOp lifecycle, status, timeout and completion family.
+// AsyncOp: lifecycle, status, timeout and completion
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,164 +10,180 @@
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0069ef80
+// Creates an idle op with an infinite timeout, async run mode and no container or timer entry
 AsyncOp::AsyncOp()
 {
-    mStartTime=0;
-    mTimeout=0xffffffff;
-    mRunMode=1;
-    mStatus=100004;
-    mCompletionPending=false;
-    mB39=false;
-    mFlag3A=false;
-    mTimeoutMap=NULL;
-    mContainer=NULL;
+    this->mStartTime=0;
+    this->mTimeout=0xffffffff;
+    this->mRunMode=OP_MODE_ASYNC;
+    this->mStatus=WS_None;
+    this->mCompletionPending=false;
+    this->mKilled=false;
+    this->mRunAsyncImmediately=false;
+    this->mTimeoutMap=NULL;
+    this->mContainer=NULL;
 }
 // FUNCTION: WON 0x0069f000
+// Destroys the op (members only)
 AsyncOp::~AsyncOp() {}
 
-void AsyncOp::Virtual04() {}
-void AsyncOp::Virtual08() {}
+void AsyncOp::RunHook() {}
+void AsyncOp::CleanupHook() {}
 // FUNCTION: WON 0x0069f080
+// Moves the op into the given timeout map under the given deadline
 void AsyncOp::AddToTimerMap(AsyncOpTimeoutMap& map,unsigned long deadline)
 {
-    RemoveFromTimerMap(true);
-    mTimeoutMap=&map;
-    mTimeoutItr=map.insert(AsyncOpTimeoutMap::value_type(deadline,this));
+    this->RemoveFromTimerMap(true);
+    this->mTimeoutMap=&map;
+    this->mTimeoutItr=map.insert(AsyncOpTimeoutMap::value_type(deadline,this));
 }
 // FUNCTION: WON 0x0069f160
+// Detaches the op from its timeout map, erasing its entry when asked
 void AsyncOp::RemoveFromTimerMap(bool erase)
 {
-    if(mTimeoutMap!=NULL) {
-        if(erase) mTimeoutMap->erase(mTimeoutItr);
-        mTimeoutMap=NULL;
+    if(this->mTimeoutMap!=NULL) {
+        if(erase) this->mTimeoutMap->erase(this->mTimeoutItr);
+        this->mTimeoutMap=NULL;
     }
 }
 
 // FUNCTION: WON 0x0069f1b0
-void AsyncOp::Fn29F1B0(unsigned long timeout)
-{ if(mStatus!=100000) mTimeout=timeout; }
+// Sets the op's timeout unless the op is already running
+void AsyncOp::SetTimeout(unsigned long timeout)
+{ if(this->mStatus!=WS_Pending) this->mTimeout=timeout; }
 // FUNCTION: WON 0x0069f1d0
-void AsyncOp::SetFlag3A(bool flag) {mFlag3A=flag;}
+// Sets whether an async run starts at once instead of being queued
+void AsyncOp::SetRunAsyncImmediately(bool flag) {this->mRunAsyncImmediately=flag;}
 // FUNCTION: WON 0x0069f1e0
+// Marks the op killed and, when asked, finishes it with the killed status
 void AsyncOp::Kill(bool finish)
 {
-    mB39=true;
-    if(finish) Fn29F220(100002);
+    this->mKilled=true;
+    if(finish) this->Finish(WS_Killed);
 }
 // FUNCTION: WON 0x0069f200
+// Queues the op on its container, or on the global WONAPI core queue when it has none
 void AsyncOp::QueueInOpContainer()
 {
-    if(mContainer!=NULL) mContainer->QueueOp(this);
+    if(this->mContainer!=NULL) this->mContainer->QueueOp(this);
     else WONAPICore::QueueOp(this);
 }
 // FUNCTION: WON 0x0069f220
-void AsyncOp::Fn29F220(WONStatus status)
+// Finishes a running op with the given status and queues its completion for async runs
+void AsyncOp::Finish(WONStatus status)
 {
-    AutoCrit lock(mLock);
-    if(mStatus!=100000) return;
-    mStatus=status;
-    mCompletionPending=true;
+    AutoCrit lock(this->mLock);
+    if(this->mStatus!=WS_Pending) return;
+    this->mStatus=status;
+    this->mCompletionPending=true;
     lock.Leave();
-    switch(mRunMode) {
-    case 1: QueueInOpContainer(); break;
+    switch(this->mRunMode) {
+    case OP_MODE_ASYNC: this->QueueInOpContainer(); break;
     }
 }
 // FUNCTION: WON 0x0069f2f0
+// Finishes the op with the given status even when it already finished, unless a completion is pending
 void AsyncOp::ForceFinish(WONStatus status)
 {
-    if(mStatus==100000) {Fn29F220(status);return;}
-    AutoCrit lock(mLock);
-    if(mCompletionPending) return;
-    mStatus=100000;
-    mB39=false;
+    if(this->mStatus==WS_Pending) {this->Finish(status);return;}
+    AutoCrit lock(this->mLock);
+    if(this->mCompletionPending) return;
+    this->mStatus=WS_Pending;
+    this->mKilled=false;
     lock.Leave();
-    Fn29F220(status);
+    this->Finish(status);
 }
 // FUNCTION: WON 0x0069f3a0
+// Delivers a pending completion: drops the timer entry, runs the cleanup hook and calls the completion
 void AsyncOp::Complete()
 {
-    AutoCrit lock(mLock);
-    if(!mCompletionPending) return;
-    mCompletionPending=false;
-    if(mTimeoutMap!=NULL) {
+    AutoCrit lock(this->mLock);
+    if(!this->mCompletionPending) return;
+    this->mCompletionPending=false;
+    if(this->mTimeoutMap!=NULL) {
         lock.Leave();
         WONAPICore::RemoveTimerOp(this);
     } else lock.Leave();
-    Virtual08();
-    SmartPtr<CompletionBase<AsyncOpPtr> > completion=mCompletion;
+    this->CleanupHook();
+    SmartPtr<CompletionBase<AsyncOpPtr> > completion=this->mCompletion;
     if(completion.get()!=NULL) completion->Complete(this);
 }
 // FUNCTION: WON 0x0069f4c0
+// Starts an async run: runs the hook and arms the timeout timer, or times out at once for a zero timeout
 void AsyncOp::StartRunAsync()
 {
-    Virtual04();
-    if(mStatus!=100000) return;
-    if(mTimeout>0) {
-        if(mTimeout!=0xffffffff) WONAPICore::AddTimerOp(this,mTimeout);
-    } else Fn29F220(100001);
+    this->RunHook();
+    if(this->mStatus!=WS_Pending) return;
+    if(this->mTimeout>0) {
+        if(this->mTimeout!=0xffffffff) WONAPICore::AddTimerOp(this,this->mTimeout);
+    } else this->Finish(WS_TimedOut);
 }
 // FUNCTION: WON 0x0069f500
-WONStatus AsyncOp::Fn29F500(long mode,unsigned long timeout)
+// Starts the op in the given mode and timeout (async queued/immediate, else blocking); returns its status
+WONStatus AsyncOp::Run(long mode,unsigned long timeout)
 {
-    AutoCrit lock(mLock);
-    if(mStatus==100000) return 100000;
-    if(mCompletionPending) return 100005;
-    mStatus=100000;
-    mB39=false;
+    AutoCrit lock(this->mLock);
+    if(this->mStatus==WS_Pending) return WS_Pending;
+    if(this->mCompletionPending) return WS_AwaitingCompletion;
+    this->mStatus=WS_Pending;
+    this->mKilled=false;
     lock.Leave();
-    mStartTime=GetTickCount();
-    mTimeout=timeout;
-    mRunMode=mode;
+    this->mStartTime=GetTickCount();
+    this->mTimeout=timeout;
+    this->mRunMode=mode;
     if(mode==1) {
-        if(mFlag3A) StartRunAsync();
-        else QueueInOpContainer();
+        if(this->mRunAsyncImmediately) this->StartRunAsync();
+        else this->QueueInOpContainer();
     } else {
-        Virtual04();
-        Complete();
+        this->RunHook();
+        this->Complete();
     }
-    return mStatus;
+    return this->mStatus;
 }
 // FUNCTION: WON 0x0069f610
-void AsyncOp::RunAsync(unsigned long timeout)
+// Starts an idle op as a pure timer that fires after the given timeout
+void AsyncOp::RunAsTimer(unsigned long timeout)
 {
-    AutoCrit lock(mLock);
-    bool aRunning=mStatus==100000 || mCompletionPending;
+    AutoCrit lock(this->mLock);
+    bool aRunning=this->mStatus==WS_Pending || this->mCompletionPending;
     if(aRunning) return;
-    mStatus=100000;
-    mB39=false;
+    this->mStatus=WS_Pending;
+    this->mKilled=false;
     lock.Leave();
-    mStartTime=GetTickCount();
-    mTimeout=timeout;
-    mRunMode=1;
+    this->mStartTime=GetTickCount();
+    this->mTimeout=timeout;
+    this->mRunMode=OP_MODE_ASYNC;
     WONAPICore::AddTimerOp(this,timeout);
 }
-// Native29f6d0/15 wrapper, zeroquota; existing canonical Run is actual SocketOp timeout dispatch API.
 // FUNCTION: WON 0x0069f6d0
-void AsyncOp::Run(long timeout) { Fn29F500(1,timeout); }
-// Native29f6e0/20 bool blocking wrapper, support0. Main identity remains29f500.
+// Runs the op asynchronously with the given timeout
+void AsyncOp::RunAsync(long timeout) { this->Run(1,timeout); }
 // FUNCTION: WON 0x0069f6e0
-bool AsyncOp::RunBlock(unsigned long timeout) {return Fn29F500(2,timeout)==0;}
+// Runs the op blocking with the given timeout; returns true on success
+bool AsyncOp::RunBlock(unsigned long timeout) {return this->Run(2,timeout)==WS_Success;}
 // FUNCTION: WON 0x0069f700
+// Returns the time left before the op times out; 0 for async runs or once the timeout has passed
 unsigned long AsyncOp::TimeLeft()
 {
-    if(mRunMode==1) return 0;
-    unsigned long elapsed=GetTickCount()-mStartTime;
-    if(elapsed>=mTimeout) return 0;
-    return mTimeout-elapsed;
+    if(this->mRunMode==OP_MODE_ASYNC) return 0;
+    unsigned long elapsed=GetTickCount()-this->mStartTime;
+    if(elapsed>=this->mTimeout) return 0;
+    return this->mTimeout-elapsed;
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine missing session/profile/operation methods.
+// No original address identified: WON SDK AsyncOp::RealTimeLeft
 namespace WONAPI {
 DWORD AsyncOp::RealTimeLeft()
 {
-	int deltaTime = GetTickCount() - mStartTime;
-	if(deltaTime >= mTimeout)
+	int deltaTime = GetTickCount() - this->mStartTime;
+	if(deltaTime >= this->mTimeout)
 		return 0;
 	else
-		return mTimeout - deltaTime;
+		return this->mTimeout - deltaTime;
 }
 }
 

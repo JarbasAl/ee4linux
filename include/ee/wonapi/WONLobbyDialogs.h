@@ -1,127 +1,121 @@
-// Original-backed WONLobby dialog contracts. The first three classes have full allocation/layout proof.
-// LanName/AddFriend/Password each allocate a4 bytes: Dialog98 plus three owning widget pointers.
+// WONLobby dialogs and popup menus.
+// LanNameDialog, PasswordDialog and AddFriendDialog are 0xa4 bytes: Dialog (0x98) plus three owned widgets.
 #ifndef EE_WONAPI_WONLOBBYDIALOGS_H
 #define EE_WONAPI_WONLOBBYDIALOGS_H
 namespace WONAPI {
 class LanNameDialog : public Dialog {
 public:
     LanNameDialog();
-    virtual ~LanNameDialog(); //explicit original3f8400 writes derived vptr
+    virtual ~LanNameDialog(); // 0x7f8400; explicit: writes its own vtable pointer
     virtual void InitComponent(ComponentInit& inInit);
     void Reset();
-    const GUIString& GetName(); //actual external nonconst getter3f90c0; SDKLanNameDialog
-    SmartPtr<InputBox> mNameInput; //98
-    SmartPtr<Button> mOkButton; //9c
-    SmartPtr<Button> mCancelButton; //a0
+    const GUIString& GetName(); // 0x7f90c0, the same code as PasswordDialog::GetPassword
+    SmartPtr<InputBox> mNameInput; // 0x98
+    SmartPtr<Button> mOkButton; // 0x9c
+    SmartPtr<Button> mCancelButton; // 0xa0
 };
 class PasswordDialog : public Dialog {
 public:
     PasswordDialog();
-    // Original3f8f70 destructor is implicit: no own vptr store. No forced empty body.
+    // Implicit destructor (0x7f8f70): it does not write its own vtable pointer.
     virtual void InitComponent(ComponentInit& inInit);
-    void Reset(); //shared physical3f8560; actual Password caller/field98 proof, zero duplicate credit
+    void Reset(); // 0x7f8560, the same code as LanNameDialog::Reset
     const GUIString& GetPassword();
-    SmartPtr<InputBox> mPasswordInput; //98
-    SmartPtr<Button> mOkButton; //9c
-    SmartPtr<Button> mCancelButton; //a0
+    SmartPtr<InputBox> mPasswordInput; // 0x98
+    SmartPtr<Button> mOkButton; // 0x9c
+    SmartPtr<Button> mCancelButton; // 0xa0
 };
 class AddFriendDialog : public Dialog {
 public:
     AddFriendDialog();
-    // Original3f48a0 destructor is implicit: no own vptr store. No forced empty body.
+    // Implicit destructor (0x7f48a0): it does not write its own vtable pointer.
     virtual void InitComponent(ComponentInit& inInit);
     virtual void HandleComponentEvent(ComponentEvent* inEvent);
     void CheckInput();
     void Reset();
     const GUIString& GetName();
-    SmartPtr<InputBox> mNameInput; //98, raw mText is used by CheckInput
-    SmartPtr<Button> mOkButton; //9c
-    SmartPtr<Button> mCancelButton; //a0
+    SmartPtr<InputBox> mNameInput; // 0x98; CheckInput reads its text directly
+    SmartPtr<Button> mOkButton; // 0x9c
+    SmartPtr<Button> mCancelButton; // 0xa0
 };
-// Reference and external-lifetime contracts below carry explicit per-class restrictions.
-// Partial pointees remain unallocated; no private/widget lifetime implementations are supplied.
-// Complete real ScrollingTextComponent54 fields; genuine explicit SDK ctor declared below.
-// Header API approval alone does not admit follow-on Source; external destructor retained.
+// Credits: CreditLineInfo is one line of text with its colour; ScrollingTextComponent (0x54 bytes) scrolls them.
 class CreditLineInfo {
 protected:
-    GUIString mLine; //00
-    DWORD mColor; //04
+    GUIString mLine; // 0x00
+    DWORD mColor; // 0x04
 public:
-    CreditLineInfo(const GUIString& text,DWORD color) {mLine=text;mColor=color;}
-    GUIString GetLine(); //actual3f7450, owned GUIString result; original external support0
-    DWORD GetColor() {return mColor;}
+    CreditLineInfo(const GUIString& text,DWORD color) {this->mLine=text;this->mColor=color;}
+    GUIString GetLine(); // 0x7f7450; returns a copy
+    DWORD GetColor() {return this->mColor;}
 };
 typedef std::list<CreditLineInfo> CreditsList;
 class ScrollingTextComponent : public Component {
 protected:
-    SmartPtr<Font> mFont; //30; exact primary SDK type, known real Font owner
-    CreditsList mLines; //34 allocator,38head,3c count; native node10/value8
-    DWORD mLastColor; //40
-    int mTimeSinceLastScroll; //44
-    int mScrollSpeed; //48
-    int mScrollTop; //4c
-    int mTotalTextHeight; //50
+    SmartPtr<Font> mFont; // 0x30
+    CreditsList mLines; // 0x34 allocator, 0x38 head, 0x3c count
+    DWORD mLastColor; // 0x40
+    int mTimeSinceLastScroll; // 0x44
+    int mScrollSpeed; // 0x48
+    int mScrollTop; // 0x4c
+    int mTotalTextHeight; // 0x50
 public:
-    ScrollingTextComponent(); //3f6de0 true SDK explicit initialization, complete54
-    virtual ~ScrollingTextComponent(); //external actual3f6e90
-    virtual void Paint(Graphics&); //actual18=3f71b0, discoverygap672
-    virtual bool Virtual44(int); //actual44=3f70b0
-    void Start(); //3f6f50 actualSDK timer activation/reset19B
-    void Stop(); //3f6f70 actualSDK timer stop8B
-    void Reset(); //3f6f80 actualSDK scrollTop=height7B
-    void AddLine(const GUIString&,unsigned long); //actual3f6f90,ret8
+    ScrollingTextComponent(); // 0x7f6de0
+    virtual ~ScrollingTextComponent(); // 0x7f6e90
+    virtual void Paint(Graphics&); // slot 0x18: 0x7f71b0
+    virtual bool TimerEvent(int); // slot 0x44: 0x7f70b0
+    void Start(); // 0x7f6f50; starts the scroll timer
+    void Stop(); // 0x7f6f70; stops the scroll timer
+    void Reset(); // 0x7f6f80; sets the scroll position to the component height
+    void AddLine(const GUIString&,unsigned long); // 0x7f6f90
 };
-// Complete Credits owna4 tail; constructor/implicit normal destructor remain original external calls.
-// No ScrollingTextComponent allocation or lifetime implementation is authorized.
+// CreditsDialog: 0xa4 bytes; the destructor is implicit.
 class CreditsDialog : public Dialog {
 protected:
-    void UpdateCredits(); //native SDK identity; actual Init calls shared empty4142a0, call-only0
+    void UpdateCredits(); // empty: InitComponent calls the shared empty function at 0x8142a0
 public:
     CreditsDialog();
     virtual void InitComponent(ComponentInit&);
-    virtual void HandleComponentEvent(ComponentEvent*); //external actual shared3fa1f0
+    virtual void HandleComponentEvent(ComponentEvent*); // 0x7fa1f0, shared with ChooseNetworkAdapterDialog
     void StartScrolling();
     void StopScrolling();
     void ResetScrolling();
     void AddLine(const GUIString&,Component*,unsigned long);
-    SmartPtr<ScrollingTextComponent> mScrollingText; //98
-    SmartPtr<Button> mCreditsButton; //9c
-    SmartPtr<Button> mCloseButton; //a0
+    SmartPtr<ScrollingTextComponent> mScrollingText; // 0x98
+    SmartPtr<Button> mCreditsButton; // 0x9c
+    SmartPtr<Button> mCloseButton; // 0xa0
 };
 class GotHTTPDocumentEvent;
 class TOUDialog : public Dialog {
 public:
-    TOUDialog(); //fullac, simple false-state/default ownership initializer support0
-    // Actual normal destructor implicit; no forced declaration/definition.
-    virtual void Paint(Graphics&); //existing actual reference slot18, support0
+    TOUDialog(); // object size 0xac
+    // The destructor is implicit.
+    virtual void Paint(Graphics&); // slot 0x18
     virtual void InitComponent(ComponentInit&);
     virtual void HandleComponentEvent(ComponentEvent*);
     void HandleHTTPDocEvent(GotHTTPDocumentEvent*);
     void Reset();
-    SmartPtr<BrowserComponent> mBrowser; //98, original external widget lifetime
-    SmartPtr<Button> mAgreeCheck; //9c
-    SmartPtr<Button> mAcceptButton; //a0
-    SmartPtr<Button> mRejectButton; //a4
-    bool mNeedGenHTML; //a8, natural paddinga9..ab
+    SmartPtr<BrowserComponent> mBrowser; // 0x98
+    SmartPtr<Button> mAgreeCheck; // 0x9c
+    SmartPtr<Button> mAcceptButton; // 0xa0
+    SmartPtr<Button> mRejectButton; // 0xa4
+    bool mNeedGenHTML; // 0xa8, padded to 0xac
 };
 class ChooseNetworkAdapterDialog : public Dialog {
 public:
-    ChooseNetworkAdapterDialog(); //fulla0; empty/default owner support0
-    virtual ~ChooseNetworkAdapterDialog(); //actual explicit normal3f9c80, source gate separately
+    ChooseNetworkAdapterDialog(); // object size 0xa0
+    virtual ~ChooseNetworkAdapterDialog(); // 0x7f9c80; explicit
     virtual void InitComponent(ComponentInit&);
-    virtual void HandleComponentEvent(ComponentEvent*); //actual shared delegate3fa1f0,0
+    virtual void HandleComponentEvent(ComponentEvent*); // 0x7fa1f0, shared with CreditsDialog
     void Reset();
-    unsigned long GetSelectedAddress(); //existing canonical rawIPv4 ABI retained, getter0
-    SmartPtr<MultiListArea> mAdapterList; //98
-    SmartPtr<Button> mActivateButton; //9c
+    unsigned long GetSelectedAddress(); // raw IPv4 address
+    SmartPtr<MultiListArea> mAdapterList; // 0x98
+    SmartPtr<Button> mActivateButton; // 0x9c
 };
-// Complete external-lifetime contracts below permit exact caller allocation only.
-// Constructors/destructors remain original external calls; no PopupMenu allocation or body is defined here.
 class LobbyGame;
-// Completec0: Dialog98 plus nine owning widget pointers and int game type.
+// CreateGameDialog (0xc0 bytes): Dialog (0x98) plus nine owned widgets and the game type.
 class CreateGameDialog : public Dialog {
 protected:
-    virtual ~CreateGameDialog(); //3f6450 explicit original external lifetime
+    virtual ~CreateGameDialog(); // 0x7f6450
 public:
     CreateGameDialog();
     virtual void InitComponent(ComponentInit& inInit);
@@ -147,35 +141,33 @@ class PopupMenu;
 class LobbyClient;
 class ClientOptionsPopup : public Container {
 protected:
-    SmartPtr<PopupMenu> mPopupMenu; //84
-    SmartPtr<LobbyClient> mClient; //88
-    int mRoomSpecFlags; //8c, constructor does not initialize this scalar
-    int GetRoomSpecFlags() const { return mRoomSpecFlags; }
-    void AddItem(const GUIString&,int); //actual3f5ea0, forwarding support0; class-correct receiver
-    virtual void HandleComponentEvent(ComponentEvent* inEvent); //3f6310, slot7c
-    virtual ~ClientOptionsPopup(); //3f5e00, explicit original external
+    SmartPtr<PopupMenu> mPopupMenu; // 0x84
+    SmartPtr<LobbyClient> mClient; // 0x88
+    int mRoomSpecFlags; // 0x8c, not initialized by the constructor
+    int GetRoomSpecFlags() const { return this->mRoomSpecFlags; }
+    void AddItem(const GUIString&,int); // 0x7f5ea0
+    virtual void HandleComponentEvent(ComponentEvent* inEvent); // 0x7f6310, slot 0x7c
+    virtual ~ClientOptionsPopup(); // 0x7f5e00
 public:
-    ClientOptionsPopup(); //3f5d10, external, fullobject90
-    void Init(LobbyClient* inClient, LobbyClient* inMyClient, int inRoomSpecFlags); //3f5ec0, retc
+    ClientOptionsPopup(); // 0x7f5d10; object size 0x90
+    void Init(LobbyClient* inClient, LobbyClient* inMyClient, int inRoomSpecFlags); // 0x7f5ec0
 };
 
-// Original allocation8c and raw slots/field proof independently checked; SDK names supplement identity only.
+// GameOptionsPopup: 0x8c bytes.
 class PopupMenu;
 class GameOptionsPopup : public Container {
 protected:
-    SmartPtr<LobbyGame> mGame; //84, owned
-    SmartPtr<PopupMenu> mPopupMenu; //88, owned; no allocation or sizeof of PopupMenu here
-    void AddItem(const GUIString&,int); //actual3f80f0, forwarding support0; class-correct receiver
-    virtual void HandleComponentEvent(ComponentEvent* inEvent); //3f82f0, slot7c
-    virtual ~GameOptionsPopup(); //3f8050; external original lifetime remains carved
+    SmartPtr<LobbyGame> mGame; // 0x84, owned
+    SmartPtr<PopupMenu> mPopupMenu; // 0x88, owned
+    void AddItem(const GUIString&,int); // 0x7f80f0
+    virtual void HandleComponentEvent(ComponentEvent* inEvent); // 0x7f82f0, slot 0x7c
+    virtual ~GameOptionsPopup(); // 0x7f8050
 public:
-    GameOptionsPopup(); //3f7f60; external original, full object8c
-    void Init(LobbyGame* inGame); //3f8110; nominal name independently from retained SDK header
+    GameOptionsPopup(); // 0x7f7f60; object size 0x8c
+    void Init(LobbyGame* inGame); // 0x7f8110
 };
 
-// Original-backed dialog field and slot contracts; widget lifetimes remain external.
 
-// Header addition draft, needs actual GUI callback and parsed integer contracts.
 class LanPortDialog : public Dialog {
 public:
     LanPortDialog();
@@ -229,7 +221,7 @@ public:
     virtual void InitComponent(ComponentInit& inInit);
     void Reset();
     const GUIString& GetAddress();
-    const GUIString& GetName(); //shared physical getter3f90c0; root alias gate pending
+    const GUIString& GetName(); // 0x7f90c0, the same code as PasswordDialog::GetPassword
     SmartPtr<InputBox> mNameInput;
     SmartPtr<InputBox> mAddressInput;
     SmartPtr<Button> mAddButton;
@@ -245,7 +237,7 @@ public:
     void UpdatePasswordVisibility();
     void CheckInput();
     const GUIString& GetPassword();
-    const GUIString& GetRoomName(); //nominal SDK; original physical getter3f90c0, root alias gate pending
+    const GUIString& GetRoomName(); // 0x7f90c0, the same code as PasswordDialog::GetPassword
     SmartPtr<InputBox> mNameInput;
     SmartPtr<InputBox> mPasswordInput;
     SmartPtr<Label> mPasswordLabel;
@@ -253,7 +245,7 @@ public:
     SmartPtr<Button> mCreateButton;
 };
 
-// Complete original0xc8 own-tail contract; external widgets remain reference-only.
+// AdminActionDialog (0xc8 bytes): warn, mute, kick or ban a user in the room or on the server.
 class AdminActionDialog : public Dialog {
 public:
     AdminActionDialog();
@@ -265,72 +257,71 @@ public:
     bool GetApplyToServer();
     const GUIString& GetExplanation();
     unsigned long GetNumSeconds();
-    int mActionType; //98, existing canonical int ABI retained
-    SmartPtr<Label> mTitleLabel; //9c
-    SmartPtr<Label> mExplanationHeader; //a0
-    SmartPtr<InputBox> mExplanation; //a4
-    bool mIsReasonOptional; //a8, natural paddinga9..ab
-    SmartPtr<Label> mDurationHeader; //ac
-    SmartPtr<ComboBox> mDurationCombo; //b0
-    SmartPtr<ComboBox> mTimeSegmentCombo; //b4
-    SmartPtr<Button> mDoActionButton; //b8
-    SmartPtr<Button> mCancelButton; //bc
-    SmartPtr<Button> mApplyToRoom; //c0
-    SmartPtr<Button> mApplyToServer; //c4
+    int mActionType; // 0x98
+    SmartPtr<Label> mTitleLabel; // 0x9c
+    SmartPtr<Label> mExplanationHeader; // 0xa0
+    SmartPtr<InputBox> mExplanation; // 0xa4
+    bool mIsReasonOptional; // 0xa8, padded to 0xac
+    SmartPtr<Label> mDurationHeader; // 0xac
+    SmartPtr<ComboBox> mDurationCombo; // 0xb0
+    SmartPtr<ComboBox> mTimeSegmentCombo; // 0xb4
+    SmartPtr<Button> mDoActionButton; // 0xb8
+    SmartPtr<Button> mCancelButton; // 0xbc
+    SmartPtr<Button> mApplyToRoom; // 0xc0
+    SmartPtr<Button> mApplyToServer; // 0xc4
 };
 
-class RoomCtrl; //complete90 in sole owner WONLobbyRoomServer.h; no duplicate class
-// Full original9c own tail. External ctor/lifetime declarations do not supply implementations.
+class RoomCtrl; // 0x90 bytes, declared in WONLobbyRoomServer.h
+// RoomDialog: 0x9c bytes.
 class RoomDialog : public Dialog {
 protected:
-    SmartPtr<RoomCtrl> mRoomCtrl; //98
-    virtual ~RoomDialog(); //native SDK protected lifetime; source-kind gate remains separate
+    SmartPtr<RoomCtrl> mRoomCtrl; // 0x98
+    virtual ~RoomDialog();
 public:
-    RoomDialog(); //external3f90d0, empty/default owner support0
-    virtual void InitComponent(ComponentInit&); //actual slot1c shared empty2fa500,0
+    RoomDialog(); // 0x7f90d0
+    virtual void InitComponent(ComponentInit&); // slot 0x1c: the shared empty one-argument function at 0x6fa500
 };
 
-struct RoutingBadUser; //Model owns the record definition; reference-only here
-// Complete original0xac own tail; actual51 slots differ only00/1c.
-// The original normal destructor is implicit (no own vptr store); no written destructor body.
+struct RoutingBadUser; // defined in WONRouting.h
+// BadUserDialog (0xac bytes): the muted/banned user list; 51 vtable slots, its own entries at 0x00 and 0x1c.
+// The destructor is implicit (it does not write its own vtable pointer).
 class BadUserDialog : public Dialog {
 public:
-    typedef std::list<unsigned long> IdList; //actual native nested alias
+    typedef std::list<unsigned long> IdList;
     BadUserDialog();
-    virtual void InitComponent(ComponentInit& inInit); //3f5a90
-    void SetUserList(const std::list<RoutingBadUser>& inList, bool inSimple); //3f5b20
-    void GetIds(IdList& outIds); //3f5c20
-    SmartPtr<MultiListArea> mUserList; //98
-    SmartPtr<ListArea> mSimpleUserList; //9c
-    SmartPtr<Component> mUserListBox; //a0
-    SmartPtr<Component> mSimpleUserListBox; //a4
-    bool mIsSimple; //a8, natural paddinga9..ab
+    virtual void InitComponent(ComponentInit& inInit); // 0x7f5a90
+    void SetUserList(const std::list<RoutingBadUser>& inList, bool inSimple); // 0x7f5b20
+    void GetIds(IdList& outIds); // 0x7f5c20
+    SmartPtr<MultiListArea> mUserList; // 0x98
+    SmartPtr<ListArea> mSimpleUserList; // 0x9c
+    SmartPtr<Component> mUserListBox; // 0xa0
+    SmartPtr<Component> mSimpleUserListBox; // 0xa4
+    bool mIsSimple; // 0xa8, padded to 0xac
 };
 
-// PARTIAL REFERENCE-ONLY CreditsDialogConfig: true14slots and borrowed9c field.
-// No constructor/destructor implementation, allocation, sizeof, copy or by-value authority.
+// CreditsDialogConfig: reads the credits dialog's resource configuration; 14 vtable slots (partial declaration).
 class CreditsDialogConfig : public DialogConfig {
 public:
-    static ComponentConfig* CfgFactory() { return new CreditsDialogConfig; } //genuine SDK inline, native365260/83 completea0
-    virtual bool Virtual24(const std::string& inInstruction); //3f7780 actualADDLINE behavior
-    virtual void Virtual34(Component* inComponent); //38f100 actual25B setter bridge,0quota
-    CreditsDialog* mCredits; //9c, borrowed; baseDialogConfig9c actual layout
+    static ComponentConfig* CfgFactory() { return new CreditsDialogConfig; } // inline as in the SDK (0x765260)
+    virtual bool Virtual24(const std::string& inInstruction); // 0x7f7780; handles the ADDLINE instruction
+    virtual void SetComponent(Component* inComponent); // 0x78f100
+    CreditsDialog* mCredits; // 0x9c, not owned
 };
 
 class LobbyFriend;
-// Complete90 external-lifetime Friend popup; no PopupMenu allocation or implementation is authorized.
-// Native45626851 slots differs Container only00/7c; peer E_FRIEND_HEADER_PEER.json.
+// FriendOptionsPopup (0x90 bytes): the popup menu on a friend.
+// Vtable 0x856268, 51 slots; it differs from Container's only at 0x00 and 0x7c.
 class FriendOptionsPopup : public Container {
 protected:
-    SmartPtr<PopupMenu> mPopupMenu; //84, owning
-    SmartPtr<LobbyFriend> mFriend; //88, owning
-    int mRoomSpecFlags; //8c, original external ctor intentionally leaves uninitialized
-    void AddItem(const GUIString&,int); //actual3f5ea0, forwarding support0; class-correct receiver
-    virtual void HandleComponentEvent(ComponentEvent*); //external3f7ea0
-    virtual ~FriendOptionsPopup(); //explicit original external3f7c50
+    SmartPtr<PopupMenu> mPopupMenu; // 0x84, owned
+    SmartPtr<LobbyFriend> mFriend; // 0x88, owned
+    int mRoomSpecFlags; // 0x8c, not initialized by the constructor
+    void AddItem(const GUIString&,int); // 0x7f5ea0, shared with ClientOptionsPopup::AddItem
+    virtual void HandleComponentEvent(ComponentEvent*); // 0x7f7ea0
+    virtual ~FriendOptionsPopup(); // 0x7f7c50
 public:
-    FriendOptionsPopup(); //external3f7b60; native child180 stays entirely original
-    void Init(LobbyFriend*,int); //external3f7cf0,ret8; full DWORD room flags
+    FriendOptionsPopup(); // 0x7f7b60
+    void Init(LobbyFriend*,int); // 0x7f7cf0
 };
 
 }

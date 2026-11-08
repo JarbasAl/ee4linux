@@ -1,4 +1,4 @@
-// Native ConfigParser token algorithm; source-only reconstruction.
+// ConfigParser token reader (wide and narrow), with quotes, line joins and $define$ expansion
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,6 +13,7 @@
 namespace WONAPI {
 template<class T> bool ReadToken(ConfigParser*,std::basic_string<T>&,bool,bool);
 // FUNCTION: WON 0x007b5cf0
+// Reads the next wide token (or the rest of the line), expanding $name$ defines; false at the end or on an error
 template<> bool ReadToken<wchar_t>(ConfigParser* parser, std::wstring& token,bool toEndLine,bool skip)
 {
     if(parser->EndOfFile()) return false;
@@ -89,6 +90,7 @@ template<> bool ReadToken<wchar_t>(ConfigParser* parser, std::wstring& token,boo
 }
 
 // FUNCTION: WON 0x007b6370
+// Reads the next token (or the rest of the line), expanding $name$ defines; false at the end or on an error
 template<> bool ReadToken<char>(ConfigParser* parser, std::string& token,bool toEndLine,bool skip)
 {
     if(parser->EndOfFile()) return false;
@@ -165,9 +167,11 @@ template<> bool ReadToken<char>(ConfigParser* parser, std::string& token,bool to
 }
 
 // FUNCTION: WON 0x007b3d50
+// Reads the next token as a wide string
 bool ConfigParser::ReadToken(std::wstring& token,bool toEndLine,bool skip)
 { return WONAPI::ReadToken<wchar_t>(this,token,toEndLine,skip); }
 // FUNCTION: WON 0x007b3d70
+// Reads the next token as a narrow string
 bool ConfigParser::ReadToken(std::string& token,bool toEndLine,bool skip)
 { return WONAPI::ReadToken<char>(this,token,toEndLine,skip); }
 }

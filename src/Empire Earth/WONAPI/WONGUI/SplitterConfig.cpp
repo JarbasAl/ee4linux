@@ -1,4 +1,4 @@
-// Complete original-backed splitter configuration algorithms on original-owned receivers.
+// Splitter config: reads quadrant positions, splitter types and the splitter keys (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,9 +13,10 @@
 #include "ee/wonapi/WONLobbySplitterConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00794ed0
+// Reads a quadrant name (Left, Right, Top, Bottom, TopLeft ...); throws a config error for any other name
 Splitter::QuadrantPosition SplitterConfig::ReadQuadrant()
 {
-	GUIString aStr = Fn3842F0(false);
+	GUIString aStr = this->ReadString(false);
 	if(aStr.CompareNoCase("Left")==0)
 		return Splitter::Position_Left;
 	else if(aStr.CompareNoCase("Right")==0)
@@ -39,9 +40,10 @@ Splitter::QuadrantPosition SplitterConfig::ReadQuadrant()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007951b0
+// Reads a splitter type name (LeftRight, UpDown, LeftRight_Top ..., Center); throws a config error otherwise
 Splitter::SplitterType SplitterConfig::ReadSplitterType()
 {
-	GUIString aStr = Fn3842F0(false);
+	GUIString aStr = this->ReadString(false);
 	if(aStr.CompareNoCase("LeftRight")==0)
 		return Splitter::Splitter_LeftRight;
 	else if(aStr.CompareNoCase("UpDown")==0)
@@ -64,76 +66,78 @@ Splitter::SplitterType SplitterConfig::ReadSplitterType()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00795450
+// Reads the splitter keys (quadrants, splitters, minimum sizes, percentages, maximize); others go to the container
+// config. The restore key is spelled UNMAXQUADRAN
 bool SplitterConfig::Virtual24(const std::string& theInstruction)
 {
 	if(theInstruction=="ADDQUADRANT")
 	{
-		Component *aComponent = ReadComponent(); EnsureComma();
-		Splitter::QuadrantPosition aPosition = ReadQuadrant();
-		mSplitter->AddQuadrant(aComponent,aPosition);
+		Component *aComponent = this->ReadComponent(); this->EnsureComma();
+		Splitter::QuadrantPosition aPosition = this->ReadQuadrant();
+		this->mSplitter->AddQuadrant(aComponent,aPosition);
 	}
 	else if(theInstruction=="ADDSPLITTER")
 	{
-		Component *aComponent = ReadComponent(); EnsureComma();
-		Splitter::SplitterType aType = ReadSplitterType();
-		mSplitter->AddSplitter(aComponent,aType);
+		Component *aComponent = this->ReadComponent(); this->EnsureComma();
+		Splitter::SplitterType aType = this->ReadSplitterType();
+		this->mSplitter->AddSplitter(aComponent,aType);
 	}
 	else if(theInstruction=="ADDINVISIBLESPLITTER")
 	{
-		Splitter::SplitterType aType = ReadSplitterType();
+		Splitter::SplitterType aType = this->ReadSplitterType();
 		int aSize = 10;
-		if(!EndOfString())
+		if(!this->EndOfString())
 		{
-			EnsureComma();
-			aSize = ReadInt();
+			this->EnsureComma();
+			aSize = this->ReadInt();
 		}
-		mSplitter->AddInvisibleSplitter(aType,aSize);
+		this->mSplitter->AddInvisibleSplitter(aType,aSize);
 	}
 	else if(theInstruction=="ADDCOMPLEXSPLITTER")
 	{
-		Container *aContainer= SafeConfigGetComponent<Container*>(ReadComponent(),"Container"); EnsureComma();
-		Splitter::SplitterType aType = ReadSplitterType();
+		Container *aContainer= SafeConfigGetComponent<Container*>(this->ReadComponent(),"Container"); this->EnsureComma();
+		Splitter::SplitterType aType = this->ReadSplitterType();
 		Component *aDragComponent = NULL;
-		if(!EndOfString())
+		if(!this->EndOfString())
 		{
-			EnsureComma();
-			aDragComponent = ReadComponent();
+			this->EnsureComma();
+			aDragComponent = this->ReadComponent();
 		}
-		mSplitter->AddComplexSplitter(aContainer,aType,aDragComponent);
+		this->mSplitter->AddComplexSplitter(aContainer,aType,aDragComponent);
 	}
 	else if(theInstruction=="MINLEFTRIGHT")
 	{
-		int minLeft = ReadInt(); EnsureComma();
-		int minRight = ReadInt(); 
-		mSplitter->SetMinLeftRight(minLeft,minRight);
+		int minLeft = this->ReadInt(); this->EnsureComma();
+		int minRight = this->ReadInt(); 
+		this->mSplitter->SetMinLeftRight(minLeft,minRight);
 	}
 	else if(theInstruction=="MINTOPBOTTOM")
 	{
-		int minTop = ReadInt(); EnsureComma();
-		int minBottom = ReadInt();
-		mSplitter->SetMinTopBottom(minTop,minBottom);
+		int minTop = this->ReadInt(); this->EnsureComma();
+		int minBottom = this->ReadInt();
+		this->mSplitter->SetMinTopBottom(minTop,minBottom);
 	}
 	else if(theInstruction=="SPLITTERPERCENTAGES")
 	{
-		int leftPercent = ReadInt(); EnsureComma();
-		int topPercent = ReadInt();
-		mSplitter->SetPercentages(leftPercent,topPercent);
+		int leftPercent = this->ReadInt(); this->EnsureComma();
+		int topPercent = this->ReadInt();
+		this->mSplitter->SetPercentages(leftPercent,topPercent);
 	}
 	else if(theInstruction=="MAXQUADRANT")
-		mSplitter->MaxQuadrant(ReadQuadrant());
+		this->mSplitter->MaxQuadrant(this->ReadQuadrant());
 	else if(theInstruction=="UNMAXQUADRAN")
-		mSplitter->UnMaxQuadrant();
+		this->mSplitter->UnMaxQuadrant();
 	else if(theInstruction=="SPLITTERPOS")
 	{
-		int x = ReadInt(); EnsureComma();
-		int y = ReadInt();
-		mSplitter->SetSplitterPos(x,y);
+		int x = this->ReadInt(); this->EnsureComma();
+		int y = this->ReadInt();
+		this->mSplitter->SetSplitterPos(x,y);
 	}
 	else if(theInstruction=="REGISTERMAXBUTTON")
 	{
-		Button *aButton = SafeConfigGetComponent<Button*>(ReadComponent(),"Button"); EnsureComma();
-		Splitter::QuadrantPosition aPosition = ReadQuadrant();
-		mSplitter->RegisterMaxButton(aButton,aPosition);
+		Button *aButton = SafeConfigGetComponent<Button*>(this->ReadComponent(),"Button"); this->EnsureComma();
+		Splitter::QuadrantPosition aPosition = this->ReadQuadrant();
+		this->mSplitter->RegisterMaxButton(aButton,aPosition);
 	}
 	else
 		return ContainerConfig::Virtual24(theInstruction);
@@ -144,11 +148,11 @@ bool SplitterConfig::Virtual24(const std::string& theInstruction)
 }
 
 namespace WONAPI {
-// SUPPORT: EXE 0x0078f960; genuine SDK SplitterConfig SetComponent, zero primary.
-void SplitterConfig::Virtual34(Component* component)
+// Binds the config to its splitter (the linker folds this body into the identical one at 0x0078f960)
+void SplitterConfig::SetComponent(Component* component)
 {
-    ContainerConfig::Virtual34(component);
-    mSplitter=static_cast<Splitter*>(component);
+    ContainerConfig::SetComponent(component);
+    this->mSplitter=static_cast<Splitter*>(component);
 }
 }
 

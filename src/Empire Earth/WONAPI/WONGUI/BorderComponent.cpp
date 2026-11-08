@@ -1,5 +1,6 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine same-SDK specialized controls.
+// Border component: four corner and four edge components laid out around a frame (not identified in the
+// original exe)
 #include <windows.h>
 #include <string>
 #include <list>
@@ -13,60 +14,60 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyBorderComponent.h"
 namespace WONAPI {
-// Real SimpleComponent.cpp BorderComponent family, no other existing types duplicated.
+// Creates a border component that passes input only to its children; the edge controls are added later
 BorderComponent::BorderComponent()
 {
 //	SetComponentFlags(ComponentFlag_NoInput,true);
-	mOnlyChildInput = true;
-	mControlsAdded = false;
+	this->mOnlyChildInput = true;
+	this->mControlsAdded = false;
 }
 
 void BorderComponent::SetComponent(BorderPos thePos, Component *theComponent, int theWidth, int theHeight)
 {
-	mComponents[thePos] = theComponent;
+	this->mComponents[thePos] = theComponent;
 	if(theWidth!=-1 && theHeight!=-1)
-		theComponent->Fn2F4B90(theWidth,theHeight);	
+		theComponent->SetSize(theWidth,theHeight);	
 }
 
 void BorderComponent::AddControls()
 {
 	for(int i=0; i<8; i++)
 	{
-		if(mComponents[i].get()==NULL)
-			mComponents[i] = new Component;
+		if(this->mComponents[i].get()==NULL)
+			this->mComponents[i] = new Component;
 			
-		Fn2F6A60(mComponents[i]);
+		this->AddChild(this->mComponents[i]);
 	}
 
-	mLeftTop = mComponents[Pos_LeftTop];
-	mRightTop = mComponents[Pos_RightTop];
-	mLeftBottom = mComponents[Pos_LeftBottom];
-	mRightBottom = mComponents[Pos_RightBottom];
+	this->mLeftTop = this->mComponents[Pos_LeftTop];
+	this->mRightTop = this->mComponents[Pos_RightTop];
+	this->mLeftBottom = this->mComponents[Pos_LeftBottom];
+	this->mRightBottom = this->mComponents[Pos_RightBottom];
 	
-	mLeft = mComponents[Pos_Left];
-	mTop = mComponents[Pos_Top];
-	mRight = mComponents[Pos_Right];
-	mBottom = mComponents[Pos_Bottom];
+	this->mLeft = this->mComponents[Pos_Left];
+	this->mTop = this->mComponents[Pos_Top];
+	this->mRight = this->mComponents[Pos_Right];
+	this->mBottom = this->mComponents[Pos_Bottom];
 
-	mControlsAdded = true;
-	Virtual08();
+	this->mControlsAdded = true;
+	this->Virtual08();
 }
 
 void BorderComponent::Virtual08()
 {
 	Container::Virtual08();
 
-	if(!mControlsAdded)
+	if(!this->mControlsAdded)
 		return;
 
-	mLeftTop->Fn2F4B70(0,0); 
-	mRightTop->Fn2F4B70(Width()-mRightTop->Width(),0);
-	mLeftBottom->Fn2F4B70(0,Height()-mLeftBottom->Height()); 
-	mRightBottom->Fn2F4B70(Width()-mRightBottom->Width(),Height()-mRightBottom->Height());
+	this->mLeftTop->SetPos(0,0); 
+	this->mRightTop->SetPos(this->Width()-this->mRightTop->Width(),0);
+	this->mLeftBottom->SetPos(0,this->Height()-this->mLeftBottom->Height()); 
+	this->mRightBottom->SetPos(this->Width()-this->mRightBottom->Width(),this->Height()-this->mRightBottom->Height());
 	
-	mLeft->Fn2F4BF0(0,(mLeftTop->Top()+mLeftTop->Height()), mLeft->Width(), mLeftBottom->Top() - (mLeftTop->Top()+mLeftTop->Height()));
-	mRight->Fn2F4BF0(Width()-mRight->Width(), (mRightTop->Top()+mRightTop->Height()), mRight->Width(), mRightBottom->Top() - (mRightTop->Top()+mRightTop->Height()));
-	mTop->Fn2F4BF0((mLeftTop->Left()+mLeftTop->Width()), 0, mRightTop->Left() - (mLeftTop->Left()+mLeftTop->Width()), mTop->Height());
-	mBottom->Fn2F4BF0((mLeftBottom->Left()+mLeftBottom->Width()), Height()-mBottom->Height(), mRightBottom->Left() - (mLeftBottom->Left()+mLeftBottom->Width()), mBottom->Height());
+	this->mLeft->SetPosSize(0,(this->mLeftTop->Top()+this->mLeftTop->Height()), this->mLeft->Width(), this->mLeftBottom->Top() - (this->mLeftTop->Top()+this->mLeftTop->Height()));
+	this->mRight->SetPosSize(this->Width()-this->mRight->Width(), (this->mRightTop->Top()+this->mRightTop->Height()), this->mRight->Width(), this->mRightBottom->Top() - (this->mRightTop->Top()+this->mRightTop->Height()));
+	this->mTop->SetPosSize((this->mLeftTop->Left()+this->mLeftTop->Width()), 0, this->mRightTop->Left() - (this->mLeftTop->Left()+this->mLeftTop->Width()), this->mTop->Height());
+	this->mBottom->SetPosSize((this->mLeftBottom->Left()+this->mLeftBottom->Width()), this->Height()-this->mBottom->Height(), this->mRightBottom->Left() - (this->mLeftBottom->Left()+this->mLeftBottom->Width()), this->mBottom->Height());
 }
 }

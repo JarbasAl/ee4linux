@@ -1,7 +1,7 @@
 #ifndef EE_WONAPI_WONFTP_H
 #define EE_WONAPI_WONFTP_H
 #include "ee/wonapi/WONRouting.h"
-// Complete genuine SDK new owner; SOURCE_ONLY_NO_NATIVE_ID, no target allocation/VT claim.
+// WON SDK class; no original address identified
 
 
 
@@ -79,8 +79,8 @@ private:
 	void ExtractUserNameAndPasswordFromURL(std::string &theURL);
 
 protected:
-	virtual void Virtual04();
-	virtual void Virtual08();
+	virtual void RunHook();
+	virtual void CleanupHook();
 	virtual bool CallbackHook(AsyncOp *theOp, int theParam);
 		
 
@@ -88,22 +88,22 @@ public:
 	FTPGetOp(const std::string &theHost, const std::string &theRemotePath);
 	FTPGetOp(const std::string &theURL, bool doExtractUserAndPassword = false);
 
-	void SetLocalPath(const std::string &thePath) { mLocalPath = thePath; }
-	const std::string& GetLocalPath() { return mLocalPath; }
+	void SetLocalPath(const std::string &thePath) { this->mLocalPath = thePath; }
+	const std::string& GetLocalPath() { return this->mLocalPath; }
 
 	void SetRemotePath(const std::string &thePath);
-	const std::string& GetRemotePath() { return mRemotePath; }
+	const std::string& GetRemotePath() { return this->mRemotePath; }
 
-	void SetUserName(const std::string &theUserName) { mUserName = theUserName; }
-	void SetPassword(const std::string &thePassword) { mPassword = thePassword; }
-	void SetIsBinary(bool isBinary) { mIsBinary = isBinary; } 
-	void SetDoResume(bool doResume) { mDoResume = doResume; }
+	void SetUserName(const std::string &theUserName) { this->mUserName = theUserName; }
+	void SetPassword(const std::string &thePassword) { this->mPassword = thePassword; }
+	void SetIsBinary(bool isBinary) { this->mIsBinary = isBinary; } 
+	void SetDoResume(bool doResume) { this->mDoResume = doResume; }
 
 	void SetRecvChunkCompletion(CompletionBase<AsyncOpPtr> *theCompletion, DWORD theChunkSize = 10000);
 
-	ConstSmartPtr<ByteBuffer> GetContent() { return mContent; }
+	ConstSmartPtr<ByteBuffer> GetContent() { return this->mContent; }
 
-	int GetFTPStatus() { return mFTPStatus; }
+	int GetFTPStatus() { return this->mFTPStatus; }
 
 };
 

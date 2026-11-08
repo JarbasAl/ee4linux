@@ -1,4 +1,4 @@
-// TextArea markup expansion using native formatting commands and borrowed parameters.
+// Formatted text for text areas: expands <n>, <cN>, <fN>, <sN> and <lN> commands
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,7 +15,9 @@
 namespace WONAPI {
 static inline void AppendRange(GUIString& text,const GUIString& f,int s,int l) { text.append(f,(unsigned short)s,(unsigned short)l); }
 // FUNCTION: WON 0x0074a1c0
-void LobbyFn34A1C0(TextArea* area,const GUIString& format,
+// Appends format text to a text area, expanding <n> line breaks, <cN>/<fN> colour and font changes and
+// <sN>/<lN> inserted strings and segments (1-based indices; "<<" is a literal '<')
+void LobbyAppendFormattedText(TextArea* area,const GUIString& format,
     const GUIString*const* strings,int numStrings,const int* colors,int numColors,
     Font*const* fonts,int numFonts,TextSegmentBase*const* segments,int numSegments,
     bool lineBreak)

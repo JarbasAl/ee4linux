@@ -1,4 +1,4 @@
-// Native typed percent-layout and color-scheme child groups.
+// Container config: PERCENTLAYOUT and COLORSCHEME groups (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,27 +15,29 @@
 #include "ee/wonapi/WONPercentLayout.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007885d0
-bool ContainerConfig::Virtual04(ConfigParser* parser,const std::string& type)
+// Reads a PERCENTLAYOUT group into a percent layout (relative to the component if no reference is given)
+// or a COLORSCHEME group into the container's colour scheme; other instructions go to the base config
+bool ContainerConfig::HandleInstruction(ConfigParser* parser,const std::string& type)
 {
     if(type=="PERCENTLAYOUT") {
         SmartPtr<PercentLayoutConfig> config=new PercentLayoutConfig;
-        if(ParseChild(*parser,config.get(),false,true)) {
+        if(this->ParseChild(*parser,config.get(),false,true)) {
             int i;
             for(i=0;i<4;++i) if(config->refs[i]!=NULL) break;
-            if(i==4) config->refs[0]=mComponent.get();
+            if(i==4) config->refs[0]=this->mComponent.get();
             PercentLayoutParam param(config->refs[0],config->refs[1],config->refs[2],config->refs[3],
                 config->params[0],config->params[1],config->params[2],config->params[3],
                 config->params[4],config->params[5],config->params[6],config->params[7]);
-            mContainer->AddChildLayout(new PercentLayout(config->target,param),mCurLayoutId);
+            this->mContainer->AddChildLayout(new PercentLayout(config->target,param),this->mCurLayoutId);
         }
         return true;
     }
     if(type=="COLORSCHEME") {
         SmartPtr<ColorSchemeConfig> config=new ColorSchemeConfig;
-        if(ParseChild(*parser,config.get(),false,true))
-            mContainer->Fn2F59A0(config->mColorScheme.get());
+        if(this->ParseChild(*parser,config.get(),false,true))
+            this->mContainer->SetColorScheme(config->mColorScheme.get());
         return true;
     }
-    return ComponentConfig::Virtual04(parser,type);
+    return ComponentConfig::HandleInstruction(parser,type);
 }
 }

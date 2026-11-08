@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// SetComponent bindings of the scroller, scrollbar-scroller and tab-control configs (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,22 +13,22 @@
 #include "ee/wonapi/WONLobbyMSExtraConfig.h"
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x0078f960 (shared25B actual base setter; zero primary/global-new native credit)
-void ScrollerConfig::Virtual34(Component* component)
+// Binds the scroller config to its scroller (the linker folds this body into the identical one at 0x0078f960)
+void ScrollerConfig::SetComponent(Component* component)
 {
-    ContainerConfig::Virtual34(component);
-    mScroller=(Scroller*)component;
+    ContainerConfig::SetComponent(component);
+    this->mScroller=static_cast<Scroller*>(component);
 }
-// SUPPORT-ONLY: EXE 0x0078f860 (shared25B actual base setter; zero primary/global-new native credit)
-void ScrollbarScrollerConfig::Virtual34(Component* component)
+// Binds the scrollbar-scroller config to its component (the linker folds this body into the identical one at 0x0078f860)
+void ScrollbarScrollerConfig::SetComponent(Component* component)
 {
-    ScrollerConfig::Virtual34(component);
-    mScrollbarScroller=(ScrollbarScroller*)component;
+    ScrollerConfig::SetComponent(component);
+    this->mScrollbarScroller=static_cast<ScrollbarScroller*>(component);
 }
-// SUPPORT-ONLY: EXE 0x0078f960 (shared25B actual TabCtrl setter; zero primary/global-new native credit)
-void TabCtrlConfig::Virtual34(Component* component)
+// Binds the tab-control config to its tab control (the linker folds this body into the identical one at 0x0078f960)
+void TabCtrlConfig::SetComponent(Component* component)
 {
-    ContainerConfig::Virtual34(component);
-    mTabCtrl=(TabCtrl*)component;
+    ContainerConfig::SetComponent(component);
+    this->mTabCtrl=static_cast<TabCtrl*>(component);
 }
 }

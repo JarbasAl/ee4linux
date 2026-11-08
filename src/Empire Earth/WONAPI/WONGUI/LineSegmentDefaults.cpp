@@ -1,4 +1,4 @@
-// Genuine current LineSegment virtual API completion; source-only.
+// Default bodies of the LineSegment virtual interface (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,58 +12,66 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyLineLayout.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x006c7b10
+// Returns a width of 0 (the linker folds this body into the identical one at 0x006c7b10)
 int LineSegment::GetWidth() { return 0; }
-// SUPPORT-ONLY: EXE 0x0070a7a0
-int LineSegment::GetMinWidth() { return GetWidth(); }
-// SUPPORT-ONLY: EXE 0x0070a7a0
-int LineSegment::GetMaxWidth() { return GetWidth(); }
-// SUPPORT-ONLY: EXE 0x006c7b10
+// Returns the width as the minimum width (the linker folds this body into the identical one at 0x0070a7a0)
+int LineSegment::GetMinWidth() { return this->GetWidth(); }
+// Returns the width as the maximum width (the linker folds this body into the identical one at 0x0070a7a0)
+int LineSegment::GetMaxWidth() { return this->GetWidth(); }
+// Returns a height of 0 (the linker folds this body into the identical one at 0x006c7b10)
 int LineSegment::GetHeight() { return 0; }
 // FUNCTION: WON 0x0070b840
-int LineSegment::GetAscent() { return GetHeight(); }
+// Returns the full height as the ascent
+int LineSegment::GetAscent() { return this->GetHeight(); }
 // FUNCTION: WON 0x0070a7a0
-int LineSegment::GetFirstWrapWidth() { return GetWidth(); }
-// SUPPORT-ONLY: EXE 0x0070a7b0
+// Returns the width as the width needed on the first line
+int LineSegment::GetFirstWrapWidth() { return this->GetWidth(); }
+// Returns 0: baseline alignment (the linker folds this body into the identical one at 0x0070a7b0)
 char LineSegment::GetVertAlign() { return 0; }
 // FUNCTION: WON 0x0070a7c0
-int LineSegment::GetStartSelIndex() { return mStartSelIndex; }
+// Returns the segment's selection index (GetEndSelIndex below returns the same index)
+int LineSegment::GetStartSelIndex() { return this->mStartSelIndex; }
 // FUNCTION: WON 0x0070a7c0
-int LineSegment::GetEndSelIndex() { return mStartSelIndex; }
-// SUPPORT-ONLY: EXE 0x006fa2a0
+// Returns the segment's selection index (one folded body with GetStartSelIndex)
+int LineSegment::GetEndSelIndex() { return this->mStartSelIndex; }
+// Ignores the mouse entering (the linker folds this body into the identical one at 0x006fa2a0)
 void LineSegment::MouseEnter(int,int) {}
-// SUPPORT-ONLY: EXE 0x00726b60
+// Ignores the mouse leaving (the linker folds this body into the identical one at 0x00726b60)
 void LineSegment::MouseExit() {}
-// SUPPORT-ONLY: EXE 0x007a6880
+// Ignores a mouse button press (the linker folds this body into the identical one at 0x007a6880)
 void LineSegment::MouseDown(int,int,MouseButton) {}
-// SUPPORT-ONLY: EXE 0x007a6880
+// Ignores a mouse button release (the linker folds this body into the identical one at 0x007a6880)
 void LineSegment::MouseUp(int,int,MouseButton) {}
-// SUPPORT-ONLY: EXE 0x006fa2a0
+// Ignores mouse movement (the linker folds this body into the identical one at 0x006fa2a0)
 void LineSegment::MouseMove(int,int) {}
-// SUPPORT-ONLY: EXE 0x006fa2a0
+// Ignores a mouse drag (the linker folds this body into the identical one at 0x006fa2a0)
 void LineSegment::MouseDrag(int,int) {}
-// SUPPORT-ONLY: EXE 0x00726b60
+// Ignores a link press (the linker folds this body into the identical one at 0x00726b60)
 void LineSegment::LinkDown() {}
-// SUPPORT-ONLY: EXE 0x00726b60
+// Ignores a link release (the linker folds this body into the identical one at 0x00726b60)
 void LineSegment::LinkUp() {}
-// SUPPORT-ONLY: EXE 0x006f30d0
+// Returns true: a selection may start on the segment (the linker folds this body into 0x006f30d0)
 bool LineSegment::CanStartSelection() { return true; }
 // FUNCTION: WON 0x0070b850
+// Returns false: a plain segment has no selection characters
 bool LineSegment::GetSelCharPos(int&,int&,int,int) { return false; }
-// SUPPORT-ONLY: EXE 0x00727440
+// Adds no selected text (the linker folds this body into the identical one at 0x00727440)
 void LineSegment::GetSelText(GUIString&,ElementSelectionInfo&) {}
-// SUPPORT-ONLY: EXE 0x007a90d0
+// Returns false: the segment holds no searchable text (the linker folds this body into 0x007a90d0)
 bool LineSegment::FindStr(ElementFindInfo&) { return false; }
 // FUNCTION: WON 0x0070a7f0
+// Returns the segment itself as the one under the point
 LineSegment* LineSegment::GetSegmentAt(int&,int&,bool) { return this; }
-// SUPPORT-ONLY: EXE 0x0070a7b0
+// Returns false: the segment is never invalid (the linker folds this body into 0x0070a7b0)
 bool LineSegment::IsInvalid() { return false; }
-// SUPPORT-ONLY: EXE 0x0070a7b0
+// Returns false: no modal input (the linker folds this body into the identical one at 0x0070a7b0)
 bool LineSegment::AllowModalInput() { return false; }
 // FUNCTION: WON 0x00787ff0
+// Returns true: the segment is placed in the line
 bool LineSegment::PerformInstructions(MultiLineBuilder*) { return true; }
 // FUNCTION: WON 0x0070b860
+// Draws nothing
 void LineSegment::Paint(Graphics&,int,int,ElementPaintInfo&) {}
-// SUPPORT-ONLY: EXE 0x0070a800
+// Ignores a maximum width (the linker folds this body into the identical one at 0x0070a800)
 void LineSegment::SetMaxWidth(int) {}
 }

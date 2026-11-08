@@ -1,5 +1,6 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine same-SDK specialized controls.
+// Special-purpose controls: sortable column header button, image check button, splitter container with
+// minimize/maximize buttons and bordered image button (not identified in the original exe)
 #include <windows.h>
 #include <string>
 #include <list>
@@ -12,15 +13,16 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbySpecialPurposeControls.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 ColHeaderButton::ColHeaderButton()
 {
-	mFont = GetFont(FontDescriptor("Verdana",FontStyle_Bold,7));
-	mBackColor = 0xffffff;
-	mIsUp = true;
-	Fn2F3370(0x0008, true);
-	mMultiListBox = NULL;
-	mCol = -1;
+	this->mFont = this->GetFont(FontDescriptor("Verdana",FontStyle_Bold,7));
+	this->mBackColor = 0xffffff;
+	this->mIsUp = true;
+	this->SetButtonFlags(0x0008, true);
+	this->mMultiListBox = NULL;
+	this->mCol = -1;
 }
 
 	
@@ -34,9 +36,9 @@ ColHeaderButton::~ColHeaderButton()
 ///////////////////////////////////////////////////////////////////////////////
 void ColHeaderButton::DrawButtonText(Graphics &g, int xoff, int yoff)
 {
-	g.SetFont(mFont);
-	Font *aFM = mFont;
-	int aTextWidth = aFM->GetStringWidth(mText);
+	g.SetFont(this->mFont);
+	Font *aFM = this->mFont;
+	int aTextWidth = aFM->GetStringWidth(this->mText);
 	int aTextHeight = aFM->GetHeight();
 
 	int x = 0;
@@ -46,7 +48,7 @@ void ColHeaderButton::DrawButtonText(Graphics &g, int xoff, int yoff)
 	y+=yoff;
 
 	g.SetColor(0x000000);
-	g.DrawString(mText, x, y);
+	g.DrawString(this->mText, x, y);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,13 +56,13 @@ void ColHeaderButton::Activate()
 {
 	if (((mButtonFlags&0x0004)!=0)) // Change up down state if checked
 	{
-		mIsUp = !mIsUp;
+		this->mIsUp = !this->mIsUp;
 	}
 
-	if (mMultiListBox.get() != NULL && mCol >= 0)
+	if (this->mMultiListBox.get() != NULL && this->mCol >= 0)
 	{
 		// Sort the Col
-		mMultiListBox->SetSortColumn(mCol, mIsUp?ListSortType_Ascending:ListSortType_Descending);
+		this->mMultiListBox->SetSortColumn(this->mCol, this->mIsUp?ListSortType_Ascending:ListSortType_Descending);
 	}
 
 	Button::Fn2F3440();
@@ -72,15 +74,15 @@ void ColHeaderButton::Paint(Graphics &g)
 	Button::Paint(g);
 
 	// Background
-	g.SetColor(mBackColor);
-	g.FillRect(0,0,Width(),Height());
+	g.SetColor(this->mBackColor);
+	g.FillRect(0,0,this->Width(),this->Height());
 
-	DrawButtonText(g,2,0);
+	this->DrawButtonText(g,2,0);
 
 	if(((mButtonFlags&0x0004)!=0)) // Draw arrow
 	{	
-		int aTextWidth = mFont->GetStringWidth(mText) + 2;
-		int x = Width()/2;
+		int aTextWidth = this->mFont->GetStringWidth(this->mText) + 2;
+		int x = this->Width()/2;
 
 		// Make sure arrow is in center or just to the right of text
 		if (aTextWidth + 6 > x)
@@ -91,7 +93,7 @@ void ColHeaderButton::Paint(Graphics &g)
 		int y = 5;
 		
 
-		if(mIsUp)
+		if(this->mIsUp)
 		{
 			for(int i=0; i<7; i++)
 			{
@@ -107,7 +109,7 @@ void ColHeaderButton::Paint(Graphics &g)
 				g.DrawLine(x-(3-w), y+i, x+(3-w), y+i);	
 			}
 
-			if(IsDisabled())
+			if(this->IsDisabled())
 				g.SetPixel(x+1,y+4,0xFFFFFF);
 		}
 	}
@@ -116,9 +118,9 @@ void ColHeaderButton::Paint(Graphics &g)
 ///////////////////////////////////////////////////////////////////////////////
 ImageCheckButton::ImageCheckButton(int theNormalControlID, int theCheckedControlID) : mAlternateControlID(theCheckedControlID)
 {
-	mControlId=theNormalControlID;
-	Fn2F3370(0x0001,true);
-	SetComponentFlags(0x000008,true);
+	this->mControlId=theNormalControlID;
+	this->SetButtonFlags(0x0001,true);
+	this->SetComponentFlags(ComponentFlag_WantFocus,true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -129,9 +131,9 @@ ImageCheckButton::~ImageCheckButton(void)
 ///////////////////////////////////////////////////////////////////////////////
 void ImageCheckButton::AlternateControlIDs(void)
 {
-	int aSavedID = mAlternateControlID;
-	mAlternateControlID = mControlId;
-	mControlId=aSavedID;
+	int aSavedID = this->mAlternateControlID;
+	this->mAlternateControlID = this->mControlId;
+	this->mControlId=aSavedID;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,23 +142,23 @@ void ImageCheckButton::Paint(Graphics &g)
 	Component::Paint(g);
 
 	Image *anImage = NULL;
-	if(IsMouseOver())
+	if(this->IsMouseOver())
 	{
 		if(((mButtonFlags&0x0004)!=0))
-			anImage = mImages[ImageCheckButtonType_CheckedOver];
+			anImage = this->mImages[ImageCheckButtonType_CheckedOver];
 		else
-			anImage = mImages[ImageCheckButtonType_Over];
+			anImage = this->mImages[ImageCheckButtonType_Over];
 	}
 	else
 	{
 		if(((mButtonFlags&0x0004)!=0))
-			anImage = mImages[ImageCheckButtonType_Checked];
+			anImage = this->mImages[ImageCheckButtonType_Checked];
 		else
-			anImage = mImages[ImageCheckButtonType_Normal];
+			anImage = this->mImages[ImageCheckButtonType_Normal];
 	}
 
 	if(anImage==NULL)
-		anImage = mImages[ImageCheckButtonType_Normal];
+		anImage = this->mImages[ImageCheckButtonType_Normal];
 
 	if(anImage!=NULL)
 		g.DrawImage(anImage,0,0);
@@ -165,13 +167,13 @@ void ImageCheckButton::Paint(Graphics &g)
 ///////////////////////////////////////////////////////////////////////////////
 CheckButtonSplitterContainer::CheckButtonSplitterContainer(void)
 {
-	mNormalSplitter = NULL;
-	mMaxMinSplitter = NULL;
-	mFirstMinButton = NULL;
-	mSecondMinButton = NULL;
-	mFirstMaxButton = NULL;
-	mSecondMaxButton = NULL;
-	mStatus = Status_Normal;
+	this->mNormalSplitter = NULL;
+	this->mMaxMinSplitter = NULL;
+	this->mFirstMinButton = NULL;
+	this->mSecondMinButton = NULL;
+	this->mFirstMaxButton = NULL;
+	this->mSecondMaxButton = NULL;
+	this->mStatus = Status_Normal;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,17 +186,16 @@ void CheckButtonSplitterContainer::AddSplitterBars(BorderComponent* theNormalSpl
 {
 	if(theNormalSplitter)
 	{
-		mNormalSplitter = theNormalSplitter;
-		mNormalSplitter->SetComponentFlags(0x000020, true);
-		Fn2F6A60(mNormalSplitter);
+		this->mNormalSplitter = theNormalSplitter;
+		this->mNormalSplitter->SetComponentFlags(ComponentFlag_ParentDrag, true);
+		this->AddChild(this->mNormalSplitter);
 	}
-	if(theMaxMinSplitter)
-	{
-		mMaxMinSplitter = theMaxMinSplitter;
-		mMaxMinSplitter->SetComponentFlags(0x000020, true);
-		mMaxMinSplitter->SetVisible(false);
-		Fn2F6A60(mMaxMinSplitter);
-	}
+	if(!theMaxMinSplitter)
+		return;
+	this->mMaxMinSplitter = theMaxMinSplitter;
+	this->mMaxMinSplitter->SetComponentFlags(ComponentFlag_ParentDrag, true);
+	this->mMaxMinSplitter->SetVisible(false);
+	this->AddChild(this->mMaxMinSplitter);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,18 +203,17 @@ void CheckButtonSplitterContainer::AddMinButtons(ImageCheckButton* theFirstMinBu
 {
 	if(theFirstMinButton)
 	{
-		mFirstMinButton = theFirstMinButton;
-		mFirstMinButton->SetComponentFlags(0x000040, true);
-		mFirstMinButton->Fn2F3370(0x0002, false);
-		Fn2F6A60(mFirstMinButton);
+		this->mFirstMinButton = theFirstMinButton;
+		this->mFirstMinButton->SetComponentFlags(ComponentFlag_NoParentCursor, true);
+		this->mFirstMinButton->SetButtonFlags(0x0002, false);
+		this->AddChild(this->mFirstMinButton);
 	}
-	if(theSecondMinButton)
-	{
-		mSecondMinButton = theSecondMinButton;
-		mSecondMinButton->SetComponentFlags(0x000040, true);
-		mSecondMinButton->Fn2F3370(0x0002, false);
-		Fn2F6A60(mSecondMinButton);
-	}
+	if(!theSecondMinButton)
+		return;
+	this->mSecondMinButton = theSecondMinButton;
+	this->mSecondMinButton->SetComponentFlags(ComponentFlag_NoParentCursor, true);
+	this->mSecondMinButton->SetButtonFlags(0x0002, false);
+	this->AddChild(this->mSecondMinButton);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -221,47 +221,46 @@ void CheckButtonSplitterContainer::AddMaxButtons(ImageCheckButton* theFirstMaxBu
 {
 	if(theFirstMaxButton)
 	{
-		mFirstMaxButton = theFirstMaxButton;
-		mFirstMaxButton->SetComponentFlags(0x000040, true);
-		mFirstMaxButton->Fn2F3370(0x0002, false);
-		Fn2F6A60(mFirstMaxButton);
+		this->mFirstMaxButton = theFirstMaxButton;
+		this->mFirstMaxButton->SetComponentFlags(ComponentFlag_NoParentCursor, true);
+		this->mFirstMaxButton->SetButtonFlags(0x0002, false);
+		this->AddChild(this->mFirstMaxButton);
 	}
-	if(theSecondMaxButton)
-	{
-		mSecondMaxButton = theSecondMaxButton;
-		mSecondMaxButton->SetComponentFlags(0x000040, true);
-		mSecondMaxButton->Fn2F3370(0x0002, false);
-		Fn2F6A60(mSecondMaxButton);
-	}
+	if(!theSecondMaxButton)
+		return;
+	this->mSecondMaxButton = theSecondMaxButton;
+	this->mSecondMaxButton->SetComponentFlags(ComponentFlag_NoParentCursor, true);
+	this->mSecondMaxButton->SetButtonFlags(0x0002, false);
+	this->AddChild(this->mSecondMaxButton);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void CheckButtonSplitterContainer::ChangeAlternateButtonState(void)
 {
-	if(mStatus == Status_Max)
+	if(this->mStatus == Status_Max)
 	{
-		if(mFirstMinButton && ((mFirstMinButton->mButtonFlags&0x0004)!=0))
+		if(this->mFirstMinButton && ((this->mFirstMinButton->mButtonFlags&0x0004)!=0))
 		{
-			mFirstMinButton->SetCheck(false);
-			mFirstMinButton->AlternateControlIDs();
+			this->mFirstMinButton->SetCheck(false);
+			this->mFirstMinButton->AlternateControlIDs();
 		}
-		if(mSecondMinButton && ((mSecondMinButton->mButtonFlags&0x0004)!=0))
+		if(this->mSecondMinButton && ((this->mSecondMinButton->mButtonFlags&0x0004)!=0))
 		{
-			mSecondMinButton->SetCheck(false);
-			mSecondMinButton->AlternateControlIDs();
+			this->mSecondMinButton->SetCheck(false);
+			this->mSecondMinButton->AlternateControlIDs();
 		}
 	}
-	else if(mStatus == Status_Min)
+	else if(this->mStatus == Status_Min)
 	{
-		if(mFirstMaxButton && ((mFirstMaxButton->mButtonFlags&0x0004)!=0))
+		if(this->mFirstMaxButton && ((this->mFirstMaxButton->mButtonFlags&0x0004)!=0))
 		{
-			mFirstMaxButton->SetCheck(false);
-			mFirstMaxButton->AlternateControlIDs();
+			this->mFirstMaxButton->SetCheck(false);
+			this->mFirstMaxButton->AlternateControlIDs();
 		}
-		if(mSecondMaxButton && ((mSecondMaxButton->mButtonFlags&0x0004)!=0))
+		if(this->mSecondMaxButton && ((this->mSecondMaxButton->mButtonFlags&0x0004)!=0))
 		{
-			mSecondMaxButton->SetCheck(false);
-			mSecondMaxButton->AlternateControlIDs();
+			this->mSecondMaxButton->SetCheck(false);
+			this->mSecondMaxButton->AlternateControlIDs();
 		}
 	}
 }
@@ -277,98 +276,98 @@ void CheckButtonSplitterContainer::HandleComponentEvent(ComponentEvent *theEvent
 			Container::HandleComponentEvent(theEvent);
 
 			bool isChecked = ((aButton->mButtonFlags&0x0004)!=0);
-			mStatus = Status_Normal;
+			this->mStatus = Status_Normal;
 			aButton->AlternateControlIDs();
-			if(theEvent->mComponent == mFirstMinButton)
+			if(theEvent->mComponent == this->mFirstMinButton)
 			{
 				if(isChecked)
-					mStatus = Status_Min;
+					this->mStatus = Status_Min;
 
-				if(mSecondMinButton)
+				if(this->mSecondMinButton)
 				{
-					mSecondMinButton->SetCheck(isChecked);
-					mSecondMinButton->AlternateControlIDs();
+					this->mSecondMinButton->SetCheck(isChecked);
+					this->mSecondMinButton->AlternateControlIDs();
 				}
 			}
-			else if(theEvent->mComponent == mSecondMinButton)
+			else if(theEvent->mComponent == this->mSecondMinButton)
 			{
 				if(isChecked)
-					mStatus = Status_Min;
+					this->mStatus = Status_Min;
 
-				if(mFirstMinButton)
+				if(this->mFirstMinButton)
 				{
-					mFirstMinButton->SetCheck(isChecked);
-					mFirstMinButton->AlternateControlIDs();
+					this->mFirstMinButton->SetCheck(isChecked);
+					this->mFirstMinButton->AlternateControlIDs();
 				}
 			}
-			else if(theEvent->mComponent == mFirstMaxButton)
+			else if(theEvent->mComponent == this->mFirstMaxButton)
 			{
 				if(isChecked)
-					mStatus = Status_Max;
+					this->mStatus = Status_Max;
 
-				if(mSecondMaxButton)
+				if(this->mSecondMaxButton)
 				{
-					mSecondMaxButton->SetCheck(isChecked);
-					mSecondMaxButton->AlternateControlIDs();
+					this->mSecondMaxButton->SetCheck(isChecked);
+					this->mSecondMaxButton->AlternateControlIDs();
 				}
 			}
-			else if(theEvent->mComponent == mSecondMaxButton)
+			else if(theEvent->mComponent == this->mSecondMaxButton)
 			{
 				if(isChecked)
-					mStatus = Status_Max;
+					this->mStatus = Status_Max;
 
-				if(mFirstMaxButton)
+				if(this->mFirstMaxButton)
 				{
-					mFirstMaxButton->SetCheck(isChecked);
-					mFirstMaxButton->AlternateControlIDs();
+					this->mFirstMaxButton->SetCheck(isChecked);
+					this->mFirstMaxButton->AlternateControlIDs();
 				}
 			}
 
-			if(!isChecked && mNormalSplitter)
+			if(!isChecked && this->mNormalSplitter)
 			{
-				if(mNormalSplitter && !mNormalSplitter->IsVisible())
-					mNormalSplitter->SetVisible(true);
-				if(mMaxMinSplitter && mNormalSplitter && mMaxMinSplitter->IsVisible())
-					mMaxMinSplitter->SetVisible(false);
+				if(this->mNormalSplitter && !this->mNormalSplitter->IsVisible())
+					this->mNormalSplitter->SetVisible(true);
+				if(this->mMaxMinSplitter && this->mNormalSplitter && this->mMaxMinSplitter->IsVisible())
+					this->mMaxMinSplitter->SetVisible(false);
 			}
-			if(isChecked && mMaxMinSplitter)
+			if(isChecked && this->mMaxMinSplitter)
 			{
-				if(mMaxMinSplitter && !mMaxMinSplitter->IsVisible())
-					mMaxMinSplitter->SetVisible(true);
-				if(mNormalSplitter && mMaxMinSplitter && mNormalSplitter->IsVisible())
-					mNormalSplitter->SetVisible(false);
+				if(this->mMaxMinSplitter && !this->mMaxMinSplitter->IsVisible())
+					this->mMaxMinSplitter->SetVisible(true);
+				if(this->mNormalSplitter && this->mMaxMinSplitter && this->mNormalSplitter->IsVisible())
+					this->mNormalSplitter->SetVisible(false);
 			}
 
-			ChangeAlternateButtonState();
+			this->ChangeAlternateButtonState();
 			return;
 		}
 	}
 	Container::HandleComponentEvent(theEvent);
 }
 
-void CheckButtonSplitterContainer::Virtual2C(int x, int y, int theButton)
+void CheckButtonSplitterContainer::MouseDown(int x, int y, int theButton)
 {
-	if(theButton==MouseButton_Left && mMaxMinSplitter && mMaxMinSplitter->IsVisible() && mMaxMinSplitter->Contains(x, y))
+	if(theButton==MouseButton_Left && this->mMaxMinSplitter && this->mMaxMinSplitter->IsVisible() && this->mMaxMinSplitter->Contains(x, y))
 	{
-		switch(mStatus)
+		switch(this->mStatus)
 		{
 		case Status_Min:
-			if(mFirstMinButton)
-				mFirstMinButton->Fn2F3440();
-			else if(mSecondMinButton)
-				mSecondMinButton->Fn2F3440();
+			if(this->mFirstMinButton)
+				this->mFirstMinButton->Fn2F3440();
+			else if(this->mSecondMinButton)
+				this->mSecondMinButton->Fn2F3440();
 			break;
 		case Status_Max:
-			if(mFirstMaxButton)
-				mFirstMaxButton->Fn2F3440();
-			else if(mSecondMaxButton)
-				mSecondMaxButton->Fn2F3440();
+			if(this->mFirstMaxButton)
+				this->mFirstMaxButton->Fn2F3440();
+			else if(this->mSecondMaxButton)
+				this->mSecondMaxButton->Fn2F3440();
 			break;
 		default:
 			break;
 		}
 	}
-	Container::Virtual2C(x, y, theButton); 
+	Container::MouseDown(x, y, theButton); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -378,17 +377,17 @@ void BorderImageButton::Paint(Graphics &g)
 	Component::Paint(g);
 
 	BorderComponent *anImage = NULL;
-	if(IsDisabled())
-		anImage = mImages[ImageButtonType_Disabled];
-	else if(((mButtonFlags&0x0004)!=0) && mImages[ImageButtonType_Checked].get()!=NULL)
-		anImage = mImages[4];
+	if(this->IsDisabled())
+		anImage = this->mImages[ImageButtonType_Disabled];
+	else if(((mButtonFlags&0x0004)!=0) && this->mImages[ImageButtonType_Checked].get()!=NULL)
+		anImage = this->mImages[ImageButtonType_Checked];
 	else if(((mButtonFlags&0x0020)!=0))
-		anImage = mImages[ImageButtonType_Down];
-	else if(IsMouseOver())// || HasFocus())
-		anImage = mImages[ImageButtonType_Over];
+		anImage = this->mImages[ImageButtonType_Down];
+	else if(this->IsMouseOver())// || HasFocus())
+		anImage = this->mImages[ImageButtonType_Over];
 
 	if(anImage==NULL)
-		anImage = mImages[ImageButtonType_Normal];
+		anImage = this->mImages[ImageButtonType_Normal];
 
 	if(anImage!=NULL)
 	{
@@ -404,8 +403,8 @@ void BorderImageButton::Virtual08()
 {
 	for(int i = 0; i < 5; i++)
 	{
-		if(mImages[i].get() != NULL)
-			mImages[i]->Fn2F4B90(Width(), Height());
+		if(this->mImages[i].get() != NULL)
+			this->mImages[i]->SetSize(this->Width(), this->Height());
 	}
 }
 }

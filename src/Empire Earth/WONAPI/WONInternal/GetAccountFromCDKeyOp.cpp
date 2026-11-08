@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK account-from-product-key protocol.
-// Missing unit proposed existing DBProxy/account family profile.
+// No original address identified: WON SDK account-from-CD-key DBProxy operation
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,6 +9,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONAccountFromCDKey.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 
@@ -27,79 +27,79 @@ GetAccountFromCDKeyOp::GetAccountFromCDKeyOp(ServerContext* theContext, std::str
 	  mEmail(""),
 	  mLastLogin("")
 {
-	mProfileData = new ProfileData();
+	this->mProfileData = new ProfileData();
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetAccountFromCDKeyOp::Virtual18()
+void GetAccountFromCDKeyOp::Reset()
 {
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetAccountFromCDKeyOp::Virtual04()
+void GetAccountFromCDKeyOp::RunHook()
 {
-	mMessageType=1002;
-	mSubMessageType=MSGTYPE;
+	this->mMessageType=1002;
+	this->mSubMessageType=MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
 
 	// Append the CDKey (string)
-	requestData.AppendString(mCDKey,2);
+	requestData.AppendString(this->mCDKey,2);
 
 	// Append the community (unsigned long)
-	requestData.AppendLong(mCommunity);
+	requestData.AppendLong(this->mCommunity);
 	
 	// Append the profile data
-	mProfileData->PackRequestData(requestData,true);
+	this->mProfileData->PackRequestData(requestData,true);
 
 	// Copy buffer into the class
-	mRequestData=requestData.ToByteBuffer(true);
+	this->mRequestData=requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus GetAccountFromCDKeyOp::Virtual14()
+WONStatus GetAccountFromCDKeyOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack:
 	// [WString] UserName
 	// [WString] Password
 	// [String ] Email
 
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 
 	try
 	{
-		theData.ReadWString(mUserName,2);
-		theData.ReadString (mEmail,2);
-		theData.ReadWString(mPassword,2);
-		theData.ReadString (mLastLogin,2);
-		theData.ReadString (mActivated,2);
+		theData.ReadWString(this->mUserName,2);
+		theData.ReadString (this->mEmail,2);
+		theData.ReadWString(this->mPassword,2);
+		theData.ReadString (this->mLastLogin,2);
+		theData.ReadString (this->mActivated,2);
 
 		// Unpack the profile data (custom actions)
-		mProfileData->UnpackGetData(theData); 
+		this->mProfileData->UnpackGetData(theData); 
 	}
 	catch (ReadBufferException&)
 	{
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 

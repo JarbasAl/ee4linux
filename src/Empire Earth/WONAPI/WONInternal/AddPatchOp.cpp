@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK patch/version DBProxy protocol unit.
-// Missing unit proposed existing DBProxy/patch-server family profile.
+// No original address identified: WON SDK patch/version DBProxy operation
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,6 +9,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONPatchAdmin.h"
+#include "ee/wonapi/WONStatus.h"
 
 using namespace WONAPI;
 
@@ -19,7 +19,7 @@ AddPatchOp::AddPatchOp(ServerContext* theContext)
 	: DBProxyOp(theContext),
 	  mMsgType(11)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,55 +28,55 @@ AddPatchOp::AddPatchOp(const IPAddr& theAddr)
 	: DBProxyOp(theAddr),
 	  mMsgType(11)
 {
-	Init();
+	this->Init();
 } 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus AddPatchOp::Virtual14()
+WONStatus AddPatchOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
-	if (mSubMessageReplyType != mMsgType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mMsgType+1)
+		return this->InvalidReplyHeader();
 	
 	// Do extended unpack
 
 	// Finished
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void AddPatchOp::Virtual04()
+void AddPatchOp::RunHook()
 {
-	mMessageType=1004;
-	mSubMessageType=mMsgType;
+	this->mMessageType=1004;
+	this->mSubMessageType=this->mMsgType;
 
 	// Pack the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendString(mProductName);
-	mPatchData->WriteToBuffer(requestData, mIsUpdate);
+	requestData.AppendString(this->mProductName);
+	this->mPatchData->WriteToBuffer(requestData, this->mIsUpdate);
 
 	// Pack and call base class implementation
-	mRequestData=requestData.ToByteBuffer(true);
-	DBProxyOp::Virtual04();
+	this->mRequestData=requestData.ToByteBuffer(true);
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void AddPatchOp::Init()
 {
-	Virtual18();
+	this->Reset();
 	ServerRequestOp::mLengthFieldSize = 4;
 
-	mProductName	= "";
-	mPatchData		= new PatchData;
-	mIsUpdate		= false;
+	this->mProductName	= "";
+	this->mPatchData		= new PatchData;
+	this->mIsUpdate		= false;
 
 }
 

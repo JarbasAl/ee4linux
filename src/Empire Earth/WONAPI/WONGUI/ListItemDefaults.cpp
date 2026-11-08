@@ -1,4 +1,4 @@
-// Complete original-backed Component source completion; all selected methods support0.
+// Default (empty) bodies of the ListItem virtual interface (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,19 +14,20 @@ namespace WONAPI {
 // ListItem's ctor, Virtual04 and Virtual10 live in ListArea.cpp (same object: the ctor must be seen before
 // ListArea's `new ListItem`).
 // FUNCTION: WON 0x0070a800
-void ListItem::Virtual08(ListArea*) {}
-// Shared ICF native0ac9c8/3B; new ListItem definition only, no globally-new native credit.
-void ListItem::Virtual0C(ListArea*,Container*) {}
-// Shared ICF native2907a3/3B, each definition0primary; no globally-new native claim.
-void ListItem::Virtual20(ListArea*,int,int) {}
-// Shared ICF native156dd8/3B, new nominal definition only.
-void ListItem::Virtual24(ListArea*) {}
-// Shared ICF native2907a3/3B.
-void ListItem::Virtual28(ListArea*,int,int) {}
-// Shared ICF native2907a3/3B.
-void ListItem::Virtual2C(ListArea*,int,int) {}
-// Shared ICF native0df42d/3B.
-void ListItem::Virtual30(ListArea*,int,int,int) {}
-// Shared ICF native0df42d/3B.
-void ListItem::Virtual34(ListArea*,int,int,int) {}
+// Leaves the item's size unchanged
+void ListItem::CalcDimensions(ListArea*) {}
+// Ignores the viewport (the linker folds this body into the identical one at 0x004ac9c8)
+void ListItem::SetViewport(ListArea*,Container*) {}
+// Ignores the mouse entering (the linker folds this body into the identical one at 0x006907a3)
+void ListItem::MouseEnter(ListArea*,int,int) {}
+// Ignores the mouse leaving (the linker folds this body into the identical one at 0x00556dd8)
+void ListItem::MouseExit(ListArea*) {}
+// Ignores mouse movement (the linker folds this body into the identical one at 0x006907a3)
+void ListItem::MouseMove(ListArea*,int,int) {}
+// Ignores a mouse drag (the linker folds this body into the identical one at 0x006907a3)
+void ListItem::MouseDrag(ListArea*,int,int) {}
+// Ignores a mouse button press (the linker folds this body into the identical one at 0x004df42d)
+void ListItem::MouseDown(ListArea*,int,int,int) {}
+// Ignores a mouse button release (the linker folds this body into the identical one at 0x004df42d)
+void ListItem::MouseUp(ListArea*,int,int,int) {}
 }

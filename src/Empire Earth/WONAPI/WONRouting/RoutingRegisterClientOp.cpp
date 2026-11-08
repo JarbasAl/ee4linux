@@ -1,4 +1,4 @@
-// Original-backed routing registration family.
+// WONAPI routing op that registers the client with the routing server
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,19 +8,23 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONRoutingOpTypes.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006c8450
+// Creates a register request with no reconnect id and no flags
 RoutingRegisterClientOp::RoutingRegisterClientOp(RoutingConnection* inConnection)
     : RoutingOp(inConnection)
 {
-    mReconnectId = 0;
-    mAsyncMessageFlags = 0;
-    mRegisterFlags = 0;
-    mClientFlags = 0;
-    mClientId = 0;
+    this->mReconnectId = 0;
+    this->mAsyncMessageFlags = 0;
+    this->mRegisterFlags = 0;
+    this->mClientFlags = 0;
+    this->mClientId = 0;
 }
 
 // FUNCTION: WON 0x006c8680
+// Creates a register request with the client name, server password, reconnect id and flags
 RoutingRegisterClientOp::RoutingRegisterClientOp(RoutingConnection* inConnection,
     const std::wstring& inName,const std::wstring& inPassword,
     unsigned long inReconnectId,unsigned long inAsyncFlags,
@@ -29,54 +33,57 @@ RoutingRegisterClientOp::RoutingRegisterClientOp(RoutingConnection* inConnection
       mReconnectId(inReconnectId),mAsyncMessageFlags(inAsyncFlags),
       mRegisterFlags(inRegisterFlags),mClientFlags(inClientFlags)
 {
-    // Native overloaded constructor leaves mClientId and reply counters untouched.
+    // The original leaves mClientId and the reply counters unset here
 }
 
 // FUNCTION: WON 0x006c8540
-RoutingOpType RoutingRegisterClientOp::GetType() const { return (RoutingOpType)42; }
+// Returns the op type (register client)
+RoutingOpType RoutingRegisterClientOp::GetType() const { return (RoutingOpType)RoutingOp_RegisterClient; }
 
 // FUNCTION: WON 0x006c87a0
-void RoutingRegisterClientOp::Virtual0C()
+// Sends the register request; expects a second reply (the client list) when flag 4 is set
+void RoutingRegisterClientOp::SendRequest()
 {
-    mReplyCount = 0;
-    mNumRepliesNeeded = 1;
-    if (mRegisterFlags & 4) mNumRepliesNeeded = 2;
-    InitSendMsg(52);
-    mSendMsg.AppendWString(mClientName, 2);
-    mSendMsg.AppendWString(mServerPassword, 2);
-    mSendMsg.AppendLong(mReconnectId);
-    mSendMsg.AppendLong(mAsyncMessageFlags);
-    mSendMsg.AppendLong(mRegisterFlags);
-    mSendMsg.AppendLong(mClientFlags);
-    SendMsg();
-    AddOp();
+    this->mReplyCount = 0;
+    this->mNumRepliesNeeded = 1;
+    if (this->mRegisterFlags & 4) this->mNumRepliesNeeded = 2;
+    this->InitSendMsg(52);
+    this->mSendMsg.AppendWString(this->mClientName, 2);
+    this->mSendMsg.AppendWString(this->mServerPassword, 2);
+    this->mSendMsg.AppendLong(this->mReconnectId);
+    this->mSendMsg.AppendLong(this->mAsyncMessageFlags);
+    this->mSendMsg.AppendLong(this->mRegisterFlags);
+    this->mSendMsg.AppendLong(this->mClientFlags);
+    this->SendMsg();
+    this->AddOp();
 }
 
 // FUNCTION: WON 0x006c8840
-WONStatus RoutingRegisterClientOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
+// Reads the register reply (client id, name, reconnect id) and the client list; waits until all replies are in
+WONStatus RoutingRegisterClientOp::HandleReply(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     WONStatus status;
     if (inMsgType != 23 && inMsgType != 74) {
         if (inMsgType == 51) {
             status = inMsg.ReadShort();
             if (status == 0) {
-                mClientId = inMsg.ReadShort();
-                inMsg.ReadWString(mClientName, 2);
-                mReconnectId = inMsg.ReadLong();
+                this->mClientId = inMsg.ReadShort();
+                inMsg.ReadWString(this->mClientName, 2);
+                this->mReconnectId = inMsg.ReadLong();
             }
-            ++mReplyCount;
+            ++this->mReplyCount;
         } else {
-            return (WONStatus)100104;
+            return (WONStatus)WS_RoutingOp_DontWantReply;
         }
     } else {
-        if (!(mRegisterFlags & 0x14))
-            return (WONStatus)100104;
-        SmartPtr<RoutingGetClientListOp> op = new RoutingGetClientListOp(mConnection.get());
-        status = op->Virtual10(inMsgType, inMsg);
-        mClientMap = op->mClientMap;
-        ++mReplyCount;
+        if (!(this->mRegisterFlags & 0x14))
+            return (WONStatus)WS_RoutingOp_DontWantReply;
+        SmartPtr<RoutingGetClientListOp> op = new RoutingGetClientListOp(this->mConnection.get());
+        status = op->HandleReply(inMsgType, inMsg);
+        this->mClientMap = op->mClientMap;
+        ++this->mReplyCount;
     }
-    if (status == 0 && mReplyCount != mNumRepliesNeeded) return (WONStatus)100105;
+    if (status == 0 && this->mReplyCount != this->mNumRepliesNeeded) return (WONStatus)WS_RoutingOp_NeedMoreReplies;
     return status;
 }
 }

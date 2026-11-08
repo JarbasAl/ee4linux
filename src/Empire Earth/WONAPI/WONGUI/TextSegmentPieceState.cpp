@@ -1,4 +1,4 @@
-// Genuine complete TextSegmentPiece state and borrowed-segment forwarding, support only.
+// Text segment pieces (a wrapped part of a text segment): construction and link queries passed to the segment
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,26 +13,31 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyTextAreaConfig.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x007113f0
+// Creates a piece covering characters start..end of the segment, with the given width and the segment's height
+// (emitted at 0x007113f0)
 TextSegmentPiece::TextSegmentPiece(TextSegment* segment,int start,int end,int width)
 {
-    mSeg=segment;
-    mWidth=width;
-    mHeight=segment->mHeight;
-    mAscent=segment->mAscent;
-    mStartChar=start;
-    mEndChar=end;
+    this->mSeg=segment;
+    this->mWidth=width;
+    this->mHeight=segment->mHeight;
+    this->mAscent=segment->mAscent;
+    this->mStartChar=start;
+    this->mEndChar=end;
 }
 // FUNCTION: WON 0x00711430
-bool TextSegmentPiece::IsLink() { return mSeg->IsLink(); }
+// Returns whether the piece's segment is a link
+bool TextSegmentPiece::IsLink() { return this->mSeg->IsLink(); }
 // FUNCTION: WON 0x00711440
-void TextSegmentPiece::Pressed() { mSeg->Pressed(); }
+// Marks the piece's segment as pressed
+void TextSegmentPiece::Pressed() { this->mSeg->Pressed(); }
 // FUNCTION: WON 0x00711450
-bool TextSegmentPiece::Released() { return mSeg->Released(); }
+// Releases the piece's segment; returns whether it was pressed
+bool TextSegmentPiece::Released() { return this->mSeg->Released(); }
 // FUNCTION: WON 0x00711460
-const GUIString& TextSegmentPiece::GetLinkParam() { return mSeg->GetLinkParam(); }
-// SUPPORT-ONLY: EXE 0x00711470
-TextSegmentBase* TextSegmentPiece::GetActual() { return mSeg; }
+// Returns the link parameter of the piece's segment
+const GUIString& TextSegmentPiece::GetLinkParam() { return this->mSeg->GetLinkParam(); }
+// Returns the whole segment this piece belongs to (the body at 0x00711470)
+TextSegmentBase* TextSegmentPiece::GetActual() { return this->mSeg; }
 }
 
 // Compiler-generated and header-inline functions this unit emits:

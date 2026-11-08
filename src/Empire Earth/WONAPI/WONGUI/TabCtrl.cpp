@@ -1,4 +1,4 @@
-// Original-backed WONGUI TabBar/TabCtrl cohesive source family; original .cpp grouping unproved.
+// Tab bar and tab control: tab buttons, their pages, arrow scrolling and keyboard selection (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,499 +10,515 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyLayout.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
-// Native308160..3081cf111B. Base/vector setup and defaults, conservative support0.
-TabBar::TabBar(TabCtrl* inCtrl) : mCurTab(NULL),mTabCtrl(inCtrl) { mOverlap=4; }
-// Native308280..30829218B. Borrowed null-guarded getter, support0.
+// Creates a tab bar for its tab control with no current tab and a 4-pixel overlap between tabs
+TabBar::TabBar(TabCtrl* inCtrl) : mCurTab(NULL),mTabCtrl(inCtrl) { this->mOverlap=4; }
 // FUNCTION: WON 0x00708280
-int TabBar::Fn308280() { return mCurTab==NULL ? -1 : mCurTab->mControlId; }
-// Native3082a0..3082f7,87B.
+// Returns the control id of the selected tab button, or -1 when no tab is selected
+int TabBar::GetCurTabId() { return this->mCurTab==NULL ? -1 : this->mCurTab->mControlId; }
 // FUNCTION: WON 0x007082a0
+// Places a tab button right after the previous tab, overlapping it by the bar's overlap (the first tab at 0)
 void TabBar::PositionTab(Button* inTab)
 {
     int x=0;
     int id=inTab->mControlId;
-    if(id>0 && id<=mTabVector.size()) {
-        Button* previous=mTabVector[id-1].get();
-        x=previous->Right()-mOverlap;
+    if(id>0 && id<=this->mTabVector.size()) {
+        Button* previous=this->mTabVector[id-1].get();
+        x=previous->Right()-this->mOverlap;
     }
-    inTab->Fn2F4B70(x,0);
+    inTab->SetPos(x,0);
 }
-// Native308300..3083f9,249B. Owning conversion temporary ends before PositionTab.
+// The temporary smart pointer from push_back is destroyed before PositionTab
 // FUNCTION: WON 0x00708300
+// Appends a tab button to the bar: gives it the next id, positions it, widens the bar and adds it as a child
 void TabBar::AddTab(Button* inTab)
 {
-    inTab->Fn2F3370(0x40,true);
-    inTab->mControlId=mTabVector.size();
-    mTabVector.push_back(inTab);
-    PositionTab(inTab);
-    Fn2F4B90(inTab->Left()+inTab->Width(),Height());
-    AddChildEx(inTab,0);
+    inTab->SetButtonFlags(0x40,true);
+    inTab->mControlId=this->mTabVector.size();
+    this->mTabVector.push_back(inTab);
+    this->PositionTab(inTab);
+    this->SetSize(inTab->Left()+inTab->Width(),this->Height());
+    this->AddChildEx(inTab,0);
 }
-// Native308400..3084fc,252B. Re-read current member after SetCheck callback.
+// mCurTab is read again after the SetCheck call
 // FUNCTION: WON 0x00708400
+// Selects an enabled tab by id: unchecks the old tab and puts it back on the bar, checks the new one, marks
+// the user interaction and tells the tab control to switch pages; reselecting only requests focus
 void TabBar::SetCurTab(int inId,bool inRequestFocus)
 {
-    if(inId<0 || inId>=mTabVector.size()) return;
-    int oldId=Fn308280();
+    if(inId<0 || inId>=this->mTabVector.size()) return;
+    int oldId=this->GetCurTabId();
     if(oldId==inId) {
-        if(inRequestFocus && mCurTab!=NULL) mCurTab->Fn2F5890();
+        if(inRequestFocus && this->mCurTab!=NULL) this->mCurTab->RequestFocus();
         return;
     }
-    Button* tab=mTabVector[inId].get();
+    Button* tab=this->mTabVector[inId].get();
     if(tab->IsDisabled()) return;
-    if(mCurTab!=NULL) {
-        mCurTab->SetCheck(false,false);
-        if(mCurTab->mParent!=this) {
-            AddChildEx(mCurTab,int(mTabVector.size())-oldId-1);
-            PositionTab(mCurTab);
+    if(this->mCurTab!=NULL) {
+        this->mCurTab->SetCheck(false,false);
+        if(this->mCurTab->mParent!=this) {
+            this->AddChildEx(this->mCurTab,int(this->mTabVector.size())-oldId-1);
+            this->PositionTab(this->mCurTab);
         }
     }
-    mCurTab=tab;
+    this->mCurTab=tab;
     tab->SetCheck(true,false);
-    mTabCtrl->mUserHasInteracted=true;
-    mTabCtrl->NotifyTabChange(inRequestFocus);
+    this->mTabCtrl->mUserHasInteracted=true;
+    this->mTabCtrl->NotifyTabChange(inRequestFocus);
 }
-// Native308500..308557,87B. Current vector/count reload each iteration.
 // FUNCTION: WON 0x00708500
+// Selects the first tab whose button text equals the given name; does nothing when none matches
 void TabBar::SetCurTabByName(const GUIString& inName,bool inRequestFocus)
 {
-    for(int i=0;i<mTabVector.size();++i) {
-        if(mTabVector[i]->GetText()==inName) {
-            SetCurTab(i,inRequestFocus);
+    for(int i=0;i<this->mTabVector.size();++i) {
+        if(this->mTabVector[i]->GetText()==inName) {
+            this->SetCurTab(i,inRequestFocus);
             return;
         }
     }
 }
-// Native308560..3085c7,103B. No new bounds recheck after nested SetCurTab.
+// The id is not range-checked again after the nested SetCurTab
 // FUNCTION: WON 0x00708560
+// Enables or disables a tab; disabling the selected tab first selects its neighbour (left, or right for tab 0)
 void TabBar::EnableTab(int inId,bool inEnabled)
 {
-    if(inId<0 || inId>=mTabVector.size()) return;
-    int oldId=Fn308280();
+    if(inId<0 || inId>=this->mTabVector.size()) return;
+    int oldId=this->GetCurTabId();
     if(oldId==inId && !inEnabled)
-        SetCurTab(oldId>0 ? oldId-1 : oldId+1,true);
-    Button* tab=mTabVector[inId].get();
+        this->SetCurTab(oldId>0 ? oldId-1 : oldId+1,true);
+    Button* tab=this->mTabVector[inId].get();
     if(tab!=NULL) tab->SetEnabled(inEnabled);
 }
-// Native3085d0..30860a,58B. Invalid or null tabs are disabled.
 // FUNCTION: WON 0x007085d0
+// Returns whether a tab is disabled; ids out of range and empty slots count as disabled
 bool TabBar::Disabled(int inId)
 {
-    if(inId>=0 && inId<mTabVector.size())
-    {
-        Button* tab=mTabVector[inId].get();
-        if(tab!=NULL)
-            return tab->IsDisabled()?true:false;
-    }
+    if(inId<0 || inId>=this->mTabVector.size())
+        return true;
+    Button* tab=this->mTabVector[inId].get();
+    if(tab!=NULL)
+        return tab->IsDisabled()?true:false;
     return true;
 }
-// Native308610..30866a,90B. Selected sender must equal current indexed Button.
 // FUNCTION: WON 0x00708610
+// Selects a tab when its own button is pressed (the sender must be the button at its id); passes other events on
 void TabBar::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if(inEvent->mType==15) {
+    if(inEvent->mType==ComponentEvent_ButtonPressed) {
         int id=inEvent->GetControlId();
-        if(id>=0 && id<mTabVector.size() && inEvent->mComponent==mTabVector[id].get()) {
-            SetCurTab(id,true);
+        if(id>=0 && id<this->mTabVector.size() && inEvent->mComponent==this->mTabVector[id].get()) {
+            this->SetCurTab(id,true);
             return;
         }
     }
     Component::HandleComponentEvent(inEvent);
 }
 
-// Native308960..3089d3,115B. Padding and current selection deliberately not copied.
 // FUNCTION: WON 0x00708960
+// Copies another tab control's tab bar offsets, height, overlap and placement flags (not padding or selection)
 void TabCtrl::CopyAttributes(TabCtrl* inFrom)
 {
-    mBottomTabLeftOffset=inFrom->mBottomTabLeftOffset;
-    mBottomTabTopOffset=inFrom->mBottomTabTopOffset;
-    mTabBarHeight=inFrom->mTabBarHeight;
-    mArrowsOnLeft=inFrom->mArrowsOnLeft;
-    mTabBarOnRight=inFrom->mTabBarOnRight;
-    mTabBarOnBottom=inFrom->mTabBarOnBottom;
-    mTabBarOverlap=inFrom->mTabBarOverlap;
-    mBottomTabBar->mOverlap=inFrom->mBottomTabBar->mOverlap;
+    this->mBottomTabLeftOffset=inFrom->mBottomTabLeftOffset;
+    this->mBottomTabTopOffset=inFrom->mBottomTabTopOffset;
+    this->mTabBarHeight=inFrom->mTabBarHeight;
+    this->mArrowsOnLeft=inFrom->mArrowsOnLeft;
+    this->mTabBarOnRight=inFrom->mTabBarOnRight;
+    this->mTabBarOnBottom=inFrom->mTabBarOnBottom;
+    this->mTabBarOverlap=inFrom->mTabBarOverlap;
+    this->mBottomTabBar->mOverlap=inFrom->mBottomTabBar->mOverlap;
 }
-// Native3089e0..308a2a,74B.
 // FUNCTION: WON 0x007089e0
-void TabCtrl::Virtual0C(int& outWidth,int& outHeight)
+// Returns the container's desired size grown by the page padding and the tab bar height
+void TabCtrl::GetDesiredSize(int& outWidth,int& outHeight)
 {
-    Container::Virtual0C(outWidth,outHeight);
-    outWidth+=mRightPad+mLeftPad;
-    outHeight+=mTabBarHeight+mBottomPad+mTopPad;
+    Container::GetDesiredSize(outWidth,outHeight);
+    outWidth+=this->mRightPad+this->mLeftPad;
+    outHeight+=this->mTabBarHeight+this->mBottomPad+this->mTopPad;
 }
-// Native308a30/13B and308a40/13B are simple field setters: support0.
 // FUNCTION: WON 0x00708a30
-void TabCtrl::SetTabBarOnRight(bool inFlag) { mTabBarOnRight=inFlag; }
+// Sets whether the tab bar is aligned to the right edge
+void TabCtrl::SetTabBarOnRight(bool inFlag) { this->mTabBarOnRight=inFlag; }
 // FUNCTION: WON 0x00708a40
-void TabCtrl::SetArrowsOnLeft(bool inFlag) { mArrowsOnLeft=inFlag; }
-// Native308a50..308b15,197B. Current arrow members reload after each call.
+// Sets whether the tab scroll arrows sit on the left
+void TabCtrl::SetArrowsOnLeft(bool inFlag) { this->mArrowsOnLeft=inFlag; }
 // FUNCTION: WON 0x00708a50
+// Installs the left and right tab scroll arrow buttons, kept on top, and adds them as children
 void TabCtrl::SetTabArrows(Button* inLeft,Button* inRight)
 {
-    mTabBarLeft=inLeft;
-    mTabBarRight=inRight;
-    mTabBarLeft->SetComponentFlags(0x1000,true);
-    mTabBarRight->SetComponentFlags(0x1000,true);
-    mTabBarLeft->Fn2F3370(2,true);
-    mTabBarRight->Fn2F3370(2,true);
-    Fn2F6A60(mTabBarLeft.get());
-    Fn2F6A60(mTabBarRight.get());
+    this->mTabBarLeft=inLeft;
+    this->mTabBarRight=inRight;
+    this->mTabBarLeft->SetComponentFlags(ComponentFlag_AlwaysOnTop,true);
+    this->mTabBarRight->SetComponentFlags(ComponentFlag_AlwaysOnTop,true);
+    this->mTabBarLeft->SetButtonFlags(2,true);
+    this->mTabBarRight->SetButtonFlags(2,true);
+    this->AddChild(this->mTabBarLeft.get());
+    this->AddChild(this->mTabBarRight.get());
 }
-// Native308b20..308bec,204B. New child snapshot survives old visibility callback.
+// The new page pointer is kept in a local across the old page's SetVisible call
 // FUNCTION: WON 0x00708b20
+// Shows the page of the newly selected tab: lifts the tab button onto the top bar, hides the old page,
+// lays out, shows and raises the new one, scrolls the tab into view and fires a tab-selected event
 void TabCtrl::NotifyTabChange(bool inRequestFocus)
 {
-    Button* button=mBottomTabBar->mCurTab;
+    Button* button=this->mBottomTabBar->mCurTab;
     if(button==NULL) return;
-    mTopTabBar->Fn2F6A60(button);
-    int id=mBottomTabBar->Fn308280();
-    if(id<0 || id>=mTabVector.size()) return;
-    Container* selected=mTabVector[id];
-    if(selected==mCurTab) return;
-    if(mCurTab!=NULL) mCurTab->SetVisible(false);
-    mCurTab=selected;
-    PositionTabContainer(selected);
-    mCurTab->SetVisible(true);
-    BringToTop(mCurTab);
-    if(inRequestFocus) mCurTab->Fn2F5890();
-    KeepTabButtonInView();
-    Invalidate();
-    Fn2F5380(29,0);
+    this->mTopTabBar->AddChild(button);
+    int id=this->mBottomTabBar->GetCurTabId();
+    if(id<0 || id>=this->mTabVector.size()) return;
+    Container* selected=this->mTabVector[id];
+    if(selected==this->mCurTab) return;
+    if(this->mCurTab!=NULL) this->mCurTab->SetVisible(false);
+    this->mCurTab=selected;
+    this->PositionTabContainer(selected);
+    this->mCurTab->SetVisible(true);
+    this->BringToTop(this->mCurTab);
+    if(inRequestFocus) this->mCurTab->RequestFocus();
+    this->KeepTabButtonInView();
+    this->Invalidate();
+    this->Fn2F5380(ComponentEvent_TabCtrlTabSelected,0);
 }
-// Native308bf0..308c39,73B. Native JS uses flags from left-position ADD,
-// across intervening MOV/LEA, so first condition is left<0, not right<0.
+// The original's first branch uses the flags of the left-position add across the following
+// mov/lea, so the first test is left<0, not right<0
 // FUNCTION: WON 0x00708bf0
+// Scrolls the tab bar so the selected tab button is fully visible (its left edge first when it does not fit)
 void TabCtrl::KeepTabButtonInView()
 {
-    Button* button=mBottomTabBar->mCurTab;
+    Button* button=this->mBottomTabBar->mCurTab;
     if(button==NULL) return;
-    int left=mBottomTabBar->Left()+button->Left();
+    int left=this->mBottomTabBar->Left()+button->Left();
     int width=button->Width();
     int right=left+width;
     if(left>=0) {
-        int limit=mTopTabBarContainer->Width();
+        int limit=this->mTopTabBarContainer->Width();
         if(width<=limit) {
-            if(right>limit) AdjustTabBarScroll(limit-right);
+            if(right>limit) this->AdjustTabBarScroll(limit-right);
             return;
         }
     }
-    AdjustTabBarScroll(-left);
+    this->AdjustTabBarScroll(-left);
 }
-// Native308c40..308ca6,102B. Layout reference and parent fields reload after SetPos.
 // FUNCTION: WON 0x00708c40
+// Fits a page into the page area below or above the tab bar, inside the padding
 void TabCtrl::PositionTabContainer(Container* inContainer)
 {
     if(inContainer==NULL) return;
-    inContainer->Fn2F4B70(mLeftPad,mContainerLayout->Top()+mTopPad);
-    inContainer->Fn2F4B90(Width()-mRightPad-mLeftPad,
-        mContainerLayout->Height()-mBottomPad-mTopPad);
+    inContainer->SetPos(this->mLeftPad,this->mContainerLayout->Top()+this->mTopPad);
+    inContainer->SetSize(this->Width()-this->mRightPad-this->mLeftPad,
+        this->mContainerLayout->Height()-this->mBottomPad-this->mTopPad);
 }
-// Native308cb0..308cd6,38B. Initial selection precedes interaction flag reset.
 // FUNCTION: WON 0x00708cb0
-void TabCtrl::Virtual6C()
+// Selects the first tab when none is selected yet, then clears the user-interaction flag
+void TabCtrl::AddedToParent()
 {
-    Container::Virtual6C();
-    if(mCurTab==NULL) Fn309350(0,false);
-    mUserHasInteracted=false;
+    Container::AddedToParent();
+    if(this->mCurTab==NULL) this->SetCurTab(0,false);
+    this->mUserHasInteracted=false;
 }
-// Native308ce0..308d37,87B.
 // FUNCTION: WON 0x00708ce0
+// Sets the page area to the space not taken by the tab bar (above or below it, minus the overlap)
 void TabCtrl::CalcContainerLayout()
 {
     int top=0;
-    int bottom=Height();
-    if(mTabBarOnBottom) bottom=mTopTabBarContainer->Top()+mTabBarOverlap;
-    else top=mTopTabBarContainer->Bottom()-mTabBarOverlap;
-    mContainerLayout->Fn2F4BF0(0,top,Width(),bottom-top);
+    int bottom=this->Height();
+    if(this->mTabBarOnBottom) bottom=this->mTopTabBarContainer->Top()+this->mTabBarOverlap;
+    else top=this->mTopTabBarContainer->Bottom()-this->mTabBarOverlap;
+    this->mContainerLayout->SetPosSize(0,top,this->Width(),bottom-top);
 }
-// Native308d40..308dbf,127B. Fresh left arrow geometry for right positioning.
 // FUNCTION: WON 0x00708d40
+// Places the two scroll arrows side by side at the left or right end of the tab bar row
 void TabCtrl::PositionArrows()
 {
-    Button* left=mTabBarLeft.get();
-    if(left==NULL || mTabBarRight.get()==NULL) return;
+    Button* left=this->mTabBarLeft.get();
+    if(left==NULL || this->mTabBarRight.get()==NULL) return;
     int x=0;
-    if(!mArrowsOnLeft) x=Width()-mTabBarRight->Width()-left->Width();
+    if(!this->mArrowsOnLeft) x=this->Width()-this->mTabBarRight->Width()-left->Width();
     int y;
-    if(mTabBarOnBottom) y=mContainerLayout->Bottom();
-    else y=mContainerLayout->Top()-left->Height();
-    left->Fn2F4B70(x,y);
-    mTabBarRight->Fn2F4B70(mTabBarLeft->Right(),y);
+    if(this->mTabBarOnBottom) y=this->mContainerLayout->Bottom();
+    else y=this->mContainerLayout->Top()-left->Height();
+    left->SetPos(x,y);
+    this->mTabBarRight->SetPos(this->mTabBarLeft->Right(),y);
 }
-// Native308dc0..308e76,182B.
 // FUNCTION: WON 0x00708dc0
+// Sizes the tab bars to the tab bar height and places them at the top or bottom of the control
 void TabCtrl::VertPositionTabBar()
 {
-    mBottomTabBar->Fn2F4B90(mBottomTabBar->Width(),
-        mTabBarHeight-mTabBarOverlap-mBottomTabTopOffset);
-    mBottomTabBarContainer->Fn2F4B90(mBottomTabBarContainer->Width(),mBottomTabBar->Height());
-    mTopTabBar->Fn2F4B90(mTopTabBar->Width(),mTabBarHeight);
-    mTopTabBarContainer->Fn2F4B90(mTopTabBarContainer->Width(),mTabBarHeight);
+    this->mBottomTabBar->SetSize(this->mBottomTabBar->Width(),
+        this->mTabBarHeight-this->mTabBarOverlap-this->mBottomTabTopOffset);
+    this->mBottomTabBarContainer->SetSize(this->mBottomTabBarContainer->Width(),this->mBottomTabBar->Height());
+    this->mTopTabBar->SetSize(this->mTopTabBar->Width(),this->mTabBarHeight);
+    this->mTopTabBarContainer->SetSize(this->mTopTabBarContainer->Width(),this->mTabBarHeight);
     int y=0;
-    int offset=mBottomTabTopOffset;
-    if(mTabBarOnBottom) { y=Height()-mBottomTabBarContainer->Height(); offset=-offset; }
-    mTopTabBarContainer->Fn2F4B70(mTopTabBarContainer->Left(),y);
-    mBottomTabBarContainer->Fn2F4B70(mBottomTabBarContainer->Left(),offset+y);
+    int offset=this->mBottomTabTopOffset;
+    if(this->mTabBarOnBottom) { y=this->Height()-this->mBottomTabBarContainer->Height(); offset=-offset; }
+    this->mTopTabBarContainer->SetPos(this->mTopTabBarContainer->Left(),y);
+    this->mBottomTabBarContainer->SetPos(this->mBottomTabBarContainer->Left(),offset+y);
 }
-// Native308e80..308f4f,207B.
 // FUNCTION: WON 0x00708e80
+// Sets the horizontal extent of the tab bar containers, leaving room for visible scroll arrows or
+// right-aligning the bar when it fits
 void TabCtrl::HorzPositionTabBar()
 {
     int left=0;
-    int right=Width();
-    if(NeedScrollButtons()) {
-        if(mArrowsOnLeft) {
-            Button* arrow=mTabBarRight.get();
+    int right=this->Width();
+    if(this->NeedScrollButtons()) {
+        if(this->mArrowsOnLeft) {
+            Button* arrow=this->mTabBarRight.get();
             if(arrow!=NULL && arrow->IsVisible()) left=arrow->Right();
         } else {
-            Button* arrow=mTabBarLeft.get();
+            Button* arrow=this->mTabBarLeft.get();
             if(arrow!=NULL && arrow->IsVisible()) right=arrow->Left()-1;
         }
-    } else if(mTabBarOnRight) left=Width()-mBottomTabBar->Width()-mBottomTabLeftOffset;
-    mTopTabBarContainer->Fn2F4B70(left,mTopTabBarContainer->Top());
-    mTopTabBarContainer->Fn2F4B90(right-left,mTopTabBarContainer->Height());
-    mBottomTabBarContainer->Fn2F4B70(mBottomTabLeftOffset+left,mBottomTabBarContainer->Top());
-    mBottomTabBarContainer->Fn2F4B90(right-mBottomTabLeftOffset-left,mBottomTabBarContainer->Height());
+    } else if(this->mTabBarOnRight) left=this->Width()-this->mBottomTabBar->Width()-this->mBottomTabLeftOffset;
+    this->mTopTabBarContainer->SetPos(left,this->mTopTabBarContainer->Top());
+    this->mTopTabBarContainer->SetSize(right-left,this->mTopTabBarContainer->Height());
+    this->mBottomTabBarContainer->SetPos(this->mBottomTabLeftOffset+left,this->mBottomTabBarContainer->Top());
+    this->mBottomTabBarContainer->SetSize(right-this->mBottomTabLeftOffset-left,this->mBottomTabBarContainer->Height());
 }
-// Native308f50..308fe3,147B. All resize/current-reference ordering preserved.
 // FUNCTION: WON 0x00708f50
+// Lays out the tab control: shows the arrows only when the tabs overflow, positions bars, page area, arrows
+// and current page, clamps the scroll and keeps the selected tab in view until the user interacts
 void TabCtrl::Virtual08()
 {
-    if(mTabBarLeft.get()!=NULL && mTabBarRight.get()!=NULL) {
-        bool need=NeedScrollButtons();
-        mTabBarLeft->SetVisible(need);
-        mTabBarRight->SetVisible(need);
+    if(this->mTabBarLeft.get()!=NULL && this->mTabBarRight.get()!=NULL) {
+        bool need=this->NeedScrollButtons();
+        this->mTabBarLeft->SetVisible(need);
+        this->mTabBarRight->SetVisible(need);
     }
-    VertPositionTabBar();
-    CalcContainerLayout();
-    PositionArrows();
-    HorzPositionTabBar();
-    PositionTabContainer(mCurTab);
-    AdjustTabBarScroll(0);
-    if(!mUserHasInteracted) KeepTabButtonInView();
+    this->VertPositionTabBar();
+    this->CalcContainerLayout();
+    this->PositionArrows();
+    this->HorzPositionTabBar();
+    this->PositionTabContainer(this->mCurTab);
+    this->AdjustTabBarScroll(0);
+    if(!this->mUserHasInteracted) this->KeepTabButtonInView();
     Container::Virtual08();
 }
-// Native308ff0..309006,22B. Simple width predicate support0.
 // FUNCTION: WON 0x00708ff0
-bool TabCtrl::NeedScrollButtons() { return mBottomTabBar->Width()>Width(); }
-// Native309010..3090dc,204B. Enable flags are untouched on the fit branch.
+// Returns whether the tabs are wider than the control
+bool TabCtrl::NeedScrollButtons() { return this->mBottomTabBar->Width()>this->Width(); }
 // FUNCTION: WON 0x00709010
+// Scrolls the tab bars by an amount, clamped to the tab extent, enabling each arrow only when it can scroll;
+// when everything fits the bars return to 0 and the arrows are left as they are
 void TabCtrl::AdjustTabBarScroll(int inAmount)
 {
-    int oldX=mBottomTabBar->Left();
+    int oldX=this->mBottomTabBar->Left();
     int x=oldX+inAmount;
-    int width=mBottomTabBar->Width();
-    int containerWidth=mBottomTabBarContainer->Width();
+    int width=this->mBottomTabBar->Width();
+    int containerWidth=this->mBottomTabBarContainer->Width();
     if(containerWidth>=width) x=0;
     else {
         bool enableLeft=true,enableRight=true;
         if(x+width<containerWidth-5) { enableRight=false; x=containerWidth-width-5; }
         if(x>=0) { enableLeft=false; x=0; }
-        if(mTabBarLeft.get()!=NULL && mTabBarRight.get()!=NULL) {
-            mTabBarLeft->SetEnabled(enableLeft);
-            mTabBarRight->SetEnabled(enableRight);
+        if(this->mTabBarLeft.get()!=NULL && this->mTabBarRight.get()!=NULL) {
+            this->mTabBarLeft->SetEnabled(enableLeft);
+            this->mTabBarRight->SetEnabled(enableRight);
         }
     }
-    if(x!=oldX) {
-        mBottomTabBar->Fn2F4B70(x,mBottomTabBar->Top());
-        mTopTabBar->Fn2F4B70(x,mTopTabBar->Top());
-        mBottomTabBarContainer->Invalidate();
-        mTopTabBarContainer->Invalidate();
-    }
+    if(x==oldX)
+        return;
+    this->mBottomTabBar->SetPos(x,this->mBottomTabBar->Top());
+    this->mTopTabBar->SetPos(x,this->mTopTabBar->Top());
+    this->mBottomTabBarContainer->Invalidate();
+    this->mTopTabBarContainer->Invalidate();
 }
-// Native3090e0..309136,86B.
 // FUNCTION: WON 0x007090e0
+// Scrolls the tab bar by 10 pixels when a scroll arrow is pressed; passes other events on
 void TabCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if(inEvent->mType==15) {
+    if(inEvent->mType==ComponentEvent_ButtonPressed) {
         int d=0;
-        if(inEvent->mComponent==mTabBarLeft.get()) d=10;
-        else if(inEvent->mComponent==mTabBarRight.get()) d=-10;
+        if(inEvent->mComponent==this->mTabBarLeft.get()) d=10;
+        else if(inEvent->mComponent==this->mTabBarRight.get()) d=-10;
         if(d!=0) {
-            mUserHasInteracted=true;
-            AdjustTabBarScroll(d);
+            this->mUserHasInteracted=true;
+            this->AdjustTabBarScroll(d);
             return;
         }
     }
     Component::HandleComponentEvent(inEvent);
 }
-// Native309140..309237,247B. Two borrowed entry snapshots; current top reload after child focus.
+// mTopTabBar is read again after each child TabFocus call
 // FUNCTION: WON 0x00709140
-bool TabCtrl::Virtual88(bool inForward,bool inInit)
+// Moves keyboard focus between the selected tab button and its page (tab button first going forward,
+// page first going back); falls back to the container's order when no tab is selected
+bool TabCtrl::TabFocus(bool inForward,bool inInit)
 {
-    Button* button=mBottomTabBar->mCurTab;
+    Button* button=this->mBottomTabBar->mCurTab;
     if(button!=NULL) {
-        Container* current=mCurTab;
+        Container* current=this->mCurTab;
         if(current!=NULL) {
             if(inInit) {
                 if(!inForward) {
-                    bool done=current->Virtual88(false,true);
+                    bool done=current->TabFocus(false,true);
                     if(done) return done;
                 }
-                bool result=button->Virtual88(inForward,true);
-                if(result) mTopTabBar->SetHasUsedDialogKeys(true);
+                bool result=button->TabFocus(inForward,true);
+                if(result) this->mTopTabBar->SetHasUsedDialogKeys(true);
                 return result;
             }
             if(button->HasFocus()) {
-                if(inForward) return current->Virtual88(true,true);
+                if(inForward) return current->TabFocus(true,true);
                 return false;
             }
-            if(current->Virtual88(inForward,false)) return true;
+            if(current->TabFocus(inForward,false)) return true;
             if(inForward) return false;
-            if(button->Virtual88(false,true)) {
-                mTopTabBar->SetHasUsedDialogKeys(true);
+            if(button->TabFocus(false,true)) {
+                this->mTopTabBar->SetHasUsedDialogKeys(true);
                 return true;
             }
             return false;
         }
     }
-    return Container::Virtual88(inForward,inInit);
+    return Container::TabFocus(inForward,inInit);
 }
-// Native309240..309347,263B. Disable predicate is evaluated BEFORE loop bounds.
+// The disabled test comes before the loop bound tests
 // FUNCTION: WON 0x00709240
-bool TabCtrl::Virtual54(int inKey)
+// Selects the next or previous enabled tab on Right/Left while a tab button has focus, then focuses it
+bool TabCtrl::KeyDown(int inKey)
 {
-    Button* button=mBottomTabBar->mCurTab;
+    Button* button=this->mBottomTabBar->mCurTab;
     if(button!=NULL && button->HasFocus()) {
         int step;
         if(inKey==39) step=1;
         else if(inKey==37) step=-1;
-        else return Container::Virtual54(inKey);
-        int old=mBottomTabBar->Fn308280();
+        else return Container::KeyDown(inKey);
+        int old=this->mBottomTabBar->GetCurTabId();
         int next=old+step;
-        while(mBottomTabBar->Disabled(next) && next>0 && next<mTabVector.size()-1) {
+        while(this->mBottomTabBar->Disabled(next) && next>0 && next<this->mTabVector.size()-1) {
             if(inKey==39) { ++step; ++next; }
             else if(inKey==37) { --step; --next; }
         }
-        mBottomTabBar->SetHasUsedDialogKeys(true);
-        mTopTabBar->SetHasUsedDialogKeys(true);
-        mUserHasInteracted=true;
-        Fn309350(old+step,false);
-        Button* current=mBottomTabBar->mCurTab;
-        if(current!=NULL) current->Fn2F5890();
+        this->mBottomTabBar->SetHasUsedDialogKeys(true);
+        this->mTopTabBar->SetHasUsedDialogKeys(true);
+        this->mUserHasInteracted=true;
+        this->SetCurTab(old+step,false);
+        Button* current=this->mBottomTabBar->mCurTab;
+        if(current!=NULL) current->RequestFocus();
         return true;
     }
-    return Container::Virtual54(inKey);
+    return Container::KeyDown(inKey);
 }
-// Native309350/309370/3093d0 each24B: thin protected-call wrappers, support0.
 // FUNCTION: WON 0x00709350
-void TabCtrl::Fn309350(int inId,bool inFocus) { mBottomTabBar->SetCurTab(inId,inFocus); }
+// Selects a tab by id (forwards to the bottom tab bar)
+void TabCtrl::SetCurTab(int inId,bool inFocus) { this->mBottomTabBar->SetCurTab(inId,inFocus); }
 // FUNCTION: WON 0x00709370
-void TabCtrl::Fn309370(const GUIString& inName,bool inFocus) { mBottomTabBar->SetCurTabByName(inName,inFocus); }
+// Selects a tab by its button text (forwards to the bottom tab bar)
+void TabCtrl::SetCurTabByName(const GUIString& inName,bool inFocus) { this->mBottomTabBar->SetCurTabByName(inName,inFocus); }
 // FUNCTION: WON 0x007093d0
-void TabCtrl::Fn3093D0(int inId,bool inEnable) { mBottomTabBar->EnableTab(inId,inEnable); }
-// Native309390..3093c7,55B. Actual vector search, no pointer ownership added.
+// Enables or disables a tab (forwards to the bottom tab bar)
+void TabCtrl::EnableTab(int inId,bool inEnable) { this->mBottomTabBar->EnableTab(inId,inEnable); }
 // FUNCTION: WON 0x00709390
-int TabCtrl::Fn309390(Container* inContainer)
+// Returns the id of the tab showing the given page, or -1
+int TabCtrl::GetTabIdForContainer(Container* inContainer)
 {
-    for(int i=0;i<mTabVector.size();++i) if(mTabVector[i]==inContainer) return i;
+    for(int i=0;i<this->mTabVector.size();++i) if(this->mTabVector[i]==inContainer) return i;
     return -1;
 }
-// Native3093f0..3094c5,213B. Prior scroll requirement sampled before AddTab callback.
 // FUNCTION: WON 0x007093f0
+// Adds a tab button and its page (hidden, clipped); the first tab sets the bar height (default 20) and
+// the control lays out again when the tabs start or stop overflowing
 void TabCtrl::AddTab(Button* inTab,Container* inContainer)
 {
-    if(mTabBarHeight==0) {
-        if(inTab->Height()>0) mTabBarHeight=inTab->Height();
-        else mTabBarHeight=20;
+    if(this->mTabBarHeight==0) {
+        if(inTab->Height()>0) this->mTabBarHeight=inTab->Height();
+        else this->mTabBarHeight=20;
     }
-    inTab->Fn2F4B90(inTab->Width(),mTabBarHeight);
-    inTab->SetComponentFlags(0x100,false);
-    mTabVector.push_back(inContainer);
-    bool oldNeed=NeedScrollButtons();
-    mBottomTabBar->AddTab(inTab);
+    inTab->SetSize(inTab->Width(),this->mTabBarHeight);
+    inTab->SetComponentFlags(ComponentFlag_GrabBG,false);
+    this->mTabVector.push_back(inContainer);
+    bool oldNeed=this->NeedScrollButtons();
+    this->mBottomTabBar->AddTab(inTab);
     if(inContainer!=NULL) {
         inContainer->SetVisible(false);
-        inContainer->SetComponentFlags(0x2000,true);
-        Fn2F6A60(inContainer);
+        inContainer->SetComponentFlags(ComponentFlag_Clip,true);
+        this->AddChild(inContainer);
     }
-    if(NeedScrollButtons()!=oldNeed) Virtual08();
+    if(this->NeedScrollButtons()!=oldNeed) this->Virtual08();
 }
 }
-// Deferred native TabCtrl ctor308670/718: no body until complete standalone
-// Container84 and LayoutPoint30 construction/lifetime contracts are closed.
 
 namespace WONAPI {
-// Native308670..30893e: operational child construction/layout setup,718B.
 // FUNCTION: WON 0x00708670
+// Creates a tab control with 5-pixel padding, no tabs, and its tab bar containers and page layout point
 TabCtrl::TabCtrl()
 {
-    mLeftPad=mRightPad=mTopPad=mBottomPad=5;
-    mBottomTabLeftOffset=2;
-    mBottomTabTopOffset=3;
-    mCurTab=NULL;
-    mTabBarHeight=0;
-    mTabBarOverlap=1;
-    mTabBarOnBottom=mTabBarOnRight=mArrowsOnLeft=false;
-    mBottomTabBarContainer=new Container;
-    mTopTabBarContainer=new Container;
-    mBottomTabBar=new TabBar(this);
-    mTopTabBar=new Container;
-    mTopTabBar->SetOnlyChildInput(true);
-    mTopTabBarContainer->SetOnlyChildInput(true);
-    mTopTabBarContainer->SetComponentFlags(0x100,true);
-    mBottomTabBarContainer->SetComponentFlags(0x100,true);
-    mBottomTabBarContainer->SetComponentFlags(8,false);
-    mBottomTabBarContainer->SetComponentFlags(0x2000,true);
-    mTopTabBarContainer->SetComponentFlags(0x3000,true);
-    mBottomTabBarContainer->Fn2F6A60(mBottomTabBar.get());
-    mTopTabBarContainer->Fn2F6A60(mTopTabBar.get());
-    Fn2F6A60(mBottomTabBarContainer.get());
-    mContainerLayout=new LayoutPoint;
-    AddLayoutPoint(mContainerLayout.get());
-    Fn2F6A60(mTopTabBarContainer.get());
+    this->mLeftPad=this->mRightPad=this->mTopPad=this->mBottomPad=5;
+    this->mBottomTabLeftOffset=2;
+    this->mBottomTabTopOffset=3;
+    this->mCurTab=NULL;
+    this->mTabBarHeight=0;
+    this->mTabBarOverlap=1;
+    this->mTabBarOnBottom=this->mTabBarOnRight=this->mArrowsOnLeft=false;
+    this->mBottomTabBarContainer=new Container;
+    this->mTopTabBarContainer=new Container;
+    this->mBottomTabBar=new TabBar(this);
+    this->mTopTabBar=new Container;
+    this->mTopTabBar->SetOnlyChildInput(true);
+    this->mTopTabBarContainer->SetOnlyChildInput(true);
+    this->mTopTabBarContainer->SetComponentFlags(ComponentFlag_GrabBG,true);
+    this->mBottomTabBarContainer->SetComponentFlags(ComponentFlag_GrabBG,true);
+    this->mBottomTabBarContainer->SetComponentFlags(ComponentFlag_WantFocus,false);
+    this->mBottomTabBarContainer->SetComponentFlags(ComponentFlag_Clip,true);
+    this->mTopTabBarContainer->SetComponentFlags(0x3000,true);
+    this->mBottomTabBarContainer->AddChild(this->mBottomTabBar.get());
+    this->mTopTabBarContainer->AddChild(this->mTopTabBar.get());
+    this->AddChild(this->mBottomTabBarContainer.get());
+    this->mContainerLayout=new LayoutPoint;
+    this->AddLayoutPoint(this->mContainerLayout.get());
+    this->AddChild(this->mTopTabBarContainer.get());
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK tab removal/reindex/reselection algorithms.
+// Tab removal (not identified in the original exe): TabBar::RemoveTab removes a tab button, renumbers
+// the rest and puts them back on the bar; TabCtrl::RemoveTab also removes the page and reselects a tab
 void TabBar::RemoveTab(int theId)
 {
-	if(theId<0 || theId>=mTabVector.size())
+	if(theId<0 || theId>=this->mTabVector.size())
 		return;
 
-	int aCurTab = Fn308280();
+	int aCurTab = this->GetCurTabId();
 
-	VirtualC4(mTabVector[theId]);
-	mTabVector.erase(mTabVector.begin() + theId);
+	this->RemoveChild(this->mTabVector[theId]);
+	this->mTabVector.erase(this->mTabVector.begin() + theId);
 	int i;
-	for(i=0; i<mTabVector.size(); i++)
-		mTabVector[i]->mControlId=i;
+	for(i=0; i<this->mTabVector.size(); i++)
+		this->mTabVector[i]->mControlId=i;
 
-	mCurTab = NULL;
-	for(i=0; i<mTabVector.size(); i++)
+	this->mCurTab = NULL;
+	for(i=0; i<this->mTabVector.size(); i++)
 	{
-		Button *aButton = mTabVector[i].get();
+		Button *aButton = this->mTabVector[i].get();
 		if(aButton->GetParent()!=this)
-			AddChildEx(aButton,mTabVector.size()-i-1);
+			this->AddChildEx(aButton,this->mTabVector.size()-i-1);
 			
-		PositionTab(aButton);
+		this->PositionTab(aButton);
 	}
 }
 
 void TabCtrl::RemoveTab(int theId)
 {
-	if(theId<0 || theId>=mTabVector.size())
+	if(theId<0 || theId>=this->mTabVector.size())
 		return;
 
-	int aCurTabId = mBottomTabBar->Fn308280();
+	int aCurTabId = this->mBottomTabBar->GetCurTabId();
 
-	mTopTabBar->VirtualC4(mBottomTabBar->mCurTab);
-	mCurTab = NULL;
+	this->mTopTabBar->RemoveChild(this->mBottomTabBar->mCurTab);
+	this->mCurTab = NULL;
 
-	VirtualC4(mTabVector[theId]);
-	mTabVector.erase(mTabVector.begin() + theId);
-	mBottomTabBar->RemoveTab(theId);
+	this->RemoveChild(this->mTabVector[theId]);
+	this->mTabVector.erase(this->mTabVector.begin() + theId);
+	this->mBottomTabBar->RemoveTab(theId);
 	
 
 	if(theId<aCurTabId)
-		Fn309350(aCurTabId-1,true);
+		this->SetCurTab(aCurTabId-1,true);
 	else if(theId>aCurTabId)
-		Fn309350(aCurTabId,true);
+		this->SetCurTab(aCurTabId,true);
 	else 
-		Fn309350(0,true);
+		this->SetCurTab(0,true);
 }
 }
 

@@ -1,8 +1,8 @@
-// Complete native10B ProgramImage owner; Image prefix0c plus callback0c.
+// ProgramImage (0x10 bytes): Image (0x0c) plus the paint callback at +0x0c.
 #ifndef EE_WONAPI_WONLOBBYIMAGEHELPERS_H
 #define EE_WONAPI_WONLOBBYIMAGEHELPERS_H
 namespace WONAPI {
-// Genuine SDK ImagePiece, complete Image0c +ownedImageSP0c +left10/top14 =18.
+// ImagePiece (0x18 bytes): Image (0x0c) + owned image at +0x0c + left at +0x10 + top at +0x14.
 class ImagePiece : public Image {
 private:
     SmartPtr<Image> mImage;
@@ -20,10 +20,10 @@ protected:
     virtual void Paint(Graphics&); //3287c0, slot14
 public:
     ProgramImage(int = 0,int = 0,PaintFunc = NULL); //328790
-    ProgramImage(PaintFunc); //genuine separate SDK callback-only constructor
+    ProgramImage(PaintFunc); // callback-only constructor
     virtual SmartPtr<Image> Duplicate(); //3286d0
     virtual void Draw(DisplayContext*,int,int,int,int,int,int); //3287f0
-    virtual void SetSize(int w,int h) { mWidth=(unsigned short)w; mHeight=(unsigned short)h; }
+    virtual void SetSize(int w,int h) { this->mWidth=(unsigned short)w; this->mHeight=(unsigned short)h; }
 };
 }
 #endif

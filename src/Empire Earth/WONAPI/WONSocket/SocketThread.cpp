@@ -1,5 +1,5 @@
-// Original-backed blocking operation family; source only, no runtime authority.
-// SendBytes/SendMsg const-ownership candidates are excluded entirely.
+// WONAPI SocketThread and SocketThreadSimple: the thread that drives pending async socket ops
+// (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,80 +8,91 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006b60d0
-SocketThread::SocketThread() { mSingleThreaded = false; }
+// Creates a socket thread that runs on its own thread
+SocketThread::SocketThread() { this->mSingleThreaded = false; }
 // FUNCTION: WON 0x006b6120
+// Destroys the socket thread (members only)
 SocketThread::~SocketThread() {}
 // FUNCTION: WON 0x006b6140
+// Pumps the socket ops with a 1-second wait until the thread is stopped
 void SocketThread::ThreadFunc()
 {
-    while(!mStopped) Pump(1000);
+    while(!this->mStopped) this->Pump(1000);
 }
 // FUNCTION: WON 0x006b6160
+// Continues a pending op and finishes it unless it is still waiting; returns true once the op is done
 bool SocketThread::DoOp(SocketOp* inOp)
 {
-    if(inOp->GetStatus()==100000) {
-        WONStatus aStatus=inOp->Virtual10();
-        if(aStatus!=100001) {
-            inOp->mB44=false;
-            inOp->Fn29F220(aStatus);
+    if(inOp->GetStatus()==WS_Pending) {
+        WONStatus aStatus=inOp->Continue();
+        if(aStatus!=WS_TimedOut) {
+            inOp->mInSocketThread=false;
+            inOp->Finish(aStatus);
         }
     }
-    if(inOp->GetStatus()!=100000) {
-        inOp->mB44=false;
+    if(inOp->GetStatus()!=WS_Pending) {
+        inOp->mInSocketThread=false;
         return true;
     }
     return false;
 }
 // FUNCTION: WON 0x006b61a0
+// Destroys the socket thread, killing every op it still holds
 SocketThreadSimple::~SocketThreadSimple()
 {
-    PurgeOps();
+    this->PurgeOps();
 }
 // FUNCTION: WON 0x006b6380
+// Kills every op the thread holds and forgets them
 void SocketThreadSimple::PurgeOps()
 {
-    OpSet::iterator anItr=mOpSet.begin();
-    while(anItr!=mOpSet.end()) {
+    OpSet::iterator anItr=this->mOpSet.begin();
+    while(anItr!=this->mOpSet.end()) {
         SmartPtr<SocketOp> anOp=*anItr;
         anOp->Kill(true);
         ++anItr;
     }
-    mOpSet.clear();
+    this->mOpSet.clear();
 }
 // FUNCTION: WON 0x006b64f0
+// Hands an op to the thread to be continued on each pump
 void SocketThreadSimple::AddSocketOp(SocketOp* inOp)
 {
-    AutoCrit aCrit(mDataCrit);
-    mOpSet.insert(SmartPtr<SocketOp>(inOp));
-    inOp->mB44=true;
+    AutoCrit aCrit(this->mDataCrit);
+    this->mOpSet.insert(SmartPtr<SocketOp>(inOp));
+    inOp->mInSocketThread=true;
 }
 // FUNCTION: WON 0x006b6660
+// Takes an op back from the thread
 void SocketThreadSimple::RemoveSocketOp(SocketOp* inOp)
 {
-    AutoCrit aCrit(mDataCrit);
-    mOpSet.erase(SmartPtr<SocketOp>(inOp));
-    inOp->mB44=false;
+    AutoCrit aCrit(this->mDataCrit);
+    this->mOpSet.erase(SmartPtr<SocketOp>(inOp));
+    inOp->mInSocketThread=false;
 }
 // FUNCTION: WON 0x006b6760
+// Continues every held op once, dropping finished ones, then waits up to 20 ms (or less) for a signal
 void SocketThreadSimple::Pump(unsigned long inWaitTime)
 {
-    AutoCrit aCrit(mDataCrit);
-    OpSet::iterator anItr=mOpSet.begin();
-    while(anItr!=mOpSet.end()) {
+    AutoCrit aCrit(this->mDataCrit);
+    OpSet::iterator anItr=this->mOpSet.begin();
+    while(anItr!=this->mOpSet.end()) {
         SocketOp* anOp=anItr->get();
-        if(DoOp(anOp)) mOpSet.erase(anItr++);
+        if(SocketThread::DoOp(anOp)) this->mOpSet.erase(anItr++);
         else ++anItr;
     }
     aCrit.Leave();
     if(inWaitTime>=20) inWaitTime=20;
-    if(inWaitTime>0) mSignalEvent.WaitFor(inWaitTime);
+    if(inWaitTime>0) this->mSignalEvent.WaitFor(inWaitTime);
 }
 // FUNCTION: WON 0x006b6890
+// Pumps the socket ops every 20 ms until the thread is stopped
 void SocketThreadSimple::ThreadFunc()
 {
-    while(!mStopped) Pump(20);
+    while(!this->mStopped) this->Pump(20);
 }
 }
 

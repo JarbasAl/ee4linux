@@ -3,7 +3,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyTextAreaConfig.h"
-// Exact new SDK HTMLParser2 owner; SOURCE_ONLY_NO_NATIVE_ID, no target ABI/VT identity.
+// HTMLParser2 (not identified in the original exe).
 
 
 namespace WONAPI
@@ -95,8 +95,8 @@ public:
 
 	bool Parse(const char *theFilePath, TextArea *theDisplay = NULL);
 
-	void SetDisplay(TextArea *theDisplay) { mDisplay = theDisplay; }
-	const std::string& GetPath() { return mPath; }
+	void SetDisplay(TextArea *theDisplay) { this->mDisplay = theDisplay; }
+	const std::string& GetPath() { return this->mPath; }
 };
 
 

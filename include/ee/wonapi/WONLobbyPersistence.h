@@ -10,252 +10,246 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyModel.h"
 #include "ee/wonapi/WONBlowfish.h"
-// Canonical original-backed WONLobby persistence storage and caller contracts.
-// Complete typed1164B owner; constructor35bcb0 source admitted with real typed member cleanup.
+// WONLobby's saved settings (LobbyPersistentData, 0x1164 bytes; constructor 0x75bcb0), their accessors and the
+// file reader / writer they use
 
 namespace WONAPI {
-// Complete IO classes: original extent, field and lifetime contracts proved.
-// FileReader exactsizeof20B(0x14): embedded ConfigParser field18 throughnextstring2c, ctor3b1d20.
-// FileWriter exactsizeof4: Initstackslots4 andconstructor2a1e10/dtor2a1e20.
+// FileReader: 0x14 bytes (ConfigParser embeds one at 0x18; constructor 0x7b1d20). FileWriter: 4 bytes
+// (constructor 0x6a1e10, destructor 0x6a1e20).
 class FileReader {
 public:
-    bool IsOpen() { return mFile!=NULL || mBuffer!=NULL; }
-    FileReader(); //2a0d00
-    FileReader(const char* inPath); //2a0d10
+    bool IsOpen() { return this->mFile!=NULL || this->mBuffer!=NULL; }
+    FileReader(); // 0x6a0d00
+    FileReader(const char* inPath); // 0x6a0d10
     FileReader(const void* theMemDataP, unsigned long theMemDataLen);
-    bool OpenText(const char* inPath); //2a0d80 fopen r; name provisional for target revision
-    void Open(const void* inData, unsigned long inLength); //2a0dc0
-    unsigned long pos(); //2a0e20
-    unsigned long length(); //2a0e40
-    unsigned long Available() { return length()-pos(); } //genuine SDK FileReader API
-    void SetPos(unsigned long inPos); //2a0e90
-    int ReadMaxBytes(void* outData, int inMaxBytes); //2a12d0 whole399B
-    int TryReadByte(); //2a1780
-    void SkipBytes(unsigned long inLength); //2a17c0
-    void ReadIntoMemory(); //2a1ac0
-    int ReadLength(int inFieldSize); //2a1b80
-    void ReadRawString(std::string& outString, int inNumChars); //2a1bc0
-    void ReadString(std::string& outString, unsigned char inFieldSize); //2a1d90
+    bool OpenText(const char* inPath); // 0x6a0d80 (fopen "r"; provisional name)
+    void Open(const void* inData, unsigned long inLength); // 0x6a0dc0
+    unsigned long pos(); // 0x6a0e20
+    unsigned long length(); // 0x6a0e40
+    unsigned long Available() { return this->length()-this->pos(); }
+    void SetPos(unsigned long inPos); // 0x6a0e90
+    int ReadMaxBytes(void* outData, int inMaxBytes); // 0x6a12d0
+    int TryReadByte(); // 0x6a1780
+    void SkipBytes(unsigned long inLength); // 0x6a17c0
+    void ReadIntoMemory(); // 0x6a1ac0
+    int ReadLength(int inFieldSize); // 0x6a1b80
+    void ReadRawString(std::string& outString, int inNumChars); // 0x6a1bc0
+    void ReadString(std::string& outString, unsigned char inFieldSize); // 0x6a1d90
     void ReadRawWString(std::wstring& theWStr,int theNumChars);
     void ReadWString(std::wstring& theWStr,unsigned char theLengthFieldSize=2);
-    void Rewind(); //2a1dc0
-    bool EndOfFile(); //2a1de0
+    void Rewind(); // 0x6a1dc0
+    bool EndOfFile(); // 0x6a1de0
 private:
-    void Init(); //2a0ce0 actual six zero stores,20B
+    void Init(); // 0x6a0ce0 (zeroes the six fields)
 public:
-    ~FileReader(); //2a0d30
-    bool Open(const char* inPath); //2a0d40
-    void Close(); //2a0de0
-    void ReadBytes(void* outData, unsigned long inLength); //2a1460
-    unsigned char ReadByte(); //2a1b20
-    unsigned short ReadShort(); //2a1b40
-    long ReadLong(); //2a1b60
-    FILE* mFile; //00
-    const char* mBuffer; //04; memory-source pointer (delete[] viaownedflag10)
-    unsigned long mLength; //08
-    unsigned long mPosition; //0c
-    bool mOwnBuffer; //10
-    bool mMemoryMode; //11; memoryOpen2a0dd6 sets1/fileOpen clears; naturalpadding12..13
+    ~FileReader(); // 0x6a0d30
+    bool Open(const char* inPath); // 0x6a0d40
+    void Close(); // 0x6a0de0
+    void ReadBytes(void* outData, unsigned long inLength); // 0x6a1460
+    unsigned char ReadByte(); // 0x6a1b20
+    unsigned short ReadShort(); // 0x6a1b40
+    long ReadLong(); // 0x6a1b60
+    FILE* mFile; // 0x00
+    const char* mBuffer; // 0x04 (memory source; delete[] when mOwnBuffer)
+    unsigned long mLength; // 0x08
+    unsigned long mPosition; // 0x0c
+    bool mOwnBuffer; // 0x10
+    bool mMemoryMode; // 0x11 (set by the memory Open at 0x6a0dd6, cleared by the file Open)
 };
-// Genuine SDK FILE* RAII owner; explicit constructor/destructor, no Native identity claimed.
+// closes a FILE* when it goes out of scope
 struct AutoFile {
     FILE* mFile;
     AutoFile(FILE* file) : mFile(file) {}
-    ~AutoFile() { fclose(mFile); }
+    ~AutoFile() { fclose(this->mFile); }
 };
 class FileWriter {
 public:
-    FileWriter(); //2a1e10
-    unsigned long pos(); //2a2080
-    void SetPos(unsigned long inPos); //2a20a0 whole325B
-    void WriteLength(unsigned long inLength, unsigned char inFieldSize); //2a2620
-    void WriteRawString(const std::string& inString); //2a2660
-    void WriteString(const std::string& inString, unsigned char inFieldSize); //2a2680
+    FileWriter(); // 0x6a1e10
+    unsigned long pos(); // 0x6a2080
+    void SetPos(unsigned long inPos); // 0x6a20a0
+    void WriteLength(unsigned long inLength, unsigned char inFieldSize); // 0x6a2620
+    void WriteRawString(const std::string& inString); // 0x6a2660
+    void WriteString(const std::string& inString, unsigned char inFieldSize); // 0x6a2680
     void WriteRawWString(const std::wstring& theWStr);
     void WriteWString(const std::wstring& theWStr,unsigned char theLengthFieldSize=2);
-    ~FileWriter(); //2a1e20
-    bool Open(const char* inPath, bool inOpenIfReadOnly); //2a1e30 retry after clearing readonly
-    void Close(); //2a2060
-    void WriteBytes(const void* inData, unsigned long inLength); //2a2400
-    void WriteByte(unsigned char inValue); //2a25f0
-    void WriteShort(unsigned short inValue); //2a2600
-    void WriteLong(long inValue); //2a2610
-    FILE* mFile; //00
+    ~FileWriter(); // 0x6a1e20
+    bool Open(const char* inPath, bool inOpenIfReadOnly); // 0x6a1e30 (retries after clearing read-only)
+    void Close(); // 0x6a2060
+    void WriteBytes(const void* inData, unsigned long inLength); // 0x6a2400
+    void WriteByte(unsigned char inValue); // 0x6a25f0
+    void WriteShort(unsigned short inValue); // 0x6a2600
+    void WriteLong(long inValue); // 0x6a2610
+    FILE* mFile; // 0x00
 };
 
-// Both direct bases proved by COL hierarchy (file-rtti.py); only dtor overrides.
+// both derive from std::exception (RTTI); only the destructor is overridden
 class FileReaderException : public std::exception {
 public:
-    FileReaderException() : std::exception() {} //genuine SDK explicit default constructor;0Native
-    FileReaderException(const std::string& inDescription) { mDescription = inDescription; }
-    // Actual SDK/native 2a10e0: destructor is implicit; std::string/base cleanup is compiler generated.
-    std::string mDescription;       // +08; ctor/throw sites2a1460
+    FileReaderException() : std::exception() {}
+    FileReaderException(const std::string& inDescription) { this->mDescription = inDescription; }
+    // the destructor is implicit (0x6a10e0)
+    std::string mDescription;       // 0x08 (thrown by 0x6a1460)
 };
 class FileWriterException : public std::exception {
 public:
-    FileWriterException(const std::string& inDescription) { mDescription = inDescription; }
-    // Actual SDK/native 2a2210: destructor is implicit; std::string/base cleanup is compiler generated.
-    std::string mDescription;       // +08; ctor/throw sites2a2400
+    FileWriterException(const std::string& inDescription) { this->mDescription = inDescription; }
+    // the destructor is implicit (0x6a2210)
+    std::string mDescription;       // 0x08 (thrown by 0x6a2400)
 };
-// Original-backed record and call-only declarations; no full private-object lifetime.
-// GUIStringLessNoCase actual definition shared from WONLobbyGUI.h via model include.
-// Complete nonpolymorphic record,24B. Field names provisional; widths and ownership proved.
+// GUIStringLessNoCase comes from WONLobbyGUI.h through the model header.
+// a saved user (0x18 bytes) (provisional member names)
 struct LobbyUserInfo {
-    LobbyUserInfo() : mUserId(0), mValue04(0), mValue08(0), mLastUseTime(0) {} //actual fourzero stores at35f867..870
-    long mUserId; //00, fileReadShort zeroextends intoDWORD
-    long mValue04; //04, fileReadLong
-    long mValue08; //08, fileReadLong
-    long mLastUseTime; //0c, fileReadLong; LoginCtrl35c910 time(NULL)
-    GUIString mUserName; //10
-    GUIString mPassword; //14
+    LobbyUserInfo() : mUserId(0), mValue04(0), mValue08(0), mLastUseTime(0) {} // four zero stores (0x75f867..0x75f870)
+    long mUserId; // 0x00 (read as a short, zero-extended)
+    long mValue04; // 0x04 (read as a long)
+    long mValue08; // 0x08 (read as a long)
+    long mLastUseTime; // 0x0c (read as a long; LoginCtrl 0x75c910 stores time(NULL))
+    GUIString mUserName; // 0x10
+    GUIString mPassword; // 0x14
 };
 typedef std::map<GUIString, LobbyUserInfo, GUIStringLessNoCase> LobbyUserInfoMap;
-const LobbyUserInfoMap& LobbyFn35CE60(); //null singleton returns actual functionstaticempty map
-GUIString LobbyFn35CEC0(const GUIString& inUserName);
-LobbyUserInfo* LobbyFn35CF20(const GUIString& inUserName);
-LobbyUserInfo* LobbyFn35C910(const GUIString& inUserName, const GUIString& inPassword, bool inExistingOnly);
-// Original-backed call-only contracts; implementations remain original-carved until admitted.
+const LobbyUserInfoMap& LobbyFn35CE60(); // 0x75ce60 (an empty function-local static map without lobby data)
+GUIString LobbyGetUserPassword(const GUIString& inUserName);
+LobbyUserInfo* LobbyFindUser(const GUIString& inUserName);
+LobbyUserInfo* LobbyAddUser(const GUIString& inUserName, const GUIString& inPassword, bool inExistingOnly);
 
-// Complete getter/setter bytes: persistence_options.txt. Proposed spellings provisional.
-const GUIString& LobbyFn35E2D0(); // persistentTabString58 or gEmptyGUIString fallback
-bool LobbyFn35E2F0(); // bool54; fallbackfalse
-bool LobbyFn35E300(); //55
-bool LobbyFn35E310(); //56
-bool LobbyFn35E320(); //5c
-bool LobbyFn35E330(); //5e
-bool LobbyFn35E340(); //5f
-bool LobbyFn35E350(); //5d
-bool LobbyFn35E360(); //60
-bool LobbyFn35E370(); //61
-bool LobbyFn35E380(); //62
-bool LobbyFn35E390(); //63
-unsigned short LobbyFn35E3A0(); //64; caller3bee7b masksffff; fallback50
-unsigned short LobbyFn35E3C0(); //66; port fallback8585
-long LobbyFn35E3E0(); //70, numeric IPv4 adapter as565f40; synchronized Root/GUI correction
-void LobbyFn35E3F0(unsigned short); //66
-void LobbyFn35E410(bool); //54; setsdirty7d only on actualchange
-void LobbyFn35E430(bool); //55
-void LobbyFn35E450(bool); //56
-void LobbyFn35E470(const GUIString&); //58; compares GUIStringData then assigns owns ref
-void LobbyFn35E4E0(bool); //5c; also recomputes7c from6c
-void LobbyFn35E510(bool); //5e
-void LobbyFn35E530(bool); //5f
-void LobbyFn35E550(bool); //5d; also recomputes7c from6d
-void LobbyFn35E580(bool); //60
-void LobbyFn35E5A0(bool); //61
-void LobbyFn35E5C0(bool); //62
-void LobbyFn35E5E0(bool); //63
-void LobbyFn35E600(unsigned short); //64; storedfromCX, callerint speed threshold narrows
-void LobbyFn35E620(); //network handle global565f40 ->70; setsdirty7c
-void LobbyFn35E660(bool); //flush userprefs via35faf0 whenforced||dirty7c
-void LobbyFn35E680(bool); //flushglobalprefs via360770 whenforced||dirty7d
-void LobbyFn35E6A0(); //restoredefaults35c720 then dirty7d=1/recomputesdirty7c
-const GUIString& LobbyFn35DC40(); //35dc40; preferred server name S74
-const GUIString& LobbyFn35DC60(); //35dc60; preferred group name S78
+// the saved options' getters and setters: LobbyPersistentData offsets, defaults without lobby data
+// (provisional names)
+const GUIString& LobbyGetTabSelect(); // 0x58, or gEmptyGUIString
+bool LobbyGetFilterDirtyWords(); // 0x54; false
+bool LobbyGetDoAutoAFK(); // 0x55
+bool LobbyGetCrossPromotion(); // 0x56
+bool LobbyGetLobbySoundEffects(); // 0x5c
+bool LobbyGetChatSoundEffects(); // 0x5e
+bool LobbyGetStagingSoundEffects(); // 0x5f
+bool LobbyGetLobbyMusic(); // 0x5d
+bool LobbyGetShowConfirmations(); // 0x60
+bool LobbyGetAutoPingGames(); // 0x61
+bool LobbyGetShowGamesInProgress(); // 0x62
+bool LobbyGetAnonymousToFriends(); // 0x63
+unsigned short LobbyGetConnectionSpeed(); // 0x64 (0x7bee7b masks it to 16 bits); 50
+unsigned short LobbyGetLanBroadcastPort(); // 0x66; 8585
+long LobbyGetNetworkAdapter(); // 0x70 (a numeric IPv4 address, copied from 0x965f40)
+void LobbySetLanBroadcastPort(unsigned short); // 0x66
+void LobbySetFilterDirtyWords(bool); // 0x54 (sets the user dirty flag 0x7d only on a change)
+void LobbySetDoAutoAFK(bool); // 0x55
+void LobbySetCrossPromotion(bool); // 0x56
+void LobbySetTabSelect(const GUIString&); // 0x58
+void LobbySetLobbySoundEffects(bool); // 0x5c (also recomputes the global dirty flag 0x7c from 0x6c)
+void LobbySetChatSoundEffects(bool); // 0x5e
+void LobbySetStagingSoundEffects(bool); // 0x5f
+void LobbySetLobbyMusic(bool); // 0x5d (also recomputes 0x7c from 0x6d)
+void LobbySetShowConfirmations(bool); // 0x60
+void LobbySetAutoPingGames(bool); // 0x61
+void LobbySetShowGamesInProgress(bool); // 0x62
+void LobbySetAnonymousToFriends(bool); // 0x63
+void LobbySetConnectionSpeed(unsigned short); // 0x64
+void LobbySaveNetworkAdapter(); // copies 0x965f40 to 0x70 and sets the global dirty flag 0x7c
+void LobbySaveGlobalPrefs(bool); // writes the global preferences (0x75faf0) when forced or 0x7c is set
+void LobbySaveUserPrefs(bool); // writes the user's preferences (0x760770) when forced or 0x7d is set
+void LobbyRestoreDefaults(); // RestoreDefaults 0x75c720, then sets 0x7d and recomputes 0x7c
+const GUIString& LobbyGetLastServerName(); // 0x75dc40 (0x74)
+const GUIString& LobbyGetLastRoomName(); // 0x75dc60 (0x78)
 
-// Friends map exact getter35d270 returnsdata+30 orlocalstatic566300.
+// 0x75d270 returns the friends map (its 0x30), or the static empty map 0x966300 without lobby data
 typedef std::map<unsigned long, SmartPtr<LobbyFriend> > LobbyFriendMap;
 const LobbyFriendMap& LobbyFn35D270();
-LobbyFriend* LobbyFn35D3F0(unsigned long inUserId); //35d3f0 borrowed map lookup
-void LobbyFn35D2C0(unsigned long inUserId);
-void LobbyFn35DB70(const GUIString& inServerName, const GUIString& inGroupName);
-void LobbyFn35D6C0(const GUIString& inName);
-void LobbyFn35D7F0(const IPAddr& inAddress, const GUIString& inName);
-void LobbyFn35D870(const IPAddr& inAddress);
+LobbyFriend* LobbyFindFriend(unsigned long inUserId); // 0x75d3f0 (not owned)
+void LobbyRemoveFriend(unsigned long inUserId);
+void LobbySetLastRoom(const GUIString& inServerName, const GUIString& inGroupName);
+void LobbySetLanName(const GUIString& inName);
+void LobbyAddDirectConnect(const IPAddr& inAddress, const GUIString& inName);
+void LobbyRemoveDirectConnect(const IPAddr& inAddress);
 
-// Exact getter35cfc0 returnsdata+18 orfunctionstaticemptyset566320.
+// 0x75cfc0 returns the ignored names (its 0x18), or the static empty set 0x966320 without lobby data
 typedef std::set<GUIString, GUIStringLessNoCase> LobbyIgnoredNameSet;
 const LobbyIgnoredNameSet& LobbyFn35CFC0();
-// Full473B35d460 target-proves canonical name/id allocation and returned actualLobbyFriend50.
-LobbyFriend* LobbyFn35D460(const GUIString& inName, unsigned long inUserId);
+// 0x75d460: adds a friend (a new LobbyFriend, 0x50 bytes)
+LobbyFriend* LobbyAddFriend(const GUIString& inName, unsigned long inUserId);
 
-// Cohesive original-backed call-only persistence additions; implementations remain carved.
-// Primary SDK nominal APIs and complete target wrappers independently agree.
 typedef std::map<GUIString, long, GUIStringLessNoCase> LobbyLanNameInfoMap;
 typedef std::map<IPAddr, GUIString> LobbyDirectConnectMap;
-const GUIString& LobbyFn35D640(); //19B, existingname68 oractualemptyGUIString
-const LobbyLanNameInfoMap& LobbyFn35D660(); //66B, field114c orfunctionstatic566388
-void LobbyFn35D770(); //120B RemoveLanName; exact NoCase comparator328030
-void LobbyFn35DF00(); //312B ResetServerListFilters; ordinary copy, no iterator repair
-const LobbyDirectConnectMap& LobbyFn35D8E0(); //66B, field1158 orstatic566330
-void LobbyFn35CF90(LobbyUserInfo* inUser); //35B, ID14=recordfirstDWORDor0 thenReadUser
-// Original record35dd20,24B; Add35baa0/Erase35bc20 prove fieldtypes and sensitivity.
+const GUIString& LobbyGetLanName(); // 0x75d640 (0x68, or the empty string)
+const LobbyLanNameInfoMap& LobbyFn35D660(); // 0x75d660 (0x114c, or the static 0x966388)
+void LobbyRemoveLanName(); // 0x75d770 (case-insensitive compare 0x728030)
+void LobbyResetFilters(); // 0x75df00
+const LobbyDirectConnectMap& LobbyFn35D8E0(); // 0x75d8e0 (0x1158, or the static 0x966330)
+void LobbySetCurrentUser(LobbyUserInfo* inUser); // 0x75cf90 (then reads the user)
+// a set of strings with a lookup index (0x18 bytes; constructor 0x75dd20; Add 0x75baa0, Erase 0x75bc20)
 class LobbyOptionSet {
 public:
     typedef std::list<GUIString> StringList;
     typedef std::map<GUIString, StringList::iterator> StringMap;
-    void Add(const GUIString& inValue); //35baa0
-    bool Erase(const GUIString& inValue); //35bc20
-    void clear(); //genuine SDK ServerListFilterSet::clear; Source-only NativeID unlocated
-    StringMap mIndex; //00
-    StringList mValues; //0c
+    void Add(const GUIString& inValue); // 0x75baa0
+    bool Erase(const GUIString& inValue); // 0x75bc20
+    void clear(); // as the SDK's ServerListFilterSet::clear
+    StringMap mIndex; // 0x00
+    StringList mValues; // 0x0c
 };
 
-// Complete actual1164 storage contract; all declared data fields original-backed.
+// the lobby's saved settings: users, friends, ignored names, options and LAN data (0x1164 bytes)
 
-// This declaration grants no new external allocation-site authority.
 struct LobbyReconnectInfo {
     long mLastUseTime;
     int mReconnectId;
-    LobbyReconnectInfo() : mLastUseTime(0) {} // Original leaves reconnectId uninitialized.
+    LobbyReconnectInfo() : mLastUseTime(0) {} // the original leaves mReconnectId uninitialized
 };
 class LobbyPersistentData : public RefCount {
 public:
-    LobbyPersistentData(); //35bcb0; native currentUser14 deliberately untouched before reset
-    // Implicit virtual destructor: original35c2c0 has no own-vptr store.
-    std::string GetUserFileName(long inUserId); // 35e6e0; descriptive name
-    long FindUnusedUserId();                  // 35e770; descriptive name
-    long ReadFileHeader(FileReader& inReader);// 35f6a0; descriptive name
-    void WriteFileHeader(FileWriter& outWriter, long inVersion);//35f750
-    void Fn35EB30(); //35eb30, user history eviction
-    GUIString Fn35EE80(FileReader& inReader); //35ee80, plain byte text
-    void Fn35F3D0(FileWriter& outWriter, const GUIString& inText); //35f3d0
-    GUIString Fn35F000(FileReader& inReader); //35f000, plain ushort text
-    GUIString Fn35F190(FileReader& inReader); //35f190, crypto remains original-carved
-    void Fn35F4E0(FileWriter& outWriter, const GUIString& inText); //35f4e0
-    void Fn35F530(FileWriter& outWriter, const GUIString& inText); //35f530
-    GUIString Fn35C520(); //35c520, CRC helper class remains original-carved
-    void Fn35C720(); //35c720
-    void Fn35F7B0(); //35f7b0
-    void Fn35FAF0(); //35faf0
-    void Fn35FC70(); //full2459 includes typedcatch6 and continuation
-    void Fn360770(); //full913 includes typedcatch6 and continuation
-    void Fn360B10(FileReader& inReader); //648
-    void Fn360DA0(FileWriter& outWriter); //241
-    void Fn35E7E0(); //35e7e0, prune typed LAN-name history to50
-    void Fn35EA40(); //228, existing carved LAN-name pruning owner
-    std::set<long> mUserIds;                  // +08; type proved namedinsert35fa52
-long mCurrentUserId; //14
-std::set<GUIString, GUIStringLessNoCase> mIgnoredNames; //18
-std::set<unsigned long> mIgnoredUserIds; //24
-std::map<unsigned long, SmartPtr<LobbyFriend> > mFriends; //30
-std::map<GUIString, LobbyOptionSet, GUIStringLessNoCase> mDefaultGameOptions; //3c
-std::map<GUIString, LobbyOptionSet, GUIStringLessNoCase> mGameOptions; //48
-bool mB54, mB55, mB56; //54,55,56; naturalpadding57
-GUIString mS58; //58
-bool mB5C, mB5D, mB5E, mB5F, mB60, mB61, mB62, mB63;
-unsigned short mShort64, mPort66; //64,66
-GUIString mS68; //68
-bool mB6C, mB6D; //6c,6d; naturalpadding6e/6f
-long mNetworkHandle; //70; actual numeric IPv4 adapter, provisional member name
-GUIString mS74, mS78; //74,78
-bool mGlobalDirty, mUserDirty; //7c,7d; naturalpadding7e/7f
+    LobbyPersistentData(); // 0x75bcb0 (leaves mCurrentUserId unset before the reset)
+    // the destructor is implicit (0x75c2c0; it does not store its own vtable)
+    std::string GetUserFileName(long inUserId); // 0x75e6e0 (provisional name)
+    long FindUnusedUserId();                  // 0x75e770 (provisional name)
+    long ReadFileHeader(FileReader& inReader);  // 0x75f6a0 (provisional name)
+    void WriteFileHeader(FileWriter& outWriter, long inVersion);  // 0x75f750
+    void PruneUsers(); // 0x75eb30 (drops the oldest users)
+    GUIString ReadByteString(FileReader& inReader); // 0x75ee80 (byte characters)
+    void WriteByteString(FileWriter& outWriter, const GUIString& inText); // 0x75f3d0
+    GUIString ReadWideString(FileReader& inReader); // 0x75f000 (16-bit characters)
+    GUIString ReadEncryptedString(FileReader& inReader); // 0x75f190
+    void WriteWideString(FileWriter& outWriter, const GUIString& inText); // 0x75f4e0
+    void WriteEncryptedString(FileWriter& outWriter, const GUIString& inText); // 0x75f530
+    GUIString GetDefaultLanName(); // 0x75c520 (uses a CRC)
+    void RestoreDefaults(); // 0x75c720
+    void LoadGlobalPrefs(); // 0x75f7b0
+    void SaveGlobalPrefs(); // 0x75faf0
+    void LoadUserPrefs(); // 0x75fc70
+    void SaveUserPrefs(); // 0x760770
+    void ReadLanPrefs(FileReader& inReader); // 0x760b10
+    void WriteLanPrefs(FileWriter& outWriter); // 0x760da0
+    void PruneLanNames(); // 0x75e7e0 (keeps the 50 most recent LAN names)
+    void SelectRecentLanName(); // 0x75ea40
+    std::set<long> mUserIds;                  // 0x08 (the insert at 0x75fa52 gives the type)
+long mCurrentUserId; // 0x14
+std::set<GUIString, GUIStringLessNoCase> mIgnoredNames; // 0x18
+std::set<unsigned long> mBlockedCDKeyIds; // 0x24 (loaded and saved, but nothing in the lobby fills it)
+std::map<unsigned long, SmartPtr<LobbyFriend> > mFriends; // 0x30
+std::map<GUIString, LobbyOptionSet, GUIStringLessNoCase> mDefaultGameOptions; // 0x3c
+std::map<GUIString, LobbyOptionSet, GUIStringLessNoCase> mGameOptions; // 0x48
+bool mFilterDirtyWords, mDoAutoAFK, mCrossPromotion; // 0x54, 0x55, 0x56
+GUIString mTabSelect; // 0x58
+bool mLobbySoundEffects, mLobbyMusic, mChatSoundEffects, mStagingSoundEffects, mShowConfirmations, mAutoPingGames, mShowGamesInProgress, mAnonymousToFriends;
+unsigned short mConnectionSpeed, mLanBroadcastPort; // 0x64, 0x66
+GUIString mLanName; // 0x68
+bool mSavedLobbySoundEffects, mSavedLobbyMusic; // 0x6c, 0x6d
+long mNetworkAdapter; // 0x70 (a numeric IPv4 address) (provisional name)
+GUIString mLastServerName, mLastRoomName; // 0x74, 0x78
+bool mGlobalDirty, mUserDirty; // 0x7c, 0x7d
 
-LobbyUserInfoMap mUsers; //80
-std::map<IPAddr, LobbyReconnectInfo> mReconnectInfoMap; //8c
-Blowfish mEncryptKey; //98,10b4B, ends114c
-std::map<GUIString, long, GUIStringLessNoCase> mLanNameInfoMap; //114c
-std::map<IPAddr, GUIString> mDirectConnectMap; //1158, ends1164
+LobbyUserInfoMap mUsers; // 0x80
+std::map<IPAddr, LobbyReconnectInfo> mReconnectInfoMap; // 0x8c
+Blowfish mEncryptKey; // 0x98..0x114c (0x10b4 bytes)
+std::map<GUIString, long, GUIStringLessNoCase> mLanNameInfoMap; // 0x114c
+std::map<IPAddr, GUIString> mDirectConnectMap; // 0x1158 (0x1164 bytes in all)
 
 };
-LobbyPersistentData* GetLobbyPersistentData(); //existing native35c900 provider, cdecl borrowed singleton accessor
-// Actual reconnect map scalar contracts; archived nominal int matches native record field.
-int LobbyFn35DB00(const IPAddr& inAddress); //35db00: null/missing0, existing ID; borrowed input
-void LobbyFn35D940(const IPAddr& inAddress, int inReconnectId); //35d940: stores time+ID then Save360770
-// Target record is the existing complete24B LobbyOptionSet; archived nominal ServerListFilterSet.
+LobbyPersistentData* GetLobbyPersistentData(); // 0x75c900 (the lobby's instance; not owned)
+int LobbyGetReconnectId(const IPAddr& inAddress); // 0x75db00 (0 when missing)
+void LobbySetReconnectId(const IPAddr& inAddress, int inReconnectId); // 0x75d940 (then saves)
+// the filter sets are LobbyOptionSet records (the SDK calls them ServerListFilterSet)
 const LobbyOptionSet& LobbyFn35DC80(const GUIString& inColumn);
-void LobbyFn35DEA0(const GUIString& inColumn, const GUIString& inValue);
-void LobbyFn35DED0(const GUIString& inColumn, const GUIString& inValue);
+void LobbyAddFilterValue(const GUIString& inColumn, const GUIString& inValue);
+void LobbyRemoveFilterValue(const GUIString& inColumn, const GUIString& inValue);
 }
 
 #endif

@@ -1,4 +1,4 @@
-// Genuine ResourceConfig sound insertion on the complete native b0 owner.
+// ResourceConfig resource insertion: stores named resources with the current parse generation
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,46 +12,48 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007a2530
+// Stores a value under a key in a resource map, tagged with the parse generation (replaces an existing entry)
 template<class Type,class Map>
 static void ResourceConfig_AddToMap(Map& values,const std::string& key,Type& value,int generation)
 {
     values[key]=Map::referent_type(value,generation);
 }
 // FUNCTION: WON 0x007934a0
+// Adds or replaces a named sound resource
 void ResourceConfig::AddSound(const std::string& key,Sound* sound)
 {
-    ResourceConfig_AddToMap(mSoundMap,key,sound,mParseCount);
+    ResourceConfig_AddToMap(this->mSoundMap,key,sound,this->mParseCount);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: same-snapshot SDK compatible resource API completion.
+// String, image, font, color, background and int insertion (not identified in the original exe)
 void ResourceConfig::AddString(const std::string &theKey, const GUIString &theStr)
 {
-	ResourceConfig_AddToMap(mStringMap,theKey,theStr,mParseCount);
+	ResourceConfig_AddToMap(this->mStringMap,theKey,theStr,this->mParseCount);
 }
 
 void ResourceConfig::AddImage(const std::string &theKey, Image *theImage)
 {
-	ResourceConfig_AddToMap(mImageMap,theKey,theImage,mParseCount);
+	ResourceConfig_AddToMap(this->mImageMap,theKey,theImage,this->mParseCount);
 }
 
 void ResourceConfig::AddFont(const std::string &theKey, Font *theFont)
 {
-	ResourceConfig_AddToMap(mFontMap,theKey,theFont,mParseCount);
+	ResourceConfig_AddToMap(this->mFontMap,theKey,theFont,this->mParseCount);
 }
 
 void ResourceConfig::AddColor(const std::string &theKey, DWORD theColor)
 {
-	ResourceConfig_AddToMap(mColorMap,theKey,theColor,mParseCount);
+	ResourceConfig_AddToMap(this->mColorMap,theKey,theColor,this->mParseCount);
 }
 
 void ResourceConfig::AddBackground(const std::string &theKey, const Background &theBackground)
 {
-	ResourceConfig_AddToMap(mBackgroundMap,theKey,theBackground,mParseCount);
+	ResourceConfig_AddToMap(this->mBackgroundMap,theKey,theBackground,this->mParseCount);
 }
 
 void ResourceConfig::AddInt(const std::string &theKey, int theInt)
 {
-	ResourceConfig_AddToMap(mIntMap,theKey,theInt,mParseCount);
+	ResourceConfig_AddToMap(this->mIntMap,theKey,theInt,this->mParseCount);
 }
 
 // Compiler-generated and header-inline functions this unit emits:

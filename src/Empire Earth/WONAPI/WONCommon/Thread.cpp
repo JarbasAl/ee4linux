@@ -1,4 +1,4 @@
-// Complete native ThreadBase14/Thread1c core and Win32 execution hooks.
+// ThreadBase (0x14 bytes) and the Win32 Thread (0x1c bytes) with its execution hooks
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <process.h>
@@ -10,55 +10,60 @@
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006a6c10
+// Creates a stopped thread object with normal priority
 ThreadBase::ThreadBase()
 {
-    mStopped=true;
-    mRunning=false;
-    mAutoDelete=false;
-    mPriority=ThreadPriority_Normal;
+    this->mStopped=true;
+    this->mRunning=false;
+    this->mAutoDelete=false;
+    this->mPriority=ThreadPriority_Normal;
 }
-// Native2a6c50 setter/default hook, support0.
 // FUNCTION: WON 0x006a6c50
-void ThreadBase::StartHook() {mRunning=false;}
+// Default start hook: starts nothing and marks the thread not running
+void ThreadBase::StartHook() {this->mRunning=false;}
 void ThreadBase::WaitForStopHook() {}
 bool ThreadBase::InThisThreadHook() {return false;}
 void ThreadBase::SetPriorityHook() {}
-// Native2a6c80 default body and natural Event cleanup, support0.
+// 0x6a6c80 (emitted from the list below): destroys the thread object and its signal event
 ThreadBase::~ThreadBase() {}
-// Native2a6ca0 lifecycle forwarding, support0.
 // FUNCTION: WON 0x006a6ca0
+// Starts the thread through its start hook unless it is already running
 void ThreadBase::Start()
 {
-    if(!mRunning) {mStopped=false;mRunning=true;StartHook();}
+    if(!this->mRunning) {this->mStopped=false;this->mRunning=true;this->StartHook();}
 }
 // FUNCTION: WON 0x006a6cc0
+// Asks a running thread to stop, signals it and optionally waits for it to end
 void ThreadBase::Stop(bool waitForStop)
 {
-    if(!mStopped) {
-        mStopped=true;
-        Signal();
-        if(waitForStop) WaitForStop();
-    }
+    if(this->mStopped)
+        return;
+    this->mStopped=true;
+    this->Signal();
+    if(waitForStop) this->WaitForStop();
 }
-// Native2a6cf0 signal forwarding, support0.
 // FUNCTION: WON 0x006a6cf0
-void ThreadBase::Signal() {mSignalEvent.Set();}
+// Wakes the thread by setting its signal event
+void ThreadBase::Signal() {this->mSignalEvent.Set();}
 // FUNCTION: WON 0x006a6d00
+// Returns true when called on this running thread
 bool ThreadBase::InThisThread()
 {
-    if(!mRunning) return false;
-    return InThisThreadHook();
+    if(!this->mRunning) return false;
+    return this->InThisThreadHook();
 }
 // FUNCTION: WON 0x006a6d10
+// Waits for a running thread to end, unless called from that thread
 void ThreadBase::WaitForStop()
 {
-    if(mRunning && !InThisThread()) WaitForStopHook();
+    if(this->mRunning && !this->InThisThread()) this->WaitForStopHook();
 }
 // FUNCTION: WON 0x006a85e0
+// Thread entry: runs ThreadFunc, marks the thread stopped and auto-deletes it; dumps the stack on a crash
 unsigned __stdcall Thread::StaticThreadFunc(void* data)
 {
     __try {
-        Thread* thread=(Thread*)data;
+        Thread* thread=static_cast<Thread*>(data);
         thread->mThreadId=GetCurrentThreadId();
         thread->ThreadFunc();
         thread->mRunning=false;
@@ -68,47 +73,50 @@ unsigned __stdcall Thread::StaticThreadFunc(void* data)
     return 0;
 }
 // FUNCTION: WON 0x006a8670
+// Creates the Win32 thread, suspended first to apply a non-normal priority
 void Thread::StartHook()
 {
     unsigned threadAddress;
-    int flags=mPriority==ThreadPriority_Normal ? 0 : CREATE_SUSPENDED;
-    mThreadHandle=(HANDLE)_beginthreadex(NULL,0,StaticThreadFunc,this,flags,&threadAddress);
+    int flags=this->mPriority==ThreadPriority_Normal ? 0 : CREATE_SUSPENDED;
+    this->mThreadHandle=(HANDLE)_beginthreadex(NULL,0,Thread::StaticThreadFunc,this,flags,&threadAddress);
     if(flags) {
-        SetPriorityHook();
-        ResumeThread(mThreadHandle);
+        this->SetPriorityHook();
+        ResumeThread(this->mThreadHandle);
     }
 }
-// Native2a86c0 forwarding, support0; native does not close thread handle here.
+// The original does not close the thread handle here
 // FUNCTION: WON 0x006a86c0
-void Thread::WaitForStopHook() {WaitForSingleObject(mThreadHandle,INFINITE);}
-// Native2a86d0 thread identity query, support0.
+// Waits for the Win32 thread to end
+void Thread::WaitForStopHook() {WaitForSingleObject(this->mThreadHandle,INFINITE);}
 // FUNCTION: WON 0x006a86d0
-bool Thread::InThisThreadHook() {return GetCurrentThreadId()==mThreadId;}
+// Returns true when called on this thread
+bool Thread::InThisThreadHook() {return GetCurrentThreadId()==this->mThreadId;}
 // FUNCTION: WON 0x006a86f0
+// Applies the thread's priority level to the Win32 thread
 void Thread::SetPriorityHook()
 {
     int priority=THREAD_PRIORITY_NORMAL;
-    switch(mPriority) {
+    switch(this->mPriority) {
     case ThreadPriority_Highest:priority=THREAD_PRIORITY_HIGHEST;break;
     case ThreadPriority_High:priority=THREAD_PRIORITY_ABOVE_NORMAL;break;
     case ThreadPriority_Normal:priority=THREAD_PRIORITY_NORMAL;break;
     case ThreadPriority_Low:priority=THREAD_PRIORITY_BELOW_NORMAL;break;
     case ThreadPriority_Lowest:priority=THREAD_PRIORITY_LOWEST;break;
     }
-    SetThreadPriority(mThreadHandle,priority);
+    SetThreadPriority(this->mThreadHandle,priority);
 }
 }
 
-// Genuine same-library SDK implementation. Native entry remains unidentified.
+// No original address identified: WON SDK SetPriority
 namespace WONAPI {
 void ThreadBase::SetPriority(ThreadPriority thePriority)
 {
-    if(thePriority == mPriority)
+    if(thePriority == this->mPriority)
         return;
 
-    mPriority = thePriority;
-    if(mRunning)
-        SetPriorityHook();
+    this->mPriority = thePriority;
+    if(this->mRunning)
+        this->SetPriorityHook();
 }
 }
 

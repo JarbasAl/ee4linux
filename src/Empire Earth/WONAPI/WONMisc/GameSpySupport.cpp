@@ -1,5 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK GameSpy query/reporting integration.
+// GameSpySupport: GameSpy query/reporting integration (WON SDK); no original address identified
 #include <winsock2.h>
 #include <windows.h>
 #include <time.h>
@@ -16,16 +16,17 @@
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONDirExtended.h"
 #include "ee/wonapi/WONGameSpySupport.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace std;
 namespace WONAPI {
 GameSpySupport::GameSpySupport(const char* aGameName, const char* aGameVersion, const char* aSecretKey, ServerContext *theDirServers)
 	:	mIP(""), mSecretKey(aSecretKey), mInitialized(false), 
-		mStatus(100004 /* SDK WS_None */), mAutoPumpTime(0),	mGameSpyStatus(0),
+		mStatus(WS_None /* SDK WS_None */), mAutoPumpTime(0),	mGameSpyStatus(0),
 		mDirServers(theDirServers), mDisabled(false)
 {
 	// Set Basic KeyValues
-	mQueryMap[0]["gamename"] = aGameName;
-	mQueryMap[0]["gamever"] = aGameVersion;
+	this->mQueryMap[0]["gamename"] = aGameName;
+	this->mQueryMap[0]["gamever"] = aGameVersion;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,43 +40,43 @@ GameSpySupport::~GameSpySupport()
 WONStatus GameSpySupport::Startup(const IPAddr& anIPAddr)
 {
 	// Store the server address
-	mLastGetServiceTime = 0;
-	mDisabled = true; // Start off disabled until first GetServiceOp returns
-	mIP = anIPAddr;
+	this->mLastGetServiceTime = 0;
+	this->mDisabled = true; // Start off disabled until first GetServiceOp returns
+	this->mIP = anIPAddr;
 
 	// Initialize the gamespy sdk
-	mGameSpyStatus = qr_init(&mQRInstance, mIP.GetHostString(true).c_str(), mIP.GetPort(), 
-						mQueryMap[0]["gamename"].c_str(), mSecretKey.c_str(), 
-						HandleQueryBasic, HandleQueryInfo, HandleQueryRules, HandleQueryPlayers, this);
+	this->mGameSpyStatus = qr_init(&this->mQRInstance, this->mIP.GetHostString(true).c_str(), this->mIP.GetPort(), 
+						this->mQueryMap[0]["gamename"].c_str(), this->mSecretKey.c_str(), 
+						GameSpySupport::HandleQueryBasic, GameSpySupport::HandleQueryInfo, GameSpySupport::HandleQueryRules, GameSpySupport::HandleQueryPlayers, this);
 
 	// Success
-	if (0 == mGameSpyStatus)
+	if (0 == this->mGameSpyStatus)
 	{
-		mInitialized = true;
-		mStatus = 0;
+		this->mInitialized = true;
+		this->mStatus = WS_Success;
 
 		// Should we autopump?
-		BeginAutoPump();
+		this->BeginAutoPump();
 	}
 	else
 	{
 		// Handle error
-		switch(mGameSpyStatus)
+		switch(this->mGameSpyStatus)
 		{
 		case E_GOA_WSOCKERROR:	//1
-			mStatus = 100107 /* SDK WinSockError */;
+			this->mStatus = WS_GameSpySupport_WinSockError /* SDK WinSockError */;
 		case E_GOA_BINDERROR:	//2
-			mStatus = 100108 /* SDK BindError */;
+			this->mStatus = WS_GameSpySupport_BindError /* SDK BindError */;
 		case E_GOA_DNSERROR:	//3
-			mStatus = 100109 /* SDK DNSError */;
+			this->mStatus = WS_GameSpySupport_DNSError /* SDK DNSError */;
 		case E_GOA_CONNERROR:	//4
-			mStatus = 100110 /* SDK ConnError */;
+			this->mStatus = WS_GameSpySupport_ConnError /* SDK ConnError */;
 		default:	// Unknown error, maybe should create new status WS_Unhandled
-			mStatus = 100106 /* SDK UnhandledError */;
+			this->mStatus = WS_GameSpySupport_UnhandledError /* SDK UnhandledError */;
 		}
 	} 
 
-	return mStatus;
+	return this->mStatus;
 }
 
 
@@ -84,21 +85,21 @@ WONStatus GameSpySupport::Startup(const IPAddr& anIPAddr)
 void GameSpySupport::Shutdown()
 {
 	// Kill the timer op
-	SetAutoPumpTime(0);				// stop future pump timers
+	this->SetAutoPumpTime(0);				// stop future pump timers
 
-	AutoCrit aCrit(mDataCrit);
-	if(mGetServiceOp.get()!=NULL)
+	AutoCrit aCrit(this->mDataCrit);
+	if(this->mGetServiceOp.get()!=NULL)
 	{
-		mGetServiceOp->Kill(true);
-		mGetServiceOp = NULL;
+		this->mGetServiceOp->Kill(true);
+		this->mGetServiceOp = NULL;
 	}
 	aCrit.Leave();
 
 	// "exiting" causes gamespy to deregister
-	SetGameMode("exiting");
+	this->SetGameMode("exiting");
 
 	// Do a final pump to send state change to gamespy
-	Pump();
+	this->Pump();
 }
 
 
@@ -106,7 +107,7 @@ void GameSpySupport::Shutdown()
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::HandleQueryBasic(char *outbuf, int maxlen, void *pThat)
 {
-	GameSpySupport* pSupport = (GameSpySupport*)pThat;
+	GameSpySupport* pSupport = static_cast<GameSpySupport*>(pThat);
 
 	// Load all keys from mBasicQueryMap into the buffer
 	pSupport->DumpKeyValueMapToBuffer(pSupport->mQueryMap[0], outbuf, maxlen);
@@ -116,7 +117,7 @@ void GameSpySupport::HandleQueryBasic(char *outbuf, int maxlen, void *pThat)
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::HandleQueryInfo(char *outbuf, int maxlen, void *pThat)
 {
-	GameSpySupport* pSupport = (GameSpySupport*)pThat;
+	GameSpySupport* pSupport = static_cast<GameSpySupport*>(pThat);
 
 	// Load all keys from mBasicQueryMap into the buffer
 	pSupport->DumpKeyValueMapToBuffer(pSupport->mQueryMap[GameSpyQueryType_Info], outbuf, maxlen);
@@ -126,7 +127,7 @@ void GameSpySupport::HandleQueryInfo(char *outbuf, int maxlen, void *pThat)
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::HandleQueryRules(char *outbuf, int maxlen, void *pThat)
 {
-	GameSpySupport* pSupport = (GameSpySupport*)pThat;
+	GameSpySupport* pSupport = static_cast<GameSpySupport*>(pThat);
 
 	// Load all keys from mBasicQueryMap into the buffer
 	pSupport->DumpKeyValueMapToBuffer(pSupport->mQueryMap[GameSpyQueryType_Rules], outbuf, maxlen);
@@ -136,7 +137,7 @@ void GameSpySupport::HandleQueryRules(char *outbuf, int maxlen, void *pThat)
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::HandleQueryPlayers(char *outbuf, int maxlen, void *pThat)
 {
-	GameSpySupport* pSupport = (GameSpySupport*)pThat;
+	GameSpySupport* pSupport = static_cast<GameSpySupport*>(pThat);
 
 	// Load all keys from mBasicQueryMap into the buffer
 	pSupport->DumpKeyValueMapToBuffer(pSupport->mQueryMap[GameSpyQueryType_Players], outbuf, maxlen);
@@ -164,19 +165,19 @@ void GameSpySupport::HandleQueryStatus(char *outbuf, int maxlen, void *pThat)
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::BeginAutoPump()
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
-	if (mPumpTimerOp.get() != NULL)
+	if (this->mPumpTimerOp.get() != NULL)
 	{
-		mPumpTimerOp->Kill(true);
-		mPumpTimerOp = NULL;
+		this->mPumpTimerOp->Kill(true);
+		this->mPumpTimerOp = NULL;
 	}
 
-	if (mAutoPumpTime != 0)
+	if (this->mAutoPumpTime != 0)
 	{
-		mPumpTimerOp = new AsyncOp();
-		mPumpTimerOp->mCompletion = new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(PumpTimerCompletion,this);
-		mPumpTimerOp->RunAsync(mAutoPumpTime);
+		this->mPumpTimerOp = new AsyncOp();
+		this->mPumpTimerOp->mCompletion = new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(GameSpySupport::PumpTimerCompletion,this);
+		this->mPumpTimerOp->RunAsTimer(this->mAutoPumpTime);
 	}
 }
 
@@ -185,10 +186,10 @@ void GameSpySupport::BeginAutoPump()
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::SetAutoPumpTime(unsigned long theMilliseconds)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
-	mAutoPumpTime = theMilliseconds;
-	BeginAutoPump();
+	this->mAutoPumpTime = theMilliseconds;
+	this->BeginAutoPump();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -198,7 +199,7 @@ void GameSpySupport::PumpTimerCompletion(AsyncOpPtr theOp, SmartPtr<RefCount> th
 	if (theOp.get()	== NULL)
 		return;
 
-	if (theOp->mB39)
+	if (theOp->mKilled)
 		return;
 
 	GameSpySupport *pThat = (GameSpySupport*)theParam.get();
@@ -218,16 +219,16 @@ void GameSpySupport::StaticGetServiceOpCompletion(AsyncOpPtr theOp, SmartPtr<Ref
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::GetServiceOpCompletion(AsyncOp *theOp)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
-	if(theOp->mB39)
+	if(theOp->mKilled)
 		return;
 
-	if(theOp!=mGetServiceOp.get())
+	if(theOp!=this->mGetServiceOp.get())
 		return;
 
-	mDisabled = theOp->GetStatus()==-1201 /* SDK WS_DirServ_ServiceNotFound */;
-	mGetServiceOp = NULL;
+	this->mDisabled = theOp->GetStatus()==WS_DirServ_ServiceNotFound /* SDK WS_DirServ_ServiceNotFound */;
+	this->mGetServiceOp = NULL;
 }
 
 
@@ -235,48 +236,48 @@ void GameSpySupport::GetServiceOpCompletion(AsyncOp *theOp)
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::LaunchGetServiceOp()
 {
-	if(mGetServiceOp.get()!=NULL)
-		mGetServiceOp->Kill(true);
+	if(this->mGetServiceOp.get()!=NULL)
+		this->mGetServiceOp->Kill(true);
 
-	GetServiceOpPtr anOp = new GetServiceOp(mDirServers);
+	GetServiceOpPtr anOp = new GetServiceOp(this->mDirServers);
 	anOp->SetPath(L"/GameSpy");
-	std::string &aName = mQueryMap[0]["gamename"];
+	std::string &aName = this->mQueryMap[0]["gamename"];
 	anOp->SetName(StringToWString(aName));
 	anOp->SetNetAddr(new ByteBuffer(aName.data(),aName.length(),false));
-	anOp->mCompletion = new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(StaticGetServiceOpCompletion,this);
-	mGetServiceOp = anOp;
-	anOp->Run(60000);
+	anOp->mCompletion = new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(GameSpySupport::StaticGetServiceOpCompletion,this);
+	this->mGetServiceOp = anOp;
+	anOp->RunAsync(60000);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::Pump()
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
 	// process queries
-	if(!mDisabled)
+	if(!this->mDisabled)
 	{
-		qr_process_queries(mQRInstance);
+		qr_process_queries(this->mQRInstance);
 
 		// Is a state changed heartbeat needed?
-		if (mStateChanged)
+		if (this->mStateChanged)
 		{
-			qr_send_statechanged(mQRInstance);
-			mStateChanged = false;
+			qr_send_statechanged(this->mQRInstance);
+			this->mStateChanged = false;
 		}
 	}
 
 	// Is a pump timer needed?
-	if (IsAutoPumping())
-		mPumpTimerOp->RunAsync(mAutoPumpTime);
+	if (this->IsAutoPumping())
+		this->mPumpTimerOp->RunAsTimer(this->mAutoPumpTime);
 
 	// Check if GameSpy is disabled
 	time_t aTime = time(NULL);
-	if(aTime - mLastGetServiceTime >= 3600)
+	if(aTime - this->mLastGetServiceTime >= 3600)
 	{
-		mLastGetServiceTime = aTime;
-		LaunchGetServiceOp();
+		this->mLastGetServiceTime = aTime;
+		this->LaunchGetServiceOp();
 	}
 }
 		
@@ -285,40 +286,40 @@ void GameSpySupport::Pump()
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::SetGameMode(const char* aGameMode)
 {
-	SetKeyValue(GameSpyQueryType_Info, "gamemode", aGameMode);
+	this->SetKeyValue(GameSpyQueryType_Info, "gamemode", aGameMode);
 
 	// Signal for a state-change heartbeat
-	mStateChanged = true;
+	this->mStateChanged = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::LockKeyValues()
 {
-	mDataCrit.Enter();
+	this->mDataCrit.Enter();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::UnlockKeyValues()
 {
-	mDataCrit.Leave();
+	this->mDataCrit.Leave();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::SetKeyValue(GameSpyQueryType theType, const char* theKey, const char* theValue)
 {
-	AutoCrit aCrit(mDataCrit);
-	mQueryMap[theType][theKey] = theValue;
+	AutoCrit aCrit(this->mDataCrit);
+	this->mQueryMap[theType][theKey] = theValue;
 }
 	
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 const char* GameSpySupport::GetKeyValue(GameSpyQueryType theType, const char* theKey)
 {
-	KeyValueMap::iterator anItr = mQueryMap[theType].find(theKey);
-	if(anItr==mQueryMap[theType].end())
+	KeyValueMap::iterator anItr = this->mQueryMap[theType].find(theKey);
+	if(anItr==this->mQueryMap[theType].end())
 		return NULL;
 	else
 		return anItr->second.c_str();
@@ -328,8 +329,8 @@ const char* GameSpySupport::GetKeyValue(GameSpyQueryType theType, const char* th
 ///////////////////////////////////////////////////////////////////////////////
 bool GameSpySupport::EraseKeyValue(GameSpyQueryType theType, const std::string &theKey)
 {
-	AutoCrit aCrit(mDataCrit);
-	return mQueryMap[theType].erase(theKey)>0;
+	AutoCrit aCrit(this->mDataCrit);
+	return this->mQueryMap[theType].erase(theKey)>0;
 	
 }
 
@@ -337,15 +338,15 @@ bool GameSpySupport::EraseKeyValue(GameSpyQueryType theType, const std::string &
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::EraseAllKeyValues(GameSpyQueryType theType)
 {
-	AutoCrit aCrit(mDataCrit);
-	mQueryMap[theType].clear();
+	AutoCrit aCrit(this->mDataCrit);
+	this->mQueryMap[theType].clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GameSpySupport::DumpKeyValueMapToBuffer(KeyValueMap& theMap, char* outbuf, unsigned int maxlen)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
 	unsigned int pos = 0;
 	unsigned int pairlength = 0;

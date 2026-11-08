@@ -1,5 +1,4 @@
-// Original-backed blocking operation family; source only, no runtime authority.
-// SendBytes/SendMsg const-ownership candidates are excluded entirely.
+// WONAPI RecvCRMsgOp: receives one CR-LF terminated line (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,31 +7,35 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006b5970
-WONStatus RecvCRMsgOp::Virtual0C()
+// Starts receiving a line: clears the buffer and the previous message, then reads what is available
+WONStatus RecvCRMsgOp::Start()
 {
-    mBuffer.Reset();
-    mMessage=NULL;
-    return Virtual10();
+    this->mBuffer.Reset();
+    this->mMessage=NULL;
+    return this->Continue();
 }
 // FUNCTION: WON 0x006b59b0
-WONStatus RecvCRMsgOp::Virtual10()
+// Reads one byte at a time until CR-LF; stores the line (CR replaced by a NUL) as the message
+// and returns success, WS_TimedOut when time runs out, or the socket error
+WONStatus RecvCRMsgOp::Continue()
 {
     for (;;) {
-        mSocket->Fn2B1410(TimeLeft());
+        this->mSocket->WaitForRead(this->TimeLeft());
         unsigned char aByte;
-        WONStatus aStatus=mSocket->Fn2B15E0(&aByte,1,NULL);
-        if (aStatus==0) {
-            mBuffer.AppendByte(aByte);
-            if (aByte==10 && mBuffer.mLength>=2 && mBuffer.mData[mBuffer.mLength-2]==13) {
-                mBuffer.data()[mBuffer.mLength-2]=0;
-                mBuffer.SetSize(mBuffer.length()-1);
-                mMessage=mBuffer.ToByteBuffer(true);
-                return 0;
+        WONStatus aStatus=this->mSocket->Recv(&aByte,1,NULL);
+        if (aStatus==WS_Success) {
+            this->mBuffer.AppendByte(aByte);
+            if (aByte==10 && this->mBuffer.mLength>=2 && this->mBuffer.mData[this->mBuffer.mLength-2]==13) {
+                this->mBuffer.data()[this->mBuffer.mLength-2]=0;
+                this->mBuffer.SetSize(this->mBuffer.length()-1);
+                this->mMessage=this->mBuffer.ToByteBuffer(true);
+                return WS_Success;
             }
-        } else if (aStatus==100001) {
-            if (TimeLeft()==0) return 100001;
+        } else if (aStatus==WS_TimedOut) {
+            if (this->TimeLeft()==0) return WS_TimedOut;
         } else return aStatus;
     }
 }

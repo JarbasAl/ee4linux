@@ -1,4 +1,4 @@
-// Complete native rectangle algorithms on the actual four-int POD.
+// Rectangle constructors, intersection and union (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,56 +11,59 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Native349300/16 support-only default initialization.
-WONRectangle::WONRectangle() { x=y=width=height=0; }
-// Native349310/32 support-only direct initialization.
+WONRectangle::WONRectangle() { this->x=this->y=this->width=this->height=0; }
 WONRectangle::WONRectangle(int inX,int inY,int inWidth,int inHeight)
     :x(inX),y(inY),width(inWidth),height(inHeight) {}
 // FUNCTION: WON 0x00749300
+// Default constructor above: creates an empty rectangle at the origin
 // (??0WONRectangle@WONAPI@@QAE@XZ)
 
 // FUNCTION: WON 0x00749310
+// Constructor above: creates a rectangle from position and size
 // (??0WONRectangle@WONAPI@@QAE@HHHH@Z)
 
 // FUNCTION: WON 0x00749330
+// Shrinks the rectangle to its overlap with another (empty size when they do not overlap)
 void WONRectangle::DoIntersect(const WONRectangle& other)
 {
-    int right=x+width;
-    int bottom=y+height;
+    int right=this->x+this->width;
+    int bottom=this->y+this->height;
     int otherRight=other.x+other.width;
     int otherBottom=other.y+other.height;
-    if(other.x>x) x=other.x;
-    if(other.y>y) y=other.y;
+    if(other.x>this->x) this->x=other.x;
+    if(other.y>this->y) this->y=other.y;
     if(otherRight<right) right=otherRight;
     if(otherBottom<bottom) bottom=otherBottom;
-    width=right-x;
-    height=bottom-y;
-    if(width<0) width=0;
-    if(height<0) height=0;
+    this->width=right-this->x;
+    this->height=bottom-this->y;
+    if(this->width<0) this->width=0;
+    if(this->height<0) this->height=0;
 }
 // FUNCTION: WON 0x007493b0
+// Grows the rectangle to cover another as well; an empty rectangle becomes a copy of the other
 void WONRectangle::DoUnion(const WONRectangle& other)
 {
-    if(width==0 || height==0)
+    if(this->width==0 || this->height==0)
     {
-        x=other.x; y=other.y; width=other.width; height=other.height;
+        this->x=other.x; this->y=other.y; this->width=other.width; this->height=other.height;
         return;
     }
-    int right=x+width;
-    int bottom=y+height;
+    int right=this->x+this->width;
+    int bottom=this->y+this->height;
     int otherRight=other.x+other.width;
     int otherBottom=other.y+other.height;
-    if(other.x<x) x=other.x;
-    if(other.y<y) y=other.y;
+    if(other.x<this->x) this->x=other.x;
+    if(other.y<this->y) this->y=other.y;
     if(otherRight>right) right=otherRight;
     if(otherBottom>bottom) bottom=otherBottom;
-    width=right-x;
-    height=bottom-y;
+    this->width=right-this->x;
+    this->height=bottom-this->y;
 }
 // FUNCTION: WON 0x00749450
+// Returns whether two rectangles overlap (touching this one's right/bottom edge counts)
 bool WONRectangle::Intersects(const WONRectangle& other) const
 {
-    return x+width>=other.x && x<other.x+other.width &&
-           y+height>=other.y && y<other.y+other.height;
+    return this->x+this->width>=other.x && this->x<other.x+other.width &&
+           this->y+this->height>=other.y && this->y<other.y+other.height;
 }
 }

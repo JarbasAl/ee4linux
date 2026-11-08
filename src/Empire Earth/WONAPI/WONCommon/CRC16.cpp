@@ -1,4 +1,4 @@
-// Original-backed CRC16 byte-update table and state owner.
+// CRC16: table-driven 16-bit CRC (polynomial 0x8005)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include "ee/wonapi/WONCRC16.h"
 static unsigned short gCRC16Table[256] =
@@ -38,13 +38,15 @@ static unsigned short gCRC16Table[256] =
 	};
 namespace WONAPI {
 // FUNCTION: WON 0x006a0c70
+// Creates a CRC with the given initial and final XOR values and resets it
 CRC16::CRC16(unsigned short initial, unsigned short xorOut)
-    : mInitValue(initial), mXOROutValue(xorOut) { Reset(); }
+    : mInitValue(initial), mXOROutValue(xorOut) { this->Reset(); }
 // FUNCTION: WON 0x006a0c90
+// Feeds the given bytes into the running CRC
 void CRC16::Put(const void* data, unsigned int length)
 {
     const unsigned char* bytes = static_cast<const unsigned char*>(data);
     while (length--)
-        mRegister = gCRC16Table[((mRegister >> 8) ^ *bytes++) & 0xff] ^ (mRegister << 8);
+        this->mRegister = gCRC16Table[((this->mRegister >> 8) ^ *bytes++) & 0xff] ^ (this->mRegister << 8);
 }
 }

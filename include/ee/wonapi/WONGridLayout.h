@@ -1,4 +1,4 @@
-// Genuine same-SDK complete GridLayout. SOURCE_ONLY_NO_NATIVE_ID.
+// GridLayout (not identified in the original exe).
 // SDK Execute() is a direct-call overload; does not override base Execute(Component*).
 #ifndef __GRIDLAYOUT_H__
 #define __GRIDLAYOUT_H__
@@ -40,8 +40,8 @@ protected:
 	
 		
 		CellInfo() : mComponent(NULL), mMinWidth(0), mMinHeight(0) { }
-		int GetMinWidth() { return mMinWidth; }
-		int GetMinHeight() { return mMinHeight; }
+		int GetMinWidth() { return this->mMinWidth; }
+		int GetMinHeight() { return this->mMinHeight; }
 
 		void SetPosSize(int x, int y, int width, int height);
 
@@ -67,10 +67,10 @@ public:
 	void SetColumnPad(int theColumn, int thePad);
 	void SetRowPad(int theRow, int thePad);
 
-	virtual int Width() { return mBounds.width; }
-	virtual int Height() { return mBounds.height; }
-	virtual int Left() { return mBounds.x; }
-	virtual int Top() { return mBounds.y; }
+	virtual int Width() { return this->mBounds.width; }
+	virtual int Height() { return this->mBounds.height; }
+	virtual int Left() { return this->mBounds.x; }
+	virtual int Top() { return this->mBounds.y; }
 	virtual void Execute();
 };
 typedef SmartPtr<GridLayout> GridLayoutPtr;

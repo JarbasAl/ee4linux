@@ -1,4 +1,4 @@
-// Source-only reconstructed WONGUI HTML parser; no runtime substitution authority.
+// HTML parser: tag name registry, character and entity reading, tag and attribute parsing (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <cstdio>
@@ -19,87 +19,120 @@
 
 using namespace WONAPI;
 
-// Genuine SDK same-TU HTML tag registry and allocation callback closure; support0.
+// Tag factories: the tag name registry below maps each tag name to one of these
 // FUNCTION: WON 0x00741c10
+// Creates a plain tag of the given type
 static HTMLTag* TagFactory(HTMLTagType theTagType) { return new HTMLTag(theTagType); }
 // FUNCTION: WON 0x00741c70
+// Creates a BODY tag
 static HTMLTag* TagBodyFactory(HTMLTagType theTagType) { return new HTMLBodyTag; }
 // FUNCTION: WON 0x00741cd0
+// Creates a plain tag of the given type that starts a new block (PRE, CENTER)
 static HTMLTag* TagBlockElemFactory(HTMLTagType theTagType) { return new HTMLTag(theTagType,true); }
 // FUNCTION: WON 0x00741d30
+// Creates a line break (BR) tag
 static HTMLTag* TagLineBreakFactory(HTMLTagType theTagType) { return new HTMLLineBreakTag; }
 // FUNCTION: WON 0x00741da0
+// Creates a horizontal rule (HR) tag
 static HTMLTag* TagHorizontalRuleFactory(HTMLTagType theTagType) { return new HTMLHorizontalRuleTag; }
 // FUNCTION: WON 0x00741e00
+// Creates a heading tag (H1 to H6)
 static HTMLTag* TagHeadingFactory(HTMLTagType theTagType) { return new HTMLHeadingTag(theTagType); }
 // FUNCTION: WON 0x00741e60
+// Creates an anchor (A) tag
 static HTMLTag* TagAnchorFactory(HTMLTagType theTagType) { return new HTMLAnchorTag; }
 // FUNCTION: WON 0x00741f10
+// Creates a FONT or BASEFONT tag
 static HTMLTag* TagFontFactory(HTMLTagType theTagType) { return new HTMLFontTag(theTagType); }
 // FUNCTION: WON 0x00741fc0
+// Deletes a font tag (compiler-generated deleting destructor, emitted here)
 // (??_GHTMLFontTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x00741fe0
+// Destroys a font tag (compiler-generated destructor, emitted here)
 // (??1HTMLFontTag@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x00742040
+// Creates a block tag (P, DIV)
 static HTMLTag* TagBlockFactory(HTMLTagType theTagType) { return new HTMLBlockTag(theTagType); }
 // FUNCTION: WON 0x007420a0
+// Creates an image map (MAP) tag
 static HTMLTag* TagImageMapFactory(HTMLTagType theTagType) { return new HTMLImageMapTag; }
 // FUNCTION: WON 0x007421d0
+// Creates an image map area (AREA) tag
 static HTMLTag* TagAreaFactory(HTMLTagType theTagType) { return new HTMLAreaTag; }
 // FUNCTION: WON 0x007422e0
+// Creates an image (IMG) tag
 static HTMLTag* TagImageFactory(HTMLTagType theTagType) { return new HTMLImageTag; }
 // FUNCTION: WON 0x00742150
+// Deletes an image map tag (compiler-generated deleting destructor, emitted here)
 // (??_GHTMLImageMapTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x00742170
+// Destroys an image map tag (compiler-generated destructor, emitted here)
 // (??1HTMLImageMapTag@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x00742260
+// Deletes an area tag (compiler-generated deleting destructor, emitted here)
 // (??_GHTMLAreaTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x00742280
+// Destroys an area tag (compiler-generated destructor, emitted here)
 // (??1HTMLAreaTag@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x007423a0
+// Deletes an image tag (compiler-generated deleting destructor, emitted here)
 // (??_GHTMLImageTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x007423c0
+// Destroys an image tag (compiler-generated destructor, emitted here)
 // (??1HTMLImageTag@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x007424b0
+// Creates an ordered or unordered list tag (OL, UL)
 static HTMLTag* TagListFactory(HTMLTagType theTagType) { return new HTMLListTag(theTagType); }
 // FUNCTION: WON 0x00742510
+// Creates a list item (LI) tag
 static HTMLTag* TagListItemFactory(HTMLTagType theTagType) { return new HTMLListItemTag; }
 // FUNCTION: WON 0x007425c0
+// Deletes a list item tag (compiler-generated deleting destructor, emitted here)
 // (??_GHTMLListItemTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x007425e0
+// Destroys a list item tag (compiler-generated destructor, emitted here)
 // (??1HTMLListItemTag@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x00742640
+// Creates a TABLE tag
 static HTMLTag* TagTableFactory(HTMLTagType theTagType) { return new HTMLTableTag; }
 // FUNCTION: WON 0x007426a0
+// Creates a table row (TR) tag
 static HTMLTag* TagTableRowFactory(HTMLTagType theTagType) { return new HTMLTableRowTag; }
 // FUNCTION: WON 0x00742700
+// Creates a table cell tag (TD or TH)
 static HTMLTag* TagTableDataFactory(HTMLTagType theTagType) { return new HTMLTableDataTag(theTagType); }
 // FUNCTION: WON 0x00742760
+// Creates an INPUT tag
 static HTMLTag* TagInputFactory(HTMLTagType theTagType) { return new HTMLInputTag; }
 // FUNCTION: WON 0x007428f0
+// Creates an input tag of the select (drop-down list) kind for SELECT
 static HTMLTag* TagSelectFactory(HTMLTagType theTagType) { return new HTMLInputTag(HTMLInputType_Select); }
 // FUNCTION: WON 0x00742820
+// Deletes an input tag (compiler-generated deleting destructor, emitted here)
 // (??_GHTMLInputTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x00742840
+// Destroys an input tag (compiler-generated destructor, emitted here)
 // (??1HTMLInputTag@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x007429b0
+// Creates a tag whose content is skipped up to its end tag (SCRIPT, STYLE)
 static HTMLTag* TagSkipFactory(HTMLTagType theTagType) { return new HTMLTag(theTagType,HTMLTagFlag_SkipToEndTag); }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00740740
+// Returns the shared tag name registry, filling it on first use with each supported tag's factory and type
 HTMLParser::TagNameMap& HTMLParser::GetTagNameMap()
 {
 	static TagNameMap mTagNameMap;
@@ -170,24 +203,28 @@ HTMLParser::TagNameMap& HTMLParser::GetTagNameMap()
 
 
 // FUNCTION: WON 0x00742a10
+// Destroys the shared tag name registry at exit
 // (_$E72)
 
 // FUNCTION: WON 0x00742bb0
+// Clears the pushed-back text and closes the input file, if one is open
 void HTMLParser::CloseFile()
 {
-	mBackStr.erase();
-	if(mFile!=NULL) { fclose(mFile); mFile=NULL; }
+	this->mBackStr.erase();
+	if(this->mFile!=NULL) { fclose(this->mFile); this->mFile=NULL; }
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00743ff0
+// Returns whether input is exhausted: no file or the file at its end, and no pushed-back text (header inline)
 // (?EndOfFile@HTMLParser@WONAPI@@IAE_NXZ)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00742fc0
+// Maps a Windows-1252 character in the range 130-159 to its Unicode code point; other values pass through
 static int GetWesternChar(int theChar)
 {
 	switch(theChar)
@@ -224,24 +261,25 @@ static int GetWesternChar(int theChar)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007434d0
+// Returns the next character (pushed-back text first, then the file, Windows-1252 mapped), counting lines
 inline int HTMLParser::GetChar()
 {
 	int aChar = 0;
-	if(mBackStr.empty())
+	if(this->mBackStr.empty())
 	{
-		if(mFile!=NULL) aChar = fgetc(mFile); else aChar = EOF;
+		if(this->mFile!=NULL) aChar = fgetc(this->mFile); else aChar = EOF;
 
 		if(aChar>=130 && aChar<=159)
 			aChar = GetWesternChar(aChar);
 	}
 	else
 	{
-		aChar = mBackStr[mBackStr.length()-1];
-		mBackStr.resize(mBackStr.length()-1);
+		aChar = this->mBackStr[this->mBackStr.length()-1];
+		this->mBackStr.resize(this->mBackStr.length()-1);
 	}
 
 	if(aChar=='\n')
-		mLineNum++;
+		this->mLineNum++;
 
 	return aChar;
 }
@@ -249,20 +287,22 @@ inline int HTMLParser::GetChar()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00744010
+// Returns the next character without consuming it, or -1 at the end of input
 inline int HTMLParser::PeekChar()
 {
-	if(EndOfFile())
+	if(this->EndOfFile())
 		return -1;
 
 
-	int aChar = GetChar();
-	UngetChar(aChar);
+	int aChar = this->GetChar();
+	this->UngetChar(aChar);
 	return aChar;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007430f0
+// Pushes a character back onto the input; end-of-file is ignored and a newline uncounts a line (header inline)
 // (?UngetChar@HTMLParser@WONAPI@@IAEXH@Z)
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -271,7 +311,7 @@ inline void HTMLParser::UngetString(const GUIString &theStr)
 {
 	for(int i=theStr.length()-1; i>=0; i--)
 	{
-		UngetChar(theStr[i]);
+		this->UngetChar(theStr[i]);
 	}
 }
 
@@ -281,22 +321,23 @@ inline void HTMLParser::UngetString(const GUIString &theStr, int theStartPos)
 {
 	for(int i=theStr.length()-1; i>=theStartPos; i--)
 	{
-		UngetChar(theStr[i]);
+		this->UngetChar(theStr[i]);
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00744200
+// Skips whitespace and returns whether any was skipped
 inline bool HTMLParser::SkipWhitespace()
 {
 	bool hadSpace = false;
-	while(!EndOfFile())
+	while(!this->EndOfFile())
 	{
-		int aChar = GetChar();
+		int aChar = this->GetChar();
 		if(!((unsigned int)aChar<256 && isspace(aChar)))
 		{
-			UngetChar(aChar);
+			this->UngetChar(aChar);
 			break;
 		}
 		else
@@ -310,13 +351,15 @@ inline bool HTMLParser::SkipWhitespace()
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00742c10
 // FUNCTION: WON 0x007431b0
+// Reads an entity after '&' up to ';' (numeric or named) and returns its character, or pushes the text
+// back and returns -1 (0x007431b0 is the exit-time destructor of its entity name map)
 inline int HTMLParser::ReadEntity()
 {
 	GUIString anEntity;
 	int i;
-	for(i=0; i<20 && !EndOfFile(); i++)
+	for(i=0; i<20 && !this->EndOfFile(); i++)
 	{
-		int aChar = GetChar();
+		int aChar = this->GetChar();
 		if(aChar==';')
 			break;
 
@@ -325,7 +368,7 @@ inline int HTMLParser::ReadEntity()
 
 	if(i==20)
 	{
-		UngetString(anEntity);
+		this->UngetString(anEntity);
 		return -1;
 	}
 
@@ -612,8 +655,8 @@ inline int HTMLParser::ReadEntity()
 		return anItr->second;	
 	else
 	{
-		UngetChar(';');
-		UngetString(anEntity);
+		this->UngetChar(';');
+		this->UngetString(anEntity);
 		return -1;
 	}
 
@@ -624,6 +667,8 @@ inline int HTMLParser::ReadEntity()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00743280
+// Reads a word up to a stop character (and whitespace if asked), decoding entities; returns whether
+// the word is not empty
 bool HTMLParser::ReadWord(GUIString &theWord,  const char *theStopChars, bool stopAtSpace, bool skip, bool erase)
 {
 	if(erase)
@@ -633,11 +678,11 @@ bool HTMLParser::ReadWord(GUIString &theWord,  const char *theStopChars, bool st
 	}
 
 	if(stopAtSpace)
-		SkipWhitespace();
+		this->SkipWhitespace();
 
 	while(true)
 	{
-		int aChar = GetChar();
+		int aChar = this->GetChar();
 		if(aChar==-1)
 			break;
 
@@ -645,14 +690,14 @@ bool HTMLParser::ReadWord(GUIString &theWord,  const char *theStopChars, bool st
 		{
 			if(aChar!=0)
 			{
-				UngetChar(aChar);
+				this->UngetChar(aChar);
 				break;
 			}
 		}
 
 		if(aChar=='&')
 		{
-			aChar = ReadEntity();
+			aChar = this->ReadEntity();
 			if(!skip)
 			{
 				if(aChar!=-1)
@@ -674,6 +719,8 @@ bool HTMLParser::ReadWord(GUIString &theWord,  const char *theStopChars, bool st
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007435e0
+// Skips input up to and including the end tag of the named tag, searching 512-character blocks
+// (an end tag that straddles two blocks is missed)
 void HTMLParser::SkipTag(const GUIString &theName)
 {
 	// LOST-DEBUG: none: exact only.
@@ -687,13 +734,13 @@ void HTMLParser::SkipTag(const GUIString &theName)
 	GUIString aBuf(new GUIStringData((unsigned short)(BUFFER_SIZE+1)));
 	GUIString aCapBuf(new GUIStringData((unsigned short)(BUFFER_SIZE+1)));
 
-	while(!EndOfFile())
+	while(!this->EndOfFile())
 	{
 		aBuf.resize(0);
 		aCapBuf.resize(0);
 		for(int i=0; i<BUFFER_SIZE; i++)
 		{
-			int aChar = GetChar();
+			int aChar = this->GetChar();
 			if(aChar<0)
 				break;
 			
@@ -704,7 +751,7 @@ void HTMLParser::SkipTag(const GUIString &theName)
 		int anEndPos = aCapBuf.find(aSearch,0);
 		if(anEndPos!=-1)
 		{
-			UngetString(aBuf,anEndPos+aSearch.length());
+			this->UngetString(aBuf,anEndPos+aSearch.length());
 			break;
 		}
 	}
@@ -713,108 +760,110 @@ void HTMLParser::SkipTag(const GUIString &theName)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007438a0
+// Parses one tag after '<': skips comments and unknown tags, otherwise creates the tag, reads its
+// attributes (or skips its content) and adds it to the document
 bool HTMLParser::GetActualTag()
 {
-	mTagAttributes.Clear();
+	this->mTagAttributes.Clear();
 	bool isEndTag = false;
 	GUIString aTagName;
 
-	if(PeekChar()=='/')
+	if(this->PeekChar()=='/')
 	{
-		GetChar(); // skip '/'
+		this->GetChar(); // skip '/'
 		isEndTag = true;
 	}
 
-	ReadWord(aTagName,">");
+	this->ReadWord(aTagName,">");
 	if(aTagName.length()>=3 && aTagName[0]=='!' && aTagName[1]=='-' && aTagName[2]=='-') // comment
 	{
 		// Skip comment
-		if(aTagName.length()>2 && aTagName[aTagName.length()-2]=='-' && aTagName[aTagName.length()-1]=='-' && PeekChar()=='>')
+		if(aTagName.length()>2 && aTagName[aTagName.length()-2]=='-' && aTagName[aTagName.length()-1]=='-' && this->PeekChar()=='>')
 		{
-			GetChar(); // skip >
+			this->GetChar(); // skip >
 			return true;
 		}
 
-		while(!EndOfFile())
+		while(!this->EndOfFile())
 		{
-			int char1 = GetChar();
-			int char2 = GetChar();
-			int char3 = GetChar();
+			int char1 = this->GetChar();
+			int char2 = this->GetChar();
+			int char3 = this->GetChar();
 			if(char1=='-' && char2=='-' && char3=='>')
 				return true;
 
-			UngetChar(char3);
-			UngetChar(char2);
+			this->UngetChar(char3);
+			this->UngetChar(char2);
 		}
 
 		return false;
 	}
 
-	TagNameMap::iterator anItr = mTagNameMap.find(aTagName);
-	if(anItr==mTagNameMap.end()) // unrecognized tag... just skip it
+	TagNameMap::iterator anItr = this->mTagNameMap.find(aTagName);
+	if(anItr==this->mTagNameMap.end()) // unrecognized tag... just skip it
 	{
 		GUIString aSkip;
-		ReadWord(aSkip,">",false,true);
-		GetChar(); // skip '>'
+		this->ReadWord(aSkip,">",false,true);
+		this->GetChar(); // skip '>'
 		return true;
 	}
 
 	TagLookupInfo &anInfo = anItr->second;	
 	HTMLTagPtr aTag = anInfo.mFactoryFunc(anInfo.mType);
-	aTag->SetLineNum(mLineNum);
+	aTag->SetLineNum(this->mLineNum);
 
 	if(isEndTag) // end tag has no parameters
 	{
 		aTag->SetFlags(HTMLTagFlag_IsEndTag,true);
 		GUIString aSkip;
-		ReadWord(aSkip,">",false,true);
-		GetChar(); // skip '>'
-		mDocument->AddTag(aTag.get());
+		this->ReadWord(aSkip,">",false,true);
+		this->GetChar(); // skip '>'
+		this->mDocument->AddTag(aTag.get());
 		return true;
 	}
 
-	while(!EndOfFile())
+	while(!this->EndOfFile())
 	{
-		if(PeekChar()=='>')
+		if(this->PeekChar()=='>')
 		{
-			GetChar(); // skip '>'
+			this->GetChar(); // skip '>'
 			break;
 		}
 
 		GUIString anAttribute;
 		GUIString aValue;
 
-		ReadWord(anAttribute,">=");
-		SkipWhitespace();
-		if(PeekChar()=='=') // read attribute value
+		this->ReadWord(anAttribute,">=");
+		this->SkipWhitespace();
+		if(this->PeekChar()=='=') // read attribute value
 		{
-			GetChar(); // skip '=' sign
-			SkipWhitespace();
-			if(PeekChar()=='"')
+			this->GetChar(); // skip '=' sign
+			this->SkipWhitespace();
+			if(this->PeekChar()=='"')
 			{
-				GetChar(); // Skip '"' sign
-				ReadWord(aValue,"\"",false);
-				GetChar(); // Skip '"' sign
+				this->GetChar(); // Skip '"' sign
+				this->ReadWord(aValue,"\"",false);
+				this->GetChar(); // Skip '"' sign
 			}
-			else if(PeekChar()=='\'')
+			else if(this->PeekChar()=='\'')
 			{
-				GetChar(); // Skip ' sign
-				ReadWord(aValue,"'",false);
-				GetChar(); // Skip ' sign
+				this->GetChar(); // Skip ' sign
+				this->ReadWord(aValue,"'",false);
+				this->GetChar(); // Skip ' sign
 			}
 			else
-				ReadWord(aValue,">");
+				this->ReadWord(aValue,">");
 		}
-		mTagAttributes.AddAttribute(anAttribute,aValue);
+		this->mTagAttributes.AddAttribute(anAttribute,aValue);
 
 	}
 
 	if(aTag->FlagSet(HTMLTagFlag_SkipToEndTag))
-		SkipTag(aTagName);
+		this->SkipTag(aTagName);
 	else
-		aTag->ParseAttributes(mTagAttributes);
+		aTag->ParseAttributes(this->mTagAttributes);
 
-	mDocument->AddTag(aTag.get());
+	this->mDocument->AddTag(aTag.get());
 	return true;
 
 }
@@ -822,21 +871,22 @@ bool HTMLParser::GetActualTag()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007443f0
+// Adds the text before the next '<' as a text tag, then parses the tag; returns false at the end of input
 bool HTMLParser::GetNextTag()
 {
 	GUIString aWord;
-	ReadWord(aWord,"<",false);
+	this->ReadWord(aWord,"<",false);
 	if(!(aWord.length()==0))
 	{
 		HTMLTagPtr aTag = new HTMLTextTag(aWord);
-		aTag->SetLineNum(mLineNum);
-		mDocument->AddTag(aTag.get());
+		aTag->SetLineNum(this->mLineNum);
+		this->mDocument->AddTag(aTag.get());
 	}
-	if(PeekChar()!='<')
+	if(this->PeekChar()!='<')
 		return false;
 
-	GetChar();
-	bool aVal = GetActualTag();
+	this->GetChar();
+	bool aVal = this->GetActualTag();
 	if(aVal)
 	{
 	// in HTML supposedly a carriage return directly after a tag is supposed to be ignored
@@ -851,56 +901,59 @@ bool HTMLParser::GetNextTag()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007446e0
+// Parses the named HTML file into the document; returns false if the name is empty or the file cannot be
+// opened
 bool HTMLParser::ParseFromFile(const GUIString &theFileName)
 {
-	CloseFile();
+	this->CloseFile();
 
 	if((theFileName.empty()))
 		return false;
 
 	std::string aFileName = theFileName;
-	mFile=fopen(aFileName.c_str(),"r");
-	if(mFile==NULL)
+	this->mFile=fopen(aFileName.c_str(),"r");
+	if(this->mFile==NULL)
 		return false;
 
-	return Parse();
+	return this->Parse();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00744850
+// Parses HTML text into the document (the text is pushed back in reverse and read from there)
 bool HTMLParser::ParseFromText(const GUIString &theText)
 {
-	CloseFile();
+	this->CloseFile();
 
-	mBackStr.resize(0);
-	mBackStr.reserve(theText.length());
+	this->mBackStr.resize(0);
+	this->mBackStr.reserve(theText.length());
 	for(int i = theText.length()-1; i>=0; i--)
-		mBackStr.append(theText[i]);
+		this->mBackStr.append(theText[i]);
 
-	return Parse();
+	return this->Parse();
 }
 
 // FUNCTION: WON 0x007445f0
+// Parses all tags of the input into a new or cleared document, then closes the input; always returns true
 bool HTMLParser::Parse()
 {
-    mLineNum=1;
-    if(mDocument.get()==NULL) mDocument=new HTMLDocument(gEmptyGUIString);
-    else mDocument->Clear();
-    while(!EndOfFile())
-        if(!GetNextTag()) break;
-    CloseFile();
+    this->mLineNum=1;
+    if(this->mDocument.get()==NULL) this->mDocument=new HTMLDocument(gEmptyGUIString);
+    else this->mDocument->Clear();
+    while(!this->EndOfFile())
+        if(!this->GetNextTag()) break;
+    this->CloseFile();
     return true;
 }
 
 namespace WONAPI {
-// Genuine original FILE-based parser constructor; shared registry is initialized
-// through the existing actualSDK provider, with natural member construction.
 // FUNCTION: WON 0x00742ae0
+// Creates a parser with no input file, using the shared tag name registry
 HTMLParser::HTMLParser() :mTagNameMap(GetTagNameMap())
 {
-    mLineNum=0;
-    mFile=NULL;
+    this->mLineNum=0;
+    this->mFile=NULL;
 }
 }
 

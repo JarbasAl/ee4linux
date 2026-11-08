@@ -1,4 +1,4 @@
-// WONGUI MSWindow native behavior; archived SDK corroborates source contract.
+// Win32 top-level window of the GUI: creation, window procedure, painting and input events
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include "LostDebug.h"
@@ -12,69 +12,76 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007d0d90
+// Creates a window object with no Win32 window yet, no key modifiers and no key forwarding
 MSWindow::MSWindow()
 {
-	mLB8 = NULL;
-	mLBC = 0;
-	mBC4 = false;
-	mBC5 = false;
+	this->mHWND = NULL;
+	this->mCurKeyMod = 0;
+	this->mMinimizeOnAltTab = false;
+	this->mForwardKeyMsgToParent = false;
 }
 
 // FUNCTION: WON 0x007d0de0
+// Destroys the window, detaching it from its Win32 window first so no more messages reach it
 MSWindow::~MSWindow()
 {
-	if(mLB8!=NULL)
+	if(this->mHWND!=NULL)
 	{
-		SetWindowLongA(mLB8, GWL_USERDATA, 0);
-		DestroyWindow(mLB8);
+		SetWindowLongA(this->mHWND, GWL_USERDATA, 0);
+		DestroyWindow(this->mHWND);
 	}
 }
 
 // FUNCTION: WON 0x007d0e70
-SmartPtr<Font> MSWindow::Virtual04(const FontDescriptor &theDescriptor)
+// Returns a new GDI font for the descriptor on the window's display context
+SmartPtr<Font> MSWindow::PlatformGetFont(const FontDescriptor &theDescriptor)
 {
-	return new MSFont(mDisplayContext.get(),theDescriptor);
+	return new MSFont(this->mDisplayContext.get(),theDescriptor);
 }
 
 // FUNCTION: WON 0x007d11d0
-void MSWindow::Virtual2C()
+// Closes the window and destroys its Win32 window
+void MSWindow::PlatformClose()
 {
-	Window::Virtual2C();
+	Window::PlatformClose();
 
-	if(mLB8!=NULL)
+	if(this->mHWND!=NULL)
 	{
-		DestroyWindow(mLB8);
-		mLB8 = NULL;
+		DestroyWindow(this->mHWND);
+		this->mHWND = NULL;
 	}
 }
 
 // FUNCTION: WON 0x007d1200
-void MSWindow::Virtual10()
+// Sets the Win32 window's caption to the title (as ANSI text)
+void MSWindow::PlatformSetTitle()
 {
-	std::string aTitle = mTitle;
-	SetWindowTextA(mLB8,aTitle.c_str());
+	std::string aTitle = this->mTitle;
+	SetWindowTextA(this->mHWND,aTitle.c_str());
 }
 
 // FUNCTION: WON 0x007d1300
-void MSWindow::Virtual14()
+// Sets the window's small icon (none when no icon is set)
+void MSWindow::PlatformSetIcon()
 {
 	HICON anIcon = NULL;
-	if(mIcon.get()!=NULL)
-		anIcon = ((MSNativeIcon*)mIcon.get())->mIcon;
+	if(this->mIcon.get()!=NULL)
+		anIcon = ((MSNativeIcon*)this->mIcon.get())->mIcon;
 
-	SendMessageA(mLB8,WM_SETICON,(WPARAM)ICON_SMALL,(LPARAM)anIcon);
+	SendMessageA(this->mHWND,WM_SETICON,(WPARAM)ICON_SMALL,(LPARAM)anIcon);
 }
 
 // FUNCTION: WON 0x007d1330
+// Moves and resizes an open window; a width or height of -1 keeps the current one
 void MSWindow::SetPosSize(int x, int y, int width, int height)
 {
-	if(mWindowState!=WindowState_Open)
+	if(this->mWindowState!=WindowState_Open)
 		return;
 
 	if(width==-1 || height==-1)
 	{
 		WONRectangle aRect;
-		GetRect(aRect,false);
+		this->GetRect(aRect,false);
 		if(width==-1)
 			width = aRect.width;
 
@@ -82,24 +89,25 @@ void MSWindow::SetPosSize(int x, int y, int width, int height)
 			height = aRect.height;
 	}
 
-	MoveWindow(mLB8, x, y, width, height, TRUE);	
+	MoveWindow(this->mHWND, x, y, width, height, TRUE);	
 }
 
 // FUNCTION: WON 0x007d13a0
+// Returns the window's screen rectangle, or its client area in screen coordinates
 void MSWindow::GetRect(WONRectangle &theRectR, bool clientArea)
 {
 	RECT aRect;
 	if(clientArea)
 	{
-		GetClientRect(mLB8, &aRect);
+		GetClientRect(this->mHWND, &aRect);
 		POINT aPoint = { aRect.left, aRect.top };
-		ClientToScreen(mLB8,&aPoint);
+		ClientToScreen(this->mHWND,&aPoint);
 		theRectR.x = aPoint.x;
 		theRectR.y = aPoint.y;
 	}
 	else
 	{
-		GetWindowRect(mLB8,&aRect);
+		GetWindowRect(this->mHWND,&aRect);
 		theRectR.x = aRect.left;
 		theRectR.y = aRect.top;
 	}
@@ -109,43 +117,48 @@ void MSWindow::GetRect(WONRectangle &theRectR, bool clientArea)
 }
 
 // FUNCTION: WON 0x007d1430
-void MSWindow::Virtual3C()
+// Gives the Win32 window the keyboard focus
+void MSWindow::PlatformSetFocus()
 {
-	::SetFocus(mLB8);
+	::SetFocus(this->mHWND);
 }
 
 // FUNCTION: WON 0x007d1440
-void MSWindow::Virtual20(bool show)
+// Shows the window (without activating it for a popup) or hides it
+void MSWindow::PlatformShow(bool show)
 {
 	int aCmd = SW_SHOW;
-	if(mIsPopup)
+	if(this->mIsPopup)
 		aCmd = SW_SHOWNA;
 
 	if(!show)
 		aCmd = SW_HIDE;
 
 
-	::ShowWindow(mLB8, aCmd);
+	::ShowWindow(this->mHWND, aCmd);
 }
 
 // FUNCTION: WON 0x007d1470
-void MSWindow::Virtual24(bool minimize)
+// Minimizes or restores the window
+void MSWindow::PlatformMinimize(bool minimize)
 {
 	int aCmd = minimize?SW_MINIMIZE:SW_RESTORE;
-	::ShowWindow(mLB8, aCmd);
+	::ShowWindow(this->mHWND, aCmd);
 }
 
 // FUNCTION: WON 0x007d1490
-void MSWindow::Virtual28(bool topMost)
+// Makes the window topmost or not, keeping its position and size
+void MSWindow::PlatformSetTopMost(bool topMost)
 {
 	if (topMost)
-		::SetWindowPos(mLB8, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		::SetWindowPos(this->mHWND, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	else
-		::SetWindowPos(mLB8, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		::SetWindowPos(this->mHWND, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 // FUNCTION: WON 0x007d14f0
-void MSWindow::Virtual1C(bool show)
+// Hides the system cursor when asked to; showing it does nothing
+void MSWindow::PlatformShowNativeCursor(bool show)
 {
 	if(!show)
 		SetCursor(NULL);
@@ -153,81 +166,93 @@ void MSWindow::Virtual1C(bool show)
 }
 
 // FUNCTION: WON 0x007d1510
-bool MSWindow::Virtual4C()
+// Returns whether the Win32 window is visible
+bool MSWindow::PlatformIsVisible()
 {
-	return ::IsWindowVisible(mLB8)?true:false;
+	return ::IsWindowVisible(this->mHWND)?true:false;
 }
 
 // FUNCTION: WON 0x007d1670
-void MSWindow::Virtual44(bool on)
+// Captures the mouse for the window or releases the capture
+void MSWindow::PlatformSetMouseCapture(bool on)
 {
 	if(on)
-		SetCapture(mLB8);
+		SetCapture(this->mHWND);
 	else
 		ReleaseCapture();
 }
 // FUNCTION: WON 0x007d2150
-bool MSWindow::Virtual08() {
-    if(!Window::Virtual08()) return false;
-    if(mRoot->mInvalidState!=0) {
-        const WONRectangle& r=mRoot->mInvalidRect;
-        RECT rect={r.x,r.y,r.x+r.width,r.y+r.height};
-        ::InvalidateRect(mLB8,&rect,FALSE);
-    }
+// Runs the idle update and asks Windows to repaint the root's invalid rectangle; false when the base
+// update fails
+bool MSWindow::IdleUpdate() {
+    if(!Window::IdleUpdate()) return false;
+    if(this->mRoot->mInvalidState==0)
+        return true;
+    const WONRectangle& r=this->mRoot->mInvalidRect;
+    RECT rect={r.x,r.y,r.x+r.width,r.y+r.height};
+    ::InvalidateRect(this->mHWND,&rect,FALSE);
     return true;
 }
 // FUNCTION: WON 0x007d21d0
-void MSWindow::Virtual0C(DWORD elapsed) {
-    Window::Virtual0C(elapsed);
-    if(mMouseIsInClientArea) {
-        POINT point;GetCursorPos(&point);
-        HWND hwnd=WindowFromPoint(point);
-        ScreenToClient(mLB8,&point);
-        if(hwnd!=mLB8 || !mRoot->Contains(point.x,point.y)) {
-            if(hwnd!=mLB8) {
-                WindowManager* manager=mManager;
-                MSWindow* popup=(MSWindow*)manager->GetPopupWindow();
-                if(popup!=NULL && ((manager->mPopupFlags&0x4000)?true:false) && popup->mLB8==hwnd) return;
-            }
-            Virtual48(new InputEvent(13));
-        }
+// Runs the timer update and queues a mouse-exit event once the cursor has left the window (being over
+// the manager's popup window while its popup flag 0x4000 is set does not count)
+void MSWindow::TimerEvent(DWORD elapsed) {
+    Window::TimerEvent(elapsed);
+    if(!this->mMouseIsInClientArea)
+        return;
+    POINT point;GetCursorPos(&point);
+    HWND hwnd=WindowFromPoint(point);
+    ScreenToClient(this->mHWND,&point);
+    if(hwnd==this->mHWND && this->mRoot->Contains(point.x,point.y))
+        return;
+    if(hwnd!=this->mHWND) {
+        WindowManager* manager=this->mManager;
+        MSWindow* popup=static_cast<MSWindow*>(manager->GetPopupWindow());
+        if(popup!=NULL && ((manager->mPopupFlags&PopupFlag_DontWantMouse)?true:false) && popup->mHWND==hwnd) return;
     }
+    this->QueueEvent(new InputEvent(InputEvent_MouseExit));
 }
 // FUNCTION: WON 0x007d22c0
-void MSWindow::Virtual54() {
-    mDisplayContext=new DisplayContext(::GetDC(mLB8));
-    mOffscreenImage=CreateImage(mRoot->Width(),mRoot->Height());
-    SetTimer(mLB8,0,50,NULL);
+// Sets up the display context, an offscreen image the size of the root and a 50 ms timer
+void MSWindow::OnCreate() {
+    this->mDisplayContext=new DisplayContext(::GetDC(this->mHWND));
+    this->mOffscreenImage=this->CreateImage(this->mRoot->Width(),this->mRoot->Height());
+    SetTimer(this->mHWND,0,50,NULL);
 }
 // FUNCTION: WON 0x007d23f0
-void MSWindow::Virtual50() {
-    PAINTSTRUCT ps;BeginPaint(mLB8,&ps);
+// Repaints the root into the offscreen image if anything is invalid (asking again for any part outside
+// the paint area), then copies the whole image to the window
+void MSWindow::OnPaint() {
+    PAINTSTRUCT ps;BeginPaint(this->mHWND,&ps);
     const RECT& paint=ps.rcPaint;
-    if(mRoot->mInvalidState!=0) {
-        const WONRectangle& r=mRoot->mInvalidRect;
+    if(this->mRoot->mInvalidState!=0) {
+        const WONRectangle& r=this->mRoot->mInvalidRect;
         RECT invalid={r.x,r.y,r.x+r.width,r.y+r.height};
         if(invalid.left<paint.left || invalid.top<paint.top || invalid.right>paint.right || invalid.bottom>paint.bottom)
-            ::InvalidateRect(mLB8,&invalid,FALSE);
-        mRoot->Virtual14(mOffscreenImage->GetGraphics());
-        mRoot->Paint(mOffscreenImage->GetGraphics());
+            ::InvalidateRect(this->mHWND,&invalid,FALSE);
+        this->mRoot->PrePaint(this->mOffscreenImage->GetGraphics());
+        this->mRoot->Paint(this->mOffscreenImage->GetGraphics());
     }
-    mOffscreenImage->DrawEntire(mDisplayContext.get(),0,0);
-    EndPaint(mLB8,&ps);
+    this->mOffscreenImage->DrawEntire(this->mDisplayContext.get(),0,0);
+    EndPaint(this->mHWND,&ps);
 }
 
 #include <imm.h>
 #include <stdio.h>
 #include <stdlib.h>
-// Native566b9c actual default owner HWND; source setter support0.
+// Owner window for windows created without a parent
 static HWND gMSWindowDefaultOwnerHWND = NULL;
 // FUNCTION: WON 0x007d08c0
-void WONAPI::LobbyFn3D08C0(HWND owner) { gMSWindowDefaultOwnerHWND=owner; }
+// Sets the owner window used for windows created without a parent
+void WONAPI::SetMSWindowDefaultOwner(HWND owner) { gMSWindowDefaultOwnerHWND=owner; }
 
 // FUNCTION: WON 0x007d0f00
+// Registers a new window class and creates the Win32 window from the style flags (popup, no system menu,
+// no minimize, fixed size, default position, client-sized, centred, hidden), then sets its icon
 void MSWindow::Create(const WONRectangle& theWindowRectR)
 {
 	Window::Create(theWindowRectR);
-	CalcCodePage();
+	this->CalcCodePage();
 
 	static int aCreateCount = 0;
 	char aBuf[50];
@@ -235,9 +260,9 @@ void MSWindow::Create(const WONRectangle& theWindowRectR)
 
 	WNDCLASS wc;
 	wc.lpszClassName = aBuf;
-	wc.lpfnWndProc = StaticWindowProc;
+	wc.lpfnWndProc = MSWindow::StaticWindowProc;
 	wc.style = CS_OWNDC | CS_DBLCLKS; 
-	wc.hInstance = ((MSWindowManager*)mManager)->mInstance;
+	wc.hInstance = static_cast<MSWindowManager*>(this->mManager)->mInstance;
 	wc.hIcon = LoadIcon( NULL, IDI_APPLICATION );
 	wc.hCursor = NULL;
 	wc.hbrBackground = NULL;
@@ -250,36 +275,36 @@ void MSWindow::Create(const WONRectangle& theWindowRectR)
 	int aStyle = WS_OVERLAPPEDWINDOW;
 	int aStyleEx = 0;
 
-	if(mParent!=NULL)
+	if(this->mParent!=NULL)
 	{
-		aParent = ((MSWindow*)mParent)->mLB8;
+		aParent = static_cast<MSWindow*>(this->mParent)->mHWND;
 		aStyle |= WS_POPUPWINDOW;
 
 	}
 	else
 		aParent = gMSWindowDefaultOwnerHWND;
 
-	if(mStyle & 0x20)
+	if(this->mStyle & 0x20)
 	{
 		aStyle = WS_POPUP;
 
 	}
 
-	if(mStyle & 0x04) 
+	if(this->mStyle & 0x04) 
 		aStyle &= ~(WS_SYSMENU);
 
-	if(mStyle & 0x08)
+	if(this->mStyle & 0x08)
 		aStyle &= ~(WS_MINIMIZEBOX);
 
-	if(mStyle & 0x10)
+	if(this->mStyle & 0x10)
 		aStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
 
 	int x = theWindowRectR.x, y = theWindowRectR.y;
-	if(mStyle&0x80)
+	if(this->mStyle&0x80)
 		x = y = CW_USEDEFAULT;
 
 
-	std::string aTitle = mTitle;
+	std::string aTitle = this->mTitle;
 	HWND aWnd = CreateWindowEx(
 		aStyleEx,
 		aBuf,
@@ -291,20 +316,20 @@ void MSWindow::Create(const WONRectangle& theWindowRectR)
 		theWindowRectR.Height(),
 		aParent,
 		NULL,
-		((MSWindowManager*)mManager)->mInstance,
+		static_cast<MSWindowManager*>(this->mManager)->mInstance,
 		this
    );
 
 
 
-	if(aWnd && (mStyle & 0x40) && !(mStyle & 0x20))
+	if(aWnd && (this->mStyle & 0x40) && !(this->mStyle & 0x20))
 	{
 		
 		
 		WONRectangle aClientRect;
 		WONRectangle aScreenRect;
-		GetRect(aScreenRect,false);
-		GetRect(aClientRect,true);
+		this->GetRect(aScreenRect,false);
+		this->GetRect(aClientRect,true);
 
 		int aWidthDelta = theWindowRectR.Width() - aClientRect.Width();
 		int aHeightDelta = theWindowRectR.Height() - aClientRect.Height();
@@ -316,46 +341,47 @@ void MSWindow::Create(const WONRectangle& theWindowRectR)
 		int aTargetWidth = aScreenRect.Width() + aWidthDelta;
 		int aTargetHeight = aScreenRect.Height() + aHeightDelta;
 
-		SetPosSize(aScreenRect.Left(), aScreenRect.Top(), aTargetWidth, aTargetHeight);
+		this->SetPosSize(aScreenRect.Left(), aScreenRect.Top(), aTargetWidth, aTargetHeight);
 	}
 
-	if(mStyle&0x01)
-		Center(true);
+	if(this->mStyle&0x01)
+		this->Center(true);
 
 
 
-	if(!(mStyle&0x02))
+	if(!(this->mStyle&0x02))
 	{
-		mIsShowing = true;
-		Virtual20(true);
+		this->mIsShowing = true;
+		this->PlatformShow(true);
 	}
 	else
-		mIsShowing = false;
+		this->mIsShowing = false;
 
-	if(mIcon.get()!=NULL)
-		Virtual14();
+	if(this->mIcon.get()!=NULL)
+		this->PlatformSetIcon();
 }
 
-// Requires actual D call contracts; include <imm.h> in owning TU.
 
-// Native3d2120 support0: actual free cdecl forwarding helper.
+// Posts a message to the window's parent, if it has one (body at 0x007d2120)
 static void SendMsgToParent(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam) {
     HWND parent=::GetParent(hwnd);
     if(parent!=NULL) ::PostMessage(parent,msg,wParam,lParam);
 }
 
 // FUNCTION: WON 0x007d0e20
+// Sets the code page for character input from the keyboard layout's language (ANSI default if unknown)
 void MSWindow::CalcCodePage()
 {
 	char aBuf[32];
 	unsigned short aLangId = ((WORD)GetKeyboardLayout(0))&0xffff;
 	GetLocaleInfo(MAKELCID(aLangId,SORT_DEFAULT),LOCALE_IDEFAULTANSICODEPAGE,aBuf,32);
-	mCodePage = atoi(aBuf);
-	if(mCodePage==0)
-		mCodePage = CP_ACP;
+	this->mCodePage = atoi(aBuf);
+	if(this->mCodePage==0)
+		this->mCodePage = CP_ACP;
 }
 
 // FUNCTION: WON 0x007d1530
+// Win32 window procedure: binds the window object on creation and forwards every message to it
 LRESULT CALLBACK MSWindow::StaticWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	MSWindow *aWindow = (MSWindow*)GetWindowLong(hwnd, GWL_USERDATA);
@@ -365,8 +391,8 @@ LRESULT CALLBACK MSWindow::StaticWindowProc(HWND hwnd, UINT msg, WPARAM wParam, 
 		{
 			CREATESTRUCT *aStruct = (CREATESTRUCT*)lParam;
 			aWindow = (MSWindow*)aStruct->lpCreateParams;
-			aWindow->mLB8 = hwnd;
-			SetWindowLong(hwnd, GWL_USERDATA, (LONG)aWindow);
+			aWindow->mHWND = hwnd;
+			SetWindowLong(hwnd, GWL_USERDATA, reinterpret_cast<LONG>(aWindow));
 		}
 		else
 			return DefWindowProc(hwnd,msg,wParam,lParam);
@@ -376,52 +402,58 @@ LRESULT CALLBACK MSWindow::StaticWindowProc(HWND hwnd, UINT msg, WPARAM wParam, 
 }
 
 // FUNCTION: WON 0x007d15a0
+// Reads the Shift (1), Alt (2) and Ctrl (4) key states into the current key modifiers
 void MSWindow::MyGetKeyState()
 {
 	int aState;
 	 
 	aState = (GetKeyState(VK_SHIFT)>>15)&1;
-	mLBC = aState;
+	this->mCurKeyMod = aState;
 
 	aState = (GetKeyState(VK_MENU)>>15)&1;
-	mLBC |= (aState<<1);
+	this->mCurKeyMod |= (aState<<1);
 
 	aState = (GetKeyState(VK_CONTROL)>>15)&1;
-	mLBC |= (aState<<2);
+	this->mCurKeyMod |= (aState<<2);
 }
 
 // FUNCTION: WON 0x007d1600
+// Queues a mouse event at the message's coordinates with the current key modifiers
 void MSWindow::PostMouseEvent(WindowEventType theType, int theButtonOrWheelAmount, LPARAM lParam)
 {
-	Virtual48(new MouseEvent(theType, (short)LOWORD(lParam), (short)HIWORD(lParam), mLBC, theButtonOrWheelAmount));
+	this->QueueEvent(new MouseEvent(theType, (short)LOWORD(lParam), (short)HIWORD(lParam), this->mCurKeyMod, theButtonOrWheelAmount));
 }
 
 // FUNCTION: WON 0x007d16a0
+// Minimizes the window's top-level ancestor; the loop re-reads this window's parent each time, so it
+// never ends when the window has a parent
 void MSWindow::DoMinimizeOnAltTab()
 {
-	HWND aWnd = mLB8;
-	HWND aParent = ::GetParent(mLB8);
+	HWND aWnd = this->mHWND;
+	HWND aParent = ::GetParent(this->mHWND);
 	while(aParent!=NULL)
 	{
 		aWnd = aParent;
-		aParent = ::GetParent(mLB8);
+		aParent = ::GetParent(this->mHWND);
 	}
 	
 	ShowWindow(aWnd, SW_MINIMIZE);
 }
 
 // FUNCTION: WON 0x007d16e0
+// Turns Win32 messages into GUI events (mouse, keys, IME text, focus, size and move), handles modal
+// activation, popups, size limits and painting, then processes the queued events
 LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {	
 	
 	switch(msg)
 	{
 		case WM_ACTIVATE:
-			if(LOWORD(wParam)!=WA_INACTIVE && mManager->NotModalWindow(this))
+			if(LOWORD(wParam)!=WA_INACTIVE && this->mManager->NotModalWindow(this))
 			{
-				MSWindow *aModalWindow = (MSWindow*)mManager->mModalWindow;
+				MSWindow *aModalWindow = static_cast<MSWindow*>(this->mManager->mModalWindow);
 
-				ShowWindow(aModalWindow->mLB8,SW_SHOW);
+				ShowWindow(aModalWindow->mHWND,SW_SHOW);
 				return 0;
 			}
 			else
@@ -429,11 +461,11 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_CLOSE:
-			Close();
+			this->Close();
 			return 1;
 
 		case WM_MOUSEACTIVATE:
-			if(mIsPopup)
+			if(this->mIsPopup)
 				return MA_NOACTIVATE;
 			else
 				return DefWindowProc(hwnd,msg,wParam,lParam);
@@ -445,15 +477,15 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_NCLBUTTONDBLCLK:
 		case WM_NCMBUTTONDBLCLK:
 		case WM_NCRBUTTONDBLCLK:
-			ClosePopup(NULL);
-			if(mManager->NotModalWindow(this))
+			this->ClosePopup(NULL);
+			if(this->mManager->NotModalWindow(this))
 				return 0;
 			else
 				return DefWindowProc(hwnd,msg,wParam,lParam);
 			break;
 
 		case WM_CREATE:
-			Virtual54();
+			this->OnCreate();
 		break;
 		case WM_SYSCOLORCHANGE:
 
@@ -462,42 +494,42 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case WM_SIZE:
 			if(wParam==SIZE_RESTORED || wParam==SIZE_MAXIMIZED)
-				Virtual48(new SizeEvent(-1,-1,(short)LOWORD(lParam), (short)HIWORD(lParam)));
+				this->QueueEvent(new SizeEvent(-1,-1,(short)LOWORD(lParam), (short)HIWORD(lParam)));
 			break;
 
 		case WM_MOVE:
-			Virtual48(new SizeEvent((short)LOWORD(lParam), (short)HIWORD(lParam),-1,-1));
+			this->QueueEvent(new SizeEvent((short)LOWORD(lParam), (short)HIWORD(lParam),-1,-1));
 			break;
 
-		case WM_MOUSEMOVE:		PostMouseEvent(InputEvent_MouseMove, 0, lParam);break;
+		case WM_MOUSEMOVE:		this->PostMouseEvent(InputEvent_MouseMove, 0, lParam);break;
 
-		case WM_LBUTTONDOWN:	PostMouseEvent(InputEvent_MouseDown, 0, lParam); break; 
-		case WM_LBUTTONDBLCLK:	PostMouseEvent(InputEvent_MouseDoubleClick,	0, lParam); break;
-		case WM_LBUTTONUP:		PostMouseEvent(InputEvent_MouseUp, 0, lParam); break; 
+		case WM_LBUTTONDOWN:	this->PostMouseEvent(InputEvent_MouseDown, 0, lParam); break; 
+		case WM_LBUTTONDBLCLK:	this->PostMouseEvent(InputEvent_MouseDoubleClick,	0, lParam); break;
+		case WM_LBUTTONUP:		this->PostMouseEvent(InputEvent_MouseUp, 0, lParam); break; 
 
-		case WM_MBUTTONDOWN:	PostMouseEvent(InputEvent_MouseDown, 1, lParam); break; 
-		case WM_MBUTTONDBLCLK:	PostMouseEvent(InputEvent_MouseDoubleClick,	1, lParam); break;
-		case WM_MBUTTONUP:		PostMouseEvent(InputEvent_MouseUp, 1, lParam); break;
+		case WM_MBUTTONDOWN:	this->PostMouseEvent(InputEvent_MouseDown, 1, lParam); break; 
+		case WM_MBUTTONDBLCLK:	this->PostMouseEvent(InputEvent_MouseDoubleClick,	1, lParam); break;
+		case WM_MBUTTONUP:		this->PostMouseEvent(InputEvent_MouseUp, 1, lParam); break;
 
-		case WM_RBUTTONDOWN:	PostMouseEvent(InputEvent_MouseDown, 2, lParam); break; 
-		case WM_RBUTTONDBLCLK:	PostMouseEvent(InputEvent_MouseDoubleClick,	2, lParam); break;
-		case WM_RBUTTONUP:		PostMouseEvent(InputEvent_MouseUp,		2, lParam); break;
+		case WM_RBUTTONDOWN:	this->PostMouseEvent(InputEvent_MouseDown, 2, lParam); break; 
+		case WM_RBUTTONDBLCLK:	this->PostMouseEvent(InputEvent_MouseDoubleClick,	2, lParam); break;
+		case WM_RBUTTONUP:		this->PostMouseEvent(InputEvent_MouseUp,		2, lParam); break;
 
-		case 0x020A: // WM_MOUSEWHEEL; actual target message, gated out by VC6 WINVER.
+		case 0x020A: // WM_MOUSEWHEEL (not defined by the VC6 headers at this WINVER)
 		{
 			
 			WONRectangle aRect;
-			GetRect(aRect,true); 
+			this->GetRect(aRect,true); 
 			short mx = LOWORD(lParam);
 			short my = HIWORD(lParam);
 			lParam = MAKELPARAM(mx - aRect.Left(), my - aRect.Top());
-			PostMouseEvent(InputEvent_MouseWheel, (short)HIWORD(wParam), lParam);
+			this->PostMouseEvent(InputEvent_MouseWheel, (short)HIWORD(wParam), lParam);
 			break;
 		}
 
 		case WM_INPUTLANGCHANGE: 
 		{
-			CalcCodePage();
+			this->CalcCodePage();
 			return DefWindowProc(hwnd,msg,wParam,lParam);
 		}
 
@@ -517,7 +549,7 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					EE_LOST_DEBUG(2);
 					ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, (char*)aStr.data(),dwSize); 
 					for(int i=0; i<aStr.length(); i++)
-						Virtual48(new KeyEvent(InputEvent_KeyChar, aStr.at(i), mLBC)); 
+						this->QueueEvent(new KeyEvent(InputEvent_KeyChar, aStr.at(i), this->mCurKeyMod)); 
 				}
 				ImmReleaseContext(hwnd, hIMC);
 
@@ -530,44 +562,44 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_CHAR:			
 		{
 			wchar_t aChar = wParam;
-			MultiByteToWideChar(mCodePage,0,(const char*)&wParam,2,&aChar,1);
-			Virtual48(new KeyEvent(InputEvent_KeyChar, aChar, mLBC)); 
+			MultiByteToWideChar(this->mCodePage,0,reinterpret_cast<const char*>(&wParam),2,&aChar,1);
+			this->QueueEvent(new KeyEvent(InputEvent_KeyChar, aChar, this->mCurKeyMod)); 
 			break;
 		}
 
 		case WM_IME_CHAR:			
 		{
 			wchar_t aChar = wParam;
-			MultiByteToWideChar(mCodePage,0,(const char*)&wParam,2,&aChar,1);
-			Virtual48(new KeyEvent(InputEvent_KeyChar, aChar, mLBC)); 
+			MultiByteToWideChar(this->mCodePage,0,reinterpret_cast<const char*>(&wParam),2,&aChar,1);
+			this->QueueEvent(new KeyEvent(InputEvent_KeyChar, aChar, this->mCurKeyMod)); 
 			break;
 		}
 
-		case WM_KEYDOWN:		MyGetKeyState(); Virtual48(new KeyEvent(InputEvent_KeyDown,	wParam, mLBC)); if(mBC5) SendMsgToParent(hwnd,msg,wParam,lParam); break;
-		case WM_KEYUP:			MyGetKeyState(); Virtual48(new KeyEvent(InputEvent_KeyUp, wParam, mLBC)); if(mBC5) SendMsgToParent(hwnd,msg,wParam,lParam); break;
+		case WM_KEYDOWN:		this->MyGetKeyState(); this->QueueEvent(new KeyEvent(InputEvent_KeyDown,	wParam, this->mCurKeyMod)); if(this->mForwardKeyMsgToParent) SendMsgToParent(hwnd,msg,wParam,lParam); break;
+		case WM_KEYUP:			this->MyGetKeyState(); this->QueueEvent(new KeyEvent(InputEvent_KeyUp, wParam, this->mCurKeyMod)); if(this->mForwardKeyMsgToParent) SendMsgToParent(hwnd,msg,wParam,lParam); break;
 		
 		
 		case WM_SYSKEYDOWN:	
 		case WM_SYSKEYUP:		
-			if(wParam==VK_TAB && mBC4)
+			if(wParam==VK_TAB && this->mMinimizeOnAltTab)
 			{
-				DoMinimizeOnAltTab();
+				this->DoMinimizeOnAltTab();
 				return 1;
 			}
 
-			MyGetKeyState(); 
-			if(mBC5) SendMsgToParent(hwnd,msg,wParam,lParam);
+			this->MyGetKeyState(); 
+			if(this->mForwardKeyMsgToParent) SendMsgToParent(hwnd,msg,wParam,lParam);
 			return DefWindowProc(hwnd,msg,wParam,lParam); 
 
 
-		case WM_KILLFOCUS:		Virtual48(new InputEvent(InputEvent_LostFocus)); break;
-		case WM_SETFOCUS:		MyGetKeyState(); Virtual48(new InputEvent(InputEvent_GotFocus)); break;
+		case WM_KILLFOCUS:		this->QueueEvent(new InputEvent(InputEvent_LostFocus)); break;
+		case WM_SETFOCUS:		this->MyGetKeyState(); this->QueueEvent(new InputEvent(InputEvent_GotFocus)); break;
 
 		case WM_DESTROY:
-			KillTimer(mLB8,0);
+			KillTimer(this->mHWND,0);
 			SetWindowLong(hwnd, GWL_USERDATA, 0);
-			mLB8 = NULL;
-			Close();
+			this->mHWND = NULL;
+			this->Close();
 			
 			break;
 
@@ -581,26 +613,26 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			
 			
-			if (aRect->right - aRect->left < mMinWidth)
+			if (aRect->right - aRect->left < this->mMinWidth)
 			{
-				aRect->right = aRect->left + mMinWidth; 
+				aRect->right = aRect->left + this->mMinWidth; 
 			}
 			
-			if ( aRect->bottom - aRect->top < mMinHeight)
+			if ( aRect->bottom - aRect->top < this->mMinHeight)
 			{
-				aRect->bottom = aRect->top + mMinHeight;
+				aRect->bottom = aRect->top + this->mMinHeight;
 			}
 
 			
 			
-			if (aRect->right - aRect->left > mMaxWidth)
+			if (aRect->right - aRect->left > this->mMaxWidth)
 			{
-				aRect->right = aRect->left + mMaxWidth;
+				aRect->right = aRect->left + this->mMaxWidth;
 			}
 			
-			if ( aRect->bottom - aRect->top > mMaxHeight)
+			if ( aRect->bottom - aRect->top > this->mMaxHeight)
 			{
-				aRect->bottom = aRect->top + mMaxHeight;
+				aRect->bottom = aRect->top + this->mMaxHeight;
 			}
 		}
 		break;
@@ -613,15 +645,15 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				int aMaximizedHeight = GetSystemMetrics(SM_CYMAXIMIZED);
 
 				
-				if (mMaxWidth < aMaximizedWidth || mMaxHeight < aMaximizedHeight)
+				if (this->mMaxWidth < aMaximizedWidth || this->mMaxHeight < aMaximizedHeight)
 				{
 					DefWindowProc(hwnd,msg,wParam,lParam); 
 					int x, y, cx, cy;
 					
-					if (mMaxWidth < aMaximizedWidth)
+					if (this->mMaxWidth < aMaximizedWidth)
 					{
-						x =  (aMaximizedWidth - mMaxWidth) / 2;
-						cx = mMaxWidth;
+						x =  (aMaximizedWidth - this->mMaxWidth) / 2;
+						cx = this->mMaxWidth;
 					}
 					else
 					{
@@ -629,10 +661,10 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						cx = aMaximizedWidth;
 					}
 					
-					if (mMaxHeight < aMaximizedHeight)
+					if (this->mMaxHeight < aMaximizedHeight)
 					{
-						y =  (aMaximizedHeight - mMaxHeight) / 2;
-						cy = mMaxHeight;
+						y =  (aMaximizedHeight - this->mMaxHeight) / 2;
+						cy = this->mMaxHeight;
 					}
 					else
 					{
@@ -656,7 +688,7 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 
 		case WM_PAINT:
-			Virtual50();
+			this->OnPaint();
 		break;
 
 		case WM_USER: 
@@ -667,14 +699,14 @@ LRESULT MSWindow::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return DefWindowProc(hwnd,msg,wParam,lParam);
 	}
 
-	mManager->ProcessEvents();
+	this->mManager->ProcessEvents();
 
 	return 1;
 }
 
-// Native3d14d0 support0: actual caller already selected a nativeCursor.
 // FUNCTION: WON 0x007d14d0
-void MSWindow::Virtual18(Cursor* cursor) { ::SetCursor(((MSCursor*)cursor)->mNativeCursor); }
+// Sets the system cursor to the cursor's Win32 cursor
+void MSWindow::PlatformSetCursor(Cursor* cursor) { ::SetCursor(static_cast<MSCursor*>(cursor)->mNativeCursor); }
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007d0dc0

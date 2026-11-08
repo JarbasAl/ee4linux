@@ -1,4 +1,4 @@
-// Native directory entity behavior; no runtime substitution authority.
+// WONAPI parser for the directory server's entity replies
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,19 +11,23 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONBuffer.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x006f04f0
+// Returns whether the get flags ask for directories only (no services)
 bool DirEntityReplyParser::OnlyDirs(DWORD inFlags)
 {
     return (inFlags & 2) == 0;
 }
 // FUNCTION: WON 0x006f0500
+// Returns whether the get flags ask for services only (no directories)
 bool DirEntityReplyParser::OnlyServices(DWORD inFlags)
 {
     return (inFlags & 5) == 0;
 }
 // FUNCTION: WON 0x006f0510
+// Parses a multi-entity reply into entities with the fields its flags include; says whether more replies follow
 WONStatus DirEntityReplyParser::ParseMultiEntityReply(const void* inData,
     unsigned long inLength, DirEntityList& outEntities, unsigned char* outSequence)
 {
@@ -37,15 +41,15 @@ WONStatus DirEntityReplyParser::ParseMultiEntityReply(const void* inData,
     unsigned short service = message.ReadShort();
     unsigned short messageType = message.ReadShort();
     if (header != 5 || service != 2 || messageType != 3)
-        return (WONStatus)100063;
+        return (WONStatus)WS_ServerReq_InvalidReplyHeader;
     short status = message.ReadShort();
     if (status < 0) return status;
     unsigned char sequence = message.ReadByte();
     if (outSequence != NULL) *outSequence = sequence;
     bool moreReplies = (sequence & 0x80) == 0;
     DWORD flags = message.ReadLong();
-    bool onlyDirs = OnlyDirs(flags);
-    bool onlyServices = OnlyServices(flags);
+    bool onlyDirs = DirEntityReplyParser::OnlyDirs(flags);
+    bool onlyServices = DirEntityReplyParser::OnlyServices(flags);
     count = (unsigned short)message.ReadShort();
     for (i = 0; i < count; ++i) {
         DirEntityPtr entity = new DirEntity;
@@ -109,7 +113,7 @@ WONStatus DirEntityReplyParser::ParseMultiEntityReply(const void* inData,
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete SDK single-entity reply parser.
+// No original address identified: WON SDK single-entity reply parser
 #include "ee/wonapi/WONDirExtended.h"
 namespace WONAPI {
 WONStatus DirEntityReplyParser::ParseSingleEntityReply(const void *theMsg, unsigned long theMsgLen, DirEntityPtr &theEntity)
@@ -120,7 +124,7 @@ WONStatus DirEntityReplyParser::ParseSingleEntityReply(const void *theMsg, unsig
 	unsigned short aMessageType = aMsg.ReadShort();		// 2 = SingleEntity Reply
 
 	if(aHeaderType!=5 || aServiceType!=2 || aMessageType!=2)
-		return (WONStatus)100063;
+		return (WONStatus)WS_ServerReq_InvalidReplyHeader;
 
 	short aStatus = aMsg.ReadShort();
 	if(aStatus<0)
@@ -192,7 +196,7 @@ WONStatus DirEntityReplyParser::ParseSingleEntityReply(const void *theMsg, unsig
 	}
 	
 	theEntity = anEntity;
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 }
 

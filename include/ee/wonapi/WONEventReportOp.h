@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete same-SDK new event-report owner.
+// No original address identified: WON SDK event-report op
 #ifndef EE_WONAPI_WONEVENTREPORTOP_H
 #define EE_WONAPI_WONEVENTREPORTOP_H
 #include "ee/wonapi/WONRouting.h"
@@ -52,7 +52,7 @@ private:
 	{
 		std::wstring mDescription;
 		unsigned char mContentType;
-		ConstSmartPtr<ByteBuffer> mData; // exact SDK ByteBufferPtr alias; retains const buffer
+		ConstSmartPtr<ByteBuffer> mData; // SDK ByteBufferPtr alias; keeps a const buffer
 
 		AttachmentStruct() : mContentType(0) {}
 		AttachmentStruct(const std::wstring &theDescription, unsigned char theContentType, const ByteBuffer *theData) : mDescription(theDescription), mContentType(theContentType), mData(theData) {}
@@ -64,14 +64,14 @@ private:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	EventReportOp(ServerContext *theEventContext);
 	EventReportOp(const IPAddr &theAddr);
 
-	void SetActivityType(unsigned short theType) { mActivityType = theType; }
+	void SetActivityType(unsigned short theType) { this->mActivityType = theType; }
 	void SetServerInfo(unsigned short theServerType, const std::wstring &theServerLogicalName, const std::string &theServerNetAddr);
 	void SetClientInfo(const std::wstring &theClientName, const std::string &theClientNetAddr);
 	void SetUserInfo(unsigned long theUserId, const std::wstring &theUserName);

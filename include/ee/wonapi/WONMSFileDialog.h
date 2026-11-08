@@ -33,8 +33,8 @@ protected:
 	GUIString mInitialDir;
 
 public:
-	const GUIString& GetOkTitle() { return mOkTitle; }
-	bool IsGetDir() { return mGetDir; }
+	const GUIString& GetOkTitle() { return this->mOkTitle; }
+	bool IsGetDir() { return this->mGetDir; }
 
 public:
 	MSFileDialog(bool isSave = false);

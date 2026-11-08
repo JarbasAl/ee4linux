@@ -1,4 +1,4 @@
-// Source-only complete table cell growth; original-backed MultiLineElement construction.
+// Table element cell growth; this unit defines no functions of its own (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>

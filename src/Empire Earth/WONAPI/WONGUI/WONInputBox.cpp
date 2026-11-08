@@ -1,4 +1,4 @@
-// Actual skinned input owner and theme duplication; all methods support0.
+// Skinned input box: a framed input box, its duplicate and its painting (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,24 +11,24 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyWONInputBox.h"
 namespace WONAPI {
-// Native319580/81, genuine empty SDK ctor with automatic real owners; support0.
+// Creates a skinned input box with an empty frame
 WONInputBox::WONInputBox()
 {
 }
-// Native319770/107, default control plus deep theme frame; support0.
 // FUNCTION: WON 0x00719770
+// Returns a new skinned input box with a copy of this one's frame (other settings stay default)
 WONInputBox* WONInputBox::Duplicate()
 {
     WONInputBox* input=new WONInputBox;
-    input->SetFrame(mFrame);
+    input->SetFrame(this->mFrame);
     return input;
 }
-// Native3197e0 forwards base content then actual frame paint; support0.
 // FUNCTION: WON 0x007197e0
+// Paints the input box, then its frame image over its full size
 void WONInputBox::Paint(Graphics& graphics)
 {
     InputBox::Paint(graphics);
-    mFrame.Paint(graphics,this);
+    this->mFrame.Paint(graphics,this);
 }
 }
 

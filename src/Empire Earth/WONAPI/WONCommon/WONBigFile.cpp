@@ -1,5 +1,5 @@
-// Genuine same-SDK WBF archive index reader, independent of the current FileReader backend.
-// SOURCE_ONLY_NO_NATIVE_ID: no Native owner/entry/physical/primary coverage claim.
+// WONBigFile: reads the index of a WBF archive (WON SDK)
+// No original address identified
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -21,33 +21,33 @@ const unsigned long BIGFILE_VERSION = 1;
 ///////////////////////////////////////////////////////////////////////////////
 void WONBigFile::Init()
 {
-	mMemDataP = NULL;
-	mOwnMemData = false;
+	this->mMemDataP = NULL;
+	this->mOwnMemData = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 WONBigFile::WONBigFile(const char *theFilePath)
 {
-	Init();
+	this->Init();
 
-	mFilePath = theFilePath;
+	this->mFilePath = theFilePath;
 
 	FileReader aReader(theFilePath);
-	Read(aReader);
+	this->Read(aReader);
 }
 	
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 WONBigFile::WONBigFile(const void *theData, unsigned long theLength, bool ownData)
 {
-	Init();
+	this->Init();
 	
-	mMemDataP = (char*)theData;
-	mOwnMemData = ownData;
+	this->mMemDataP = (char*)theData;
+	this->mOwnMemData = ownData;
 
 	FileReader aReader(theData,theLength);
-	Read(aReader);
+	this->Read(aReader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ WONBigFile::WONBigFile(const void *theData, unsigned long theLength, bool ownDat
 #ifdef WIN32_NOT_XBOX
 WONBigFile::WONBigFile(const char *theResName, const char *theResType)
 {
-	Init();
+	this->Init();
 
 	HMODULE aModule = GetModuleHandle(NULL);
 
@@ -67,14 +67,14 @@ WONBigFile::WONBigFile(const char *theResName, const char *theResType)
 	if(aGlobal==NULL)
 		return;
 
-	mMemDataP = (char*)LockResource(aGlobal);
-	if(mMemDataP==NULL)
+	this->mMemDataP = (char*)LockResource(aGlobal);
+	if(this->mMemDataP==NULL)
 		return;
 
 	DWORD aMemSize = SizeofResource(aModule, aResource);
 	FileReader aReader;
-	aReader.Open(mMemDataP,aMemSize);
-	Read(aReader);
+	aReader.Open(this->mMemDataP,aMemSize);
+	this->Read(aReader);
 }
 #endif // WIN32_NOT_XBOX
 
@@ -82,8 +82,8 @@ WONBigFile::WONBigFile(const char *theResName, const char *theResType)
 ///////////////////////////////////////////////////////////////////////////////
 WONBigFile::~WONBigFile()
 {
-	if(mOwnMemData)
-		delete [] mMemDataP;
+	if(this->mOwnMemData)
+		delete [] this->mMemDataP;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,7 +122,7 @@ bool WONBigFile::Read(FileReader &theReader)
 			if(aStartPos + aLength > aFileLength)
 				return false;
 
-			mFileMap[aPath] = FilePiece(aStartPos,aLength);
+			this->mFileMap[aPath] = FilePiece(aStartPos,aLength);
 		}	
 	}
 	catch(FileReaderException&)

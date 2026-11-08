@@ -11,45 +11,48 @@
 
 namespace WONAPI {
 
-// Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
 AddFriendDialog::AddFriendDialog() {}
 
 
 
 // FUNCTION: WON 0x7f4980
+// Finds the friend name input and the OK and cancel buttons in the layout
 void AddFriendDialog::InitComponent(ComponentInit& inInit)
 {
-    if (inInit.mType == 2) {
-        ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(aConfig, mNameInput, "NameInput", __FILE__, 25);
-        SafeGetComponent(aConfig, mOkButton, "OkButton", __FILE__, 26);
-        SafeGetComponent(aConfig, mCancelButton, "CancelButton", __FILE__, 27);
-    }
+    if (inInit.mType != 2)
+        return;
+    ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(aConfig, this->mNameInput, "NameInput", __FILE__, 25);
+    SafeGetComponent(aConfig, this->mOkButton, "OkButton", __FILE__, 26);
+    SafeGetComponent(aConfig, this->mCancelButton, "CancelButton", __FILE__, 27);
 }
 
 const GUIString& AddFriendDialog::GetName()
 {
-    return mNameInput->GetText();
+    return this->mNameInput->GetText();
 }
 
 // FUNCTION: WON 0x7f49f0
+// Enables OK only when a friend name is typed
 void AddFriendDialog::CheckInput()
 {
-    mOkButton->SetEnabled(mNameInput->mText.length() != 0);
+    this->mOkButton->SetEnabled(this->mNameInput->mText.length() != 0);
 }
 
 // FUNCTION: WON 0x7f4a20
+// Clears the friend name and focuses it
 void AddFriendDialog::Reset()
 {
-    mNameInput->Clear(true);
-    mNameInput->Fn2F5890();
+    this->mNameInput->Clear(true);
+    this->mNameInput->RequestFocus();
 }
 
 // FUNCTION: WON 0x7f4a40
+// Rechecks OK when the name changes; passes other events to the dialog
 void AddFriendDialog::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if (inEvent->mType == 21)
-        CheckInput();
+    if (inEvent->mType == ComponentEvent_InputTextChanged)
+        this->CheckInput();
     else
         Dialog::HandleComponentEvent(inEvent);
 }

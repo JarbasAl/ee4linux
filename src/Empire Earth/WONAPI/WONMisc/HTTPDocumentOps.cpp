@@ -1,4 +1,4 @@
-// Additional complete native HTTP document request behavior.
+// GetHTTPDocumentOp download requests (host, path and per-language document names)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,12 +13,14 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "LostDebug.h"
 // FUNCTION: WON 0x006d0e70
+// Returns the document host name (www.sierra.com)
 static std::string& GetHost()
 {
     static std::string host="www.sierra.com";
     return host;
 }
 // FUNCTION: WON 0x006d0f70
+// Returns the document base path (/motd/)
 static std::string& GetPath()
 {
     static std::string path="/motd/";
@@ -26,6 +28,7 @@ static std::string& GetPath()
 }
 namespace WONAPI {
 // FUNCTION: WON 0x006cffb0
+// Once per process opens the type's _won*path.txt override file but ignores it (host and path stay default)
 void GetHTTPDocumentOp::CheckHostAndPath(HTTPDocType inType)
 {
     static bool checked=false;
@@ -44,42 +47,44 @@ void GetHTTPDocumentOp::CheckHostAndPath(HTTPDocType inType)
     EE_LOST_DEBUG(2);
 }
 // FUNCTION: WON 0x006d0810
+// Records a finished download and finishes the op when no download is left
 bool GetHTTPDocumentOp::CallbackHook(AsyncOp* inOp,int inParam)
 {
-    OpFinished(static_cast<HTTPGetOp*>(inOp),inParam);
-    if (mTracker.mMaps.mEntries.empty()) DoFinish();
+    this->OpFinished(static_cast<HTTPGetOp*>(inOp),inParam);
+    if (this->mTracker.mMaps.mEntries.empty()) this->DoFinish();
     return true;
 }
 // FUNCTION: WON 0x006d0840
+// Starts the download of the system or game copy, in the configured language or the default file
 void GetHTTPDocumentOp::TryHTTPOp(HTTPDocOwner inOwner,bool inForceDefault)
 {
     std::string document;
-    std::string config=StringToLowerCase(mPath);
+    std::string config=StringToLowerCase(this->mPath);
     if (config=="en") config.erase();
     if (config.empty() || inForceDefault) {
-        mRetried[inOwner]=true;
-        if (mDocumentType==HTTPDocType_MOTD) document="motd.txt";
-        else if (mDocumentType==HTTPDocType_TOU) document="tou.txt";
-        else if (mDocumentType==HTTPDocType_ADV) document="adv.txt";
+        this->mRetried[inOwner]=true;
+        if (this->mDocumentType==HTTPDocType_MOTD) document="motd.txt";
+        else if (this->mDocumentType==HTTPDocType_TOU) document="tou.txt";
+        else if (this->mDocumentType==HTTPDocType_ADV) document="adv.txt";
     } else {
-        if (mDocumentType==HTTPDocType_MOTD) document="motd_"+config+".txt";
-        else if (mDocumentType==HTTPDocType_TOU) document="tou_"+config+".txt";
-        else if (mDocumentType==HTTPDocType_ADV) document="adv_"+config+".txt";
+        if (this->mDocumentType==HTTPDocType_MOTD) document="motd_"+config+".txt";
+        else if (this->mDocumentType==HTTPDocType_TOU) document="tou_"+config+".txt";
+        else if (this->mDocumentType==HTTPDocType_ADV) document="adv_"+config+".txt";
     }
     std::string path;
     if (inOwner==HTTPDocOwner_Sys) path=GetPath()+"sys/";
-    else if (inOwner==HTTPDocOwner_Game) path=GetPath()+StringToLowerCase(mProduct)+"/";
+    else if (inOwner==HTTPDocOwner_Game) path=GetPath()+StringToLowerCase(this->mProduct)+"/";
     SmartPtr<HTTPGetOp> op=new HTTPGetOp(GetHost(),path+document);
     op->SetDoRangeResume(false);
-    op->SetLocalPath(mDocuments[inOwner]);
-    if (mRunMode==1) {
-        Track(op.get(),inOwner);
-        if (mSession.get()!=NULL) mSession->AddOp(op.get());
-        else op->Run(-1);
+    op->SetLocalPath(this->mDocuments[inOwner]);
+    if (this->mRunMode==OP_MODE_ASYNC) {
+        this->Track(op.get(),inOwner);
+        if (this->mSession.get()!=NULL) this->mSession->AddOp(op.get());
+        else op->RunAsync(-1);
         return;
     }
-    op->Fn29F500(2,TimeLeft());
-    OpFinished(op.get(),inOwner);
+    op->Run(2,this->TimeLeft());
+    this->OpFinished(op.get(),inOwner);
 }
 }
 

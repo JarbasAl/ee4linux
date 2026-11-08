@@ -1,4 +1,4 @@
-// Browser scroller attachment, anchor/history navigation and relative link context.
+// HTML browser component: scroller, page history, anchors, links and document loading
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,74 +10,79 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONURL.h"
+#include "ee/wonapi/WONComponentFlags.h"
 using namespace std;
 namespace WONAPI {
 
 // FUNCTION: WON 0x007FB1A0
+// Attaches a scroller around the HTML view, sized to the browser, and adds it as a child
 void BrowserComponent::SetScroller(Scroller *theScroller)
 {
-	mScroller = theScroller;
-	if(theScroller->GetScrollArea()!=mHTMLView.get())
-		theScroller->SetScrollArea(mHTMLView.get());
+	this->mScroller = theScroller;
+	if(theScroller->GetScrollArea()!=this->mHTMLView.get())
+		theScroller->SetScrollArea(this->mHTMLView.get());
 
-	Fn2F6140(theScroller,3,this,0,0,0,0,0); //actual CLI_SameSize=3
-	Fn2F6A60(theScroller);
+	this->Fn2F6140(theScroller,3,this,0,0,0,0,0); // CLI_SameSize = 3
+	this->AddChild(theScroller);
 }
 
 // FUNCTION: WON 0x007FC540
+// Scrolls to the remembered offset after back/forward, else to the top and then to the current anchor
 void BrowserComponent::GotoAnchor()
 {
-	if(mVertOffset>=0) // this was a back or forward traversal and we were somewhere else on the page
+	if(this->mVertOffset>=0) // this was a back or forward traversal and we were somewhere else on the page
 	{
-		mHTMLView->SetOffsets(0,mVertOffset);
+		this->mHTMLView->SetOffsets(0,this->mVertOffset);
 		return;
 	}
 
-	mHTMLView->SetOffsets(0,0);
-	if(mCurAnchor.length()==0)
+	this->mHTMLView->SetOffsets(0,0);
+	if(this->mCurAnchor.length()==0)
 		return;
 
-	mHTMLView->GotoAnchor(mCurAnchor);
+	this->mHTMLView->GotoAnchor(this->mCurAnchor);
 }
 
 // FUNCTION: WON 0x007FC7C0
+// Stores the view's vertical scroll offset in the current history entry
 void BrowserComponent::RememberVertOffset()
 {
-	if(mCurPage>=0 && mCurPage<mPageVector.size()) // remember the current vert offset in this page
-		mPageVector[mCurPage].mVertOffset = mHTMLView->mVertOffset;
+	if(this->mCurPage>=0 && this->mCurPage<this->mPageVector.size()) // remember the current vert offset in this page
+		this->mPageVector[this->mCurPage].mVertOffset = this->mHTMLView->mVertOffset;
 }
 
 // FUNCTION: WON 0x007FCF60
+// Goes back one page in the history, restoring that page's scroll offset
 void BrowserComponent::Back()
 {
-	if(!mPageVector.empty() && mCurPage>0)
-	{
-		RememberVertOffset();
+	if(this->mPageVector.empty() || !(this->mCurPage>0))
+		return;
+	this->RememberVertOffset();
 
-		mCurPage--;
-		PageLocation &aLoc = mPageVector[mCurPage];
-		Go(aLoc.mLocation,false,true,aLoc.mVertOffset);
-	}
+	this->mCurPage--;
+	PageLocation &aLoc = this->mPageVector[this->mCurPage];
+	this->Go(aLoc.mLocation,false,true,aLoc.mVertOffset);
 }
 
 // FUNCTION: WON 0x007FCFC0
+// Goes forward one page in the history, restoring that page's scroll offset
 void BrowserComponent::Forward()
 {
-	if(!mPageVector.empty() && mCurPage<mPageVector.size()-1)
-	{
-		RememberVertOffset();
+	if(this->mPageVector.empty() || !(this->mCurPage<this->mPageVector.size()-1))
+		return;
+	this->RememberVertOffset();
 
-		mCurPage++;
-		PageLocation &aLoc = mPageVector[mCurPage];
-		Go(aLoc.mLocation,false,true,aLoc.mVertOffset);
-	}
+	this->mCurPage++;
+	PageLocation &aLoc = this->mPageVector[this->mCurPage];
+	this->Go(aLoc.mLocation,false,true,aLoc.mVertOffset);
 }
 
 // FUNCTION: WON 0x007FD030
+// Resolves a link relative to the current page into a full path
 void BrowserComponent::GetLinkPath(const std::string &theLink, std::string &thePath)
 {
 	URL aLink(theLink);
-	string aStr = mCurPath;
+	string aStr = this->mCurPath;
 	aLink.CalcRelativeTo(aStr);
 	aLink.GetEntire(thePath);
 }
@@ -85,43 +90,45 @@ void BrowserComponent::GetLinkPath(const std::string &theLink, std::string &theP
 
 namespace WONAPI {
 // FUNCTION: WON 0x007fb230
+// Returns whether downloads are pending (the Stop button is enabled)
 bool BrowserComponent::StopButtonEnabled()
 {
-    if(mHTTPSession.get()==NULL)
+    if(this->mHTTPSession.get()==NULL)
         return false;
-    return mNumPendingOps>0;
+    return this->mNumPendingOps>0;
 }
-// Native3fb250/45 and3fb280/63 history accessors, support0.
 // FUNCTION: WON 0x007fb250
+// Returns whether there is a page to go back to
 bool BrowserComponent::BackButtonEnabled()
 {
-    return !mPageVector.empty() && mCurPage>0;
+    return !this->mPageVector.empty() && this->mCurPage>0;
 }
 // FUNCTION: WON 0x007fb280
+// Returns whether there is a page to go forward to
 bool BrowserComponent::ForwardButtonEnabled()
 {
-    return !mPageVector.empty() && mCurPage<mPageVector.size()-1;
+    return !this->mPageVector.empty() && this->mCurPage<this->mPageVector.size()-1;
 }
-// Native3fc480/81 clear/state reset, support0.
 // FUNCTION: WON 0x007fc480
+// Clears the page history
 void BrowserComponent::Reset()
 {
-    mPageVector.clear();
-    mCurPage=0;
+    this->mPageVector.clear();
+    this->mCurPage=0;
 }
-// Native3fc4e0/45 conditional forwarding, support0.
 // FUNCTION: WON 0x007fc4e0
+// Reloads the current page (forced, without adding a history entry)
 void BrowserComponent::Refresh()
 {
-    if(!mPageVector.empty()) Go(mCurLocation,true,true);
+    if(!this->mPageVector.empty()) this->Go(this->mCurLocation,true,true);
 }
-// Native3fc510/37 kill/state/event orchestration, conservatively support0.
 // FUNCTION: WON 0x007fc510
+// Cancels every pending download and signals a browser button change
 void BrowserComponent::Stop()
 {
-    mHTTPSession->KillAll();
-    mNumPendingOps=0;
-    Fn2F5380(ComponentEvent_BrowserButtonChange,0);
+    this->mHTTPSession->KillAll();
+    this->mNumPendingOps=0;
+    this->Fn2F5380(ComponentEvent_BrowserButtonChange,0);
 }
 }
 
@@ -130,46 +137,48 @@ void BrowserComponent::Stop()
 #include "ee/wonapi/WONLobbyImageButton.h"
 #include "LostDebug.h"
 
-// Actual standalone path comparison: case-sensitive code units, slash directions equivalent.
 // FUNCTION: WON 0x007fced0
+// Returns whether two paths are equal, comparing case-sensitively but treating slash and backslash alike
 static bool PathsAreEqual(const WONAPI::GUIString& first,const WONAPI::GUIString& second)
 {
     if(first.length()!=second.length()) return false;
     for(int i=0;i<first.length();++i)
     {
-        if(first[i]!=second[i])
-        {
-            int a=first[i],b=second[i];
-            bool slashA=a=='\\' || a=='/';
-            bool slashB=b=='\\' || b=='/';
-            if(!slashA || !slashB) return false;
-        }
+        if(first[i]==second[i])
+            continue;
+        int a=first[i],b=second[i];
+        bool slashA=a=='\\' || a=='/';
+        bool slashB=b=='\\' || b=='/';
+        if(!slashA || !slashB) return false;
     }
     return true;
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007fc590
+// Shows an already parsed document at the top of the view, unless its images still have to be downloaded
 void BrowserComponent::Go(HTMLDocument* document)
 {
     if(document==NULL) return;
-    Stop();
-    mHTMLDocument=document;
+    this->Stop();
+    this->mHTMLDocument=document;
     SmartPtr<MultiLineElement> element=new MultiLineElement;
-    if(!DownloadImages())
+    if(!this->DownloadImages())
     {
         HTMLDisplayGen generator;
-        generator.SetFontSize(mFontSize);
-        generator.SetNoBackground(mHaveBackground);
-        generator.Generate(mHTMLDocument.get(),element.get(),mHTMLView.get());
-        mHTMLView->SetContents(element.get());
-        mHTMLView->SetOffsets(0,0);
+        generator.SetFontSize(this->mFontSize);
+        generator.SetNoBackground(this->mHaveBackground);
+        generator.Generate(this->mHTMLDocument.get(),element.get(),this->mHTMLView.get());
+        this->mHTMLView->SetContents(element.get());
+        this->mHTMLView->SetOffsets(0,0);
     }
 }
 // FUNCTION: WON 0x007fc800
+// Navigates to a location: updates the history (at most 100 pages), jumps to an anchor on the same page,
+// or loads a local file / starts an HTTP download (or hands the link to the system browser)
 void BrowserComponent::Go(const GUIString& location,bool force,bool backTraversal,int vertOffset)
 {
-    Stop();
+    this->Stop();
     int pound=location.find('#',0);
     GUIString path,anchor;
     if(pound>=0)
@@ -178,52 +187,52 @@ void BrowserComponent::Go(const GUIString& location,bool force,bool backTraversa
         anchor=location.substr((unsigned short)(pound+1));
     }
     else path=location;
-    mCurAnchor=anchor;
+    this->mCurAnchor=anchor;
     if(!backTraversal)
     {
-        RememberVertOffset();
-        if(!mPageVector.empty() && mCurPage<mPageVector.size()+1)
-            mPageVector.erase(mPageVector.begin()+mCurPage+1,mPageVector.end());
-        if(mPageVector.empty() || location!=mPageVector.back().mLocation)
+        this->RememberVertOffset();
+        if(!this->mPageVector.empty() && this->mCurPage<this->mPageVector.size()+1)
+            this->mPageVector.erase(this->mPageVector.begin()+this->mCurPage+1,this->mPageVector.end());
+        if(this->mPageVector.empty() || location!=this->mPageVector.back().mLocation)
         {
-            mPageVector.push_back(PageLocation(location,0));
+            this->mPageVector.push_back(PageLocation(location,0));
             // LOST-DEBUG: none: exact only
             EE_LOST_DEBUG(3);
-            if(mPageVector.size()>100)
-                mPageVector.erase(mPageVector.begin(),mPageVector.begin()+mPageVector.size()-100);
+            if(this->mPageVector.size()>100)
+                this->mPageVector.erase(this->mPageVector.begin(),this->mPageVector.begin()+this->mPageVector.size()-100);
         }
-        mCurPage=mPageVector.size()-1;
+        this->mCurPage=this->mPageVector.size()-1;
     }
-    mCurLocation=location;
-    mVertOffset=vertOffset;
-    Fn2F5380(ComponentEvent_BrowserLocationChange,0);
-    Fn2F5380(ComponentEvent_BrowserButtonChange,0);
-    if(PathsAreEqual(path,mCurPath) && !force)
+    this->mCurLocation=location;
+    this->mVertOffset=vertOffset;
+    this->Fn2F5380(ComponentEvent_BrowserLocationChange,0);
+    this->Fn2F5380(ComponentEvent_BrowserButtonChange,0);
+    if(PathsAreEqual(path,this->mCurPath) && !force)
     {
-        GotoAnchor();
+        this->GotoAnchor();
         return;
     }
     if(path.length()==0) return;
-    if(mLaunchBrowserOnLink)
+    if(this->mLaunchBrowserOnLink)
     {
         Browse(location);
         return;
     }
     URL pathURL(path);
-    mCurPath=path;
+    this->mCurPath=path;
     if(pathURL.GetType()==URLType_File)
     {
-        mHTMLDocumentPath=pathURL.GetPathAsLocalFilePath();
-        ParseDocument();
+        this->mHTMLDocumentPath=pathURL.GetPathAsLocalFilePath();
+        this->ParseDocument();
     }
     else if(pathURL.GetType()==URLType_HTTP)
     {
         SmartPtr<HTTPGetOp> op=new HTTPGetOp(pathURL.GetAddress(),pathURL.GetPath());
-        op->SetHTTPCache(mHTTPCache.get());
-        op->mCompletion=new OpGUICompletion(new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(DownloadDocumentCompletion,this));
-        mHTTPSession->AddOp(op.get());
-        ++mNumPendingOps;
-        mHTMLView->SetContents(new MultiLineElement);
+        op->SetHTTPCache(this->mHTTPCache.get());
+        op->mCompletion=new OpGUICompletion(new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(BrowserComponent::DownloadDocumentCompletion,this));
+        this->mHTTPSession->AddOp(op.get());
+        ++this->mNumPendingOps;
+        this->mHTMLView->SetContents(new MultiLineElement);
     }
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(3);
@@ -234,36 +243,38 @@ void BrowserComponent::Go(const GUIString& location,bool force,bool backTraversa
 
 namespace WONAPI {
 // FUNCTION: WON 0x007fc0d0
+// Parses the downloaded or local HTML file, shows it unless images are pending, and goes to the anchor
 void BrowserComponent::ParseDocument()
 {
-    if(mHTMLDocumentPath.empty())
+    if(this->mHTMLDocumentPath.empty())
     {
-        Stop();
+        this->Stop();
         return;
     }
     HTMLParser parser;
-    parser.SetDocument(new HTMLDocument(mCurPath));
-    parser.ParseFromFile(mHTMLDocumentPath.c_str());
-    mHTMLDocument=parser.GetDocument();
+    parser.SetDocument(new HTMLDocument(this->mCurPath));
+    parser.ParseFromFile(this->mHTMLDocumentPath.c_str());
+    this->mHTMLDocument=parser.GetDocument();
     SmartPtr<MultiLineElement> element=new MultiLineElement;
-    if(!DownloadImages())
+    if(!this->DownloadImages())
     {
         HTMLDisplayGen generator;
-        generator.SetFontSize(mFontSize);
-        mHTMLDocument->DecodeImages(true);
-        generator.SetNoBackground(mHaveBackground);
-        generator.Generate(mHTMLDocument.get(),element.get(),mHTMLView.get());
-        mHTMLView->SetContents(element.get());
+        generator.SetFontSize(this->mFontSize);
+        this->mHTMLDocument->DecodeImages(true);
+        generator.SetNoBackground(this->mHaveBackground);
+        generator.Generate(this->mHTMLDocument.get(),element.get(),this->mHTMLView.get());
+        this->mHTMLView->SetContents(element.get());
     }
-    GotoAnchor();
-    mCurLocation=mCurPath;
-    Fn2F5380(ComponentEvent_BrowserLocationChange,0);
+    this->GotoAnchor();
+    this->mCurLocation=this->mCurPath;
+    this->Fn2F5380(ComponentEvent_BrowserLocationChange,0);
 }
 }
 
-// Browser hyperlink activation/hover event handling; borrowed actual event only.
 namespace WONAPI {
 // FUNCTION: WON 0x007fd350
+// Follows an activated hyperlink (in the system browser with Shift or when the link asks for it, unless Alt)
+// and shows the hovered link's path in the status
 void BrowserComponent::HandleComponentEvent(ComponentEvent* event)
 {
     switch(event->mType)
@@ -273,12 +284,12 @@ void BrowserComponent::HandleComponentEvent(ComponentEvent* event)
             HyperLinkEvent* linkEvent=static_cast<HyperLinkEvent*>(event);
             const std::string& link=linkEvent->mLinkParam->mLinkParam;
             std::string path;
-            GetLinkPath(link,path);
-            int keyMod=GetKeyMod();
+            this->GetLinkPath(link,path);
+            int keyMod=this->GetKeyMod();
             if((keyMod & KEYMOD_SHIFT) ||
                (linkEvent->mLinkParam->mLaunchBrowser && !(keyMod & KEYMOD_ALT)))
                 Browse(path);
-            else Go(path);
+            else this->Go(path);
         }
         return;
     case ComponentEvent_HyperLinkOver:
@@ -288,10 +299,10 @@ void BrowserComponent::HandleComponentEvent(ComponentEvent* event)
             {
                 const std::string& link=linkEvent->mLinkParam->mLinkParam;
                 std::string path;
-                GetLinkPath(link,path);
-                SetStatus(path);
+                this->GetLinkPath(link,path);
+                this->SetStatus(path);
             }
-            else SetStatus("");
+            else this->SetStatus("");
         }
         return;
     }
@@ -299,56 +310,60 @@ void BrowserComponent::HandleComponentEvent(ComponentEvent* event)
 }
 namespace WONAPI {
 // FUNCTION: WON 0x007fd1f0
+// Searches the page for text (next match, optionally case-sensitive); returns whether it was found
 bool BrowserComponent::FindStr(const GUIString& text,bool next,bool caseSensitive)
 {
-    return mHTMLView->FindStr(text,next,caseSensitive);
+    return this->mHTMLView->FindStr(text,next,caseSensitive);
 }
 }
 
 #include "ee/wonapi/WONLobbyMSExtraConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007fb0e0
-void BrowserComponent::Virtual6C()
+// Creates a default scroll container with conditional scrollbars if none was set, then joins the parent
+void BrowserComponent::AddedToParent()
 {
-    if(mScroller.get()==NULL)
+    if(this->mScroller.get()==NULL)
     {
-        SmartPtr<MSScrollContainer> scroller=new MSScrollContainer(mHTMLView.get());
+        SmartPtr<MSScrollContainer> scroller=new MSScrollContainer(this->mHTMLView.get());
         scroller->SetScrollbarConditions(ScrollbarCondition_Conditional,ScrollbarCondition_Conditional);
-        SetScroller(scroller.get());
+        this->SetScroller(scroller.get());
     }
-    Container::Virtual6C();
+    Container::AddedToParent();
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007fad10
+// Creates a browser with an empty view, its own HTTP session, the global HTTP cache and medium font
 BrowserComponent::BrowserComponent()
 {
-    mLaunchBrowserOnLink=false;
-    mFontSize=HTMLFontSize_Medium;
-    mHTTPSession=new HTTPSession;
-    mHTTPCache=HTTPCache::GetGlobalCache();
-    mCurPage=0;
-    mNumPendingOps=0;
-    mVertOffset=-1;
-    mHTMLView=new Table;
-    mHaveBackground=false;
+    this->mLaunchBrowserOnLink=false;
+    this->mFontSize=HTMLFontSize_Medium;
+    this->mHTTPSession=new HTTPSession;
+    this->mHTTPCache=HTTPCache::GetGlobalCache();
+    this->mCurPage=0;
+    this->mNumPendingOps=0;
+    this->mVertOffset=-1;
+    this->mHTMLView=new Table;
+    this->mHaveBackground=false;
 }
 // FUNCTION: WON 0x007faf30
+// Destroys the browser (members only)
 BrowserComponent::~BrowserComponent()
 {
 }
 // FUNCTION: WON 0x007fd210
-// Target retains the older SDK SetTransparent contract. The cached newer
-// SetBackground/RemoveBackground replacement is not the target API.
+// Makes the page background transparent (no colour, no border) or keeps the document's
+// The original has the older SDK's SetTransparent, not the later SetBackground/RemoveBackground
 void BrowserComponent::SetTransparent(bool transparent)
 {
-    mHaveBackground=transparent;
+    this->mHaveBackground=transparent;
     if(transparent) {
         Background background(-1,-1);
-        mHTMLView->SetBackground(background);
+        this->mHTMLView->SetBackground(background);
     }
-    mHTMLView->SetComponentFlags(0x100,mHaveBackground);
+    this->mHTMLView->SetComponentFlags(ComponentFlag_GrabBG,this->mHaveBackground);
 }
 }
 

@@ -15,256 +15,256 @@
 #include "ee/wonapi/WONLobbyModel.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
-// Original3ca6a0..3ca717,119B. Full30 typed item construction.
+// UserListItem: a client of the chat room, or a separator line between the list's groups
 // FUNCTION: WON 0x007ca6a0
-UserListItem::UserListItem() { mSortKey=0; mShowSeparator=true; }
-// Original3ca820..3ca840,32B including terminalRET8 only (verify boundary).
+// Creates a room user list entry with no client (a separator line until a client is set)
+UserListItem::UserListItem() { this->mSortKey=0; this->mShowSeparator=true; }
 // FUNCTION: WON 0x007ca820
-int UserListItem::Virtual10(const ListItem* inOther,ListArea* inArea) const
+// Orders entries by sort key, highest first (admins, moderators, separator, friends, separator, others), then text
+int UserListItem::Compare(const ListItem* inOther,ListArea* inArea) const
 {
     const UserListItem* other=static_cast<const UserListItem*>(inOther);
-    int result=other->mSortKey-mSortKey;
+    int result=other->mSortKey-this->mSortKey;
     if(result!=0) return result;
-    return TextListItem::Virtual10(inOther,inArea);
+    return TextListItem::Compare(inOther,inArea);
 }
-// Original3ca840..3ca873,51B.
 // FUNCTION: WON 0x007ca840
-void UserListItem::Virtual08(ListArea* inArea)
+// Sizes a separator (8 pixels high when shown, else 1) or a client's text entry
+void UserListItem::CalcDimensions(ListArea* inArea)
 {
-    if(mClient.get()==NULL) {
-        mL10=1;
-        if(mShowSeparator) mHeight=8;
-        else mHeight=1;
-    } else TextListItem::Virtual08(inArea);
+    if(this->mClient.get()==NULL) {
+        this->mWidth=1;
+        if(this->mShowSeparator) this->mHeight=8;
+        else this->mHeight=1;
+    } else TextListItem::CalcDimensions(inArea);
 }
-// Original3ca880..3ca8e1,97B. Canonical SetSysColor is actual326d40.
+// Graphics::SetSysColor is the original's function at 0x726d40
 // FUNCTION: WON 0x007ca880
-void UserListItem::Virtual04(Graphics& inGraphics,ListArea* inArea)
+// Draws a shown separator as a line across the list, or a client's text entry
+void UserListItem::Paint(Graphics& inGraphics,ListArea* inArea)
 {
-    if(mClient.get()==NULL) {
-        if(mShowSeparator) {
-            int width=inArea->mL0A4+10;
-            if(inArea->mL12C>width) width=inArea->mL12C;
-            int y=mHeight>>2;
-            inGraphics.SetSysColor(14);
+    if(this->mClient.get()==NULL) {
+        if(this->mShowSeparator) {
+            int width=inArea->mTotalWidth+10;
+            if(inArea->mPaintWidth>width) width=inArea->mPaintWidth;
+            int y=this->mHeight>>2;
+            inGraphics.SetSysColor(StandardColor_Text);
             inGraphics.DrawLine(0,y,width,y);
         }
-    } else TextListItem::Virtual04(inGraphics,inArea);
+    } else TextListItem::Paint(inGraphics,inArea);
 }
-// Original3ca8f0..3ca932,66B; flags5 real initialization, source-kind gate separate.
 // FUNCTION: WON 0x007ca8f0
-UserListCtrl::UserListCtrl() { mUpdating = false; mModeFlags = 5; }
-// Original3ca960..3caa68,264B, own-vptr store3ca97f plus five typed owners.
-// Admitted-normal-destruction candidate, not hand-authorship or implicit support.
+// Creates the room user list with room flags 5, not updating
+UserListCtrl::UserListCtrl() { this->mUpdating = false; this->mModeFlags = 5; }
+// explicit: the original destructor stores its own vptr (0x7ca97f) before releasing five members
 // FUNCTION: WON 0x007ca960
+// Destroys the room user list, releasing its list, buttons and separators
 UserListCtrl::~UserListCtrl() {}
-// Original3cac50..3cace7,151B. Resource owner producer proofs required.
 // FUNCTION: WON 0x007cac50
+// Returns a client's status icon, first match wins: ignored, blocked, muted, away, admin, moderator, captain, normal
 Image* GetLobbyClientIcon(LobbyClient* inClient,bool inMode)
 {
     if(inClient==NULL) return NULL;
-    if(inClient->mB22) return ::UserListCtrl_Ignored_Image.get();
-    if(inClient->mB23) return ::UserListCtrl_Blocked_Image.get();
-    if(inClient->Fn3A5480(inMode)) return ::UserListCtrl_Muted_Image.get();
-    if(inClient->Fn3A54B0()) return ::UserListCtrl_Away_Image.get();
-    if(inClient->Fn3A54C0()) return ::UserListCtrl_Admin_Image.get();
-    if(inClient->Fn3A54D0()) return ::UserListCtrl_Moderator_Image.get();
-    return inClient->Fn3A54E0(inMode)?::UserListCtrl_Captain_Image.get() : ::UserListCtrl_Normal_Image.get();
+    if(inClient->mIgnored) return ::UserListCtrl_Ignored_Image.get();
+    if(inClient->mBlocked) return ::UserListCtrl_Blocked_Image.get();
+    if(inClient->IsMuted(inMode)) return ::UserListCtrl_Muted_Image.get();
+    if(inClient->IsAway()) return ::UserListCtrl_Away_Image.get();
+    if(inClient->IsAdmin()) return ::UserListCtrl_Admin_Image.get();
+    if(inClient->IsModerator()) return ::UserListCtrl_Moderator_Image.get();
+    return inClient->IsCaptain(inMode)?::UserListCtrl_Captain_Image.get() : ::UserListCtrl_Normal_Image.get();
 }
-// Original3caa70..3cac49,473B. Raw incomingclient is not additionally pinned.
 // FUNCTION: WON 0x007caa70
+// Fills an entry from a client: name, status icon, sort group, and bold for friends who are not anonymous
 void UserListCtrl::UpdateItem(LobbyClient* inClient,UserListItem* inItem)
 {
     inItem->mClient=inClient;
     unsigned char sortKey;
-    if(inClient->Fn3A54C0()) sortKey=5;
-    else if(inClient->Fn3A54D0()) sortKey=4;
-    else if(inClient->IsFriend() && !inClient->Fn3A5470()) sortKey=2;
-    else sortKey=0;
+    if(inClient->IsAdmin()) sortKey=5;
+    else if(inClient->IsModerator()) sortKey=4;
+    else sortKey = inClient->IsFriend() && !inClient->IsAnonymous() ? 2 : 0;
     inItem->mSortKey=sortKey;
     inItem->mText=inClient->mName;
-    inItem->mImage=GetLobbyClientIcon(inClient,(mModeFlags&2)!=0);
-    if(inClient->IsFriend() && !inClient->Fn3A5470()) inItem->mFont=Fn2F5B50(1,0);
-    else inItem->mFont=Fn2F5B20();
+    inItem->mImage=GetLobbyClientIcon(inClient,(this->mModeFlags&2)!=0);
+    if(inClient->IsFriend() && !inClient->IsAnonymous()) inItem->mFont=this->GetDefaultFontMod(1,0);
+    else inItem->mFont=this->GetDefaultFont();
 }
-// Original3cacf0..3cade2,242B. Current member receivers reload at each external call.
 // FUNCTION: WON 0x007cacf0
+// Shows each separator only when it has entries on both sides
 void UserListCtrl::RefreshSeparators()
 {
-    mUserList->Fn2FC730(mFirstSeparator.get());
-    mUserList->Fn2FC730(mSecondSeparator.get());
-    int first=mUserList->GetItemPos(mFirstSeparator.get());
-    int second=mUserList->GetItemPos(mSecondSeparator.get());
+    this->mUserList->RefreshItem(this->mFirstSeparator.get());
+    this->mUserList->RefreshItem(this->mSecondSeparator.get());
+    int first=this->mUserList->GetItemPos(this->mFirstSeparator.get());
+    int second=this->mUserList->GetItemPos(this->mSecondSeparator.get());
     bool before=first>0;
     bool middle=second>first+1;
-    bool after=second<mUserList->GetNumItems()-1;
+    bool after=second<this->mUserList->GetNumItems()-1;
     bool showFirst=before&&(middle||after);
     bool showSecond=middle&&after;
-    if(mFirstSeparator->mShowSeparator!=showFirst) {
-        mFirstSeparator->mShowSeparator=showFirst;
-        mUserList->Fn2FC730(mFirstSeparator.get());
+    if(this->mFirstSeparator->mShowSeparator!=showFirst) {
+        this->mFirstSeparator->mShowSeparator=showFirst;
+        this->mUserList->RefreshItem(this->mFirstSeparator.get());
     }
-    if(mSecondSeparator->mShowSeparator!=showSecond) {
-        mSecondSeparator->mShowSeparator=showSecond;
-        mUserList->Fn2FC730(mSecondSeparator.get());
+    if(this->mSecondSeparator->mShowSeparator!=showSecond) {
+        this->mSecondSeparator->mShowSeparator=showSecond;
+        this->mUserList->RefreshItem(this->mSecondSeparator.get());
     }
 }
-// Original3cadf0..3cb0dd,749B. Both30-byte allocations use complete UserListItem.
 // FUNCTION: WON 0x007cadf0
+// Looks up the user list and the Whisper and Ignore buttons, creates the two separators, listens to broadcasts
 void UserListCtrl::InitComponent(ComponentInit& inInit)
 {
     if(inInit.mType!=2) return;
     ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-    SafeGetComponent(config,mUserList,"UserList",__FILE__,194);
-    SafeGetComponent(config,mWhisperButton,"WhisperButton",__FILE__,195);
-    SafeGetComponent(config,mIgnoreButton,"IgnoreButton",__FILE__,196);
-    Fn2F5360(1);
-    mFirstSeparator=new UserListItem;
-    mFirstSeparator->mB09=false;
-    mFirstSeparator->mSortKey=3;
-    mSecondSeparator=new UserListItem;
-    mSecondSeparator->mB09=false;
-    mSecondSeparator->mSortKey=1;
-    UpdateButtons();
+    SafeGetComponent(config,this->mUserList,"UserList",__FILE__,194);
+    SafeGetComponent(config,this->mWhisperButton,"WhisperButton",__FILE__,195);
+    SafeGetComponent(config,this->mIgnoreButton,"IgnoreButton",__FILE__,196);
+    this->SubscribeToBroadcast(1);
+    this->mFirstSeparator=new UserListItem;
+    this->mFirstSeparator->mSelectable=false;
+    this->mFirstSeparator->mSortKey=3;
+    this->mSecondSeparator=new UserListItem;
+    this->mSecondSeparator->mSelectable=false;
+    this->mSecondSeparator->mSortKey=1;
+    this->UpdateButtons();
 }
-// Original3cb0e0..3cb130,80B. ID comparison, not object identity.
 // FUNCTION: WON 0x007cb0e0
+// Returns the entry of the client with the same client id, or NULL
 UserListItem* UserListCtrl::FindItem(LobbyClient* inClient)
 {
-    for(int i=0;i<mUserList->GetNumItems();++i) {
-        UserListItem* item=static_cast<UserListItem*>(mUserList->GetItem(i));
+    for(int i=0;i<this->mUserList->GetNumItems();++i) {
+        UserListItem* item=static_cast<UserListItem*>(this->mUserList->GetItem(i));
         if(item->mClient.get()!=NULL && item->mClient->mClientId==inClient->mClientId)
             return item;
     }
     return NULL;
 }
-// Original3cb130..3cb13d,13B and3cb140..3cb155,21B. Borrowed selection.
-// SUPPORT0: EXE 0x007cb130
 // FUNCTION: WON 0x007cb130
+// Returns the selected entry, or NULL
 UserListItem* UserListCtrl::GetSelectedItem()
 {
-    return static_cast<UserListItem*>(mUserList->mSelItem);
+    return static_cast<UserListItem*>(this->mUserList->mSelItem);
 }
-// SUPPORT0: EXE 0x007cb140
 // FUNCTION: WON 0x007cb140
+// Returns the client of the selected entry, or NULL
 LobbyClient* UserListCtrl::GetSelectedClient()
 {
-    UserListItem* item=static_cast<UserListItem*>(mUserList->mSelItem);
+    UserListItem* item=static_cast<UserListItem*>(this->mUserList->mSelItem);
     return item==NULL?NULL:item->mClient.get();
 }
-// Original3cb160..3cb1f6,150B. Current button receiver reloaded after each call.
 // FUNCTION: WON 0x007cb160
+// Enables Whisper and Ignore while a client is selected, labelling Ignore or Unignore by its state
 void UserListCtrl::UpdateButtons()
 {
-    LobbyClient* client=GetSelectedClient();
+    LobbyClient* client=this->GetSelectedClient();
     if(client==NULL) {
-        mIgnoreButton->SetText(::UserListCtrl_Ignore_String,true);
-        mIgnoreButton->SetEnabled(false);
-        mWhisperButton->SetEnabled(false);
+        this->mIgnoreButton->SetText(::UserListCtrl_Ignore_String,true);
+        this->mIgnoreButton->SetEnabled(false);
+        this->mWhisperButton->SetEnabled(false);
     } else {
-        mWhisperButton->SetEnabled(true);
-        mIgnoreButton->SetEnabled(true);
-        if(client->mB22) mIgnoreButton->SetText(::UserListCtrl_Unignore_String,true);
-        else mIgnoreButton->SetText(::UserListCtrl_Ignore_String,true);
+        this->mWhisperButton->SetEnabled(true);
+        this->mIgnoreButton->SetEnabled(true);
+        if(client->mIgnored) this->mIgnoreButton->SetText(::UserListCtrl_Unignore_String,true);
+        else this->mIgnoreButton->SetText(::UserListCtrl_Ignore_String,true);
     }
 }
-// Original3cb200..3cb354,340B. Item releases before incrementing borrowed map.
 // FUNCTION: WON 0x007cb200
+// Fills the list with the joined room's clients and the two separators
 void UserListCtrl::JoinedRoom(JoinedRoomEvent* inEvent)
 {
-    if((mModeFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
-    mUpdating=true;
-    mUserList->Fn2FAA00();
-    mUserList->Fn2FAA50(true);
-    mUserList->InsertItem(mFirstSeparator.get(),-1);
-    mUserList->InsertItem(mSecondSeparator.get(),-1);
+    if((this->mModeFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
+    this->mUpdating=true;
+    this->mUserList->BeginUpdate();
+    this->mUserList->Clear(true);
+    this->mUserList->InsertItem(this->mFirstSeparator.get(),-1);
+    this->mUserList->InsertItem(this->mSecondSeparator.get(),-1);
     LobbyClientList* clients=inEvent->mClients.get();
     for(LobbyClientMap::iterator i=clients->mClients.begin();i!=clients->mClients.end();++i) {
         LobbyClient* client=i->second.get();
         SmartPtr<UserListItem> item=new UserListItem;
-        UpdateItem(client,item.get());
-        mUserList->InsertItem(item.get(),-1);
+        this->UpdateItem(client,item.get());
+        this->mUserList->InsertItem(item.get(),-1);
     }
-    mUserList->Fn2FAA10();
-    UpdateButtons();
-    RefreshSeparators();
+    this->mUserList->EndUpdate();
+    this->UpdateButtons();
+    this->RefreshSeparators();
 }
-// Original3cb360..3cb395,53B.
 // FUNCTION: WON 0x007cb360
+// Empties the list when we leave the room
 void UserListCtrl::LeftRoom(LeftRoomEvent* inEvent)
 {
-    if((mModeFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
-    mUpdating=false;
-    mUserList->Fn2FAA50(true);
-    UpdateButtons();
+    if((this->mModeFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
+    this->mUpdating=false;
+    this->mUserList->Clear(true);
+    this->UpdateButtons();
 }
-// Original3cb3a0..3cb4ce,302B. Creation/release block ends before UI refresh.
 // FUNCTION: WON 0x007cb3a0
+// Adds, removes or refreshes a client's entry, then updates the buttons and separators
 void UserListCtrl::ClientChanged(ClientChangedEvent* inEvent)
 {
-    if((mModeFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
+    if((this->mModeFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
     if(inEvent->IsAdd()) {
         SmartPtr<UserListItem> item=new UserListItem;
         LobbyClient* client=inEvent->mClient.get();
-        UpdateItem(client,item.get());
-        mUserList->InsertItem(item.get(),-1);
+        this->UpdateItem(client,item.get());
+        this->mUserList->InsertItem(item.get(),-1);
     } else if(inEvent->IsDelete()) {
-        UserListItem* item=FindItem(inEvent->mClient.get());
+        UserListItem* item=this->FindItem(inEvent->mClient.get());
         if(item==NULL) return;
-        mUserList->RemoveItem(item);
+        this->mUserList->RemoveItem(item);
     } else {
-        UserListItem* item=FindItem(inEvent->mClient.get());
+        UserListItem* item=this->FindItem(inEvent->mClient.get());
         if(item==NULL) return;
-        UpdateItem(inEvent->mClient.get(),item);
-        mUserList->Fn2FC730(item);
+        this->UpdateItem(inEvent->mClient.get(),item);
+        this->mUserList->RefreshItem(item);
     }
-    UpdateButtons();
-    RefreshSeparators();
+    this->UpdateButtons();
+    this->RefreshSeparators();
 }
-// Original missing scan start3cb4d0..3cb761,657B. Four allocation guards, full events.
 // FUNCTION: WON 0x007cb4d0
+// Handles room/client events, Ignore/Unignore, Whisper, the right-click client menu and double-click whisper
 void UserListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType) {
-    case 100006: ClientChanged(static_cast<ClientChangedEvent*>(inEvent)); return;
-    case 100030: JoinedRoom(static_cast<JoinedRoomEvent*>(inEvent)); return;
-    case 100033: LeftRoom(static_cast<LeftRoomEvent*>(inEvent)); return;
-    case 15: {
-        Component* anIgnore=mIgnoreButton.get();
+    case LobbyEvent_ClientChanged: this->ClientChanged(static_cast<ClientChangedEvent*>(inEvent)); return;
+    case LobbyEvent_JoinedRoom: this->JoinedRoom(static_cast<JoinedRoomEvent*>(inEvent)); return;
+    case LobbyEvent_LeftRoom: this->LeftRoom(static_cast<LeftRoomEvent*>(inEvent)); return;
+    case ComponentEvent_ButtonPressed: {
+        Component* anIgnore=this->mIgnoreButton.get();
         Component* component=inEvent->mComponent;
         if(component==anIgnore) {
-            LobbyClient* client=GetSelectedClient();
+            LobbyClient* client=this->GetSelectedClient();
             if(client!=NULL)
-                Fn2F53F0(new ClientActionEvent(client->GetB22()?12:5,GetRoomSpecFlags(),client),false);
-        } else if(component==mWhisperButton.get()) {
-            LobbyClient* client=GetSelectedClient();
+                this->DeliverEvent(new ClientActionEvent(client->IsIgnored()?12:5,this->GetRoomSpecFlags(),client),false);
+        } else if(component==this->mWhisperButton.get()) {
+            LobbyClient* client=this->GetSelectedClient();
             if(client!=NULL)
-                LobbyFn359100(new SetChatInputEvent(2,client->GetName(),mModeFlags,false),true);
+                LobbyBroadcastEvent(new SetChatInputEvent(2,client->GetName(),this->mModeFlags,false),true);
         }
         return;
     }
-    case 22: UpdateButtons(); return;
-    case 23: {
-        LobbyClient* client=GetSelectedClient();
+    case ComponentEvent_ListSelChanged: this->UpdateButtons(); return;
+    case ComponentEvent_ListItemClicked: {
+        LobbyClient* client=this->GetSelectedClient();
         if(client==NULL) return;
         ListItemClickedEvent* clicked=static_cast<ListItemClickedEvent*>(inEvent);
         ListItem* item=clicked->mItem.get();
-        if(GetSelectedItem()!=item) return;
+        if(this->GetSelectedItem()!=item) return;
         if(clicked->GetButton()==2)
-            Fn2F53F0(new ClientActionEvent(18,GetRoomSpecFlags(),client),false);
+            this->DeliverEvent(new ClientActionEvent(18,this->GetRoomSpecFlags(),client),false);
         else if(clicked->GetButton()==0 && clicked->IsDoubleClick())
-            LobbyFn359100(new SetChatInputEvent(2,client->GetName(),mModeFlags,false),true);
+            LobbyBroadcastEvent(new SetChatInputEvent(2,client->GetName(),this->mModeFlags,false),true);
         return;
     }
     default: Component::HandleComponentEvent(inEvent); return;
     }
 }
 }
-// Private UserListCtrlConfig family is separate and not yet drafted here.
 
 
 namespace WONAPI {
 // FUNCTION: WON 0x00765a60
+// Creates the layout reader for a room user list
 ComponentConfig* UserListCtrlConfig::CfgFactory()
 {
     return new UserListCtrlConfig;
@@ -273,6 +273,7 @@ ComponentConfig* UserListCtrlConfig::CfgFactory()
 
 namespace WONAPI {
 // FUNCTION: WON 0x007cb770
+// Accepts (and ignores) the GROUPTYPE and CTRLLINKID layout keys; passes other keys to the container's reader
 bool UserListCtrlConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="GROUPTYPE") { }

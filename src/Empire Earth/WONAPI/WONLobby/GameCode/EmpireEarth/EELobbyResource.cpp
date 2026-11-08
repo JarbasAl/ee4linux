@@ -1,8 +1,8 @@
-// C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyResource.cpp (file name PROVISIONAL: no __FILE__; it
-// sorts after EELobbyPlayerOptionsCtrl.cpp and before the sound classes). The lobby's text resources, in the shape of
-// WONAPI's generated resource units: 73 GUIString globals (init chains 0x29a43d..0x29b1ed, definition order = table
-// order), the loader registration, the section loader and the reset: 0x29a43d..0x29ce06 (GUIString::operator='s
-// COMDAT closes it). Every name PROVISIONAL.
+// C:\EEX\Empire Earth\WONAPI\WONLobby\GameCode\EmpireEarth\EELobbyResource.cpp (file name inferred: no __FILE__;
+// it sorts after EELobbyPlayerOptionsCtrl.cpp and before the sound classes). The game lobby's text resources, in the
+// shape of WONAPI's generated resource units: 73 GUIString globals (init chains 0x69a43d..0x69b1ed, definition order
+// = table order), the loader registration, the section loader and the reset: 0x69a43d..0x69ce06 (the
+// GUIString::operator= COMDAT closes it). Every name here is a provisional name.
 #include <windows.h>
 #include <string>
 #include <list>
@@ -168,7 +168,8 @@ static GUIString* sEELobbyStrings[] = {
 static void EELobbyResource_Load(ResourceConfigTable* inTable);
 
 // FUNCTION: EXE 0x69b1ed
-// NEAR: the returned copy stores once after the test in the original (SmartPtr copy ctor shape, proposals_h2.md P1)
+// Registers the game lobby's string loader with a resource table, creating the table when none is given
+// Not identical: the original stores the returned smart pointer copy only once, after the NULL test
 ResourceConfigTablePtr EELobbyResource_Init(ResourceConfigTable* inCollection)
 {
     ResourceConfigTablePtr theCollection = inCollection;
@@ -181,14 +182,16 @@ ResourceConfigTablePtr EELobbyResource_Init(ResourceConfigTable* inCollection)
 }
 
 // FUNCTION: EXE 0x69b26c
+// Returns the game lobby string with the given table index (epochs, game options, dialog texts)
 GUIString& EELobbyResource_GetString(int inID)
 {
     return *sEELobbyStrings[inID];
 }
 
 // FUNCTION: EXE 0x69b278
-// GUIString::operator='s inner SmartPtr::operator=(const SmartPtr&) (IL 44, ee/EEWonNet.h) is refused at the first 48
-// sites (call 0x29cdf2) and expanded from site 49 on
+// Loads the game options, player options, connect, file dialog, game status and lobby texts from resources
+// GUIString::operator='s inner SmartPtr::operator=(const SmartPtr&) (ee/EEWonNet.h) is called out of line
+// (0x69cdf2) at the first 48 assignments and expanded inline from the 49th on
 static void EELobbyResource_Load(ResourceConfigTable* inTable)
 {
     ResourceConfig* aTable;
@@ -281,6 +284,7 @@ static void EELobbyResource_Load(ResourceConfigTable* inTable)
 }
 
 // FUNCTION: EXE 0x69c961
+// Resets every game lobby string to the empty string
 void EELobbyResource_Destroy()
 {
     gEELobbyGameOptionsCtrl_Epoch1 = GetEmptyGUIStringData();

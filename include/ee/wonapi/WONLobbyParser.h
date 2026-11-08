@@ -33,15 +33,15 @@ public:
     static void ValueToString(const std::list<std::list<std::string> >& theVal,std::string& theStr);
     static void ValueToString(const std::list<std::list<std::wstring> >& theVal,std::string& theStr);
     StringParser() : mPos(0), mWide(false) { mNarrow=""; }
-    void Set(const char* theStr) { mNarrow=theStr; mPos=0; mWide=false; }
-    void Set(const wchar_t* theStr) { mWideText=theStr; mPos=0; mWide=true; }
+    void Set(const char* theStr) { mNarrow=theStr; this->mPos=0; this->mWide=false; }
+    void Set(const wchar_t* theStr) { mWideText=theStr; this->mPos=0; this->mWide=true; }
     const char* GetStr() { return mNarrow; }
     const wchar_t* GetWStr() { return mWideText; }
-    int GetPos() { return mPos; }
-    void SetIsWString(bool isWString) { mWide=isWString; }
-    bool GetIsWString() { return mWide; }
-    StringParser(const char* inText) { Set(inText); }
-    StringParser(const wchar_t* inText) { Set(inText); }
+    int GetPos() { return this->mPos; }
+    void SetIsWString(bool isWString) { this->mWide=isWString; }
+    bool GetIsWString() { return this->mWide; }
+    StringParser(const char* inText) { this->Set(inText); }
+    StringParser(const wchar_t* inText) { this->Set(inText); }
     unsigned char GetChar(int inOffset); //2a48c0, wide >=256 clamps0xff
     wchar_t GetWChar(int inOffset); //2a4910
     void IncrementPos(int inAmount); //2a4900
@@ -51,13 +51,13 @@ public:
     bool ReadString(std::wstring& outString, bool inStopAtWhitespace); //2a4ff0
     bool ReadValue(int& outValue); //2a53d0
     bool ReadValue(__int64 &theInt64);
-    bool ReadValue(unsigned __int64 &theInt64)  { __int64 anInt64; bool aRet = ReadValue(anInt64); theInt64 = anInt64; return aRet; }
-    bool ReadValue(long &theLong) { int anInt; bool aRet = ReadValue(anInt); theLong = anInt; return aRet; }
-    bool ReadValue(unsigned long &theLong) { int anInt; bool aRet = ReadValue(anInt); theLong = anInt; return aRet; }
-    bool ReadValue(short &theShort) { int anInt; bool aRet = ReadValue(anInt); theShort = (short)anInt; return aRet; }
-    bool ReadValue(unsigned short &theShort) { int anInt; bool aRet = ReadValue(anInt); theShort = (unsigned short)anInt; return aRet; }
-    bool ReadValue(char &theByte) { int anInt; bool aRet = ReadValue(anInt); theByte = (char)anInt; return aRet; }
-    bool ReadValue(unsigned char &theByte) { int anInt; bool aRet = ReadValue(anInt); theByte = (unsigned char)anInt; return aRet; }
+    bool ReadValue(unsigned __int64 &theInt64)  { __int64 anInt64; bool aRet = this->ReadValue(anInt64); theInt64 = anInt64; return aRet; }
+    bool ReadValue(long &theLong) { int anInt; bool aRet = this->ReadValue(anInt); theLong = anInt; return aRet; }
+    bool ReadValue(unsigned long &theLong) { int anInt; bool aRet = this->ReadValue(anInt); theLong = anInt; return aRet; }
+    bool ReadValue(short &theShort) { int anInt; bool aRet = this->ReadValue(anInt); theShort = (short)anInt; return aRet; }
+    bool ReadValue(unsigned short &theShort) { int anInt; bool aRet = this->ReadValue(anInt); theShort = (unsigned short)anInt; return aRet; }
+    bool ReadValue(char &theByte) { int anInt; bool aRet = this->ReadValue(anInt); theByte = (char)anInt; return aRet; }
+    bool ReadValue(unsigned char &theByte) { int anInt; bool aRet = this->ReadValue(anInt); theByte = (unsigned char)anInt; return aRet; }
     bool ReadValue(bool& outValue); //2a5550
     bool ReadString(std::string& outString, bool inFlag); // 0x2a49f0
     // Genuine nominal static formatting overloads; call-only original-owned implementations.
@@ -96,14 +96,14 @@ public:
     void AddHelpEntry(int inId, const GUIString& inCommand, GUIString& outHelp);
     GUIString GetHelp(unsigned short inClientId);
 
-    int GetCommand() const { return mCommand; }
-    const GUIString& GetTargetName() const { return mTargetName; }
-    int GetPrefix() const { return mPrefix; }
-    LobbyClient* GetTarget() const { return mTarget.get(); }
-    const GUIString& GetText() const { return mText; }
-    unsigned long GetDuration() const { return mDuration; }
-    unsigned long GetRoomFlags() const { return mRoomFlags; }
-    LobbyClientList* GetClients() const { return mClients.get(); }
+    int GetCommand() const { return this->mCommand; }
+    const GUIString& GetTargetName() const { return this->mTargetName; }
+    int GetPrefix() const { return this->mPrefix; }
+    LobbyClient* GetTarget() const { return this->mTarget.get(); }
+    const GUIString& GetText() const { return this->mText; }
+    unsigned long GetDuration() const { return this->mDuration; }
+    unsigned long GetRoomFlags() const { return this->mRoomFlags; }
+    LobbyClientList* GetClients() const { return this->mClients.get(); }
     SmartPtr<LobbyClientList> mClients;    // +0x08
     GUIString mInput;                     // +0x0c
     CommandMap mCommands;                 // +0x10

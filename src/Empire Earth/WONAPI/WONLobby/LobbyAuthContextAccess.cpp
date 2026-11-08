@@ -1,4 +1,4 @@
-// Lazy original CRC/hash configuration before returning the current auth context.
+// Access to the lobby's login (auth) context
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONLobbyCore.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075b490
+// Returns the login context; with CRC checks on, first gives it the files to hash for the community (once)
 AuthContext* GetLobbyAuthContext()
 {
     if(gLobbyData.get()==NULL)

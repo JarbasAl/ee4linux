@@ -1,4 +1,4 @@
-// Genuine SDK skin duplicate and frame-copy constructor providers.
+// Duplicates of the skinned buttons and the frame component's frame-copy constructor (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONLobbySkinListControls.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00718d40
+// Returns a new skinned button with this one's attributes copied
 WONButton* WONButton::Duplicate()
 {
     WONButton* copy=new WONButton;
@@ -21,6 +22,7 @@ WONButton* WONButton::Duplicate()
     return copy;
 }
 // FUNCTION: WON 0x00719350
+// Returns a new skinned header button with this one's attributes copied
 WONHeaderButton* WONHeaderButton::Duplicate()
 {
     WONHeaderButton* button=new WONHeaderButton;
@@ -30,7 +32,7 @@ WONHeaderButton* WONHeaderButton::Duplicate()
 
 WONFrameComponent::WONFrameComponent(const WONFrame& frame)
 {
-    mFrame.Copy(frame);
+    this->mFrame.Copy(frame);
 }
 }
 

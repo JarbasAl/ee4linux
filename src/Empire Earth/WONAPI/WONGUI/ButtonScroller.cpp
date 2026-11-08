@@ -9,45 +9,46 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK algorithms, no Native/primary/physical claim.
+// Scroller driven by left, right, up and down buttons (not identified in the original exe)
 ButtonScroller::ButtonScroller()
 {
-	mSettingScrollButtonConditions = false;
-	mVertCondition = mHorzCondition = ScrollButtonCondition_Enable;
+	this->mSettingScrollButtonConditions = false;
+	this->mVertCondition = this->mHorzCondition = ScrollButtonCondition_Enable;
 }
 
-void ButtonScroller::Virtual6C()
+void ButtonScroller::AddedToParent()
 {
 
-	if(mScrollArea.get()!=NULL && mScrollArea->GetParent()!=this)
-		AddControls();
+	if(this->mScrollArea.get()!=NULL && this->mScrollArea->GetParent()!=this)
+		this->AddControls();
 
-	Scroller::Virtual6C();
+	Scroller::AddedToParent();
 }
 
 void ButtonScroller::AddControls()
 {
-	mScrollArea->SetScroller(this);
-	SmartPtr<Button>* buttons[] = {&mLeftButton, &mRightButton, &mUpButton, &mDownButton};
+	this->mScrollArea->SetScroller(this);
+	SmartPtr<Button>* buttons[] = {&this->mLeftButton, &this->mRightButton, &this->mUpButton, &this->mDownButton};
 	for(int i=0; i<4; i++)
 	{
 		SmartPtr<Button> &aButton = *buttons[i];
 		if(aButton.get()==NULL)
 		{
 			aButton = new Button;
-			aButton->SetComponentFlags(0x800,true);
+			aButton->SetComponentFlags(ComponentFlag_NoInput,true);
 		}
 	}
 
-	Fn2F6A60(mScrollArea);
-	Fn2F6A60(mLeftButton);
-	Fn2F6A60(mRightButton);
-	Fn2F6A60(mUpButton);
-	Fn2F6A60(mDownButton);
+	this->AddChild(this->mScrollArea);
+	this->AddChild(this->mLeftButton);
+	this->AddChild(this->mRightButton);
+	this->AddChild(this->mUpButton);
+	this->AddChild(this->mDownButton);
 
-	if(mScrollArea->mL0A4>0 || mScrollArea->mTotalHeight>0)
-		NotifyScrollChange(false);
+	if(this->mScrollArea->mTotalWidth>0 || this->mScrollArea->mTotalHeight>0)
+		this->NotifyScrollChange(false);
 }
 
 bool ButtonScroller::EnableScrollButtons(Button *theLeft, Button *theRight, ScrollButtonCondition theCondition)
@@ -67,7 +68,7 @@ bool ButtonScroller::EnableScrollButtons(Button *theLeft, Button *theRight, Scro
 	// Prevent situations where conditional scrollbars are enabled and disabled recursively since
 	// it turns out that it's possible for the appearance of a scrollbar to change the wordwrapping
 	// such that the scrollbar is no longer necessary.
-	if(mSettingScrollButtonConditions)
+	if(this->mSettingScrollButtonConditions)
 	{
 		if(!showLeft && theLeft->IsVisible())
 			return false;
@@ -85,19 +86,19 @@ bool ButtonScroller::EnableScrollButtons(Button *theLeft, Button *theRight, Scro
 void ButtonScroller::SetScrollButtonConditions(ScrollButtonCondition theHorzCondition, ScrollButtonCondition theVertCondition)
 {
 	bool needChange = false;
-	mHorzCondition = theHorzCondition;
-	mVertCondition = theVertCondition;
+	this->mHorzCondition = theHorzCondition;
+	this->mVertCondition = theVertCondition;
 
-	needChange = EnableScrollButtons(mLeftButton,mRightButton, mHorzCondition) || needChange;
-	needChange = EnableScrollButtons(mUpButton, mDownButton, mVertCondition) || needChange;
+	needChange = this->EnableScrollButtons(this->mLeftButton,this->mRightButton, this->mHorzCondition) || needChange;
+	needChange = this->EnableScrollButtons(this->mUpButton, this->mDownButton, this->mVertCondition) || needChange;
 
-	mSettingScrollButtonConditions = true;
+	this->mSettingScrollButtonConditions = true;
 	if(needChange)
 	{
-		Invalidate();
-		Virtual08();
+		this->Invalidate();
+		this->Virtual08();
 	}
-	mSettingScrollButtonConditions = false;
+	this->mSettingScrollButtonConditions = false;
 }
 
 void ButtonScroller::Virtual08()
@@ -138,10 +139,10 @@ void ButtonScroller::SetButton(Button *theButton, Direction theDirection)
 {
 	switch(theDirection)
 	{
-		case Direction_Left: mLeftButton = theButton; break;
-		case Direction_Right: mRightButton = theButton; break;
-		case Direction_Up:	mUpButton = theButton; break;
-		case Direction_Down: mDownButton = theButton; break;
+		case Direction_Left: this->mLeftButton = theButton; break;
+		case Direction_Right: this->mRightButton = theButton; break;
+		case Direction_Up:	this->mUpButton = theButton; break;
+		case Direction_Down: this->mDownButton = theButton; break;
 		default:
 			return;
 	}
@@ -151,33 +152,33 @@ void ButtonScroller::SetButton(Button *theButton, Direction theDirection)
 
 void ButtonScroller::NotifyScrollChange(bool becauseOfScroller)
 {
-	if(mLeftButton.get()!=NULL)
-		mLeftButton->SetEnabled(mScrollArea->mHorzOffset>0);
+	if(this->mLeftButton.get()!=NULL)
+		this->mLeftButton->SetEnabled(this->mScrollArea->mHorzOffset>0);
 
-	if(mUpButton.get()!=NULL)
-		mUpButton->SetEnabled(mScrollArea->mVertOffset>0);
+	if(this->mUpButton.get()!=NULL)
+		this->mUpButton->SetEnabled(this->mScrollArea->mVertOffset>0);
 
-	if(mRightButton.get()!=NULL)
-		mRightButton->SetEnabled(mScrollArea->mHorzOffset + mScrollArea->mScrollArea.width < mScrollArea->mL0A4);
+	if(this->mRightButton.get()!=NULL)
+		this->mRightButton->SetEnabled(this->mScrollArea->mHorzOffset + this->mScrollArea->mScrollArea.width < this->mScrollArea->mTotalWidth);
 
-	if(mDownButton.get()!=NULL)
-		mDownButton->SetEnabled(mScrollArea->mVertOffset + mScrollArea->mScrollArea.height < (mScrollArea->mTotalHeight+mScrollArea->mExtraHeight));
+	if(this->mDownButton.get()!=NULL)
+		this->mDownButton->SetEnabled(this->mScrollArea->mVertOffset + this->mScrollArea->mScrollArea.height < (this->mScrollArea->mTotalHeight+this->mScrollArea->mExtraHeight));
 
-	SetScrollButtonConditions(mHorzCondition, mVertCondition);
+	this->SetScrollButtonConditions(this->mHorzCondition, this->mVertCondition);
 }
 
 void ButtonScroller::HandleComponentEvent(ComponentEvent *theEvent)
 {
-	if(theEvent->mType==15)
+	if(theEvent->mType==ComponentEvent_ButtonPressed)
 	{
-		if(theEvent->mComponent==mLeftButton)
-			SetHorzOffset(mScrollArea->mHorzOffset-mScrollArea->mLeftScrollAmount);
-		else if(theEvent->mComponent==mRightButton)
-			SetHorzOffset(mScrollArea->mHorzOffset+mScrollArea->mRightScrollAmount);
-		else if(theEvent->mComponent==mUpButton)
-			SetVertOffset(mScrollArea->mVertOffset-mScrollArea->mUpScrollAmount);
-		else if(theEvent->mComponent==mDownButton)
-			SetVertOffset(mScrollArea->mVertOffset+mScrollArea->mDownScrollAmount);
+		if(theEvent->mComponent==this->mLeftButton)
+			this->SetHorzOffset(this->mScrollArea->mHorzOffset-this->mScrollArea->mLeftScrollAmount);
+		else if(theEvent->mComponent==this->mRightButton)
+			this->SetHorzOffset(this->mScrollArea->mHorzOffset+this->mScrollArea->mRightScrollAmount);
+		else if(theEvent->mComponent==this->mUpButton)
+			this->SetVertOffset(this->mScrollArea->mVertOffset-this->mScrollArea->mUpScrollAmount);
+		else if(theEvent->mComponent==this->mDownButton)
+			this->SetVertOffset(this->mScrollArea->mVertOffset+this->mScrollArea->mDownScrollAmount);
 		else
 			Scroller::HandleComponentEvent(theEvent);
 	}

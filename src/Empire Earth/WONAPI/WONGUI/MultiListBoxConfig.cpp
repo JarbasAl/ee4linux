@@ -1,4 +1,4 @@
-// Native borrowed MultiList configuration instruction dispatch; no owner allocation/lifetime bodies.
+// Config instructions for multi-column list areas and their headers (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,42 +12,45 @@
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00790160
+// Handles one multi-column list instruction (sort column/func, widths, column count, alignment, auto-grow)
+// or passes it to the list area config; throws on an unknown sort function
 bool MultiListAreaConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="SORTCOLUMN") {
-        int column=ReadInt(); EnsureComma();
-        ListSortType type=ReadSortType();
-        mMultiListArea->SetSortColumn(column,type);
+        int column=this->ReadInt(); this->EnsureComma();
+        ListSortType type=this->ReadSortType();
+        this->mMultiListArea->SetSortColumn(column,type);
     } else if(instruction=="COLUMNWIDTH") {
-        int column=ReadInt(); EnsureComma();
-        int width=ReadInt();
-        mMultiListArea->SetColumnWidth(column,width,false);
-    } else if(instruction=="NUMCOLUMNS") mMultiListArea->SetNumColumns(ReadInt());
-    else if(instruction=="DYNAMICSIZECOLUMN") mMultiListArea->mDynamicSizeColumn=ReadInt();
+        int column=this->ReadInt(); this->EnsureComma();
+        int width=this->ReadInt();
+        this->mMultiListArea->SetColumnWidth(column,width,false);
+    } else if(instruction=="NUMCOLUMNS") this->mMultiListArea->SetNumColumns(this->ReadInt());
+    else if(instruction=="DYNAMICSIZECOLUMN") this->mMultiListArea->mDynamicSizeColumn=this->ReadInt();
     else if(instruction=="SORTCOLUMNFUNC") {
-        int column=ReadInt(); EnsureComma();
-        GUIString name=Fn3842F0(false);
+        int column=this->ReadInt(); this->EnsureComma();
+        GUIString name=this->ReadString(false);
         ListArea::SortFunc function=NULL;
         if(name.CompareNoCase("NUMERIC")==0) function=ListArea::NumberSortFunc;
         else throw ConfigObjectException("Unknown sort func: "+(std::string)name);
-        mMultiListArea->SetSortColumnFunc(column,function);
-    } else if(instruction=="AUTOGROWCOLUMNS") mMultiListArea->mAutoGrowColumns=Fn3837F0();
+        this->mMultiListArea->SetSortColumnFunc(column,function);
+    } else if(instruction=="AUTOGROWCOLUMNS") this->mMultiListArea->mAutoGrowColumns=this->ReadBool();
     else if(instruction=="COLUMNHALIGN") {
-        int column=ReadInt(); EnsureComma();
-        HorzAlign align=ReadHorzAlign();
-        mMultiListArea->SetColumnHAlign(column,align);
+        int column=this->ReadInt(); this->EnsureComma();
+        HorzAlign align=this->ReadHorzAlign();
+        this->mMultiListArea->SetColumnHAlign(column,align);
     } else return ListAreaConfig::Virtual24(instruction);
     return true;
 }
 // FUNCTION: WON 0x00790490
+// Handles SETCOLUMN and MULTILISTAREA for a list header, or passes the instruction to the container config
 bool MultiListHeaderConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="SETCOLUMN") {
-        int column=ReadInt(); EnsureComma();
-        Component* component=ReadComponent();
-        mHeader->SetColumnItem(column,component);
+        int column=this->ReadInt(); this->EnsureComma();
+        Component* component=this->ReadComponent();
+        this->mHeader->SetColumnItem(column,component);
     } else if(instruction=="MULTILISTAREA") {
-        mHeader->SetMultiListArea(SafeConfigGetComponent<MultiListArea*>(ReadComponent(),"MultiListArea"));
+        this->mHeader->SetMultiListArea(SafeConfigGetComponent<MultiListArea*>(this->ReadComponent(),"MultiListArea"));
     } else return ContainerConfig::Virtual24(instruction);
     return true;
 }

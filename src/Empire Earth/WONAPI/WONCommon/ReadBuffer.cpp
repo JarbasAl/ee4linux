@@ -1,4 +1,4 @@
-// Native full ReadBuffer12 and ReadBufferException24 families; source only.
+// ReadBuffer: sequential reads from a byte buffer, throwing ReadBufferException at the end
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,75 +10,88 @@
 #include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006a39f0
+// Creates a reader over the given bytes
 ReadBuffer::ReadBuffer(const void* data,unsigned long length)
-{ SetData(data,length); }
+{ this->SetData(data,length); }
 // FUNCTION: WON 0x006a3a10
+// Points the reader at the given bytes and rewinds it
 void ReadBuffer::SetData(const void* data,unsigned long length)
 {
-    mData=(const char*)data;
-    mL08=length;
-    Rewind();
+    this->mData=static_cast<const char*>(data);
+    this->mLength=length;
+    this->Rewind();
 }
 // FUNCTION: WON 0x006a41c0
-void ReadBuffer::Rewind() {mL00=0;}
+// Moves the read position back to the start
+void ReadBuffer::Rewind() {this->mPos=0;}
 // FUNCTION: WON 0x006a3a30
+// Returns a pointer to the next bytes and skips them; throws ReadBufferException past the end
 const void* ReadBuffer::ReadBytes(unsigned long amount)
 {
-    if(length()-pos()<amount)
+    if(this->length()-this->pos()<amount)
         throw ReadBufferException("Attempt to read past end of buffer.");
-    const void* result=(const char*)data()+mL00;
-    mL00+=amount;
+    const void* result=static_cast<const char*>(this->data())+this->mPos;
+    this->mPos+=amount;
     return result;
 }
 // FUNCTION: WON 0x006a3b40
 // (the implicit destructor of ReadBufferException is emitted here, after the throw in ReadBytes)
 // FUNCTION: WON 0x006a3d30
-bool ReadBuffer::ReadBool() {return ReadByte()!=0;}
+// Reads a byte as a bool
+bool ReadBuffer::ReadBool() {return this->ReadByte()!=0;}
 // FUNCTION: WON 0x006a3d40
-unsigned char ReadBuffer::ReadByte() {return *(const unsigned char*)ReadBytes(1);}
+// Reads one byte
+unsigned char ReadBuffer::ReadByte() {return *static_cast<const unsigned char*>(this->ReadBytes(1));}
 // FUNCTION: WON 0x006a3d50
-short ReadBuffer::ReadShort() {return *(const short*)ReadBytes(2);}
+// Reads a 16-bit value
+short ReadBuffer::ReadShort() {return *static_cast<const short*>(this->ReadBytes(2));}
 // FUNCTION: WON 0x006a3d60
-long ReadBuffer::ReadLong() {return *(const long*)ReadBytes(4);}
+// Reads a 32-bit value
+long ReadBuffer::ReadLong() {return *static_cast<const long*>(this->ReadBytes(4));}
 // FUNCTION: WON 0x006a3d70
+// Reads a sign-extended 1, 2 or 4 byte length field; returns 0 for any other size
 unsigned long ReadBuffer::ReadLength(unsigned char fieldSize)
 {
     switch(fieldSize) {
-    case 1:return (signed char)ReadByte();
-    case 2:return ReadShort();
-    case 4:return ReadLong();
+    case 1:return (signed char)this->ReadByte();
+    case 2:return this->ReadShort();
+    case 4:return this->ReadLong();
     default:return 0;
     }
 }
 // FUNCTION: WON 0x006a3db0
+// Reads the given number of characters into the string
 void ReadBuffer::ReadRawString(std::string& text,unsigned long length)
 {
     text.erase();
-    const char* data=(const char*)ReadBytes(length);
+    const char* data=static_cast<const char*>(this->ReadBytes(length));
     text.append(data,length);
 }
-// Original3f40/30 forwarding wrapper, zeroquota.
 // FUNCTION: WON 0x006a3f40
+// Reads a length-prefixed string with the given length field size
 void ReadBuffer::ReadString(std::string& text,unsigned char fieldSize)
-{ReadRawString(text,ReadLength(fieldSize));}
+{this->ReadRawString(text,this->ReadLength(fieldSize));}
 // FUNCTION: WON 0x006a3f60
+// Reads the given number of 16-bit characters into the wide string
 void ReadBuffer::ReadRawWString(std::wstring& text,unsigned long length)
 {
     text.erase();
-    const wchar_t* data=(const wchar_t*)ReadBytes(length*2);
+    const wchar_t* data=static_cast<const wchar_t*>(this->ReadBytes(length*2));
     text.append(data,length);
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(1);
 }
-// Original40f0/30 forwarding wrapper, existing canonicalint contract retained, zeroquota.
+// The field size is passed as int
 // FUNCTION: WON 0x006a40f0
+// Reads a length-prefixed wide string with the given length field size
 void ReadBuffer::ReadWString(std::wstring& text,int fieldSize)
-{ReadRawWString(text,ReadLength((unsigned char)fieldSize));}
+{this->ReadRawWString(text,this->ReadLength((unsigned char)fieldSize));}
 // FUNCTION: WON 0x006a4110
+// Reads a length-prefixed block into a new byte buffer
 ByteBufferPtr ReadBuffer::ReadBuf(unsigned char fieldSize)
 {
-    unsigned long length=ReadLength(fieldSize);
-    return new ByteBuffer(ReadBytes(length),length,false);
+    unsigned long length=this->ReadLength(fieldSize);
+    return new ByteBuffer(this->ReadBytes(length),length,false);
 }
 }
 

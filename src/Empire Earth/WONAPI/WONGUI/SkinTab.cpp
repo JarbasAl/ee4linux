@@ -1,4 +1,4 @@
-// Skinned tab frame ownership and standard tab setup.
+// Skinned tab control: frame, transparency and standard tabs (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,36 +13,38 @@
 #include "ee/wonapi/WONLobbyMSPainters.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0071AAA0
+// Sets the tab frame: adds a stretched frame image over the page area and, when opaque, a dialog back inside it
 void WONTabCtrl::SetFrame(const WONFrame &theFrame)
 {
-    mFrame = theFrame;
+    this->mFrame = theFrame;
     SmartPtr<ImageComponent> aFrame = new ImageComponent;
     aFrame->mStretch = true;
-    aFrame->VirtualB0(mFrame.mImage.get());
+    aFrame->SetImage(this->mFrame.mImage.get());
     // CLI_SameLeft | CLI_SameTop | CLI_SameSize = 0x5003.
-    Fn2F6140(aFrame.get(),0x5003,mContainerLayout.get(),0,0,0,0,0);
-    Fn2F6A60(aFrame.get());
-    if(!mIsTransparent)
+    this->Fn2F6140(aFrame.get(),0x5003,this->mContainerLayout.get(),0,0,0,0,0);
+    this->AddChild(aFrame.get());
+    if(!this->mIsTransparent)
     {
-        mBack = new MSDlgBack;
-        Fn2F6140(mBack.get(),0x5003,aFrame.get(),mFrame.mLeft,mFrame.mTop,
-            -mFrame.mRight-mFrame.mLeft,-mFrame.mTop-mFrame.mBottom,0);
-        Fn2F6A60(mBack.get());
+        this->mBack = new MSDlgBack;
+        this->Fn2F6140(this->mBack.get(),0x5003,aFrame.get(),this->mFrame.mLeft,this->mFrame.mTop,
+            -this->mFrame.mRight-this->mFrame.mLeft,-this->mFrame.mTop-this->mFrame.mBottom,0);
+        this->AddChild(this->mBack.get());
     }
 }
-// Support0: conditional RemoveChild forwarding, native31ac50/30; does not store flag.
 // FUNCTION: WON 0x0071ac50
+// Removes the dialog back when made transparent; never stores the flag or re-adds the back
 void WONTabCtrl::SetTransparent(bool isTransparent)
 {
-    if(mBack.get()!=NULL && isTransparent)
-        VirtualC4(mBack.get());
+    if(this->mBack.get()!=NULL && isTransparent)
+        this->RemoveChild(this->mBack.get());
 }
 // FUNCTION: WON 0x0071AC70
+// Adds a page with a skinned tab button showing the given text
 void WONTabCtrl::AddStandardTab(const GUIString &theText,Container *theContainer)
 {
-    SmartPtr<WONButton> aButton = mSkin->GetTabButton();
+    SmartPtr<WONButton> aButton = this->mSkin->GetTabButton();
     aButton->SetText(theText,true);
     aButton->SetDesiredWidth(0);
-    AddTab(aButton.get(),theContainer);
+    this->AddTab(aButton.get(),theContainer);
 }
 }

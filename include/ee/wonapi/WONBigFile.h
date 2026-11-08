@@ -47,9 +47,9 @@ public:
 	WONBigFile(const char *theResName, const char *theResType);
 #endif
 
-	const char* GetMemData() { return mMemDataP; }
-	const std::string& GetFilePath() { return mFilePath; }
-	const FileMap& GetFileMap() { return mFileMap; }
+	const char* GetMemData() { return this->mMemDataP; }
+	const std::string& GetFilePath() { return this->mFilePath; }
+	const FileMap& GetFileMap() { return this->mFileMap; }
 };
 typedef SmartPtr<WONBigFile> WONBigFilePtr;
 

@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK data/mixer/channel/thread owners.
+// WONSound data, mixer, channel and thread classes (not identified in the original exe).
 #ifndef EE_WONAPI_WONLOBBYWONSOUND_H
 #define EE_WONAPI_WONLOBBYWONSOUND_H
 
@@ -32,7 +32,7 @@ public:
 	virtual const char* GetData(int &theLen) = 0;
 	virtual void Rewind() = 0;
 
-	FileReader& GetReader() { return mReader; }
+	FileReader& GetReader() { return this->mReader; }
 };
 typedef SmartPtr<WONSoundDataBase> WONSoundDataBasePtr;
 
@@ -90,7 +90,7 @@ public:
 
 	void Mix(char *theBuf, int theNumBytes, int theFreq, int theFlags);
 
-	bool IsPlaying() { return mIsPlaying; }
+	bool IsPlaying() { return this->mIsPlaying; }
 }; 
 typedef SmartPtr<WONSound> WONSoundPtr;
 
@@ -130,7 +130,7 @@ protected:
 	virtual ~WONSoundChannel();
 
 public:
-	bool IsMusic() { return mIsMusic; }
+	bool IsMusic() { return this->mIsMusic; }
 	void SetBuffers(int theNumBuffers, int theBufferDuration);
 	void SetVolume(unsigned char theVolume);
 

@@ -1,5 +1,4 @@
-// ResourceConfig scalar literals. The project's ResourceConfig nominal is the
-// SDK ResourceConfig owner; preserve the already-established project identity.
+// Resource-file value parsers: colors, font styles, fonts, sounds, images and backgrounds
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -25,6 +24,7 @@ static int GetHexDigit(char inChar)
 }
 
 // FUNCTION: WON 0x00790f20
+// Consumes the next ',' in the resource text or throws "Expecting ','"
 void ResourceConfig::EnsureComma(StringParser& inParser)
 {
     if(!inParser.CheckNextChar(','))
@@ -32,6 +32,7 @@ void ResourceConfig::EnsureComma(StringParser& inParser)
 }
 
 // FUNCTION: WON 0x00791060
+// Consumes the next ')' in the resource text or throws "Expecting ')'"
 void ResourceConfig::EnsureCloseParen(StringParser& inParser)
 {
     if(!inParser.CheckNextChar(')'))
@@ -40,6 +41,8 @@ void ResourceConfig::EnsureCloseParen(StringParser& inParser)
 
 inline int MakeStdColor(int inIndex) { return inIndex|0x80000000; }
 // FUNCTION: WON 0x007911a0
+// Reads a color: (STD,<system color name>), (DEC,r,g,b) or six hex digits RRGGBB; throws on bad input
+// (an unknown standard color reports the type "STD" rather than the bad name; another type yields 0)
 int ResourceConfig::SafeReadColor(StringParser& inParser)
 {
     inParser.SkipWhitespace();
@@ -51,7 +54,7 @@ int ResourceConfig::SafeReadColor(StringParser& inParser)
         int color=0;
         if(_stricmp(type.c_str(),"STD")==0)
         {
-            EnsureComma(inParser);
+            ResourceConfig::EnsureComma(inParser);
             std::string name;
             inParser.ReadString(name,false);
             const char* aName=name.c_str();
@@ -77,15 +80,15 @@ int ResourceConfig::SafeReadColor(StringParser& inParser)
         else if(_stricmp(type.c_str(),"DEC")==0)
         {
             int red,green,blue;
-            EnsureComma(inParser);
+            ResourceConfig::EnsureComma(inParser);
             inParser.ReadValue(red);
-            EnsureComma(inParser);
+            ResourceConfig::EnsureComma(inParser);
             inParser.ReadValue(green);
-            EnsureComma(inParser);
+            ResourceConfig::EnsureComma(inParser);
             inParser.ReadValue(blue);
             color=((red&0xff)<<16)|((green&0xff)<<8)|(blue&0xff);
         }
-        EnsureCloseParen(inParser);
+        ResourceConfig::EnsureCloseParen(inParser);
         return color;
     }
     int color=0;
@@ -101,6 +104,7 @@ int ResourceConfig::SafeReadColor(StringParser& inParser)
 }
 
 // FUNCTION: WON 0x007916c0
+// Reads font style words (Bold, Italic, Plain, Underline) into style bits; throws on an unknown word
 int ResourceConfig::SafeReadFontStyle(StringParser& inParser)
 {
     int style=0;
@@ -118,16 +122,15 @@ int ResourceConfig::SafeReadFontStyle(StringParser& inParser)
     return style;
 }
 
-// Additional real ResourceConfig (SDK ResourceConfig) literals.
-// Requires complete Background, SoundDescriptor, Window and WindowManager.
 // FUNCTION: WON 0x00791870
+// Reads face, style and size and returns that font from the default window; throws on a size <= 0
 SmartPtr<Font> ResourceConfig::SafeReadFont(StringParser& parser)
 {
     std::string face;
     parser.ReadString(face,false);
-    EnsureComma(parser);
-    int style=SafeReadFontStyle(parser);
-    EnsureComma(parser);
+    ResourceConfig::EnsureComma(parser);
+    int style=ResourceConfig::SafeReadFontStyle(parser);
+    ResourceConfig::EnsureComma(parser);
     int size;
     if(!parser.ReadValue(size) || size<=0)
         throw ConfigObjectException("Invalid font size.");
@@ -135,6 +138,7 @@ SmartPtr<Font> ResourceConfig::SafeReadFont(StringParser& parser)
 }
 
 // FUNCTION: WON 0x00791ab0
+// Reads a sound path or (path,flags) with Preload/Music/Muted and decodes it; throws on a bad flag or decode failure
 SmartPtr<Sound> ResourceConfig::SafeReadSound(StringParser& parser)
 {
     parser.SkipWhitespace();
@@ -144,7 +148,7 @@ SmartPtr<Sound> ResourceConfig::SafeReadSound(StringParser& parser)
     {
         parser.IncrementPos(1);
         parser.ReadString(path,false);
-        EnsureComma(parser);
+        ResourceConfig::EnsureComma(parser);
         int flags=0;
         while(true)
         {
@@ -157,7 +161,7 @@ SmartPtr<Sound> ResourceConfig::SafeReadSound(StringParser& parser)
             else throw ConfigObjectException("Unknown sound flag: "+flag);
         }
         desc.SetSoundFlags(flags,true);
-        EnsureCloseParen(parser);
+        ResourceConfig::EnsureCloseParen(parser);
     }
     else parser.ReadString(path,false);
     desc.mPath=ComponentConfig::GetResourceFile(path);
@@ -168,6 +172,7 @@ SmartPtr<Sound> ResourceConfig::SafeReadSound(StringParser& parser)
 }
 
 // FUNCTION: WON 0x00791ea0
+// Reads an image path and decodes it as a delay-loaded image; throws when decoding fails
 SmartPtr<Image> ResourceConfig::SafeReadImage(StringParser& parser)
 {
     std::string path;
@@ -179,31 +184,32 @@ SmartPtr<Image> ResourceConfig::SafeReadImage(StringParser& parser)
 }
 
 // FUNCTION: WON 0x00792050
+// Reads a background: COLOR, IMAGE, STRETCHIMAGE, WATERMARK (no offsets) or NONE; throws on anything else
 Background ResourceConfig::SafeReadBackground(StringParser& parser)
 {
     std::string type;
     parser.ReadString(type,false);
     if(_stricmp(type.c_str(),"COLOR")==0)
     {
-        EnsureComma(parser);
-        return Background(SafeReadColor(parser));
+        ResourceConfig::EnsureComma(parser);
+        return Background(ResourceConfig::SafeReadColor(parser));
     }
     if(_stricmp(type.c_str(),"IMAGE")==0)
     {
-        EnsureComma(parser);
-        return Background(SafeReadImage(parser).get());
+        ResourceConfig::EnsureComma(parser);
+        return Background(ResourceConfig::SafeReadImage(parser).get());
     }
     if(_stricmp(type.c_str(),"STRETCHIMAGE")==0)
     {
-        EnsureComma(parser);
-        Background background(SafeReadImage(parser).get());
+        ResourceConfig::EnsureComma(parser);
+        Background background(ResourceConfig::SafeReadImage(parser).get());
         background.mStretchImage=true;
         return background;
     }
     if(_stricmp(type.c_str(),"WATERMARK")==0)
     {
-        EnsureComma(parser);
-        Background background(SafeReadImage(parser).get());
+        ResourceConfig::EnsureComma(parser);
+        Background background(ResourceConfig::SafeReadImage(parser).get());
         background.mUseOffsets=false;
         return background;
     }

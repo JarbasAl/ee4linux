@@ -15,72 +15,84 @@
 #include "ee/wonapi/WONLobbyHTMLFromText.h"
 #include "ee/wonapi/WONLobbyHTMLParser.h"
 // FUNCTION: WON 0x0073f6e0
+// Static initializer: constructs the URL protocol prefix table and registers its destructor
 // (_$E74)
 // FUNCTION: WON 0x0073f6f0
+// Constructs the five URL protocol prefixes (HTTP://, HTTPS://, FTP://, MAILTO:, WWW.)
 // (_$E71)
 // FUNCTION: WON 0x0073f740
+// Registers the protocol prefix table's destructor with atexit
 // (_$E73)
 // FUNCTION: WON 0x0073f750
+// Destroys the protocol prefix table at exit
 // (_$E72)
 extern const WONAPI::GUIString gProtocols[5];
 extern const WONAPI::GUIString gProtocolPrepends[5];
 const WONAPI::GUIString gProtocols[] = { "HTTP://", "HTTPS://", "FTP://", "MAILTO:", "WWW." };
 // FUNCTION: WON 0x0073f770
+// Static initializer: constructs the link prefix table and registers its destructor
 // (_$E79)
 // FUNCTION: WON 0x0073f780
+// Constructs the link prefixes added before each protocol's links (HTTP:// for WWW., else none)
 // (_$E76)
 // FUNCTION: WON 0x0073f7d0
+// Registers the link prefix table's destructor with atexit
 // (_$E78)
 // FUNCTION: WON 0x0073f7e0
+// Destroys the link prefix table at exit
 // (_$E77)
 const WONAPI::GUIString gProtocolPrepends[] = { "", "", "", "", "HTTP://" };
 static int gNumProtocols = 5;
 namespace WONAPI {
-// Genuine SDK constructor; member owners use ordinary implicit construction.
 // FUNCTION: WON 0x0073f510
+// Creates a text-to-HTML converter with no open file
 HTMLFromText::HTMLFromText()
 {
-    mFile=NULL;
+    this->mFile=NULL;
 }
 // FUNCTION: WON 0x0073f580
+// Drops the pending text and closes the input file
 void HTMLFromText::CloseFile()
 {
-	mBackStr = GetEmptyGUIStringData();
-	if(mFile!=NULL)
+	this->mBackStr = GetEmptyGUIStringData();
+	if(this->mFile!=NULL)
 	{
-		fclose(mFile);
-		mFile = NULL;
+		fclose(this->mFile);
+		this->mFile = NULL;
 	}
 }
 // FUNCTION: WON 0x0073f5f0
+// Returns whether the input is used up: no pending text and no file data left
 bool HTMLFromText::EndOfFile()
 {	
-	if(!mFile || feof(mFile))
-		return mBackStr.length()==0;
+	if(!this->mFile || feof(this->mFile))
+		return this->mBackStr.length()==0;
 	else
 		return false;
 }
 // FUNCTION: WON 0x0073F610
+// Returns the next input character from the pending text (stored reversed) or the file; -1 at the end
 int HTMLFromText::GetChar()
 {
 	int aChar = 0;
-	if(mBackStr.length()==0)
+	if(this->mBackStr.length()==0)
 	{
-		if(mFile)
-			aChar = fgetc(mFile);
+		if(this->mFile)
+			aChar = fgetc(this->mFile);
 		else 
 			aChar = -1;
 	}
 	else
 	{
-		aChar = mBackStr[mBackStr.length()-1];
-		mBackStr.resize(mBackStr.length()-1);
+		aChar = this->mBackStr[this->mBackStr.length()-1];
+		this->mBackStr.resize(this->mBackStr.length()-1);
 	}
 
 	return aChar;
 }
 
 // FUNCTION: WON 0x0073F800
+// Returns whether one string contains another at the given positions, ignoring case
 bool HTMLFromText::StartsWith(const GUIString &s1, int p1, const GUIString &s2, int p2)
 {
 	int c1, c2;
@@ -99,11 +111,12 @@ bool HTMLFromText::StartsWith(const GUIString &s1, int p1, const GUIString &s2, 
 }
 
 // FUNCTION: WON 0x0073F8B0
+// Turns a URL starting a word at the position into a link tag; adds the text before it and keeps the rest
 bool HTMLFromText::CheckURL(GUIString &aStr, int &aPos)
 {
 	for(int i=0; i<gNumProtocols; i++)
 	{
-		if(StartsWith(aStr,aPos,gProtocols[i],0) &&
+		if(this->StartsWith(aStr,aPos,gProtocols[i],0) &&
 		   (aPos==0 || aStr[aPos-1]== ' '))
 		{
 			int anEndPos = aPos;
@@ -120,7 +133,7 @@ bool HTMLFromText::CheckURL(GUIString &aStr, int &aPos)
 			}
 			
 			if(aPos>0)
-				mDocument->AddTag(new HTMLTextTag(aStr.substr(0,aPos)));
+				this->mDocument->AddTag(new HTMLTextTag(aStr.substr(0,aPos)));
 
 			HTMLAnchorTag *anAnchor = new HTMLAnchorTag;
 			GUIString aLink = aStr.substr(aPos,anEndPos-aPos);
@@ -128,12 +141,12 @@ bool HTMLFromText::CheckURL(GUIString &aStr, int &aPos)
 			anHRef.append(aLink);
 
 			anAnchor->mHRef = anHRef;
-			mDocument->AddTag(anAnchor);
-			mDocument->AddTag(new HTMLTextTag(aLink));
+			this->mDocument->AddTag(anAnchor);
+			this->mDocument->AddTag(new HTMLTextTag(aLink));
 
 			anAnchor = new HTMLAnchorTag;
 			anAnchor->SetFlags(HTMLTagFlag_IsEndTag,true);
-			mDocument->AddTag(anAnchor);
+			this->mDocument->AddTag(anAnchor);
 
 			aStr = aStr.substr(anEndPos);
 			aPos = 0;
@@ -144,24 +157,29 @@ bool HTMLFromText::CheckURL(GUIString &aStr, int &aPos)
 	return false;
 }
 // FUNCTION: WON 0x0073fc30
+// Deleting destructor of an anchor tag (compiler-generated)
 // (??_GHTMLAnchorTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x0073fc50
+// Destroys an anchor tag, releasing its name and link
 // (??1HTMLAnchorTag@WONAPI@@UAE@XZ)
 // FUNCTION: WON 0x0073fce0
+// Deleting destructor of a text tag (compiler-generated)
 // (??_GHTMLTextTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x0073fd00
+// Destroys a text tag, releasing its text
 // (??1HTMLTextTag@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x0073FD60
+// Adds a line of plain text to the document, turning URLs in it into links
 void HTMLFromText::AddStr(GUIString &theStr)
 {
 	int aPos = 0;
 
 	while(aPos<theStr.length())
 	{
-		if(CheckURL(theStr,aPos))
+		if(this->CheckURL(theStr,aPos))
 			continue;
 		
 //		if(CheckEmoticon(aStr,aPos))
@@ -178,96 +196,101 @@ void HTMLFromText::AddStr(GUIString &theStr)
 	}
 
 	if(theStr.length()!=0)
-		mDocument->AddTag(new HTMLTextTag(theStr));
+		this->mDocument->AddTag(new HTMLTextTag(theStr));
 }
 
 
 // FUNCTION: WON 0x0073fe40
+// Converts the plain-text input into a document: one line break tag per newline, optionally inside <BODY>
 HTMLDocument* HTMLFromText::Generate(bool wantBody)
 {
-    mDocument=new HTMLDocument(gEmptyGUIString);
-    if(wantBody) mDocument->AddTag(new HTMLBodyTag);
+    this->mDocument=new HTMLDocument(gEmptyGUIString);
+    if(wantBody) this->mDocument->AddTag(new HTMLBodyTag);
     GUIString current((unsigned short)32);
-    while(!EndOfFile()) {
-        int ch=GetChar();
+    while(!this->EndOfFile()) {
+        int ch=this->GetChar();
         if(ch=='\n') {
             if(current.length()!=0) {
-                AddStr(current);
+                this->AddStr(current);
                 current.erase();
                 current.reserve(32);
             }
-            mDocument->AddTag(new HTMLLineBreakTag);
+            this->mDocument->AddTag(new HTMLLineBreakTag);
         } else if(ch!=-1) current.append(ch);
 
         else break;
     }
-    if(current.length()!=0) AddStr(current);
+    if(current.length()!=0) this->AddStr(current);
     if(wantBody) {
         HTMLBodyTag* tag=new HTMLBodyTag;
         tag->SetFlags(HTMLTagFlag_IsEndTag,true);
-        mDocument->AddTag(tag);
+        this->mDocument->AddTag(tag);
     }
-    CloseFile();
-    return mDocument.get();
+    this->CloseFile();
+    return this->mDocument.get();
 }
 
 // FUNCTION: WON 0x007400a0
+// Converts a file to a document, parsed as HTML when flagged (or optionally when it starts with '<'); NULL if unopened
 HTMLDocument* HTMLFromText::GenerateFromFile(const GUIString& path,int flags)
 {
-    CloseFile();
+    this->CloseFile();
     if(path.empty()) return NULL;
     std::string narrowPath=path;
-    mFile=fopen(narrowPath.c_str(),"r");
-    if(mFile==NULL) return NULL;
+    this->mFile=fopen(narrowPath.c_str(),"r");
+    if(this->mFile==NULL) return NULL;
     bool isHTML=(flags&HTMLDocGenFlag_IsHTML)!=0;
     if(flags&HTMLDocGenFlag_IsOptionalHTML) {
-        int first=fgetc(mFile);
+        int first=fgetc(this->mFile);
         if(first=='<') {
-            CloseFile();
+            this->CloseFile();
             isHTML=true;
-        } else if(!(flags&HTMLDocGenFlag_SkipFirstCharIfNotHTML)) ungetc(first,mFile);
+        } else if(!(flags&HTMLDocGenFlag_SkipFirstCharIfNotHTML)) ungetc(first,this->mFile);
     }
     if(isHTML) {
         HTMLParser parser;
         parser.ParseFromFile(path);
-        mDocument=parser.GetDocument();
-        // Preserve the original forced-HTML file-handle state; no extra fclose.
-        return mDocument.get();
+        this->mDocument=parser.GetDocument();
+        // The file opened above stays open when HTML was forced by flag (closed by the next CloseFile)
+        return this->mDocument.get();
     }
-    return Generate(false);
+    return this->Generate(false);
 }
 
 // FUNCTION: WON 0x00740340
+// Destroys an HTML parser
 // (??1HTMLParser@WONAPI@@QAE@XZ)
 
 // FUNCTION: WON 0x00740440
+// Converts text to a document, parsed as HTML when flagged (or optionally when it starts with '<')
 HTMLDocument* HTMLFromText::GenerateFromText(const GUIString& text,int flags)
 {
-    CloseFile();
+    this->CloseFile();
     bool isHTML=(flags&HTMLDocGenFlag_IsHTML)!=0;
     if((flags&HTMLDocGenFlag_IsOptionalHTML) && text.length()!=0 && text[0]=='<')
         isHTML=true;
     if(isHTML) {
         HTMLParser parser;
         parser.ParseFromText(text);
-        mDocument=parser.GetDocument();
-        return mDocument.get();
+        this->mDocument=parser.GetDocument();
+        return this->mDocument.get();
     }
-    mBackStr.resize(0);
-    mBackStr.reserve(text.length());
-    for(int i=text.length()-1;i>=0;--i) mBackStr.append(text[i]);
+    this->mBackStr.resize(0);
+    this->mBackStr.reserve(text.length());
+    for(int i=text.length()-1;i>=0;--i) this->mBackStr.append(text[i]);
     if(flags&HTMLDocGenFlag_IsOptionalHTML) {
-        if((flags&HTMLDocGenFlag_SkipFirstCharIfNotHTML) && mBackStr.length()>0)
-            mBackStr.resize(mBackStr.length()-1);
+        if((flags&HTMLDocGenFlag_SkipFirstCharIfNotHTML) && this->mBackStr.length()>0)
+            this->mBackStr.resize(this->mBackStr.length()-1);
     }
-    return Generate(false);
+    return this->Generate(false);
 }
 
 // FUNCTION: WON 0x00740710
+// Converts a file or a text to a document depending on the file flag
 HTMLDocument* HTMLFromText::Generate(const GUIString& text,int flags)
 {
-    if(flags&HTMLDocGenFlag_IsFile) return GenerateFromFile(text,flags);
-    return GenerateFromText(text,flags);
+    if(flags&HTMLDocGenFlag_IsFile) return this->GenerateFromFile(text,flags);
+    return this->GenerateFromText(text,flags);
 }
 }
 

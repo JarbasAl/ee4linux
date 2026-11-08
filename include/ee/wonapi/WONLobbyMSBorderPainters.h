@@ -2,22 +2,19 @@
 #define EE_WONAPI_WONLOBBYMSBORDERPAINTERS_H
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Actual fieldless Component descendant, original VT44ec7c; borrowed paint only.
-// No constructor, allocation, sizeof, copy or lifetime implementation authority.
+// MSEtchedFrame: fieldless Component subclass, vtable 0x0084ec7c; paint only.
 class MSEtchedFrame : public Component {
 public:
-    MSEtchedFrame(); //300840 genuine SDK explicit constructor, fieldless30
-    virtual void Paint(Graphics&); //300860, genuine18slot, full98B
+    MSEtchedFrame(); // at 0x00700840 (fieldless, 0x30 bytes)
+    virtual void Paint(Graphics&); // slot 0x18, at 0x00700860
 };
-// Complete actual fieldless MSInputBoxec derived owner, native allocation33bc8e.
-// Genuine implicit ctor calls original InputBox2f7fd0 and sets ownVT451858.
-// Original external dtor33bec0 retains all cleanup; no new lifetime body/copy.
-// Historical external label only; source contract has no explicit destructor. Natural full InputBox/member cleanup remains automatic.
+// MSInputBox: fieldless InputBox subclass (0xec bytes), allocated at 0x0073bc8e. The implicit
+// constructor calls InputBox (0x006f7fd0) and sets the vtable 0x00851858; the destructor
+// (0x0073bec0) is implicit.
 class MSInputBox : public InputBox {
 public:
-    // virtual ~MSInputBox(); //original-owned lifetime only -- provisional external declaration withdrawn: genuine SDK destructor is implicit.
-    virtual void Paint(Graphics&); //2ffad0, genuine18slot, full42B
-    virtual void Virtual0C(int&,int&); //original forwarding desired-size provider
+    virtual void Paint(Graphics&); // slot 0x18, at 0x006ffad0
+    virtual void GetDesiredSize(int&,int&); // forwards the desired size
 };
 }
 #endif

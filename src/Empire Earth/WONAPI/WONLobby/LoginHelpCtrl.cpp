@@ -1,4 +1,4 @@
-// Scratch original-backed LoginHelp whole consumer. Browser reference contract pending GUI.
+// Login help page: an HTML browser that shows help/loginhelp.html
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,22 +11,23 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
-// Constructor3bfc20/32B initializes only members; implicitnormal3bfc60/106B noownVP,0quota.
+// The constructor (0x7bfc20) only initializes members; the destructor (0x7bfc60) is implicit
 LoginHelpCtrl::LoginHelpCtrl() : mHaveLoadedHelp(false) {}
-// Original3bfea0..3bfecb,43B.
 // FUNCTION: WON 0x007bfea0
+// Looks up the help browser from the layout
 void LoginHelpCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2) SafeGetComponent(static_cast<ComponentConfigInit&>(inInit).mConfig,mBrowser,"Browser",__FILE__,40);
+    if(inInit.mType==2) SafeGetComponent(static_cast<ComponentConfigInit&>(inInit).mConfig,this->mBrowser,"Browser",__FILE__,40);
 }
-// Original3bfcd0..3bfe9f,463B. Both std::string values die before flags/ContainerPaint.
+// Both std::string temporaries are destroyed before the flag store and Container::Paint
 // FUNCTION: WON 0x007bfcd0
+// Loads the login help page on first paint (links open the external browser), then paints the page
 void LoginHelpCtrl::Paint(Graphics& inGraphics)
 {
-    if(!mHaveLoadedHelp) {
-        mBrowser->Go(ComponentConfig::GetResourceFile("help/loginhelp.html"),false,0,-1);
-        mBrowser->SetLaunchBrowserOnLink(true);
-        mHaveLoadedHelp=true;
+    if(!this->mHaveLoadedHelp) {
+        this->mBrowser->Go(ComponentConfig::GetResourceFile("help/loginhelp.html"),false,0,-1);
+        this->mBrowser->SetLaunchBrowserOnLink(true);
+        this->mHaveLoadedHelp=true;
     }
     Container::Paint(inGraphics);
 }

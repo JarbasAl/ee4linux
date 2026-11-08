@@ -1,4 +1,4 @@
-// Complete genuine same-SDK source-only version/directory operation owner. No Native layout claim.
+// WON SDK version/directory op; no original address identified
 #ifndef __WON_FINDPATCHOP_H__
 #define __WON_FINDPATCHOP_H__
 #include "ee/wonapi/WONGetVersionOp.h"
@@ -40,13 +40,13 @@ protected:
 	void DoFinish(GetDirOp *theOp);
 
 	virtual bool CallbackHook(AsyncOp *theOp, int theId);
-	virtual void Virtual04();
+	virtual void RunHook();
 
 public:
 	FindPatchOp(ServerContext *theDirServers, const std::string &theProduct);
 	FindPatchOp(GetVersionOp *theVersionOp);
 
-	const PatchList& GetPatchList() { return mPatchList; } // all available patches
+	const PatchList& GetPatchList() { return this->mPatchList; } // all available patches
 	void GetPatchList(const std::string &theFromVersion, PatchList &aList); // all patches from this version
 	void GetValidPatchList(const std::string &theFromVersion, PatchList &aList); // all patches from this version to a valid version
 	void GetHighestPatchList(const std::string &theFromVersion, PatchList &aList); // all patches to the highest version available from this version

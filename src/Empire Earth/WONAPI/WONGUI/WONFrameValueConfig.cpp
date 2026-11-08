@@ -1,4 +1,4 @@
-// Actual native frame parsing and original-owned skin control instructions.
+// Frame values in skin files and the WON combo box, tab control and scroll container instructions (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,6 +14,7 @@
 #include "LostDebug.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007980a0
+// Reads a frame value: a stretch image alone (its own borders), or an image plus one border width or four
 static WONFrame ReadFrame(ComponentConfig* config)
 {
     SmartPtr<Image> image=config->ReadImage(false);
@@ -29,40 +30,43 @@ static WONFrame ReadFrame(ComponentConfig* config)
     return WONFrame(image.get(),left,top,right,bottom);
 }
 namespace WONAPI {
-// Exact genuine SDK out-of-line copy constructor. SUPPORT0/unmarked; no native entry claimed.
+// Out-of-line copy constructor (not identified separately in the original exe)
 WONFrame::WONFrame(const WONFrame& from)
 {
-    Copy(from);
+    this->Copy(from);
 }
 // FUNCTION: WON 0x00797f70
+// Handles the WON combo box skin keys DRAWFRAME, BUTTONINFRAME and FRAME; passes other keys to the combo box config
 bool WONComboBoxConfig::Virtual24(const std::string& key)
 {
-    if(key=="DRAWFRAME") { bool on=Fn3837F0(); mComboBox->mDrawFrame=on; }
-    else if(key=="BUTTONINFRAME") { bool on=Fn3837F0(); mComboBox->mButtonInFrame=on; }
-    else if(key=="FRAME") mComboBox->SetFrame(ReadFrame(this));
+    if(key=="DRAWFRAME") { bool on=this->ReadBool(); this->mComboBox->mDrawFrame=on; }
+    else if(key=="BUTTONINFRAME") { bool on=this->ReadBool(); this->mComboBox->mButtonInFrame=on; }
+    else if(key=="FRAME") this->mComboBox->SetFrame(ReadFrame(this));
     else return ComboBoxConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x007981f0
+// Handles the WON tab control skin keys TRANSPARENT, ADDSTANDARDTAB (name, container) and FRAME; passes other keys on
 bool WONTabCtrlConfig::Virtual24(const std::string& key)
 {
-    if(key=="TRANSPARENT") mTabCtrl->SetTransparent(Fn3837F0());
+    if(key=="TRANSPARENT") this->mTabCtrl->SetTransparent(this->ReadBool());
     else if(key=="ADDSTANDARDTAB") {
-        GUIString name=Fn3842F0(false); EnsureComma();
-        Container* tab=SafeConfigGetComponent<Container*>(ReadComponent(),"Container");
-        mTabCtrl->AddStandardTab(name,tab);
-    } else if(key=="FRAME") mTabCtrl->SetFrame(ReadFrame(this));
+        GUIString name=this->ReadString(false); this->EnsureComma();
+        Container* tab=SafeConfigGetComponent<Container*>(this->ReadComponent(),"Container");
+        this->mTabCtrl->AddStandardTab(name,tab);
+    } else if(key=="FRAME") this->mTabCtrl->SetFrame(ReadFrame(this));
     else return TabCtrlConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x007987e0
+// Handles DRAWFRAME (false clears the frame, true does nothing), TRANSPARENT, FRAME and CORNER; passes other keys on
 bool WONScrollContainerConfig::Virtual24(const std::string& key)
 {
     if(key=="DRAWFRAME") {
-        if(!Fn3837F0()) mScrollContainer->SetFrame(WONFrame());
-    } else if(key=="TRANSPARENT") { bool on=Fn3837F0(); mScrollContainer->mTransparent=on; }
-    else if(key=="FRAME") mScrollContainer->SetFrame(ReadFrame(this));
-    else if(key=="CORNER") mScrollContainer->SetCorner(ReadImage(false));
+        if(!this->ReadBool()) this->mScrollContainer->SetFrame(WONFrame());
+    } else if(key=="TRANSPARENT") { bool on=this->ReadBool(); this->mScrollContainer->mTransparent=on; }
+    else if(key=="FRAME") this->mScrollContainer->SetFrame(ReadFrame(this));
+    else if(key=="CORNER") this->mScrollContainer->SetCorner(this->ReadImage(false));
     else return ScrollbarScrollerConfig::Virtual24(key);
     return true;
 }

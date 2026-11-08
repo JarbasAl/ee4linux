@@ -1292,7 +1292,7 @@ void EEUserInterface::UpdateInterface()
     gMouse->Update();
     gMouse->mInputLock->Leave();
     gWorld.mLock->ReadLock();
-    if (!Fn297ED0())
+    if (!EELobbyIsShown())
         gUIManager->UpdateUI(gMouse->mPosition);
     gWorld.mLock->ReadUnlock();
     this->ProcessActions();
@@ -1765,7 +1765,7 @@ long __stdcall EEUserInterface::WindowProc(HWND inWindow, UINT inMessage, WPARAM
 {
     static float sMasterVolume = gSoundManager != NULL ? gSoundManager->GetMasterVolume() : 0.0f;
     static float sMusicVolume = gConductor != NULL ? gConductor->GetConductor().GetVolume() : 0.0f;
-    if (Fn297ED0() && inMessage != WM_SIZE)
+    if (EELobbyIsShown() && inMessage != WM_SIZE)
         return DefWindowProc(inWindow, inMessage, inWParam, inLParam);
     switch (inMessage) {
     case WM_CREATE: {

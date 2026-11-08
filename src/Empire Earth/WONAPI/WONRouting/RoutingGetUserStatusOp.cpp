@@ -1,4 +1,4 @@
-// Native friend-status routing datagram operation.
+// WONAPI datagram op that asks a routing server for the online status of friends
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,57 +9,62 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006c6630
+// Creates a friend status query to a server address, with 3 retransmits and a 1 s message timeout
 RoutingGetUserStatusOp::RoutingGetUserStatusOp(const IPAddr& inAddress, UDPManager* inManager)
 {
-    SetDestAddr(inAddress);
-    SetUDPManager(inManager);
-    SetNumRetransmits(3);
-    SetMsgTimeout(1000);
+    this->SetDestAddr(inAddress);
+    this->SetUDPManager(inManager);
+    this->SetNumRetransmits(3);
+    this->SetMsgTimeout(1000);
 }
 // FUNCTION: WON 0x006c68c0
+// Adds a WON user id to query, with status 0 until the reply arrives
 void RoutingGetUserStatusOp::AddWONUserId(unsigned long inUserId)
 {
-    mFriendStatusMap.insert(FriendStatusMap::value_type(inUserId, 0));
+    this->mFriendStatusMap.insert(FriendStatusMap::value_type(inUserId, 0));
 }
 // FUNCTION: WON 0x006c6970
-void RoutingGetUserStatusOp::Virtual04()
+// Builds the user status datagram listing every queried WON id and starts the send/receive
+void RoutingGetUserStatusOp::RunHook()
 {
     WriteBuffer message(0, true);
     message.AppendByte(3);
     message.AppendByte(7);
     message.AppendByte(72);
-    message.AppendByte((unsigned char)mFriendStatusMap.size());
-    FriendStatusMap::const_iterator i = mFriendStatusMap.begin();
+    message.AppendByte((unsigned char)this->mFriendStatusMap.size());
+    FriendStatusMap::const_iterator i = this->mFriendStatusMap.begin();
     while (true) {
-        if (i == GetFriendStatusMap().end()) break;
+        if (i == this->GetFriendStatusMap().end()) break;
         message.AppendLong(i->first);
         ++i;
     }
-    mOutgoing = message.ToByteBuffer(true);
-    UDPManagerSendRecvOp::Virtual04();
+    this->mOutgoing = message.ToByteBuffer(true);
+    UDPManagerSendRecvOp::RunHook();
     // LOST-DEBUG: none: exact only.
-    EE_LOST_TRACE(mOutgoing.get());
-    EE_LOST_TRACE(mOutgoing.get());
-    EE_LOST_TRACE(mOutgoing.get());
-    EE_LOST_TRACE(mOutgoing.get());
+    EE_LOST_TRACE(this->mOutgoing.get());
+    EE_LOST_TRACE(this->mOutgoing.get());
+    EE_LOST_TRACE(this->mOutgoing.get());
+    EE_LOST_TRACE(this->mOutgoing.get());
 }
 // FUNCTION: WON 0x006c6ab0
-WONStatus RoutingGetUserStatusOp::Virtual0C(ReadBuffer& inMessage)
+// Checks the status reply header and count and stores each user's status byte; returns the result
+WONStatus RoutingGetUserStatusOp::CheckResponse(ReadBuffer& inMessage)
 {
     try {
-        if (inMessage.ReadByte() != 3) return (WONStatus)100004;
-        if (inMessage.ReadByte() != 7) return (WONStatus)100004;
-        if (inMessage.ReadByte() != 73) return (WONStatus)100004;
+        if (inMessage.ReadByte() != 3) return (WONStatus)WS_None;
+        if (inMessage.ReadByte() != 7) return (WONStatus)WS_None;
+        if (inMessage.ReadByte() != 73) return (WONStatus)WS_None;
         unsigned char count = inMessage.ReadByte();
-        if (count != mFriendStatusMap.size()) return (WONStatus)100006;
-        FriendStatusMap::iterator i = mFriendStatusMap.begin();
+        if (count != this->mFriendStatusMap.size()) return (WONStatus)WS_InvalidMessage;
+        FriendStatusMap::iterator i = this->mFriendStatusMap.begin();
         for (int j = 0; j < count; ++i, ++j)
             i->second = inMessage.ReadByte();
-        return (WONStatus)0;
+        return (WONStatus)WS_Success;
     } catch (ReadBufferException&) {
-        return (WONStatus)100012;
+        return (WONStatus)WS_MessageUnpackFailure;
     }
 }
 }

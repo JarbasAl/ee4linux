@@ -50,6 +50,8 @@
 #include "ee/EEUIEWonNetArenaGameEvents.h"
 #include "ee/EEUICWonNetRoomsBox.h"
 #include "ee/EEStringIDs.h"
+#include "ee/wonapi/WONRoutingOpTypes.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace WONAPI;
 
 char* kWonGameKey = "GAME";                          // 0x4bba5c
@@ -63,10 +65,10 @@ wchar_t* kWonRoutingServerType = L"TitanRoutingServerG2";       // 0x4bba78
 wchar_t* kWonProductDirectory = L"/EmpireEarth";                // 0x4bba7c
 wchar_t* kWonCommunityName = L"EmpireEarth";                    // 0x4bba80
 
-extern char gU4E5B98[];                     // 0x4e5b98 (pooled "")
+extern char gEmptyString[];                 // 0x4e5b98 (pooled "")
 unsigned long gWonClientId;                 // 0x4e60b8 (RegisterCallback stores the server's client id)
 unsigned short gEmptyWideString[2];         // 0x4e60bc (L"": zero .bss right after gWonClientId; size = the gap to 0x4e60c0)
-extern unsigned long gU5308A0;              // 0x5308a0 (the adapter of the local address)
+extern unsigned long gNetworkAdapter;       // 0x5308a0 (the adapter of the local address)
 
 static const unsigned short kEEWonNetGameInfoVersion = 1;   // 0x43e480 (ExportGameInfo's record version)
 
@@ -118,67 +120,67 @@ void EEWonNetError(const char* inWhere, WONStatus inStatus)
 const char* RoutingOpTypeToString(RoutingOpType inType)
 {
     switch (inType) {
-    case 0: return "RoutingOp_Undefined";
-    case 1: return "RoutingOp_AbortServerShutdown";
-    case 2: return "RoutingOp_AcceptClient";
-    case 3: return "RoutingOp_BanClient";
-    case 4: return "RoutingOp_BecomeModerator";
-    case 5: return "RoutingOp_CancelJoinGroup";
-    case 6: return "RoutingOp_ClientFlagsChanged";
-    case 7: return "RoutingOp_ClientJoinedGroup";
-    case 8: return "RoutingOp_ClientJoinedServer";
-    case 9: return "RoutingOp_ClientLeftGroup";
-    case 10: return "RoutingOp_ClientLeftServer";
-    case 11: return "RoutingOp_CreateDataObject";
-    case 12: return "RoutingOp_CreateGroup";
-    case 13: return "RoutingOp_DataObjectCreated";
-    case 14: return "RoutingOp_DataObjectDeleted";
-    case 15: return "RoutingOp_DataObjectModified";
-    case 16: return "RoutingOp_DeleteDataObject";
-    case 17: return "RoutingOp_DetectFirewall";
-    case 18: return "RoutingOp_DisconnectClient";
-    case 19: return "RoutingOp_GetBadUserList";
-    case 20: return "RoutingOp_GetClientList";
-    case 21: return "RoutingOp_GetGroupList";
-    case 22: return "RoutingOp_GetMembersOfGroup";
-    case 23: return "RoutingOp_GroupCaptainChanged";
-    case 24: return "RoutingOp_GroupCreated";
-    case 25: return "RoutingOp_GroupDeleted";
-    case 26: return "RoutingOp_GroupFlagsChanged";
-    case 27: return "RoutingOp_GroupInvitation";
-    case 28: return "RoutingOp_GroupJoinAttempt";
-    case 29: return "RoutingOp_GroupMaxPlayersChanged";
-    case 30: return "RoutingOp_GroupMemberCount";
-    case 31: return "RoutingOp_GroupNameChanged";
-    case 32: return "RoutingOp_GroupObserverCount";
-    case 33: return "RoutingOp_InviteClient";
-    case 34: return "RoutingOp_JoinGroup";
-    case 35: return "RoutingOp_LeaveGroup";
-    case 36: return "RoutingOp_MemberFlagsChanged";
-    case 37: return "RoutingOp_ModifyDataObject";
-    case 38: return "RoutingOp_MuteClient";
-    case 39: return "RoutingOp_PeerChat";
-    case 40: return "RoutingOp_PeerData";
-    case 41: return "RoutingOp_ReadDataObject";
-    case 42: return "RoutingOp_RegisterClient";
-    case 43: return "RoutingOp_RelinquishCaptaincy";
-    case 44: return "RoutingOp_SendChat";
-    case 45: return "RoutingOp_SendComplaint";
-    case 46: return "RoutingOp_SendData";
-    case 47: return "RoutingOp_SendServerAlert";
-    case 48: return "RoutingOp_ServerAlert";
-    case 49: return "RoutingOp_ServerShutdownAborted";
-    case 50: return "RoutingOp_ServerShutdownStarted";
-    case 51: return "RoutingOp_SetClientFlags";
-    case 52: return "RoutingOp_SetGroupFlags";
-    case 53: return "RoutingOp_SetGroupMaxPlayers";
-    case 54: return "RoutingOp_SetGroupName";
-    case 55: return "RoutingOp_SetGroupPassword";
-    case 56: return "RoutingOp_StartServerShutdown";
-    case 57: return "RoutingOp_UnsubscribeDataObject";
-    case 58: return "RoutingOp_YouWereBanned";
-    case 59: return "RoutingOp_YouWereMuted";
-    case 60: return "RoutingOp_DerivedServerOp";
+    case RoutingOp_Undefined: return "RoutingOp_Undefined";
+    case RoutingOp_AbortServerShutdown: return "RoutingOp_AbortServerShutdown";
+    case RoutingOp_AcceptClient: return "RoutingOp_AcceptClient";
+    case RoutingOp_BanClient: return "RoutingOp_BanClient";
+    case RoutingOp_BecomeModerator: return "RoutingOp_BecomeModerator";
+    case RoutingOp_CancelJoinGroup: return "RoutingOp_CancelJoinGroup";
+    case RoutingOp_ClientFlagsChanged: return "RoutingOp_ClientFlagsChanged";
+    case RoutingOp_ClientJoinedGroup: return "RoutingOp_ClientJoinedGroup";
+    case RoutingOp_ClientJoinedServer: return "RoutingOp_ClientJoinedServer";
+    case RoutingOp_ClientLeftGroup: return "RoutingOp_ClientLeftGroup";
+    case RoutingOp_ClientLeftServer: return "RoutingOp_ClientLeftServer";
+    case RoutingOp_CreateDataObject: return "RoutingOp_CreateDataObject";
+    case RoutingOp_CreateGroup: return "RoutingOp_CreateGroup";
+    case RoutingOp_DataObjectCreated: return "RoutingOp_DataObjectCreated";
+    case RoutingOp_DataObjectDeleted: return "RoutingOp_DataObjectDeleted";
+    case RoutingOp_DataObjectModified: return "RoutingOp_DataObjectModified";
+    case RoutingOp_DeleteDataObject: return "RoutingOp_DeleteDataObject";
+    case RoutingOp_DetectFirewall: return "RoutingOp_DetectFirewall";
+    case RoutingOp_DisconnectClient: return "RoutingOp_DisconnectClient";
+    case RoutingOp_GetBadUserList: return "RoutingOp_GetBadUserList";
+    case RoutingOp_GetClientList: return "RoutingOp_GetClientList";
+    case RoutingOp_GetGroupList: return "RoutingOp_GetGroupList";
+    case RoutingOp_GetMembersOfGroup: return "RoutingOp_GetMembersOfGroup";
+    case RoutingOp_GroupCaptainChanged: return "RoutingOp_GroupCaptainChanged";
+    case RoutingOp_GroupCreated: return "RoutingOp_GroupCreated";
+    case RoutingOp_GroupDeleted: return "RoutingOp_GroupDeleted";
+    case RoutingOp_GroupFlagsChanged: return "RoutingOp_GroupFlagsChanged";
+    case RoutingOp_GroupInvitation: return "RoutingOp_GroupInvitation";
+    case RoutingOp_GroupJoinAttempt: return "RoutingOp_GroupJoinAttempt";
+    case RoutingOp_GroupMaxPlayersChanged: return "RoutingOp_GroupMaxPlayersChanged";
+    case RoutingOp_GroupMemberCount: return "RoutingOp_GroupMemberCount";
+    case RoutingOp_GroupNameChanged: return "RoutingOp_GroupNameChanged";
+    case RoutingOp_GroupObserverCount: return "RoutingOp_GroupObserverCount";
+    case RoutingOp_InviteClient: return "RoutingOp_InviteClient";
+    case RoutingOp_JoinGroup: return "RoutingOp_JoinGroup";
+    case RoutingOp_LeaveGroup: return "RoutingOp_LeaveGroup";
+    case RoutingOp_MemberFlagsChanged: return "RoutingOp_MemberFlagsChanged";
+    case RoutingOp_ModifyDataObject: return "RoutingOp_ModifyDataObject";
+    case RoutingOp_MuteClient: return "RoutingOp_MuteClient";
+    case RoutingOp_PeerChat: return "RoutingOp_PeerChat";
+    case RoutingOp_PeerData: return "RoutingOp_PeerData";
+    case RoutingOp_ReadDataObject: return "RoutingOp_ReadDataObject";
+    case RoutingOp_RegisterClient: return "RoutingOp_RegisterClient";
+    case RoutingOp_RelinquishCaptaincy: return "RoutingOp_RelinquishCaptaincy";
+    case RoutingOp_SendChat: return "RoutingOp_SendChat";
+    case RoutingOp_SendComplaint: return "RoutingOp_SendComplaint";
+    case RoutingOp_SendData: return "RoutingOp_SendData";
+    case RoutingOp_SendServerAlert: return "RoutingOp_SendServerAlert";
+    case RoutingOp_ServerAlert: return "RoutingOp_ServerAlert";
+    case RoutingOp_ServerShutdownAborted: return "RoutingOp_ServerShutdownAborted";
+    case RoutingOp_ServerShutdownStarted: return "RoutingOp_ServerShutdownStarted";
+    case RoutingOp_SetClientFlags: return "RoutingOp_SetClientFlags";
+    case RoutingOp_SetGroupFlags: return "RoutingOp_SetGroupFlags";
+    case RoutingOp_SetGroupMaxPlayers: return "RoutingOp_SetGroupMaxPlayers";
+    case RoutingOp_SetGroupName: return "RoutingOp_SetGroupName";
+    case RoutingOp_SetGroupPassword: return "RoutingOp_SetGroupPassword";
+    case RoutingOp_StartServerShutdown: return "RoutingOp_StartServerShutdown";
+    case RoutingOp_UnsubscribeDataObject: return "RoutingOp_UnsubscribeDataObject";
+    case RoutingOp_YouWereBanned: return "RoutingOp_YouWereBanned";
+    case RoutingOp_YouWereMuted: return "RoutingOp_YouWereMuted";
+    case RoutingOp_DerivedServerOp: return "RoutingOp_DerivedServerOp";
     }
     return "Unknown Routing Type";
 }
@@ -305,7 +307,7 @@ void EEWonNet::ListGamesCallback(AsyncOp* inOp)
 {
     EEWonNetGameInfo theInfo;
 
-    if (inOp->GetStatus() == 0) {
+    if (inOp->GetStatus() == WS_Success) {
         this->mLock->Enter();
         this->mGames.clear();
         for (RoutingDataObjectList::iterator theObject = static_cast<RoutingReadDataObjectOp*>(inOp)->mDataObjects.begin();
@@ -338,7 +340,7 @@ void EEWonNet::ListRoomCallback(AsyncOp* inOp)
     unsigned long theMaxPlayers;
 
     TMGetTime();
-    if (theStatus == 0 && this->mRouting.get() != NULL) {
+    if (theStatus == WS_Success && this->mRouting.get() != NULL) {
         this->mLock->Enter();
         EnterCriticalSection(&this->mRouting->mDataCrit.mCrit);
         this->mRooms.clear();
@@ -391,7 +393,7 @@ void EEWonNet::TempCallback(AsyncOp* inOp)
 {
     static_cast<RoutingOp*>(inOp)->GetType();
     RoutingOpTypeToString(static_cast<RoutingOp*>(inOp)->GetType());
-    if (inOp->GetStatus() != 0)
+    if (inOp->GetStatus() != WS_Success)
         EEWonNetError("EEWonNet::TempCallback", inOp->GetStatus());
 }
 
@@ -403,7 +405,7 @@ void EEWonNet::SelectServer(const std::wstring& inName, IPAddr inAddress)
 
     this->Disconnect();
     this->mRouting = new SmartRoutingConnection;
-    this->mRouting->Fn2AB0A0(this->mUser, AUTH_TYPE_PERSISTENT);
+    this->mRouting->SetAuth(this->mUser, AUTH_TYPE_PERSISTENT);
     this->mRouting->SetConnectCompletion(new EEWonNetCompletion(&EEWonNet::ConnectCallback));
     this->mRouting->SetCloseCompletion(new EEWonNetCompletion(&EEWonNet::CloseCallback));
     this->mRouting->mCompletions[39] = new RoutingCompletion(&EEWonNet::OnChat);
@@ -430,8 +432,8 @@ void EEWonNet::ConnectCallback(AsyncOp* inOp)
 {
     UWideString theMessage;
 
-    if (static_cast<PeerAuthOp*>(inOp)->mSocket.get() == this->mRouting.get() && inOp->GetStatus() != 100002 && this->mCancelled == false) {
-        if (inOp->GetStatus() != 0) {
+    if (static_cast<PeerAuthOp*>(inOp)->mSocket.get() == this->mRouting.get() && inOp->GetStatus() != WS_Killed && this->mCancelled == false) {
+        if (inOp->GetStatus() != WS_Success) {
             this->Disconnect();
             WONStatusToString(inOp->GetStatus());
             gUserInterface->CloseForm(gUIManager->GetFormByID(kFormSelectServer));
@@ -451,7 +453,7 @@ void EEWonNet::ConnectCallback(AsyncOp* inOp)
 // Opens the room list screen once the group list arrived and reads the room and game objects
 void EEWonNet::ChatRoomListCallback(AsyncOp* inOp)
 {
-    if (inOp->GetStatus() != 0) {
+    if (inOp->GetStatus() != WS_Success) {
         EEWonNetError("EEWonNet::ChatRoomListCallback", inOp->GetStatus());
         return;
     }
@@ -462,8 +464,8 @@ void EEWonNet::ChatRoomListCallback(AsyncOp* inOp)
         gUIManager->GetFormByID(kFormAvailableRooms)->SetFormOpenEvent(theEvent);
         theEvent->Dereference();
         gUIManager->Push(gUIManager->GetFormByID(kFormAvailableRooms));
-        this->mRouting->ReadDataObject(0xffff, kWonRoomObject, true, new RoutingCompletion(&EEWonNet::ListRoomCallback));
-        this->mRouting->ReadDataObject(0xffff, kWonGameObject, true, new RoutingCompletion(&EEWonNet::ListGamesCallback));
+        this->mRouting->SubscribeDataObject(0xffff, kWonRoomObject, true, new RoutingCompletion(&EEWonNet::ListRoomCallback));
+        this->mRouting->SubscribeDataObject(0xffff, kWonGameObject, true, new RoutingCompletion(&EEWonNet::ListGamesCallback));
     }
     gUIManager->UnlockUIForCopyData();
 }
@@ -478,7 +480,7 @@ void EEWonNet::JoinGameDataCallback(AsyncOp* inOp)
 
     this->mLock->Enter();
     RoutingOpTypeToString(static_cast<RoutingCreateDataObjectOp*>(inOp)->GetType());
-    if (theStatus != 0) {
+    if (theStatus != WS_Success) {
         this->ClearGames();
         this->RejoinRoom(false);
         gResource->GetString(IDS_FAILED_TO_CREATE_GAME, theMessage);
@@ -511,24 +513,24 @@ void EEWonNet::CreateGameCallback(AsyncOp* inOp)
     unsigned char* theData;
     unsigned long theSize;
 
-    if (theStatus != -2517) {
-        if (theStatus != 0) {
+    if (theStatus != WS_RoutingServG2_GroupAlreadyExists) {
+        if (theStatus != WS_Success) {
             gResource->GetString(IDS_FAILED_TO_CREATE_GAME, theMessage);
             gUIManager->DisplayMessage(theMessage, 1, NULL, NULL, true);
         } else {
             this->mRoomGroupId = this->mGameListPort;
             this->mCurrentRoom = this->mRoomName;
             this->mIgnoreClose = true;
-            this->mRouting->Fn2BF2E0(0xffff, kWonGameObject, true, NULL);
+            this->mRouting->UnsubscribeDataObject(0xffff, kWonGameObject, true, NULL);
             this->LeaveGroups();
             this->mGameGroupId = static_cast<RoutingCreateGroupOp*>(inOp)->GetGroupId();
             if (this->mPassword.length() != 0)
                 theInfo.mPassword = UWideString(this->ToString(this->mPassword).c_str());
             else
-                theInfo.mPassword = UWideString(gU4E5B98);
+                theInfo.mPassword = UWideString(gEmptyString);
             NEProtocol::GetProtocol(0, theProtocol);
             theInfo.mGameName = UWideString(this->ToString(this->mGameName).c_str());
-            theInfo.mAddress = theProtocol->GetLocalAddress(gU5308A0);
+            theInfo.mAddress = theProtocol->GetLocalAddress(gNetworkAdapter);
             theInfo.mHumans = 0;
             theInfo.mPlayers = 8;
             theInfo.mHostClientId = this->mRouting->mClientId;
@@ -714,13 +716,13 @@ void EEWonNet::JoinGroupCallback(AsyncOp* inOp)
     UWideString theMessage;
 
     if (static_cast<RoutingJoinGroupOp*>(inOp)->GetGroupId() != this->mJoinGroupId) {
-        if (inOp->GetStatus() == 0)
+        if (inOp->GetStatus() == WS_Success)
             this->mRouting->LeaveGroup(static_cast<RoutingJoinGroupOp*>(inOp)->GetGroupId(), NULL);
         return;
     } else {
         this->mJoinGroupId = 0xffff;
-        if (inOp->GetStatus() != 0) {
-            if (inOp->GetStatus() == -2524)
+        if (inOp->GetStatus() != WS_Success) {
+            if (inOp->GetStatus() == WS_RoutingServG2_InvalidPassword)
                 gResource->GetString(IDS_PASSWORD_IS_INCORRECT, theMessage);
             else
                 gResource->GetString(IDS_COULDNT_JOIN_GAME, theMessage);
@@ -732,9 +734,9 @@ void EEWonNet::JoinGroupCallback(AsyncOp* inOp)
             this->LeaveGroups();
             this->mGameGroupId = static_cast<RoutingJoinGroupOp*>(inOp)->GetGroupId();
             theGroup = this->mRouting->GetGroup(this->mGameListPort);
-            this->mRouting->Fn2BF0C0(this->mGameGroupId, kWonGameObject, true,
+            this->mRouting->ReadDataObject(this->mGameGroupId, kWonGameObject, true,
                                new RoutingCompletion(&EEWonNet::JoinGameObjectsCallback));
-            this->mRouting->Fn2BF2E0(0xffff, kWonGameObject, true, NULL);
+            this->mRouting->UnsubscribeDataObject(0xffff, kWonGameObject, true, NULL);
         }
     }
 }
@@ -749,7 +751,7 @@ void EEWonNet::JoinGameObjectsCallback(AsyncOp* inOp)
     EEWonNetGameInfo theInfo;
     bool theFound = false;
 
-    if (inOp->GetStatus() == 0) {
+    if (inOp->GetStatus() == WS_Success) {
         for (; theObject != static_cast<RoutingReadDataObjectOp*>(inOp)->mDataObjects.end(); theObject++) {
             if ((*theObject)->mDataType.compare(0, (*theObject)->mDataType.length(), kWonGameObject,
                                                 strlen(kWonGameObject)) != 0)
@@ -764,7 +766,7 @@ void EEWonNet::JoinGameObjectsCallback(AsyncOp* inOp)
             theFound = true;
         }
     } else {
-        EEWonNetError(gU4E5B98, inOp->GetStatus());
+        EEWonNetError(gEmptyString, inOp->GetStatus());
     }
     if (theFound == false) {
         this->ClearGames();
@@ -787,7 +789,7 @@ bool EEWonNet::RejoinRoom(bool inFlag)
         this->mGameListPort = this->mRoomGroupId;
         this->mRoomName = this->mCurrentRoom;
         this->mIgnoreClose = false;
-        this->mRouting->ReadDataObject(0xffff, kWonGameObject, true, new RoutingCompletion(&EEWonNet::ListGamesCallback));
+        this->mRouting->SubscribeDataObject(0xffff, kWonGameObject, true, new RoutingCompletion(&EEWonNet::ListGamesCallback));
     } else {
         gResource->GetString(IDS_YOU_HAVE_LOST_YOUR_CONNECTION_TO_SIERRA, theMessage);
         gUIManager->DisplayMessage(theMessage, 1, NULL, CloseMessageCallback, true);
@@ -845,16 +847,16 @@ void EEWonNet::JoinRoomCallback(AsyncOp* inOp)
     UWideString theMessage;
 
     if (static_cast<RoutingJoinGroupOp*>(inOp)->GetGroupId() != this->mJoinRoomId) {
-        if (inOp->GetStatus() == 0)
+        if (inOp->GetStatus() == WS_Success)
             this->mRouting->LeaveGroup(static_cast<RoutingJoinGroupOp*>(inOp)->GetGroupId(), NULL);
     } else {
         this->mJoinRoomId = 0xffff;
         if (this->mJoinRoomCancelled == false) {
             gUserInterface->CloseForm(NULL);
             WONStatus theStatus = inOp->GetStatus();
-            if (theStatus != 0 && theStatus != -2504) {
+            if (theStatus != WS_Success && theStatus != WS_RoutingServG2_ClientAlreadyInGroup) {
                 EEWonNetError("EEWonNet::JoinRoomCompletion", theStatus);
-                if (inOp->GetStatus() == -2524)
+                if (inOp->GetStatus() == WS_RoutingServG2_InvalidPassword)
                     gResource->GetString(IDS_PASSWORD_IS_INCORRECT, theMessage);
                 else
                     gResource->GetString(IDS_COULDNT_JOIN_ROOM, theMessage);
@@ -880,7 +882,7 @@ void EEWonNet::Disconnect()
     if (this->mRouting.get() == NULL)
         return;
     this->mIgnoreClose = true;
-    this->mRouting->Close();
+    this->mRouting->Kill();
     this->mRouting = NULL;
     this->LeaveGroups();
     this->ClearGames();
@@ -976,7 +978,7 @@ void EEWonNet::RefreshGameList(UIControl* inGamesBox)
 // Stores the client list and requests the room's members
 void EEWonNet::ClientListCallback(AsyncOp* inOp)
 {
-    if (inOp->GetStatus() == 0) {
+    if (inOp->GetStatus() == WS_Success) {
         this->mClients = static_cast<RoutingGetClientListOp*>(inOp)->mClientMap;
         this->mRouting->GetMembersOfGroup(this->mGameListPort, new RoutingCompletion(&EEWonNet::MembersCallback));
     } else {
@@ -993,7 +995,7 @@ void EEWonNet::MembersCallback(AsyncOp* inOp)
     RoutingMemberMap::const_iterator theMember = theMembers.begin();
     EEAction* theAction;
 
-    if (theStatus != 0) {
+    if (theStatus != WS_Success) {
         this->mIsListingPlayers = false;
     } else {
         theAction = new EEAWonNet(4, NULL, UWideString("@@@@"), false);
@@ -1025,7 +1027,7 @@ void EEWonNet::Login(const char* inName, const char* inPassword)
         this->mLoginOp = new GetCertOp(this->mUser);
         this->mLoginOp->mCompletion = new EEWonNetCompletion(&EEWonNet::LoginCallback);
         this->mLoginOp->SetCreateAccount(false);
-        this->mLoginOp->Run(15000);
+        this->mLoginOp->RunAsync(15000);
     }
 }
 
@@ -1037,7 +1039,7 @@ void EEWonNet::LoginCallback(AsyncOp* inOp)
 
     if (static_cast<AsyncOp*>(inOp) != this->mLoginOp.get())
         return;
-    if (inOp->GetStatus() == 0)
+    if (inOp->GetStatus() == WS_Success)
         gUserInterface->PostLoginDone();
     else
         theKey.SaveToRegistry();
@@ -1049,7 +1051,7 @@ void EEWonNet::RequestMOTD()
 {
     this->mMOTDOp = new GetMOTDOp(kWonProductName);
     this->mMOTDOp->mCompletion = new EEWonNetCompletion(&EEWonNet::MOTDCallback);
-    this->mMOTDOp->Run(15000);
+    this->mMOTDOp->RunAsync(15000);
 }
 
 // DEAD-IN-AOC: base exe 0x4c975d (hands the game's and the system's message of the day to the UI thread: message
@@ -1062,7 +1064,7 @@ void EEWonNet::MOTDCallback(AsyncOp* inOp)
     GetMOTDOp* theOp = static_cast<GetMOTDOp*>((AsyncOp*)inOp);
     bool theFound = false;
 
-    if (static_cast<AsyncOp*>(inOp) == (AsyncOp*)this->mMOTDOp.get() && inOp->GetStatus() == 0) {
+    if (static_cast<AsyncOp*>(inOp) == (AsyncOp*)this->mMOTDOp.get() && inOp->GetStatus() == WS_Success) {
         if (theOp->mIsNew[0]) {
             theBuffer = theOp->GetDocument(HTTPDocOwner_Sys);
             theGameMOTD = GetBufferData(theBuffer);
@@ -1087,7 +1089,7 @@ void EEWonNet::GetTitanServerList()
     this->mDirOp->SetFlags(0x703003a);
     this->mDirOp->SetPath(kWonProductDirectory);
     this->mDirOp->mCompletion = new EEWonNetCompletion(&EEWonNet::GetTitanServerListCompletion);
-    this->mDirOp->Run(15000);
+    this->mDirOp->RunAsync(15000);
 }
 
 // DEAD-IN-AOC: base exe 0x4c9ad9 (AoC: the list<DirEntityPtr> push_back COMDATs _Insert 0x4d1e96 / _Incsize
@@ -1099,7 +1101,7 @@ void EEWonNet::GetTitanServerListCompletion(AsyncOp* inOp)
     DirEntityList::const_iterator theEntity;
 
     this->mServers.clear();
-    if (static_cast<AsyncOp*>(inOp) != (AsyncOp*)this->mDirOp.get() || inOp->GetStatus() != 0)
+    if (static_cast<AsyncOp*>(inOp) != (AsyncOp*)this->mDirOp.get() || inOp->GetStatus() != WS_Success)
         return;
     for (theEntity = theOp->GetDirEntityList().begin(); theEntity != theOp->GetDirEntityList().end(); theEntity++) {
         if ((*theEntity)->mName == kWonRoutingServerType)
@@ -1195,7 +1197,7 @@ void EEWonNet::UpdateAccount(const UWideString& inName, const UWideString& inPas
     theOp->mCompletion = new EEWonNetCompletion(&EEWonNet::UpdateAccountCallback);
     theOp->mProfileData->ClearNewsletterSubs();
     theOp->mProfileData->AddNewsletterSub(1, inFlag);
-    theOp->Run(15000);
+    theOp->RunAsync(15000);
 }
 
 // FUNCTION: EXE 0x4d0141
@@ -1206,9 +1208,9 @@ void EEWonNet::UpdateAccountCallback(AsyncOp* inOp)
     UWideString theMessage;
 
     gUserInterface->CloseForm(NULL);
-    if (theStatus == 100002)
+    if (theStatus == WS_Killed)
         return;
-    if (theStatus == 0) {
+    if (theStatus == WS_Success) {
         gResource->GetString(IDS_SUCCESSFULLY_MODIFIED_YOUR_ACCOUNT, theMessage);
     } else {
         EEWonNetError("EEWonNet::ModifyWONAccount()", theStatus);
@@ -1227,7 +1229,7 @@ void EEWonNet::OpenUpdateAccount()
     this->mAccountOp->mAuthType = AUTH_TYPE_SESSION;
     this->mAccountOp->mAuthContext = this->mUser;
     this->mAccountOp->mCompletion = new EEWonNetCompletion(&EEWonNet::GetAccountCallback);
-    this->mAccountOp->Run(15000);
+    this->mAccountOp->RunAsync(15000);
     this->mAccountOp->mProfileData->AddNewsletterSub(true, false);
     gResource->GetString(IDS_GETTING_CURRENT_USER_INFO, theMessage);
     gUIManager->DisplayCancel(theMessage, 1, (UIForm*)this->mAccountOp.get(), CancelOpCallback,
@@ -1251,8 +1253,8 @@ void EEWonNet::GetAccountCallback(AsyncOp* inOp)
     UWideString theMessage;
     bool theChecked;
 
-    if (theStatus != 100002) {
-        if (theStatus == 0) {
+    if (theStatus != WS_Killed) {
+        if (theStatus == WS_Success) {
             gUserInterface->CloseForm(NULL);
             theChecked = static_cast<GetAccountOp*>(inOp)->mProfileData->GetNewsletterSub(true);
             theName = static_cast<GetAccountOp*>(inOp)->mEmail;
@@ -1379,10 +1381,10 @@ void EEWonNet::RegisterCallback(AsyncOp* inOp)
     WONStatus theStatus = inOp->GetStatus();
     UWideString theMessage;
 
-    if (theStatus == 100002)
+    if (theStatus == WS_Killed)
         return;
-    if (inOp->GetStatus() != 0) {
-        if (theStatus != -2503)
+    if (inOp->GetStatus() != WS_Success) {
+        if (theStatus != WS_RoutingServG2_ClientAlreadyExists)
             gResource->GetString(IDS_UNABLE_TO_ACCESS_SERVER_AT_THIS_TIME, theMessage);
         else
             gResource->GetString(IDS_SIERRA_COM_USER_IS_ALREADY, theMessage);
@@ -1392,7 +1394,7 @@ void EEWonNet::RegisterCallback(AsyncOp* inOp)
         gWonClientId = static_cast<RoutingRegisterClientOp*>(inOp)->mReconnectId;
         this->mRouting->GetGroupList(0xff, new RoutingCompletion(&EEWonNet::ChatRoomListCallback));
     }
-    if (theStatus != 0)
+    if (theStatus != WS_Success)
         EEWonNetError("ESReport::RegisterCompletion", theStatus);
 }
 
@@ -1402,7 +1404,7 @@ void EEWonNet::SendChatCallback(AsyncOp* inOp)
 {
     WONStatus theStatus = inOp->GetStatus();
 
-    if (theStatus != 0)
+    if (theStatus != WS_Success)
         EEWonNetError("EEWonNet::SendChatMessage", theStatus);
 }
 

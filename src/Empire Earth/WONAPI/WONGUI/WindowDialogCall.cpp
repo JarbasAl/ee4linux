@@ -1,4 +1,4 @@
-// Complete original-backed GUI values; source-only, no runtime substitution.
+// Window::RunDialog (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,10 +11,11 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Genuine SDK Window::DoDialog, current established canonical member name.
+// Window::DoDialog in the WON SDK
 // FUNCTION: WON 0x0072b080
+// Runs the component as a modal dialog over this window through the window manager; returns the dialog result
 int Window::RunDialog(Component* component)
 {
-    return mManager->DoDialog(this,component);
+    return this->mManager->DoDialog(this,component);
 }
 }

@@ -1,4 +1,3 @@
-// Complete native singleton orchestration; genuine external lifetime providers.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -26,16 +25,18 @@
 #include "ee/wonapi/EELobbySound.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075e620
-void LobbyFn35E620()
+// Records the network adapter now in use (local host address), marking the global settings changed
+void LobbySaveNetworkAdapter()
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
-    if(data!=NULL && data->mNetworkHandle!=WONAPI::IPAddr::GetLocalHost()) {
-        data->mNetworkHandle=WONAPI::IPAddr::GetLocalHost();
+    if(data!=NULL && data->mNetworkAdapter!=WONAPI::IPAddr::GetLocalHost()) {
+        data->mNetworkAdapter=WONAPI::IPAddr::GetLocalHost();
         data->mGlobalDirty=true;
     }
 }
 // FUNCTION: WON 0x0075dea0
-void LobbyFn35DEA0(const GUIString& column,const GUIString& value)
+// Adds a value to the user's filter for a game list column
+void LobbyAddFilterValue(const GUIString& column,const GUIString& value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data!=NULL) {
@@ -44,7 +45,8 @@ void LobbyFn35DEA0(const GUIString& column,const GUIString& value)
     }
 }
 // FUNCTION: WON 0x0075ded0
-void LobbyFn35DED0(const GUIString& column,const GUIString& value)
+// Removes a value from the user's filter for a game list column (an emptied column stays in the map)
+void LobbyRemoveFilterValue(const GUIString& column,const GUIString& value)
 {
     LobbyPersistentData* data=GetLobbyPersistentData();
     if(data==NULL) return;

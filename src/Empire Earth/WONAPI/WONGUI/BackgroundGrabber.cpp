@@ -9,45 +9,49 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 
 using namespace WONAPI;
 
 unsigned __int64 BackgroundGrabber::mImageOrderCounter = 0;
 
 // FUNCTION: WON 0x00736000
+// Creates a grabber with no captured background and a half-strength translucent tint
 BackgroundGrabber::BackgroundGrabber()
 {
-    mImageX = mImageY = 0;
-    mNeedPutBG = false;
-    mHaveBG = false;
-    mTranslucentColor = 0;
-    mTranslucentLevel = 4;
+    this->mImageX = this->mImageY = 0;
+    this->mNeedPutBG = false;
+    this->mHaveBG = false;
+    this->mTranslucentColor = 0;
+    this->mTranslucentLevel = 4;
 }
 
 // FUNCTION: WON 0x00736060
+// Forgets the captured background
 void BackgroundGrabber::Clear()
 {
-    mHaveBG = mNeedPutBG = false;
+    this->mHaveBG = this->mNeedPutBG = false;
 }
 
 // FUNCTION: WON 0x00736070
+// Restores the captured background under the component when a repaint is pending, then forgets it
 void BackgroundGrabber::PrePaint(Component* theComponent, Graphics& g)
 {
-    if(mHaveBG && mNeedPutBG)
-    {
-        int x = 0, y = 0;
-        theComponent->Fn2F56D0(x,y);
-        g.DrawImage(mBGImage.get(),mImageX-x,mImageY-y);
-        mHaveBG = false;
-        mNeedPutBG = false;
-    }
+    if(!this->mHaveBG || !this->mNeedPutBG)
+        return;
+    int x = 0, y = 0;
+    theComponent->LocalToRoot(x,y);
+    g.DrawImage(this->mBGImage.get(),this->mImageX-x,this->mImageY-y);
+    this->mHaveBG = false;
+    this->mNeedPutBG = false;
 }
 
 // FUNCTION: WON 0x007360d0
+// Sets the tint colour and its strength in eighths
 void BackgroundGrabber::SetTranslucentColor(int theColor,int theLevel)
 {
-    mTranslucentLevel = theLevel;
-    mTranslucentColor = theColor;
+    this->mTranslucentLevel = theLevel;
+    this->mTranslucentColor = theColor;
 }
 
 #define COLOR_1_8(c) (((c)>>3)&0xff1f1f1f)
@@ -62,6 +66,7 @@ void BackgroundGrabber::SetTranslucentColor(int theColor,int theLevel)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007365b0
+// Returns a colour scaled to n/8 per channel (0 outside 1..7)
 static int GetColor8th(int theColor, int theNumerator)
 {
 	switch(theNumerator)
@@ -81,123 +86,123 @@ static int GetColor8th(int theColor, int theNumerator)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007360f0
+// Captures the screen under the component once and, for translucent components, tints it (blended fill or per-pixel)
 void BackgroundGrabber::Paint(Component *theComponent, Graphics &g)
 {
-	if(!mHaveBG)
+	if(this->mHaveBG)
+		return;
+	this->mClipRect = g.mClipRect;
+	this->mImageOrder = BackgroundGrabber::mImageOrderCounter++;
+	int aWidth = theComponent->Width();
+	int aHeight = theComponent->Height();
+	if(this->mBGImage.get()==NULL || aWidth!=this->mBGImage->GetWidth() || aHeight!=this->mBGImage->GetHeight())
 	{
-		mClipRect = g.mClipRect;
-		mImageOrder = mImageOrderCounter++;
-		int aWidth = theComponent->Width();
-		int aHeight = theComponent->Height();
-		if(mBGImage.get()==NULL || aWidth!=mBGImage->GetWidth() || aHeight!=mBGImage->GetHeight())
-		{
-			Window *aWindow = theComponent->GetRoot();
-			mBGImage = aWindow->CreateImage(aWidth, aHeight);
-			
-			if(theComponent->ComponentFlagSet(0x20000) && mDebugWindow.get()==NULL)
-			{
-				mDebugWindow = new MSWindow;
-				mDebugWindow->SetParent(theComponent->GetRoot());
-				mDebugWindow->mStyle=0x40;
-				WONRectangle aRect(0,0,mBGImage->GetWidth(),mBGImage->GetHeight());
-				mDebugWindow->Create(aRect);
-			}
-			
-			if(mDebugWindow.get()!=NULL)
-			{
-				mDebugWindow->mRoot.get()->RemoveAllChildren();
-				mDebugWindow->AddComponent(new ImageComponent(mBGImage.get()));
-				int x=0,y=0;
-				theComponent->Fn2F56D0(x,y);
-				WONRectangle aScreenRect;
-				theComponent->GetRoot()->GetRect(aScreenRect,false);
-				mDebugWindow->SetPosSize(x+aScreenRect.x,y+aScreenRect.y,-1,-1);
-			}
+		Window *aWindow = theComponent->GetRoot();
+		this->mBGImage = aWindow->CreateImage(aWidth, aHeight);
 
+		if(theComponent->ComponentFlagSet(ComponentFlag_DebugBG) && this->mDebugWindow.get()==NULL)
+		{
+			this->mDebugWindow = new MSWindow;
+			this->mDebugWindow->SetParent(theComponent->GetRoot());
+			this->mDebugWindow->mStyle=0x40;
+			WONRectangle aRect(0,0,this->mBGImage->GetWidth(),this->mBGImage->GetHeight());
+			this->mDebugWindow->Create(aRect);
 		}
 
-		NativeImage *anImage = theComponent->GetRoot()->GetOffscreenImage();
-		int x = 0, y = 0;
-		theComponent->RootToChild(x,y);
-		mBGImage->GetGraphics().DrawImage(anImage, x, y);
-		mImageX = 0;//theComponent->Left();
-		mImageY = 0;//theComponent->Top();
-		theComponent->Fn2F56D0(mImageX,mImageY);
-
-		if(mDebugWindow.get()!=NULL)
-			mDebugWindow->mRoot.get()->Invalidate();
-
-		mHaveBG = true;
-
-		if(theComponent->ComponentFlagSet(0x200))
+		if(this->mDebugWindow.get()!=NULL)
 		{
-
-			int aColor = GetColor8th(mTranslucentColor,8-mTranslucentLevel);
-			if(g.BlendSupported())
-			{
-				g.SetColor(mTranslucentColor);
-				g.FillRectBlend(0,0,theComponent->Width(),theComponent->Height(),(8-mTranslucentLevel)*255/8);
-				return;
-			}
-	
-			SmartPtr<RawImage32> aRawImage = mBGImage->GetRaw();
-			int aNumPixels = aRawImage->GetWidth()*aRawImage->GetHeight();
-			DWORD *aPixels =aRawImage->mImageData;
-			DWORD *anEndPixels = aPixels+aNumPixels;
-			switch(mTranslucentLevel)
-			{
-			case 1:
-				do
-				{
-					*aPixels = COLOR_1_8(*aPixels) + aColor;
-				} while(++aPixels!=anEndPixels);
-				break;
-
-			case 2:
-				do
-				{
-					*aPixels = COLOR_2_8(*aPixels) + aColor;
-				} while(++aPixels!=anEndPixels);
-				break;
-
-			case 3:
-				do
-				{
-					*aPixels = COLOR_3_8(*aPixels) + aColor;
-				} while(++aPixels!=anEndPixels);
-				break;
-
-			case 4:
-				do
-				{
-					*aPixels = COLOR_4_8(*aPixels) + aColor;
-				} while(++aPixels!=anEndPixels);
-				break;
-
-			case 5:
-				do
-				{
-					*aPixels = COLOR_5_8(*aPixels) + aColor;
-				} while(++aPixels!=anEndPixels);
-				break;
-
-			case 6:
-				do
-				{
-					*aPixels = COLOR_6_8(*aPixels) + aColor;
-				} while(++aPixels!=anEndPixels);
-				break;
-			
-			case 7:
-				do
-				{
-					*aPixels = COLOR_7_8(*aPixels) + aColor;
-				} while(++aPixels!=anEndPixels);
-				break;
-
-			}
-			g.DrawImage(aRawImage.get(),0,0);
+			this->mDebugWindow->mRoot.get()->RemoveAllChildren();
+			this->mDebugWindow->AddComponent(new ImageComponent(this->mBGImage.get()));
+			int x=0,y=0;
+			theComponent->LocalToRoot(x,y);
+			WONRectangle aScreenRect;
+			theComponent->GetRoot()->GetRect(aScreenRect,false);
+			this->mDebugWindow->SetPosSize(x+aScreenRect.x,y+aScreenRect.y,-1,-1);
 		}
+
+	}
+
+	NativeImage *anImage = theComponent->GetRoot()->GetOffscreenImage();
+	int x = 0, y = 0;
+	theComponent->RootToChild(x,y);
+	this->mBGImage->GetGraphics().DrawImage(anImage, x, y);
+	this->mImageX = 0;//theComponent->Left();
+	this->mImageY = 0;//theComponent->Top();
+	theComponent->LocalToRoot(this->mImageX,this->mImageY);
+
+	if(this->mDebugWindow.get()!=NULL)
+		this->mDebugWindow->mRoot.get()->Invalidate();
+
+	this->mHaveBG = true;
+
+	if(theComponent->ComponentFlagSet(ComponentFlag_Translucent))
+	{
+
+		int aColor = GetColor8th(this->mTranslucentColor,8-this->mTranslucentLevel);
+		if(g.BlendSupported())
+		{
+			g.SetColor(this->mTranslucentColor);
+			g.FillRectBlend(0,0,theComponent->Width(),theComponent->Height(),(8-this->mTranslucentLevel)*255/8);
+			return;
+		}
+
+		SmartPtr<RawImage32> aRawImage = this->mBGImage->GetRaw();
+		int aNumPixels = aRawImage->GetWidth()*aRawImage->GetHeight();
+		DWORD *aPixels =aRawImage->mImageData;
+		DWORD *anEndPixels = aPixels+aNumPixels;
+		switch(this->mTranslucentLevel)
+		{
+		case 1:
+			do
+			{
+				*aPixels = COLOR_1_8(*aPixels) + aColor;
+			} while(++aPixels!=anEndPixels);
+			break;
+
+		case 2:
+			do
+			{
+				*aPixels = COLOR_2_8(*aPixels) + aColor;
+			} while(++aPixels!=anEndPixels);
+			break;
+
+		case 3:
+			do
+			{
+				*aPixels = COLOR_3_8(*aPixels) + aColor;
+			} while(++aPixels!=anEndPixels);
+			break;
+
+		case 4:
+			do
+			{
+				*aPixels = COLOR_4_8(*aPixels) + aColor;
+			} while(++aPixels!=anEndPixels);
+			break;
+
+		case 5:
+			do
+			{
+				*aPixels = COLOR_5_8(*aPixels) + aColor;
+			} while(++aPixels!=anEndPixels);
+			break;
+
+		case 6:
+			do
+			{
+				*aPixels = COLOR_6_8(*aPixels) + aColor;
+			} while(++aPixels!=anEndPixels);
+			break;
+
+		case 7:
+			do
+			{
+				*aPixels = COLOR_7_8(*aPixels) + aColor;
+			} while(++aPixels!=anEndPixels);
+			break;
+
+		}
+		g.DrawImage(aRawImage.get(),0,0);
 	}
 }
 
@@ -206,15 +211,16 @@ void BackgroundGrabber::Paint(Component *theComponent, Graphics &g)
 
 namespace WONAPI {
 // FUNCTION: WON 0x00736680
+// Marks a captured background to be restored before the next paint
 void BackgroundGrabber::Invalidate(Component *theComponent)
 {
-	if(mHaveBG)
-		mNeedPutBG = true;
+	if(this->mHaveBG)
+		this->mNeedPutBG = true;
 }
 }
 
-// Genuine SDK BackgroundGrabber.cpp SizeChanged; native2fa500 RET4, support only.
+// Leaves the captured background as it is (empty; the linker folds this body into the identical one at
+// 0x006fa500)
 void BackgroundGrabber::SizeChanged(Component* theComponent)
 {
-    // SDK intentionally leaves the captured background valid here.
 }

@@ -1,5 +1,5 @@
-// Complete native nonvirtual HTMLDisplayGencc value owner; original constructor337f50.
-// Member types/order and native implicit cleanup proven; no fabricated lifetime provider.
+// HTMLDisplayGen (0xcc bytes, non-virtual value type); constructor at 0x00737f50.
+// Member types and order follow the original; the destructor is implicit.
 #ifndef EE_WONAPI_WONLOBBYHTMLDISPLAYGEN_H
 #define EE_WONAPI_WONLOBBYHTMLDISPLAYGEN_H
 #include "ee/wonapi/WONLobbyGUI.h"
@@ -16,7 +16,7 @@ protected:
     SmartPtr<Table> mDisplayContainer; //14
     SmartPtr<MultiLineElement> mDisplay; //18
     Window* mWindow; //1c borrowed
-    LineBuilder mCurLine; //20..33 actual14, retained line30
+    LineBuilder mCurLine; // offsets 0x20..0x33 (0x14 bytes), retained line at +0x30
     SmartPtr<LineSegment> mPrevSegment; //34
     bool mCurLineEmpty,mPrevLineEmpty,mCanBreak,mLastWasSpace; //38..3b
     bool mInPre; //3c; natural3d..3f
@@ -24,7 +24,7 @@ protected:
     bool mInParagraph; //44; natural45..47
     SmartPtr<ComboBox> mCurCombo; //48
     bool mNoBackground; //4c; natural4d..4f
-    HTMLFontSize mFontSize; //50, genuine shared SDK enum
+    HTMLFontSize mFontSize; // offset 0x50
     SmartPtr<TableElement> mCurTable; //54
     HTMLAlign mCurTableAlign; //58
     bool mDone,mInTable,mParsingTableData,mInAnchor; //5c..5f
@@ -32,7 +32,7 @@ protected:
     struct FontInfo {
         std::string mFace; //00..0f
         int mSize,mColor; //10,14
-        bool mIsMonoSpace; //18; natural19..1b, full1c
+        bool mIsMonoSpace; // offset 0x18; padding 0x19..0x1b; class size 0x1c
         FontInfo() {}
         FontInfo(const std::string& face,int size,int color,bool mono)
             :mFace(face),mSize(size),mColor(color),mIsMonoSpace(mono) {}
@@ -48,12 +48,12 @@ protected:
     typedef std::vector<HTMLAlign> AlignStack;
     AlignStack mAlignStack; //a8..b7, real allocatora8/dataac/endb0/capb4, stride4
     int mLeftMargin,mRightMargin,mTopMargin,mBottomMargin; //b8,bc,c0,c4
-    int mListDepth; //c8, fullcc
-    HTMLTag* GetNextTag(); //338270 support0
+    int mListDepth; // offset 0xc8; class size 0xcc
+    HTMLTag* GetNextTag(); // at 0x00738270
     void CalcLineEmpty(int,bool); //338290
     void AddDisplaySegment(LineSegment*,int=0); //3382d0
-    void AddNonDisplaySegment(LineSegment*,int=0); //338430 support0
-    void AddEmptySegment(LineSegment*,int=0); //338460 support0
+    void AddNonDisplaySegment(LineSegment*,int=0); // at 0x00738430
+    void AddEmptySegment(LineSegment*,int=0); // at 0x00738460
     void ClearAccumulatedSegment(int=0); //3384a0
     int GetFontStyle(); //3386f0
     bool GetIsFontMonospace(); //338720
@@ -65,45 +65,45 @@ protected:
     int HandleBeginGlueWord(const GUIString&); //339290/687
     inline void HandlePreSpace(int,GUIString&);
     void HandleTextTag(HTMLTextTag*); //3398c0/951
-    TextLineSegment* GetTextLineSegment(const GUIString&,int,Font*); //339540 externalrawproviderRET0c
-    HTMLTextTag* GetNextTextTag(); //339d20 externalboundedlookahead
-    void GenerateBase(); //actual82B33c5b0
-    void HandleTag(HTMLTag*); //actualoriginal33c020 dispatchprovider, external atthisstage
+    TextLineSegment* GetTextLineSegment(const GUIString&,int,Font*); // at 0x00739540
+    HTMLTextTag* GetNextTextTag(); // bounded look-ahead, at 0x00739d20
+    void GenerateBase(); // at 0x0073c5b0
+    void HandleTag(HTMLTag*); // tag dispatch, at 0x0073c020
     void HandleTableData(HTMLTableDataTag*); //33b1d0/709
-    void HandleEndTableData(); //33b660/14 support0
-    void PushAlign(HTMLAlign,bool=false); //338bd0/160 actualexternalSDKproviderRET8; no newAlignLineSegment constructionauthority
-    void HandleHeading(HTMLHeadingTag*); //339e80/121 RET4
-    void HandlePre(HTMLTag*); //33a220/87 RET4
-    void HandleCenter(HTMLTag*); //33a280/51 RET4 support0
-    void HandleModifyFontStyle(HTMLTag*,int); //33a2c0/64 RET8 support0
-    void HandleModifyFont(HTMLTag*,const char*,int,int,bool); //33a300/53 RET14 support0
-    void HandleFont(HTMLFontTag*); //33a340/344 RET4
-    void EndParagraph(); //33a4a0/21 RET0 support0
-    void HandleBlock(HTMLBlockTag*); //33a4c0/121 RET4
-    void HandleInput(HTMLInputTag*); //33b8b0/1473 actual RET4
-    void HandleOption(HTMLTag*); //33b6e0/449 actual RET4
-    void StartFreshLine(); //338560/70 actual external RET0; no new LineBreak18 construction authority
-    void StartFreshParagraph(); //3385c0/137 actual external RET0; no new LineBreak18 construction authority
-    void PopAlign(); //338c80/174 actual external RET0; no new AlignLineSegment construction authority
-    void AddLineBreak(int=0); //338650/160 support0, genuine SDK default
+    void HandleEndTableData(); // at 0x0073b660
+    void PushAlign(HTMLAlign,bool=false); // at 0x00738bd0
+    void HandleHeading(HTMLHeadingTag*); // at 0x00739e80
+    void HandlePre(HTMLTag*); // at 0x0073a220
+    void HandleCenter(HTMLTag*); // at 0x0073a280
+    void HandleModifyFontStyle(HTMLTag*,int); // at 0x0073a2c0
+    void HandleModifyFont(HTMLTag*,const char*,int,int,bool); // at 0x0073a300
+    void HandleFont(HTMLFontTag*); // at 0x0073a340
+    void EndParagraph(); // at 0x0073a4a0
+    void HandleBlock(HTMLBlockTag*); // at 0x0073a4c0
+    void HandleInput(HTMLInputTag*); // at 0x0073b8b0
+    void HandleOption(HTMLTag*); // at 0x0073b6e0
+    void StartFreshLine(); // at 0x00738560
+    void StartFreshParagraph(); // at 0x007385c0
+    void PopAlign(); // at 0x00738c80
+    void AddLineBreak(int=0); // at 0x00738650
     void HandleList(HTMLListTag*); //33ac40/247
-    bool FindBody(); //3391c0/196 support0
+    bool FindBody(); // at 0x007391c0
     void HandleBody(HTMLBodyTag*); //338d30/962
-    void HandleLineBreak(HTMLLineBreakTag*); //339d50/38 support0
+    void HandleLineBreak(HTMLLineBreakTag*); // at 0x00739d50
     void HandleTable(HTMLTableTag*); //33afc0/414
-    void HandleTableRow(HTMLTableRowTag*); //33b160/112 support0
-    void HandleImage(HTMLImageTag*); //33a540/925 code,948 physical
-    void HandleAnchor(HTMLAnchorTag*); //339f00/437 RET4
-    void HandleHorizontalRule(HTMLHorizontalRuleTag*); //339d80/203 support0 RET4
-    void HandleListItem(HTMLListItemTag*); //33ad40/379 RET4
-    void HandleGUIComponent(HTMLGUIComponentTag*); //33b670/106 support0 RET4
+    void HandleTableRow(HTMLTableRowTag*); // at 0x0073b160
+    void HandleImage(HTMLImageTag*); // at 0x0073a540
+    void HandleAnchor(HTMLAnchorTag*); // at 0x00739f00
+    void HandleHorizontalRule(HTMLHorizontalRuleTag*); // at 0x00739d80
+    void HandleListItem(HTMLListItemTag*); // at 0x0073ad40
+    void HandleGUIComponent(HTMLGUIComponentTag*); // at 0x0073b670
 public:
-    HTMLDisplayGen(); //337f50 genuine155B constructor, authored as support0 in flow family
-    // Keep implicit natural destructor: native33b4a0 has no own-vptr store and only real member cleanup.
-    void SetNoBackground(bool value) { mNoBackground=value; } //actualSDKinline/native Browser3fc644
-    void SetFontSize(HTMLFontSize size) { mFontSize=size; } //actualSDKinline/native Browser3fc63a
-    void Generate(HTMLDocument*,MultiLineElement*,Table*); //33c430 originalexternal379B/RET0c
-    static void SetGlobalDefaultFontFace(const std::string&); //3380e0 existing external static API
+    HTMLDisplayGen(); // at 0x00737f50
+    // Implicit destructor (0x0073b4a0): stores no own vptr, only releases the members.
+    void SetNoBackground(bool value) { this->mNoBackground=value; } // inline (used by the browser at 0x007fc644)
+    void SetFontSize(HTMLFontSize size) { this->mFontSize=size; } // inline (used by the browser at 0x007fc63a)
+    void Generate(HTMLDocument*,MultiLineElement*,Table*); // at 0x0073c430
+    static void SetGlobalDefaultFontFace(const std::string&); // at 0x007380e0
 };
 }
 #endif

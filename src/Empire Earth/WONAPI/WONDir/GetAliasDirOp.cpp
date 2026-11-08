@@ -1,5 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete same-SDK alias directory request/response sequence.
-// Missing-unit proposed family profile: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
+// No original address identified: WON SDK alias directory request/response
+// Expected flags: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
 #include <list>
@@ -9,6 +9,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONDirAlias.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 //#include "DirEntityReplyParser.h"
@@ -20,8 +21,8 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 void GetAliasDirOp::Init()
 {
-	mLengthFieldSize   = 4;
-	mNumFailedRequests = 0;
+	this->mLengthFieldSize   = 4;
+	this->mNumFailedRequests = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -29,22 +30,22 @@ void GetAliasDirOp::Init()
 
 GetAliasDirOp::GetAliasDirOp(ServerContext *theDirContext) : ServerRequestOp(theDirContext)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 GetAliasDirOp::GetAliasDirOp(const IPAddr &theAddr) : ServerRequestOp(theAddr)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetAliasDirOp::Virtual18()
+void GetAliasDirOp::Reset()
 {
-	GetEntityRequestList::const_iterator anItr = mRequestList.begin();
-	for (;anItr != mRequestList.end(); ++anItr)
+	GetEntityRequestList::const_iterator anItr = this->mRequestList.begin();
+	for (;anItr != this->mRequestList.end(); ++anItr)
 		(*anItr)->Reset();
 }
 
@@ -52,7 +53,7 @@ void GetAliasDirOp::Virtual18()
 ///////////////////////////////////////////////////////////////////////////////
 void GetAliasDirOp::AddRequest(GetEntityRequest* theRequest)
 {
-	mRequestList.push_back(theRequest);
+	this->mRequestList.push_back(theRequest);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,75 +62,75 @@ void GetAliasDirOp::AddService(const std::wstring& theService)
 {
 	GetEntityRequestPtr pRequest = new GetEntityRequest;
 	pRequest->SetPath(theService);
-	pRequest->SetFlags(mFlags);
-	pRequest->SetDataTypes(mDataTypes);
+	pRequest->SetFlags(this->mFlags);
+	pRequest->SetDataTypes(this->mDataTypes);
 
-	AddRequest(pRequest);
+	this->AddRequest(pRequest);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus GetAliasDirOp::Virtual10()
+WONStatus GetAliasDirOp::GetNextRequest()
 {
 	// Once per op
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 	aMsg.AppendByte(5);						// Small Header
 	aMsg.AppendShort(2);					// DirServer
 	aMsg.AppendShort(114);					// AliasGetEntity
 
 	aMsg.AppendShort(0);					// MaxEntitiesPerReply
-	aMsg.AppendString(mProductName);
-	aMsg.AppendByte(mRequestList.size());	// Number of entities requests
+	aMsg.AppendString(this->mProductName);
+	aMsg.AppendByte(this->mRequestList.size());	// Number of entities requests
 
 	// Once per request
-	GetEntityRequestList::const_iterator anItr = mRequestList.begin();
-	for (;anItr != mRequestList.end(); ++anItr)
+	GetEntityRequestList::const_iterator anItr = this->mRequestList.begin();
+	for (;anItr != this->mRequestList.end(); ++anItr)
 	{	
 		(*anItr)->Pack(&aMsg, GetEntityRequest::Pack_GetMultiDirOp);
 	}
-	mRequest = aMsg.ToByteBuffer(true);
+	this->mRequest = aMsg.ToByteBuffer(true);
 
 	// Prepare the iterator for Recv
-	mCurRequest = mRequestList.begin();
+	this->mCurRequest = this->mRequestList.begin();
 
-	return (WONStatus)100059;
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Parse the dir entities (One MultiEntityReply for each Request)
-WONStatus GetAliasDirOp::Virtual14()
+WONStatus GetAliasDirOp::CheckResponse()
 {
 	// Was the request list empty?
-	if (mCurRequest == mRequestList.end())
+	if (this->mCurRequest == this->mRequestList.end())
 	{
 		// Construct a new request to parse out the status result
 		GetEntityRequestPtr aRequest = new GetEntityRequest;
-		return aRequest->ParseMultiEntityReply(mResponse->data(),mResponse->length());
+		return aRequest->ParseMultiEntityReply(this->mResponse->data(),this->mResponse->length());
 	}
 
-	(*mCurRequest)->ParseMultiEntityReply(mResponse->data(), mResponse->length());
+	(*this->mCurRequest)->ParseMultiEntityReply(this->mResponse->data(), this->mResponse->length());
 		
 	// Does this request have pending data?
-	if ((*mCurRequest)->GetStatus() != (WONStatus)100059)
+	if ((*this->mCurRequest)->GetStatus() != (WONStatus)100059)
 	{
-		if ((*mCurRequest)->GetStatus() != (WONStatus)0)
-			++mNumFailedRequests;
-		++mCurRequest;
+		if ((*this->mCurRequest)->GetStatus() != (WONStatus)0)
+			++this->mNumFailedRequests;
+		++this->mCurRequest;
 	}
 
 	// Are all requests complete?
-	if (mCurRequest == mRequestList.end())
+	if (this->mCurRequest == this->mRequestList.end())
 	{
-		if (mNumFailedRequests == 0)
-			return (WONStatus)0;
-		else if (mNumFailedRequests != mRequestList.size())
+		if (this->mNumFailedRequests == 0)
+			return (WONStatus)WS_Success;
+		else if (this->mNumFailedRequests != this->mRequestList.size())
 			return (WONStatus)-1223;
 		else
 			return (WONStatus)-1224;
 	}
 	else
-		return (WONStatus)100059;
+		return (WONStatus)WS_ServerReq_Recv;
 
 }

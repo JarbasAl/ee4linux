@@ -1,4 +1,4 @@
-// Native ASN.1 integer extractor used by ElGamal key loading.
+// ElGamal key loading from ASN.1 integer sequences (and the SDK key writer)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,60 +9,62 @@
 #include "ee/wonapi/WONIntegerExtractor.h"
 #include "ee/wonapi/WONElGamal.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x007d7690 (thin initializer plus generated seven owners, conservative0quota)
+// The original's default constructor is at 0x007d7690 (with the seven BigInteger member constructors)
 ElGamal::ElGamal()
 {
-	Invalidate();
+	this->Invalidate();
 }
 
-// SUPPORT-ONLY: EXE 0x007d7740 (constructor setter delegation plus generated owners, conservative0quota)
+// The original's key constructor is at 0x007d7740
 ElGamal::ElGamal(const void *theKey, int theKeyLen, bool isPrivate)
 {
 	if(isPrivate)
-		SetPrivateKey(theKey,theKeyLen);
+		this->SetPrivateKey(theKey,theKeyLen);
 	else
-		SetPublicKey(theKey,theKeyLen);
+		this->SetPublicKey(theKey,theKeyLen);
 }
 
 // FUNCTION: WON 0x007d7850
+// Loads a private key (p, q, g, y, x) and its reduction reciprocal; false when the data is malformed
 bool ElGamal::SetPrivateKey(const void *theKey, int theKeyLen)
 {		
-	Invalidate();
+	this->Invalidate();
 
 	IntegerExtractor anExtractor(theKey,theKeyLen);
-	bool aSuccess = anExtractor.Extract(p) && anExtractor.Extract(q) && anExtractor.Extract(g) 
-			   && anExtractor.Extract(y) && anExtractor.Extract(x);	
+	bool aSuccess = anExtractor.Extract(this->p) && anExtractor.Extract(this->q) && anExtractor.Extract(this->g) 
+			   && anExtractor.Extract(this->y) && anExtractor.Extract(this->x);	
 	
 	if(!aSuccess)
 		return false;
 	
-	modulusLen = p.bitLength()/8;
+	this->modulusLen = this->p.bitLength()/8;
 
-	recip = p.recip(nb);
+	this->recip = this->p.recip(this->nb);
 	
 
-	mIsPrivate = true;
-	mIsPublic = true;
+	this->mIsPrivate = true;
+	this->mIsPublic = true;
 	return true;
 }
 
 // FUNCTION: WON 0x007d79e0
+// Loads a public key (p, q, g, y) and its reduction reciprocal; false when the data is malformed
 bool ElGamal::SetPublicKey(const void *theKey, int theKeyLen)
 {		
-	Invalidate();
+	this->Invalidate();
 
 	IntegerExtractor anExtractor(theKey,theKeyLen);
-	bool aSuccess = anExtractor.Extract(p) && anExtractor.Extract(q) && anExtractor.Extract(g)
-		&& anExtractor.Extract(y);
+	bool aSuccess = anExtractor.Extract(this->p) && anExtractor.Extract(this->q) && anExtractor.Extract(this->g)
+		&& anExtractor.Extract(this->y);
 	
 	if(!aSuccess)
 		return false;
 
-	modulusLen = p.bitLength()/8;
+	this->modulusLen = this->p.bitLength()/8;
 
-	recip = p.recip(nb);
+	this->recip = this->p.recip(this->nb);
 
-	mIsPublic = true;
+	this->mIsPublic = true;
 	return true;
 }
 
@@ -73,43 +75,43 @@ bool ElGamal::SetPublicKey(const void *theKey, int theKeyLen)
 #include <ctype.h>
 namespace WONAPI {
 using namespace std;
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 ByteBufferPtr ElGamal::GetRawPrivateKey() const
 {
-	if(!IsPrivate())
+	if(!this->IsPrivate())
 		return NULL;
 
 	IntegerInserter anInserter;
-	anInserter.Insert(p);
-	anInserter.Insert(q);
-	anInserter.Insert(g);
-	anInserter.Insert(y);
-	anInserter.Insert(x);
+	anInserter.Insert(this->p);
+	anInserter.Insert(this->q);
+	anInserter.Insert(this->g);
+	anInserter.Insert(this->y);
+	anInserter.Insert(this->x);
 
 	return anInserter.Get();
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 ByteBufferPtr ElGamal::GetRawPublicKey() const
 {
-	if(!IsPublic())
+	if(!this->IsPublic())
 		return NULL;
 
 	IntegerInserter anInserter;
-	anInserter.Insert(p);
-	anInserter.Insert(q);
-	anInserter.Insert(g);
-	anInserter.Insert(y);
+	anInserter.Insert(this->p);
+	anInserter.Insert(this->q);
+	anInserter.Insert(this->g);
+	anInserter.Insert(this->y);
 
 	return anInserter.Get();
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 IntegerInserter::IntegerInserter()
 {
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 void IntegerInserter::AddLength(RawBuffer &theBuf, int theLen)
 {
 	if(theLen>0x7f)
@@ -136,27 +138,27 @@ void IntegerInserter::AddLength(RawBuffer &theBuf, int theLen)
 
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 ByteBufferPtr IntegerInserter::Get()
 {
 	RawBuffer aHeader;
 	aHeader += (unsigned char)(SEQUENCE | CONSTRUCTED);
-	AddLength(aHeader,out.length());
+	this->AddLength(aHeader,this->out.length());
 	
-	char *aBuf = new char[aHeader.length() + out.length()];
+	char *aBuf = new char[aHeader.length() + this->out.length()];
 	memcpy(aBuf,aHeader.data(),aHeader.length());
-	memcpy(aBuf+aHeader.length(),out.data(),out.length());
-	return new ByteBuffer(aBuf,aHeader.length() + out.length(),true);
+	memcpy(aBuf+aHeader.length(),this->out.data(),this->out.length());
+	return new ByteBuffer(aBuf,aHeader.length() + this->out.length(),true);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 void IntegerInserter::Insert(const BigInteger &theInt)
 {
-	out+=(unsigned char)INTEGER;
+	this->out+=(unsigned char)INTEGER;
 	RawBuffer aBuf;
 	theInt.toBinary(aBuf);
-	AddLength(out,aBuf.length());
-	out+=aBuf;	
+	this->AddLength(this->out,aBuf.length());
+	this->out+=aBuf;	
 }
 }
 

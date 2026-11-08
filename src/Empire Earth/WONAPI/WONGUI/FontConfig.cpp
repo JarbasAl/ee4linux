@@ -1,4 +1,4 @@
-// Complete native FontConfig98 parser/cache owner; base lifetime remains original external.
+// Font configuration: font selection, style flags and default/named font registration
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,44 +11,49 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyParser.h"
 namespace WONAPI {
-// Full actual constructor38a1c0 remains original external; no newconstruction here.
 // FUNCTION: WON 0x0078a300
+// Returns the configured font, first fetching it from the default window when the descriptor
+// changed and no matching font is held
 Font* FontConfig::GetFont()
 {
-    if(mNeedRecalcFont) {
-        if(mFont.get()==NULL || mFont->mDescriptor!=mDescriptor)
-            mFont=Window::GetDefaultWindow()->GetFont(mDescriptor).get();
+    if(this->mNeedRecalcFont) {
+        if(this->mFont.get()==NULL || this->mFont->mDescriptor!=this->mDescriptor)
+            this->mFont=Window::GetDefaultWindow()->GetFont(this->mDescriptor).get();
     }
-    return mFont.get();
+    return this->mFont.get();
 }
 // FUNCTION: WON 0x0078a3e0
+// Sets the font directly, taking its descriptor, so no lookup is needed
 void FontConfig::SetFont(Font* font)
 {
-    mFont=font;
-    if(font!=NULL) mDescriptor=font->mDescriptor;
-    mNeedRecalcFont=false;
+    this->mFont=font;
+    if(font!=NULL) this->mDescriptor=font->mDescriptor;
+    this->mNeedRecalcFont=false;
 }
 // FUNCTION: WON 0x0078a580
-bool FontConfig::Virtual2C(const std::string& name,int& value)
+// Returns the font's SIZE or HEIGHT as a named value; false without a font or for other names
+bool FontConfig::GetNamedValue(const std::string& name,int& value)
 {
-    if(mFont.get()==NULL) return false;
-    if(name=="SIZE") value=mDescriptor.mSize;
-    else if(name=="HEIGHT") value=mFont->GetHeight();
+    if(this->mFont.get()==NULL) return false;
+    if(name=="SIZE") value=this->mDescriptor.mSize;
+    else if(name=="HEIGHT") value=this->mFont->GetHeight();
     else return false;
     return true;
 }
 // FUNCTION: WON 0x0078a5f0
+// Handles the font config instructions SRC, SIZE, STYLE (Bold/Italic/Plain/Underline flags added or
+// removed; throws on an unknown one), SETDEFAULTFONT and SETNAMEDFONT; false for others
 bool FontConfig::Virtual24(const std::string& instruction)
 {
-    if(instruction=="SRC") SetFont(ReadFont().get());
+    if(instruction=="SRC") this->SetFont(this->ReadFont().get());
     else if(instruction=="SIZE") {
-        mNeedRecalcFont=true;
-        mDescriptor.mSize=ReadInt();
+        this->mNeedRecalcFont=true;
+        this->mDescriptor.mSize=this->ReadInt();
     } else if(instruction=="STYLE") {
         while(true) {
-            mNeedRecalcFont=true;
+            this->mNeedRecalcFont=true;
             bool add=true;
-            GUIString flag=ReadFlag(&add);
+            GUIString flag=this->ReadFlag(&add);
             if(flag.length()==0) break;
             int style=0;
             if(flag.CompareNoCase("Bold")==0) style=FontStyle_Bold;
@@ -56,35 +61,35 @@ bool FontConfig::Virtual24(const std::string& instruction)
             else if(flag.CompareNoCase("Plain")==0) style=FontStyle_Plain;
             else if(flag.CompareNoCase("Underline")==0) style=FontStyle_Underline;
             else throw ConfigObjectException("Unknown font style: "+(std::string)flag);
-            if(add) mDescriptor.mStyle|=style;
-            else mDescriptor.mStyle&=~style;
+            if(add) this->mDescriptor.mStyle|=style;
+            else this->mDescriptor.mStyle&=~style;
         }
-    } else if(instruction=="SETDEFAULTFONT") WONAPI::WindowManager::GetDefaultWindowManager()->SetDefaultFont(ReadFont().get());
+    } else if(instruction=="SETDEFAULTFONT") WONAPI::WindowManager::GetDefaultWindowManager()->SetDefaultFont(this->ReadFont().get());
     else if(instruction=="SETNAMEDFONT") {
-        GUIString name=Fn3842F0(false);
-        EnsureComma();
-        SmartPtr<Font> font=ReadFont();
+        GUIString name=this->ReadString(false);
+        this->EnsureComma();
+        SmartPtr<Font> font=this->ReadFont();
         WONAPI::WindowManager::GetDefaultWindowManager()->SetNamedFont(name,font.get());
     } else return false;
     return true;
 }
-// Actual PostParse3099f0 shared true hook, support0.
-bool FontConfig::Virtual10(ConfigParser*) {return true;}
+// Always succeeds (the linker folds this body into the identical one at 0x007099f0)
+bool FontConfig::PostParse(ConfigParser*) {return true;}
 }
 
 
 namespace WONAPI {
 // FUNCTION: WON 0x0078a080
+// Registers the "Font" config type with the resource config table
 void FontConfig_Init(ResourceConfigTable* table)
 {
     table->AddAllocator("Font",FontConfig::CfgFactory,FontConfig::CompFactory);
 }
 }
 
-// Round8 B: genuine static callbacks used by this original SDK registration unit.
 namespace WONAPI {
 
-// SUPPORT-ONLY: EXE 0x006c7b10 (genuine SDK shared NULL callback; zero new native/primary credit)
+// Font configs create no component (the linker folds this body into the identical one at 0x006c7b10)
 Component* FontConfig::CompFactory()
 {
     return NULL;
@@ -92,18 +97,19 @@ Component* FontConfig::CompFactory()
 
 }
 
-// Private Round9 genuine SDK FontConfig additions; apply only under Root exact lease.
 namespace WONAPI {
 // FUNCTION: WON 0x0078a160
+// Creates a new font config
 ComponentConfig* FontConfig::CfgFactory()
 {
     return new FontConfig;
 }
 // FUNCTION: WON 0x0078a1c0
+// Creates a font config that needs its font looked up
 FontConfig::FontConfig()
 {
-    mHaveInitedComponents=true;
-    mNeedRecalcFont=true;
+    this->mHaveInitedComponents=true;
+    this->mNeedRecalcFont=true;
 }
 }
 

@@ -1,4 +1,4 @@
-// Native TextArea configuration instruction handling; borrowed original-owned receiver.
+// Text area configuration: binds the text area and reads its config keys
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,18 +12,21 @@
 #include "ee/wonapi/WONLobbyTextAreaConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0078f860
-void TextAreaConfig::Virtual34(Component* theComponent)
+// Binds the config to its scroll area and keeps the component as the text area to configure
+void TextAreaConfig::SetComponent(Component* theComponent)
 {
-    ScrollAreaConfig::Virtual34(theComponent);
-    mTextArea = (TextArea*)theComponent;
+    ScrollAreaConfig::SetComponent(theComponent);
+    this->mTextArea = static_cast<TextArea*>(theComponent);
 }
 // FUNCTION: WON 0x00795990
+// Handles one text area config key (text flags, text, font, colours, limits, alignment); passes
+// unknown keys to the scroll area config and throws on an unknown text flag
 bool TextAreaConfig::Virtual24(const std::string& key)
 {
     if(key=="TEXTFLAGS") {
         while(true) {
             bool add=true;
-            GUIString flag=ReadFlag(&add);
+            GUIString flag=this->ReadFlag(&add);
             if(flag.length()==0) break;
             int mask;
             if(flag.CompareNoCase("WordWrap")==0) mask=1;
@@ -33,28 +36,28 @@ bool TextAreaConfig::Virtual24(const std::string& key)
             else if(flag.CompareNoCase("ScrollFullLine")==0) mask=0x10;
             else if(flag.CompareNoCase("DelayWordWrap")==0) mask=0x20;
             else throw ConfigObjectException("Unknown text flag: "+(std::string)flag);
-            mTextArea->SetTextFlags(mask,add);
+            this->mTextArea->SetTextFlags(mask,add);
         }
     } else if(key=="TEXT") {
-        mTextArea->AddSegment(Fn3842F0(false),false);
+        this->mTextArea->AddSegment(this->ReadString(false),false);
     } else if(key=="FORMATTEDTEXT") {
-        mTextArea->AddFormatedText(Fn3842F0(false),false);
+        this->mTextArea->AddFormatedText(this->ReadString(false),false);
     } else if(key=="FONT") {
-        mTextArea->SetFont(ReadFont());
+        this->mTextArea->SetFont(this->ReadFont());
     } else if(key=="TEXTCOLOR") {
-        mTextArea->mTextColor=Fn385510();
+        this->mTextArea->mTextColor=this->ReadColor();
     } else if(key=="SELCOLOR") {
-        mTextArea->mSelColor=ReadSelectionColor();
+        this->mTextArea->mSelColor=this->ReadSelectionColor();
     } else if(key=="LINKFONT") {
-        mTextArea->SetLinkFont(ReadFont());
+        this->mTextArea->SetLinkFont(this->ReadFont());
     } else if(key=="MAXCHARS") {
-        mTextArea->SetMaxChars(ReadInt());
+        this->mTextArea->SetMaxChars(this->ReadInt());
     } else if(key=="MAXLINES") {
-        mTextArea->SetMaxLines(ReadInt());
+        this->mTextArea->SetMaxLines(this->ReadInt());
     } else if(key=="WRAPINDENTSIZE") {
-        mTextArea->SetWrapIndentSize(ReadInt());
+        this->mTextArea->SetWrapIndentSize(this->ReadInt());
     } else if(key=="HORZALIGN") {
-        mTextArea->SetLineAlignment(ReadHorzAlign());
+        this->mTextArea->SetLineAlignment(this->ReadHorzAlign());
     } else return ScrollAreaConfig::Virtual24(key);
     return true;
 }

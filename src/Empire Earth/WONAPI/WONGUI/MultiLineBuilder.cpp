@@ -1,4 +1,4 @@
-// Native rich-text line layout builder with genuine original lifecycle providers.
+// Rich-text line builder: breaks segments into lines around left/right floating segments (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,68 +11,69 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyLineLayout.h"
 namespace WONAPI {
-// Genuine SDK helper APIs, support0; definitions follow complete LineElement type.
 
-// Support0 genuine indent setters and margin recomputation.
 // FUNCTION: WON 0x0070be50
+// Sets the left and right indents and recomputes the current line margins
 void MultiLineBuilder::SetIndentSize(int theLeftIndent, int theRightIndent)
 {
-	mLeftIndent = theLeftIndent;
-	mRightIndent = theRightIndent;
-	CalcMargins();
+	this->mLeftIndent = theLeftIndent;
+	this->mRightIndent = theRightIndent;
+	this->CalcMargins();
 
 }
 
 // FUNCTION: WON 0x0070BE70
+// Finishes the current line and shifts it for center/right alignment, widening the block if the line sticks out
 void MultiLineBuilder::AlignCurLine()
 {
-	if(!mLineVector->empty()) // Calc alignment
+	if(!this->mLineVector->empty()) // Calc alignment
 	{
-		CurLine()->FinishBuild();
-		LineElement *anElement = CurLine()->mLine.get();
+		this->CurLine()->FinishBuild();
+		LineElement *anElement = this->CurLine()->mLine.get();
 		int aDelta = 0;
-		switch(mAlignment)
+		switch(this->mAlignment)
 		{
 			case HorzAlign_Center: 
 			{
-				int anExtraWidth = GetCurMaxLineWidth() - anElement->GetWidth();
+				int anExtraWidth = this->GetCurMaxLineWidth() - anElement->GetWidth();
 				aDelta = anExtraWidth>>1; 
 				if((anExtraWidth&1) && (anElement->GetWidth()&1) && aDelta<anExtraWidth)
 					aDelta++;
 				
 				break;
 			}
-			case HorzAlign_Right: aDelta = GetCurMaxLineWidth() - anElement->GetWidth(); break;//(mSpecifiedWidth - mRightMargin - mRightIndent - anElement->GetWidth()); break;
+			case HorzAlign_Right: aDelta = this->GetCurMaxLineWidth() - anElement->GetWidth(); break;//(mSpecifiedWidth - mRightMargin - mRightIndent - anElement->GetWidth()); break;
 		}
-		anElement->mLeftMargin = aDelta + mLeftMargin;//+ mLeftIndent;
+		anElement->mLeftMargin = aDelta + this->mLeftMargin;//+ mLeftIndent;
 		if(anElement->mLeftMargin<0)
 			anElement->mLeftMargin = 0;
 
-		if(anElement->GetWidth() + anElement->mLeftMargin > mWidth)
-			mWidth = anElement->GetWidth() + anElement->mLeftMargin;
+		if(anElement->GetWidth() + anElement->mLeftMargin > this->mWidth)
+			this->mWidth = anElement->GetWidth() + anElement->mLeftMargin;
 	}
 }
 
 // FUNCTION: WON 0x0070BF20
+// Places the floating segments deferred while a line was being filled; returns false when there were none
 bool MultiLineBuilder::FlushDeferredItems()
 {
-	if(mHaveDeferredItems)
+	if(this->mHaveDeferredItems)
 	{
-		if(!mDeferredLeftItems.empty())
+		if(!this->mDeferredLeftItems.empty())
 		{
-			for(LineSegmentList::iterator anItr = mDeferredLeftItems.begin(); anItr!=mDeferredLeftItems.end(); ++anItr)
-				AddFloatingSegment(*anItr,true);
+			for(LineSegmentList::iterator anItr = this->mDeferredLeftItems.begin(); anItr!=this->mDeferredLeftItems.end(); ++anItr)
+				this->AddFloatingSegment(*anItr,true);
 
-			mDeferredLeftItems.clear();
+			this->mDeferredLeftItems.clear();
 		}
-		if(!mDeferredRightItems.empty())
+		if(!this->mDeferredRightItems.empty())
 		{
-			for(LineSegmentList::iterator anItr = mDeferredRightItems.begin(); anItr!=mDeferredRightItems.end(); ++anItr)
-				AddFloatingSegment(*anItr,false);
+			for(LineSegmentList::iterator anItr = this->mDeferredRightItems.begin(); anItr!=this->mDeferredRightItems.end(); ++anItr)
+				this->AddFloatingSegment(*anItr,false);
 			
-			mDeferredRightItems.clear();
+			this->mDeferredRightItems.clear();
 		}
-		mHaveDeferredItems = false;
+		this->mHaveDeferredItems = false;
 		return true;
 	}
 	else
@@ -80,116 +81,120 @@ bool MultiLineBuilder::FlushDeferredItems()
 }
 
 // FUNCTION: WON 0x0070C000
+// Aligns the current line, starts a new one below it (optionally clearing left/right floats) and returns it
 LineElement* MultiLineBuilder::AddLine(bool clearLeft, bool clearRight)
 {
-	AlignCurLine();
-	if(mHaveDeferredItems)
+	this->AlignCurLine();
+	if(this->mHaveDeferredItems)
 	{
-		CurLine()->Clear();
-		FlushDeferredItems();
+		this->CurLine()->Clear();
+		this->FlushDeferredItems();
 	}
 
-	if(clearLeft && mHeight<mMaxLeftHeight)
-		mHeight = mMaxLeftHeight;
+	if(clearLeft && this->mHeight<this->mMaxLeftHeight)
+		this->mHeight = this->mMaxLeftHeight;
 
-	if(clearRight && mHeight<mMaxRightHeight)
-		mHeight = mMaxRightHeight;
+	if(clearRight && this->mHeight<this->mMaxRightHeight)
+		this->mHeight = this->mMaxRightHeight;
 
-	CalcMargins();
+	this->CalcMargins();
 	LineElement *anElement = new LineElement;
-	anElement->my = mHeight;
+	anElement->my = this->mHeight;
 
-	mLineVector->push_back(anElement);
-	mCurLine.StartBuild(anElement);
+	this->mLineVector->push_back(anElement);
+	this->mCurLine.StartBuild(anElement);
 
 	return anElement;
 }
 
 // FUNCTION: WON 0x0070C150
+// Appends a segment to the current line, growing the block's width and height to fit
 void MultiLineBuilder::AddSegmentToCurLine(LineSegment *theSegment)
 {
 
-	int anOldHeight = CurLine()->GetHeight();
-	CurLine()->AddSegment(theSegment);
-	int aWidth = CurLine()->GetWidth()+mLeftMargin;//+mLeftIndent;
-	int aNewHeight = CurLine()->GetHeight();
+	int anOldHeight = this->CurLine()->GetHeight();
+	this->CurLine()->AddSegment(theSegment);
+	int aWidth = this->CurLine()->GetWidth()+this->mLeftMargin;//+mLeftIndent;
+	int aNewHeight = this->CurLine()->GetHeight();
 	
-	if(aWidth>mWidth)
+	if(aWidth>this->mWidth)
 	{
 
 
-		if(aWidth>mWidth)
-			mWidth = aWidth;
+		if(aWidth>this->mWidth)
+			this->mWidth = aWidth;
 	}
 
 	if(aNewHeight!=anOldHeight)
-		mHeight += aNewHeight-anOldHeight;
+		this->mHeight += aNewHeight-anOldHeight;
 }
 
 // FUNCTION: WON 0x0070C1B0
+// Recomputes the left/right margins from the floats still beside the current height, dropping floats already passed
 void MultiLineBuilder::CalcMargins()
 {
 	FloatingList::iterator anItr;
 
 	int aBottom;
 	int aLeftMargin = 0;
-	int aRightMargin = mSpecifiedWidth;
-	for(anItr=mCurLeftItems.begin(); anItr!=mCurLeftItems.end(); )
+	int aRightMargin = this->mSpecifiedWidth;
+	for(anItr=this->mCurLeftItems.begin(); anItr!=this->mCurLeftItems.end(); )
 	{
 		FloatingSegment *aSegment = &*anItr;
 		aBottom = aSegment->my + aSegment->GetHeight();
-		if(aBottom > mHeight)
+		if(aBottom > this->mHeight)
 		{
 			if(aSegment->mx + aSegment->GetWidth() > aLeftMargin)
 				aLeftMargin = aSegment->mx + aSegment->GetWidth();
 
-			if(aBottom>mMaxLeftHeight)
-				mMaxLeftHeight = aBottom;
+			if(aBottom>this->mMaxLeftHeight)
+				this->mMaxLeftHeight = aBottom;
 
 			++anItr;
 		}
 		else
-			mCurLeftItems.erase(anItr++);
+			this->mCurLeftItems.erase(anItr++);
 	}
 
-	for(anItr=mCurRightItems.begin(); anItr!=mCurRightItems.end(); )
+	for(anItr=this->mCurRightItems.begin(); anItr!=this->mCurRightItems.end(); )
 	{
 		FloatingSegment *aSegment = &*anItr;
 		aBottom = aSegment->my + aSegment->GetHeight();
-		if(aBottom > mHeight)
+		if(aBottom > this->mHeight)
 		{
 			if(aSegment->mx < aRightMargin)
 				aRightMargin = aSegment->mx;
 
-			if(aBottom>mMaxRightHeight)
-				mMaxRightHeight = aBottom;
+			if(aBottom>this->mMaxRightHeight)
+				this->mMaxRightHeight = aBottom;
 
 			++anItr;
 		}
 		else
-			mCurRightItems.erase(anItr++);
+			this->mCurRightItems.erase(anItr++);
 	}
 
-	if(aLeftMargin<mLeftIndent)
-		aLeftMargin = mLeftIndent;
-	if(mSpecifiedWidth-aRightMargin<mRightIndent)
-		aRightMargin = mSpecifiedWidth-mRightIndent;
+	if(aLeftMargin<this->mLeftIndent)
+		aLeftMargin = this->mLeftIndent;
+	if(this->mSpecifiedWidth-aRightMargin<this->mRightIndent)
+		aRightMargin = this->mSpecifiedWidth-this->mRightIndent;
 
-	mLeftMargin = aLeftMargin;
-	mRightMargin = aRightMargin;
+	this->mLeftMargin = aLeftMargin;
+	this->mRightMargin = aRightMargin;
 }
 
 // FUNCTION: WON 0x0070C310
+// Places a segment floating at the left or right edge, or defers it until the current non-empty line ends
 void MultiLineBuilder::AddFloatingSegment(LineSegment *theSegment, bool left)
 {
 
-	if(!CurLine()->IsEmpty())
+	if(!this->CurLine()->IsEmpty())
 	{
-		mHaveDeferredItems = true;
+		this->mHaveDeferredItems = true;
 		if(left)
-			mDeferredLeftItems.push_back(theSegment);
+			this->mDeferredLeftItems.push_back(theSegment);
 		else
-			mDeferredRightItems.push_back(theSegment);
+			this->mDeferredRightItems.push_back(theSegment);
 
 		return;
 	}
@@ -198,120 +203,122 @@ void MultiLineBuilder::AddFloatingSegment(LineSegment *theSegment, bool left)
 	if(left)
 	{
 
-		if(mLeftMargin+aWidth>mRightMargin)
-			mLeftMargin = mRightMargin-aWidth;
-		if(mLeftMargin<0)
-			mLeftMargin = 0;
+		if(this->mLeftMargin+aWidth>this->mRightMargin)
+			this->mLeftMargin = this->mRightMargin-aWidth;
+		if(this->mLeftMargin<0)
+			this->mLeftMargin = 0;
 
-		if(mLeftMargin+aWidth>mWidth)
-			mWidth = mLeftMargin+aWidth;
+		if(this->mLeftMargin+aWidth>this->mWidth)
+			this->mWidth = this->mLeftMargin+aWidth;
 
-		mLeftItems->push_back(FloatingSegment(theSegment,mLeftMargin,mHeight));
-		mCurLeftItems.push_back(mLeftItems->back());
+		this->mLeftItems->push_back(FloatingSegment(theSegment,this->mLeftMargin,this->mHeight));
+		this->mCurLeftItems.push_back(this->mLeftItems->back());
 	}
 	else 
 	{
-		if(mWidth<mSpecifiedWidth)
-			mWidth = mSpecifiedWidth;
+		if(this->mWidth<this->mSpecifiedWidth)
+			this->mWidth = this->mSpecifiedWidth;
 
-		if(mRightMargin-aWidth<mLeftMargin)
+		if(this->mRightMargin-aWidth<this->mLeftMargin)
 		{
-			mRightMargin = mLeftMargin+aWidth;
-			if(mRightMargin>mWidth)
-				mWidth = mRightMargin;
+			this->mRightMargin = this->mLeftMargin+aWidth;
+			if(this->mRightMargin>this->mWidth)
+				this->mWidth = this->mRightMargin;
 		}
 
-		mRightItems->push_back(FloatingSegment(theSegment,mRightMargin - aWidth,mHeight));
-		mCurRightItems.push_back(mRightItems->back());
+		this->mRightItems->push_back(FloatingSegment(theSegment,this->mRightMargin - aWidth,this->mHeight));
+		this->mCurRightItems.push_back(this->mRightItems->back());
 	}
 
-	CalcMargins();
+	this->CalcMargins();
 }
 
 // FUNCTION: WON 0x0070C560
+// Lays out a segment list into lines and floating items within a maximum width (per-segment float/break/clear flags)
 void MultiLineBuilder::AddSegments(SegmentList *theSegmentList, LineVector *theLineVector,
 								   FloatingVector *theLeftItems, FloatingVector *theRightItems,
 								   int theMaxWidth)
 {
-	mSegmentList = theSegmentList;
-	mLineVector = theLineVector;
-	mLeftItems = theLeftItems;
-	mRightItems = theRightItems;
-	mSpecifiedWidth = theMaxWidth;
-	mWidth = mHeight = 0;
-	mLeftMargin = mRightMargin = 0;
-	mLeftIndent = mRightIndent = 0;
-	mMaxLeftHeight =  mMaxRightHeight = 0;
-	mAlignment = HorzAlign_Left;
-	mHaveDeferredItems = false;
+	this->mSegmentList = theSegmentList;
+	this->mLineVector = theLineVector;
+	this->mLeftItems = theLeftItems;
+	this->mRightItems = theRightItems;
+	this->mSpecifiedWidth = theMaxWidth;
+	this->mWidth = this->mHeight = 0;
+	this->mLeftMargin = this->mRightMargin = 0;
+	this->mLeftIndent = this->mRightIndent = 0;
+	this->mMaxLeftHeight =  this->mMaxRightHeight = 0;
+	this->mAlignment = HorzAlign_Left;
+	this->mHaveDeferredItems = false;
 
-	mLeftItems->clear();
-	mRightItems->clear();
-	mLineVector->clear();
+	this->mLeftItems->clear();
+	this->mRightItems->clear();
+	this->mLineVector->clear();
 
-	AddLine();
+	this->AddLine();
 
-	SegmentList::iterator anItr = mSegmentList->begin();
-	while(anItr!=mSegmentList->end())
+	SegmentList::iterator anItr = this->mSegmentList->begin();
+	while(anItr!=this->mSegmentList->end())
 	{
 		SegmentInfo &anInfo = *anItr;
 		LineSegment *aSegment = anInfo.mSegment.get();
 		unsigned short aFlags = anInfo.mFlags;
 
-		aSegment->SetMaxWidth(theMaxWidth-mLeftIndent-mRightIndent);
-		if(aFlags&4 && (!CurLine()->IsEmpty() || 
+		aSegment->SetMaxWidth(theMaxWidth-this->mLeftIndent-this->mRightIndent);
+		if(aFlags&4 && (!this->CurLine()->IsEmpty() || 
 			(aFlags&0x10) || (aFlags&0x20)))
-				AddLine(aFlags&0x10?true:false,aFlags&0x20?true:false);
+				this->AddLine(aFlags&0x10?true:false,aFlags&0x20?true:false);
 
 		if(aSegment->PerformInstructions(this))
 		{
 			if(aFlags&(1 | 2))
-				AddFloatingSegment(aSegment,aFlags&1?true:false);
+				this->AddFloatingSegment(aSegment,aFlags&1?true:false);
 			else
 			{
-				if(CurLine()->GetWidth()+aSegment->GetWidth() > GetCurMaxLineWidth())
-					aSegment->Wrap(this, CurLine()->IsEmpty());
+				if(this->CurLine()->GetWidth()+aSegment->GetWidth() > this->GetCurMaxLineWidth())
+					aSegment->Wrap(this, this->CurLine()->IsEmpty());
 				else
-					AddSegmentToCurLine(aSegment);
+					this->AddSegmentToCurLine(aSegment);
 			}
 		}
 
-		if(aFlags&8 && (!CurLine()->IsEmpty() || 
+		if(aFlags&8 && (!this->CurLine()->IsEmpty() || 
 			(aFlags&0x10) || (aFlags&0x20)))
-				AddLine(aFlags&0x10?true:false,aFlags&0x20?true:false);
+				this->AddLine(aFlags&0x10?true:false,aFlags&0x20?true:false);
 	
 		++anItr;
 	}
 
-	AlignCurLine();
-	if(mHaveDeferredItems)
+	this->AlignCurLine();
+	if(this->mHaveDeferredItems)
 	{
-		CurLine()->Clear();
-		FlushDeferredItems();
+		this->CurLine()->Clear();
+		this->FlushDeferredItems();
 	}
 
-	if(mHeight<mMaxLeftHeight)
-		mHeight = mMaxLeftHeight;
+	if(this->mHeight<this->mMaxLeftHeight)
+		this->mHeight = this->mMaxLeftHeight;
 
-	if(mHeight<mMaxRightHeight)
-		mHeight = mMaxRightHeight;
+	if(this->mHeight<this->mMaxRightHeight)
+		this->mHeight = this->mMaxRightHeight;
 }
 
 // FUNCTION: WON 0x0070d1d0
+// Re-lays out the element's segments for a maximum width; width becomes the larger of that and the content
 void MultiLineElement::SetMaxWidth(int theMaxWidth)
 {
-	GetMinWidth();
+	this->GetMinWidth();
 
 
 	MultiLineBuilder aBuilder;
-	aBuilder.AddSegments(&mSegmentList, &mLineVector, &mFloatingItems[0], &mFloatingItems[1], theMaxWidth);
+	aBuilder.AddSegments(&this->mSegmentList, &this->mLineVector, &this->mFloatingItems[0], &this->mFloatingItems[1], theMaxWidth);
 
 	if(aBuilder.mWidth > theMaxWidth)
-		mWidth = aBuilder.mWidth;
+		this->mWidth = aBuilder.mWidth;
 	else
-		mWidth = theMaxWidth;
+		this->mWidth = theMaxWidth;
 
-	mHeight = aBuilder.mHeight;
+	this->mHeight = aBuilder.mHeight;
 }
 
 }

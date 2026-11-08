@@ -46,7 +46,7 @@ private:
     static long mLocalHost; //genuine SDK host-order local IPv4, native565f40
 public:
     static long GetLocalHost() { return mLocalHost; } //genuine SDK inline getter
-    void SetRememberHostString(bool remember) { mB00=remember; }
+    void SetRememberHostString(bool remember) { mRememberHostString=remember; }
     IPAddr(const sockaddr_in&); //2b2380, primary concrete IPv4 socket-address constructor
     const sockaddr_in& GetSockAddrIn() const; //2b31e0, LEA14/RET; no invented pointer API
     void Fn2B2B00(const sockaddr_in&); //2b2b00, actual Set address/string/validity
@@ -61,9 +61,9 @@ public:
     IPAddr(const std::string& inHostAndPort); //target2b2440, complete85B native ctor + pinned SDK
     std::string GetHostString(bool inFlag) const;   // 0x2b2fc0
     unsigned short GetPort() const; //2b31c0, host byte order
-    long Fn2B2FB0() const; //2b2fb0, ntohl host IPv4, nominal GetHost
+    long GetHost() const;  //2b2fb0, ntohl host IPv4, nominal GetHost
     bool SetWithDefaultPort(const std::string&,unsigned short); //2b2d50, DNS default-port dispatch
-    bool Fn2B2DF0(const std::string&, unsigned short); //2b2df0, actual SetWithDefaultPortNoDNS
+    bool SetWithDefaultPortNoDNS(const std::string&, unsigned short); //2b2df0, actual SetWithDefaultPortNoDNS
     IPAddr(long inHost,unsigned short inPort); //2b24a0, host-order input; actualret8
     static IPAddr GetLocalAddr(); //2b2500, cdecl hidden IPAddr result
     static IPAddr GetBroadcastAddr(int); //2b2630, cdecl hidden result +port
@@ -77,10 +77,10 @@ public:
     bool operator<(const IPAddr& inOther) const; // 0x2b31f0: six network-order port/IP bytes at +0x16
 
     // implicit copy ctor (COMDAT 0x291d59), operator= (COMDAT 0x29181b) and dtor (provisional names)
-    bool mB00;                              // +0x00
+    bool mRememberHostString;               // +0x00
     std::string mHost;                      // +0x04
     sockaddr_in mAddr;                      // +0x14 (16 bytes, copied as four dwords)
-    bool mB24;                              // +0x24
+    bool mIsValid;                          // +0x24
 };
 
 // WONAPI's intrusive reference count base (inferred reconstruction: AddRef is InterlockedIncrement of +4 in
@@ -234,7 +234,7 @@ public:
     bool LoadFromFile(const std::string&);
     bool IsBeta() const;
     bool IsForceCheck() const;
-    const ByteBuffer* GetRaw() const { return mP14.get(); } //genuine SDK borrowed key accessor, mutable owner to const pointee only
+    const ByteBuffer* GetRaw() const { return mKey.get(); } //genuine SDK borrowed key accessor, mutable owner to const pointee only
     bool IsValid() const { return mValid; } //genuine SDK CDKey validity bool18
 protected:
     bool CalcKeyFromBuffer(const char*); //2e3220, exactly8 copied bytes and product CRC
@@ -243,7 +243,7 @@ protected:
     virtual bool GetUseNewEncryptMethod() const { return true; } //actual slot4/2f30d0
 public:
     std::string mProduct; //04..14; actual SDK mProduct
-    ConstSmartPtr<ByteBuffer> mP14; //14..18; actual SDK mKey, real ByteBuffer owner
+    ConstSmartPtr<ByteBuffer> mKey; //14..18; actual SDK mKey, real ByteBuffer owner
     bool mValid; //18; actual SDK mIsValid; complete extent1c
 };
 
@@ -367,7 +367,7 @@ public:
 
     SmartPtr<AuthSession> GetSession(const IPAddr&); //2df080, owning return; call-only
     void PutSession(const IPAddr&,AuthSession*); //2deeb0, actual borrowed parameters; call-only
-    void Fn2DEB30(bool); //actual reference-only flag/reset API2deb30
+    void SetDoAutoRefresh(bool); //actual reference-only flag/reset API2deb30
     void SetCommunity(const std::wstring&); //2dfcc0 preserves selected existing full3c record before clear
     void SetCDKey(const std::wstring&,const CDKey&); //2e0380 original locked map mutation, borrowed call-only
     bool SetHashFile(const std::wstring&); //2e06d0 support0 adapter

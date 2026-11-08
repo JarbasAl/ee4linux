@@ -1,4 +1,4 @@
-// Text segment metrics and selection on original-owned rich text objects.
+// Rich text line segments: metrics, selection, search, painting and word wrap
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,57 +15,60 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x00709E70
+// Returns (and caches) the width of the widest word; the last word after a space is never measured,
+// so a text whose longest word comes last reports a smaller minimum
 int TextLineSegment::GetMinWidth()
 {
-	if(mMinWidth==0)
+	if(this->mMinWidth==0)
 	{
 		int aWidth = 0;
 		int aPos = 0;
-		while(aPos<mText.length())
+		while(aPos<this->mText.length())
 		{
-			int aChar = mText[aPos];
+			int aChar = this->mText[aPos];
 			if(aChar==' ')
 			{
-				if(aWidth>mMinWidth)
-					mMinWidth = aWidth;
+				if(aWidth>this->mMinWidth)
+					this->mMinWidth = aWidth;
 
 				aWidth = 0;
 			}
 			else
-				aWidth += mFont->Virtual10(aChar);
+				aWidth += this->mFont->GetCharacterWidth(aChar);
 
 			aPos++;
 		}
 
-		if(mMinWidth==0)  // no space found
-			mMinWidth = aWidth;
+		if(this->mMinWidth==0)  // no space found
+			this->mMinWidth = aWidth;
 	}
 
-	return mMinWidth;
+	return this->mMinWidth;
 }
 
-// Support0 cached getter / forwarding overload.
 // FUNCTION: WON 0x00709ed0
+// Returns (and caches) the pixel width of the segment's text
 int TextLineSegment::GetWidth()
 {
-	if(mWidth==0)
-		mWidth = mFont->GetStringWidth(mText);
+	if(this->mWidth==0)
+		this->mWidth = this->mFont->GetStringWidth(this->mText);
 
-	return mWidth;
+	return this->mWidth;
 }
 
 // FUNCTION: WON 0x00709F00
+// Returns the pixel width of the text up to its first space
 int TextLineSegment::GetFirstWrapWidth()
 {
 	int aWidth = 0;
 	int aPos = 0;
-	while(aPos<mText.length())
+	while(aPos<this->mText.length())
 	{
-		int aChar = mText[aPos];
+		int aChar = this->mText[aPos];
 		if(aChar==' ')
 			return aWidth;
 		else
-			aWidth += mFont->Virtual10(aChar);
+			aWidth += this->mFont->GetCharacterWidth(aChar);
 
 		aPos++;
 	}
@@ -74,13 +77,14 @@ int TextLineSegment::GetFirstWrapWidth()
 }
 
 // FUNCTION: WON 0x00709F40
+// Returns the character in a range nearest to pixel x (rounding at half a character)
 int TextLineSegment::GetSelChar(int x, int y, int theStartChar, int theEndChar)
 {
 	int aWidth = 0;
 	int aPos = theStartChar;
 	while(aPos<theEndChar)
 	{
-		int aCharWidth = mFont->Virtual10(mText[aPos]);
+		int aCharWidth = this->mFont->GetCharacterWidth(this->mText[aPos]);
 		if(aWidth + (aCharWidth>>1) >= x)
 			break;
 
@@ -92,53 +96,57 @@ int TextLineSegment::GetSelChar(int x, int y, int theStartChar, int theEndChar)
 
 }
 
-// Support0 cached getter / forwarding overload.
+// Returns the character nearest to pixel x across the whole text (emitted at 0x00709f90)
 int TextLineSegment::GetSelChar(int x, int y)
 {
-	return GetSelChar(x,y,0,mText.length());
+	return this->GetSelChar(x,y,0,this->mText.length());
 }
 
 // FUNCTION: WON 0x00709FC0
+// Appends the selected part of the segment's text, if the segment is in the selection
 void TextLineSegment::GetSelText(GUIString &theText, ElementSelectionInfo &theInfo)
 {
-	if(mStartSelIndex<theInfo.mStartSelSegment || mStartSelIndex>theInfo.mEndSelSegment)
+	if(this->mStartSelIndex<theInfo.mStartSelSegment || this->mStartSelIndex>theInfo.mEndSelSegment)
 		return;
 
 	int aStartPos = 0;
-	int anEndPos = mText.length();
+	int anEndPos = this->mText.length();
 	bool partial = false;
-	if(theInfo.mStartSelSegment==mStartSelIndex)
+	if(theInfo.mStartSelSegment==this->mStartSelIndex)
 	{
 		aStartPos = theInfo.mStartSelSegmentPos;
 		partial = true;
 	}
-	if(theInfo.mEndSelSegment==mStartSelIndex)
+	if(theInfo.mEndSelSegment==this->mStartSelIndex)
 	{
 		anEndPos = theInfo.mEndSelSegmentPos;
 		partial = true;
 	}
 
 	if(partial)
-		theText.append(mText.substr(aStartPos,anEndPos-aStartPos));
+		theText.append(this->mText.substr(aStartPos,anEndPos-aStartPos));
 	else
-		theText.append(mText);
+		theText.append(this->mText);
 }
 
 // FUNCTION: WON 0x0070A260
+// Returns the screen position of a character of this segment; false when it is another segment's
 bool TextLineSegment::GetSelCharPos(int &x, int &y, int theSelIndex, int theSelChar)
 {
-	if(theSelIndex!=mStartSelIndex)
+	if(theSelIndex!=this->mStartSelIndex)
 		return false;
 
-	if(theSelChar<0 || theSelChar>mText.length())
+	if(theSelChar<0 || theSelChar>this->mText.length())
 		return false;
 
-	x = mAbsX + mFont->GetStringWidth(mText,0,theSelChar);
-	y = mAbsY;
+	x = this->mAbsX + this->mFont->GetStringWidth(this->mText,0,theSelChar);
+	y = this->mAbsY;
 	return true;
 }
 
 // FUNCTION: WON 0x0070A320
+// Continues a match begun in an earlier segment; returns false on a mismatch, else records how much
+// has matched and where it ends
 bool TextLineSegment::FindPartial(ElementFindInfo &theInfo, int startChar, int endChar)
 {
 	int p1 = startChar, p2 = theInfo.mCurFoundLength;
@@ -150,10 +158,10 @@ bool TextLineSegment::FindPartial(ElementFindInfo &theInfo, int startChar, int e
 	{
 		if(caseSensitive)
 		{
-			if(mText[p1]!=aText[p2])
+			if(this->mText[p1]!=aText[p2])
 				break;
 		}
-		else if(towupper(mText[p1])!=towupper(aText[p2]))
+		else if(towupper(this->mText[p1])!=towupper(aText[p2]))
 			break;
 
 		p1++; p2++;
@@ -164,24 +172,25 @@ bool TextLineSegment::FindPartial(ElementFindInfo &theInfo, int startChar, int e
 	else
 	{
 		theInfo.mCurFoundLength = p2;
-		theInfo.mFoundEndSegment = mStartSelIndex;
+		theInfo.mFoundEndSegment = this->mStartSelIndex;
 		theInfo.mFoundEndChar = p1;
 		return true;
 	}
 }
 
 
-// Support0 virtual forwarding Paint overload30a900.
 // FUNCTION: WON 0x0070a900
+// Paints the whole segment
 void TextLineSegment::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInfo)
 {
-	Paint(g,x,y,mStartSelIndex,0,mText.length(),GetWidth(),GetHeight(),theInfo);
+	this->Paint(g,x,y,this->mStartSelIndex,0,this->mText.length(),this->GetWidth(),this->GetHeight(),theInfo);
 }
 
 // FUNCTION: WON 0x0070A950
+// Paints a character range of the text in its colour, drawing the selected part in highlight colours
 void TextLineSegment::Paint(Graphics &g, int x, int y, int theSelIndex, int startChar, int endChar, int theWidth, int theHeight, ElementPaintInfo &theInfo)
 {
-	g.SetFont(mFont.get());
+	g.SetFont(this->mFont.get());
 	if(theSelIndex>=theInfo.mStartSelSegment && theSelIndex<=theInfo.mEndSelSegment)
 	{
 		int aStartSelPos = startChar;
@@ -204,38 +213,40 @@ void TextLineSegment::Paint(Graphics &g, int x, int y, int theSelIndex, int star
 
 		if(fullSelect)
 		{
-			g.SetSysColor(7);
+			g.SetSysColor(StandardColor_Hilight);
 			g.FillRect(x,theInfo.mLineY,theWidth,theInfo.mLineHeight);
-			g.SetSysColor(8);
-			g.DrawString(mText,startChar,endChar-startChar,x,y);
+			g.SetSysColor(StandardColor_HilightText);
+			g.DrawString(this->mText,startChar,endChar-startChar,x,y);
 			return;
 		}
 		else if(aStartSelPos<anEndSelPos)
 		{
-			int aStartWidth = mFont->GetStringWidth(mText,startChar,aStartSelPos-startChar);
-			int aSelWidth = mFont->GetStringWidth(mText,aStartSelPos,anEndSelPos-aStartSelPos);
-			g.SetColor(mColor);
-			g.DrawString(mText,startChar,aStartSelPos-startChar,x,y);
-			g.DrawString(mText,anEndSelPos,endChar-anEndSelPos,x+aStartWidth+aSelWidth,y);
-			g.SetSysColor(7);
+			int aStartWidth = this->mFont->GetStringWidth(this->mText,startChar,aStartSelPos-startChar);
+			int aSelWidth = this->mFont->GetStringWidth(this->mText,aStartSelPos,anEndSelPos-aStartSelPos);
+			g.SetColor(this->mColor);
+			g.DrawString(this->mText,startChar,aStartSelPos-startChar,x,y);
+			g.DrawString(this->mText,anEndSelPos,endChar-anEndSelPos,x+aStartWidth+aSelWidth,y);
+			g.SetSysColor(StandardColor_Hilight);
 			g.FillRect(x+aStartWidth,theInfo.mLineY,aSelWidth,theInfo.mLineHeight);
-			g.SetSysColor(8);
-			g.DrawString(mText,aStartSelPos,anEndSelPos-aStartSelPos,x+aStartWidth,y);
+			g.SetSysColor(StandardColor_HilightText);
+			g.DrawString(this->mText,aStartSelPos,anEndSelPos-aStartSelPos,x+aStartWidth,y);
 			return;
 		}
 	}
 
-	g.SetColor(mColor);
-	g.DrawString(mText,startChar,endChar-startChar,x,y);
+	g.SetColor(this->mColor);
+	g.DrawString(this->mText,startChar,endChar-startChar,x,y);
 }
 
 
 // FUNCTION: WON 0x0070A590
+// Word-wraps the text into pieces across lines of the builder, breaking at spaces and moving to a
+// new line when a word does not fit
 void TextLineSegment::Wrap(MultiLineBuilder *theContainer, bool needSegmentOnFirstLine)
 {
 	int aCurPos = 0;
-	const GUIString &aStr = mText;
-	Font *aFM = mFont.get();
+	const GUIString &aStr = this->mText;
+	Font *aFM = this->mFont.get();
 	int aTextBoxWidth = theContainer->GetCurMaxLineWidth() - theContainer->CurLine()->GetWidth();
 	
 	int aWidth = 0;
@@ -254,7 +265,7 @@ void TextLineSegment::Wrap(MultiLineBuilder *theContainer, bool needSegmentOnFir
 				aBreakWidth = aWidth;
 			}
 
-			aWidth += aFM->Virtual10(aChar);
+			aWidth += aFM->GetCharacterWidth(aChar);
 
 			if(aWidth>aTextBoxWidth && (aBreakPos>=aStartPos || !needSegmentOnFirstLine))
 				break;
@@ -297,34 +308,35 @@ void TextLineSegment::Wrap(MultiLineBuilder *theContainer, bool needSegmentOnFir
 }
 
 // FUNCTION: WON 0x0070A2C0
+// Returns the screen position of a character inside this piece; false when it lies outside
 bool TextPieceLineSegment::GetSelCharPos(int &x, int &y, int theSelIndex, int theSelChar)
 {
-	if(theSelIndex!=mStartSelIndex)
+	if(theSelIndex!=this->mStartSelIndex)
 		return false;
 
-	if(theSelChar<mStartChar || theSelChar>mEndChar)
+	if(theSelChar<this->mStartChar || theSelChar>this->mEndChar)
 		return false;
 
-	x = mAbsX + mSegment->mFont->GetStringWidth(mSegment->mText,mStartChar,theSelChar-mStartChar);
-	y = mAbsY;
+	x = this->mAbsX + this->mSegment->mFont->GetStringWidth(this->mSegment->mText,this->mStartChar,theSelChar-this->mStartChar);
+	y = this->mAbsY;
 	return true;
 }
 
-// Support0 direct forwarding virtuals on the actual borrowed text piece.
 // FUNCTION: WON 0x0070b330
-int TextPieceLineSegment::GetSelChar(int x,int y) { return mSegment->GetSelChar(x,y,mStartChar,mEndChar); }
+// Returns the character of this piece nearest to pixel x
+int TextPieceLineSegment::GetSelChar(int x,int y) { return this->mSegment->GetSelChar(x,y,this->mStartChar,this->mEndChar); }
 // FUNCTION: WON 0x0070b350
+// Paints this piece's character range of the segment
 void TextPieceLineSegment::Paint(Graphics& g,int x,int y,ElementPaintInfo& info) {
-    mSegment->Paint(g,x,y,mStartSelIndex,mStartChar,mEndChar,GetWidth(),GetHeight(),info);
+    this->mSegment->Paint(g,x,y,this->mStartSelIndex,this->mStartChar,this->mEndChar,this->GetWidth(),this->GetHeight(),info);
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK nonvirtual background-only selection algorithm.
-// Existing target Paint and virtual slots remain unchanged; no wrapper/provider forcing.
+// Paints only the selection background of a character range (not identified in the original exe)
 void TextLineSegment::PaintSelection(Graphics &g, int x, int y, int theSelIndex, int startChar, int endChar, int theWidth, int theHeight, ElementPaintInfo &theInfo)
 {
-	g.SetFont(mFont.get());
+	g.SetFont(this->mFont.get());
 	if(theSelIndex>=theInfo.mStartSelSegment && theSelIndex<=theInfo.mEndSelSegment)
 	{
 		int aStartSelPos = startChar;
@@ -347,7 +359,7 @@ void TextLineSegment::PaintSelection(Graphics &g, int x, int y, int theSelIndex,
 
 		if(fullSelect)
 		{
-			g.SetSysColor(7);
+			g.SetSysColor(StandardColor_Hilight);
 			g.FillRect(x,theInfo.mLineY,theWidth,theInfo.mLineHeight);
 //			g.ApplyColorSchemeColor(StandardColor_HilightText);
 //			g.DrawString(mText,startChar,endChar-startChar,x,y);
@@ -355,12 +367,12 @@ void TextLineSegment::PaintSelection(Graphics &g, int x, int y, int theSelIndex,
 		}
 		else if(aStartSelPos<anEndSelPos)
 		{
-			int aStartWidth = mFont->GetStringWidth(mText,startChar,aStartSelPos-startChar);
-			int aSelWidth = mFont->GetStringWidth(mText,aStartSelPos,anEndSelPos-aStartSelPos);
+			int aStartWidth = this->mFont->GetStringWidth(this->mText,startChar,aStartSelPos-startChar);
+			int aSelWidth = this->mFont->GetStringWidth(this->mText,aStartSelPos,anEndSelPos-aStartSelPos);
 //			g.SetColor(mColor);
 //			g.DrawString(mText,startChar,aStartSelPos-startChar,x,y);
 //			g.DrawString(mText,anEndSelPos,endChar-anEndSelPos,x+aStartWidth+aSelWidth,y);
-			g.SetSysColor(7);
+			g.SetSysColor(StandardColor_Hilight);
 			g.FillRect(x+aStartWidth,theInfo.mLineY,aSelWidth,theInfo.mLineHeight);
 //			g.ApplyColorSchemeColor(StandardColor_HilightText);
 //			g.DrawString(mText,aStartSelPos,anEndSelPos-aStartSelPos,x+aStartWidth,y);

@@ -9,25 +9,27 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 using namespace WONAPI;
-// Actual native initialized dimensions/painter globals; no sourcequota for storage.
+// Check box size and the replaceable function that paints the box
 int MSCheckbox::mCheckboxWidth=13;
 int MSCheckbox::mCheckboxHeight=13;
 MSCheckbox::CheckboxPainterFunc MSCheckbox::CheckboxPainter=MSCheckbox::DefaultCheckboxPainterFunc;
 // FUNCTION: WON 0x6ff430
+// Paints the default check box square, pressed and checked as the button's flags say
 void MSCheckbox::DefaultCheckboxPainterFunc(Graphics& g,MSCheckbox* button) {
-    MSGraphicsUtil::DrawCheck(g,0,0,mCheckboxWidth,mCheckboxHeight,(button->mButtonFlags&0x20)!=0,(button->mButtonFlags&4)!=0);
+    MSGraphicsUtil::DrawCheck(g,0,0,MSCheckbox::mCheckboxWidth,MSCheckbox::mCheckboxHeight,(button->mButtonFlags&0x20)!=0,(button->mButtonFlags&4)!=0);
 }
 // FUNCTION: WON 0x6ff470
+// Paints the check box: face, the box aligned vertically by the painter function, then the text
 void MSCheckbox::Paint(Graphics& g) {
     Component::Paint(g);
     g.SetSysColor(StandardColor_3DFace);
-    if(!mIsTransparent) g.FillRect(0,0,Width(),Height());
-    int height=mCheckboxHeight;
+    if(!this->mIsTransparent) g.FillRect(0,0,this->Width(),this->Height());
+    int height=MSCheckbox::mCheckboxHeight;
     int y=0;
-    if(mVAlign==VertAlign_Center) y=(Height()-height-mTopTextPad-mBottomTextPad)/2;
-    else if(mVAlign==VertAlign_Bottom) y=Height()-height-mTopTextPad-mBottomTextPad;
-    g.Translate(0,mTopTextPad+y);
-    CheckboxPainter(g,this);
-    g.Translate(0,-y-mTopTextPad);
-    DrawButtonText(g,0,0);
+    if(this->mVAlign==VertAlign_Center) y=(this->Height()-height-this->mTopTextPad-this->mBottomTextPad)/2;
+    else if(this->mVAlign==VertAlign_Bottom) y=this->Height()-height-this->mTopTextPad-this->mBottomTextPad;
+    g.Translate(0,this->mTopTextPad+y);
+    MSCheckbox::CheckboxPainter(g,this);
+    g.Translate(0,-y-this->mTopTextPad);
+    this->DrawButtonText(g,0,0);
 }

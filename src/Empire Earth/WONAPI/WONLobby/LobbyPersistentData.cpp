@@ -1,10 +1,8 @@
-// C:\EEX\Empire Earth\WONAPI\WONLobby\LobbyPersistentData.cpp (RECONSTRUCTION).
-// Original filename PROVISIONAL: no filename assertion found. RTTI identifies LobbyPersistentData;
-// ctor35bcb0, dtor35c2c0, vtable451c28 and allocation1164 establish its original family.
-// complete typed persistence behavior; constructor follows native member/key/default initialization.
-// Other unimplemented bodies remain original-carved. The real1164B constructor and implicit
-// member cleanup are typed; no external allocation sites or runtime substitution are granted.
-// Original body ranges and typed-EH helpers are retained in
+// C:\EEX\Empire Earth\WONAPI\WONLobby\LobbyPersistentData.cpp (file name inferred: no __FILE__)
+// LobbyPersistentData (RTTI name; 1164-byte object, constructor 0x75bcb0, destructor 0x75c2c0, vtable 0x851c28):
+// the lobby's saved settings. _wonlobbypersistent.dat holds the login users and global sound/adapter options;
+// _wonuser<N>.dat holds one user's reconnect ids, ignore list, friends, blocked CD keys, options, LAN names,
+// direct-connect addresses and game filters
 
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
@@ -30,22 +28,23 @@
 
 namespace WONAPI {
 // FUNCTION: WON 0x0075e6e0
+// Returns the preferences file name of a lobby user, _wonuser<id>.dat
 std::string LobbyPersistentData::GetUserFileName(long inUserId)
 {
-    // Stackextent suggests char[50] rounded52 plus returnconstructionstate4.
-    // Natural buffer size remains source-shape hypothesis; no matching evidence yet.
+    // The original's frame holds a 52-byte area; the 50-character buffer size is inferred
     char aFileName[50];
     sprintf(aFileName, "_wonuser%d.dat", inUserId);
     return aFileName;
 }
 // FUNCTION: WON 0x0075e770
+// Returns the first free user id after the run of consecutive ids starting at the smallest (1 when none exist)
 long LobbyPersistentData::FindUnusedUserId()
 {
-    if (mUserIds.empty())
+    if (this->mUserIds.empty())
         return 1;
-    std::set<long>::iterator anItr = mUserIds.begin();
+    std::set<long>::iterator anItr = this->mUserIds.begin();
     long anId = *anItr;
-    while (anItr != mUserIds.end() && anId == *anItr)
+    while (anItr != this->mUserIds.end() && anId == *anItr)
     {
         ++anId;
         ++anItr;
@@ -53,6 +52,7 @@ long LobbyPersistentData::FindUnusedUserId()
     return anId;
 }
 // FUNCTION: WON 0x0075f6a0
+// Reads the "WONPER" file tag and returns the file version that follows (0 for a bad tag or a read error)
 long LobbyPersistentData::ReadFileHeader(FileReader& inReader)
 {
     try
@@ -69,6 +69,7 @@ long LobbyPersistentData::ReadFileHeader(FileReader& inReader)
     return 0;
 }
 // FUNCTION: WON 0x0075f750
+// Writes the "WONPER" file tag and the given version, ignoring write errors
 void LobbyPersistentData::WriteFileHeader(FileWriter& outWriter, long inVersion)
 {
     try
@@ -87,27 +88,27 @@ long gLobbyGlobalPrefsVersion = 2;
 long gLobbyUserPrefsVersion = 4;
 
 
-// Original35baa0 uses key-sensitive ordered set with insertion-order list; no invented container behavior.
 // FUNCTION: WON 0x0075baa0
+// Adds a value to the option set unless it is already present, keeping the values in insertion order
 void LobbyOptionSet::Add(const GUIString& inValue)
 {
-    std::pair<StringMap::iterator, bool> aResult = mIndex.insert(StringMap::value_type(inValue, mValues.end()));
-    if (aResult.second)
-    {
-        mValues.push_back(inValue);
-        StringList::iterator anItr = mValues.end();
-        --anItr;
-        aResult.first->second = anItr;
-    }
+    std::pair<StringMap::iterator, bool> aResult = this->mIndex.insert(StringMap::value_type(inValue, this->mValues.end()));
+    if (!aResult.second)
+        return;
+    this->mValues.push_back(inValue);
+    StringList::iterator anItr = this->mValues.end();
+    --anItr;
+    aResult.first->second = anItr;
 }
 // FUNCTION: WON 0x0075bc20
+// Removes a value from the option set; returns whether it was present
 bool LobbyOptionSet::Erase(const GUIString& inValue)
 {
-    StringMap::iterator anItr = mIndex.find(inValue);
-    if (anItr != mIndex.end())
+    StringMap::iterator anItr = this->mIndex.find(inValue);
+    if (anItr != this->mIndex.end())
     {
-        mValues.erase(anItr->second);
-        mIndex.erase(anItr);
+        this->mValues.erase(anItr->second);
+        this->mIndex.erase(anItr);
         return true;
     }
     return false;
@@ -118,138 +119,124 @@ LobbyPersistentData* GetLobbyPersistentData()
     return gLobbyData.get() != NULL ? gLobbyData->mPersistentData.get() : NULL;
 }
 
-// Scratch continuation of original LobbyPersistentData family; NOT admitted source.
-// Gates: full FileReader20/FileWriter4, real prefix through mUsers8c, GUIStringNoCase,
-// Sound::Fn329BF0 + original SoundPtr566770, and explicit globals4d9d14/4d9550.
-// Crypto stays original-carved through individually proved member call contracts.
-// Required class methods (descriptive address names):
-// GUIString LobbyPersistentData::Fn35F000(FileReader&); // plain ushort text, NOT encrypted
-// GUIString LobbyPersistentData::Fn35F190(FileReader&); // encrypted text
-// void LobbyPersistentData::Fn35F4E0(FileWriter&, const GUIString&); // plain ushort text
-// void LobbyPersistentData::Fn35F530(FileWriter&, const GUIString&); // encrypted text
-// void LobbyPersistentData::Fn35F7B0(); void LobbyPersistentData::Fn35FAF0();
-// extern SmartPtr<Sound> ::LobbyGlobal_ButtonClick_Sound; //566770; original no null guard
 
-// Original35f7b0..35fae8 inclusive, body excluding typed6B catch funclet819B.
 // FUNCTION: WON 0x0075f7b0
-void LobbyPersistentData::Fn35F7B0()
+// Loads the saved login users (names, ids, encrypted passwords) and the lobby sound, music and network adapter
+// settings from _wonlobbypersistent.dat, muting the button click sound to match
+void LobbyPersistentData::LoadGlobalPrefs()
 {
     FileReader aReader;
     if (!aReader.Open("_wonlobbypersistent.dat"))
         return;
-    mUsers.clear();
-    mNetworkHandle = 0;
+    this->mUsers.clear();
+    this->mNetworkAdapter = 0;
     try
     {
-        if (ReadFileHeader(aReader) != gLobbyGlobalPrefsVersion)
+        if (this->ReadFileHeader(aReader) != gLobbyGlobalPrefsVersion)
             return;
         unsigned short aCount = aReader.ReadShort();
         for (int i = 0; i < aCount; ++i)
         {
-            GUIString aName = Fn35F000(aReader);
-            std::pair<LobbyUserInfoMap::iterator,bool> aPair = mUsers.insert(LobbyUserInfoMap::value_type(aName, LobbyUserInfo()));
+            GUIString aName = this->ReadWideString(aReader);
+            std::pair<LobbyUserInfoMap::iterator,bool> aPair = this->mUsers.insert(LobbyUserInfoMap::value_type(aName, LobbyUserInfo()));
             LobbyUserInfo& aUser = aPair.first->second;
             aUser.mUserName = aName;
             aUser.mLastUseTime = aReader.ReadLong();
             aUser.mUserId = aReader.ReadShort();
             aUser.mValue04 = aReader.ReadLong();
             aUser.mValue08 = aReader.ReadLong();
-            aUser.mPassword = Fn35F190(aReader);
-            mUserIds.insert(aUser.mUserId);
+            aUser.mPassword = this->ReadEncryptedString(aReader);
+            this->mUserIds.insert(aUser.mUserId);
         }
-        mB5C = mB6C = aReader.ReadByte() != 0;
-        ::LobbyGlobal_ButtonClick_Sound->Fn329BF0(!mB5C);
-        mB5D = mB6D = aReader.ReadByte() != 0;
-        // Actual numeric IPv4 adapter70 is a long; synchronized Root/GUI declaration.
-        mNetworkHandle = aReader.ReadLong();
+        this->mLobbySoundEffects = this->mSavedLobbySoundEffects = aReader.ReadByte() != 0;
+        ::LobbyGlobal_ButtonClick_Sound->SetMuted(!this->mLobbySoundEffects);
+        this->mLobbyMusic = this->mSavedLobbyMusic = aReader.ReadByte() != 0;
+        // The network adapter is stored as its numeric IPv4 address; the click sound is used without a null check
+        this->mNetworkAdapter = aReader.ReadLong();
     }
     catch (FileReaderException&)
     {
     }
-    mGlobalDirty = false;
+    this->mGlobalDirty = false;
 }
 
-// Original35faf0..35fc63 inclusive, body excluding typed6B catch funclet366B.
 // FUNCTION: WON 0x0075faf0
-void LobbyPersistentData::Fn35FAF0()
+// Writes the login users and the lobby sound, music and network adapter settings to _wonlobbypersistent.dat
+void LobbyPersistentData::SaveGlobalPrefs()
 {
     FileWriter aWriter;
     if (!aWriter.Open("_wonlobbypersistent.dat", false))
         return;
     try
     {
-        WriteFileHeader(aWriter, gLobbyGlobalPrefsVersion);
-        aWriter.WriteShort(mUsers.size());
-        for (LobbyUserInfoMap::iterator anItr = mUsers.begin(); anItr != mUsers.end(); ++anItr)
+        this->WriteFileHeader(aWriter, gLobbyGlobalPrefsVersion);
+        aWriter.WriteShort(this->mUsers.size());
+        for (LobbyUserInfoMap::iterator anItr = this->mUsers.begin(); anItr != this->mUsers.end(); ++anItr)
         {
             LobbyUserInfo& aUser = anItr->second;
-            Fn35F4E0(aWriter, aUser.mUserName);
+            this->WriteWideString(aWriter, aUser.mUserName);
             aWriter.WriteLong(aUser.mLastUseTime);
             aWriter.WriteShort(aUser.mUserId);
             aWriter.WriteLong(aUser.mValue04);
             aWriter.WriteLong(aUser.mValue08);
-            Fn35F530(aWriter, aUser.mPassword);
+            this->WriteEncryptedString(aWriter, aUser.mPassword);
         }
-        aWriter.WriteByte(mB5C ? 1 : 0);
-        aWriter.WriteByte(mB5D ? 1 : 0);
-        aWriter.WriteLong(mNetworkHandle);
+        aWriter.WriteByte(this->mLobbySoundEffects ? 1 : 0);
+        aWriter.WriteByte(this->mLobbyMusic ? 1 : 0);
+        aWriter.WriteLong(this->mNetworkAdapter);
     }
     catch (FileWriterException&)
     {
     }
-    // Original updates snapshots even after a swallowed WriterException.
-    mB6C = mB5C;
-    mB6D = mB5D;
-    mGlobalDirty = false;
+    // The saved sound and music states are updated even when a write failed
+    this->mSavedLobbySoundEffects = this->mLobbySoundEffects;
+    this->mSavedLobbyMusic = this->mLobbyMusic;
+    this->mGlobalDirty = false;
 }
 
 
-// Scratch only: actual477B35c720, uses only proved persistence prefix through80.
-// Required individually original-carved method GUIString Fn35C520() (default LAN name).
-// Required GUIString externs566758 and5669e0 (provisional names below).
 // FUNCTION: WON 0x0075c720
-void LobbyPersistentData::Fn35C720()
+// Resets the user's lobby options to their defaults: Quick Play tab for an internet user, LAN tab and the
+// default LAN name for the LAN user, all sounds and confirmations on, broadcast port 8585
+void LobbyPersistentData::RestoreDefaults()
 {
-    mS74 = GetEmptyGUIStringData();
-    mS78 = GetEmptyGUIStringData();
-    if (mCurrentUserId != 0)
-        mS58 = ::LobbyGlobal_QuickPlay_String; //566758
+    this->mLastServerName = GetEmptyGUIStringData();
+    this->mLastRoomName = GetEmptyGUIStringData();
+    if (this->mCurrentUserId != 0)
+        this->mTabSelect = ::LobbyGlobal_QuickPlay_String;
     else
     {
-        mS58 = ::LobbyGlobal_Lan_String; //5669e0
-        mS68 = Fn35C520();
+        this->mTabSelect = ::LobbyGlobal_Lan_String;
+        this->mLanName = this->GetDefaultLanName();
     }
-    mB54 = true;
-    mB55 = true;
-    mB56 = true;
-    mB5C = true;
-    mB5D = true;
-    mB60 = true;
-    mB5E = true;
-    mB5F = true;
-    mB61 = true;
-    mB62 = true;
-    mB63 = false;
-    mPort66 = 8585;
-    mShort64 = 25;
-    mNetworkHandle = 0;
+    this->mFilterDirtyWords = true;
+    this->mDoAutoAFK = true;
+    this->mCrossPromotion = true;
+    this->mLobbySoundEffects = true;
+    this->mLobbyMusic = true;
+    this->mShowConfirmations = true;
+    this->mChatSoundEffects = true;
+    this->mStagingSoundEffects = true;
+    this->mAutoPingGames = true;
+    this->mShowGamesInProgress = true;
+    this->mAnonymousToFriends = false;
+    this->mLanBroadcastPort = 8585;
+    this->mConnectionSpeed = 25;
+    this->mNetworkAdapter = 0;
 }
 
-// ResetFilters35df00 source is deferred until actual mapped LobbyOptionSet copy
-// constructor/assignment graph closes. The map stores list iterators; blindly
-// generating the default copy could leave iterators into the source list.
-// Existing natural Add/Erase candidates require no object copying.
 
-// Scratch only. Requires admitted true WONFile70 and persistence prefix8c.
 
 // FUNCTION: WON 0x0075c910
-LobbyUserInfo* LobbyFn35C910(const GUIString& inUserName, const GUIString& inPassword, bool inExistingOnly)
+// Records a login (name and password) as the most recent use of a saved user, giving a new user a free id and
+// deleting any stale preferences file; with inExistingOnly returns NULL for a user never seen before
+LobbyUserInfo* LobbyAddUser(const GUIString& inUserName, const GUIString& inPassword, bool inExistingOnly)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL)
         return NULL;
     if (!inExistingOnly)
-        aData->Fn35EB30();
+        aData->PruneUsers();
     LobbyUserInfoMap::iterator anItr = aData->mUsers.insert(
         LobbyUserInfoMap::value_type(inUserName, LobbyUserInfo())).first;
     LobbyUserInfo& aUser = anItr->second;
@@ -272,21 +259,20 @@ LobbyUserInfo* LobbyFn35C910(const GUIString& inUserName, const GUIString& inPas
     return &aUser;
 }
 
-// Original35eb30657B. Comparator36b0c0 signed-key and unconditional insertion
-// (equal keys go right, no unique-key rejection) prove time-ordered multi tree.
-// Node mapped value is actual LobbyUserInfoMap::iterator, used by mUsers.erase.
+// The age index is a multimap keyed by last use time (equal times kept), each entry pointing back into mUsers
 // FUNCTION: WON 0x0075eb30
-void LobbyPersistentData::Fn35EB30()
+// Keeps at most 50 saved users: drops users without an id, then deletes the least recently used ones and their files
+void LobbyPersistentData::PruneUsers()
 {
-    if (mUsers.size() <= 50)
+    if (this->mUsers.size() <= 50)
         return;
     typedef std::multimap<long, LobbyUserInfoMap::iterator> UserTimeMap;
     UserTimeMap aTimes;
-    LobbyUserInfoMap::iterator anItr = mUsers.begin();
-    while (anItr != mUsers.end())
+    LobbyUserInfoMap::iterator anItr = this->mUsers.begin();
+    while (anItr != this->mUsers.end())
     {
         if (anItr->second.mUserId == 0)
-            mUsers.erase(anItr++);
+            this->mUsers.erase(anItr++);
         else
         {
             aTimes.insert(UserTimeMap::value_type(anItr->second.mLastUseTime, anItr));
@@ -294,20 +280,20 @@ void LobbyPersistentData::Fn35EB30()
         }
     }
     UserTimeMap::iterator aTime = aTimes.begin();
-    while (aTime != aTimes.end() && mUsers.size() > 50)
+    while (aTime != aTimes.end() && this->mUsers.size() > 50)
     {
         LobbyUserInfo& aUser = aTime->second->second;
-        WONFile aFile(GetUserFileName(aUser.mUserId));
+        WONFile aFile(this->GetUserFileName(aUser.mUserId));
         aFile.Delete(true);
-        mUserIds.erase(aUser.mUserId);
-        mUsers.erase(aTime->second);
+        this->mUserIds.erase(aUser.mUserId);
+        this->mUsers.erase(aTime->second);
         aTime++;
     }
 }
 
-// Original friend behavior, scratch only; requires actual complete model LobbyFriend50.
 // FUNCTION: WON 0x0075d460
-LobbyFriend* LobbyFn35D460(const GUIString& inName, unsigned long inUserId)
+// Adds a player to the current user's friend list unless the user id is already there; returns the friend entry
+LobbyFriend* LobbyAddFriend(const GUIString& inName, unsigned long inUserId)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL)
@@ -321,9 +307,9 @@ LobbyFriend* LobbyFn35D460(const GUIString& inName, unsigned long inUserId)
     }
     return aPair.first->second.get();
 }
-// Original296B. Preserve assignment: an unsuccessful erase CLEARS old dirty state.
 // FUNCTION: WON 0x0075d2c0
-void LobbyFn35D2C0(unsigned long inUserId)
+// Removes a user id from the friend list; the dirty flag is set to whether one was removed, so a miss clears it
+void LobbyRemoveFriend(unsigned long inUserId)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData != NULL)
@@ -334,10 +320,9 @@ void LobbyFn35D2C0(unsigned long inUserId)
 
 namespace WONAPI {
 
-// Serialization of the original persistence family; ownership reviewed independently.
-// Plain readers retain a bounded unique-owner COW reachability qualification.
 // FUNCTION: WON 0x0075ee80
-GUIString LobbyPersistentData::Fn35EE80(FileReader& inReader)
+// Reads a length-prefixed 8-bit string from a preferences file
+GUIString LobbyPersistentData::ReadByteString(FileReader& inReader)
 {
     unsigned short aLength = inReader.ReadShort();
     GUIString aString(new GUIStringData(aLength));
@@ -346,7 +331,8 @@ GUIString LobbyPersistentData::Fn35EE80(FileReader& inReader)
     return aString;
 }
 // FUNCTION: WON 0x0075f000
-GUIString LobbyPersistentData::Fn35F000(FileReader& inReader)
+// Reads a length-prefixed 16-bit (unencrypted) string from a preferences file
+GUIString LobbyPersistentData::ReadWideString(FileReader& inReader)
 {
     unsigned short aLength = inReader.ReadShort();
     GUIString aString(new GUIStringData(aLength));
@@ -355,29 +341,31 @@ GUIString LobbyPersistentData::Fn35F000(FileReader& inReader)
     return aString;
 }
 // FUNCTION: WON 0x0075f3d0
-void LobbyPersistentData::Fn35F3D0(FileWriter& outWriter, const GUIString& inText)
+// Writes a string as a length-prefixed 8-bit string
+void LobbyPersistentData::WriteByteString(FileWriter& outWriter, const GUIString& inText)
 {
     std::string aString = (std::string)inText;
     outWriter.WriteShort(aString.length());
     outWriter.WriteBytes(aString.c_str(), aString.length());
 }
 // FUNCTION: WON 0x0075f4e0
-void LobbyPersistentData::Fn35F4E0(FileWriter& outWriter, const GUIString& inText)
+// Writes a string as a length-prefixed 16-bit (unencrypted) string
+void LobbyPersistentData::WriteWideString(FileWriter& outWriter, const GUIString& inText)
 {
     outWriter.WriteShort(inText.length());
     for (int i = 0; i < inText.length(); ++i)
         outWriter.WriteShort(inText[i]);
 }
 
-// Encrypted text uses the original-carved cipher and natural GUIStringData allocation guards.
 // FUNCTION: WON 0x0075f190
-GUIString LobbyPersistentData::Fn35F190(FileReader& reader)
+// Reads and decrypts a saved password with the machine-bound key; returns an empty string if it cannot be decoded
+GUIString LobbyPersistentData::ReadEncryptedString(FileReader& reader)
 {
     unsigned short length = reader.ReadShort();
     WriteBuffer storage(0, true);
-    storage.Reserve(length); //2a81e0 declaration gate; grows capacity, does not change length
+    storage.Reserve(length); // grows the capacity only; the length stays 0
     reader.ReadBytes(storage.mData, length);
-    ByteBufferPtr decrypted = mEncryptKey.Decrypt(storage.mData, length);
+    ByteBufferPtr decrypted = this->mEncryptKey.Decrypt(storage.mData, length);
     if (decrypted.get() == NULL)
         return GUIString("");
     ReadBuffer decoded(decrypted->data(), decrypted->length());
@@ -394,42 +382,45 @@ GUIString LobbyPersistentData::Fn35F190(FileReader& reader)
 }
 
 // FUNCTION: WON 0x0075f530
-void LobbyPersistentData::Fn35F530(FileWriter& writer, const GUIString& inText)
+// Encrypts a password with the machine-bound key and writes it length-prefixed (length 0 if encryption fails)
+void LobbyPersistentData::WriteEncryptedString(FileWriter& writer, const GUIString& inText)
 {
     WriteBuffer storage(0, true);
     std::wstring text = (std::wstring)inText;
     storage.AppendWString(text, 2);
-    ByteBufferPtr encrypted = mEncryptKey.Encrypt(storage.mData, storage.mLength);
+    ByteBufferPtr encrypted = this->mEncryptKey.Encrypt(storage.mData, storage.mLength);
     writer.WriteShort(encrypted.get() != NULL ? encrypted->length() : 0);
     writer.WriteBytes(encrypted.get() != NULL ? encrypted->data() : NULL,
                       encrypted.get() != NULL ? encrypted->length() : 0);
 }
-// User/LAN serialization; complete field declarations grant no full-object lifecycle authority.
+// A file with another version returns early: the game filters then stay empty and the dirty flags unchanged
 // FUNCTION: WON 0x0075fc70
-void LobbyPersistentData::Fn35FC70()
+// Loads the current user's _wonuser file: reconnect ids, ignored names, friends, blocked CD keys (loaded and saved
+// but never filled by the lobby), options, last server/room, sounds and game filters; LAN data for the LAN user
+void LobbyPersistentData::LoadUserPrefs()
 {
-    Fn35C720();
-    mReconnectInfoMap.clear();
-    mIgnoredNames.clear();
-    mFriends.clear();
-    mLanNameInfoMap.clear();
-    mDirectConnectMap.clear();
-    mGameOptions.clear();
+    this->RestoreDefaults();
+    this->mReconnectInfoMap.clear();
+    this->mIgnoredNames.clear();
+    this->mFriends.clear();
+    this->mLanNameInfoMap.clear();
+    this->mDirectConnectMap.clear();
+    this->mGameOptions.clear();
     bool haveGameOptions = false;
     int i;
     FileReader reader;
-    std::string fileName = GetUserFileName(mCurrentUserId);
+    std::string fileName = this->GetUserFileName(this->mCurrentUserId);
     if (!reader.Open(fileName.c_str()))
     {
-        mGameOptions = mDefaultGameOptions;
+        this->mGameOptions = this->mDefaultGameOptions;
         return;
     }
     try
     {
-        if (ReadFileHeader(reader) != gLobbyUserPrefsVersion)
+        if (this->ReadFileHeader(reader) != gLobbyUserPrefsVersion)
             return;
-        if (mCurrentUserId == 0)
-            Fn360B10(reader);
+        if (this->mCurrentUserId == 0)
+            this->ReadLanPrefs(reader);
         unsigned short count = reader.ReadShort();
         for (i = 0; i < count; ++i)
         {
@@ -437,69 +428,70 @@ void LobbyPersistentData::Fn35FC70()
             reader.ReadBytes(bytes, 6);
             IPAddr address;
             address.SetSixByte(bytes);
-            LobbyReconnectInfo& info = mReconnectInfoMap.insert(
+            LobbyReconnectInfo& info = this->mReconnectInfoMap.insert(
                 std::map<IPAddr, LobbyReconnectInfo>::value_type(address, LobbyReconnectInfo())).first->second;
             info.mLastUseTime = reader.ReadLong();
             info.mReconnectId = reader.ReadLong();
         }
         count = reader.ReadShort();
         for (i = 0; i < count; ++i)
-            mIgnoredNames.insert(Fn35F000(reader));
+            this->mIgnoredNames.insert(this->ReadWideString(reader));
         count = reader.ReadShort();
         for (i = 0; i < count; ++i)
         {
-            std::wstring name = (std::wstring)Fn35F000(reader);
+            std::wstring name = (std::wstring)this->ReadWideString(reader);
             unsigned long userId = reader.ReadLong();
             SmartPtr<LobbyFriend> aFriend = new LobbyFriend(GUIString(name), userId);
-            mFriends.insert(LobbyFriendMap::value_type(userId, aFriend));
+            this->mFriends.insert(LobbyFriendMap::value_type(userId, aFriend));
         }
         count = reader.ReadShort();
         for (i = 0; i < count; ++i)
-            mIgnoredUserIds.insert(reader.ReadLong());
-        mB54 = reader.ReadByte() == 1;
-        mB55 = reader.ReadByte() == 1;
-        mB56 = reader.ReadByte() == 1;
-        mB61 = reader.ReadByte() == 1;
-        mB63 = reader.ReadByte() == 1;
-        mB62 = reader.ReadByte() == 1;
-        mS58 = Fn35F000(reader);
-        mS74 = Fn35F000(reader);
-        mS78 = Fn35F000(reader);
-        mB5C = reader.ReadByte() == 1;
-        mB5D = reader.ReadByte() == 1;
-        mB5E = reader.ReadByte() == 1;
-        mB5F = reader.ReadByte() == 1;
-        mB60 = reader.ReadByte() == 1;
-        mShort64 = reader.ReadShort();
+            this->mBlockedCDKeyIds.insert(reader.ReadLong());
+        this->mFilterDirtyWords = reader.ReadByte() == 1;
+        this->mDoAutoAFK = reader.ReadByte() == 1;
+        this->mCrossPromotion = reader.ReadByte() == 1;
+        this->mAutoPingGames = reader.ReadByte() == 1;
+        this->mAnonymousToFriends = reader.ReadByte() == 1;
+        this->mShowGamesInProgress = reader.ReadByte() == 1;
+        this->mTabSelect = this->ReadWideString(reader);
+        this->mLastServerName = this->ReadWideString(reader);
+        this->mLastRoomName = this->ReadWideString(reader);
+        this->mLobbySoundEffects = reader.ReadByte() == 1;
+        this->mLobbyMusic = reader.ReadByte() == 1;
+        this->mChatSoundEffects = reader.ReadByte() == 1;
+        this->mStagingSoundEffects = reader.ReadByte() == 1;
+        this->mShowConfirmations = reader.ReadByte() == 1;
+        this->mConnectionSpeed = reader.ReadShort();
         count = reader.ReadShort();
         haveGameOptions = true;
         for (i = 0; i < count; ++i)
         {
-            GUIString optionName = Fn35EE80(reader);
-            LobbyOptionSet& option = mGameOptions[optionName];
+            GUIString optionName = this->ReadByteString(reader);
+            LobbyOptionSet& option = this->mGameOptions[optionName];
             unsigned short numValues = reader.ReadShort();
             for (int j = 0; j < numValues; ++j)
-                option.Add(Fn35F000(reader));
+                option.Add(this->ReadWideString(reader));
         }
     }
     catch (FileReaderException&) {}
     if (!haveGameOptions)
-        mGameOptions = mDefaultGameOptions;
-    mGlobalDirty = mB5C != mB6C || mB6D != mB5D;
-    mUserDirty = false;
+        this->mGameOptions = this->mDefaultGameOptions;
+    this->mGlobalDirty = this->mLobbySoundEffects != this->mSavedLobbySoundEffects || this->mSavedLobbyMusic != this->mLobbyMusic;
+    this->mUserDirty = false;
 }
 
 // FUNCTION: WON 0x00760b10
-void LobbyPersistentData::Fn360B10(FileReader& reader)
+// Reads the LAN user's recent LAN names (selecting the most recent), direct-connect addresses and broadcast port
+void LobbyPersistentData::ReadLanPrefs(FileReader& reader)
 {
     int count = reader.ReadShort();
     for (int nameIndex = 0; nameIndex < count; ++nameIndex)
     {
-        GUIString name = Fn35F000(reader);
+        GUIString name = this->ReadWideString(reader);
         long lastUseTime = reader.ReadLong();
-        mLanNameInfoMap[name] = lastUseTime;
+        this->mLanNameInfoMap[name] = lastUseTime;
     }
-    Fn35EA40(); // existing original-carved LAN-name pruning owner
+    this->SelectRecentLanName();
     count = reader.ReadShort();
     for (int addressIndex = 0; addressIndex < count; ++addressIndex)
     {
@@ -507,99 +499,103 @@ void LobbyPersistentData::Fn360B10(FileReader& reader)
         unsigned char bytes[6];
         reader.ReadBytes(bytes, 6);
         address.SetSixByte(bytes);
-        GUIString name = Fn35F000(reader);
-        mDirectConnectMap[address] = name;
+        GUIString name = this->ReadWideString(reader);
+        this->mDirectConnectMap[address] = name;
     }
-    mPort66 = reader.ReadShort();
+    this->mLanBroadcastPort = reader.ReadShort();
 }
 
 // FUNCTION: WON 0x00760da0
-void LobbyPersistentData::Fn360DA0(FileWriter& writer)
+// Writes the LAN user's recent LAN names, direct-connect addresses and broadcast port
+void LobbyPersistentData::WriteLanPrefs(FileWriter& writer)
 {
-    writer.WriteShort((unsigned short)mLanNameInfoMap.size());
-    for (std::map<GUIString, long, GUIStringLessNoCase>::const_iterator i = mLanNameInfoMap.begin(); i != mLanNameInfoMap.end(); ++i)
+    writer.WriteShort((unsigned short)this->mLanNameInfoMap.size());
+    for (std::map<GUIString, long, GUIStringLessNoCase>::const_iterator i = this->mLanNameInfoMap.begin(); i != this->mLanNameInfoMap.end(); ++i)
     {
-        Fn35F4E0(writer, i->first);
+        this->WriteWideString(writer, i->first);
         writer.WriteLong(i->second);
     }
-    writer.WriteShort((unsigned short)mDirectConnectMap.size());
-    for (std::map<IPAddr, GUIString>::const_iterator j = mDirectConnectMap.begin(); j != mDirectConnectMap.end(); ++j)
+    writer.WriteShort((unsigned short)this->mDirectConnectMap.size());
+    for (std::map<IPAddr, GUIString>::const_iterator j = this->mDirectConnectMap.begin(); j != this->mDirectConnectMap.end(); ++j)
     {
         writer.WriteBytes(j->first.GetSixByte(), 6);
-        Fn35F4E0(writer, j->second);
+        this->WriteWideString(writer, j->second);
     }
-    writer.WriteShort(mPort66);
+    writer.WriteShort(this->mLanBroadcastPort);
 }
 // FUNCTION: WON 0x00760770
-void LobbyPersistentData::Fn360770()
+// Writes the current user's _wonuser file (the counterpart of LoadUserPrefs) and clears the user dirty flag
+void LobbyPersistentData::SaveUserPrefs()
 {
     FileWriter writer;
-    std::string fileName = GetUserFileName(mCurrentUserId);
+    std::string fileName = this->GetUserFileName(this->mCurrentUserId);
     if (!writer.Open(fileName.c_str(), false))
         return;
     try
     {
-        WriteFileHeader(writer, gLobbyUserPrefsVersion);
-        if (mCurrentUserId == 0)
-            Fn360DA0(writer);
-        writer.WriteShort((unsigned short)mReconnectInfoMap.size());
-        for (std::map<IPAddr, LobbyReconnectInfo>::const_iterator a = mReconnectInfoMap.begin(); a != mReconnectInfoMap.end(); ++a)
+        this->WriteFileHeader(writer, gLobbyUserPrefsVersion);
+        if (this->mCurrentUserId == 0)
+            this->WriteLanPrefs(writer);
+        writer.WriteShort((unsigned short)this->mReconnectInfoMap.size());
+        for (std::map<IPAddr, LobbyReconnectInfo>::const_iterator a = this->mReconnectInfoMap.begin(); a != this->mReconnectInfoMap.end(); ++a)
         {
             const LobbyReconnectInfo& anInfo = a->second;
             writer.WriteBytes(a->first.GetSixByte(), 6);
             writer.WriteLong(anInfo.mLastUseTime);
             writer.WriteLong(anInfo.mReconnectId);
         }
-        writer.WriteShort((unsigned short)mIgnoredNames.size());
-        for (LobbyIgnoredNameSet::const_iterator n = mIgnoredNames.begin(); n != mIgnoredNames.end(); ++n)
-            Fn35F4E0(writer, *n);
-        writer.WriteShort((unsigned short)mFriends.size());
-        for (LobbyFriendMap::const_iterator f = mFriends.begin(); f != mFriends.end(); ++f)
+        writer.WriteShort((unsigned short)this->mIgnoredNames.size());
+        for (LobbyIgnoredNameSet::const_iterator n = this->mIgnoredNames.begin(); n != this->mIgnoredNames.end(); ++n)
+            this->WriteWideString(writer, *n);
+        writer.WriteShort((unsigned short)this->mFriends.size());
+        for (LobbyFriendMap::const_iterator f = this->mFriends.begin(); f != this->mFriends.end(); ++f)
         {
-            Fn35F4E0(writer, f->second->mName);
+            this->WriteWideString(writer, f->second->mName);
             writer.WriteLong(f->first);
         }
-        writer.WriteShort((unsigned short)mIgnoredUserIds.size());
-        for (std::set<unsigned long>::const_iterator u = mIgnoredUserIds.begin(); u != mIgnoredUserIds.end(); ++u)
+        writer.WriteShort((unsigned short)this->mBlockedCDKeyIds.size());
+        for (std::set<unsigned long>::const_iterator u = this->mBlockedCDKeyIds.begin(); u != this->mBlockedCDKeyIds.end(); ++u)
             writer.WriteLong(*u);
-        writer.WriteByte(mB54 ? 1 : 0);
-        writer.WriteByte(mB55 ? 1 : 0);
-        writer.WriteByte(mB56 ? 1 : 0);
-        writer.WriteByte(mB61 ? 1 : 0);
-        writer.WriteByte(mB63 ? 1 : 0);
-        writer.WriteByte(mB62 ? 1 : 0);
-        Fn35F4E0(writer, mS58);
-        Fn35F4E0(writer, mS74);
-        Fn35F4E0(writer, mS78);
-        writer.WriteByte(mB5C ? 1 : 0);
-        writer.WriteByte(mB5D ? 1 : 0);
-        writer.WriteByte(mB5E ? 1 : 0);
-        writer.WriteByte(mB5F ? 1 : 0);
-        writer.WriteByte(mB60 ? 1 : 0);
-        writer.WriteShort(mShort64);
-        writer.WriteShort((unsigned short)mGameOptions.size());
-        for (std::map<GUIString, LobbyOptionSet, GUIStringLessNoCase>::const_iterator o = mGameOptions.begin(); o != mGameOptions.end(); ++o)
+        writer.WriteByte(this->mFilterDirtyWords ? 1 : 0);
+        writer.WriteByte(this->mDoAutoAFK ? 1 : 0);
+        writer.WriteByte(this->mCrossPromotion ? 1 : 0);
+        writer.WriteByte(this->mAutoPingGames ? 1 : 0);
+        writer.WriteByte(this->mAnonymousToFriends ? 1 : 0);
+        writer.WriteByte(this->mShowGamesInProgress ? 1 : 0);
+        this->WriteWideString(writer, this->mTabSelect);
+        this->WriteWideString(writer, this->mLastServerName);
+        this->WriteWideString(writer, this->mLastRoomName);
+        writer.WriteByte(this->mLobbySoundEffects ? 1 : 0);
+        writer.WriteByte(this->mLobbyMusic ? 1 : 0);
+        writer.WriteByte(this->mChatSoundEffects ? 1 : 0);
+        writer.WriteByte(this->mStagingSoundEffects ? 1 : 0);
+        writer.WriteByte(this->mShowConfirmations ? 1 : 0);
+        writer.WriteShort(this->mConnectionSpeed);
+        writer.WriteShort((unsigned short)this->mGameOptions.size());
+        for (std::map<GUIString, LobbyOptionSet, GUIStringLessNoCase>::const_iterator o = this->mGameOptions.begin(); o != this->mGameOptions.end(); ++o)
         {
-            Fn35F3D0(writer, o->first);
-            // Observed wire quirk: empty option index omits even the zero count; iteration still uses the list.
+            this->WriteByteString(writer, o->first);
+            // A filter with no values writes no count at all, which the loader does not expect: the filters after it
+            // are misread on the next load
             const LobbyOptionSet& aSet = o->second;
             unsigned long aCount = aSet.mIndex.size();
             if (aCount != 0)
             {
                 writer.WriteShort((unsigned short)aCount);
                 for (LobbyOptionSet::StringList::const_iterator v = aSet.mValues.begin(); v != aSet.mValues.end(); ++v)
-                    Fn35F4E0(writer, *v);
+                    this->WriteWideString(writer, *v);
             }
         }
     }
     catch (FileWriterException&) {}
-    mUserDirty = false;
+    this->mUserDirty = false;
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x0075d940
-void LobbyFn35D940(const IPAddr& inAddress, int inReconnectId)
+// Remembers the reconnect id for a server address with the current time and saves the user's preferences
+void LobbySetReconnectId(const IPAddr& inAddress, int inReconnectId)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL)
@@ -609,10 +605,11 @@ void LobbyFn35D940(const IPAddr& inAddress, int inReconnectId)
     LobbyReconnectInfo& anInfo = aPair.first->second;
     anInfo.mLastUseTime = time(NULL);
     anInfo.mReconnectId = inReconnectId;
-    aData->Fn360770();
+    aData->SaveUserPrefs();
 }
 // FUNCTION: WON 0x0075db00
-int LobbyFn35DB00(const IPAddr& inAddress)
+// Returns the saved reconnect id for a server address, or 0 if none
+int LobbyGetReconnectId(const IPAddr& inAddress)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL)
@@ -621,6 +618,8 @@ int LobbyFn35DB00(const IPAddr& inAddress)
     return anItr == aData->mReconnectInfoMap.end() ? 0 : anItr->second.mReconnectId;
 }
 // FUNCTION: WON 0x0075e040
+// Adds comma-separated values to a default game filter column; skips a column that already has values unless
+// inAppend is set
 void LobbyAddGameOption(const GUIString& inName, const GUIString& inValues, bool inAppend)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
@@ -645,44 +644,48 @@ void LobbyAddGameOption(const GUIString& inName, const GUIString& inValues, bool
 
 namespace WONAPI {
 // FUNCTION: WON 0x0075d100
-void LobbyFn35D100(const GUIString& inName, bool inIgnore)
+// Adds a player name to or removes it from the ignore list; the dirty flag is set to whether the list changed
+void LobbySetNameIgnored(const GUIString& inName, bool inIgnore)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
-    if (aData != NULL) {
-        bool aDirty;
-        if (inIgnore)
-            aDirty = aData->mIgnoredNames.insert(inName).second;
-        else
-            aDirty = aData->mIgnoredNames.erase(inName) > 0;
-        aData->mUserDirty = aDirty;
-    }
+    if (aData == NULL)
+        return;
+    bool aDirty;
+    if (inIgnore)
+        aDirty = aData->mIgnoredNames.insert(inName).second;
+    else
+        aDirty = aData->mIgnoredNames.erase(inName) > 0;
+    aData->mUserDirty = aDirty;
 }
 // FUNCTION: WON 0x0075d6c0
-void LobbyFn35D6C0(const GUIString& inName)
+// Makes a non-empty name the current LAN name, stamping its use time and keeping the 50 most recent names
+void LobbySetLanName(const GUIString& inName)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL || inName.mData->mLength == 0 ||
-        inName.mData->Compare(aData->mS68.mData.get()) == 0) return;
+        inName.mData->Compare(aData->mLanName.mData.get()) == 0) return;
     long aTime = time(NULL);
     aData->mLanNameInfoMap[inName] = aTime;
-    aData->mS68 = inName;
-    aData->Fn35E7E0();
+    aData->mLanName = inName;
+    aData->PruneLanNames();
     aData->mUserDirty = true;
 }
 // FUNCTION: WON 0x0075d770
-void LobbyFn35D770()
+// Forgets the current LAN name and falls back to the most recently used remaining one
+void LobbyRemoveLanName()
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL) return;
-    LobbyLanNameInfoMap::iterator anItr = aData->mLanNameInfoMap.find(aData->mS68);
-    if (anItr != aData->mLanNameInfoMap.end()) {
-        aData->mLanNameInfoMap.erase(anItr);
-        aData->Fn35EA40();
-        aData->mUserDirty = true;
-    }
+    LobbyLanNameInfoMap::iterator anItr = aData->mLanNameInfoMap.find(aData->mLanName);
+    if (anItr == aData->mLanNameInfoMap.end())
+        return;
+    aData->mLanNameInfoMap.erase(anItr);
+    aData->SelectRecentLanName();
+    aData->mUserDirty = true;
 }
 // FUNCTION: WON 0x0075d7f0
-void LobbyFn35D7F0(const IPAddr& inAddress, const GUIString& inName)
+// Saves a named direct-connect address
+void LobbyAddDirectConnect(const IPAddr& inAddress, const GUIString& inName)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL) return;
@@ -690,7 +693,8 @@ void LobbyFn35D7F0(const IPAddr& inAddress, const GUIString& inName)
     aData->mUserDirty = true;
 }
 // FUNCTION: WON 0x0075d870
-void LobbyFn35D870(const IPAddr& inAddress)
+// Forgets a saved direct-connect address
+void LobbyRemoveDirectConnect(const IPAddr& inAddress)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL) return;
@@ -701,53 +705,57 @@ void LobbyFn35D870(const IPAddr& inAddress)
     }
 }
 // FUNCTION: WON 0x0075db70
-void LobbyFn35DB70(const GUIString& inServer, const GUIString& inGroup)
+// Remembers the last server and room the user joined
+void LobbySetLastRoom(const GUIString& inServer, const GUIString& inGroup)
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL) return;
-    if (inServer.mData->Compare(aData->mS74.mData.get()) == 0 &&
-        inGroup.mData->Compare(aData->mS78.mData.get()) == 0) return;
-    aData->mS74 = inServer;
-    aData->mS78 = inGroup;
+    if (inServer.mData->Compare(aData->mLastServerName.mData.get()) == 0 &&
+        inGroup.mData->Compare(aData->mLastRoomName.mData.get()) == 0) return;
+    aData->mLastServerName = inServer;
+    aData->mLastRoomName = inGroup;
     aData->mUserDirty = true;
 }
 // FUNCTION: WON 0x0075df00
-void LobbyFn35DF00()
+// Resets the user's game filters to the configured defaults
+void LobbyResetFilters()
 {
     LobbyPersistentData* aData = GetLobbyPersistentData();
     if (aData == NULL) return;
-    // Native performs ordinary memberwise copying, including stored list iterators.
+    // The original copies the option sets memberwise, stored list iterators included
     aData->mGameOptions = aData->mDefaultGameOptions;
     aData->mUserDirty = true;
 }
 // FUNCTION: WON 0x0075e7e0
-void LobbyPersistentData::Fn35E7E0()
+// Keeps at most 50 recent LAN names, dropping the least recently used
+void LobbyPersistentData::PruneLanNames()
 {
     GetLobbyPersistentData();
-    if (mLanNameInfoMap.size() <= 50) return;
+    if (this->mLanNameInfoMap.size() <= 50) return;
     typedef std::multimap<long, LobbyLanNameInfoMap::iterator> TimeMap;
     TimeMap aTimes;
-    for (LobbyLanNameInfoMap::iterator anItr = mLanNameInfoMap.begin();
-         anItr != mLanNameInfoMap.end(); ++anItr)
+    for (LobbyLanNameInfoMap::iterator anItr = this->mLanNameInfoMap.begin();
+         anItr != this->mLanNameInfoMap.end(); ++anItr)
         aTimes.insert(TimeMap::value_type(anItr->second, anItr));
     TimeMap::iterator aTime = aTimes.begin();
-    while (aTime != aTimes.end() && mLanNameInfoMap.size() > 50)
+    while (aTime != aTimes.end() && this->mLanNameInfoMap.size() > 50)
     {
-        mLanNameInfoMap.erase(aTime->second);
+        this->mLanNameInfoMap.erase(aTime->second);
         aTime++;
     }
 }
 // FUNCTION: WON 0x0075ea40
-void LobbyPersistentData::Fn35EA40()
+// Makes the most recently used saved LAN name current, or the default name when none is saved
+void LobbyPersistentData::SelectRecentLanName()
 {
     GetLobbyPersistentData();
-    mS68 = Fn35C520();
+    this->mLanName = this->GetDefaultLanName();
     long aLastTime = 0;
     LobbyLanNameInfoMap::iterator anItr;
-    for (anItr = mLanNameInfoMap.begin();
-         anItr != mLanNameInfoMap.end(); ++anItr) {
+    for (anItr = this->mLanNameInfoMap.begin();
+         anItr != this->mLanNameInfoMap.end(); ++anItr) {
         if (aLastTime == 0 || anItr->second > aLastTime) {
-            mS68 = anItr->first;
+            this->mLanName = anItr->first;
             aLastTime = anItr->second;
         }
     }
@@ -756,13 +764,15 @@ void LobbyPersistentData::Fn35EA40()
 
 namespace WONAPI {
 // FUNCTION: WON 0x0075c520
-GUIString LobbyPersistentData::Fn35C520()
+// Returns the default LAN player name, with a number derived from the local IP address appended unless the
+// lobby configuration turns that off
+GUIString LobbyPersistentData::GetDefaultLanName()
 {
     GUIString aName = ::LobbyOptions_DefaultName_String;
     LobbyConfig* aConfig = GetLobbyConfig();
     if (aConfig != NULL && !aConfig->mAppendNumberToDefaultLanName)
         return aName;
-    long anAddress = IPAddr::GetLocalAddr().Fn2B2FB0();
+    long anAddress = IPAddr::GetLocalAddr().GetHost();
     CRC16 aCRC;
     aCRC.Put(&anAddress,4);
     char aNumber[256];
@@ -775,30 +785,31 @@ GUIString LobbyPersistentData::Fn35C520()
 
 namespace WONAPI {
 // FUNCTION: WON 0x0075bcb0
+// Creates the lobby's saved settings with default options and a password key bound to this machine
 LobbyPersistentData::LobbyPersistentData()
 {
     WriteBuffer aKey(0,true);
     aKey.Reserve(8);
     aKey.AppendLong(0x22fa655f);
     aKey.AppendLong(CDKey::GetMachineId(NULL));
-    mEncryptKey.SetKey(aKey.data(),aKey.length());
-    // Native deliberately leaves mCurrentUserId untouched before this reset.
-    Fn35C720();
-    mPort66 = 8585;
-    mGlobalDirty = false;
-    mUserDirty = false;
-    mB6C = true;
-    mB6D = true;
+    this->mEncryptKey.SetKey(aKey.data(),aKey.length());
+    // The original does not set mCurrentUserId before this reset
+    this->RestoreDefaults();
+    this->mLanBroadcastPort = 8585;
+    this->mGlobalDirty = false;
+    this->mUserDirty = false;
+    this->mSavedLobbySoundEffects = true;
+    this->mSavedLobbyMusic = true;
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: exact same-SDK ServerListFilterSet::clear,
-// using the established canonical LobbyOptionSet owner/member names.
+// Empties an option set (value index and ordered value list); no copy of its own was found in the original,
+// it has the same shape as the SDK's ServerListFilterSet::clear
 namespace WONAPI {
 void LobbyOptionSet::clear()
 {
-    mIndex.clear();
-    mValues.clear();
+    this->mIndex.clear();
+    this->mValues.clear();
 }
 }
 

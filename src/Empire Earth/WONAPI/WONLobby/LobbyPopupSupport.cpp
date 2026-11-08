@@ -15,13 +15,14 @@
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00758df0
-void LobbyFn358DF0(Component* popup,int flags,int x,int y)
+// Opens a popup over the lobby at the given position and lets it receive lobby logic events
+void LobbyOpenPopup(Component* popup,int flags,int x,int y)
 {
     if(gLobbyData.get()==NULL)
         return;
-    Window* window=LobbyFn361230();
+    Window* window=LobbyGetRootWindow();
     if(window!=NULL) {
-        LobbyFn359080(popup);
+        LobbyAddLogicListener(popup);
         window->OpenPopup(PopupParams(popup,flags,gLobbyData->mLobbyContainer.get(),x,y));
     }
 }

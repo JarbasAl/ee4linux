@@ -132,7 +132,7 @@ extern float gViewportXCenter;              // 0x530b64
 extern float gViewportYCenter;              // 0x530b68
 extern UWideString gWonPlayerName;          // 0x53077c (the WON player name)
 extern UString gDefaultCampaignUser;        // 0x52a170 ("default"; defined below, its init chain mid-file)
-extern char gU4E5B98[];                     // 0x4e5b98 (pooled "")
+extern char gEmptyString[];                 // 0x4e5b98 (pooled "")
 void EEStopAllSounds();                     // 0x140ceb
 void EEDumpGraphicObjectTable(FSFileSpec& inFile);  // 0xd7acf
 void EEDumpLeakedUnits(FSFileSpec& inFile);  // 0x1f8e7c
@@ -1285,7 +1285,7 @@ void EEWorld::RecordStatistics()
                 theComputerCount++;
                 sprintf(theRecord.mNameSuffix, " #%d", theComputerCount);
             } else {
-                theRecord.mNameSuffix = gU4E5B98;
+                theRecord.mNameSuffix = gEmptyString;
             }
             for (unsigned long r = 2; r < 7; r++) {
                 long theBase = EEStartingResources::sTable[this->mGameOptions.mResources]->mAmounts[r - 2];
@@ -1335,7 +1335,7 @@ void EEWorld::RecordStatistics()
                 thePlayer->mResourceCaps[r] = theBase - theSpent + theValue;
             }
         } else {
-            theRecord.mNameSuffix = gU4E5B98;
+            theRecord.mNameSuffix = gEmptyString;
         }
         unsigned long theScore = 0;
         long theMilitary = 0;

@@ -11,7 +11,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 using namespace WONAPI;
 
-// Actual128B bitmap resource asset; tablequota0.
+// Hand cursor image bits (32x32 monochrome AND/XOR pair: this is the XOR plane)
 static const unsigned char gHandCursorData[] = 
 {
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -24,7 +24,7 @@ static const unsigned char gHandCursorData[] =
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
-// Actual128B bitmap resource asset; tablequota0.
+// Hand cursor mask bits (the AND plane)
 static const unsigned char gHandCursorMaskData[] = 
 {
 	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
@@ -37,21 +37,22 @@ static const unsigned char gHandCursorMaskData[] =
 	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
 	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 };
-// Native3d08d0 support0: COLORREF to logicalRGB conversion.
+// Returns a Windows system color with red and blue swapped (COLORREF 0x00BBGGRR -> GUI 0x00RRGGBB)
 static DWORD MyGetSysColor(int index) {
     DWORD c=GetSysColor(index);
     return ((c&0xff0000)>>16)|(c&0xff00)|((c&0xff)<<16);
 }
 
 // FUNCTION: WON 0x007d0900
+// Creates the Win32 window manager for a module (the exe when none is given) and installs the standard cursors
 MSWindowManager::MSWindowManager(HINSTANCE theHinstance)
 {
 	if(theHinstance==NULL)
 		theHinstance = (HINSTANCE)GetModuleHandle(NULL);
 
-	mInstance = theHinstance;
+	this->mInstance = theHinstance;
 
-	Cursor::SetStandardCursor(StandardCursor_Hand, new MSCursor(CreateCursor(mInstance,12,4,32,32,gHandCursorMaskData,gHandCursorData),true));
+	Cursor::SetStandardCursor(StandardCursor_Hand, new MSCursor(CreateCursor(this->mInstance,12,4,32,32,gHandCursorMaskData,gHandCursorData),true));
 	Cursor::SetStandardCursor(StandardCursor_Arrow, new MSCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_ARROW))));
 	Cursor::SetStandardCursor(StandardCursor_IBeam, new MSCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_IBEAM))));
 	Cursor::SetStandardCursor(StandardCursor_EastWest, new MSCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_SIZEWE))));
@@ -60,31 +61,33 @@ MSWindowManager::MSWindowManager(HINSTANCE theHinstance)
 }
 
 // FUNCTION: WON 0x007d0b70
+// Fills the color scheme's standard colors from the Windows system colors (text takes COLOR_WINDOWFRAME)
 void MSWindowManager::GetSystemColorScheme()
 {
-	mColorScheme->SetStandardColor(StandardColor_3DDarkShadow,MyGetSysColor(COLOR_3DDKSHADOW));
-	mColorScheme->SetStandardColor(StandardColor_3DFace,MyGetSysColor(COLOR_3DFACE));
-	mColorScheme->SetStandardColor(StandardColor_3DHilight,MyGetSysColor(COLOR_3DHILIGHT));
+	this->mColorScheme->SetStandardColor(StandardColor_3DDarkShadow,MyGetSysColor(COLOR_3DDKSHADOW));
+	this->mColorScheme->SetStandardColor(StandardColor_3DFace,MyGetSysColor(COLOR_3DFACE));
+	this->mColorScheme->SetStandardColor(StandardColor_3DHilight,MyGetSysColor(COLOR_3DHILIGHT));
 
-	mColorScheme->SetStandardColor(StandardColor_3DShadow,MyGetSysColor(COLOR_3DSHADOW));
-	mColorScheme->SetStandardColor(StandardColor_Scrollbar,MyGetSysColor(COLOR_SCROLLBAR));
+	this->mColorScheme->SetStandardColor(StandardColor_3DShadow,MyGetSysColor(COLOR_3DSHADOW));
+	this->mColorScheme->SetStandardColor(StandardColor_Scrollbar,MyGetSysColor(COLOR_SCROLLBAR));
 
-	mColorScheme->SetStandardColor(StandardColor_ButtonText,MyGetSysColor(COLOR_BTNTEXT));
-	mColorScheme->SetStandardColor(StandardColor_GrayText,MyGetSysColor(COLOR_GRAYTEXT));
-	mColorScheme->SetStandardColor(StandardColor_Hilight,MyGetSysColor(COLOR_HIGHLIGHT));
-	mColorScheme->SetStandardColor(StandardColor_HilightText,MyGetSysColor(COLOR_HIGHLIGHTTEXT));
+	this->mColorScheme->SetStandardColor(StandardColor_ButtonText,MyGetSysColor(COLOR_BTNTEXT));
+	this->mColorScheme->SetStandardColor(StandardColor_GrayText,MyGetSysColor(COLOR_GRAYTEXT));
+	this->mColorScheme->SetStandardColor(StandardColor_Hilight,MyGetSysColor(COLOR_HIGHLIGHT));
+	this->mColorScheme->SetStandardColor(StandardColor_HilightText,MyGetSysColor(COLOR_HIGHLIGHTTEXT));
 
-	mColorScheme->SetStandardColor(StandardColor_ToolTipBack,MyGetSysColor(COLOR_INFOBK));
-	mColorScheme->SetStandardColor(StandardColor_ToolTipText,MyGetSysColor(COLOR_INFOTEXT));
+	this->mColorScheme->SetStandardColor(StandardColor_ToolTipBack,MyGetSysColor(COLOR_INFOBK));
+	this->mColorScheme->SetStandardColor(StandardColor_ToolTipText,MyGetSysColor(COLOR_INFOTEXT));
 
-	mColorScheme->SetStandardColor(StandardColor_MenuBack,MyGetSysColor(COLOR_MENU));
-	mColorScheme->SetStandardColor(StandardColor_MenuText,MyGetSysColor(COLOR_MENUTEXT));
+	this->mColorScheme->SetStandardColor(StandardColor_MenuBack,MyGetSysColor(COLOR_MENU));
+	this->mColorScheme->SetStandardColor(StandardColor_MenuText,MyGetSysColor(COLOR_MENUTEXT));
 
-	mColorScheme->SetStandardColor(StandardColor_Back,MyGetSysColor(COLOR_WINDOW));
-	mColorScheme->SetStandardColor(StandardColor_Text,MyGetSysColor(COLOR_WINDOWFRAME));
+	this->mColorScheme->SetStandardColor(StandardColor_Back,MyGetSysColor(COLOR_WINDOW));
+	this->mColorScheme->SetStandardColor(StandardColor_Text,MyGetSysColor(COLOR_WINDOWFRAME));
 }
 
 // FUNCTION: WON 0x007d0c40
+// Waits for and dispatches one Windows message; on WM_QUIT ends every running message loop
 void MSWindowManager::GetNextEvent()
 {
 	MSG msg;
@@ -94,10 +97,11 @@ void MSWindowManager::GetNextEvent()
 		DispatchMessage(&msg);
 	}
 	else
-		mTargetMsgLoopDepth = 0;
+		this->mTargetMsgLoopDepth = 0;
 }
 
 // FUNCTION: WON 0x007d0c90
+// Returns the main screen's rectangle in pixels, placed at the origin
 void MSWindowManager::GetScreenRect(WONRectangle &theRect) 
 { 
 	theRect.x = theRect.y = 0;
@@ -106,36 +110,38 @@ void MSWindowManager::GetScreenRect(WONRectangle &theRect)
 }
 
 // FUNCTION: WON 0x007d0cc0
+// Wakes the message loop by posting WM_USER to the default window, if it has one
 void MSWindowManager::Signal()
 {
-	MSWindow *aWindow = (MSWindow*)mDefaultWindow;
+	MSWindow *aWindow = static_cast<MSWindow*>(this->mDefaultWindow);
 	if(aWindow==NULL)
 		return;
 
-	if(aWindow->mLB8==NULL)
+	if(aWindow->mHWND==NULL)
 		return;
 
-	::PostMessage(aWindow->mLB8,WM_USER,0,0);
+	::PostMessage(aWindow->mHWND,WM_USER,0,0);
 }
 
 // FUNCTION: WON 0x007d0cf0
+// Switches the display to the given resolution (fullscreen mode change) when it differs; always returns true
 bool MSWindowManager::SetScreenResolutionHook(int theWidth, int theHeight)
 {
 	DEVMODE dm;
 	EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm );
 
 	
-	if (dm.dmPelsWidth!=theWidth || dm.dmPelsHeight!=theHeight)
-	{
-		dm.dmPelsWidth = theWidth;
-		dm.dmPelsHeight = theHeight;
-		dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
-		ChangeDisplaySettings(&dm,CDS_FULLSCREEN);
-	}
+	if (dm.dmPelsWidth==theWidth && dm.dmPelsHeight==theHeight)
+		return true;
+	dm.dmPelsWidth = theWidth;
+	dm.dmPelsHeight = theHeight;
+	dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+	ChangeDisplaySettings(&dm,CDS_FULLSCREEN);
 	return true;
 }
 
 // FUNCTION: WON 0x007d0d50
+// Returns the current display resolution
 void MSWindowManager::GetScreenResolutionHook(int &theWidth, int &theHeight)
 {
 	DEVMODE dm;
@@ -145,6 +151,7 @@ void MSWindowManager::GetScreenResolutionHook(int &theWidth, int &theHeight)
 }
 
 // FUNCTION: WON 0x007d0b60
+// Destroys the window manager (base class cleanup only)
 MSWindowManager::~MSWindowManager() {}
 
 // Compiler-generated and header-inline functions this unit emits:

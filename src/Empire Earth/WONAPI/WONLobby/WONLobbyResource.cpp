@@ -2362,6 +2362,7 @@ GUIString WONStatus_ConnRefused_String; // 0x5668f8
 // SYNTHETIC: WON 0x777660
 
 // FUNCTION: WON 0x00777670
+// Registers the lobby's resource loader and control ids on the given (or a new) resource table and returns it
 ResourceConfigTablePtr LobbyResource_Init(ResourceConfigTable* theTable)
 {
     ResourceConfigTablePtr aTable=theTable;
@@ -2869,8 +2870,10 @@ static void* gResources[] = {
 
 // The string and background getters fold to one body, the pointer and value getters to another.
 // FUNCTION: WON 0x00777f40
+// Returns the lobby string resource with the given id
 const GUIString& LobbyResource_GetString(LobbyResourceId id) { return *(GUIString*)gResources[id]; }
 // FUNCTION: WON 0x00777f50
+// Returns the lobby image resource with the given id (also serves sounds, fonts, colours and ints)
 Image* LobbyResource_GetImage(LobbyResourceId id) { return ((SmartPtr<Image>*)gResources[id])->get(); }
 Sound* LobbyResource_GetSound(LobbyResourceId id) { return ((SmartPtr<Sound>*)gResources[id])->get(); }
 Font* LobbyResource_GetFont(LobbyResourceId id) { return ((SmartPtr<Font>*)gResources[id])->get(); }
@@ -2879,6 +2882,7 @@ DWORD LobbyResource_GetColor(LobbyResourceId id) { return *(DWORD*)gResources[id
 int LobbyResource_GetInt(LobbyResourceId id) { return *(int*)gResources[id]; }
 
 // FUNCTION: WON 0x00777f60
+// Loads every lobby string, image and sound from its section of the resource table
 void LobbyResource_SafeGlueResources(ResourceConfigTable* theTable)
 {
     ResourceConfig* aConfig;
@@ -3386,6 +3390,7 @@ void LobbyResource_SafeGlueResources(ResourceConfigTable* theTable)
 }
 
 // FUNCTION: WON 0x0077fb50
+// Releases every lobby image and sound and empties every lobby string
 void LobbyResource_UnloadResources()
 {
     LobbyGlobal_Cancel_String.erase();

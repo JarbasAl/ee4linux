@@ -4,37 +4,35 @@
 #include "ee/wonapi/WONLobbyWONButton.h"
 #include "ee/wonapi/WONLobbySkinnedContainers.h"
 namespace WONAPI {
-// Actual fieldless100 renderer derived from true WONButton100, VT450798/48slots.
-// Borrowed-only, no receiver allocation/construction/copy/lifecycle source.
+// Fieldless 0x100-byte renderer derived from WONButton (0x100), vtable 0x00850798 (48 slots).
 class WONHeaderButton : public WONButton {
 public:
-    WONHeaderButton(); //3191a0 external fieldless100, bounded F allocation
-    virtual void Paint(Graphics&); //3193c0 actual18
-    WONHeaderButton* Duplicate(); //319350 genuine SDK raw duplicate provider
+    WONHeaderButton(); // at 0x007191a0 (fieldless, 0x100 bytes)
+    virtual void Paint(Graphics&); // slot 0x18, at 0x007193c0
+    WONHeaderButton* Duplicate(); // at 0x00719350
 };
-// Complete actual WONHeaderControlb4, real MultiListHeaderac plus textpadac/SkinSPb0.
-// Complete b4 constructor source uses genuine MultiListHeader default base and retained skin; no copy authority.
+// WONHeaderControl (0xb4 bytes): MultiListHeader (0xac) + text padding at +0xac + skin pointer at +0xb0.
 class WONSkin;
 class WONHeaderControl : public MultiListHeader {
 public:
-    WONHeaderControl(WONSkin* =NULL); //31a060 original external RET4
-    // Genuine SDK implicit virtual destructor31a120; automatic SkinSP/MultiListHeader cleanup.
-    void SetColumn(int,const GUIString&,int* =NULL); //31a1c0 real provider
+    WONHeaderControl(WONSkin* =NULL); // at 0x0071a060
+    // Implicit virtual destructor (0x0071a120): releases the skin, then MultiListHeader.
+    void SetColumn(int,const GUIString&,int* =NULL); // at 0x0071a1c0
 protected:
     int mTextLeftPad; //ac
-    SmartPtr<WONSkin> mSkin; //b0 retained, fullb4
+    SmartPtr<WONSkin> mSkin; // offset 0xb0, retained; class size 0xb4
 };
-// Actualc0 borrowed list control; truebc WONScrollContainer plus retained headerbc.
+// WONListCtrl (0xc0 bytes): WONScrollContainer (0xbc) plus a retained header at +0xbc.
 class WONListCtrl : public WONScrollContainer {
 public:
-    WONListCtrl(); //31a270 external fullc0, bounded F allocation
-    // Genuine SDK implicit virtual destructor31a2b0; automatic HeaderSP/WONScrollContainer cleanup.
-    virtual void Virtual08(); //31a580 support0 geometry forwarding
-    WONListCtrl* Duplicate(); //31a520 original external raw result
-    void SetHeader(WONHeaderControl*); //31a3e0 original external RET4
-    WONHeaderControl* GetHeader() { return mHeader.get(); } //genuine SDK inline
-    MultiListArea* GetListArea() { return (MultiListArea*)GetScrollArea(); } //genuine SDK inline, borrowed84
-    void SetStandarColumnHeader(int,const GUIString&,int); //31a450 genuine SDK spelling
+    WONListCtrl(); // at 0x0071a270 (0xc0 bytes)
+    // Implicit virtual destructor (0x0071a2b0): releases the header, then WONScrollContainer.
+    virtual void Virtual08(); // geometry forwarding (0x0071a580)
+    WONListCtrl* Duplicate(); // at 0x0071a520
+    void SetHeader(WONHeaderControl*); // at 0x0071a3e0
+    WONHeaderControl* GetHeader() { return this->mHeader.get(); } // inline
+    MultiListArea* GetListArea() { return static_cast<MultiListArea*>(this->GetScrollArea()); } // inline, borrowed
+    void SetStandarColumnHeader(int,const GUIString&,int); // at 0x0071a450 (SDK spelling)
     void SetColumnHeader(int,Component*,int); //31a4c0
     SmartPtr<WONHeaderControl> mHeader; //bc..bf
 };

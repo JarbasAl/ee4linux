@@ -3,30 +3,29 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbySkinFrame.h"
 namespace WONAPI {
-// Actualbc original-owned WONComboBox, parent actuala4. Borrowed-only receiver,
-// no constructor/new/sizeof/copy/lifecycle source. Vtable450a9c51 real slots.
+// WONComboBox (0xbc bytes; parent 0xa4), vtable 0x00850a9c (51 slots).
 class WONComboBox : public ComboBox {
 public:
-    WONComboBox(); //319800 original external fullbc, bounded F allocation
-    WONComboBox* Duplicate(); //3199e0 actual raw result, original external
-    virtual void Virtual08(); //319b00 actual SizeChanged08
-    virtual void Virtual0C(int&,int&); //319a70 desired-size0c
-    virtual void Paint(Graphics&); //319bf0 actual18
-    void SetFrame(const WONFrame& f) { mFrame=f; } //genuineSDKinline, deep original assignment3177a0
+    WONComboBox(); // at 0x00719800 (0xbc bytes)
+    WONComboBox* Duplicate(); // at 0x007199e0
+    virtual void Virtual08(); // SizeChanged (slot 0x08), at 0x00719b00
+    virtual void GetDesiredSize(int&,int&); //319a70 desired-size0c
+    virtual void Paint(Graphics&); // slot 0x18, at 0x00719bf0
+    void SetFrame(const WONFrame& f) { this->mFrame=f; } // inline deep copy (WONFrame assignment 0x007177a0)
     bool mDrawFrame,mButtonInFrame; //a4,a5; natural a6/a7 padding
     WONFrame mFrame; //a8..bb
 };
-// Actualbc original-owned WONScrollContainer, actual9c ScrollbarScroller base.
-// Vtable450b6c52 real slots; original ctor/dtor owners remain external.
+// WONScrollContainer (0xbc bytes): ScrollbarScroller (0x9c) base, vtable 0x00850b6c (52 slots);
+// constructor and destructor out of line.
 class WONScrollContainer : public ScrollbarScroller {
 public:
-    WONScrollContainer(); //319c50 original external fullbc, bounded F allocation
-    void CopyAttributes(WONScrollContainer*); //319f70 original deep attribute composition
-    void SetFrame(const WONFrame& f) { mFrame=f; } //genuineSDKinline
-    void SetCorner(Image* i) { mCorner=i; } //genuineSDKinline retained imageb8
-    WONScrollContainer* Duplicate(); //319f00 actual raw result, original external
-    virtual void Virtual08(); //319df0 actual08, direct Container base hook
-    virtual void Paint(Graphics&); //319ff0 actual18
+    WONScrollContainer(); // at 0x00719c50 (0xbc bytes)
+    void CopyAttributes(WONScrollContainer*); // copies the attributes, at 0x00719f70
+    void SetFrame(const WONFrame& f) { this->mFrame=f; } // inline
+    void SetCorner(Image* i) { this->mCorner=i; } // inline; retained image at +0xb8
+    WONScrollContainer* Duplicate(); // at 0x00719f00
+    virtual void Virtual08(); // slot 0x08, at 0x00719df0: the Container base hook
+    virtual void Paint(Graphics&); // slot 0x18, at 0x00719ff0
     int mHeaderHeight; //9c
     bool mTransparent; //a0; natural a1..a3 padding
     WONFrame mFrame; //a4..b7

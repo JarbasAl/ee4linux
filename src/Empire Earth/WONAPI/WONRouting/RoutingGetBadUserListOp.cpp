@@ -1,4 +1,4 @@
-// Native routing behavior; source-only reconstruction.
+// WONAPI routing op that fetches a banned or muted user list
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,40 +8,43 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x6c5320
-void RoutingGetBadUserListOp::Virtual0C()
+// Sends the routing server a request for the banned/muted user list of a group
+void RoutingGetBadUserListOp::SendRequest()
 {
-    InitSendMsg(22);
-    mSendMsg.AppendByte((unsigned char)mListType);
-    mSendMsg.AppendShort(mGroupId);
-    mSendMsg.AppendByte(mFlags);
-    SendMsg();
-    AddOp();
+    this->InitSendMsg(22);
+    this->mSendMsg.AppendByte((unsigned char)this->mListType);
+    this->mSendMsg.AppendShort(this->mGroupId);
+    this->mSendMsg.AppendByte(this->mFlags);
+    this->SendMsg();
+    this->AddOp();
 }
 
 // FUNCTION: WON 0x6c5370
-WONStatus RoutingGetBadUserListOp::Virtual10(unsigned char inMsgType,ReadBuffer& inMsg)
+// Parses the bad-user list reply into the op's list, reading the optional fields its flags select; returns the status
+WONStatus RoutingGetBadUserListOp::HandleReply(unsigned char inMsgType,ReadBuffer& inMsg)
 {
-    if(inMsgType!=21) return (WONStatus)100104;
-    mBadUserList.clear();
+    if(inMsgType!=21) return (WONStatus)WS_RoutingOp_DontWantReply;
+    this->mBadUserList.clear();
     WONStatus status=inMsg.ReadShort();
     if(status==0) {
-        mListType=(RoutingBadUserListType)(signed char)inMsg.ReadByte();
-        mGroupId=inMsg.ReadShort();
-        mFlags=inMsg.ReadByte();
+        this->mListType=(RoutingBadUserListType)(signed char)inMsg.ReadByte();
+        this->mGroupId=inMsg.ReadShort();
+        this->mFlags=inMsg.ReadByte();
         int count=(unsigned short)inMsg.ReadShort();
         for(;count>0;--count) {
             unsigned short length=inMsg.ReadShort();
             long start=inMsg.pos();
-            RoutingBadUser user; // real default: DWORD10/14/18=0, three wstring owners
+            RoutingBadUser user; // default: the three longs zeroed, three empty wstrings
             user.mWONId=inMsg.ReadLong();
             inMsg.ReadWString(user.mName,2);
-            if(GetFlags()&1) user.mExpirationDiff=inMsg.ReadLong();
-            if(GetFlags()&2) user.mModeratorWONId=inMsg.ReadLong();
-            if(GetFlags()&4) inMsg.ReadWString(user.mModeratorName,2);
-            if(GetFlags()&8) inMsg.ReadWString(user.mModeratorComment,2);
-            mBadUserList.push_back(user);
+            if(this->GetFlags()&1) user.mExpirationDiff=inMsg.ReadLong();
+            if(this->GetFlags()&2) user.mModeratorWONId=inMsg.ReadLong();
+            if(this->GetFlags()&4) inMsg.ReadWString(user.mModeratorName,2);
+            if(this->GetFlags()&8) inMsg.ReadWString(user.mModeratorComment,2);
+            this->mBadUserList.push_back(user);
             inMsg.ReadBytes(length-inMsg.pos()+start);
         }
     }

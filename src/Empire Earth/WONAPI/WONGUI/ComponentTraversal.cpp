@@ -1,4 +1,4 @@
-// Remaining component traversal and parent-state behavior; original-owned receivers.
+// Component sibling/root traversal, focus, timers, tooltips and background-grab painting (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,89 +10,97 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f5230
+// Returns the next or previous sibling in the parent's child list, optionally wrapping (NULL without a parent)
 Component* Component::GetNextSibling(bool forward,bool wrap)
 {
-    if(mParent==NULL) return NULL;
-    std::list<SmartPtr<Component> >::iterator i=mChildListItr;
+    if(this->mParent==NULL) return NULL;
+    std::list<SmartPtr<Component> >::iterator i=this->mChildListItr;
     if(forward) {
         ++i;
-        if(i==mParent->mChildList.end()) {
+        if(i==this->mParent->mChildList.end()) {
             if(!wrap) return NULL;
-            return mParent->mChildList.front().get();
+            return this->mParent->mChildList.front().get();
         }
     } else {
-        if(i==mParent->mChildList.begin()) {
+        if(i==this->mParent->mChildList.begin()) {
             if(!wrap) return NULL;
-            return mParent->mChildList.back().get();
+            return this->mParent->mChildList.back().get();
         }
         --i;
     }
-    return (*i).get();
+    return i->get();
 }
 
 // FUNCTION: WON 0x006f5160
-void Component::Virtual6C()
+// Hooks a newly added child into its parent: hands over or drops focus, registers timers, propagates root visibility
+// and invalidates it
+void Component::AddedToParent()
 {
-    if(HasFocus()) {
-        if(!WantFocus()) Virtual4C();
-        else mParent->VirtualB4(this);
+    if(this->HasFocus()) {
+        if(!this->WantFocus()) this->LostFocus();
+        else this->mParent->SetFocusChild(this);
     }
-    if(mTimerFlags!=0) mParent->VirtualB8(this);
-    if(mParent->Fn2F5600() && IsVisible()) Virtual84(true);
-    mInvalidState=0;
-    Invalidate();
+    if(this->mTimerFlags!=0) this->mParent->AddTimerChild(this);
+    if(this->mParent->IsRootVisible() && this->IsVisible()) this->NotifyRootVisibility(true);
+    this->mInvalidState=0;
+    this->Invalidate();
 }
 
 // FUNCTION: WON 0x006f5720
+// Converts root coordinates into this component's coordinates by subtracting every ancestor's position
 void Component::RootToChild(int& x,int& y)
 {
-    x-=Left();
-    y-=Top();
-    if(mParent!=NULL) mParent->RootToChild(x,y);
+    x-=this->Left();
+    y-=this->Top();
+    if(this->mParent!=NULL) this->mParent->RootToChild(x,y);
 }
 
 // FUNCTION: WON 0x006f5810
+// Returns whether the component can take focus: focusable, visible, enabled, and not blocked by a modal parent
 bool Component::WantFocus()
 {
-    if(!ComponentFlagSet(8)) return false;
-    if(!IsVisible() || IsDisabled()) return false;
-    if(mParent!=NULL && mParent->mModalCount>0 && !ComponentFlagSet(0x8000)) return false;
+    if(!this->ComponentFlagSet(ComponentFlag_WantFocus)) return false;
+    if(!this->IsVisible() || this->IsDisabled()) return false;
+    if(this->mParent!=NULL && this->mParent->mModalCount>0 && !this->ComponentFlagSet(0x8000)) return false;
     return true;
 }
 }
 
 namespace WONAPI {
-// Original2f5a00/39B actual font forwarding provider; support0.
 // FUNCTION: WON 0x006f5a00
+// Returns the font matching a descriptor from the component's window
 SmartPtr<Font> Component::GetFont(const FontDescriptor& descriptor)
 {
-    Window* root=GetRoot();
+    Window* root=this->GetRoot();
     return root->GetFont(descriptor);
 }
 // FUNCTION: WON 0x006f5a30
-Font* Component::Fn2F5A30(Font* font,int style,int size)
+// Returns a variant of a font with another style and, if size > 0, another size
+Font* Component::GetFontMod(Font* font,int style,int size)
 {
     FontDescriptor descriptor=font->mDescriptor;
     descriptor.mStyle=style;
     if(size>0) descriptor.mSize=size;
-    return GetFont(descriptor).get();
+    return this->GetFont(descriptor).get();
 }
 // FUNCTION: WON 0x006f54e0
-void Component::Fn2F54E0(ComponentEvent* event)
+// Passes a non-broadcast event to the component's listener, else its parent, else the root of the owner window
+void Component::BubbleEvent(ComponentEvent* event)
 {
     if(event->mBroadcast) return;
-    if(mExtraStuff!=NULL && mExtraStuff->mListener.get()!=NULL)
-        mExtraStuff->mListener->Virtual04(event);
-    else if(mParent!=NULL)
-        mParent->HandleComponentEvent(event);
+    if(this->mExtraStuff!=NULL && this->mExtraStuff->mListener.get()!=NULL)
+        this->mExtraStuff->mListener->HandleComponentEvent(event);
+    else if(this->mParent!=NULL)
+        this->mParent->HandleComponentEvent(event);
     else {
-        Window* window=GetRoot();
+        Window* window=this->GetRoot();
         if(window!=NULL) {
             window=window->mParent;
             if(window!=NULL && window->mRoot.get()!=NULL)
-                window->mRoot->Fn2F54E0(event);
+                window->mRoot->BubbleEvent(event);
         }
     }
 }
@@ -102,48 +110,49 @@ void Component::Fn2F54E0(ComponentEvent* event)
 DWORD gComponentToolTipStartTime=500;
 DWORD gComponentToolTipEndTime=5000;
 namespace WONAPI {
-// Original2f4cc0/19B defaultcursor forwarding support0.
 // FUNCTION: WON 0x006f4cc0
-void Component::Virtual24(int x,int y)
+// Shows the component's default cursor when the mouse enters
+void Component::MouseEnter(int x,int y)
 {
-    if(mExtraStuff!=NULL) Virtual78(mExtraStuff->mDefaultCursor.get());
+    if(this->mExtraStuff!=NULL) this->SetCursor(this->mExtraStuff->mDefaultCursor.get());
 }
-// Original2f4ce0/38B tooltip-state reset/close forwarding support0.
 // FUNCTION: WON 0x006f4ce0
-void Component::Virtual28()
+// Closes the component's tooltip and re-arms it when the mouse leaves
+void Component::MouseExit()
 {
-    if(mExtraStuff!=NULL && mExtraStuff->mToolTip.get()!=NULL) {
-        mExtraStuff->mDontDoTip=false;
-        GetRoot()->ClosePopup(mExtraStuff->mToolTip.get());
+    if(this->mExtraStuff!=NULL && this->mExtraStuff->mToolTip.get()!=NULL) {
+        this->mExtraStuff->mDontDoTip=false;
+        this->GetRoot()->ClosePopup(this->mExtraStuff->mToolTip.get());
     }
 }
 // FUNCTION: WON 0x006f4d10
-void Component::Virtual40(unsigned long elapsed)
+// Opens the tooltip beside the mouse once the hover delay passes and closes it after the display time
+void Component::MouseHover(unsigned long elapsed)
 {
-    if(mExtraStuff==NULL || mExtraStuff->mToolTip.get()==NULL) return;
-    if(elapsed>=gComponentToolTipStartTime && !mExtraStuff->mDontDoTip) {
-        Window* window=GetRoot();
+    if(this->mExtraStuff==NULL || this->mExtraStuff->mToolTip.get()==NULL) return;
+    if(elapsed>=gComponentToolTipStartTime && !this->mExtraStuff->mDontDoTip) {
+        Window* window=this->GetRoot();
         int x=window->mMouseX+15; int y=window->mMouseY+15;
-        window->OpenPopup(PopupParams(mExtraStuff->mToolTip.get(),PopupFlag_StandardTip,this,x,y));
-        mExtraStuff->mDontDoTip=true;
+        window->OpenPopup(PopupParams(this->mExtraStuff->mToolTip.get(),PopupFlag_StandardTip,this,x,y));
+        this->mExtraStuff->mDontDoTip=true;
     } else if(elapsed>=gComponentToolTipStartTime+gComponentToolTipEndTime)
-        GetRoot()->ClosePopup(mExtraStuff->mToolTip.get());
+        this->GetRoot()->ClosePopup(this->mExtraStuff->mToolTip.get());
 }
 }
 
 namespace WONAPI {
-// Original2f5590/18B root-visibility flag forwarding, support0.
 // FUNCTION: WON 0x006f5590
-void Component::Virtual84(bool visible)
+// Records whether the component's root is visible
+void Component::NotifyRootVisibility(bool visible)
 {
-    SetComponentFlags(0x40000,visible);
+    this->SetComponentFlags(0x40000,visible);
 }
-// Original2f5850/49B default tab-focus adapter, support0; actual RET8.
 // FUNCTION: WON 0x006f5850
-bool Component::Virtual88(bool forward,bool init)
+// Takes focus on the initial tab step if the component is a tab stop and can take focus; returns whether it did
+bool Component::TabFocus(bool forward,bool init)
 {
-    if(init && ComponentFlagSet(0x4000) && WantFocus()) {
-        Fn2F5890();
+    if(init && this->ComponentFlagSet(ComponentFlag_WantTabFocus) && this->WantFocus()) {
+        this->RequestFocus();
         return true;
     }
     return false;
@@ -152,126 +161,132 @@ bool Component::Virtual88(bool forward,bool init)
 
 namespace WONAPI {
 // FUNCTION: WON 0x006f57d0
-void Component::Fn2F57D0(bool on)
+// Turns the component's timer request on or off and tells the parent when its timer need changes
+void Component::RequestTimer(bool on)
 {
-    bool oldWantTimer=mTimerFlags!=0;
-    if(on) mTimerFlags|=2;
-    else mTimerFlags&=~2;
-    bool wantTimer=mTimerFlags!=0;
-    if(wantTimer!=oldWantTimer && mParent!=NULL) mParent->VirtualB8(this);
+    bool oldWantTimer=this->mTimerFlags!=0;
+    if(on) this->mTimerFlags|=2;
+    else this->mTimerFlags&=~2;
+    bool wantTimer=this->mTimerFlags!=0;
+    if(wantTimer!=oldWantTimer && this->mParent!=NULL) this->mParent->AddTimerChild(this);
 }
 // FUNCTION: WON 0x006f5890
-void Component::Fn2F5890()
+// Gives the component focus through its parent (or directly when it has none) if it can take it
+void Component::RequestFocus()
 {
-    if(HasFocus() || !WantFocus()) return;
-    if(mParent==NULL) Virtual48();
-    else mParent->VirtualB4(this);
+    if(this->HasFocus() || !this->WantFocus()) return;
+    if(this->mParent==NULL) this->GotFocus();
+    else this->mParent->SetFocusChild(this);
 }
-// Original2f58f0/40, root getter support0.
 // FUNCTION: WON 0x006f58f0
-RootContainer* Component::Fn2F58F0()
+// Returns the topmost ancestor if it is a root container, else NULL
+RootContainer* Component::GetRootContainer()
 {
     Component* root=this;
     while(root->mParent!=NULL) root=root->mParent;
     return dynamic_cast<RootContainer*>(root);
 }
-// Original2f5920/21, window getter/default provider support0.
 // FUNCTION: WON 0x006f5920
+// Returns the window of the component's root container, or the default window when it has none
 Window* Component::GetRoot()
 {
-    RootContainer* root=Fn2F58F0();
+    RootContainer* root=this->GetRootContainer();
     if(root!=NULL) return root->mWindow;
     return Window::GetDefaultWindow();
 }
-// Original2f5940/19, own window getter support0; no default substitution.
 // FUNCTION: WON 0x006f5940
-Window* Component::Fn2F5940()
+// Returns the window of the component's root container, or NULL when it has none
+Window* Component::GetRootWindow()
 {
-    RootContainer* root=Fn2F58F0();
+    RootContainer* root=this->GetRootContainer();
     if(root!=NULL) return root->mWindow;
     return NULL;
 }
-// Original2f5600/9, root-visibility flag getter support0.
 // FUNCTION: WON 0x006f5600
-bool Component::Fn2F5600()
+// Returns whether the component's root is visible
+bool Component::IsRootVisible()
 {
-    return ComponentFlagSet(0x40000);
+    return this->ComponentFlagSet(0x40000);
 }
-// Original2f58d0/10, focus flag setter support0.
 // FUNCTION: WON 0x006f58d0
-void Component::Virtual48()
+// Marks the component as focused
+void Component::GotFocus()
 {
-    SetComponentFlags(0x10,true);
+    this->SetComponentFlags(ComponentFlag_HasFocus,true);
 }
-// Original2f58e0/10, focus flag setter support0.
 // FUNCTION: WON 0x006f58e0
-void Component::Virtual4C()
+// Marks the component as not focused
+void Component::LostFocus()
 {
-    SetComponentFlags(0x10,false);
+    this->SetComponentFlags(ComponentFlag_HasFocus,false);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x006f4db0
+// Returns whether the component grabs its background, creating the background grabber on first use
 bool Component::CheckGrabBG()
 {
-    if(ComponentFlagSet(0x300)) {
-        AllocateExtraStuff();
-        if(mExtraStuff->mGrabBG==NULL)
-            mExtraStuff->mGrabBG=new BackgroundGrabber;
+    if(this->ComponentFlagSet(0x300)) {
+        this->AllocateExtraStuff();
+        if(this->mExtraStuff->mGrabBG==NULL)
+            this->mExtraStuff->mGrabBG=new BackgroundGrabber;
         return true;
     }
     return false;
 }
 // FUNCTION: WON 0x006f4f60
-bool Component::Virtual10()
+// Returns whether an invalid component needs painting: when visible, or when its grabbed background must be drawn
+bool Component::NeedsPaint()
 {
-    if(mInvalidState==0) return false;
-    if(IsVisible()) return true;
-    return CheckGrabBG() && mExtraStuff->mGrabBG->NeedDrawBG();
+    if(this->mInvalidState==0) return false;
+    if(this->IsVisible()) return true;
+    return this->CheckGrabBG() && this->mExtraStuff->mGrabBG->NeedDrawBG();
 }
 // FUNCTION: WON 0x006f5110
+// Invalidates the whole component, tells the parent, and marks it invalid (no-op if already fully invalid)
 void Component::Invalidate()
 {
-    if(mInvalidState==2) return;
-    WONRectangle rect(0,0,Width(),Height());
-    Virtual60(rect);
-    if(mParent!=NULL) mParent->VirtualC0(this);
-    Virtual68();
+    if(this->mInvalidState==2) return;
+    WONRectangle rect(0,0,this->Width(),this->Height());
+    this->InvalidateRect(rect);
+    if(this->mParent!=NULL) this->mParent->ChildInvalidated(this);
+    this->MarkInvalid();
 }
 // FUNCTION: WON 0x006f51f0
-void Component::Virtual68()
+// Marks the component fully invalid and queues its background grabber with the root container
+void Component::MarkInvalid()
 {
-    mInvalidState=2;
-    if(CheckGrabBG()) {
-        mExtraStuff->mGrabBG->Invalidate(this);
-        RootContainer* root=Fn2F58F0();
-        if(root!=NULL) root->AddBG(mExtraStuff->mGrabBG);
-    }
+    this->mInvalidState=2;
+    if(!this->CheckGrabBG())
+        return;
+    this->mExtraStuff->mGrabBG->Invalidate(this);
+    RootContainer* root=this->GetRootContainer();
+    if(root!=NULL) root->AddBG(this->mExtraStuff->mGrabBG);
 }
-// Original2f4e50/26, forwarding support0.
 // FUNCTION: WON 0x006f4e50
+// Tells the background grabber that the component's size changed
 void Component::Virtual08()
 {
-    if(CheckGrabBG()) mExtraStuff->mGrabBG->SizeChanged(this);
+    if(this->CheckGrabBG()) this->mExtraStuff->mGrabBG->SizeChanged(this);
 }
-// Original2f4ff0/33, forwarding support0.
 // FUNCTION: WON 0x006f4ff0
-void Component::Virtual14(Graphics& graphics)
+// Lets the background grabber capture the background before painting
+void Component::PrePaint(Graphics& graphics)
 {
-    if(CheckGrabBG()) mExtraStuff->mGrabBG->PrePaint(this,graphics);
+    if(this->CheckGrabBG()) this->mExtraStuff->mGrabBG->PrePaint(this,graphics);
 }
-// Original2f5020/37, forwarding support0; invalidation reset precedes callback.
 // FUNCTION: WON 0x006f5020
+// Clears the invalid state, then lets the background grabber paint the saved background
 void Component::Paint(Graphics& graphics)
 {
-    mInvalidState=0;
-    if(CheckGrabBG()) mExtraStuff->mGrabBG->Paint(this,graphics);
+    this->mInvalidState=0;
+    if(this->CheckGrabBG()) this->mExtraStuff->mGrabBG->Paint(this,graphics);
 }
-// Original2f51d0/25, forwarding support0.
 // FUNCTION: WON 0x006f51d0
-void Component::Virtual70()
+// Discards the grabbed background
+void Component::ClearGrabBG()
 {
-    if(CheckGrabBG()) mExtraStuff->mGrabBG->Clear();
+    if(this->CheckGrabBG()) this->mExtraStuff->mGrabBG->Clear();
 }
 }

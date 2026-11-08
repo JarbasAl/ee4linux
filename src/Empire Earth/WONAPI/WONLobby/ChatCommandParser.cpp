@@ -1,12 +1,9 @@
-// ChatCommandParser original-backed reconstruction, WONLobby.
+// ChatCommandParser: turns a line of lobby chat input into a broadcast, an emote or a slash command
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Original body family: RVA355750..357d67, allocation0x54 at362aed..362b06,
-// RefCount-derived RTTI/vtable451a9c and matching original EH ownership.
-// Original .cpp filename is unconfirmed; this source spelling is provisional.
-// Boundary separates the following LobbyCompletion family; generated container
-// helpers and canonical GUIString/std::wstring COMDATs carry no forced markers.
-// Original quirks retained: single-character remainder truncation, ambiguous
-// prefix matching, duration unit validation and persistent INFINITE duration.
+// The original's functions run from 0x755750 to 0x757d67; the parser (0x54 bytes, RefCount-derived, vtable
+// 0x851a9c) is allocated at 0x762aed. The LobbyCompletion functions follow. (file name inferred: no __FILE__)
+// Behaviour of the original kept here: a one-character rest of line reads as empty, a name prefix shared by two
+// clients is ambiguous, a duration needs a unit letter (D/H/M/S), and INFINITE keeps the previous duration.
 #include <windows.h>
 #include <string>
 #include <list>
@@ -20,83 +17,90 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyParser.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONLobbyChatCommands.h"
 extern unsigned short gEmptyWideString[]; // 0x8e60bc, an empty wide string (zero .bss)
 using namespace WONAPI;
 namespace WONAPI {
 }
 // FUNCTION: WON 0x755750
+// Creates the chat command parser: '/' prefix, unique name prefixes accepted, colon emotes off, no room flags
 ChatCommandParser::ChatCommandParser()
 {
- mB2C=false;
- mAllowColonEmote=false;
- mMatchThreshold=2;
- mDuration=0;
- mPrefix='/';
- mRoomFlags=0;
+ this->mB2C=false;
+ this->mAllowColonEmote=false;
+ this->mMatchThreshold=2;
+ this->mDuration=0;
+ this->mPrefix='/';
+ this->mRoomFlags=0;
 }
 
 // FUNCTION: WON 0x7559f0
+// Destroys the chat command parser (members only)
 ChatCommandParser::~ChatCommandParser() {}
 
 // FUNCTION: WON 0x755b50
+// Registers the localized names of every chat command (whisper, block, emote, ignore, ... alert, warn)
 void ChatCommandParser::InitCommands()
 {
- AddCommands(::ChatCommandLogic_Whisper_String,2);
- AddCommands(::ChatCommandLogic_Block_String,4);
- AddCommands(::ChatCommandLogic_Emote_String,3);
- AddCommands(::ChatCommandLogic_Ignore_String,5);
- AddCommands(::ChatCommandLogic_Away_String,6);
- AddCommands(::ChatCommandLogic_Invite_String,16);
- AddCommands(::ChatCommandLogic_Uninvite_String,17);
- AddCommands(::ChatCommandLogic_Reply_String,18);
- AddCommands(::ChatCommandLogic_Clear_String,19);
- AddCommands(::ChatCommandLogic_Help_String,20);
- AddCommands(::ChatCommandLogic_ShowTeam_String,21);
- AddCommands(::ChatCommandLogic_Moderator_String,7);
- AddCommands(::ChatCommandLogic_ServerMute_String,8);
- AddCommands(::ChatCommandLogic_ServerBan_String,9);
- AddCommands(::ChatCommandLogic_Mute_String,10);
- AddCommands(::ChatCommandLogic_Ban_String,11);
- AddCommands(::ChatCommandLogic_Unmute_String,12);
- AddCommands(::ChatCommandLogic_ServerUnmute_String,13);
- AddCommands(::ChatCommandLogic_Unban_String,14);
- AddCommands(::ChatCommandLogic_ServerUnban_String,15);
- AddCommands(::ChatCommandLogic_Alert_String,22);
- AddCommands(gEmptyWideString,23);
- AddCommands(gEmptyWideString,24);
- AddCommands(::ChatCommandLogic_Warn_String,25);
+ this->AddCommands(::ChatCommandLogic_Whisper_String,LobbyChatCommand_Whisper);
+ this->AddCommands(::ChatCommandLogic_Block_String,LobbyChatCommand_Block);
+ this->AddCommands(::ChatCommandLogic_Emote_String,LobbyChatCommand_Emote);
+ this->AddCommands(::ChatCommandLogic_Ignore_String,LobbyChatCommand_Ignore);
+ this->AddCommands(::ChatCommandLogic_Away_String,LobbyChatCommand_Away);
+ this->AddCommands(::ChatCommandLogic_Invite_String,LobbyChatCommand_Invite);
+ this->AddCommands(::ChatCommandLogic_Uninvite_String,LobbyChatCommand_Uninvite);
+ this->AddCommands(::ChatCommandLogic_Reply_String,LobbyChatCommand_Reply);
+ this->AddCommands(::ChatCommandLogic_Clear_String,LobbyChatCommand_Clear);
+ this->AddCommands(::ChatCommandLogic_Help_String,LobbyChatCommand_Help);
+ this->AddCommands(::ChatCommandLogic_ShowTeam_String,LobbyChatCommand_ShowTeam);
+ this->AddCommands(::ChatCommandLogic_Moderator_String,LobbyChatCommand_Moderator);
+ this->AddCommands(::ChatCommandLogic_ServerMute_String,LobbyChatCommand_ServerMute);
+ this->AddCommands(::ChatCommandLogic_ServerBan_String,LobbyChatCommand_ServerBan);
+ this->AddCommands(::ChatCommandLogic_Mute_String,LobbyChatCommand_Mute);
+ this->AddCommands(::ChatCommandLogic_Ban_String,LobbyChatCommand_Ban);
+ this->AddCommands(::ChatCommandLogic_Unmute_String,LobbyChatCommand_Unmute);
+ this->AddCommands(::ChatCommandLogic_ServerUnmute_String,LobbyChatCommand_ServerUnmute);
+ this->AddCommands(::ChatCommandLogic_Unban_String,LobbyChatCommand_Unban);
+ this->AddCommands(::ChatCommandLogic_ServerUnban_String,LobbyChatCommand_ServerUnban);
+ this->AddCommands(::ChatCommandLogic_Alert_String,LobbyChatCommand_Alert);
+ this->AddCommands(gEmptyWideString,LobbyChatCommand_StartShutdown);
+ this->AddCommands(gEmptyWideString,LobbyChatCommand_AbortShutdown);
+ this->AddCommands(::ChatCommandLogic_Warn_String,LobbyChatCommand_Warn);
 }
 
 // FUNCTION: WON 0x7561b0
+// Sets the room's client list (used to resolve names) and the room flags (used for the help text)
 void ChatCommandParser::SetClientList(LobbyClientList* clients,int roomFlags)
 {
- mClients=clients;
- mRoomFlags=roomFlags;
+ this->mClients=clients;
+ this->mRoomFlags=roomFlags;
 }
 
 // FUNCTION: WON 0x756220
+// Maps a command name to its command id; the first name added for an id becomes its display name
 void ChatCommandParser::AddCommand(const GUIString& text,int command)
 {
  if(text.empty()) return;
  GUIString key=text;
- mCommands[key]=command;
- std::map<int,std::wstring>::iterator i=mCommandStrings.find(command);
+ this->mCommands[key]=command;
+ std::map<int,std::wstring>::iterator i=this->mCommandStrings.find(command);
  // LOST-DEBUG: none: exact only
- EE_LOST_TRACE(i==mCommandStrings.end());
- if(i==mCommandStrings.end())
-  mCommandStrings.insert(std::map<int,std::wstring>::value_type(command,text));
+ EE_LOST_TRACE(i==this->mCommandStrings.end());
+ if(i==this->mCommandStrings.end())
+  this->mCommandStrings.insert(std::map<int,std::wstring>::value_type(command,text));
 }
 
 // FUNCTION: WON 0x7564b0
+// Returns a command id's display name, else any name registered for it, else an empty string
 GUIString ChatCommandParser::GetCommandString(int command)
 {
- std::map<int,std::wstring>::iterator i=mCommandStrings.find(command);
- if(i!=mCommandStrings.end()) return GUIString(i->second);
- ChatCommandParser::CommandMap::iterator j=mCommands.begin();
+ std::map<int,std::wstring>::iterator i=this->mCommandStrings.find(command);
+ if(i!=this->mCommandStrings.end()) return GUIString(i->second);
+ ChatCommandParser::CommandMap::iterator j=this->mCommands.begin();
  // LOST-DEBUG: none: exact only
  EE_LOST_DEBUG(5);
  while(true) {
-  if(j==mCommands.end()) break;
+  if(j==this->mCommands.end()) break;
   if(j->second==command) return GUIString(j->first);
   ++j;
  }
@@ -104,36 +108,39 @@ GUIString ChatCommandParser::GetCommandString(int command)
 }
 
 // FUNCTION: WON 0x756620
+// Returns the built-in short name of a command id ('w', 'em', 'afk', ...); empty for an unknown id
 const char* ChatCommandParser::GetCommandName(int command)
 {
  switch(command) {
- case 2:return "w";case 3:return "em";case 4:return "b";case 5:return "i";
- case 6:return "afk";case 7:return "mod";case 8:return "smute";case 9:return "sban";
- case 10:return "mute";case 11:return "ban";case 12:return "unmute";case 13:return "sunmute";
- case 14:return "unban";case 15:return "sunban";case 16:return "invite";case 17:return "uninvite";
- case 18:return "r";case 19:return "cls";case 20:return "?";case 21:return "team";
- case 22:return "alert";case 23:return "startshutdown";case 24:return "abortshutdown";case 25:return "warn";
+ case LobbyChatCommand_Whisper:return "w";case LobbyChatCommand_Emote:return "em";case LobbyChatCommand_Block:return "b";case LobbyChatCommand_Ignore:return "i";
+ case LobbyChatCommand_Away:return "afk";case LobbyChatCommand_Moderator:return "mod";case LobbyChatCommand_ServerMute:return "smute";case LobbyChatCommand_ServerBan:return "sban";
+ case LobbyChatCommand_Mute:return "mute";case LobbyChatCommand_Ban:return "ban";case LobbyChatCommand_Unmute:return "unmute";case LobbyChatCommand_ServerUnmute:return "sunmute";
+ case LobbyChatCommand_Unban:return "unban";case LobbyChatCommand_ServerUnban:return "sunban";case LobbyChatCommand_Invite:return "invite";case LobbyChatCommand_Uninvite:return "uninvite";
+ case LobbyChatCommand_Reply:return "r";case LobbyChatCommand_Clear:return "cls";case LobbyChatCommand_Help:return "?";case LobbyChatCommand_ShowTeam:return "team";
+ case LobbyChatCommand_Alert:return "alert";case LobbyChatCommand_StartShutdown:return "startshutdown";case LobbyChatCommand_AbortShutdown:return "abortshutdown";case LobbyChatCommand_Warn:return "warn";
  default:return "";
  }
 }
 
 // FUNCTION: WON 0x756760
+// Registers every name in a list of command names; with no names, registers the built-in short name
 void ChatCommandParser::AddCommands(const std::wstring& names,int command)
 {
  StringParser parser; parser.Set(names.c_str());
  std::list<std::wstring> tokens;
  parser.ReadValue(tokens);
  if(names.empty() || tokens.empty()) {
-  AddCommand(GUIString(GetCommandName(command)),command);
+  this->AddCommand(GUIString(this->GetCommandName(command)),command);
   return;
  } else {
   for(std::list<std::wstring>::iterator i=tokens.begin();i!=tokens.end();++i)
-   AddCommand(GUIString(*i),command);
+   this->AddCommand(GUIString(*i),command);
   return;
  }
 }
 
 // FUNCTION: WON 0x756950
+// Compares two names ignoring case: true when equal; also reports whether the first is a prefix of the second
 static bool CompareNames(const GUIString& a,const GUIString& b,bool& prefix)
 {
  prefix=false;
@@ -146,12 +153,14 @@ static bool CompareNames(const GUIString& a,const GUIString& b,bool& prefix)
 }
 
 // FUNCTION: WON 0x7569f0
+// Advances a position past whitespace in a string
 static void SkipWhitespace(const GUIString& text,int& pos)
 {
  while(pos<text.length() && iswctype(text.at(pos),_SPACE)) ++pos;
 }
 
 // FUNCTION: WON 0x756a40
+// Reads the next space-delimited word (or quoted string), optionally upper-cased, and advances the position
 static GUIString GetToken(const GUIString& text,int& pos,bool upper,bool quotes)
 {
  SkipWhitespace(text,pos);
@@ -179,6 +188,7 @@ static GUIString GetToken(const GUIString& text,int& pos,bool upper,bool quotes)
 }
 
 // FUNCTION: WON 0x756c90
+// Returns the rest of the line (or a quoted string) without trailing spaces; a single character returns empty
 static GUIString GetRestOfLine(const GUIString& text,int pos)
 {
  SkipWhitespace(text,pos);
@@ -197,12 +207,13 @@ static GUIString GetRestOfLine(const GUIString& text,int pos)
 }
 
 // FUNCTION: WON 0x756e90
+// Finds a room client by full name, else by a unique name prefix; reports none, ambiguous, prefix or full match
 LobbyClient* ChatCommandParser::FindClient(const GUIString& name,int* outMatch)
 {
  LobbyClientMap::iterator i;
  int match=0;
  LobbyClient* found=NULL;
- LobbyClientList* clients=mClients.get();
+ LobbyClientList* clients=this->mClients.get();
  if(clients!=NULL) {
   for(i=clients->mClients.begin();i!=clients->mClients.end();++i) {
    LobbyClient* client=i->second.get();
@@ -222,60 +233,61 @@ LobbyClient* ChatCommandParser::FindClient(const GUIString& name,int* outMatch)
 }
 
 // FUNCTION: WON 0x756f40
+// Parses a slash command: looks it up, resolves its target client, reads its text or duration; sets an error code
 bool ChatCommandParser::ParseCommand(const GUIString& text)
 {
  int pos=1;
  GUIString command=GetToken(text,pos,true,false);
- ChatCommandParser::CommandMap::iterator i=mCommands.find(command);
- if(i==mCommands.end()) { mCommand=0;mError=1;return false; }
+ ChatCommandParser::CommandMap::iterator i=this->mCommands.find(command);
+ if(i==this->mCommands.end()) { this->mCommand=LobbyChatCommand_None;this->mError=1;return false; }
  // LOST-DEBUG: none: exact only
  EE_LOST_TRACE(text.empty());
- mCommand=i->second;
+ this->mCommand=i->second;
  bool needTarget=false;
- switch(mCommand) {
- case 18: mTargetName=mInput; needTarget=true; break;
- case 5:
-  mTargetName=GetRestOfLine(text,pos);
-  needTarget=!mTargetName.empty();
+ switch(this->mCommand) {
+ case LobbyChatCommand_Reply: this->mTargetName=this->mInput; needTarget=true; break;
+ case LobbyChatCommand_Ignore:
+  this->mTargetName=GetRestOfLine(text,pos);
+  needTarget=!this->mTargetName.empty();
   break;
- case 4: mTargetName=GetRestOfLine(text,pos); needTarget=true; break;
- case 12:
- case 13:
-  mTargetName=GetRestOfLine(text,pos);
-  if(mTargetName.length()!=0) needTarget=true;
+ case LobbyChatCommand_Block: this->mTargetName=GetRestOfLine(text,pos); needTarget=true; break;
+ case LobbyChatCommand_Unmute:
+ case LobbyChatCommand_ServerUnmute:
+  this->mTargetName=GetRestOfLine(text,pos);
+  if(this->mTargetName.length()!=0) needTarget=true;
   break;
- case 2:case 8:case 9:case 10:case 11:case 16:case 17:case 25:
-  mTargetName=GetToken(text,pos,false,true);
+ case LobbyChatCommand_Whisper:case LobbyChatCommand_ServerMute:case LobbyChatCommand_ServerBan:case LobbyChatCommand_Mute:case LobbyChatCommand_Ban:case LobbyChatCommand_Invite:case LobbyChatCommand_Uninvite:case LobbyChatCommand_Warn:
+  this->mTargetName=GetToken(text,pos,false,true);
   needTarget=true;
   break;
  }
  if(needTarget) {
-  if(mTargetName.length()==0) { mError=2;return false; }
+  if(this->mTargetName.length()==0) { this->mError=2;return false; }
   int match;
-  mTarget=FindClient(mTargetName,&match);
-  if(match<mMatchThreshold) {
-   if(match==1) mError=4;
-   else mError=3;
+  this->mTarget=this->FindClient(this->mTargetName,&match);
+  if(match<this->mMatchThreshold) {
+   if(match==1) this->mError=4;
+   else this->mError=3;
    return false;
   }
  }
  SkipWhitespace(text,pos);
- switch(mCommand) {
- case 2:case 3:case 22:case 25:
-  if(pos>=text.length()) { mError=5;return false; }
-  mText=text.substr(pos);
+ switch(this->mCommand) {
+ case LobbyChatCommand_Whisper:case LobbyChatCommand_Emote:case LobbyChatCommand_Alert:case LobbyChatCommand_Warn:
+  if(pos>=text.length()) { this->mError=5;return false; }
+  this->mText=text.substr(pos);
   return true;
- case 18:
-  mText=text.substr(pos);
-  if(mText.length()!=0) mCommand=2;
+ case LobbyChatCommand_Reply:
+  this->mText=text.substr(pos);
+  if(this->mText.length()!=0) this->mCommand=LobbyChatCommand_Whisper;
   return true;
- case 16:case 17:
-  mText=text.substr(pos);
-  mInvitation=mCommand==16;
+ case LobbyChatCommand_Invite:case LobbyChatCommand_Uninvite:
+  this->mText=text.substr(pos);
+  this->mInvitation=this->mCommand==LobbyChatCommand_Invite;
   return true;
- case 5:case 6:case 7:case 20:case 24:
+ case LobbyChatCommand_Ignore:case LobbyChatCommand_Away:case LobbyChatCommand_Moderator:case LobbyChatCommand_Help:case LobbyChatCommand_AbortShutdown:
   return true;
- case 8:case 9:case 10:case 11:case 23:
+ case LobbyChatCommand_ServerMute:case LobbyChatCommand_ServerBan:case LobbyChatCommand_Mute:case LobbyChatCommand_Ban:case LobbyChatCommand_StartShutdown:
   {
    std::string duration=GetToken(text,pos,true,false);
    if(!(duration=="INFINITE") && duration.length()>0) {
@@ -289,16 +301,16 @@ bool ChatCommandParser::ParseCommand(const GUIString& text)
     case 'S': break;
     default: value=0;
     }
-    if(value==0) { mError=7;return false; }
+    if(value==0) { this->mError=7;return false; }
     // LOST-DEBUG: none: exact only
     EE_LOST_TRACE(text.empty());
     EE_LOST_TRACE(text.empty());
-    mDuration=value;
+    this->mDuration=value;
    }
-   mText=GetRestOfLine(text,pos);
+   this->mText=GetRestOfLine(text,pos);
   }
   return true;
- case 12:case 13: mText=GetRestOfLine(text,pos); return true;
+ case LobbyChatCommand_Unmute:case LobbyChatCommand_ServerUnmute: this->mText=GetRestOfLine(text,pos); return true;
  }
  // LOST-DEBUG: none: exact only
  EE_LOST_TRACE(text.empty());
@@ -308,28 +320,30 @@ bool ChatCommandParser::ParseCommand(const GUIString& text)
 }
 
 // FUNCTION: WON 0x757630
+// Parses a line of chat input as a slash command, a colon emote or a broadcast; false with an error code if bad
 bool ChatCommandParser::HandleInput(const GUIString& text)
 {
- mError=0;
- mTarget=NULL;
- mTargetName=GetEmptyGUIStringData();
- if(mClients.get()==NULL) { mError=6;return false; }
- if(text[0]==mPrefix) return ParseCommand(text);
- if(mAllowColonEmote && text[0]==':') {
-  mCommand=3;
-  mText=text.substr(1);
-  int pos=0;SkipWhitespace(mText,pos);
-  if(pos==mText.length()) { mError=5;return false; }
+ this->mError=0;
+ this->mTarget=NULL;
+ this->mTargetName=GetEmptyGUIStringData();
+ if(this->mClients.get()==NULL) { this->mError=6;return false; }
+ if(text[0]==this->mPrefix) return this->ParseCommand(text);
+ if(this->mAllowColonEmote && text[0]==':') {
+  this->mCommand=LobbyChatCommand_Emote;
+  this->mText=text.substr(1);
+  int pos=0;SkipWhitespace(this->mText,pos);
+  if(pos==this->mText.length()) { this->mError=5;return false; }
  } else {
-  mCommand=1;
+  this->mCommand=LobbyChatCommand_Broadcast;
   int pos=0;SkipWhitespace(text,pos);
-  if(pos==text.length()) { mError=5;return false; }
-  mText=text;
+  if(pos==text.length()) { this->mError=5;return false; }
+  this->mText=text;
  }
  return true;
 }
 
 // FUNCTION: WON 0x757800
+// Appends one help line and a line break to the help text
 void ChatCommandParser::AddHelpEntry(int command,const GUIString& entry,GUIString& out)
 {
  out.append(entry);
@@ -337,50 +351,52 @@ void ChatCommandParser::AddHelpEntry(int command,const GUIString& entry,GUIStrin
 }
 
 // FUNCTION: WON 0x7579c0
+// Builds a client's chat help; outside LAN adds block/away, invite if game captain, mute/ban if captain of this
+// room or a moderator, server mute/ban and warn if a moderator, alert if an admin; team help in game rooms
 GUIString ChatCommandParser::GetHelp(unsigned short clientId)
 {
- bool lan=(mRoomFlags>>3)&1;
- bool isIgnored=false,isAdmin=false,isModerator=false,isCaptain=false;
- if(mClients.get()!=NULL) {
-  LobbyClient* client=mClients->FindClient(clientId);
+ bool lan=(this->mRoomFlags>>3)&1;
+ bool isAdmin=false,isModerator=false,isRoomCaptain=false,isGameCaptain=false;
+ if(this->mClients.get()!=NULL) {
+  LobbyClient* client=this->mClients->FindClient(clientId);
   if(client!=NULL) {
-   isAdmin=client->Fn3A54D0();
-   isModerator=client->Fn3A54E0((mRoomFlags>>1)&1);
-   isCaptain=client->Fn3A54E0(1);
-   isIgnored=client->Fn3A54C0();
+   isModerator=client->IsModerator();
+   isRoomCaptain=client->IsCaptain((this->mRoomFlags>>1)&1);
+   isGameCaptain=client->IsCaptain(1);
+   isAdmin=client->IsAdmin();
   }
  }
  GUIString out=::ChatCommandLogic_HelpHeader_String;
  out.append(GUIString("<n>"));
- AddHelpEntry(20,::ChatCommandLogic_HelpHelp_String,out);
- AddHelpEntry(2,::ChatCommandLogic_WhisperHelp_String,out);
- AddHelpEntry(18,::ChatCommandLogic_ReplyHelp_String,out);
- AddHelpEntry(3,::ChatCommandLogic_EmoteHelp_String,out);
- AddHelpEntry(5,::ChatCommandLogic_IgnoreHelp_String,out);
- AddHelpEntry(19,::ChatCommandLogic_ClearHelp_String,out);
- if(mRoomFlags&2) AddHelpEntry(21,::ChatCommandLogic_ShowTeamHelp_String,out);
+ this->AddHelpEntry(LobbyChatCommand_Help,::ChatCommandLogic_HelpHelp_String,out);
+ this->AddHelpEntry(LobbyChatCommand_Whisper,::ChatCommandLogic_WhisperHelp_String,out);
+ this->AddHelpEntry(LobbyChatCommand_Reply,::ChatCommandLogic_ReplyHelp_String,out);
+ this->AddHelpEntry(LobbyChatCommand_Emote,::ChatCommandLogic_EmoteHelp_String,out);
+ this->AddHelpEntry(LobbyChatCommand_Ignore,::ChatCommandLogic_IgnoreHelp_String,out);
+ this->AddHelpEntry(LobbyChatCommand_Clear,::ChatCommandLogic_ClearHelp_String,out);
+ if(this->mRoomFlags&2) this->AddHelpEntry(LobbyChatCommand_ShowTeam,::ChatCommandLogic_ShowTeamHelp_String,out);
  if(!lan) {
-  AddHelpEntry(4,::ChatCommandLogic_BlockHelp_String,out);
-  AddHelpEntry(6,::ChatCommandLogic_AwayHelp_String,out);
-  if(isCaptain) {
-   AddHelpEntry(16,::ChatCommandLogic_InviteHelp_String,out);
-   AddHelpEntry(17,::ChatCommandLogic_UninviteHelp_String,out);
+  this->AddHelpEntry(LobbyChatCommand_Block,::ChatCommandLogic_BlockHelp_String,out);
+  this->AddHelpEntry(LobbyChatCommand_Away,::ChatCommandLogic_AwayHelp_String,out);
+  if(isGameCaptain) {
+   this->AddHelpEntry(LobbyChatCommand_Invite,::ChatCommandLogic_InviteHelp_String,out);
+   this->AddHelpEntry(LobbyChatCommand_Uninvite,::ChatCommandLogic_UninviteHelp_String,out);
   }
-  if(isModerator||isAdmin) {
-   AddHelpEntry(10,::ChatCommandLogic_MuteHelp_String,out);
-   AddHelpEntry(12,::ChatCommandLogic_UnmuteHelp_String,out);
-   AddHelpEntry(11,::ChatCommandLogic_BanHelp_String,out);
-   AddHelpEntry(14,::ChatCommandLogic_UnbanHelp_String,out);
-   if(isAdmin) {
-    AddHelpEntry(7,::ChatCommandLogic_ModeratorHelp_String,out);
-    AddHelpEntry(8,::ChatCommandLogic_ServerMuteHelp_String,out);
-    AddHelpEntry(13,::ChatCommandLogic_ServerUnmuteHelp_String,out);
-    AddHelpEntry(9,::ChatCommandLogic_ServerBanHelp_String,out);
-    AddHelpEntry(15,::ChatCommandLogic_ServerUnbanHelp_String,out);
-    AddHelpEntry(25,::ChatCommandLogic_WarnHelp_String,out);
+  if(isRoomCaptain||isModerator) {
+   this->AddHelpEntry(LobbyChatCommand_Mute,::ChatCommandLogic_MuteHelp_String,out);
+   this->AddHelpEntry(LobbyChatCommand_Unmute,::ChatCommandLogic_UnmuteHelp_String,out);
+   this->AddHelpEntry(LobbyChatCommand_Ban,::ChatCommandLogic_BanHelp_String,out);
+   this->AddHelpEntry(LobbyChatCommand_Unban,::ChatCommandLogic_UnbanHelp_String,out);
+   if(isModerator) {
+    this->AddHelpEntry(LobbyChatCommand_Moderator,::ChatCommandLogic_ModeratorHelp_String,out);
+    this->AddHelpEntry(LobbyChatCommand_ServerMute,::ChatCommandLogic_ServerMuteHelp_String,out);
+    this->AddHelpEntry(LobbyChatCommand_ServerUnmute,::ChatCommandLogic_ServerUnmuteHelp_String,out);
+    this->AddHelpEntry(LobbyChatCommand_ServerBan,::ChatCommandLogic_ServerBanHelp_String,out);
+    this->AddHelpEntry(LobbyChatCommand_ServerUnban,::ChatCommandLogic_ServerUnbanHelp_String,out);
+    this->AddHelpEntry(LobbyChatCommand_Warn,::ChatCommandLogic_WarnHelp_String,out);
    }
   }
-  if(isIgnored) AddHelpEntry(22,::ChatCommandLogic_AlertHelp_String,out);
+  if(isAdmin) this->AddHelpEntry(LobbyChatCommand_Alert,::ChatCommandLogic_AlertHelp_String,out);
  }
  return out;
 }

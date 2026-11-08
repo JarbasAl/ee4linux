@@ -10,129 +10,141 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00704fd0
+// Positions the viewport at the scroll offset, sized to the total content size
 void ScrollArea::SetDelegatePos()
 {
-    mViewport->Fn2F4BF0(mScrollArea.x-mHorzOffset,mScrollArea.y-mVertOffset,mL0A4,mTotalHeight);
+    this->mViewport->SetPosSize(this->mScrollArea.x-this->mHorzOffset,this->mScrollArea.y-this->mVertOffset,this->mTotalWidth,this->mTotalHeight);
 }
 // FUNCTION: WON 0x00705030
-void ScrollArea::VirtualCC(bool scrollbar)
+// Clamps the scroll offsets to the content, tells the scroller, moves the viewport and repaints
+// (a scrollbar-driven change marks the user as having scrolled)
+void ScrollArea::AdjustPosition(bool scrollbar)
 {
-    if(scrollbar) mUserHasScrolled=true;
-    if(mVertOffset+mScrollArea.height>mTotalHeight+mExtraHeight)
-        mVertOffset=mTotalHeight+mExtraHeight-mScrollArea.height;
-    if(mVertOffset<0) mVertOffset=0;
-    if(mHorzOffset+mScrollArea.width>mL0A4) mHorzOffset=mL0A4-mScrollArea.width;
-    if(mHorzOffset<0) mHorzOffset=0;
-    if(mScroller!=NULL) mScroller->NotifyScrollChange(scrollbar);
-    mAVertOffset=mVertOffset;
-    mAHorzOffset=mHorzOffset;
-    mATotalHeight=mTotalHeight;
-    mATotalWidth=mL0A4;
-    mOldScrollAreaWidth=mScrollArea.width;
-    mOldScrollAreaHeight=mScrollArea.height;
-    SetDelegatePos();
-    Invalidate();
+    if(scrollbar) this->mUserHasScrolled=true;
+    if(this->mVertOffset+this->mScrollArea.height>this->mTotalHeight+this->mExtraHeight)
+        this->mVertOffset=this->mTotalHeight+this->mExtraHeight-this->mScrollArea.height;
+    if(this->mVertOffset<0) this->mVertOffset=0;
+    if(this->mHorzOffset+this->mScrollArea.width>this->mTotalWidth) this->mHorzOffset=this->mTotalWidth-this->mScrollArea.width;
+    if(this->mHorzOffset<0) this->mHorzOffset=0;
+    if(this->mScroller!=NULL) this->mScroller->NotifyScrollChange(scrollbar);
+    this->mAVertOffset=this->mVertOffset;
+    this->mAHorzOffset=this->mHorzOffset;
+    this->mATotalHeight=this->mTotalHeight;
+    this->mATotalWidth=this->mTotalWidth;
+    this->mOldScrollAreaWidth=this->mScrollArea.width;
+    this->mOldScrollAreaHeight=this->mScrollArea.height;
+    this->SetDelegatePos();
+    this->Invalidate();
 }
-// Native23B forwarding setter support0.
 // FUNCTION: WON 0x00705130
-void ScrollArea::SetVertOffset(int offset) { mVertOffset=offset; VirtualCC(false); }
-// Native33B forwarding setter support0.
+// Scrolls to a vertical offset
+void ScrollArea::SetVertOffset(int offset) { this->mVertOffset=offset; this->AdjustPosition(false); }
 // FUNCTION: WON 0x00705150
+// Scrolls to a horizontal and vertical offset
 void ScrollArea::SetOffsets(int horizontal,int vertical)
 {
-    mHorzOffset=horizontal;
-    mVertOffset=vertical;
-    VirtualCC(false);
+    this->mHorzOffset=horizontal;
+    this->mVertOffset=vertical;
+    this->AdjustPosition(false);
 }
 // FUNCTION: WON 0x00705190
+// Returns true when scrolled down (offset > 0) to the end of the content
 bool ScrollArea::OnBottom()
 {
-    return mVertOffset>0 && mVertOffset+mScrollArea.height>=mTotalHeight;
+    return this->mVertOffset>0 && this->mVertOffset+this->mScrollArea.height>=this->mTotalHeight;
 }
 // FUNCTION: WON 0x007051c0
+// Recomputes the visible area inside the padding, keeps the view pinned to the bottom if it was there, re-clamps
 void ScrollArea::Virtual08()
 {
     Container::Virtual08();
-    bool bottom=OnBottom();
-    mScrollArea.x=mLeftPad;
-    mScrollArea.y=mTopPad;
-    mScrollArea.width=Width()-mRightPad-mLeftPad;
-    mScrollArea.height=Height()-mBottomPad-mTopPad;
-    if(mScrollArea.Width()<0) mScrollArea.width=0;
-    if(mScrollArea.Height()<0) mScrollArea.height=0;
-    if(bottom) mVertOffset=mTotalHeight+mExtraHeight-mScrollArea.Height();
-    VirtualD0();
-    VirtualCC(false);
+    bool bottom=this->OnBottom();
+    this->mScrollArea.x=this->mLeftPad;
+    this->mScrollArea.y=this->mTopPad;
+    this->mScrollArea.width=this->Width()-this->mRightPad-this->mLeftPad;
+    this->mScrollArea.height=this->Height()-this->mBottomPad-this->mTopPad;
+    if(this->mScrollArea.Width()<0) this->mScrollArea.width=0;
+    if(this->mScrollArea.Height()<0) this->mScrollArea.height=0;
+    if(bottom) this->mVertOffset=this->mTotalHeight+this->mExtraHeight-this->mScrollArea.Height();
+    this->ScrollSizeChanged();
+    this->AdjustPosition(false);
 }
 // FUNCTION: WON 0x00705270
+// Sets the border padding on each side and lays out again when it changed
 void ScrollArea::SetBorderPadding(int left,int top,int right,int bottom)
 {
-    if(mLeftPad==left && mRightPad==right && mTopPad==top && mBottomPad==bottom) return;
-    mLeftPad=left;mTopPad=top;mRightPad=right;mBottomPad=bottom;
-    Virtual08();
+    if(this->mLeftPad==left && this->mRightPad==right && this->mTopPad==top && this->mBottomPad==bottom) return;
+    this->mLeftPad=left;this->mTopPad=top;this->mRightPad=right;this->mBottomPad=bottom;
+    this->Virtual08();
 }
 // FUNCTION: WON 0x00705390
+// Converts a point from scroll area coordinates to content coordinates
 void ScrollArea::ScrollTranslate(int& x,int& y)
 {
-    x+=mHorzOffset-mScrollArea.x;
-    y+=mVertOffset-mScrollArea.y;
+    x+=this->mHorzOffset-this->mScrollArea.x;
+    y+=this->mVertOffset-this->mScrollArea.y;
 }
 // FUNCTION: WON 0x007053d0
+// Converts a point from content coordinates to scroll area coordinates
 void ScrollArea::ScrollUntranslate(int& x,int& y)
 {
-    x+=mScrollArea.x-mHorzOffset;
-    y+=mScrollArea.y-mVertOffset;
+    x+=this->mScrollArea.x-this->mHorzOffset;
+    y+=this->mScrollArea.y-this->mVertOffset;
 }
 // FUNCTION: WON 0x00705410
-bool ScrollArea::Virtual3C(int amount)
+// Scrolls up by the wheel amount unless a child handled the wheel; always handled
+bool ScrollArea::MouseWheel(int amount)
 {
-    if(Container::Virtual3C(amount)) return true;
-    mUserHasScrolled=true;
-    mVertOffset-=amount;
-    VirtualCC(false);
+    if(Container::MouseWheel(amount)) return true;
+    this->mUserHasScrolled=true;
+    this->mVertOffset-=amount;
+    this->AdjustPosition(false);
     return true;
 }
 // FUNCTION: WON 0x00705450
+// Resizes the scroll area to fit the whole content (at least the given minimum) plus padding
 void ScrollArea::SetSizeEqualToTotal(int minWidth,int minHeight)
 {
-    int width=mL0A4,height=mTotalHeight;
+    int width=this->mTotalWidth,height=this->mTotalHeight;
     if(minWidth>width) width=minWidth;
     if(minHeight>height) height=minHeight;
-    Fn2F4B90(width+mLeftPad+mRightPad,height+mTopPad+mBottomPad);
+    this->SetSize(width+this->mLeftPad+this->mRightPad,height+this->mTopPad+this->mBottomPad);
 }
 // FUNCTION: WON 0x007054a0
-void ScrollArea::Virtual0C(int& width,int& height)
+// Returns the content size, capped at 300x300
+void ScrollArea::GetDesiredSize(int& width,int& height)
 {
-    if(mL0A4<300) width=mL0A4;
+    if(this->mTotalWidth<300) width=this->mTotalWidth;
     else width=300;
-    if(mTotalHeight<300) height=mTotalHeight;
+    if(this->mTotalHeight<300) height=this->mTotalHeight;
     else height=300;
 }
-// Original80B rectangle predicate wrapper. Direct borrowed rectangle expression
-// expands actual external349450 (edge inequalities intentionally asymmetric);support0.
+// WONRectangle::Intersects expands inline here (out-of-line copy at 0x00749450); its edge tests are asymmetric.
 // FUNCTION: WON 0x007054f0
+// Returns true when a content rectangle overlaps the currently visible part of the content
 bool ScrollArea::IsRectVisible(const WONRectangle& r)
 {
-    WONRectangle view=mScrollArea;
-    view.x=mHorzOffset;
-    view.y=mVertOffset;
+    WONRectangle view=this->mScrollArea;
+    view.x=this->mHorzOffset;
+    view.y=this->mVertOffset;
     return r.Intersects(view);
 }
 }
 namespace WONAPI {
 // FUNCTION: WON 0x007052d0
+// Paints the background at the scroll offset, then the children and the scrolled content clipped to the view
 void ScrollArea::Paint(Graphics &g)
 {
-	mBackground.Paint(g,0,0,Width(),Height(),mHorzOffset,mVertOffset);
-	g.PushClipRect(mScrollArea.x,mScrollArea.y,mScrollArea.width,mScrollArea.height);
+	this->mBackground.Paint(g,0,0,this->Width(),this->Height(),this->mHorzOffset,this->mVertOffset);
+	g.PushClipRect(this->mScrollArea.x,this->mScrollArea.y,this->mScrollArea.width,this->mScrollArea.height);
 
 	Container::Paint(g);
 
 	int dx = 0, dy = 0;
-	ScrollTranslate(dx,dy);
+	this->ScrollTranslate(dx,dy);
 	g.Translate(-dx,-dy);
 
-	VirtualD4(g);
+	this->ScrollPaint(g);
 
 	g.Translate(dx,dy);
 
@@ -141,48 +153,48 @@ void ScrollArea::Paint(Graphics &g)
 }
 
 namespace WONAPI {
-// Native304df0..304f73: actualviewport creation/child ownership and scroll setup,387B.
 // FUNCTION: WON 0x00704df0
+// Creates an empty scroll area with its viewport child, line scroll steps of 10 and no padding or scroller
 ScrollArea::ScrollArea()
 {
-    mViewport=new ScrollAreaViewport(this);
-    Fn2F6A60(mViewport.get());
-    mUpScrollAmount=mDownScrollAmount=10;
-    mLeftScrollAmount=mRightScrollAmount=10;
-    mVertOffset=mHorzOffset=mTotalHeight=mL0A4=0;
-    mAVertOffset=mAHorzOffset=mATotalHeight=mATotalWidth=0;
-    mExtraHeight=0;
-    mOldScrollAreaWidth=mOldScrollAreaHeight=0;
-    mLeftPad=mRightPad=mTopPad=mBottomPad=0;
-    mScroller=NULL;
-    mUserHasScrolled=false;
+    this->mViewport=new ScrollAreaViewport(this);
+    this->AddChild(this->mViewport.get());
+    this->mUpScrollAmount=this->mDownScrollAmount=10;
+    this->mLeftScrollAmount=this->mRightScrollAmount=10;
+    this->mVertOffset=this->mHorzOffset=this->mTotalHeight=this->mTotalWidth=0;
+    this->mAVertOffset=this->mAHorzOffset=this->mATotalHeight=this->mATotalWidth=0;
+    this->mExtraHeight=0;
+    this->mOldScrollAreaWidth=this->mOldScrollAreaHeight=0;
+    this->mLeftPad=this->mRightPad=this->mTopPad=this->mBottomPad=0;
+    this->mScroller=NULL;
+    this->mUserHasScrolled=false;
 }
 }
 
 namespace WONAPI {
-// Genuine SDK ScrollPaint empty default, sharednative2fa500/3; primary/physicalnew0.
-void ScrollArea::VirtualD4(Graphics&) {}
+// Paints no scrolled content by default (the linker folds this empty body into the identical one at 0x006fa500)
+void ScrollArea::ScrollPaint(Graphics&) {}
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK scroll content dimensions.
+// Sets the content size and re-clamps the scroll position (not identified in the original exe)
 void ScrollArea::SetScrollDimension(int theWidth, int theHeight)
 {
-	mL0A4 = theWidth;
-	mTotalHeight = theHeight;
-	VirtualCC(false);
+	this->mTotalWidth = theWidth;
+	this->mTotalHeight = theHeight;
+	this->AdjustPosition(false);
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK scroller selection and registration.
+// Attach a scrollbar or scroll button, creating the matching scroller on first use (not identified in the original exe)
 void ScrollArea::SetScrollbar(Scrollbar *theScrollbar)
 {
-	ScrollbarScroller *aScroller = dynamic_cast<ScrollbarScroller*>(mScroller);
+	ScrollbarScroller *aScroller = dynamic_cast<ScrollbarScroller*>(this->mScroller);
 	if(aScroller==NULL)
 	{
 		aScroller = new ScrollbarScroller;
-		SetScroller(aScroller);
+		this->SetScroller(aScroller);
 	}
 
 	aScroller->SetScrollbar(theScrollbar);
@@ -190,11 +202,11 @@ void ScrollArea::SetScrollbar(Scrollbar *theScrollbar)
 
 void ScrollArea::SetScrollButton(Button *theButton, Direction theDirection)
 {
-	ButtonScroller *aScroller = dynamic_cast<ButtonScroller*>(mScroller);
+	ButtonScroller *aScroller = dynamic_cast<ButtonScroller*>(this->mScroller);
 	if(aScroller==NULL)
 	{
 		aScroller = new ButtonScroller;
-		SetScroller(aScroller);
+		this->SetScroller(aScroller);
 	}
 
 	aScroller->SetButton(theButton, theDirection);
@@ -202,9 +214,8 @@ void ScrollArea::SetScrollButton(Button *theButton, Direction theDirection)
 }
 
 namespace WONAPI {
-// Genuine SDK explicit out-of-line ScrollSizeChanged empty default; Source support only.
-// SOURCE_ONLY_NO_NATIVE_ID: existing mapped slot/signature, zero Native/primary/physical credit.
-void ScrollArea::VirtualD0()
+// Hook called when the visible area is resized; empty by default (not identified in the original exe)
+void ScrollArea::ScrollSizeChanged()
 {
 }
 }

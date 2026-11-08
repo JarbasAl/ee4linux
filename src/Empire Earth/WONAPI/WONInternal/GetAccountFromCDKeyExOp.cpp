@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK account-from-product-key protocol.
-// Missing unit proposed existing DBProxy/account family profile.
+// No original address identified: WON SDK account-from-CD-key DBProxy operation
 #include <windows.h>
 #include <string>
 #include <list>
@@ -27,30 +26,30 @@ GetAccountFromCDKeyExOp::GetAccountFromCDKeyExOp(ServerContext* theContext, std:
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetAccountFromCDKeyExOp::Virtual04()
+void GetAccountFromCDKeyExOp::RunHook()
 {
-	mMessageType=1002;
-	mSubMessageType=MSGTYPE;
+	this->mMessageType=1002;
+	this->mSubMessageType=MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
 
 	// Append the CDKey (string)
-	requestData.AppendString(mCDKey,2);
+	requestData.AppendString(this->mCDKey,2);
 
 	// Append the community (unsigned long)
-	requestData.AppendLong(mCommunity);
+	requestData.AppendLong(this->mCommunity);
 	
 	// Append the Reset or Ban flag
-	requestData.AppendByte(mActionFlag);
+	requestData.AppendByte(this->mActionFlag);
 
 	// Append the profile data
-	mProfileData->PackRequestData(requestData,true);
+	this->mProfileData->PackRequestData(requestData,true);
 
 	// Copy buffer into the class
-	mRequestData=requestData.ToByteBuffer(true);
+	this->mRequestData=requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 

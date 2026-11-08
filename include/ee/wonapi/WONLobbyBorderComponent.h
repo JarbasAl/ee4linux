@@ -2,8 +2,7 @@
 #define EE_WONAPI_WONLOBBYBORDERCOMPONENT_H
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Complete genuine SDK owner: eight retained children and eight borrowed views.
-// Source-only identity; no opaque allocation, field guesses or handwritten implicit lifetime.
+// Border container: eight retained children and eight borrowed views (not identified in the original exe).
 class BorderComponent : public Container
 {
 public:

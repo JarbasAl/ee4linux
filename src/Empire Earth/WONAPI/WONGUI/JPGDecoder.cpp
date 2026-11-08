@@ -1,4 +1,4 @@
-// Native image codec adapters; source-only, no runtime substitution authority.
+// JPEG image decoder on libjpeg, reading through a FileReader
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -29,14 +29,14 @@ struct my_source_mgr {
 };
 typedef my_source_mgr* my_src_ptr;
 
-// Actual noreturn callback3d2cb0..3d2cce, support0; not linear665 scanner overrun.
+// libjpeg error handler: prints the message and jumps back to the decoder's setjmp (emitted at 0x007d2cb0)
 static void my_error_exit(j_common_ptr cinfo)
 {
     my_error_ptr error=(my_error_ptr)cinfo->err;
     (*cinfo->err->output_message)(cinfo);
     longjmp(error->setjmp_buffer,1);
 }
-// Native source-init12/term-empty1 support0.
+// Source manager callbacks: init marks the start of the file, term does nothing
 static void init_source(j_decompress_ptr cinfo)
 {
     my_src_ptr source=(my_src_ptr)cinfo->src;
@@ -45,6 +45,8 @@ static void init_source(j_decompress_ptr cinfo)
 static void term_source(j_decompress_ptr) {}
 
 // FUNCTION: WON 0x007d2b30
+// Refills the libjpeg input buffer with up to 4 KB from the file reader; at end of data, errors on an empty file
+// or warns and inserts a fake end-of-image marker
 static boolean fill_input_buffer(j_decompress_ptr cinfo)
 {
     my_src_ptr source=(my_src_ptr)cinfo->src;
@@ -63,6 +65,7 @@ static boolean fill_input_buffer(j_decompress_ptr cinfo)
     return TRUE;
 }
 // FUNCTION: WON 0x007d2ba0
+// Skips input bytes, first from the buffer, then by skipping the rest in the file reader
 static void skip_input_data(j_decompress_ptr cinfo,long bytes)
 {
     my_src_ptr source=(my_src_ptr)cinfo->src;
@@ -76,10 +79,11 @@ static void skip_input_data(j_decompress_ptr cinfo,long bytes)
     }
 }
 // FUNCTION: WON 0x007d2ac0
+// Sets up a libjpeg source manager that reads from a FileReader (allocated once per decompressor)
 void jpeg_filereader_src(j_decompress_ptr cinfo,WONAPI::FileReader* reader)
 {
     if(cinfo->src==NULL)
-        cinfo->src=(jpeg_source_mgr*)(*cinfo->mem->alloc_small)((j_common_ptr)cinfo,JPOOL_PERMANENT,sizeof(my_source_mgr));
+        cinfo->src=(jpeg_source_mgr*)(*cinfo->mem->alloc_small)(reinterpret_cast<j_common_ptr>(cinfo),JPOOL_PERMANENT,sizeof(my_source_mgr));
     my_src_ptr source=(my_src_ptr)cinfo->src;
     source->mReader=reader;
     source->pub.init_source=init_source;
@@ -93,8 +97,8 @@ void jpeg_filereader_src(j_decompress_ptr cinfo,WONAPI::FileReader* reader)
 }}
 using namespace WONJPG;
 namespace WONAPI {
-// Native registration150 andDuplicate80 support0, actual fieldless8 decoder.
 // FUNCTION: WON 0x007d2a20
+// Registers one JPEG decoder with a multi-decoder for the jpg, jpe, jpeg and pjpeg extensions
 void JPGDecoder::Add(MultiImageDecoder* decoder)
 {
     JPGDecoder* jpg=new JPGDecoder;
@@ -104,9 +108,11 @@ void JPGDecoder::Add(MultiImageDecoder* decoder)
     decoder->AddDecoder(jpg,"pjpeg");
 }
 // FUNCTION: WON 0x007d2f50
+// Creates a new JPEG decoder
 ImageDecoder* JPGDecoder::Duplicate() { return new JPGDecoder; }
 
 // FUNCTION: WON 0x007d2bf0
+// Reads the JPEG header to get the image size; false on a libjpeg error
 bool JPGDecoder::DoGetAttrib(ImageAttributes& attributes)
 {
     jpeg_decompress_struct cinfo;
@@ -118,7 +124,7 @@ bool JPGDecoder::DoGetAttrib(ImageAttributes& attributes)
         return false;
     }
     jpeg_create_decompress(&cinfo);
-    jpeg_filereader_src(&cinfo,mFileReader);
+    jpeg_filereader_src(&cinfo,this->mFileReader);
     (void)jpeg_read_header(&cinfo,TRUE);
     (void)jpeg_start_decompress(&cinfo);
     attributes.mWidth=cinfo.output_width;
@@ -128,6 +134,8 @@ bool JPGDecoder::DoGetAttrib(ImageAttributes& attributes)
 }
 
 // FUNCTION: WON 0x007d2cd0
+// Decodes the JPEG into a 32-bit raw image (greyscale expanded to RGB); NULL on a libjpeg error, leaking any
+// image already allocated
 SmartPtr<RawImage> JPGDecoder::DoDecodeRaw()
 {
     jpeg_decompress_struct cinfo;
@@ -139,13 +147,13 @@ SmartPtr<RawImage> JPGDecoder::DoDecodeRaw()
         return NULL;
     }
     jpeg_create_decompress(&cinfo);
-    jpeg_filereader_src(&cinfo,mFileReader);
+    jpeg_filereader_src(&cinfo,this->mFileReader);
     (void)jpeg_read_header(&cinfo,TRUE);
     (void)jpeg_start_decompress(&cinfo);
     int stride=cinfo.output_width*cinfo.output_components;
-    JSAMPARRAY rows=(*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo,JPOOL_IMAGE,stride,1);
+    JSAMPARRAY rows=(*cinfo.mem->alloc_sarray)(reinterpret_cast<j_common_ptr>(&cinfo),JPOOL_IMAGE,stride,1);
     int width=cinfo.output_width,height=cinfo.output_height;
-    // Target directly allocates the complete concrete24B RawImage32 owner.
+    // Allocates the RawImage32 directly (not through CreateRawImage32)
     SmartPtr<RawImage32> image=new RawImage32(width,height);
     image->StartRowTraversal(0);
     while(cinfo.output_scanline<cinfo.output_height) {

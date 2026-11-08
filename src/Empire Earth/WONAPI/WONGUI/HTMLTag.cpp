@@ -1,4 +1,5 @@
-// Source-only reconstructed WONGUI HTML tags; no runtime substitution authority.
+// HTML tag classes: attribute parsing per tag, and the attribute set with its int, size, align and colour
+// readers (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <cstdio>
@@ -26,127 +27,136 @@ template class WONAPI::SmartPtr<GUIStringData>;
 ///////////////////////////////////////////////////////////////////////////////
 HTMLTag::HTMLTag(HTMLTagType theType, unsigned short theFlags)
 {
-	mType = theType;
-	mFlags = theFlags;
+	this->mType = theType;
+	this->mFlags = theFlags;
 }
 
 // FUNCTION: WON 0x007449e0
+// Creates a tag of the given type and flags (the constructor body just above)
 // (??0HTMLTag@WONAPI@@QAE@W4HTMLTagType@1@G@Z)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00744a10
+// Creates a BODY tag with no colours set, 10-pixel side margins and 15-pixel top and bottom margins
 HTMLBodyTag::HTMLBodyTag() : HTMLTag(HTMLTagType_Body)
 {
-	mBGColor = -1;
-	mTextColor = -1;
-	mLinkColor = -1;
-	mALinkColor = -1;
+	this->mBGColor = -1;
+	this->mTextColor = -1;
+	this->mLinkColor = -1;
+	this->mALinkColor = -1;
 
-	mLeftMargin = mRightMargin = 10;
-	mTopMargin = mBottomMargin = 15;
+	this->mLeftMargin = this->mRightMargin = 10;
+	this->mTopMargin = this->mBottomMargin = 15;
 }
 
 // FUNCTION: WON 0x00744ab0
+// Deletes a BODY tag (compiler-generated deleting destructor, emitted here)
 // (??_GHTMLBodyTag@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x00744ad0
+// Destroys a BODY tag (compiler-generated destructor, emitted here)
 // (??1HTMLBodyTag@WONAPI@@UAE@XZ)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00744b60
+// Reads the page colours, background image and margins; LEFT/RIGHT/TOP/BOTTOMMARGIN override
+// MARGINWIDTH and MARGINHEIGHT
 void HTMLBodyTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mBGColor = theAttributes.GetColor("BGCOLOR");
-	mTextColor = theAttributes.GetColor("TEXT");
-	mLinkColor = theAttributes.GetColor("LINK");
-	mALinkColor = theAttributes.GetColor("ALINK");
-	theAttributes.GetAttribute("BACKGROUND",mBGImageSrc); 
+	this->mBGColor = theAttributes.GetColor("BGCOLOR");
+	this->mTextColor = theAttributes.GetColor("TEXT");
+	this->mLinkColor = theAttributes.GetColor("LINK");
+	this->mALinkColor = theAttributes.GetColor("ALINK");
+	theAttributes.GetAttribute("BACKGROUND",this->mBGImageSrc); 
 
-	if(theAttributes.GetIntParam("MARGINWIDTH",mLeftMargin))
-		mRightMargin = mLeftMargin;
-	if(theAttributes.GetIntParam("MARGINHEIGHT",mTopMargin))
-		mBottomMargin = mTopMargin;
+	if(theAttributes.GetIntParam("MARGINWIDTH",this->mLeftMargin))
+		this->mRightMargin = this->mLeftMargin;
+	if(theAttributes.GetIntParam("MARGINHEIGHT",this->mTopMargin))
+		this->mBottomMargin = this->mTopMargin;
 
-	theAttributes.GetIntParam("LEFTMARGIN",mLeftMargin);
-	theAttributes.GetIntParam("RIGHTMARGIN",mRightMargin);
-	theAttributes.GetIntParam("TOPMARGIN",mTopMargin);
-	theAttributes.GetIntParam("BOTTOMMARGIN",mBottomMargin);
+	theAttributes.GetIntParam("LEFTMARGIN",this->mLeftMargin);
+	theAttributes.GetIntParam("RIGHTMARGIN",this->mRightMargin);
+	theAttributes.GetIntParam("TOPMARGIN",this->mTopMargin);
+	theAttributes.GetIntParam("BOTTOMMARGIN",this->mBottomMargin);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00744fa0
+// Reads CLEAR (LEFT, RIGHT or ALL) into the clear-left and clear-right flags
 void HTMLLineBreakTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
 	GUIString *aParam = theAttributes.GetAttribute("CLEAR");
-	if(aParam!=NULL)
-	{
-		if(aParam->CompareNoCase("LEFT")==0)
-			mClearLeft = true;
-		else if(aParam->CompareNoCase("RIGHT")==0)
-			mClearRight = true;
-		else if(aParam->CompareNoCase("ALL")==0)
-			mClearLeft = mClearRight = true;
-	}
+	if(aParam==NULL)
+		return;
+	if(aParam->CompareNoCase("LEFT")==0)
+		this->mClearLeft = true;
+	else if(aParam->CompareNoCase("RIGHT")==0)
+		this->mClearRight = true;
+	else if(aParam->CompareNoCase("ALL")==0)
+		this->mClearLeft = this->mClearRight = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007450e0
+// Reads the rule's size (default 2), width, NOSHADE and alignment (default centred)
 void HTMLHorizontalRuleTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mSize = 0;
-	theAttributes.GetIntParam("SIZE",mSize);
-	if(mSize<=0)
-		mSize = 2;
+	this->mSize = 0;
+	theAttributes.GetIntParam("SIZE",this->mSize);
+	if(this->mSize<=0)
+		this->mSize = 2;
 
-	mWidthSpec = theAttributes.GetAbsOrPercentParam("WIDTH");
-	mNoShade = theAttributes.GetAttribute("NOSHADE")!=NULL;
+	this->mWidthSpec = theAttributes.GetAbsOrPercentParam("WIDTH");
+	this->mNoShade = theAttributes.GetAttribute("NOSHADE")!=NULL;
 
-	mAlign = HTMLAlign_Center;
+	this->mAlign = HTMLAlign_Center;
 	GUIString *aParam = theAttributes.GetAttribute("ALIGN");
-	if(aParam!=NULL)
-	{
-		if(StringCompareNoCase(*aParam,"RIGHT")==0)
-			mAlign = HTMLAlign_Right;
-		else if(StringCompareNoCase(*aParam,"LEFT")==0)
-			mAlign = HTMLAlign_Left;
-	}
+	if(aParam==NULL)
+		return;
+	if(StringCompareNoCase(*aParam,"RIGHT")==0)
+		this->mAlign = HTMLAlign_Right;
+	else if(StringCompareNoCase(*aParam,"LEFT")==0)
+		this->mAlign = HTMLAlign_Left;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007453f0
+// Reads the link target and anchor name; TARGET=_browser opens the link in the external browser
 void HTMLAnchorTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	theAttributes.GetAttribute("HREF",mHRef);
-	theAttributes.GetAttribute("NAME",mName);
+	theAttributes.GetAttribute("HREF",this->mHRef);
+	theAttributes.GetAttribute("NAME",this->mName);
 
 	GUIString *aTarget = theAttributes.GetAttribute("TARGET");
-	mLaunchBrowser = aTarget!=NULL && aTarget->CompareNoCase("_browser")==0;
+	this->mLaunchBrowser = aTarget!=NULL && aTarget->CompareNoCase("_browser")==0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007455d0
+// Reads the heading's block alignment
 void HTMLHeadingTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mAlign = theAttributes.GetBlockAlign("ALIGN");
+	this->mAlign = theAttributes.GetBlockAlign("ALIGN");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00745690
+// Reads the first font face, the size (absolute, or +n/-n relative to 3, clamped to 1-7) and the colour
 void HTMLFontTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	theAttributes.GetAttribute("FACE",mFace);
-	int aCommaPos = mFace.find(',',0);
+	theAttributes.GetAttribute("FACE",this->mFace);
+	int aCommaPos = this->mFace.find(',',0);
 	if(aCommaPos>=0)
-		mFace.resize(aCommaPos);
+		this->mFace.resize(aCommaPos);
 
-	mSize = 0;
+	this->mSize = 0;
 	GUIString *aParam = theAttributes.GetAttribute("SIZE");
 	if(aParam!=NULL && !(aParam->length()==0))
 	{
@@ -156,85 +166,89 @@ void HTMLFontTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 			int aVal = aParam->mData->ToInt(1);
 			if(aStartChar=='+')
 			{
-				mSize = 3 + aVal;
-				if(mSize>7)
-					mSize = 7;
+				this->mSize = 3 + aVal;
+				if(this->mSize>7)
+					this->mSize = 7;
 			}
 			else
 			{
-				mSize = 3 - aVal;
-				if(mSize < 1)
-					mSize = 1;
+				this->mSize = 3 - aVal;
+				if(this->mSize < 1)
+					this->mSize = 1;
 			}
 		}
 		else
-			mSize = aParam->mData->ToInt(0);
+			this->mSize = aParam->mData->ToInt(0);
 	}
 
-	mColor = theAttributes.GetColor("COLOR");
+	this->mColor = theAttributes.GetColor("COLOR");
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007458c0
+// Reads the block's alignment
 void HTMLBlockTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mAlign = theAttributes.GetBlockAlign("ALIGN");
+	this->mAlign = theAttributes.GetBlockAlign("ALIGN");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00745980
+// Reads the image map's name
 void HTMLImageMapTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	theAttributes.GetAttribute("NAME",mName);
+	theAttributes.GetAttribute("NAME",this->mName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00745a40
+// Reads the image source, alignment (LEFT/RIGHT add 3 pixels of side space), spacing, size, the
+// '#'-prefixed USEMAP name and the border
 void HTMLImageTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	theAttributes.GetAttribute("SRC",mSrc);
+	theAttributes.GetAttribute("SRC",this->mSrc);
 
-	mAlign = HTMLAlign_None;
-	mHSpace = mVSpace = 0;
-	mWidth = mHeight = 0;
-	mBorder = -1;
+	this->mAlign = HTMLAlign_None;
+	this->mHSpace = this->mVSpace = 0;
+	this->mWidth = this->mHeight = 0;
+	this->mBorder = -1;
 
 	GUIString *aParam = theAttributes.GetAttribute("ALIGN");
 	if(aParam!=NULL)
 	{
 		if(aParam->CompareNoCase("LEFT")==0)
 		{
-			mAlign = HTMLAlign_Left;
-			mHSpace = 3;
+			this->mAlign = HTMLAlign_Left;
+			this->mHSpace = 3;
 		}
 		else if(aParam->CompareNoCase("RIGHT")==0)
 		{
-			mAlign = HTMLAlign_Right;
-			mHSpace = 3;
+			this->mAlign = HTMLAlign_Right;
+			this->mHSpace = 3;
 		}
 		else if(aParam->CompareNoCase("MIDDLE")==0)
-			mAlign = HTMLAlign_Middle;
+			this->mAlign = HTMLAlign_Middle;
 		else if(aParam->CompareNoCase("TOP")==0)
-			mAlign = HTMLAlign_Top;
+			this->mAlign = HTMLAlign_Top;
 	}
 
-	theAttributes.GetIntParam("HSPACE",mHSpace);
-	theAttributes.GetIntParam("VSPACE",mVSpace);
+	theAttributes.GetIntParam("HSPACE",this->mHSpace);
+	theAttributes.GetIntParam("VSPACE",this->mVSpace);
 
-	theAttributes.GetIntParam("WIDTH",mWidth);
-	theAttributes.GetIntParam("HEIGHT",mHeight);
+	theAttributes.GetIntParam("WIDTH",this->mWidth);
+	theAttributes.GetIntParam("HEIGHT",this->mHeight);
 	
 	aParam  = theAttributes.GetAttribute("USEMAP");
 	if(aParam!=NULL && aParam->mData.mPtr->mLength>1 && aParam->mData.mPtr->mText[0]==0x23)
-		mUseMap = aParam->substr(1);
+		this->mUseMap = aParam->substr(1);
 
 	// LOST-DEBUG: none: exact only (the USEMAP temp's dtor expands, BORDER's stays a call)
 	EE_LOST_DEBUG(1);
-	theAttributes.GetIntParam("BORDER",mBorder);
+	theAttributes.GetIntParam("BORDER",this->mBorder);
 }
 
 
@@ -242,10 +256,11 @@ void HTMLImageTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00745e60
+// Reads the area's link and its four COORDS; the area is valid only when all four were read
 void HTMLAreaTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mIsValid = false;
-	theAttributes.GetAttribute("HREF",mHRef);
+	this->mIsValid = false;
+	theAttributes.GetAttribute("HREF",this->mHRef);
 
 
 	GUIString *aParamStr = theAttributes.GetAttribute("COORDS");
@@ -253,164 +268,175 @@ void HTMLAreaTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 		return;
 
 	string aParam = *aParamStr;
-	mLeft = mTop = mRight = mBottom = -1;
-	sscanf(aParam.c_str(),"%d,%d,%d,%d",&mLeft,&mTop,&mRight,&mBottom);
-	if(mLeft==-1 || mTop==-1 || mRight==-1 || mBottom==-1)
+	this->mLeft = this->mTop = this->mRight = this->mBottom = -1;
+	sscanf(aParam.c_str(),"%d,%d,%d,%d",&this->mLeft,&this->mTop,&this->mRight,&this->mBottom);
+	if(this->mLeft==-1 || this->mTop==-1 || this->mRight==-1 || this->mBottom==-1)
 		return;
 
-	mIsValid = true;
+	this->mIsValid = true;
 	GUIString *aTarget= theAttributes.GetAttribute("TARGET");
-	mLaunchBrowser = aTarget!=NULL && aTarget->CompareNoCase("_browser")==0;
+	this->mLaunchBrowser = aTarget!=NULL && aTarget->CompareNoCase("_browser")==0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00746100
+// Reads the list's bullet or numbering style from TYPE (case-sensitive for ordered lists) and START
+// (at least 1)
 void HTMLListTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	if(GetType()==HTMLTagType_OrderedList)
+	if(this->GetType()==HTMLTagType_OrderedList)
 	{
-		mListType = HTMLListType_Digit;
+		this->mListType = HTMLListType_Digit;
 		GUIString *aParam = theAttributes.GetAttribute("TYPE");
 		if(aParam!=NULL)
 		{
 			if(aParam->compare("1") == 0)
-				mListType = HTMLListType_Digit;
+				this->mListType = HTMLListType_Digit;
 			else if(aParam->compare("a") == 0)
-				mListType = HTMLListType_LowerLetter;
+				this->mListType = HTMLListType_LowerLetter;
 			else if(aParam->compare("A") == 0)
-				mListType = HTMLListType_UpperLetter;
+				this->mListType = HTMLListType_UpperLetter;
 			else if(aParam->compare("i") == 0)
-				mListType = HTMLListType_LowerRoman;
+				this->mListType = HTMLListType_LowerRoman;
 			else if(aParam->compare("I") == 0)
-				mListType = HTMLListType_UpperRoman;
+				this->mListType = HTMLListType_UpperRoman;
 		}
 	}
 	else
 	{
-		mListType = HTMLListType_None;
+		this->mListType = HTMLListType_None;
 		GUIString *aParam = theAttributes.GetAttribute("TYPE");
 		if(aParam!=NULL)
 		{
 			if(aParam->CompareNoCase("disc")==0)
-				mListType = HTMLListType_Disc;
+				this->mListType = HTMLListType_Disc;
 			else if(aParam->CompareNoCase("circle")==0)
-				mListType = HTMLListType_Circle;
+				this->mListType = HTMLListType_Circle;
 			else if(aParam->CompareNoCase("square")==0)
-				mListType = HTMLListType_Square;
+				this->mListType = HTMLListType_Square;
 		}
 	}
 
-	mStart = 1;
-	theAttributes.GetIntParam("START",mStart);
-	if(mStart<1)
-		mStart = 1;
+	this->mStart = 1;
+	theAttributes.GetIntParam("START",this->mStart);
+	if(this->mStart<1)
+		this->mStart = 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007463c0
+// Gives the list item a disc bullet (its attributes are ignored)
 void HTMLListItemTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mListType = HTMLListType_Disc;
+	this->mListType = HTMLListType_Disc;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007463d0
+// Reads the table's spacing, padding, border (a bare BORDER means 1), background colour, width and
+// alignment
 void HTMLTableTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mCellSpacing = 2;
-	mCellPadding = 1;
-	mBorder = 0;
+	this->mCellSpacing = 2;
+	this->mCellPadding = 1;
+	this->mBorder = 0;
 
-	theAttributes.GetIntParam("CELLSPACING",mCellSpacing);
-	theAttributes.GetIntParam("CELLPADDING",mCellPadding);
-	theAttributes.GetIntParam("BORDER",mBorder);
+	theAttributes.GetIntParam("CELLSPACING",this->mCellSpacing);
+	theAttributes.GetIntParam("CELLPADDING",this->mCellPadding);
+	theAttributes.GetIntParam("BORDER",this->mBorder);
 
 	GUIString *aParam = theAttributes.GetAttribute("BORDER"); 
 	if(aParam!=NULL)
 	{
-		mBorder = aParam->mData->ToInt(0);
-		if(mBorder==0 && (*aParam)[0]!='0') // border may be a boolean
-			mBorder = 1;
+		this->mBorder = aParam->mData->ToInt(0);
+		if(this->mBorder==0 && (*aParam)[0]!='0') // border may be a boolean
+			this->mBorder = 1;
 	}
 
-	mBGColor = theAttributes.GetColor("BGCOLOR");
-	mWidthSpec = theAttributes.GetAbsOrPercentParam("WIDTH");
+	this->mBGColor = theAttributes.GetColor("BGCOLOR");
+	this->mWidthSpec = theAttributes.GetAbsOrPercentParam("WIDTH");
 
-	mAlign = theAttributes.GetStandardHAlign("ALIGN");
+	this->mAlign = theAttributes.GetStandardHAlign("ALIGN");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007466f0
+// Reads the row's background colour and its horizontal (default left) and vertical (default middle)
+// alignment
 void HTMLTableRowTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mBGColor = theAttributes.GetColor("BGCOLOR");
-	mHAlign = theAttributes.GetTableDataHAlign("ALIGN",HTMLAlign_Left);
-	mVAlign = theAttributes.GetTableDataVAlign("VALIGN",HTMLAlign_Middle);
+	this->mBGColor = theAttributes.GetColor("BGCOLOR");
+	this->mHAlign = theAttributes.GetTableDataHAlign("ALIGN",HTMLAlign_Left);
+	this->mVAlign = theAttributes.GetTableDataVAlign("VALIGN",HTMLAlign_Middle);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007468c0
+// Reads the cell's colour, alignment (TH defaults to centred), NOWRAP, row and column spans (at least 1),
+// width and height
 void HTMLTableDataTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	mBGColor = theAttributes.GetColor("BGCOLOR");
-	mHAlign = theAttributes.GetTableDataHAlign("ALIGN",GetType()==HTMLTagType_TableData?HTMLAlign_Left:HTMLAlign_Center);
-	mVAlign = theAttributes.GetTableDataVAlign("VALIGN");
+	this->mBGColor = theAttributes.GetColor("BGCOLOR");
+	this->mHAlign = theAttributes.GetTableDataHAlign("ALIGN",this->GetType()==HTMLTagType_TableData?HTMLAlign_Left:HTMLAlign_Center);
+	this->mVAlign = theAttributes.GetTableDataVAlign("VALIGN");
 
-	mNoWrap = theAttributes.GetAttribute("NOWRAP")!=NULL;
-	mRowSpan = mColSpan = 0;
-	theAttributes.GetIntParam("ROWSPAN",mRowSpan);
-	theAttributes.GetIntParam("COLSPAN",mColSpan);
+	this->mNoWrap = theAttributes.GetAttribute("NOWRAP")!=NULL;
+	this->mRowSpan = this->mColSpan = 0;
+	theAttributes.GetIntParam("ROWSPAN",this->mRowSpan);
+	theAttributes.GetIntParam("COLSPAN",this->mColSpan);
 	
-	if(mRowSpan<=0) mRowSpan = 1;
-	if(mColSpan<=0) mColSpan = 1;
+	if(this->mRowSpan<=0) this->mRowSpan = 1;
+	if(this->mColSpan<=0) this->mColSpan = 1;
 
-	mWidthSpec = mHeight = 0;
-	mWidthSpec = theAttributes.GetAbsOrPercentParam("WIDTH");
-	theAttributes.GetIntParam("HEIGHT",mHeight);
+	this->mWidthSpec = this->mHeight = 0;
+	this->mWidthSpec = theAttributes.GetAbsOrPercentParam("WIDTH");
+	theAttributes.GetIntParam("HEIGHT",this->mHeight);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00746c40
+// Reads the input kind from TYPE (default text) unless already set, its value (Submit/Reset get default
+// captions), image source, or text size, length limit and read-only flag
 void HTMLInputTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 {
-	if(mInputType==HTMLInputType_None)
+	if(this->mInputType==HTMLInputType_None)
 	{
 		GUIString aType;
 		theAttributes.GetAttribute("TYPE",aType);
 
-		if(aType.CompareNoCase("Button")==0) mInputType = HTMLInputType_Button;
-		else if(aType.CompareNoCase("Submit")==0) mInputType = HTMLInputType_Submit;
-		else if(aType.CompareNoCase("Reset")==0) mInputType = HTMLInputType_Reset;
-		else if(aType.CompareNoCase("Radio")==0) mInputType = HTMLInputType_Radio;
-		else if(aType.CompareNoCase("Checkbox")==0) mInputType = HTMLInputType_Checkbox;
-		else if(aType.CompareNoCase("Hidden")==0) mInputType = HTMLInputType_Hidden;
-		else if(aType.CompareNoCase("Image")==0) mInputType = HTMLInputType_Image;
-		else if(aType.CompareNoCase("Select")==0) mInputType = HTMLInputType_Select;
-		else if(aType.CompareNoCase("Password")==0) mInputType = HTMLInputType_Password;
-		else mInputType = HTMLInputType_Text;
+		if(aType.CompareNoCase("Button")==0) this->mInputType = HTMLInputType_Button;
+		else if(aType.CompareNoCase("Submit")==0) this->mInputType = HTMLInputType_Submit;
+		else if(aType.CompareNoCase("Reset")==0) this->mInputType = HTMLInputType_Reset;
+		else if(aType.CompareNoCase("Radio")==0) this->mInputType = HTMLInputType_Radio;
+		else if(aType.CompareNoCase("Checkbox")==0) this->mInputType = HTMLInputType_Checkbox;
+		else if(aType.CompareNoCase("Hidden")==0) this->mInputType = HTMLInputType_Hidden;
+		else if(aType.CompareNoCase("Image")==0) this->mInputType = HTMLInputType_Image;
+		else if(aType.CompareNoCase("Select")==0) this->mInputType = HTMLInputType_Select;
+		else if(aType.CompareNoCase("Password")==0) this->mInputType = HTMLInputType_Password;
+		else this->mInputType = HTMLInputType_Text;
 	}
 
-	theAttributes.GetAttribute("VALUE",mValue);
+	theAttributes.GetAttribute("VALUE",this->mValue);
 
-	switch(mInputType)
+	switch(this->mInputType)
 	{
-		case HTMLInputType_Submit: if((mValue.length()==0)) mValue = "Submit";	break;
-		case HTMLInputType_Reset: if((mValue.length()==0)) mValue = "Reset";		break;
-		case HTMLInputType_Image: theAttributes.GetAttribute("SRC",mImageSrc);	break;
+		case HTMLInputType_Submit: if((this->mValue.length()==0)) this->mValue = "Submit";	break;
+		case HTMLInputType_Reset: if((this->mValue.length()==0)) this->mValue = "Reset";		break;
+		case HTMLInputType_Image: theAttributes.GetAttribute("SRC",this->mImageSrc);	break;
 		
 		case HTMLInputType_Password:
 		case HTMLInputType_Text:		
-			mSize = 20;
-			mMaxLength = 0;
-			theAttributes.GetIntParam("SIZE",mSize);
-			theAttributes.GetIntParam("MAXLENGTH",mMaxLength);
-			mReadOnly = theAttributes.GetAttribute("READONLY")!=NULL;
+			this->mSize = 20;
+			this->mMaxLength = 0;
+			theAttributes.GetIntParam("SIZE",this->mSize);
+			theAttributes.GetIntParam("MAXLENGTH",this->mMaxLength);
+			this->mReadOnly = theAttributes.GetAttribute("READONLY")!=NULL;
 			break;
 	}
 }
@@ -427,32 +453,35 @@ void HTMLInputTag::ParseAttributes(HTMLTagAttributes &theAttributes)
 ///////////////////////////////////////////////////////////////////////////////
 
 // FUNCTION: WON 0x00747140
+// Removes every attribute
 void HTMLTagAttributes::Clear()
 {	
-	mAttributeMap.clear();
+	this->mAttributeMap.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 GUIString* HTMLTagAttributes::GetAttribute(const GUIString &theKey)
 {
-	AttributeMap::iterator anItr = mAttributeMap.find(theKey);
-	if(anItr==mAttributeMap.end())
+	AttributeMap::iterator anItr = this->mAttributeMap.find(theKey);
+	if(anItr==this->mAttributeMap.end())
 		return NULL;
 	else
 		return &(anItr->second);
 }
 
 // FUNCTION: WON 0x007471f0
+// Returns the named attribute's value, or null when the tag lacks it (the body just above)
 // (?GetAttribute@HTMLTagAttributes@WONAPI@@QAEPAVGUIString@2@ABV32@@Z)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00747220
+// Copies the named attribute's value out, or an empty string when the tag lacks it
 void HTMLTagAttributes::GetAttribute(const GUIString &theKey, GUIString &theValue)
 {
-	AttributeMap::iterator anItr = mAttributeMap.find(theKey);
-	if(anItr==mAttributeMap.end())
+	AttributeMap::iterator anItr = this->mAttributeMap.find(theKey);
+	if(anItr==this->mAttributeMap.end())
 		theValue.erase();
 	else
 		theValue = anItr->second;
@@ -461,9 +490,10 @@ void HTMLTagAttributes::GetAttribute(const GUIString &theKey, GUIString &theValu
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007472d0
+// Sets an attribute's value, replacing any earlier one of the same name
 void HTMLTagAttributes::AddAttribute(const GUIString &theKey, const GUIString &theValue)
 {
-	mAttributeMap[theKey] = theValue;
+	this->mAttributeMap[theKey] = theValue;
 }
 
 
@@ -484,9 +514,10 @@ static int GetHexDigit(char theChar)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00747330
+// Reads the named attribute as an integer; returns false (value untouched) when absent or not a number
 bool HTMLTagAttributes::GetIntParam(const GUIString &theKey, int &theInt)
 {
-	GUIString *aParam = GetAttribute(theKey);
+	GUIString *aParam = this->GetAttribute(theKey);
 	if(aParam==NULL)
 		return false; 
 
@@ -500,9 +531,10 @@ bool HTMLTagAttributes::GetIntParam(const GUIString &theKey, int &theInt)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00747480
+// Returns the named size in pixels, or a percentage as a negative number; 0 when absent or empty
 int HTMLTagAttributes::GetAbsOrPercentParam(const GUIString &theKey)
 {
-	GUIString *aParam = GetAttribute(theKey);
+	GUIString *aParam = this->GetAttribute(theKey);
 	if(aParam==NULL || (aParam->length()==0))
 		return 0;
 
@@ -515,9 +547,10 @@ int HTMLTagAttributes::GetAbsOrPercentParam(const GUIString &theKey)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007474d0
+// Returns the named block alignment (CENTER, RIGHT, LEFT; JUSTIFY counts as left), else the default
 HTMLAlign HTMLTagAttributes::GetBlockAlign(const GUIString &theKey, HTMLAlign theDefault)
 {
-	GUIString *anAlignStr = GetAttribute(theKey);
+	GUIString *anAlignStr = this->GetAttribute(theKey);
 	if(anAlignStr==NULL)
 		return theDefault;
 
@@ -536,9 +569,10 @@ HTMLAlign HTMLTagAttributes::GetBlockAlign(const GUIString &theKey, HTMLAlign th
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00747560
+// Returns the named horizontal alignment (CENTER, RIGHT, LEFT), else the default
 HTMLAlign HTMLTagAttributes::GetStandardHAlign(const GUIString &theKey, HTMLAlign theDefault)
 {
-	GUIString *anAlignStr = GetAttribute(theKey);
+	GUIString *anAlignStr = this->GetAttribute(theKey);
 	if(anAlignStr==NULL)
 		return theDefault;
 
@@ -555,9 +589,10 @@ HTMLAlign HTMLTagAttributes::GetStandardHAlign(const GUIString &theKey, HTMLAlig
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007475d0
+// Returns a cell's horizontal alignment (LEFT, CENTER or MIDDLE, RIGHT), else the default
 HTMLAlign HTMLTagAttributes::GetTableDataHAlign(const GUIString &theKey, HTMLAlign theDefault)
 {
-	GUIString *anAlign = GetAttribute(theKey);
+	GUIString *anAlign = this->GetAttribute(theKey);
 	if(anAlign==NULL)
 		return theDefault;
 
@@ -576,9 +611,10 @@ HTMLAlign HTMLTagAttributes::GetTableDataHAlign(const GUIString &theKey, HTMLAli
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00747650
+// Returns a cell's vertical alignment (TOP, MIDDLE or CENTER, BOTTOM), else the default
 HTMLAlign HTMLTagAttributes::GetTableDataVAlign(const GUIString &theKey, HTMLAlign theDefault)
 {
-	GUIString *anAlign = GetAttribute(theKey);
+	GUIString *anAlign = this->GetAttribute(theKey);
 	if(anAlign==NULL)
 		return theDefault;
 
@@ -598,9 +634,11 @@ HTMLAlign HTMLTagAttributes::GetTableDataVAlign(const GUIString &theKey, HTMLAli
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007476e0
+// Returns the named colour as 0xRRGGBB from a colour name or hex digits ('#' optional), or -1; later
+// table entries win (Green is 0x00FF00, Purple 0xA020F0), and without '#' the end test looks one digit ahead
 int HTMLTagAttributes::GetColor(const GUIString &theKey)
 {
-	GUIString *aStr = GetAttribute(theKey);
+	GUIString *aStr = this->GetAttribute(theKey);
 	if(aStr==NULL)
 		return -1;
 
@@ -806,6 +844,7 @@ int HTMLTagAttributes::GetColor(const GUIString &theKey)
 
 
 // FUNCTION: WON 0x007478e0
+// Destroys the colour name map at exit
 // (_$E72)
 
 // Compiler-generated and header-inline functions this unit emits:

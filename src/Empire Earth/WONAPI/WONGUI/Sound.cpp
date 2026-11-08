@@ -10,56 +10,57 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/EELobbySound.h"
 namespace WONAPI {
-// Native329810/25, direct default initialization, support0.
-SoundDescriptor::SoundDescriptor() { mL00=0; }
-// Native329830/341 including complete std::string copy expansion, support0.
+// Creates an empty sound descriptor with no flags (emitted at 0x00729810)
+SoundDescriptor::SoundDescriptor() { this->mSoundFlags=0; }
+// Creates a sound descriptor for a file path with the given flags (emitted at 0x00729830)
 SoundDescriptor::SoundDescriptor(const std::string& path,long flags) :mPath(path)
 {
-    mL00=flags;
+    this->mSoundFlags=flags;
 }
-// Native329990/36 flag setter, support0.
 // FUNCTION: WON 0x00729990
+// Sets or clears the given sound flags
 void SoundDescriptor::SetSoundFlags(int flags,bool on)
 {
-    if(on) mL00|=flags;
-    else mL00&=~flags;
+    if(on) this->mSoundFlags|=flags;
+    else this->mSoundFlags&=~flags;
 }
-// Native3299c0/378, direct complete descriptor-field copy and default state, support0.
+// Creates a sound from a copy of the descriptor, not looping (emitted at 0x007299c0)
 Sound::Sound(const SoundDescriptor& descriptor)
     :mDescriptor(descriptor)
 {
-    mIsLooping=false;
+    this->mIsLooping=false;
 }
-// Native329bd0/21, public play gate wrapper, support0.
 // FUNCTION: WON 0x00729bd0
-void Sound::Fn329BD0()
+// Plays the sound unless it is muted
+void Sound::Play()
 {
-    if(!GetMuted()) PlayHook();
+    if(!this->GetMuted()) this->PlayHook();
 }
 // FUNCTION: WON 0x00729bf0
-void Sound::Fn329BF0(bool muted)
+// Mutes or unmutes the sound (flag 4); muting stops it
+void Sound::SetMuted(bool muted)
 {
-    if(muted==GetMuted()) return;
-    mDescriptor.SetSoundFlags(4,muted);
-    if(muted) Stop();
+    if(muted==this->GetMuted()) return;
+    this->mDescriptor.SetSoundFlags(4,muted);
+    if(muted) this->Stop();
 }
 }
 
-// Genuine SDK Sound.cpp public APIs. Existing complete Sound20 receiver and virtual hooks.
+// Stop and Resume forward to the playback hooks
 void WONAPI::Sound::Stop()
 {
-    StopHook();
+    this->StopHook();
 }
 void WONAPI::Sound::Resume()
 {
-    ResumeHook();
+    this->ResumeHook();
 }
 
-// Genuine SDK Sound.cpp GetMuted; native329c20/9. Existing flags08 and SoundFlag_Muted4.
 // FUNCTION: WON 0x00729c20
+// Returns true when the sound's muted flag (4) is set
 bool WONAPI::Sound::GetMuted()
 {
-    return (mDescriptor.mL00&4)?true:false;
+    return (this->mDescriptor.mSoundFlags&4)?true:false;
 }
 
 namespace WONAPI {
@@ -67,13 +68,13 @@ namespace WONAPI {
 
 SoundDescriptor::SoundDescriptor(const char *thePath) : mPath(thePath)
 {
-	mL00 = 0;
+	this->mSoundFlags = 0;
 }
 
 
 void Sound::Rewind()
 {
-	RewindHook();
+	this->RewindHook();
 }
 }
 

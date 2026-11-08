@@ -1,4 +1,4 @@
-// Localized text for a WONStatus (LobbyFn366170).
+// Localized text for a WONStatus (GetWONStatusString).
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,12 +11,14 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyCore.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 const char* WONStatusToString(WONStatus);
 }
 using namespace WONAPI;
 
 // FUNCTION: WON 0x00766a60
+// Formats a failure message with the status's internal description filled in
 static GUIString GeneralStatusError(const GUIString& text,WONStatus status)
 {
     const char* description=WONStatusToString(status);
@@ -24,7 +26,9 @@ static GUIString GeneralStatusError(const GUIString& text,WONStatus status)
 }
 namespace WONAPI {
 // FUNCTION: WON 0x00766170
-GUIString LobbyFn366170(WONStatus status)
+// Returns the player-facing message for a WON status: a specific text for account, login and server errors,
+// else a generic HTTP, MOTD, routing, GameSpy or general failure text with the status description
+GUIString GetWONStatusString(WONStatus status)
 {
     GUIString aString;
     switch(status) {
@@ -220,180 +224,180 @@ GUIString LobbyFn366170(WONStatus status)
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
     case -3:
         return ::WONStatus_NotAllowed_String;
-    case 0:
+    case WS_Success:
         return ::WONStatus_Success_String;
-    case 10004:
-    case 10009:
-    case 10013:
-    case 10014:
-    case 10022:
-    case 10024:
-    case 10035:
-    case 10036:
-    case 10037:
-    case 10038:
-    case 10039:
-    case 10040:
-    case 10041:
-    case 10042:
-    case 10043:
-    case 10044:
-    case 10045:
-    case 10046:
-    case 10047:
-    case 10048:
-    case 10049:
-    case 10050:
-    case 10051:
-    case 10052:
-    case 10053:
-    case 10054:
-    case 10055:
-    case 10056:
-    case 10057:
-    case 10058:
-    case 10059:
-    case 10060:
-    case 10062:
-    case 10063:
-    case 10064:
-    case 10065:
-    case 10066:
-    case 10067:
-    case 10068:
-    case 10069:
-    case 10070:
-    case 10071:
+    case WS_WSAEINTR:
+    case WS_WSAEBADF:
+    case WS_WSAEACCES:
+    case WS_WSAEFAULT:
+    case WS_WSAEINVAL:
+    case WS_WSAEMFILE:
+    case WS_WSAEWOULDBLOCK:
+    case WS_WSAEINPROGRESS:
+    case WS_WSAEALREADY:
+    case WS_WSAENOTSOCK:
+    case WS_WSAEDESTADDRREQ:
+    case WS_WSAEMSGSIZE:
+    case WS_WSAEPROTOTYPE:
+    case WS_WSAENOPROTOOPT:
+    case WS_WSAEPROTONOSUPPORT:
+    case WS_WSAESOCKTNOSUPPORT:
+    case WS_WSAEOPNOTSUPP:
+    case WS_WSAEPFNOSUPPORT:
+    case WS_WSAEAFNOSUPPORT:
+    case WS_WSAEADDRINUSE:
+    case WS_WSAEADDRNOTAVAIL:
+    case WS_WSAENETDOWN:
+    case WS_WSAENETUNREACH:
+    case WS_WSAENETRESET:
+    case WS_WSAECONNABORTED:
+    case WS_WSAECONNRESET:
+    case WS_WSAENOBUFS:
+    case WS_WSAEISCONN:
+    case WS_WSAENOTCONN:
+    case WS_WSAESHUTDOWN:
+    case WS_WSAETOOMANYREFS:
+    case WS_WSAETIMEDOUT:
+    case WS_WSAELOOP:
+    case WS_WSAENAMETOOLONG:
+    case WS_WSAEHOSTDOWN:
+    case WS_WSAEHOSTUNREACH:
+    case WS_WSAENOTEMPTY:
+    case WS_WSAEPROCLIM:
+    case WS_WSAEUSERS:
+    case WS_WSAEDQUOT:
+    case WS_WSAESTALE:
+    case WS_WSAEREMOTE:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
-    case 10061:
+    case WS_WSAECONNREFUSED:
         return ::WONStatus_ConnRefused_String;
-    case 100001:
+    case WS_TimedOut:
         return ::WONStatus_TimedOut_String;
-    case 100002:
+    case WS_Killed:
         return ::WONStatus_Killed_String;
-    case 100000:
-    case 100003:
-    case 100004:
-    case 100005:
-    case 100006:
-    case 100007:
-    case 100008:
-    case 100009:
-    case 100010:
-    case 100011:
-    case 100012:
-    case 100013:
+    case WS_Pending:
+    case WS_Incomplete:
+    case WS_None:
+    case WS_AwaitingCompletion:
+    case WS_InvalidMessage:
+    case WS_FailedToOpenFile:
+    case WS_FailedToWriteToFile:
+    case WS_BlockMode_NotSupported:
+    case WS_AsyncMode_NotSupported:
+    case WS_InvalidPublicKey:
+    case WS_MessageUnpackFailure:
+    case WS_AuthRequired:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
-    case 100014:
+    case WS_InvalidAddress:
         return ::WONStatus_InvalidAddress_String;
-    case 100015:
-    case 100016:
-    case 100017:
-    case 100018:
-    case 100019:
-    case 100020:
+    case WS_NoReply:
+    case WS_AsyncSocket_InvalidSocket:
+    case WS_AsyncSocket_PartialSendTo:
+    case WS_AsyncSocket_StreamNotAllowed:
+    case WS_AsyncSocket_DatagramNotAllowed:
+    case WS_AsyncSocket_Shutdown:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
-    case 100021:
+    case WS_AsyncSocket_ConnectFailed:
         return ::WONStatus_ConnRefused_String;
-    case 100022:
-    case 100023:
-    case 100024:
+    case WS_SocketOp_InvalidSocket:
+    case WS_RecvMsg_InvalidLengthFieldSize:
+    case WS_RecvMsg_InvalidMessageLength:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
-    case 100025:
-    case 100026:
-    case 100027:
-    case 100028:
-    case 100029:
-    case 100030:
-    case 100031:
-    case 100032:
-    case 100033:
-    case 100034:
-    case 100035:
-    case 100036:
-    case 100037:
-    case 100038:
-    case 100039:
-    case 100040:
-    case 100041:
-    case 100042:
-    case 100043:
-    case 100044:
-    case 100045:
-    case 100046:
-    case 100047:
-    case 100048:
-    case 100049:
-    case 100050:
-    case 100051:
-    case 100052:
-    case 100053:
+    case WS_PeerAuthClient_Challenge1DecryptFailure:
+    case WS_PeerAuthClient_Challenge1InvalidSecretLen:
+    case WS_PeerAuthClient_Challenge1InvalidSecretKey:
+    case WS_PeerAuthClient_Challenge1CertificateUnpackFailure:
+    case WS_PeerAuthClient_Challenge1CertificateVerifyFailure:
+    case WS_PeerAuthClient_Challenge2EncryptFailure:
+    case WS_PeerAuthClient_CompleteDecryptFailure:
+    case WS_PeerAuthClient_CompleteInvalidSecretLen:
+    case WS_PeerAuthClient_CompleteInvalidSecretKey:
+    case WS_PeerAuthClient_InvalidServiceType:
+    case WS_PeerAuthClient_UnexpectedChallenge:
+    case WS_PeerAuthClient_InvalidMessage:
+    case WS_PeerAuthClient_MsgUnpackFailure:
+    case WS_PeerAuthServer_NotStarted:
+    case WS_PeerAuthServer_InvalidServiceType:
+    case WS_PeerAuthServer_UnexpectedRequest:
+    case WS_PeerAuthServer_UnexpectedChallenge:
+    case WS_PeerAuthServer_InvalidMessage:
+    case WS_PeerAuthServer_MsgUnpackFailure:
+    case WS_PeerAuthServer_InvalidAuthMode:
+    case WS_PeerAuthServer_InvalidEncryptType:
+    case WS_PeerAuthServer_InvalidClientCertificate:
+    case WS_PeerAuthServer_ExpiredClientCertificate:
+    case WS_PeerAuthServer_FailedToVerifyClientCertificate:
+    case WS_PeerAuthServer_FailedToEncryptWithClientPubKey:
+    case WS_PeerAuthServer_FailedToDecryptWithPrivateKey:
+    case WS_PeerAuthServer_InvalidSecretA:
+    case WS_PeerAuthServer_InvalidSecretB:
+    case WS_PeerAuth_GetCertFailure:
         return GeneralStatusError(::WONStatus_AuthFailure_String,status);
-    case 100054:
-    case 100055:
-    case 100056:
-    case 100057:
-    case 100058:
-    case 100059:
-    case 100060:
-    case 100061:
-    case 100062:
-    case 100063:
-    case 100064:
+    case WS_ServerReq_FailedAllServers:
+    case WS_ServerReq_NoServersSpecified:
+    case WS_ServerReq_NeedAuthContext:
+    case WS_ServerReq_TryNextServer:
+    case WS_ServerReq_Send:
+    case WS_ServerReq_Recv:
+    case WS_ServerReq_ExitCommunicationLoop:
+    case WS_ServerReq_SessionExpired:
+    case WS_ServerReq_GetCertFailure:
+    case WS_ServerReq_InvalidReplyHeader:
+    case WS_ServerReq_UnpackFailure:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
-    case 100065:
-    case 100066:
-    case 100067:
-    case 100068:
-    case 100069:
-    case 100070:
-    case 100071:
-    case 100072:
-    case 100073:
-    case 100074:
-    case 100075:
-    case 100076:
-    case 100077:
-    case 100078:
-    case 100079:
-    case 100080:
-    case 100081:
-    case 100082:
-    case 100083:
-    case 100084:
-    case 100085:
-    case 100086:
-    case 100087:
+    case WS_GetCert_PubKeyEncryptFailure:
+    case WS_GetCert_InvalidPubKeyReply:
+    case WS_GetCert_InvalidLoginReply:
+    case WS_GetCert_UnableToFindHashFile:
+    case WS_GetCert_UnexpectedLoginChallenge:
+    case WS_GetCert_NeedVerifierKey:
+    case WS_GetCert_FailedToVerifyPubKeyBlock:
+    case WS_GetCert_InvalidCertificate:
+    case WS_GetCert_InvalidPubKeyBlock:
+    case WS_GetCert_DecryptFailure:
+    case WS_GetCert_InvalidPrivateKey:
+    case WS_GetCert_InvalidSecretConfirm:
+    case WS_GetCert_MissingCertificate:
+    case WS_AuthData_SetCertificateUnpackFailed:
+    case WS_AuthData_SetPubKeyBlockUnpackFailed:
+    case WS_AuthData_SetCertificateVerifyFailed:
+    case WS_AuthData_SetPrivateKeyFailed:
+    case WS_AuthSession_EncryptFailure:
+    case WS_AuthSession_DecryptSessionIdMismatch:
+    case WS_AuthSession_DecryptFailure:
+    case WS_AuthSession_DecryptBadLen:
+    case WS_AuthSession_DecryptInvalidSequenceNum:
+    case WS_AuthSession_DecryptUnpackFailure:
         return GeneralStatusError(::WONStatus_AuthFailure_String,status);
-    case 100088:
+    case WS_ServerConnection_RecvNotAllowedInAsyncMode:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
-    case 100089:
-    case 100090:
-    case 100091:
+    case WS_FTP_InvalidResponse:
+    case WS_FTP_StatusError:
+    case WS_FTP_InvalidPasvResponse:
         return GeneralStatusError(::WONStatus_FTPFailure_String,status);
-    case 100092:
-    case 100093:
-    case 100094:
-    case 100095:
-    case 100096:
-    case 100097:
+    case WS_HTTP_InvalidHeader:
+    case WS_HTTP_StatusError:
+    case WS_HTTP_InvalidRedirect:
+    case WS_HTTP_TooManyRedirects:
+    case WS_HTTP_Redirected:
+    case WS_HTTP_SendSuccess:
         return GeneralStatusError(::WONStatus_HTTPFailure_String,status);
-    case 100098:
-    case 100099:
+    case WS_GetMOTD_SysNotFound:
+    case WS_GetMOTD_GameNotFound:
         return GeneralStatusError(::WONStatus_MOTDFailure_String,status);
-    case 100100:
-    case 100101:
-    case 100102:
+    case WS_BaseMsgRequest_NoRequest:
+    case WS_BaseMsgRequest_UnpackFailure:
+    case WS_BaseMsgRequest_BadHeaderType:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);
-    case 100103:
-    case 100104:
-    case 100105:
+    case WS_RoutingOp_ReplyUnpackFailure:
+    case WS_RoutingOp_DontWantReply:
+    case WS_RoutingOp_NeedMoreReplies:
         return GeneralStatusError(::WONStatus_RoutingFailure_String,status);
-    case 100106:
-    case 100107:
-    case 100108:
-    case 100109:
-    case 100110:
+    case WS_GameSpySupport_UnhandledError:
+    case WS_GameSpySupport_WinSockError:
+    case WS_GameSpySupport_BindError:
+    case WS_GameSpySupport_DNSError:
+    case WS_GameSpySupport_ConnError:
         return GeneralStatusError(::WONStatus_GameSpyFailure_String,status);
     default:
         return GeneralStatusError(::WONStatus_GeneralFailure_String,status);

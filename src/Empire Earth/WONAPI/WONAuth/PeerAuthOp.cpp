@@ -1,4 +1,4 @@
-// Native-backed client peer authentication operation and tracked asynchronous flow.
+// PeerAuthOp: connects a socket to a peer and runs the client peer authentication, blocking or asynchronous
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <time.h>
@@ -11,38 +11,42 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONAuthPeerData.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006e6a10
+// Creates a peer auth op for an address, auth context, auth type and socket
 PeerAuthOp::PeerAuthOp(const IPAddr &theAddr, AuthContext *theAuthContext, AuthType theType, 
 					   BlockingSocket *theSocket, bool useAuth2) : mConnectAddr(theAddr)
 {
-	mAuthContext = theAuthContext;
-	mAuthType = theType;
-	mSocket = theSocket;
-	mPeerAuthClient.SetUseAuth2(useAuth2);
+	this->mAuthContext = theAuthContext;
+	this->mAuthType = theType;
+	this->mSocket = theSocket;
+	this->mPeerAuthClient.SetUseAuth2(useAuth2);
 }
 
 // FUNCTION: WON 0x006e6d10
+// Destroys the op (members only)
 PeerAuthOp::~PeerAuthOp()
 {
 }
 
 // FUNCTION: WON 0x006e6ed0
+// Advances the asynchronous handshake on socket and certificate-refresh completions; false for unknown ops
 bool PeerAuthOp::CallbackHook(AsyncOp *theOp, int theParam)
 {
 	switch(theParam)
 	{
 		case PeerAuth_Track_Socket:
 		{
-			if(theOp->GetStatus()!=0)
+			if(theOp->GetStatus()!=WS_Success)
 			{
-				Fn29F220(theOp->GetStatus());
+				this->Finish(theOp->GetStatus());
 				break;
 			}
 
-			if(mAuthType==AUTH_TYPE_NONE) // just connecting
+			if(this->mAuthType==AUTH_TYPE_NONE) // just connecting
 			{
-				Fn29F220(0);
+				this->Finish(WS_Success);
 				break;
 			}
 
@@ -52,45 +56,45 @@ bool PeerAuthOp::CallbackHook(AsyncOp *theOp, int theParam)
 
 			ByteBufferPtr aSendMsg;
 			ByteBufferPtr aRecvMsg = aRecvOp->GetMsg();
-			WONStatus aStatus = mPeerAuthClient.HandleRecvMsg(aRecvMsg->data(),aRecvMsg->length(),aSendMsg);
+			WONStatus aStatus = this->mPeerAuthClient.HandleRecvMsg(aRecvMsg->data(),aRecvMsg->length(),aSendMsg);
 			if(aStatus==(-4) || aStatus==(-19)) // expired certificate
 			{
-				mPeerAuthClient.Reset();
-				switch(mGetCertStatus)
+				this->mPeerAuthClient.Reset();
+				switch(this->mGetCertStatus)
 				{
-					case 100004: AsyncRefreshCert(); break;
-					case 100000: break;
-					case 0: AsyncRetry(); break;
-					default: Fn29F220(100053);
+					case WS_None: this->AsyncRefreshCert(); break;
+					case WS_Pending: break;
+					case WS_Success: this->AsyncRetry(); break;
+					default: this->Finish(WS_PeerAuth_GetCertFailure);
 				}	
 
 				break;
 			}
-			else if(CheckStatus(aStatus))
+			else if(this->CheckStatus(aStatus))
 				break;
 
 			if(aSendMsg.get()==NULL) 
-				Success(); 				// done
+				this->Success(); 				// done
 			else
-				AsyncSend(aSendMsg.get()); 	// Need to send more stuff
+				this->AsyncSend(aSendMsg.get()); 	// Need to send more stuff
 		}
 		break;
 
 
 		case PeerAuth_Track_GetCert:
 		{
-			LightGetCertOp *aGetCert = (LightGetCertOp*)theOp;
-			mGetCertStatus = aGetCert->GetStatus();
-			mPeerData = aGetCert->GetPeerData();
-			if(mPeerAuthClient.GetState()==PeerAuthClient::STATE_NOT_STARTED)
+			LightGetCertOp *aGetCert = static_cast<LightGetCertOp*>(theOp);
+			this->mGetCertStatus = aGetCert->GetStatus();
+			this->mPeerData = aGetCert->GetPeerData();
+			if(this->mPeerAuthClient.GetState()==PeerAuthClient::STATE_NOT_STARTED)
 			{
-				if(mGetCertStatus!=0)
+				if(this->mGetCertStatus!=WS_Success)
 				{
-					Fn29F220(100053);
+					this->Finish(WS_PeerAuth_GetCertFailure);
 					break;
 				}
 				else
-					AsyncRetry();
+					this->AsyncRetry();
 			}
 		}
 		break;
@@ -105,82 +109,88 @@ bool PeerAuthOp::CallbackHook(AsyncOp *theOp, int theParam)
 
 
 // FUNCTION: WON 0x006e71a0
+// Reconnects and resends the auth request after a certificate refresh
 void PeerAuthOp::AsyncRetry()
 {
-	mGetCertStatus = (-4); 
-	AsyncConnect();
-	AsyncSend(mPeerAuthClient.Start(mPeerData.get(),mAuthType,mLengthFieldSize).get());
+	this->mGetCertStatus = (-4); 
+	this->AsyncConnect();
+	this->AsyncSend(this->mPeerAuthClient.Start(this->mPeerData.get(),this->mAuthType,this->mLengthFieldSize).get());
 }
 
 // FUNCTION: WON 0x006e7240
+// Queues a send of the message followed by a receive on the socket
 void PeerAuthOp::AsyncSend(const ByteBuffer *theMsg)
 {
-	mSocket->Fn2B4740((SocketOp*)Track(new SendMsgOp(theMsg),PeerAuth_Track_Socket), SendTime());
-	mSocket->Fn2B4740((SocketOp*)Track(new RecvMsgOp,PeerAuth_Track_Socket), RecvTime());
+	this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(new SendMsgOp(theMsg),PeerAuth_Track_Socket)), this->SendTime());
+	this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(new RecvMsgOp,PeerAuth_Track_Socket)), this->RecvTime());
 }
 
 // FUNCTION: WON 0x006e7370
+// Queues a connect to the peer address on the socket
 void PeerAuthOp::AsyncConnect()
 {
-	mSocket->Fn2B4740((SocketOp*)Track(new ConnectOp(mConnectAddr),PeerAuth_Track_Socket), ConnectTime());
+	this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(new ConnectOp(this->mConnectAddr),PeerAuth_Track_Socket)), this->ConnectTime());
 }
 
 // FUNCTION: WON 0x006e74a0
+// Asks the auth context for a fresh certificate and tracks the request
 void PeerAuthOp::AsyncRefreshCert()
 {
-	mGetCertStatus = 100000;
+	this->mGetCertStatus = WS_Pending;
 	SmartPtr<LightGetCertOp> aGetCert = new LightGetCertOp;
-	Track(aGetCert.get(),PeerAuth_Track_GetCert);
-	mAuthContext->RefreshAsync(aGetCert.get());
+	this->Track(aGetCert.get(),PeerAuth_Track_GetCert);
+	this->mAuthContext->RefreshAsync(aGetCert.get());
 }
 
 // FUNCTION: WON 0x006e75f0
+// Starts the asynchronous flow: refreshes a soon-expiring certificate, then connects and sends the request
 void PeerAuthOp::AsyncRun()
 {
-	mGetCertStatus = 100004;
-	if(mAuthType!=AUTH_TYPE_NONE)
+	this->mGetCertStatus = WS_None;
+	if(this->mAuthType!=AUTH_TYPE_NONE)
 	{
-		if(mPeerData->CertificateExpired(120))
-			AsyncRefreshCert();
+		if(this->mPeerData->CertificateExpired(120))
+			this->AsyncRefreshCert();
 
-		if(mPeerData->CertificateExpired(30)) // don't even try until get the certificate
+		if(this->mPeerData->CertificateExpired(30)) // don't even try until get the certificate
 			return;
 	}
 
-	AsyncConnect();
-	if(mAuthType!=AUTH_TYPE_NONE)
-		AsyncSend(mPeerAuthClient.Start(mPeerData.get(),mAuthType,mLengthFieldSize).get());		
+	this->AsyncConnect();
+	if(this->mAuthType!=AUTH_TYPE_NONE)
+		this->AsyncSend(this->mPeerAuthClient.Start(this->mPeerData.get(),this->mAuthType,this->mLengthFieldSize).get());		
 }
 
 // FUNCTION: WON 0x006e76d0
-void PeerAuthOp::Virtual04()
+// Runs the handshake: async flow, or blocking connect/request/challenges, refreshing once on an expired cert
+void PeerAuthOp::RunHook()
 {	
-	mLengthFieldSize = mSocket->GetLengthFieldSize();
-	mPeerAuthClient.SetClientKeySize(mClientKeySize, mUseClientKey);
+	this->mLengthFieldSize = this->mSocket->GetLengthFieldSize();
+	this->mPeerAuthClient.SetClientKeySize(this->mClientKeySize, this->mUseClientKey);
 
-	if(mAuthType!=AUTH_TYPE_NONE)
-		mPeerData = mAuthContext->GetPeerData();
+	if(this->mAuthType!=AUTH_TYPE_NONE)
+		this->mPeerData = this->mAuthContext->GetPeerData();
 
 	// Asynchronous operation
-	if(mRunMode==OP_MODE_ASYNC)
+	if(this->mRunMode==OP_MODE_ASYNC)
 	{
-		AsyncRun();
+		this->AsyncRun();
 		return;
 	}
 
 	// Blocking operation
 
 	// Refresh certificate if necessary
-	if(mAuthType!=AUTH_TYPE_NONE && mPeerData->CertificateExpired(30))
+	if(this->mAuthType!=AUTH_TYPE_NONE && this->mPeerData->CertificateExpired(30))
 	{
-		mGetCertStatus = mAuthContext->RefreshBlock(TimeLeft());
-		if(mGetCertStatus!=0)
+		this->mGetCertStatus = this->mAuthContext->RefreshBlock(this->TimeLeft());
+		if(this->mGetCertStatus!=WS_Success)
 		{
-			Fn29F220(100053);
+			this->Finish(WS_PeerAuth_GetCertFailure);
 			return;
 		}
 
-		mPeerData = mAuthContext->GetPeerData();
+		this->mPeerData = this->mAuthContext->GetPeerData();
 	}
 
 	for(int i=0; i<2; i++)
@@ -188,76 +198,77 @@ void PeerAuthOp::Virtual04()
 		WONStatus aStatus;
 
 		// Connect
-		aStatus = mSocket->Connect(mConnectAddr, ConnectTime());
-		if(CheckStatus(aStatus))
+		aStatus = this->mSocket->Connect(this->mConnectAddr, this->ConnectTime());
+		if(this->CheckStatus(aStatus))
 			return;
 
 		// If no auth then done
-		if(mAuthType==AUTH_TYPE_NONE)
+		if(this->mAuthType==AUTH_TYPE_NONE)
 		{
-			Fn29F220(0);
+			this->Finish(WS_Success);
 			return;
 		}
 
 		// Send peer auth request
-		ByteBufferPtr aSendMsg = mPeerAuthClient.Start(mPeerData.get(),mAuthType,mLengthFieldSize);
-		aStatus = mSocket->SendMsg(aSendMsg.get(), SendTime());
-		if(CheckStatus(aStatus))
+		ByteBufferPtr aSendMsg = this->mPeerAuthClient.Start(this->mPeerData.get(),this->mAuthType,this->mLengthFieldSize);
+		aStatus = this->mSocket->SendMsg(aSendMsg.get(), this->SendTime());
+		if(this->CheckStatus(aStatus))
 			return;
 
 		// Receive challenge1
 		ByteBufferPtr aRecvMsg;
-		aStatus = mSocket->RecvMsg(aRecvMsg, RecvTime());
-		if(CheckStatus(aStatus))
+		aStatus = this->mSocket->RecvMsg(aRecvMsg, this->RecvTime());
+		if(this->CheckStatus(aStatus))
 			return;
 
 		// Check challenge 1
-		aStatus = mPeerAuthClient.HandleRecvMsg(aRecvMsg->data(),aRecvMsg->length(),aSendMsg);
+		aStatus = this->mPeerAuthClient.HandleRecvMsg(aRecvMsg->data(),aRecvMsg->length(),aSendMsg);
 		if(i==0 && (aStatus==(-4) || aStatus==(-19))) // expired certificate
 		{
-			mPeerAuthClient.Reset();
-			mGetCertStatus = mAuthContext->RefreshBlock(TimeLeft());
-			if(mGetCertStatus!=0)
+			this->mPeerAuthClient.Reset();
+			this->mGetCertStatus = this->mAuthContext->RefreshBlock(this->TimeLeft());
+			if(this->mGetCertStatus!=WS_Success)
 			{
-				Fn29F220(100053);
+				this->Finish(WS_PeerAuth_GetCertFailure);
 				return;
 			}
 
-			mPeerData = mAuthContext->GetPeerData();
+			this->mPeerData = this->mAuthContext->GetPeerData();
 			continue; // try one more time
 		}
-		else if(CheckStatus(aStatus))
+		else if(this->CheckStatus(aStatus))
 			return;
 
 
 		// Send challenge 2
-		aStatus = mSocket->SendMsg(aSendMsg.get(), SendTime());
-		if(CheckStatus(aStatus))
+		aStatus = this->mSocket->SendMsg(aSendMsg.get(), this->SendTime());
+		if(this->CheckStatus(aStatus))
 			return;
 
 		// Receive peer auth complete
-		aStatus = mSocket->RecvMsg(aRecvMsg, RecvTime());
-		if(CheckStatus(aStatus))
+		aStatus = this->mSocket->RecvMsg(aRecvMsg, this->RecvTime());
+		if(this->CheckStatus(aStatus))
 			return;
 
 		// Check peer auth complete
-		aStatus = mPeerAuthClient.HandleRecvMsg(aRecvMsg->data(),aRecvMsg->length(),aSendMsg);
-		if(CheckStatus(aStatus))
+		aStatus = this->mPeerAuthClient.HandleRecvMsg(aRecvMsg->data(),aRecvMsg->length(),aSendMsg);
+		if(this->CheckStatus(aStatus))
 			return;
 
 		// Success... add encryption protocol if necessary
-		Success();
+		this->Success();
 		return;
 	}
 }
 
 // FUNCTION: WON 0x006e7c40
+// Adds the session encryption to the socket when the auth type encrypts, then finishes with success
 void PeerAuthOp::Success()
 {
-	if(mAuthType==AUTH_TYPE_SESSION || mAuthType==AUTH_TYPE_PERSISTENT) // add crypt protocol
-		mSocket->Fn2B0620(new CryptTransform(GetSession()));
+	if(this->mAuthType==AUTH_TYPE_SESSION || this->mAuthType==AUTH_TYPE_PERSISTENT) // add crypt protocol
+		this->mSocket->AddMsgTransform(new CryptTransform(this->GetSession()));
 
-	Fn29F220(0);
+	this->Finish(WS_Success);
 }
 
 
@@ -266,17 +277,19 @@ void PeerAuthOp::Success()
 
 namespace WONAPI {
 // FUNCTION: WON 0x006e8fa0
+// Finishes the op with the status and returns true unless it is success
 bool PeerAuthOp::CheckStatus(WONStatus status)
 {
     if(status==0)
         return false;
-    Fn29F220(status);
+    this->Finish(status);
     return true;
 }
 // FUNCTION: WON 0x006e7cb0
-void PeerAuthOp::Virtual08()
+// Cleans up the tracked sub-ops
+void PeerAuthOp::CleanupHook()
 {
-    AsyncOpWithTracker::Virtual08();
+    AsyncOpWithTracker::CleanupHook();
 }
 }
 

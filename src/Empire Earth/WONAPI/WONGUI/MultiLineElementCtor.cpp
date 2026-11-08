@@ -1,4 +1,4 @@
-// Complete genuine rich-text owner construction; lifecycle support only.
+// Multi-line element constructor (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,11 +13,12 @@
 #include "ee/wonapi/WONLobbyLineLayout.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0070c7e0
+// Creates an empty multi-line element with zero widths and its own search line
 MultiLineElement::MultiLineElement()
 {
-    mMinWidth=mMaxWidth=0;
-    mCurLineWidth=0;
-    mSearchLine=new LineElement;
+    this->mMinWidth=this->mMaxWidth=0;
+    this->mCurLineWidth=0;
+    this->mSearchLine=new LineElement;
 }
 }
 

@@ -1,4 +1,4 @@
-// Actual socket operation start/async/blocking dispatch; no new owner or helper.
+// SocketOp run step: start, then hand to the socket thread or finish in place
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,29 +10,32 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONAPICore.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006b6070
-void SocketOp::Virtual04()
+// Starts the op, first finishing it with InvalidSocket when it has no socket (and starting anyway); a pending
+// start is queued on the socket thread (async) or continued and finished (blocking), any other result finishes it
+void SocketOp::RunHook()
 {
-    if(mSocket.get()==NULL)
-        Fn29F220(100022); //actual invalid-socket status; native continues to Start
-    WONStatus status=Virtual0C();
-    if(status!=100001) //actual WS_TimedOut signals pending socket work
+    if(this->mSocket.get()==NULL)
+        this->Finish(WS_SocketOp_InvalidSocket);  //invalid-socket status; the original continues to Start
+    WONStatus status=this->Start();
+    if(status!=WS_TimedOut) //WS_TimedOut signals pending socket work
     {
-        Fn29F220(status);
+        this->Finish(status);
         return;
     }
-    if(mRunMode==1)
+    if(this->mRunMode==OP_MODE_ASYNC)
         WONAPICore::AddToSocketThread(this);
     else
     {
-        status=Virtual10();
-        Fn29F220(status);
+        status=this->Continue();
+        this->Finish(status);
     }
 }
 }
 
-// Genuine SDK SocketOp.cpp static definition; actual native565f08 logical zero byte.
+// SDK SocketOp static definition; in the original a zero byte at 565f08
 namespace WONAPI {
 bool SocketOp::mRunAsyncImmediatelyDef;
 }

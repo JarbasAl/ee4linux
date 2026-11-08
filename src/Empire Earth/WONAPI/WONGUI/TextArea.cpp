@@ -14,117 +14,130 @@
 using namespace WONAPI;
 
 // FUNCTION: WON 0x00711df0
+// Clears the laid-out lines and anchors; unless only the display is reset, also drops every segment,
+// the selection and the scroll position
 void TextArea::Reset(bool justDisplay) {
-    mLineVector.clear();
-    mAnchorMap.clear();
+    this->mLineVector.clear();
+    this->mAnchorMap.clear();
     if(!justDisplay) {
-        mSegmentList.clear();
-        mSelecting=false;
-        mSelStartChar=mSelEndChar=0;
-        mBackwardsSel=false;
-        mVertOffset=mHorzOffset=0;
-        mL0A4=mTotalHeight=0;
-        VirtualCC(false);
+        this->mSegmentList.clear();
+        this->mSelecting=false;
+        this->mSelStartChar=this->mSelEndChar=0;
+        this->mBackwardsSel=false;
+        this->mVertOffset=this->mHorzOffset=0;
+        this->mTotalWidth=this->mTotalHeight=0;
+        this->AdjustPosition(false);
     }
-    mNumLines=0;
-    mTopLineVectorPos=0;
-    mTotalHeight=mL0A4=0;
-    mCurLink=NULL;
-    mLastFindSeg=NULL;
-    mNeedRecalcWordWrap=false;
-    mDelayWordWrapTimeAccum=0;
+    this->mNumLines=0;
+    this->mTopLineVectorPos=0;
+    this->mTotalHeight=this->mTotalWidth=0;
+    this->mCurLink=NULL;
+    this->mLastFindSeg=NULL;
+    this->mNeedRecalcWordWrap=false;
+    this->mDelayWordWrapTimeAccum=0;
 }
 
 // FUNCTION: WON 0x00711fc0
+// Lays every segment out again (after a width change) and keeps the view at the bottom when it
+// scrolls on bottom
 void TextArea::RecalcWordWrap(bool wasDelayed) {
-    Reset(true);
-    SegmentList::iterator itr=mSegmentList.begin();
-    while(itr!=mSegmentList.end()) {
-        AddSegmentPrv(itr->get());
+    this->Reset(true);
+    SegmentList::iterator itr=this->mSegmentList.begin();
+    while(itr!=this->mSegmentList.end()) {
+        this->AddSegmentPrv(itr->get());
         ++itr;
     }
-    if(ShouldScrollOnBottom()) mVertOffset=mTotalHeight;
-    if(wasDelayed) VirtualCC(false);
+    if(this->ShouldScrollOnBottom()) this->mVertOffset=this->mTotalHeight;
+    if(wasDelayed) this->AdjustPosition(false);
 }
 
 // FUNCTION: WON 0x00712030
+// Relays out the scroll area; re-wraps the text when the width changed (deferred to the timer for
+// over 5000 characters with delayed wrap) and keeps a bottom-scrolled view at the bottom
 void TextArea::Virtual08() {
-    int oldWidth=mScrollArea.width;
-    bool bottom=ShouldScrollOnBottom();
+    int oldWidth=this->mScrollArea.width;
+    bool bottom=this->ShouldScrollOnBottom();
     ScrollArea::Virtual08();
-    if(TextFlagSet(TextFlag_WordWrap) && !mSegmentList.empty() && mScrollArea.width!=oldWidth && mHasBeenVisible) {
-        if(TextFlagSet(TextFlag_DelayWordWrap) && !mSegmentList.empty() && mSegmentList.back()->mAbsEndChar>5000) {
-            mDelayWordWrapTimeAccum=0;
-            mNeedRecalcWordWrap=true;
-            Fn2F57D0(true);
-        } else RecalcWordWrap(false);
+    if(this->TextFlagSet(TextFlag_WordWrap) && !this->mSegmentList.empty() && this->mScrollArea.width!=oldWidth && this->mHasBeenVisible) {
+        if(this->TextFlagSet(TextFlag_DelayWordWrap) && !this->mSegmentList.empty() && this->mSegmentList.back()->mAbsEndChar>5000) {
+            this->mDelayWordWrapTimeAccum=0;
+            this->mNeedRecalcWordWrap=true;
+            this->RequestTimer(true);
+        } else this->RecalcWordWrap(false);
     }
-    if(bottom) mVertOffset=mTotalHeight+mExtraHeight-mScrollArea.height;
-    VirtualCC(false);
+    if(bottom) this->mVertOffset=this->mTotalHeight+this->mExtraHeight-this->mScrollArea.height;
+    this->AdjustPosition(false);
 }
 
 // FUNCTION: WON 0x007120f0
-void TextArea::VirtualCC(bool becauseOfScrollbar) {
-    mExtraHeight=0;
-    if(TextFlagSet(TextFlag_ScrollFullLine) && mTotalHeight>mScrollArea.height) {
-        LineVector::iterator itr=FindLineAt(mTotalHeight-mScrollArea.height);
-        if(itr!=mLineVector.end()) {
+// Clamps the scroll position and finds the top line; with full-line scrolling, snaps the view to
+// the top line's start and sets the up/down scroll steps to the neighbouring line heights
+void TextArea::AdjustPosition(bool becauseOfScrollbar) {
+    this->mExtraHeight=0;
+    if(this->TextFlagSet(TextFlag_ScrollFullLine) && this->mTotalHeight>this->mScrollArea.height) {
+        LineVector::iterator itr=this->FindLineAt(this->mTotalHeight-this->mScrollArea.height);
+        if(itr!=this->mLineVector.end()) {
             TextLine* line=(*itr).get();
-            mExtraHeight=line->my+line->mHeight+mScrollArea.height-mTotalHeight;
-            if(mExtraHeight<0) mExtraHeight=0;
+            this->mExtraHeight=line->my+line->mHeight+this->mScrollArea.height-this->mTotalHeight;
+            if(this->mExtraHeight<0) this->mExtraHeight=0;
         }
     }
-    ScrollArea::VirtualCC(becauseOfScrollbar);
-    FindTopLine();
-    if(TextFlagSet(TextFlag_ScrollFullLine)) {
-        if(mTopLineVectorPos<mLineVector.size()) {
-            TextLine* line=mLineVector[mTopLineVectorPos].get();
-            mVertOffset=line->my;
-            mDownScrollAmount=line->mHeight;
-            if(mTopLineVectorPos>0) {
-                line=mLineVector[mTopLineVectorPos-1].get();
-                mUpScrollAmount=line->mHeight;
-            }
-            ScrollArea::VirtualCC(true);
-        }
+    ScrollArea::AdjustPosition(becauseOfScrollbar);
+    this->FindTopLine();
+    if(!this->TextFlagSet(TextFlag_ScrollFullLine))
+        return;
+    if(!(this->mTopLineVectorPos<this->mLineVector.size()))
+        return;
+    TextLine* line=this->mLineVector[this->mTopLineVectorPos].get();
+    this->mVertOffset=line->my;
+    this->mDownScrollAmount=line->mHeight;
+    if(this->mTopLineVectorPos>0) {
+        line=this->mLineVector[this->mTopLineVectorPos-1].get();
+        this->mUpScrollAmount=line->mHeight;
     }
+    ScrollArea::AdjustPosition(true);
 }
 
 // FUNCTION: WON 0x007128c0
+// Returns whether new text should scroll the view to the bottom: scroll-on-bottom is set and the
+// user has not scrolled away from the last (non-empty) line
 bool TextArea::ShouldScrollOnBottom() {
-    if(!TextFlagSet(TextFlag_ScrollOnBottom)) return false;
-    if(!mUserHasScrolled) return true;
-    if(!mLineVector.empty()) {
-        TextLine* line=mLineVector.back().get();
-        if(line->mHeight==0 && mLineVector.size()>1) line=mLineVector[mLineVector.size()-2].get();
-        if(IsLineVisible(line)) return true;
+    if(!this->TextFlagSet(TextFlag_ScrollOnBottom)) return false;
+    if(!this->mUserHasScrolled) return true;
+    if(!this->mLineVector.empty()) {
+        TextLine* line=this->mLineVector.back().get();
+        if(line->mHeight==0 && this->mLineVector.size()>1) line=this->mLineVector[this->mLineVector.size()-2].get();
+        if(this->IsLineVisible(line)) return true;
     }
     return false;
 }
 
 // FUNCTION: WON 0x00713030
+// Returns whether a line is inside the view (partly, when partial lines are shown)
 bool TextArea::IsLineVisible(TextLine* line) {
-    if(line->my+line->mHeight<mVertOffset) return false;
+    if(line->my+line->mHeight<this->mVertOffset) return false;
     int y=line->my;
-    if(!TextFlagSet(TextFlag_ShowPartialLines)) y+=line->mHeight;
-    return y<=mVertOffset+mScrollArea.height;
+    if(!this->TextFlagSet(TextFlag_ShowPartialLines)) y+=line->mHeight;
+    return y<=this->mVertOffset+this->mScrollArea.height;
 }
 
 // FUNCTION: WON 0x00713080
-void TextArea::Virtual84(bool visible) {
-    ScrollArea::Virtual84(visible);
-    if(visible && !mHasBeenVisible) {
-        mHasBeenVisible=true;
-        if(TextFlagSet(TextFlag_WordWrap) && !mSegmentList.empty()) RecalcWordWrap(true);
+// On first becoming visible, word-wraps the text that was added while hidden
+void TextArea::NotifyRootVisibility(bool visible) {
+    ScrollArea::NotifyRootVisibility(visible);
+    if(visible && !this->mHasBeenVisible) {
+        this->mHasBeenVisible=true;
+        if(this->TextFlagSet(TextFlag_WordWrap) && !this->mSegmentList.empty()) this->RecalcWordWrap(true);
     }
 }
 
 // FUNCTION: WON 0x007130d0
-void TextArea::VirtualD4(Graphics& g) {
-    LineVector::iterator lineItr=mLineVector.begin()+mTopLineVectorPos;
-    while(lineItr!=mLineVector.end()) {
+// Paints the segments of every visible line, starting at the top line
+void TextArea::ScrollPaint(Graphics& g) {
+    LineVector::iterator lineItr=this->mLineVector.begin()+this->mTopLineVectorPos;
+    while(lineItr!=this->mLineVector.end()) {
         TextLine* line=(*lineItr).get();
-        if(!IsLineVisible(line)) break;
+        if(!this->IsLineVisible(line)) break;
         TextLine::SegmentList::iterator segItr=line->mSegmentList.begin();
         g.Translate(line->mx,line->my);
         while(segItr!=line->mSegmentList.end()) {
@@ -140,38 +153,42 @@ struct TextLineYLess {
     bool operator()(const SmartPtr<TextLine>& a,const SmartPtr<TextLine>& b) const { return a->my<b->my; }
 };
 // FUNCTION: WON 0x007131b0
+// Returns the line containing height y (the last line starting at or above y)
 TextArea::LineVector::iterator TextArea::FindLineAt(int y) {
-    mSearchLine->my=y;
-    LineVector::iterator itr=std::lower_bound(mLineVector.begin(),mLineVector.end(),mSearchLine,TextLineYLess());
-    if(itr==mLineVector.end() || (*itr)->my>y) {
-        if(itr!=mLineVector.begin()) --itr;
+    this->mSearchLine->my=y;
+    LineVector::iterator itr=std::lower_bound(this->mLineVector.begin(),this->mLineVector.end(),this->mSearchLine,TextLineYLess());
+    if(itr==this->mLineVector.end() || (*itr)->my>y) {
+        if(itr!=this->mLineVector.begin()) --itr;
     }
     return itr;
 }
 
 // FUNCTION: WON 0x00713250
+// Records the index of the line at the current vertical scroll offset
 void TextArea::FindTopLine() {
-    LineVector::iterator itr=FindLineAt(mVertOffset);
-    mTopLineVectorPos=itr-mLineVector.begin();
+    LineVector::iterator itr=this->FindLineAt(this->mVertOffset);
+    this->mTopLineVectorPos=itr-this->mLineVector.begin();
 }
 
 // FUNCTION: WON 0x00713290
+// Returns the segment under a point (cached from the last lookup when still under it); lenient
+// clamps the point into the text, and a point right of a line's end hits its last segment
 TextSegmentBase* TextArea::FindSegment(int x,int y,bool lenient) {
-    if(mLineVector.empty()) return NULL;
+    if(this->mLineVector.empty()) return NULL;
     if(lenient) {
-        if(x>=mL0A4 && mL0A4!=0) x=mL0A4-1;
+        if(x>=this->mTotalWidth && this->mTotalWidth!=0) x=this->mTotalWidth-1;
         if(x<0) x=0;
-        if(y>=mTotalHeight) y=mTotalHeight-1;
+        if(y>=this->mTotalHeight) y=this->mTotalHeight-1;
         if(y<0) y=0;
     }
-    if(mLastFindSeg!=NULL) {
-        TextLine* line=mLastFindSeg->mLine;
+    if(this->mLastFindSeg!=NULL) {
+        TextLine* line=this->mLastFindSeg->mLine;
         int xpos=x-line->mx;
         if(line->my<=y && line->my+line->mHeight>=y) {
-            if(xpos>=mLastFindSeg->mx && xpos<=mLastFindSeg->mx+mLastFindSeg->mWidth) return mLastFindSeg;
+            if(xpos>=this->mLastFindSeg->mx && xpos<=this->mLastFindSeg->mx+this->mLastFindSeg->mWidth) return this->mLastFindSeg;
         }
     }
-    LineVector::iterator lineItr=FindLineAt(y);
+    LineVector::iterator lineItr=this->FindLineAt(y);
     TextLine* line=(*lineItr).get();
     if(!lenient && line->my+line->mHeight<y) return NULL;
     x-=line->mx;
@@ -183,142 +200,156 @@ TextSegmentBase* TextArea::FindSegment(int x,int y,bool lenient) {
         ++segItr;
     }
     if(seg!=NULL && !lenient && x<seg->mx) seg=NULL;
-    mLastFindSeg=seg;
+    this->mLastFindSeg=seg;
     return seg;
 }
 
 // FUNCTION: WON 0x007133d0
-void TextArea::VirtualD8(int x,int y,bool newStart) {
-    TextSegmentBase* seg=FindSegment(x,y,true);
+// Starts the selection at the character under a point, or extends it there, swapping its ends when
+// the drag crosses the anchor
+void TextArea::CheckSel(int x,int y,bool newStart) {
+    TextSegmentBase* seg=this->FindSegment(x,y,true);
     if(seg==NULL) return;
     int selection=seg->CharAt(x-seg->mLine->mx);
     if(newStart) {
-        mSelStartChar=mSelEndChar=selection;
-        mBackwardsSel=false;
-        Invalidate();
+        this->mSelStartChar=this->mSelEndChar=selection;
+        this->mBackwardsSel=false;
+        this->Invalidate();
         return;
     }
-    bool backwards=mBackwardsSel;
-    if(backwards) mSelStartChar=selection;
-    else mSelEndChar=selection;
-    if(mSelStartChar>mSelEndChar) {
-        mBackwardsSel=!backwards;
-        int old=mSelStartChar;mSelStartChar=mSelEndChar;mSelEndChar=old;
+    bool backwards=this->mBackwardsSel;
+    if(backwards) this->mSelStartChar=selection;
+    else this->mSelEndChar=selection;
+    if(this->mSelStartChar>this->mSelEndChar) {
+        this->mBackwardsSel=!backwards;
+        int old=this->mSelStartChar;this->mSelStartChar=this->mSelEndChar;this->mSelEndChar=old;
     }
-    Invalidate();
+    this->Invalidate();
 }
 
 // FUNCTION: WON 0x00713480
-bool TextArea::Virtual44(int) {
-    if(mNeedRecalcWordWrap) {
-        mDelayWordWrapTimeAccum++;
-        if(mDelayWordWrapTimeAccum>1) {
+// Runs a pending delayed word wrap; while selecting with the mouse outside the area, scrolls toward
+// it and extends the selection; returns whether the timer is still needed
+bool TextArea::TimerEvent(int) {
+    if(this->mNeedRecalcWordWrap) {
+        this->mDelayWordWrapTimeAccum++;
+        if(this->mDelayWordWrapTimeAccum>1) {
             int chars=0;
-            if(!mSegmentList.empty()) chars=mSegmentList.back()->mAbsEndChar;
-            if(mDelayWordWrapTimeAccum>=10 || mDelayWordWrapTimeAccum>=chars/16000) RecalcWordWrap(true);
+            if(!this->mSegmentList.empty()) chars=this->mSegmentList.back()->mAbsEndChar;
+            if(this->mDelayWordWrapTimeAccum>=10 || this->mDelayWordWrapTimeAccum>=chars/16000) this->RecalcWordWrap(true);
         }
     }
-    if(!mSelecting) return mNeedRecalcWordWrap;
-    int x,y;GetMousePos(x,y);
-    if(x>=0 && x<=Width() && y>=0 && y<=Height()) return true;
-    if(y>Height()) {
-        int delta=y-Height();
-        if(TextFlagSet(TextFlag_ScrollFullLine) && delta<mDownScrollAmount) delta=mDownScrollAmount;
-        mVertOffset+=delta;
+    if(!this->mSelecting) return this->mNeedRecalcWordWrap;
+    int x,y;this->GetMousePos(x,y);
+    if(x>=0 && x<=this->Width() && y>=0 && y<=this->Height()) return true;
+    if(y>this->Height()) {
+        int delta=y-this->Height();
+        if(this->TextFlagSet(TextFlag_ScrollFullLine) && delta<this->mDownScrollAmount) delta=this->mDownScrollAmount;
+        this->mVertOffset+=delta;
     } else if(y<0) {
         int delta=-y;
-        if(TextFlagSet(TextFlag_ScrollFullLine) && delta<mUpScrollAmount) delta=mUpScrollAmount;
-        mVertOffset-=delta;
+        if(this->TextFlagSet(TextFlag_ScrollFullLine) && delta<this->mUpScrollAmount) delta=this->mUpScrollAmount;
+        this->mVertOffset-=delta;
     }
-    if(x>Width()) mHorzOffset+=x-Width();
-    else if(x<0) mHorzOffset+=x;
-    VirtualCC(false);
-    ScrollTranslate(x,y);
-    VirtualD8(x,y,false);
+    if(x>this->Width()) this->mHorzOffset+=x-this->Width();
+    else if(x<0) this->mHorzOffset+=x;
+    this->AdjustPosition(false);
+    this->ScrollTranslate(x,y);
+    this->CheckSel(x,y,false);
     return true;
 }
 
 // FUNCTION: WON 0x007135e0
-void TextArea::Virtual2C(int x,int y,int button) {
-    ScrollArea::Virtual2C(x,y,button);
+// On a left press, takes focus and presses the link under the mouse, or starts (shift: extends) a
+// text selection
+void TextArea::MouseDown(int x,int y,int button) {
+    ScrollArea::MouseDown(x,y,button);
     if(button!=0) return;
-    ScrollTranslate(x,y);
-    Fn2F5890();
-    if(mCurLink!=NULL) {
-        mCurLink->Pressed();
-        Invalidate();
-        mSelecting=false;
+    this->ScrollTranslate(x,y);
+    this->RequestFocus();
+    if(this->mCurLink!=NULL) {
+        this->mCurLink->Pressed();
+        this->Invalidate();
+        this->mSelecting=false;
         return;
     }
-    if(TextFlagSet(TextFlag_AllowSelection)) {
-        mSelecting=true;
-        Fn2F57D0(true);
-        VirtualD8(x,y,(GetKeyMod()&1)==0);
-    }
+    if(!this->TextFlagSet(TextFlag_AllowSelection))
+        return;
+    this->mSelecting=true;
+    this->RequestTimer(true);
+    this->CheckSel(x,y,(this->GetKeyMod()&1)==0);
 }
 
 // FUNCTION: WON 0x007138f0
-void TextArea::Virtual28() {
-    ScrollArea::Virtual28();
-    if(mCurLink!=NULL) {
-        mCurLink->Released();
-        mCurLink=NULL;
-        Invalidate();
+// Releases a hovered link and stops selecting when the mouse leaves
+void TextArea::MouseExit() {
+    ScrollArea::MouseExit();
+    if(this->mCurLink!=NULL) {
+        this->mCurLink->Released();
+        this->mCurLink=NULL;
+        this->Invalidate();
     }
-    mSelecting=false;
+    this->mSelecting=false;
 }
 
 // FUNCTION: WON 0x00713930
-void TextArea::Virtual34(int x,int y) {
-    ScrollArea::Virtual34(x,y);
-    ScrollTranslate(x,y);
-    TextSegmentBase* seg=FindSegment(x,y,false);
-    if(seg==mCurLink) return;
+// Tracks the link under the mouse and shows the hand cursor over it, else the text cursor (when
+// selection is allowed)
+void TextArea::MouseMove(int x,int y) {
+    ScrollArea::MouseMove(x,y);
+    this->ScrollTranslate(x,y);
+    TextSegmentBase* seg=this->FindSegment(x,y,false);
+    if(seg==this->mCurLink) return;
     if(seg!=NULL && seg->IsLink()) {
-        mCurLink=seg;
-        mParent->Virtual78(Cursor::GetStandardCursor(StandardCursor_Hand));
+        this->mCurLink=seg;
+        this->mParent->SetCursor(Cursor::GetStandardCursor(StandardCursor_Hand));
     } else {
-        mCurLink=NULL;
-        mParent->Virtual78(TextFlagSet(TextFlag_AllowSelection)?Cursor::GetStandardCursor(StandardCursor_IBeam):(Cursor*)NULL);
+        this->mCurLink=NULL;
+        this->mParent->SetCursor(this->TextFlagSet(TextFlag_AllowSelection)?Cursor::GetStandardCursor(StandardCursor_IBeam):(Cursor*)NULL);
     }
 }
 
 // FUNCTION: WON 0x007139f0
-void TextArea::Virtual24(int x,int y) {
-    ScrollArea::Virtual24(x,y);
-    mParent->Virtual78(TextFlagSet(TextFlag_AllowSelection)?Cursor::GetStandardCursor(StandardCursor_IBeam):(Cursor*)NULL);
-    Virtual34(x,y);
+// Shows the text cursor (when selection is allowed) and checks for a link under the mouse
+void TextArea::MouseEnter(int x,int y) {
+    ScrollArea::MouseEnter(x,y);
+    this->mParent->SetCursor(this->TextFlagSet(TextFlag_AllowSelection)?Cursor::GetStandardCursor(StandardCursor_IBeam):(Cursor*)NULL);
+    this->MouseMove(x,y);
 }
 
 // FUNCTION: WON 0x00713a40
-void TextArea::Virtual38(int x,int y) {
-    ScrollArea::Virtual38(x,y);
-    ScrollTranslate(x,y);
-    if(mSelecting) VirtualD8(x,y,false);
+// Extends the selection to the mouse while selecting
+void TextArea::MouseDrag(int x,int y) {
+    ScrollArea::MouseDrag(x,y);
+    this->ScrollTranslate(x,y);
+    if(this->mSelecting) this->CheckSel(x,y,false);
 }
 
 // FUNCTION: WON 0x00713a90
-bool TextArea::Virtual54(int key) {
-    if(ScrollArea::Virtual54(key)) return true;
+// Scrolls with the arrow and page keys and marks the view as user-scrolled; returns whether the key
+// was used
+bool TextArea::KeyDown(int key) {
+    if(ScrollArea::KeyDown(key)) return true;
     switch(key) {
-    case VK_RIGHT:mHorzOffset+=10;break;
-    case VK_LEFT:mHorzOffset-=10;break;
-    case VK_DOWN:mVertOffset+=mDownScrollAmount;break;
-    case VK_UP:mVertOffset-=mUpScrollAmount;break;
-    case VK_NEXT:mVertOffset+=mScrollArea.height;break;
-    case VK_PRIOR:mVertOffset-=mScrollArea.height;break;
+    case VK_RIGHT:this->mHorzOffset+=10;break;
+    case VK_LEFT:this->mHorzOffset-=10;break;
+    case VK_DOWN:this->mVertOffset+=this->mDownScrollAmount;break;
+    case VK_UP:this->mVertOffset-=this->mUpScrollAmount;break;
+    case VK_NEXT:this->mVertOffset+=this->mScrollArea.height;break;
+    case VK_PRIOR:this->mVertOffset-=this->mScrollArea.height;break;
     default:return false;
     }
-    mUserHasScrolled=true;
-    VirtualCC(false);
+    this->mUserHasScrolled=true;
+    this->AdjustPosition(false);
     return true;
 }
 
 // FUNCTION: WON 0x00713b60
+// Copies the selected text of every segment to the clipboard
 void TextArea::CopySelection() {
     GUIString text;
-    SegmentList::iterator itr=mSegmentList.begin();
-    while(itr!=mSegmentList.end()) {
+    SegmentList::iterator itr=this->mSegmentList.begin();
+    while(itr!=this->mSegmentList.end()) {
         itr->get()->GetSelText(this,text);
         ++itr;
     }
@@ -326,13 +357,16 @@ void TextArea::CopySelection() {
 }
 
 // FUNCTION: WON 0x00713c20
-bool TextArea::Virtual50(int key) {
-    if(ScrollArea::Virtual50(key)) return true;
-    if(key==3) { CopySelection();return true; }
+// Copies the selection on Ctrl+C; returns whether the character was used
+bool TextArea::KeyChar(int key) {
+    if(ScrollArea::KeyChar(key)) return true;
+    if(key==3) { this->CopySelection();return true; }
     return false;
 }
 
 // FUNCTION: WON 0x00713ec0
+// Appends text split at CR, LF and CRLF into one line-broken segment per line; the last line breaks
+// only when lineBreak is set
 void TextArea::AddFormatedText(const GUIString& text,bool lineBreak) {
     int start=0,next=0;
     while(start<text.length()) {
@@ -348,55 +382,60 @@ void TextArea::AddFormatedText(const GUIString& text,bool lineBreak) {
         }
         bool foundReturn=true;
         if(end>=text.length()) { next=text.length();foundReturn=lineBreak; }
-        AddSegment(text.substr((unsigned short)start,(unsigned short)(end-start)),foundReturn);
+        this->AddSegment(text.substr((unsigned short)start,(unsigned short)(end-start)),foundReturn);
         start=next;
     }
 }
 
 // FUNCTION: WON 0x00713ff0
+// Sets or clears text flags; turning word wrap on relays out the area, and disallowing selection
+// clears any selection
 void TextArea::SetTextFlags(int flags,bool on) {
-    bool wordWrap=TextFlagSet(TextFlag_WordWrap);
-    if(on) mTextFlags|=flags;else mTextFlags&=~flags;
-    if(!wordWrap && TextFlagSet(TextFlag_WordWrap)) Virtual08();
-    if(!TextFlagSet(TextFlag_AllowSelection) && mSelStartChar!=mSelEndChar) {
-        mSelecting=false;
-        mSelStartChar=mSelEndChar=0;
-        Invalidate();
-    }
+    bool wordWrap=this->TextFlagSet(TextFlag_WordWrap);
+    if(on) this->mTextFlags|=flags;else this->mTextFlags&=~flags;
+    if(!wordWrap && this->TextFlagSet(TextFlag_WordWrap)) this->Virtual08();
+    if(this->TextFlagSet(TextFlag_AllowSelection) || this->mSelStartChar==this->mSelEndChar)
+        return;
+    this->mSelecting=false;
+    this->mSelStartChar=this->mSelEndChar=0;
+    this->Invalidate();
 }
 
 // FUNCTION: WON 0x00714090
+// Sets the character limit and drops the oldest text beyond it
 void TextArea::SetMaxChars(int chars) {
-    mMaxChars=chars;
-    EnforceMaxChars();
-    VirtualCC(false);
+    this->mMaxChars=chars;
+    this->EnforceMaxChars();
+    this->AdjustPosition(false);
 }
 // FUNCTION: WON 0x007140c0
+// Sets the line limit and drops the oldest lines beyond it
 void TextArea::SetMaxLines(int lines) {
-    mMaxLines=lines;
-    EnforceMaxLines();
-    VirtualCC(false);
+    this->mMaxLines=lines;
+    this->EnforceMaxLines();
+    this->AdjustPosition(false);
 }
 
-// Private next borrowed TextArea methods. Requires genuine H declarations, no receiver allocation/lifecycle.
 // FUNCTION: WON 0x00712260
+// Places a segment at the end of the last line, growing the line's height and baseline (and
+// realigning its segments) as needed, then aligns the line
 void TextArea::AddSeg(TextSegmentBase* segment) {
-    TextLine* line=mLineVector.back().get();
+    TextLine* line=this->mLineVector.back().get();
     bool adjust=false;
     int baseline=segment->mAscent;
     if(baseline>line->mBaseline) { line->mBaseline=baseline;adjust=true; }
     int descent=segment->mHeight-segment->mAscent;
     if(descent>line->mDescent) line->mDescent=descent;
     if(segment->mHeight>line->mHeight) {
-        mTotalHeight-=line->mHeight;
+        this->mTotalHeight-=line->mHeight;
         line->mHeight=segment->mHeight;
-        mTotalHeight+=line->mHeight;
+        this->mTotalHeight+=line->mHeight;
         adjust=true;
     }
     if(line->mDescent+line->mBaseline>line->mHeight) {
-        mTotalHeight-=line->mHeight;
+        this->mTotalHeight-=line->mHeight;
         line->mHeight=line->mBaseline+line->mDescent;
-        mTotalHeight+=line->mHeight;
+        this->mTotalHeight+=line->mHeight;
         adjust=true;
     }
     if(adjust) {
@@ -412,68 +451,75 @@ void TextArea::AddSeg(TextSegmentBase* segment) {
     segment->mLine=line;
     line->mSegmentList.push_back(SmartPtr<TextSegmentBase>(segment));
     line->mWidth+=segment->mWidth;
-    AlignLine(line,mLineAlign);
+    this->AlignLine(line,this->mLineAlign);
 }
 // FUNCTION: WON 0x007124a0
+// Sets a line's x for left, centre or right alignment in the view (never negative)
 void TextArea::AlignLine(TextLine* line,HorzAlign align) {
     int x=0;
     switch(align) {
-    case HorzAlign_Center:x=(mScrollArea.width-line->mWidth)/2;break;
-    case HorzAlign_Right:x=mScrollArea.width-line->mWidth;break;
+    case HorzAlign_Center:x=(this->mScrollArea.width-line->mWidth)/2;break;
+    case HorzAlign_Right:x=this->mScrollArea.width-line->mWidth;break;
     }
     if(x<=0) x=0;
     line->mx=x;
 }
 // FUNCTION: WON 0x00712980
+// Appends a segment after the last one, lays it out, enforces the character and line limits and
+// keeps a bottom-scrolled view at the bottom
 void TextArea::AddSegment(TextSegmentBase* segment) {
-    if(!mSegmentList.empty()) segment->mAbsStartChar=mSegmentList.back()->mAbsEndChar;
+    if(!this->mSegmentList.empty()) segment->mAbsStartChar=this->mSegmentList.back()->mAbsEndChar;
     segment->mAbsEndChar=segment->mAbsStartChar+segment->GetLength();
-    bool bottom=ShouldScrollOnBottom();
-    mSegmentList.push_back(SmartPtr<TextSegmentBase>(segment));
+    bool bottom=this->ShouldScrollOnBottom();
+    this->mSegmentList.push_back(SmartPtr<TextSegmentBase>(segment));
     segment->CalcDimensions();
-    AddSegmentPrv(segment);
-    EnforceMaxChars();
-    EnforceMaxLines();
-    if(bottom) mVertOffset=mTotalHeight+mExtraHeight-mScrollArea.height;
-    VirtualCC(false);
+    this->AddSegmentPrv(segment);
+    this->EnforceMaxChars();
+    this->EnforceMaxLines();
+    if(bottom) this->mVertOffset=this->mTotalHeight+this->mExtraHeight-this->mScrollArea.height;
+    this->AdjustPosition(false);
 }
 // FUNCTION: WON 0x00712b60
+// After leading text was removed, shifts lines, character positions, selection and scroll offset
+// back to start at zero and recounts total size and line breaks
 void TextArea::EnforceInvariants() {
-    mL0A4=0;
-    mTotalHeight=0;
-    mNumLines=0;
-    if(mLineVector.empty() || mSegmentList.empty()) return;
-    int deltaPos=mLineVector.front()->my;
-    LineVector::iterator lineItr=mLineVector.begin();
-    while(lineItr!=mLineVector.end()) {
+    this->mTotalWidth=0;
+    this->mTotalHeight=0;
+    this->mNumLines=0;
+    if(this->mLineVector.empty() || this->mSegmentList.empty()) return;
+    int deltaPos=this->mLineVector.front()->my;
+    LineVector::iterator lineItr=this->mLineVector.begin();
+    while(lineItr!=this->mLineVector.end()) {
         TextLine* line=(*lineItr).get();
-        if(line->mWidth>mL0A4) mL0A4=line->mWidth;
+        if(line->mWidth>this->mTotalWidth) this->mTotalWidth=line->mWidth;
         line->my-=deltaPos;
-        mTotalHeight+=line->mHeight;
+        this->mTotalHeight+=line->mHeight;
         ++lineItr;
     }
-    int deltaChar=mSegmentList.front()->mAbsStartChar;
-    SegmentList::iterator itr=mSegmentList.begin();
-    while(itr!=mSegmentList.end()) {
+    int deltaChar=this->mSegmentList.front()->mAbsStartChar;
+    SegmentList::iterator itr=this->mSegmentList.begin();
+    while(itr!=this->mSegmentList.end()) {
         TextSegmentBase* seg=itr->get();
         seg->mAbsStartChar-=deltaChar;
         seg->mAbsEndChar-=deltaChar;
-        if(seg->mLineBreak) mNumLines++;
+        if(seg->mLineBreak) this->mNumLines++;
         ++itr;
     }
-    mSelStartChar-=deltaChar;
-    mSelEndChar-=deltaChar;
-    if(mSelStartChar<0) mSelStartChar=0;
-    if(mSelEndChar<0) mSelEndChar=0;
-    mVertOffset-=deltaPos;
+    this->mSelStartChar-=deltaChar;
+    this->mSelEndChar-=deltaChar;
+    if(this->mSelStartChar<0) this->mSelStartChar=0;
+    if(this->mSelEndChar<0) this->mSelEndChar=0;
+    this->mVertOffset-=deltaPos;
 }
 // FUNCTION: WON 0x00712cd0
+// Removes the lines up to the one ending past the given segment and every segment before that line,
+// then renormalizes positions
 void TextArea::RemoveSegmentsUpTo(TextSegmentBase* segment) {
     TextLine* findLine=segment->mLine;
-    mLastFindSeg=NULL;
+    this->mLastFindSeg=NULL;
     bool found=false;
-    LineVector::iterator lineItr=mLineVector.begin();
-    while(lineItr!=mLineVector.end()) {
+    LineVector::iterator lineItr=this->mLineVector.begin();
+    while(lineItr!=this->mLineVector.end()) {
         TextLine* line=(*lineItr).get();
         if(line==findLine) found=true;
         if(found && !line->mSegmentList.empty()) {
@@ -485,97 +531,95 @@ void TextArea::RemoveSegmentsUpTo(TextSegmentBase* segment) {
         }
         ++lineItr;
     }
-    mLineVector.erase(mLineVector.begin(),lineItr);
+    this->mLineVector.erase(this->mLineVector.begin(),lineItr);
     TextSegmentBase* stop=NULL;
-    if(!mLineVector.empty()) {
-        TextLine* line=mLineVector.front().get();
+    if(!this->mLineVector.empty()) {
+        TextLine* line=this->mLineVector.front().get();
         if(!line->mSegmentList.empty()) stop=line->mSegmentList.front()->GetActual();
     }
-    SegmentList::iterator itr=mSegmentList.begin();
-    while(itr!=mSegmentList.end()) {
+    SegmentList::iterator itr=this->mSegmentList.begin();
+    while(itr!=this->mSegmentList.end()) {
         TextSegmentBase* seg=itr->get();
         if(seg==stop) break;
-        if(seg==mCurLink) mCurLink=NULL;
+        if(seg==this->mCurLink) this->mCurLink=NULL;
         ++itr;
     }
-    mSegmentList.erase(mSegmentList.begin(),itr);
-    EnforceInvariants();
-    VirtualCC(false);
+    this->mSegmentList.erase(this->mSegmentList.begin(),itr);
+    this->EnforceInvariants();
+    this->AdjustPosition(false);
 }
 // FUNCTION: WON 0x00712f70
+// Removes the oldest segments while the text is longer than the character limit
 void TextArea::EnforceMaxChars() {
-    if(mMaxChars<=0 || mSegmentList.empty()) return;
-    TextSegmentBase* seg=mSegmentList.back().get();
-    int toRemove=seg->mAbsEndChar-mMaxChars;
+    if(this->mMaxChars<=0 || this->mSegmentList.empty()) return;
+    TextSegmentBase* seg=this->mSegmentList.back().get();
+    int toRemove=seg->mAbsEndChar-this->mMaxChars;
     if(toRemove<=0) return;
-    SegmentList::iterator itr=mSegmentList.begin();
-    while(itr!=mSegmentList.end()) {
+    SegmentList::iterator itr=this->mSegmentList.begin();
+    while(itr!=this->mSegmentList.end()) {
         seg=itr->get();
         if(seg->mAbsEndChar+1>=toRemove) break;
         ++itr;
     }
-    RemoveSegmentsUpTo(seg);
+    this->RemoveSegmentsUpTo(seg);
 }
 // FUNCTION: WON 0x00712fd0
+// Removes the oldest lines while the text has more line breaks than the line limit
 void TextArea::EnforceMaxLines() {
-    if(mMaxLines<=0 || mSegmentList.empty()) return;
-    TextSegmentBase* seg=mSegmentList.back().get();
-    int toRemove=mNumLines-mMaxLines;
+    if(this->mMaxLines<=0 || this->mSegmentList.empty()) return;
+    TextSegmentBase* seg=this->mSegmentList.back().get();
+    int toRemove=this->mNumLines-this->mMaxLines;
     if(toRemove<=0) return;
     int count=0;
-    SegmentList::iterator itr=mSegmentList.begin();
-    while(itr!=mSegmentList.end()) {
+    SegmentList::iterator itr=this->mSegmentList.begin();
+    while(itr!=this->mSegmentList.end()) {
         seg=itr->get();
         if(seg->mLineBreak) count++;
         if(count>=toRemove) break;
         ++itr;
     }
-    RemoveSegmentsUpTo(seg);
+    this->RemoveSegmentsUpTo(seg);
 }
 
 // FUNCTION: WON 0x00713680
-void TextArea::Virtual30(int x,int y,int button) {
-    ScrollArea::Virtual30(x,y,button);
+// On a left release, activates a pressed link still under the mouse (sends a link-activated event),
+// updates the hovered link and cursor, and ends selecting
+void TextArea::MouseUp(int x,int y,int button) {
+    ScrollArea::MouseUp(x,y,button);
     if(button!=0) return;
-    ScrollTranslate(x,y);
-    TextSegmentBase* seg=FindSegment(x,y,false);
+    this->ScrollTranslate(x,y);
+    TextSegmentBase* seg=this->FindSegment(x,y,false);
     bool pressed=false;
-    if(mCurLink!=NULL) pressed=mCurLink->Released();
-    if(seg==mCurLink && pressed) {
-        mLinkParam=mCurLink->GetLinkParam();
-        Fn2F53F0(new TextLinkActivatedEvent(this,mCurLink->GetActual()),false);
+    if(this->mCurLink!=NULL) pressed=this->mCurLink->Released();
+    if(seg==this->mCurLink && pressed) {
+        this->mLinkParam=this->mCurLink->GetLinkParam();
+        this->DeliverEvent(new TextLinkActivatedEvent(this,this->mCurLink->GetActual()),false);
     }
-    if(mCurLink!=NULL) {
+    if(this->mCurLink!=NULL) {
         if(seg==NULL || !seg->IsLink()) {
-            mCurLink=NULL;
-            mParent->Virtual78(TextFlagSet(TextFlag_AllowSelection)?Cursor::GetStandardCursor(StandardCursor_IBeam):(Cursor*)NULL);
-        } else mCurLink=seg;
-        Invalidate();
+            this->mCurLink=NULL;
+            this->mParent->SetCursor(this->TextFlagSet(TextFlag_AllowSelection)?Cursor::GetStandardCursor(StandardCursor_IBeam):(Cursor*)NULL);
+        } else this->mCurLink=seg;
+        this->Invalidate();
     }
-    mSelecting=false;
+    this->mSelecting=false;
 }
-/* HISTORICAL_REJECTED_SOURCE: EXE 0x00713860
-Preserved unused source for future models. Pinned SDK declares no event destructor;
-the target135B destructor is genuinely implicit. This former authored141B body
-adds an own-vptr store absent from native. Active class declaration now permits
-natural implicit SP20/senderSP10/RefCount cleanup; no replacement body is authored.
-// Actual owner cleanup: linkSP20 then ComponentEvent senderSP10/base. Lifecycle support0.
-TextLinkActivatedEvent::~TextLinkActivatedEvent() {}
-*/
 
 // FUNCTION: WON 0x007127d0
+// Lays out one segment: runs its instructions, adds it to the last line or word-wraps it, and starts
+// a new line after a line break
 void TextArea::AddSegmentPrv(TextSegmentBase* segment) {
-    if(mLineVector.empty()) AddLine();
-    TextLine* line=mLineVector.back().get();
+    if(this->mLineVector.empty()) this->AddLine();
+    TextLine* line=this->mLineVector.back().get();
     segment->mLine=line;
     segment->PerformInstructions(this);
-    if(Width()<=0 || line->mWidth+segment->mWidth<=mScrollArea.width || !TextFlagSet(TextFlag_WordWrap) || !mHasBeenVisible) {
-        AddSeg(segment);
-        if(line->mWidth>mL0A4 && !TextFlagSet(TextFlag_WordWrap)) mL0A4=line->mWidth;
+    if(this->Width()<=0 || line->mWidth+segment->mWidth<=this->mScrollArea.width || !this->TextFlagSet(TextFlag_WordWrap) || !this->mHasBeenVisible) {
+        this->AddSeg(segment);
+        if(line->mWidth>this->mTotalWidth && !this->TextFlagSet(TextFlag_WordWrap)) this->mTotalWidth=line->mWidth;
     } else segment->Wrap(this,line);
     if(segment->mLineBreak) {
-        mNumLines++;
-        AddLine();
+        this->mNumLines++;
+        this->AddLine();
     }
 }
 

@@ -1,109 +1,105 @@
-// Original RoomLabelCtrl complete0xa0, actual Container0x84/51slots.
+// Room and server list controls. RoomLabelCtrl (0xa0 bytes): the label naming the current room.
 
 #ifndef EE_WONAPI_WONLOBBYROOMSERVER_H
 #define EE_WONAPI_WONLOBBYROOMSERVER_H
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyScreens.h"
-#include "ee/wonapi/WONLobbyPersistence.h" //actual NoCase static-column-map comparator
+#include "ee/wonapi/WONLobbyPersistence.h" // GUIStringLessNoCase, for the static column map
 namespace WONAPI {
 class RoomLabelCtrl : public Container {
 public:
-    RoomLabelCtrl(); //3c32b0
-    // Implicit normal3c33a0: full original has no own-vptr write.
+    RoomLabelCtrl(); // 0x7c32b0
+    // Implicit destructor (0x7c33a0): it does not write its own vtable pointer.
     virtual void InitComponent(ComponentInit&);
     virtual void HandleComponentEvent(ComponentEvent*);
     void CalcLabel();
-    void SetPrefix(const GUIString& inPrefix) { mPrefix=inPrefix; }
-    void SetRoomSpecFlags(int inFlags) { mRoomSpecFlags=inFlags; }
-    void SetShowUserCount(bool inShow) { if(!inShow) mUserCt=-1; else if(mUserCt<0) mUserCt=0; }
-    void SetShowServer(bool inShow) { mShowServer=inShow; }
-    int mRoomSpecFlags; //84
-    SmartPtr<Label> mLabel; //88
-    GUIString mPrefix; //8c
-    GUIString mServer; //90
-    GUIString mRoom; //94
-    int mUserCt; //98
-    bool mShowServer; //9c
+    void SetPrefix(const GUIString& inPrefix) { this->mPrefix=inPrefix; }
+    void SetRoomSpecFlags(int inFlags) { this->mRoomSpecFlags=inFlags; }
+    void SetShowUserCount(bool inShow) { if(!inShow) this->mUserCt=-1; else if(this->mUserCt<0) this->mUserCt=0; }
+    void SetShowServer(bool inShow) { this->mShowServer=inShow; }
+    int mRoomSpecFlags; // 0x84
+    SmartPtr<Label> mLabel; // 0x88
+    GUIString mPrefix; // 0x8c
+    GUIString mServer; // 0x90
+    GUIString mRoom; // 0x94
+    int mUserCt; // 0x98
+    bool mShowServer; // 0x9c
 };
 }
-// Reference-only widget contracts scoped to RootScreen. All actual RTTI bases/tables
-// recovered in identities.json; no allocation/construction/sizeof/copy/byvalue/ownVT use.
+// Widgets used by RootScreen.
 namespace WONAPI {
-// Complete actualMSSeperator30: fieldlessComponent30, nativeAddSeperator new30.
-// Overrides inherited reference-only default for thisoneclass; originalexternal lifetime.
+// MSSeperator: 0x30 bytes, a Component with no members of its own.
 class MSSeperator : public Component {
 public:
-    MSSeperator(int=6); //3006a0 originalexternal constructor
-    virtual void Virtual0C(int& width,int& height) { width=100; height=6; } //genuine SDK inline GetDesiredSize, native300700/23
-    virtual void Paint(Graphics&); //300720 actual18slot
+    MSSeperator(int=6); // 0x7006a0
+    virtual void GetDesiredSize(int& width,int& height) { width=100; height=6; } // inline as in the SDK (0x700700)
+    virtual void Paint(Graphics&); // 0x700720, slot 0x18
 };
 class RectangleComponent3D : public Component {
 public:
-    RectangleComponent3D(bool up=true,int thickness=2); //3068f0 genuine SDK complete44
-    virtual void Paint(Graphics&); //306930 genuine SDK override, existing slot18
-    // Genuine SDK implicit destructor; natural Component cleanup, no own resource.
-    int mSolidColor,mLightColor,mDarkColor; //30,34,38 actual SDK/native394c3b/394c5f/394c83
-    int mThickness; //3c, targetRoot3c47fa+primaryGetThickness nominal
-    bool mUp; //40, actual native394ca7; complete44 scalar owner
-    void SetSolidColor(int c) { mSolidColor=c; }
-    void SetLightColor(int c) { mLightColor=c; }
-    void SetDarkColor(int c) { mDarkColor=c; }
-    void SetThickness(int n) { mThickness=n; }
-    void SetIsUp(bool up) { mUp=up; }
+    RectangleComponent3D(bool up=true,int thickness=2); // 0x7068f0; object size 0x44
+    virtual void Paint(Graphics&); // 0x706930, slot 0x18
+    // Implicit destructor: nothing of its own to free.
+    int mSolidColor,mLightColor,mDarkColor; // 0x30, 0x34, 0x38 (set at 0x794c3b, 0x794c5f, 0x794c83)
+    int mThickness; // 0x3c (set by RootScreen at 0x7c47fa)
+    bool mUp; // 0x40 (set at 0x794ca7)
+    void SetSolidColor(int c) { this->mSolidColor=c; }
+    void SetLightColor(int c) { this->mLightColor=c; }
+    void SetDarkColor(int c) { this->mDarkColor=c; }
+    void SetThickness(int n) { this->mThickness=n; }
+    void SetIsUp(bool up) { this->mUp=up; }
 };
 }
 
-// Complete original RootScreen0xcc. Requires pointer-only widget reference contracts
-// (TabCtrl/MSSeperator/RectangleComponent3D) and screens-owned GameBrowserCtrl.
+// RootScreen (0xcc bytes): the internet or LAN lobby screen with its tabs (lobby, game, direct connect,
+// LAN, help, news).
 namespace WONAPI {
 class RootScreen : public Container {
 public:
     RootScreen(bool);
-    virtual ~RootScreen(); // own-vptr3c3d2f, actual10member+base cleanup
-    virtual void InitComponent(ComponentInit&); //3c3f40
-    virtual void Virtual08(); //3c46d0, actual SizeChanged inheritedslot08
-    virtual void HandleComponentEvent(ComponentEvent*); //3c4ae0
-    bool OnDirectConnectTab(); //3c3ec0
-    bool OnLanTab(); //3c3f00
-    void EnterGameTab(bool); //3c4880
-    void ShowLobbyTab(); //3c4930
-    void HandleJoinedGame(); //3c4950
-    void HandleLeftGame(); //3c4980
-    void HandleEnteredScreen(); //3c4990
-    void HandleTabCtrlTabSelected(ComponentEvent*); //3c49d0
-    bool mIsLan; //84
-    SmartPtr<TabCtrl> mTabCtrl; //88
-    GUIString mDefaultTabName; //8c
-    SmartPtr<GameBrowserCtrl> mHelpTab; //90
-    SmartPtr<GameBrowserCtrl> mNewsTab; //94
-    SmartPtr<Component> mLowerLayoutPoint; //98
-    SmartPtr<MSSeperator> mLowerDivider; //9c
-    SmartPtr<Component> mSierraLogo; //a0
-    SmartPtr<Component> mLowerBanner; //a4
-    SmartPtr<RectangleComponent3D> mLowerBannerFrame; //a8
-    SmartPtr<Component> mBackButton; //ac
-    bool mHideLowerControls; //b0
-    bool mIsSwat; //b1
-    int mLastJoinTab; //b4
-    int mGameTab; //b8, deliberately not initialized byctor
-    int mDirectConnectTab; //bc
-    int mLanTab; //c0
-    int mLobbyTab; //c4
-    int mRoomSpecFlags; //c8
+    virtual ~RootScreen(); // writes its own vtable pointer (0x7c3d2f); frees ten members, then the base
+    virtual void InitComponent(ComponentInit&); // 0x7c3f40
+    virtual void Virtual08(); // 0x7c46d0; slot 0x08 (SizeChanged)
+    virtual void HandleComponentEvent(ComponentEvent*); // 0x7c4ae0
+    bool OnDirectConnectTab(); // 0x7c3ec0
+    bool OnLanTab(); // 0x7c3f00
+    void EnterGameTab(bool); // 0x7c4880
+    void ShowLobbyTab(); // 0x7c4930
+    void HandleJoinedGame(); // 0x7c4950
+    void HandleLeftGame(); // 0x7c4980
+    void HandleEnteredScreen(); // 0x7c4990
+    void HandleTabCtrlTabSelected(ComponentEvent*); // 0x7c49d0
+    bool mIsLan; // 0x84
+    SmartPtr<TabCtrl> mTabCtrl; // 0x88
+    GUIString mDefaultTabName; // 0x8c
+    SmartPtr<GameBrowserCtrl> mHelpTab; // 0x90
+    SmartPtr<GameBrowserCtrl> mNewsTab; // 0x94
+    SmartPtr<Component> mLowerLayoutPoint; // 0x98
+    SmartPtr<MSSeperator> mLowerDivider; // 0x9c
+    SmartPtr<Component> mSierraLogo; // 0xa0
+    SmartPtr<Component> mLowerBanner; // 0xa4
+    SmartPtr<RectangleComponent3D> mLowerBannerFrame; // 0xa8
+    SmartPtr<Component> mBackButton; // 0xac
+    bool mHideLowerControls; // 0xb0
+    bool mIsSwat; // 0xb1
+    int mLastJoinTab; // 0xb4
+    int mGameTab; // 0xb8, not initialized by the constructor
+    int mDirectConnectTab; // 0xbc
+    int mLanTab; // 0xc0
+    int mLobbyTab; // 0xc4
+    int mRoomSpecFlags; // 0xc8
 };
 }
 
-// E domain contracts: Tree classes are reference-only; Room classes complete.
-// Reference-only actual TreeItem3c prefix; NEVER new/sizeof/ctor/copy/byvalue/ownVT.
-// 1c is deliberately not interpreted. Full external lifetime3140f0/314170.
+// RoomCtrl: the room list (servers and their chat rooms) with Join and Create buttons.
 namespace WONAPI {
 class ServerChangedEvent;
 class GroupChangedEvent;
-// Tree records now live in the common GUI header with existing Fn names/fields preserved.
+// TreeItem and TreeArea are declared in WONLobbyGUI.h.
 class RoomCtrl : public Container {
 public:
-    RoomCtrl(); // empty initialization body38 support0
-    // Implicit destructor184 support0; no own-vptr write.
+    RoomCtrl();
+    // Implicit destructor: it does not write its own vtable pointer.
     virtual void InitComponent(ComponentInit&);
     virtual void HandleComponentEvent(ComponentEvent*);
     void EnableControls();
@@ -119,35 +115,35 @@ public:
     void HandleServerChanged(ServerChangedEvent*);
     void HandleGroupChanged(GroupChangedEvent*);
     void HandleItemOpened(TreeItemOpenedEvent*);
-    SmartPtr<TreeArea> mRoomList; //84
-    SmartPtr<Button> mJoinButton; //88
-    SmartPtr<Button> mCreateButton; //8c
-}; // complete90, actualContainer84/51slots
+    SmartPtr<TreeArea> mRoomList; // 0x84
+    SmartPtr<Button> mJoinButton; // 0x88
+    SmartPtr<Button> mCreateButton; // 0x8c
+}; // 0x90 bytes; Container is 0x84 bytes with 51 vtable slots
 }
 
-// Global nominal type is proved by RTTI .?AVRoomListItem@@ (not WONAPI namespace).
-// Complete0x58, original ListItem14slot base0x18. No unknown ownership fields.
+// One row of the room list (a server or a room); global namespace, not WONAPI (RTTI .?AVRoomListItem@@).
+// 0x58 bytes; the ListItem base is 0x18 bytes with 14 vtable slots.
 class RoomListItem : public WONAPI::ListItem {
 public:
-    RoomListItem(WONAPI::LobbyServer*,bool); //3c19a0
-    RoomListItem(WONAPI::LobbyGroup*,WONAPI::LobbyServer*); //3c1c50: group FIRST
-    // Implicit normal3c1b70 contains no own-vptr store; support only.
-    virtual void Virtual04(WONAPI::Graphics&,WONAPI::ListArea*); //3c20c0
-    virtual void Virtual08(WONAPI::ListArea*); //3c1fd0
-    virtual int Virtual10(const WONAPI::ListItem*,WONAPI::ListArea*) const; //3c20a0
-    void Fn3C1D40(WONAPI::LobbyServer*,WONAPI::LobbyGroup*);
-    int mColor; //18
-    bool mLoading; //1c
-    WONAPI::SmartPtr<WONAPI::Image> mImage; //20
-    WONAPI::SmartPtr<WONAPI::Font> mFont; //24
-    WONAPI::GUIString mText; //28
-    WONAPI::IPAddr mAddress; //2c
-    unsigned long mGroupId; //54, group id zeroextends from ushort, server sentinelffff
+    RoomListItem(WONAPI::LobbyServer*,bool); // 0x7c19a0
+    RoomListItem(WONAPI::LobbyGroup*,WONAPI::LobbyServer*); // 0x7c1c50: the group comes first
+    // Implicit destructor (0x7c1b70): it does not write its own vtable pointer.
+    virtual void Paint(WONAPI::Graphics&,WONAPI::ListArea*);     // 0x7c20c0
+    virtual void CalcDimensions(WONAPI::ListArea*); // 0x7c1fd0
+    virtual int Compare(const WONAPI::ListItem*,WONAPI::ListArea*) const;   // 0x7c20a0
+    void UpdateText(WONAPI::LobbyServer*,WONAPI::LobbyGroup*);
+    int mColor; // 0x18
+    bool mLoading; // 0x1c
+    WONAPI::SmartPtr<WONAPI::Image> mImage; // 0x20
+    WONAPI::SmartPtr<WONAPI::Font> mFont; // 0x24
+    WONAPI::GUIString mText; // 0x28
+    WONAPI::IPAddr mAddress; // 0x2c
+    unsigned long mGroupId; // 0x54, the group id (zero-extended), 0xffff on a server row
 };
 
 
-// Scratch complete original ServerListCtrl0xc8. Shared ServerDetails28/16-slot migration pending Root.
-// Actual constructor3c5c10, explicit normal3c5d30 own-vptr; vector84/mapbc own real elements.
+// ServerListCtrl (0xc8 bytes): the game list with filter combos and sortable columns.
+// The column vector (0x84) and the details map (0xbc) own their elements.
 namespace WONAPI {
 class ComboSelChangedEvent;
 class GameChangedEvent;
@@ -158,59 +154,59 @@ public:
         typedef void (*PaintFunc)(Graphics&,ServerDetailsItem*,ServerListCtrl*);
         typedef int (*CompareFunc)(const ServerDetailsItem*,const ServerDetailsItem*,ServerListCtrl*);
         typedef void (*FilterFunc)(const GUIString&,std::list<ServerDetailsItem*>&,ServerListCtrl*);
-        PaintFunc mPaintFunc; //00
-        CompareFunc mCompareFunc; //04
-        FilterFunc mFilterFunc; //08
-        SmartPtr<ComboBox> mFilterCombo; //0c
-        unsigned char mGameTypeFlags; //10
-        GUIString mColumnName; //14
-        ColumnInfo(); //3c5f80
-        ~ColumnInfo(); //3c5ef0
-    }; //complete18
+        PaintFunc mPaintFunc; // 0x00
+        CompareFunc mCompareFunc; // 0x04
+        FilterFunc mFilterFunc; // 0x08
+        SmartPtr<ComboBox> mFilterCombo; // 0x0c
+        unsigned char mGameTypeFlags; // 0x10
+        GUIString mColumnName; // 0x14
+        ColumnInfo(); // 0x7c5f80
+        ~ColumnInfo(); // 0x7c5ef0
+    }; // 0x18 bytes
     typedef std::vector<ColumnInfo> ColumnInfoVector;
     typedef std::map<GUIString,ColumnInfo,GUIStringLessNoCase> ColumnMap;
     typedef std::list<ServerDetailsItem*> ServerDetailsList;
     typedef std::map<SmartPtr<LobbyGame>,SmartPtr<ServerDetailsItem> > ServerDetailsMap;
-    ServerListCtrl(); //3c5c10, meaningful game/filter/columns initialization
-    virtual ~ServerListCtrl(); //explicit3c5d30 own-vptr, actualownedcleanup
-    virtual void InitComponent(ComponentInit&); //3c6360
-    virtual bool Virtual44(int); //3c66d0 TimerEvent
-    virtual void HandleComponentEvent(ComponentEvent*); //3c80f0
-    void LoadFilterCombos(); //3c6740
-    void FilterInProgressGames(ServerDetailsList&); //3c6a70
-    void DoFilter(ServerDetailsList&); //3c6ad0
-    bool FitsFilter(ServerDetailsItem*); //3c6be0
-    void UpdateJoinButton(); //3c6d00
-    void UpdateSummaryLabel(); //3c6d50
-    void AddEntries(const ServerDetailsList&); //3c6ff0
-    void AddFilteredEntries(bool,ServerDetailsList&); //3c7090
-    void AddFilteredEntries_All(bool); //3c7220
-    void AddFilteredEntries_List(bool); //3c73c0
-    LobbyGame* GetSelGame(); //3c7580, reference-only accessor bodyquota0
-    void HandleGameChanged(GameChangedEvent*); //3c75a0
-    void HandleSyncGameList(SyncGameListEvent*); //3c7870
-    void HandleComboTextChanged(Component*); //3c7b30
-    void HandleComboSelChanged(ComboSelChangedEvent*); //3c7dd0
-    bool HandleRefreshButton(); //3c80c0
-    void HandleListItemClicked(ListItemClickedEvent*); //3c7a50
-    void SetNumColumns(int); //3c8340 fieldstore+vectorresize sequence25, zeroquota
-    static ColumnInfo* GetColumnInfo(const GUIString&); //3c5ff0 actualnestedrecord, oldglobalprefixaliasRootgate
-    static void InitColumnMap(); //3c6050
-    static void AddDefaultFilters(const GUIString&,const GUIString&,bool); //3c6340 sequence wrapper24, zeroquota
-    ColumnInfoVector mColumnInfo; //84..93
-    void SetGameType(int inType) { mGameType=inType; }
-    int mGameType; //94
-    bool mNeedFilter; //98
-    int mFilterTimeAccum; //9c
-    int mNumColumns; //a0
-    SmartPtr<Font> mBoldFont; //a4
-    SmartPtr<MultiListArea> mList; //a8
-    SmartPtr<Button> mJoinButton; //ac
-    SmartPtr<Button> mRefreshButton; //b0
-    SmartPtr<Component> mRemoveButton; //b4
-    SmartPtr<Label> mSummaryLabel; //b8
-    ServerDetailsMap mServerDetailsMap; //bc..c7
-    static ColumnMap mColumnMap; //566b60
+    ServerListCtrl(); // 0x7c5c10
+    virtual ~ServerListCtrl(); // 0x7c5d30; explicit: writes its own vtable pointer
+    virtual void InitComponent(ComponentInit&); // 0x7c6360
+    virtual bool TimerEvent(int); // 0x7c66d0
+    virtual void HandleComponentEvent(ComponentEvent*); // 0x7c80f0
+    void LoadFilterCombos(); // 0x7c6740
+    void FilterInProgressGames(ServerDetailsList&); // 0x7c6a70
+    void DoFilter(ServerDetailsList&); // 0x7c6ad0
+    bool FitsFilter(ServerDetailsItem*); // 0x7c6be0
+    void UpdateJoinButton(); // 0x7c6d00
+    void UpdateSummaryLabel(); // 0x7c6d50
+    void AddEntries(const ServerDetailsList&); // 0x7c6ff0
+    void AddFilteredEntries(bool,ServerDetailsList&); // 0x7c7090
+    void AddFilteredEntries_All(bool); // 0x7c7220
+    void AddFilteredEntries_List(bool); // 0x7c73c0
+    LobbyGame* GetSelGame(); // 0x7c7580
+    void HandleGameChanged(GameChangedEvent*); // 0x7c75a0
+    void HandleSyncGameList(SyncGameListEvent*); // 0x7c7870
+    void HandleComboTextChanged(Component*); // 0x7c7b30
+    void HandleComboSelChanged(ComboSelChangedEvent*); // 0x7c7dd0
+    bool HandleRefreshButton(); // 0x7c80c0
+    void HandleListItemClicked(ListItemClickedEvent*); // 0x7c7a50
+    void SetNumColumns(int); // 0x7c8340; stores the count and resizes the column vector
+    static ColumnInfo* GetColumnInfo(const GUIString&); // 0x7c5ff0
+    static void InitColumnMap(); // 0x7c6050
+    static void AddDefaultFilters(const GUIString&,const GUIString&,bool); // 0x7c6340
+    ColumnInfoVector mColumnInfo; // 0x84..0x93
+    void SetGameType(int inType) { this->mGameType=inType; }
+    int mGameType; // 0x94
+    bool mNeedFilter; // 0x98
+    int mFilterTimeAccum; // 0x9c
+    int mNumColumns; // 0xa0
+    SmartPtr<Font> mBoldFont; // 0xa4
+    SmartPtr<MultiListArea> mList; // 0xa8
+    SmartPtr<Button> mJoinButton; // 0xac
+    SmartPtr<Button> mRefreshButton; // 0xb0
+    SmartPtr<Component> mRemoveButton; // 0xb4
+    SmartPtr<Label> mSummaryLabel; // 0xb8
+    ServerDetailsMap mServerDetailsMap; // 0xbc..0xc7
+    static ColumnMap mColumnMap; // 0x966b60
 };
 }
 

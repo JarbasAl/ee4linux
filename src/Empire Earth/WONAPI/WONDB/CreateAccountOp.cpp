@@ -1,4 +1,4 @@
-// Native account creation exchange through DBProxy service.
+// WONAPI op that creates a WON account through the DBProxy service (encrypted exchange)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,46 +8,51 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONElGamal.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006cbe70
+// Sets 4-byte length fields, creates an empty profile and a new 8-byte session key
 void CreateAccountOp::Init()
 {
-    mLengthFieldSize=4;
-    mProfileData=new ProfileData;
-    mSymKey.Create(8);
+    this->mLengthFieldSize=4;
+    this->mProfileData=new ProfileData;
+    this->mSymKey.Create(8);
 }
 // FUNCTION: WON 0x006cbf20
+// Creates an account-creation request for a server context
 CreateAccountOp::CreateAccountOp(ServerContext* inContext)
     : ServerRequestOp(inContext)
 {
-    Init();
+    this->Init();
 }
 // FUNCTION: WON 0x006cc4e0
-void CreateAccountOp::Virtual18()
+// Restarts the exchange at fetching the server's public key
+void CreateAccountOp::Reset()
 {
-    mState=State_GettingPubKey;
+    this->mState=State_GettingPubKey;
 }
 // FUNCTION: WON 0x006cc4f0
-WONStatus CreateAccountOp::Virtual10()
+// Builds the next message: public key request, encrypted session key, or the encrypted account data
+WONStatus CreateAccountOp::GetNextRequest()
 {
-    WriteBuffer request(mLengthFieldSize,true);
-    if (mState==State_GettingPubKey) {
+    WriteBuffer request(this->mLengthFieldSize,true);
+    if (this->mState==State_GettingPubKey) {
         request.AppendByte(5);
         request.AppendShort(14);
         request.AppendShort(2);
         request.AppendShort(1);
-        mRequest=request.ToByteBuffer(true);
-        return 100059;
-    } else if (mState==State_SettingSessionKey) {
+        this->mRequest=request.ToByteBuffer(true);
+        return WS_ServerReq_Recv;
+    } else if (this->mState==State_SettingSessionKey) {
         request.AppendByte(5);
         request.AppendShort(14);
         request.AppendShort(4);
         request.AppendShort(1);
-        ByteBufferPtr encryptedKey=mPubKey.Encrypt(mSymKey.GetKey(),mSymKey.GetKeyLen());
+        ByteBufferPtr encryptedKey=this->mPubKey.Encrypt(this->mSymKey.GetKey(),this->mSymKey.GetKeyLen());
         request.AppendBuffer(encryptedKey.get(),2);
-        mRequest=request.ToByteBuffer(true);
-        mState=State_CreatingAccount;
-        return 100058;
+        this->mRequest=request.ToByteBuffer(true);
+        this->mState=State_CreatingAccount;
+        return WS_ServerReq_Send;
     } else {
         request.AppendByte(5);
         request.AppendShort(14);
@@ -58,40 +63,41 @@ WONStatus CreateAccountOp::Virtual10()
         account.AppendShort(14);
         account.AppendShort(1002);
         account.AppendShort(2);
-        account.AppendWString(mUserName,2);
-        account.AppendWString(mPassword,2);
-        account.AppendString(mEmail,2);
-        mProfileData->PackRequestData(account,true);
-        ByteBufferPtr encrypted=mSymKey.Encrypt(account.data(),account.length());
+        account.AppendWString(this->mUserName,2);
+        account.AppendWString(this->mPassword,2);
+        account.AppendString(this->mEmail,2);
+        this->mProfileData->PackRequestData(account,true);
+        ByteBufferPtr encrypted=this->mSymKey.Encrypt(account.data(),account.length());
         request.AppendBuffer(encrypted.get(),0);
-        mRequest=request.ToByteBuffer(true);
-        return 100059;
+        this->mRequest=request.ToByteBuffer(true);
+        return WS_ServerReq_Recv;
     }
 }
 // FUNCTION: WON 0x006cc8d0
-WONStatus CreateAccountOp::Virtual14()
+// Checks a reply: stores the server's public key and moves on, or returns the account creation status
+WONStatus CreateAccountOp::CheckResponse()
 {
-    ReadBuffer reply(mResponse->data(),mResponse->length());
+    ReadBuffer reply(this->mResponse->data(),this->mResponse->length());
     unsigned char header=reply.ReadByte();
     unsigned short service=reply.ReadShort();
     unsigned short message=reply.ReadShort();
     unsigned short subMessage=reply.ReadShort();
     WONStatus status=reply.ReadShort();
-    reply.ReadString(mErrorString,2);
+    reply.ReadString(this->mErrorString,2);
     reply.ReadByte();
-    if (header!=5 || service!=14) return InvalidReplyHeader();
+    if (header!=5 || service!=14) return this->InvalidReplyHeader();
     if (status!=0) return status;
-    if (mState==State_GettingPubKey) {
-        if (message!=3) return InvalidReplyHeader();
+    if (this->mState==State_GettingPubKey) {
+        if (message!=3) return this->InvalidReplyHeader();
         unsigned short keyLength=reply.ReadShort();
-        if (!mPubKey.SetPublicKey(reply.ReadBytes(keyLength),keyLength)) {
-            SetLastServerError(100011);
-            return 100057;
+        if (!this->mPubKey.SetPublicKey(reply.ReadBytes(keyLength),keyLength)) {
+            this->SetLastServerError(WS_InvalidPublicKey);
+            return WS_ServerReq_TryNextServer;
         }
-        mState=State_SettingSessionKey;
-        return 100058;
+        this->mState=State_SettingSessionKey;
+        return WS_ServerReq_Send;
     } else {
-        if (message!=1002 || subMessage!=3) return InvalidReplyHeader();
+        if (message!=1002 || subMessage!=3) return this->InvalidReplyHeader();
         return status;
     }
 }

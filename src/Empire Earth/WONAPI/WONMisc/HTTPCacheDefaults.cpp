@@ -1,5 +1,4 @@
-// Genuine original API definitions whose ICF native bodies are already represented.
-// Source completeness only: zero incremental unique native functions/bytes/primary.
+// HTTPCache default hooks whose bodies the linker folded into identical functions elsewhere
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,6 +8,6 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
-// SOURCE-ONLY original ICF 0x2fa500; no new native credit.
+// Same body as 0x6fa500 in the original (folded by the linker)
 void HTTPCache::UpdateEntry(HTTPCacheEntry*) {}
 }

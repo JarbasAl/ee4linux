@@ -66,7 +66,7 @@ public:
     void ChooseFavoriteSeaType();
     void ChooseFavoriteSpaceType();
     void Regroup();                         // 0x2e2a3 (Attacked when there is no resource center)
-    void EnterEpoch(long inEpoch);          // 0x3c9c5 (VirtualA4: a new epoch)
+    void EnterEpoch(long inEpoch);          // 0x3c9c5 (GetMaxWidth: a new epoch)
     void UpdateGroups();                    // 0x3f3f1
     void EnableManagers(unsigned long inTime);  // 0x2d334 (Update) (provisional name)
     void SetNextAttackTime(unsigned long inTime);  // 0x3d4cd (Update) (provisional name)

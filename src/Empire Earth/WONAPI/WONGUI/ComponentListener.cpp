@@ -1,4 +1,4 @@
-// Genuine SDK ComponentListener.cpp dispatch definition.
+// ComponentListener event dispatch (SDK ComponentListener.cpp)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,8 +11,9 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00737bf0
-void ComponentListenerComp::Virtual04(ComponentEvent* event)
+// Forwards a component event to the listening component
+void ComponentListenerComp::HandleComponentEvent(ComponentEvent* event)
 {
-    mComponent->HandleComponentEvent(event);
+    this->mComponent->HandleComponentEvent(event);
 }
 }

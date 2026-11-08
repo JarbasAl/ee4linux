@@ -1,4 +1,4 @@
-// Rich text multi-line hit testing, selection/search, extents and rendering.
+// Rich text multi-line element: hit testing, selection, search, segment list and painting (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,11 +13,12 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x0070CA30
+// Returns the segment under a point (made relative to it), checking lines then floats; the element itself if none
 LineSegment* MultiLineElement::GetSegmentAt(int &x, int &y, bool lenient) 
 { 
-	LineVector::iterator anItr = FindLineAt(y);
+	LineVector::iterator anItr = this->FindLineAt(y);
 	FloatingSegment *aFloat = NULL; 
-	if(anItr!=mLineVector.end())
+	if(anItr!=this->mLineVector.end())
 	{
 		LineElement *aLine = anItr->get();
 		if(y>=aLine->my && y<aLine->my+aLine->GetHeight() && aLine->mLeftMargin<=x && aLine->mLeftMargin+aLine->mWidth>=x)
@@ -26,9 +27,9 @@ LineSegment* MultiLineElement::GetSegmentAt(int &x, int &y, bool lenient)
 			return aLine->GetSegmentAt(x,y,lenient);
 		}
 		else if(aLine->mLeftMargin>x) // find left floating element
-			aFloat = FindFloatingSegmentAt(x,y,true);
+			aFloat = this->FindFloatingSegmentAt(x,y,true);
 		else // find right floating element
-			aFloat = FindFloatingSegmentAt(x,y,false);
+			aFloat = this->FindFloatingSegmentAt(x,y,false);
 
 		if(lenient && aFloat==NULL)
 		{
@@ -38,9 +39,9 @@ LineSegment* MultiLineElement::GetSegmentAt(int &x, int &y, bool lenient)
 	}
 	else
 	{
-		aFloat = FindFloatingSegmentAt(x,y,true);
+		aFloat = this->FindFloatingSegmentAt(x,y,true);
 		if(aFloat==NULL)
-			aFloat = FindFloatingSegmentAt(x,y,false);
+			aFloat = this->FindFloatingSegmentAt(x,y,false);
 	}
 
 	if(aFloat==NULL)
@@ -52,11 +53,12 @@ LineSegment* MultiLineElement::GetSegmentAt(int &x, int &y, bool lenient)
 }
 
 // FUNCTION: WON 0x0070CB60
+// Attaches the element, each of its lines and every floating segment to a scroll viewport at their offsets
 void MultiLineElement::SetViewport(ScrollAreaViewport *theViewport, int x, int y)
 {
 	LineSegment::SetViewport(theViewport,x,y);
-	LineVector::iterator anItr = mLineVector.begin();
-	while(anItr!=mLineVector.end())
+	LineVector::iterator anItr = this->mLineVector.begin();
+	while(anItr!=this->mLineVector.end())
 	{
 		LineElement *aLine = anItr->get();
 		aLine->SetViewport(theViewport,x,y+aLine->my);
@@ -65,7 +67,7 @@ void MultiLineElement::SetViewport(ScrollAreaViewport *theViewport, int x, int y
 
 	for(int i=0; i<2; i++)
 	{
-		for(FloatingVector::iterator anItr =  mFloatingItems[i].begin(); anItr!=mFloatingItems[i].end(); ++anItr)
+		for(FloatingVector::iterator anItr =  this->mFloatingItems[i].begin(); anItr!=this->mFloatingItems[i].end(); ++anItr)
 		{
 			FloatingSegment &aSeg = *anItr;
 			aSeg.mSegment->SetViewport(theViewport,x + aSeg.mx, y + aSeg.my);
@@ -75,11 +77,12 @@ void MultiLineElement::SetViewport(ScrollAreaViewport *theViewport, int x, int y
 }
 
 // FUNCTION: WON 0x0070CBF0
+// Numbers the element and then each of its segments for selection
 void MultiLineElement::SetSelIndex()
 {
 	LineSegment::SetSelIndex();
-	SegmentList::iterator anItr = mSegmentList.begin();
-	while(anItr!=mSegmentList.end())
+	SegmentList::iterator anItr = this->mSegmentList.begin();
+	while(anItr!=this->mSegmentList.end())
 	{
 		anItr->mSegment->SetSelIndex();
 		++anItr;
@@ -87,10 +90,11 @@ void MultiLineElement::SetSelIndex()
 }
 
 // FUNCTION: WON 0x0070CC50
+// Appends the selected text of the segments inside the selection range (no separators are added between lines)
 void MultiLineElement::GetSelText(GUIString &theText, ElementSelectionInfo &theInfo)
 {
-	SegmentList::iterator anItr = mSegmentList.begin();
-	while(anItr!=mSegmentList.end())
+	SegmentList::iterator anItr = this->mSegmentList.begin();
+	while(anItr!=this->mSegmentList.end())
 	{
 		LineSegment *aSeg = anItr->mSegment.get();
 		if(aSeg->GetEndSelIndex()>=theInfo.mStartSelSegment)
@@ -100,7 +104,7 @@ void MultiLineElement::GetSelText(GUIString &theText, ElementSelectionInfo &theI
 	}
 
 	bool hadText = false;
-	while(anItr!=mSegmentList.end())
+	while(anItr!=this->mSegmentList.end())
 	{
 		SegmentInfo &aSegInfo = *anItr;
 		LineSegment *aSeg = aSegInfo.mSegment.get();
@@ -128,10 +132,11 @@ void MultiLineElement::GetSelText(GUIString &theText, ElementSelectionInfo &theI
 }
 
 // FUNCTION: WON 0x0070CCD0
+// Finds the position of a selection character in the lines, then in the floats; returns false if none has it
 bool MultiLineElement::GetSelCharPos(int &x, int &y, int theSelIndex, int theSelChar)
 {
-	LineVector::iterator aLineItr = mLineVector.begin();
-	while(aLineItr!=mLineVector.end())
+	LineVector::iterator aLineItr = this->mLineVector.begin();
+	while(aLineItr!=this->mLineVector.end())
 	{
 		LineElement *anElement = aLineItr->get();
 		if(anElement->GetSelCharPos(x,y,theSelIndex,theSelChar))
@@ -142,8 +147,8 @@ bool MultiLineElement::GetSelCharPos(int &x, int &y, int theSelIndex, int theSel
 
 	for(int i=0; i<2; i++)
 	{
-		FloatingVector::iterator anItr = mFloatingItems[i].begin();
-		while(anItr!=mFloatingItems[i].end())
+		FloatingVector::iterator anItr = this->mFloatingItems[i].begin();
+		while(anItr!=this->mFloatingItems[i].end())
 		{
 			FloatingSegment &aSegment = *anItr;
 			if(aSegment.mSegment->GetSelCharPos(x,y,theSelIndex,theSelChar))
@@ -157,10 +162,11 @@ bool MultiLineElement::GetSelCharPos(int &x, int &y, int theSelIndex, int theSel
 }
 
 // FUNCTION: WON 0x0070CD70
+// Searches the segments for the find string (forward, or the last hit when searching backwards) and sets its position
 bool MultiLineElement::FindStr(ElementFindInfo &theInfo)
 {
-	SegmentList::iterator anItr = mSegmentList.begin();
-	while(anItr!=mSegmentList.end())
+	SegmentList::iterator anItr = this->mSegmentList.begin();
+	while(anItr!=this->mSegmentList.end())
 	{
 		LineSegment *aSeg = anItr->mSegment.get();
 		if(aSeg->GetEndSelIndex()>=theInfo.mStartSelSegment)
@@ -170,10 +176,10 @@ bool MultiLineElement::FindStr(ElementFindInfo &theInfo)
 	}
 
 	bool found = false;
-	SegmentList::iterator aStartFindItr = mSegmentList.end();
+	SegmentList::iterator aStartFindItr = this->mSegmentList.end();
 	ElementFindInfo aFoundInfo;
 
-	while(anItr!=mSegmentList.end())
+	while(anItr!=this->mSegmentList.end())
 	{
 		SegmentInfo &aSegInfo = *anItr;
 		LineSegment *aSeg = aSegInfo.mSegment.get();
@@ -188,7 +194,7 @@ bool MultiLineElement::FindStr(ElementFindInfo &theInfo)
 				aFoundInfo = theInfo;
 				if(theInfo.mFindPrev)
 				{
-					if(aStartFindItr!=mSegmentList.end())
+					if(aStartFindItr!=this->mSegmentList.end())
 						anItr = aStartFindItr;
 
 					theInfo.mStartSelSegment = theInfo.mFoundStartSegment;
@@ -200,10 +206,10 @@ bool MultiLineElement::FindStr(ElementFindInfo &theInfo)
 				else
 					break;
 			}
-			else if(theInfo.mCurFoundLength>0 && aStartFindItr==mSegmentList.end())
+			else if(theInfo.mCurFoundLength>0 && aStartFindItr==this->mSegmentList.end())
 				aStartFindItr = anItr;
 			else
-				aStartFindItr = mSegmentList.end();
+				aStartFindItr = this->mSegmentList.end();
 
 
 			if((aSegInfo.mFlags&8))
@@ -223,47 +229,49 @@ bool MultiLineElement::FindStr(ElementFindInfo &theInfo)
 	else
 	{
 		theInfo = aFoundInfo;
-		GetSelCharPos(theInfo.mFoundX,theInfo.mFoundY,theInfo.mFoundStartSegment,theInfo.mFoundStartChar);
+		this->GetSelCharPos(theInfo.mFoundX,theInfo.mFoundY,theInfo.mFoundStartSegment,theInfo.mFoundStartChar);
 		return true;
 	}
 }
 
 // FUNCTION: WON 0x0070D570
+// Appends a segment with its layout flags, updating the element's minimum and maximum widths
 void MultiLineElement::AddSegment(LineSegment *theSegment, unsigned short theFlags)
 {
 	int aMinWidth = theSegment->GetMinWidth();
-	if(aMinWidth>mMinWidth)
-		mMinWidth = aMinWidth;
+	if(aMinWidth>this->mMinWidth)
+		this->mMinWidth = aMinWidth;
 
 	if(theFlags & 4)
-		mCurLineWidth = 0;
+		this->mCurLineWidth = 0;
 
-	mCurLineWidth += theSegment->GetMaxWidth();
-	if(mCurLineWidth>mMaxWidth)
-		mMaxWidth = mCurLineWidth;
+	this->mCurLineWidth += theSegment->GetMaxWidth();
+	if(this->mCurLineWidth>this->mMaxWidth)
+		this->mMaxWidth = this->mCurLineWidth;
 
 	if(theFlags & 8)
-		mCurLineWidth = 0;
+		this->mCurLineWidth = 0;
 
 
-	mSegmentList.push_back(SegmentInfo(theSegment,theFlags));
+	this->mSegmentList.push_back(SegmentInfo(theSegment,theFlags));
 }
 
 // FUNCTION: WON 0x0070D6E0
+// Paints the lines inside the clip rectangle and then every floating segment
 void MultiLineElement::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInfo)
 {
 	int aTop = theInfo.mClipY-y;
 	int aBottom = (theInfo.mClipY+theInfo.mClipHeight)-y;
-	if(aTop>mHeight || theInfo.mClipX-x>mWidth || aBottom<0 || (theInfo.mClipX+theInfo.mClipWidth)-x<0)
+	if(aTop>this->mHeight || theInfo.mClipX-x>this->mWidth || aBottom<0 || (theInfo.mClipX+theInfo.mClipWidth)-x<0)
 		return;
 
 	LineVector::iterator anItr;
 	if(aTop>0)
-		anItr = FindLineAt(aTop);
+		anItr = this->FindLineAt(aTop);
 	else
-		anItr = mLineVector.begin();
+		anItr = this->mLineVector.begin();
 
-	while(anItr!=mLineVector.end())
+	while(anItr!=this->mLineVector.end())
 	{
 		LineElement *anElement = anItr->get();
 		if(anElement->my > aBottom)
@@ -276,7 +284,7 @@ void MultiLineElement::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInf
 	FloatingVector::iterator aFloatItr;
 	for(int i=0; i<2; i++)
 	{
-		for(aFloatItr=mFloatingItems[i].begin(); aFloatItr!=mFloatingItems[i].end(); ++aFloatItr)
+		for(aFloatItr=this->mFloatingItems[i].begin(); aFloatItr!=this->mFloatingItems[i].end(); ++aFloatItr)
 		{
 			FloatingSegment *aSegment = &*aFloatItr;
 			theInfo.mLineY = y+aSegment->my;

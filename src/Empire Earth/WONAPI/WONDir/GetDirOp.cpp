@@ -1,4 +1,4 @@
-// Native AoC GetDirOp protocol behavior; legacy header migration pending Root.
+// WONAPI op that lists a directory on the directory server
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,39 +10,45 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONBuffer.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f1190
+// Sets 4-byte length fields and creates the entity request
 void GetDirOp::Init()
 {
-    mLengthFieldSize=4;
-    mGetEntityRequest=new GetEntityRequest;
+    this->mLengthFieldSize=4;
+    this->mGetEntityRequest=new GetEntityRequest;
 }
 // FUNCTION: WON 0x006f12d0
+// Creates a get-directory request for a server context
 GetDirOp::GetDirOp(ServerContext* context) : ServerRequestOp(context)
 {
-    Init();
+    this->Init();
 }
 // FUNCTION: WON 0x006f13c0
-void GetDirOp::Virtual18()
+// Forgets the entities received so far
+void GetDirOp::Reset()
 {
-    mGetEntityRequest->Reset();
+    this->mGetEntityRequest->Reset();
 }
 // FUNCTION: WON 0x006f13d0
-WONStatus GetDirOp::Virtual10()
+// Builds the get-directory message from the path, flags and data types
+WONStatus GetDirOp::GetNextRequest()
 {
-    WriteBuffer message(mLengthFieldSize,true);
+    WriteBuffer message(this->mLengthFieldSize,true);
     message.AppendByte(5);
     message.AppendShort(2);
     message.AppendShort(103);
-    mGetEntityRequest->Pack(&message,GetEntityRequest::Pack_GetDirOp);
-    mRequest=message.ToByteBuffer(true);
-    return (WONStatus)100059;
+    this->mGetEntityRequest->Pack(&message,GetEntityRequest::Pack_GetDirOp);
+    this->mRequest=message.ToByteBuffer(true);
+    return (WONStatus)WS_ServerReq_Recv;
 }
 // FUNCTION: WON 0x006f14e0
-WONStatus GetDirOp::Virtual14()
+// Parses a reply into the entity list; returns the status (more replies, done or bad header)
+WONStatus GetDirOp::CheckResponse()
 {
-    WONStatus status=mGetEntityRequest->ParseMultiEntityReply(mResponse->data(),mResponse->length());
-    if(status==(WONStatus)100063) return InvalidReplyHeader();
+    WONStatus status=this->mGetEntityRequest->ParseMultiEntityReply(this->mResponse->data(),this->mResponse->length());
+    if(status==(WONStatus)100063) return this->InvalidReplyHeader();
     return status;
 }
 }

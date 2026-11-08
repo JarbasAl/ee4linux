@@ -1,6 +1,6 @@
-// Complete original-backed ElGamal1a8 storage and external public-key API contract.
-// Native3d7690 constructs Random0 +6 BigInteger20; actual CreateAccount108..2b0 span1a8.
-// Implicit destruction proven by2cc010/2cc2e0: six real BigInteger dtors and Random COW owners.
+// ElGamal (0x1a8 bytes): storage and the external public-key API.
+// 3d7690 constructs Random at 0, then six 0x20-byte BigIntegers; CreateAccount spans 108..2b0 (0x1a8).
+// Implicit destruction, from 2cc010/2cc2e0: six BigInteger dtors and the Random COW members.
 #ifndef EE_WONAPI_WONELGAMAL_H
 #define EE_WONAPI_WONELGAMAL_H
 #include "ee/wonapi/WONRandom.h"
@@ -18,14 +18,14 @@ class ElGamal {
     int modulusLen; //19c
     bool mIsPrivate; //1a0
     bool mIsPublic; //1a1; natural1a2..1a8 alignment
-    bool EncodeDigest(const RawBuffer&,BigInteger&) const; //3d84a0, external actualret8
-    bool encrypt(const BigInteger&,BigInteger[]) const; //3d8990, external actualret8
-    bool decrypt(const BigInteger&,const BigInteger&,BigInteger&) const; //3d8b70, external actualret0c
-    bool BogusVerify(const BigInteger&,const BigInteger&,const BigInteger&) const; //3d8c50, external actualret0c
+    bool EncodeDigest(const RawBuffer&,BigInteger&) const; //3d84a0, external, ret 8
+    bool encrypt(const BigInteger&,BigInteger[]) const; //3d8990, external, ret 8
+    bool decrypt(const BigInteger&,const BigInteger&,BigInteger&) const; //3d8b70, external, ret 0c
+    bool BogusVerify(const BigInteger&,const BigInteger&,const BigInteger&) const; //3d8c50, external, ret 0c
     static BigInteger GetRandBetween(Random&,const BigInteger&,const BigInteger&);
     bool BogusSign(const BigInteger&,BigInteger[]) const;
 public:
-    ElGamal(); //3d7690, actual complete owner construction
+    ElGamal(); //3d7690
     ElGamal(const void*, int, bool); //3d7740
     void Invalidate(); //3d7820
     bool IsPrivate() const; //3d7830
@@ -38,7 +38,7 @@ public:
     ByteBufferPtr Sign(const void*,int) const;
     ByteBufferPtr GetRawPrivateKey() const;
     ByteBufferPtr GetRawPublicKey() const;
-    // Actual implicit destructor: no vtable, member owners above.
+    // Implicit destructor: no vtable, members above
 };
 }
 #endif

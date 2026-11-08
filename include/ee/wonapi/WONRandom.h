@@ -1,4 +1,4 @@
-// Complete native Randomd8 owner; constructor intentionally does not initialize counter/used.
+// Random (0xd8 bytes); the constructor does not initialize counter/used
 #ifndef EE_WONAPI_WONRANDOM_H
 #define EE_WONAPI_WONRANDOM_H
 #include "ee/wonapi/WONMD5Digest.h"
@@ -18,7 +18,7 @@ public:
     unsigned int next(int);
     void setSeed(const RawBuffer&); //3da5e0
     void nextBytes(RawBuffer&); //3da770
-    static RawBuffer getSeed(int); //3da950, ignored requestedlen, actual8 bytes
+    static RawBuffer getSeed(int); //3da950, ignores the requested length, 8 bytes
     RawBuffer longToByteArray(__int64); //3dab20
 };
 }

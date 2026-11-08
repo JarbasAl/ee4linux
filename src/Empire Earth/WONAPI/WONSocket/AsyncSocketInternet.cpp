@@ -10,6 +10,7 @@
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006b09a0
+// Asks wininet.dll (loaded once) whether the machine is online; returns true when wininet is unavailable
 bool AsyncSocket::HasInternetConnection()
 {
     typedef BOOL (WINAPI *InternetGetConnectedStateFunc)(LPDWORD,DWORD);

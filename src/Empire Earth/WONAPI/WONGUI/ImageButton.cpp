@@ -9,21 +9,25 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/EELobbySound.h"
 #include "ee/wonapi/WONLobbyImageButton.h"
+#include "ee/wonapi/WONComponentFlags.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x006f7d70
+// Creates an image button that takes focus but not tab focus, with stretching off
 ImageButton::ImageButton() {
-    Fn2F3370(1,true);
-    SetComponentFlags(8,true);
-    SetComponentFlags(0x4000,false);
-    mStretch=false;
+    this->SetButtonFlags(1,true);
+    this->SetComponentFlags(ComponentFlag_WantFocus,true);
+    this->SetComponentFlags(ComponentFlag_WantTabFocus,false);
+    this->mStretch=false;
 }
 // FUNCTION: WON 0x006f7e20
+// Destroys the image button (members only)
 ImageButton::~ImageButton() {}
 // FUNCTION: WON 0x006f7e80
-void ImageButton::Virtual0C(int& outWidth,int& outHeight) {
+// Returns the largest width and height among the button's five state images
+void ImageButton::GetDesiredSize(int& outWidth,int& outHeight) {
     int width=0,height=0;
     for(int i=0;i<5;++i) {
-        Image* image=mImages[i].get();
+        Image* image=this->mImages[i].get();
         if(image) {
             if(image->mWidth>width) width=image->mWidth;
             if(image->mHeight>height) height=image->mHeight;
@@ -33,18 +37,20 @@ void ImageButton::Virtual0C(int& outWidth,int& outHeight) {
     outHeight=height;
 }
 // FUNCTION: WON 0x006f7ed0
+// Draws the image for the current state (disabled, checked, down, over), falling back to the normal image,
+// resizing it to the button first when stretching
 void ImageButton::Paint(Graphics& g) {
     Component::Paint(g);
     Image* image=NULL;
-    if(IsDisabled()) image=mImages[ImageButtonType_Disabled].get();
-    else if(IsChecked() && mImages[ImageButtonType_Checked].get())
-        image=mImages[ImageButtonType_Checked].get();
-    else if(IsPressed()) image=mImages[ImageButtonType_Down].get();
-    else if(IsMouseOver()) image=mImages[ImageButtonType_Over].get();
-    if(!image) image=mImages[ImageButtonType_Normal].get();
+    if(this->IsDisabled()) image=this->mImages[ImageButtonType_Disabled].get();
+    else if(this->IsChecked() && this->mImages[ImageButtonType_Checked].get())
+        image=this->mImages[ImageButtonType_Checked].get();
+    else if(this->IsPressed()) image=this->mImages[ImageButtonType_Down].get();
+    else if(this->IsMouseOver()) image=this->mImages[ImageButtonType_Over].get();
+    if(!image) image=this->mImages[ImageButtonType_Normal].get();
     if(!image) return;
-    if(mStretch && (image->mWidth!=Width() || image->mHeight!=Height()))
-        image->SetSize(Width(),Height());
+    if(this->mStretch && (image->mWidth!=this->Width() || image->mHeight!=this->Height()))
+        image->SetSize(this->Width(),this->Height());
     g.DrawImage(image,0,0);
 }
 

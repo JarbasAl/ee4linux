@@ -1,6 +1,6 @@
-// Genuine used BigInteger lifetime/API bodies and bounded random-bit generation.
+// BigInteger: lifetime, bit access, random bits and the member-function API over the st_ helpers
 
-// ZERO/ONE remain external original-owned objects: no definitions or startup code here.
+// ZERO and ONE are defined in BigInteger.cpp
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,6 +15,7 @@
 #include "ee/wonapi/WONRandom.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007d3020
+// Returns numBits random bits as big-endian bytes, masking the excess high bits
 RawBuffer BigInteger::st_randomBits(int numBits, Random &rndSrc)
 {		
 	int numBytes = (numBits+7)/8;
@@ -31,12 +32,14 @@ RawBuffer BigInteger::st_randomBits(int numBits, Random &rndSrc)
 }
 
 // FUNCTION: WON 0x007d2fd0
+// Returns the number of bytes needed for the magnitude
 int BigInteger::byteLength() const
 {
-	return ((st_bitLength(*this) + 7) / 8);
+	return ((BigInteger::st_bitLength(*this) + 7) / 8);
 }
 
 // FUNCTION: WON 0x007d3160
+// Returns whether bit i of the value is set (false beyond its length)
 bool BigInteger::st_bit(const BigInteger &n, int i)
 {
     int bit = i % 32;
@@ -49,6 +52,7 @@ bool BigInteger::st_bit(const BigInteger &n, int i)
 }
 
 // FUNCTION: WON 0x007d31b0
+// Sets bit i of the value; does nothing beyond its current length
 void BigInteger::st_setBit(BigInteger &n, int i)
 {
     int bit = i % 32;
@@ -62,6 +66,7 @@ void BigInteger::st_setBit(BigInteger &n, int i)
 }
 
 // FUNCTION: WON 0x007d31f0
+// Copies count words (memmove when source and target are the same)
 void BigInteger::st_CopyBuffer(word *dest, const word *src, size_t count)
 {
 	if(dest!=src)
@@ -71,13 +76,15 @@ void BigInteger::st_CopyBuffer(word *dest, const word *src, size_t count)
 }
 
 // FUNCTION: WON 0x007d32d0
+// Destroys the value, freeing a heap word buffer
 BigInteger::~BigInteger()
 {
-	if(n!=stackN)
-		delete[] n;
+	if(this->n!=this->stackN)
+		delete[] this->n;
 }
 
 // FUNCTION: WON 0x007d3610
+// Sets the value to zero
 void BigInteger::st_zero(BigInteger &a)
 {
     a.n[0] = 0;
@@ -86,6 +93,7 @@ void BigInteger::st_zero(BigInteger &a)
 }
 
 // FUNCTION: WON 0x007d3630
+// Sets the value to one
 void BigInteger::st_one(BigInteger &a)
 {
     a.n[0] = 1;
@@ -94,9 +102,10 @@ void BigInteger::st_one(BigInteger &a)
 }
 
 // FUNCTION: WON 0x007d3dd0
+// Compares the magnitudes of two values; returns -1, 0 or 1
 int BigInteger::st_ucmp(const BigInteger &a, const BigInteger &b)
 {
-    return CompareWords(a.n,b.n,a.len,b.len);
+    return BigInteger::CompareWords(a.n,b.n,a.len,b.len);
 /*	int alen = a.len;
     int blen = b.len;
 
@@ -115,173 +124,194 @@ int BigInteger::st_ucmp(const BigInteger &a, const BigInteger &b)
 }
 
 // FUNCTION: WON 0x007d4fa0
+// Sets r to the greatest common divisor of a and b
 void BigInteger::st_gcd(BigInteger &r, const BigInteger &a, const BigInteger &b)
 {
-    if (st_cmp(a, b) > 0)
-        st_euclid(r, a, b);
+    if (BigInteger::st_cmp(a, b) > 0)
+        BigInteger::st_euclid(r, a, b);
     else
-        st_euclid(r, b, a);
+        BigInteger::st_euclid(r, b, a);
 }
 
 // FUNCTION: WON 0x007d5760
+// Creates a zero value
 BigInteger::BigInteger()
 {
-	Init();
+	this->Init();
 }
 
 // FUNCTION: WON 0x007d5780
+// Creates a copy of another value
 BigInteger::BigInteger(const BigInteger &theVal)
 {
-	Init();
-	st_copy(*this,theVal);
+	this->Init();
+	BigInteger::st_copy(*this,theVal);
 }
 
 // FUNCTION: WON 0x007d57b0
+// Creates a value from an int
 BigInteger::BigInteger(int theFrom)
 {
-	Init();
+	this->Init();
 
-	negative = theFrom<0;
-	if(negative)
-		n[0] = theFrom*-1;
+	this->negative = theFrom<0;
+	if(this->negative)
+		this->n[0] = theFrom*-1;
 	else
-		n[0] = theFrom;
+		this->n[0] = theFrom;
 
-	len = 1;
+	this->len = 1;
 	if(theFrom==0)
-		len = 0;
+		this->len = 0;
 }
 
 // FUNCTION: WON 0x007d5800
+// Creates a value from big-endian unsigned bytes
 BigInteger::BigInteger(const RawBuffer &buffer)
 {
-	Init();
-    fromBinary(buffer);
+	this->Init();
+    this->fromBinary(buffer);
 }
 
 // FUNCTION: WON 0x007d5820
+// Creates a random value of up to numBits bits
 BigInteger::BigInteger(int numBits, Random &rndSrc)
 {
-	Init();
-	fromBinary(st_randomBits(numBits,rndSrc));
+	this->Init();
+	this->fromBinary(BigInteger::st_randomBits(numBits,rndSrc));
 }
 
 // FUNCTION: WON 0x007d58c0
+// Copies another value into this one
 const BigInteger& BigInteger::operator =(const BigInteger& theVal)
 {
-	st_copy(*this,theVal);
+	BigInteger::st_copy(*this,theVal);
 	return *this;
 }
 
 // FUNCTION: WON 0x007d58e0
+// Returns whether the given bit is set
 bool BigInteger::testBit(int theBit)
 {
-	return st_bit(*this,theBit);
+	return BigInteger::st_bit(*this,theBit);
 }
 
 // FUNCTION: WON 0x007d5900
+// Sets the given bit (within the current length) and returns this value
 BigInteger& BigInteger::setBit(int theBit)
 {
-	st_setBit(*this,theBit);
+	BigInteger::st_setBit(*this,theBit);
 	return *this;
 }
 
 // FUNCTION: WON 0x007d5920
+// Returns the greatest common divisor with b
 BigInteger BigInteger::gcd(const BigInteger &b) const
 {
 	BigInteger r;
-	st_gcd(r,*this,b);
+	BigInteger::st_gcd(r,*this,b);
 
 	return r;
 }
 
 // FUNCTION: WON 0x007d59b0
+// Returns the number of significant bits
 int BigInteger::bitLength() const
 { 
-	return st_bitLength(*this); 
+	return BigInteger::st_bitLength(*this); 
 }
 
 // FUNCTION: WON 0x007d59c0
+// Returns this value raised to a power modulo m, using a precomputed reciprocal
 BigInteger BigInteger::modExp(const BigInteger &power, const BigInteger &modulo, const BigInteger &recip, short nb) const
 {
 	BigInteger r;
-	st_modExp(r, *this, power, modulo,recip,nb);
+	BigInteger::st_modExp(r, *this, power, modulo,recip,nb);
 
     return r;
 }
 
 // FUNCTION: WON 0x007d5a50
+// Returns the multiplicative inverse modulo n
 BigInteger BigInteger::inverseModN(const BigInteger &n) const
 {
 	BigInteger r;
 
-	st_inverseModN(r,*this, n);
+	BigInteger::st_inverseModN(r,*this, n);
 
     return r;
 }
 
 // FUNCTION: WON 0x007d5ae0
+// Returns this value modulo b
 BigInteger BigInteger::mod(const BigInteger &b) const
 {
 	BigInteger r;
 
-	st_mod(r, *this, b);
+	BigInteger::st_mod(r, *this, b);
    
 	return r;
 }
 
 // FUNCTION: WON 0x007d5b70
+// Returns this value plus b
 BigInteger BigInteger::add(const BigInteger &b) const
 {
 	BigInteger r;
 	
-	st_add(r, *this, b);
+	BigInteger::st_add(r, *this, b);
     return r;
 }
 
 // FUNCTION: WON 0x007d5c00
+// Returns this value minus b
 BigInteger BigInteger::sub(const BigInteger &b) const
 {
 	BigInteger r;
-	st_sub(r, *this, b);
+	BigInteger::st_sub(r, *this, b);
 
     return r;
 }
 
 // FUNCTION: WON 0x007d5c90
+// Compares with another value; returns -1, 0 or 1
 int BigInteger::cmp(const BigInteger &a) const
 {
-    return st_cmp(*this, a);
+    return BigInteger::st_cmp(*this, a);
 }
 
 // FUNCTION: WON 0x007d5cb0
+// Shifts this value right by n bits in place
 BigInteger& BigInteger::shiftRight(int n)
 {
-	st_shiftRight(*this, *this, (short) n);
+	BigInteger::st_shiftRight(*this, *this, (short) n);
     return *this;
 }
 
 // FUNCTION: WON 0x007d5cd0
+// Returns whether the values are equal
 bool BigInteger::equals(const BigInteger &b) const
 {
-    return (cmp(b) == 0);
+    return (this->cmp(b) == 0);
 }
 
 // FUNCTION: WON 0x007d5cf0
+// Returns the reciprocal used for fast modular reduction and its bit count
 BigInteger BigInteger::recip(int &nb) const
 {
 	BigInteger r;
 
-	nb = st_recip(r,*this);
+	nb = BigInteger::st_recip(r,*this);
 	return r;
 }
 
 // FUNCTION: WON 0x007d5d80
+// Returns this value times y modulo m, using a precomputed reciprocal
 BigInteger BigInteger::modMulRecip(const BigInteger &y, const BigInteger &m, const BigInteger &i, short nb) const
 {
 	BigInteger r;
 
-	st_modMulRecip(r,*this,y,m,i,nb);
+	BigInteger::st_modMulRecip(r,*this,y,m,i,nb);
 	
 	return r;
 }
@@ -293,11 +323,11 @@ BigInteger BigInteger::modMulRecip(const BigInteger &y, const BigInteger &m, con
 #include <ctype.h>
 namespace WONAPI {
 using namespace std;
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 void BigInteger::fromString(const std::string& theString)
 {
 
-	st_zero(*this);
+	BigInteger::st_zero(*this);
 
 	int aPos = 0;
 	while(aPos<theString.length() && isspace(theString[aPos]))
@@ -327,17 +357,17 @@ void BigInteger::fromString(const std::string& theString)
 		
 		BigInteger anInt = atoi(aSubStr.c_str());
 
-		st_mul(r1,thousand,r2);
-		st_add(r1,r1,anInt);
+		BigInteger::st_mul(r1,thousand,r2);
+		BigInteger::st_add(r1,r1,anInt);
 
 		r2 = r1;
 		aPos+=3;
 	}
 
-	st_copy(*this,r1);
+	BigInteger::st_copy(*this,r1);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 std::string BigInteger::toString() const
 {
 	string s;
@@ -383,51 +413,51 @@ std::string BigInteger::toString() const
     }		
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 BigInteger::BigInteger(const std::string &theString)
 {
-	Init();
-	fromString(theString);
+	this->Init();
+	this->fromString(theString);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 BigInteger BigInteger::modExp(const BigInteger &power, const BigInteger &modulo) const
 {
 	BigInteger r;
-	st_modExp(r, *this, power, modulo);
+	BigInteger::st_modExp(r, *this, power, modulo);
 
     return r;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 BigInteger BigInteger::mul(const BigInteger &b) const
 {
 	BigInteger r;
-	st_mul(r, *this, b);
+	BigInteger::st_mul(r, *this, b);
 
     return r;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 BigInteger BigInteger::div(const BigInteger &b) const
 {
 	BigInteger r;
 	
-	st_div(r, *this, b);
+	BigInteger::st_div(r, *this, b);
 
 	return r;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 BigInteger BigInteger::divrem(const BigInteger &a, BigInteger &rem) const
 {
 	BigInteger div;
-	st_div(&div,&rem,*this,a);
+	BigInteger::st_div(&div,&rem,*this,a);
 
 	return div;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 BigInteger BigInteger::negate() const
 {
 	BigInteger r(*this);
@@ -436,14 +466,14 @@ BigInteger BigInteger::negate() const
 	return r;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 BigInteger& BigInteger::shiftLeft(int n)
 {
-	st_shiftLeft(*this, *this, (short) n);
+	BigInteger::st_shiftLeft(*this, *this, (short) n);
     return *this;
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing body; zero Native/primary/physical credit.
+// No original address identified: WON SDK body
 bool BigInteger::operator<(const BigInteger &a) const
 {
 	return cmp(a)<0;

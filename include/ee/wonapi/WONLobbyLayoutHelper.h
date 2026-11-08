@@ -2,7 +2,7 @@
 #define EE_WONAPI_WONLOBBYLAYOUTHELPER_H
 #include "ee/wonapi/WONLobbyLayout.h"
 namespace WONAPI {
-// Complete same-snapshot SDK value owner; Source-only Native ABI identity unlocated.
+// LayoutHelper value type (not identified in the original exe).
 class LayoutHelper
 {
 protected:

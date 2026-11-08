@@ -1,5 +1,5 @@
-// Original-backed UDP manager family; exact original TU grouping provisional.
-// Canonical candidate source; full ordinary COFF/EH/data review pending.
+// WONAPI UDPManager: one UDP socket shared by receive ops matched by sender, plus send/retry ops
+// (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,332 +8,358 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x006b76b0
+// Creates an unbound UDP manager with 1024-byte receives and auto-receive off
 UDPManager::UDPManager() : mCleanListItr(NULL), mCleanMapItr(NULL)
 {
-    mCleanListItr = mOpList.begin();
-    mCleanMapItr = mOpMap.begin();
-    mMaxRecvBytes = 1024;
-    mAutoRecv = false;
+    this->mCleanListItr = this->mOpList.begin();
+    this->mCleanMapItr = this->mOpMap.begin();
+    this->mMaxRecvBytes = 1024;
+    this->mAutoRecv = false;
 }
 
 // FUNCTION: WON 0x006b78e0
+// Kills the socket, the auto-receive op and every waiting receive op and forgets them
 void UDPManager::Close()
 {
-    if (mSocket.get() == NULL)
+    if (this->mSocket.get() == NULL)
         return;
-    mSocket->Close();
-    mSocket = NULL;
-    if (mAutoRecvOp.get() != NULL) {
-        mAutoRecvOp->Kill(true);
-        mAutoRecvOp = NULL;
+    this->mSocket->Kill();
+    this->mSocket = NULL;
+    if (this->mAutoRecvOp.get() != NULL) {
+        this->mAutoRecvOp->Kill(true);
+        this->mAutoRecvOp = NULL;
     }
-    for (OpList::iterator aListItr = mOpList.begin(); aListItr != mOpList.end(); ++aListItr)
+    for (OpList::iterator aListItr = this->mOpList.begin(); aListItr != this->mOpList.end(); ++aListItr)
         (*aListItr)->Kill(true);
-    for (OpMap::iterator aMapItr = mOpMap.begin(); aMapItr != mOpMap.end(); ++aMapItr)
+    for (OpMap::iterator aMapItr = this->mOpMap.begin(); aMapItr != this->mOpMap.end(); ++aMapItr)
         aMapItr->second->Kill(true);
-    mOpList.clear();
-    mOpMap.clear();
-    mCleanListItr = mOpList.end();
-    mCleanMapItr = mOpMap.end();
+    this->mOpList.clear();
+    this->mOpMap.clear();
+    this->mCleanListItr = this->mOpList.end();
+    this->mCleanMapItr = this->mOpMap.end();
 }
 
 // FUNCTION: WON 0x006b7b40
+// Turns auto-receive on (unmatched datagrams finish a catch-all op) or off
 void UDPManager::SetAutoRecv(bool inAutoRecv)
 {
     if (inAutoRecv) {
-        if (mAutoRecvOp.get() == NULL)
-            mAutoRecvOp = new UDPManagerRecvOp;
+        if (this->mAutoRecvOp.get() == NULL)
+            this->mAutoRecvOp = new UDPManagerRecvOp;
     }
     else
-        mAutoRecvOp = NULL;
+        this->mAutoRecvOp = NULL;
 }
 
 // FUNCTION: WON 0x006b7c50
+// Registers a receive op (by sender address if it has one) and starts it; kills it at once when unbound
 void UDPManager::QueueOp(UDPManagerRecvOp* inOp, unsigned long inTimeout)
 {
     if (inOp->mCompletion.get() == NULL)
-        inOp->mCompletion = mDefaultCompletion;
-    if (mSocket.get() == NULL) {
-        if (inOp->GetStatus() != 100000)
-            inOp->Run(inTimeout);
+        inOp->mCompletion = this->mDefaultCompletion;
+    if (this->mSocket.get() == NULL) {
+        if (inOp->GetStatus() != WS_Pending)
+            inOp->RunAsync(inTimeout);
         inOp->Kill(true);
         return;
     }
-    CleanOps();
+    this->CleanOps();
     if (inOp->mAddress.IsValid())
-        mOpMap.insert(OpMap::value_type(inOp->mAddress, inOp));
+        this->mOpMap.insert(OpMap::value_type(inOp->mAddress, inOp));
     else
-        mOpList.push_back(inOp);
-    if (inOp->GetStatus() != 100000)
-        inOp->Run(inTimeout);
+        this->mOpList.push_back(inOp);
+    if (inOp->GetStatus() != WS_Pending)
+        inOp->RunAsync(inTimeout);
 }
 
 // FUNCTION: WON 0x006b7ec0
+// Queues a datagram to an address on the manager's socket
 void UDPManager::Send(const ByteBuffer* inData, const IPAddr& inAddress)
 {
-    mSocket->Fn2B4740(new SendBytesToOp(inData, inAddress), -1);
+    this->mSocket->QueueOp(new SendBytesToOp(inData, inAddress), -1);
 }
 
 // FUNCTION: WON 0x006b8000
+// Drops up to 10 finished ops from the list and from the map, resuming where the last clean-up stopped
 void UDPManager::CleanOps()
 {
     for (int i = 0; i < 10; ++i) {
-        if (mCleanListItr == mOpList.end()) {
-            mCleanListItr = mOpList.begin();
+        if (this->mCleanListItr == this->mOpList.end()) {
+            this->mCleanListItr = this->mOpList.begin();
             break;
         }
-        if ((*mCleanListItr)->GetStatus() != 100000)
-            mOpList.erase(mCleanListItr++);
+        if ((*this->mCleanListItr)->GetStatus() != 100000)
+            this->mOpList.erase(this->mCleanListItr++);
         else
-            ++mCleanListItr;
+            ++this->mCleanListItr;
     }
     for (int j = 0; j < 10; ++j) {
-        if (mCleanMapItr == mOpMap.end()) {
-            mCleanMapItr = mOpMap.begin();
+        if (this->mCleanMapItr == this->mOpMap.end()) {
+            this->mCleanMapItr = this->mOpMap.begin();
             break;
         }
-        if (mCleanMapItr->second->GetStatus() != 100000)
-            mOpMap.erase(mCleanMapItr++);
+        if (this->mCleanMapItr->second->GetStatus() != 100000)
+            this->mOpMap.erase(this->mCleanMapItr++);
         else
-            ++mCleanMapItr;
+            ++this->mCleanMapItr;
     }
 }
-// Round3 additional original operation behavior; source-only.
 
 
 // FUNCTION: WON 0x006b6bf0
-void UDPManagerRecvOp::Fn2B6BF0(MessageVerifier inVerifier, void* inContext)
+// Sets the callback (and its context) that decides whether a datagram answers this op
+void UDPManagerRecvOp::SetMessageVerifier(MessageVerifier inVerifier, void* inContext)
 {
-    mVerifier = inVerifier;
-    mVerifierContext = inContext;
+    this->mVerifier = inVerifier;
+    this->mVerifierContext = inContext;
 }
 // FUNCTION: WON 0x006b6c10
-WONStatus UDPManagerRecvOp::Virtual0C(ReadBuffer& inMessage)
+// Asks the message check callback whether a datagram answers this op (WS_None = no); without a callback accepts all
+WONStatus UDPManagerRecvOp::CheckMessage(ReadBuffer& inMessage)
 {
-    return mVerifier ? mVerifier(inMessage, mVerifierContext) : 0;
+    return this->mVerifier ? this->mVerifier(inMessage, this->mVerifierContext) : 0;
 }
 // FUNCTION: WON 0x006b6d70
-void UDPManagerRecvOp::Fn2B6D70(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
+// Forwards a successful datagram receive to its receive op
+void UDPManagerRecvOp::StaticRecvCallback(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
 {
     if (!inOp->Succeeded())
         return;
-    static_cast<UDPManagerRecvOp*>(inParam.get())->Fn2B6E60(static_cast<RecvBytesFromOp*>(inOp.get()));
+    static_cast<UDPManagerRecvOp*>(inParam.get())->RecvCallback(static_cast<RecvBytesFromOp*>(inOp.get()));
 }
 
 // FUNCTION: WON 0x006b7250
-WONStatus UDPManagerSendRecvOp::Fn2B7250(ReadBuffer& inMessage, void* inParam)
+// Forwards a datagram to the send/receive op's response check
+WONStatus UDPManagerSendRecvOp::StaticCheckResponse(ReadBuffer& inMessage, void* inParam)
 {
-    return static_cast<UDPManagerSendRecvOp*>(inParam)->Virtual0C(inMessage);
+    return static_cast<UDPManagerSendRecvOp*>(inParam)->CheckResponse(inMessage);
 }
 // FUNCTION: WON 0x006b7550
-void UDPManagerSendRecvOp::Fn2B7550(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
+// Forwards the end of a reply wait to its send/receive op
+void UDPManagerSendRecvOp::StaticRecvCallback(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
 {
-    static_cast<UDPManagerSendRecvOp*>(inParam.get())->Fn2B75E0(inOp.get());
+    static_cast<UDPManagerSendRecvOp*>(inParam.get())->RecvCallback(inOp.get());
 }
 
 // FUNCTION: WON 0x006b6c30
-void UDPManagerRecvOp::Fn2B6C30()
+// Queues a receive of one datagram (up to 1024 bytes) on the op's own socket
+void UDPManagerRecvOp::QueueRecv()
 {
-    if (mSocket.get() == NULL)
+    if (this->mSocket.get() == NULL)
         return;
     SmartPtr<RecvBytesFromOp> anOp = new RecvBytesFromOp(1024, NULL);
-    anOp->mCompletion = new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(Fn2B6D70, this);
-    mSocket->Fn2B4740(anOp.get(), -1);
+    anOp->mCompletion = new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(UDPManagerRecvOp::StaticRecvCallback, this);
+    this->mSocket->QueueOp(anOp.get(), -1);
 }
 
 // FUNCTION: WON 0x006b6e60
-void UDPManagerRecvOp::Fn2B6E60(RecvBytesFromOp* inOp)
+// Finishes the op with a datagram from the expected sender that its message check accepts; otherwise receives again
+void UDPManagerRecvOp::RecvCallback(RecvBytesFromOp* inOp)
 {
-    if (mStatus != 100000)
+    if (this->mStatus != WS_Pending)
         return;
-    if (mAddress.IsValid() && inOp->mFromAddress != mAddress) {
-        Fn2B6C30();
+    if (this->mAddress.IsValid() && inOp->mFromAddress != this->mAddress) {
+        this->QueueRecv();
         return;
     }
     const ByteBuffer* aBuffer = inOp->GetBytes().get();
     try {
         ReadBuffer aMessage(aBuffer->data(), aBuffer->length());
-        WONStatus aStatus = Virtual0C(aMessage);
-        if (aStatus != 100004) {
-            Fn29F220(aStatus);
+        WONStatus aStatus = this->CheckMessage(aMessage);
+        if (aStatus != WS_None) {
+            this->Finish(aStatus);
             return;
         }
     }
     catch (ReadBufferException&) {
     }
-    Fn2B6C30();
+    this->QueueRecv();
 }
 
 // FUNCTION: WON 0x006b68b0
-UDPManagerRecvOp::UDPManagerRecvOp() { mVerifier = NULL; }
+// Creates a receive op that accepts a datagram from any sender
+UDPManagerRecvOp::UDPManagerRecvOp() { this->mVerifier = NULL; }
 
 // FUNCTION: WON 0x006b6a10
+// Creates a receive op that waits for a datagram from the given address
 UDPManagerRecvOp::UDPManagerRecvOp(const IPAddr& inAddress)
 {
-    mAddress = inAddress;
-    mVerifier = NULL;
+    this->mAddress = inAddress;
+    this->mVerifier = NULL;
 }
 
 // FUNCTION: WON 0x006b6f60
-void UDPManagerRecvOp::Virtual08()
+// Kills the op's own socket when the op ends
+void UDPManagerRecvOp::CleanupHook()
 {
-    if (mSocket.get() != NULL && mOwnSocket) {
-        mSocket->Close();
-        mSocket = NULL;
+    if (this->mSocket.get() != NULL && this->mOwnSocket) {
+        this->mSocket->Kill();
+        this->mSocket = NULL;
     }
 }
 
 // FUNCTION: WON 0x006b6fb0
-void UDPManagerRecvOp::Virtual04()
+// Runs the op: refused in blocking mode; registers with the manager, or binds its own UDP socket and receives
+void UDPManagerRecvOp::RunHook()
 {
-    if (mRunMode == 2) {
-        Fn29F220(100009);
+    if (this->mRunMode == OP_MODE_BLOCK) {
+        this->Finish(WS_BlockMode_NotSupported);
         return;
     }
-    if (mManager.get() != NULL) {
-        mManager->QueueOp(this, mTimeout);
+    if (this->mManager.get() != NULL) {
+        this->mManager->QueueOp(this, this->mTimeout);
         return;
     }
-    if (mSocket.get() == NULL) {
-        mSocket = new QueueSocket(1);
-        mSocket->Fn2B0D90(0, 0);
-        mOwnSocket = true;
+    if (this->mSocket.get() == NULL) {
+        this->mSocket = new QueueSocket(1);
+        this->mSocket->Fn2B0D90(0, 0);
+        this->mOwnSocket = true;
     }
-    Fn2B6C30();
+    this->QueueRecv();
 }
 
 // FUNCTION: WON 0x006b70b0
-UDPManagerSendRecvOp::UDPManagerSendRecvOp() : mRetryLimit(0) { mReceiveTimeout=10000; }
+// Creates a request/reply op with no retries and a 10-second reply wait
+UDPManagerSendRecvOp::UDPManagerSendRecvOp() : mRetryLimit(0) { this->mReceiveTimeout=10000; }
 
 // FUNCTION: WON 0x006b7260
-void UDPManagerSendRecvOp::Fn2B7260()
+// Sends the request datagram (via the manager or the op's socket) and waits for a matching reply
+void UDPManagerSendRecvOp::SendRequest()
 {
-    mRecvOp = new UDPManagerRecvOp(mAddress);
-    mRecvOp->mCompletion = new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(Fn2B7550, this);
-    mRecvOp->Fn2B6BF0(Fn2B7250, this);
-    if (mManager.get() != NULL) {
-        mManager->Send(mOutgoing.get(), mAddress);
-        mRecvOp->SetUDPManager(mManager);
+    this->mRecvOp = new UDPManagerRecvOp(this->mAddress);
+    this->mRecvOp->mCompletion = new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(UDPManagerSendRecvOp::StaticRecvCallback, this);
+    this->mRecvOp->SetMessageVerifier(UDPManagerSendRecvOp::StaticCheckResponse, this);
+    if (this->mManager.get() != NULL) {
+        this->mManager->Send(this->mOutgoing.get(), this->mAddress);
+        this->mRecvOp->SetUDPManager(this->mManager);
     }
     else {
-        mSocket->Fn2B4740(new SendBytesToOp(mOutgoing.get(), mAddress, NULL), -1);
-        mRecvOp->SetSocket(mSocket);
+        this->mSocket->QueueOp(new SendBytesToOp(this->mOutgoing.get(), this->mAddress, NULL), -1);
+        this->mRecvOp->SetSocket(this->mSocket);
     }
-    mRecvOp->Run(mReceiveTimeout);
+    this->mRecvOp->RunAsync(this->mReceiveTimeout);
 }
 
 // FUNCTION: WON 0x006b7470
-void UDPManagerSendRecvOp::Virtual04()
+// Runs the op: refused in blocking mode; binds its own UDP socket without a manager, then sends the request
+void UDPManagerSendRecvOp::RunHook()
 {
-    if (mRunMode == 2) {
-        Fn29F220(100009);
+    if (this->mRunMode == OP_MODE_BLOCK) {
+        this->Finish(WS_BlockMode_NotSupported);
         return;
     }
-    mAttemptCount = 0;
-    if (mManager.get() == NULL) {
-        mSocket = new QueueSocket(1);
-        mSocket->Fn2B0D90(0, 0);
+    this->mAttemptCount = 0;
+    if (this->mManager.get() == NULL) {
+        this->mSocket = new QueueSocket(1);
+        this->mSocket->Fn2B0D90(0, 0);
     }
-    Fn2B7260();
+    this->SendRequest();
 }
 
 // FUNCTION: WON 0x006b75e0
-void UDPManagerSendRecvOp::Fn2B75E0(AsyncOp* inOp)
+// Finishes with the reply's status, resends on a timeout until the retry limit, then finishes with WS_NoReply
+void UDPManagerSendRecvOp::RecvCallback(AsyncOp* inOp)
 {
-    if (mStatus != 100000 || inOp != mRecvOp.get())
+    if (this->mStatus != WS_Pending || inOp != this->mRecvOp.get())
         return;
     WONStatus aStatus = inOp->GetStatus();
-    if (aStatus != 100001) {
-        Fn29F220(aStatus);
+    if (aStatus != WS_TimedOut) {
+        this->Finish(aStatus);
         return;
     }
-    if (mAttemptCount >= mRetryLimit) {
-        Fn29F220(100015);
+    if (this->mAttemptCount >= this->mRetryLimit) {
+        this->Finish(WS_NoReply);
         return;
     }
-    ++mAttemptCount;
-    Fn2B7260();
+    ++this->mAttemptCount;
+    this->SendRequest();
 }
 
 // FUNCTION: WON 0x006b7630
-void UDPManagerSendRecvOp::Virtual08()
+// Kills the reply wait and the op's socket when the op ends
+void UDPManagerSendRecvOp::CleanupHook()
 {
-    if (mRecvOp.get() != NULL) {
-        mRecvOp->Kill(true);
-        mRecvOp = NULL;
+    if (this->mRecvOp.get() != NULL) {
+        this->mRecvOp->Kill(true);
+        this->mRecvOp = NULL;
     }
-    if (mSocket.get() != NULL) {
-        mSocket->Close();
-        mSocket = NULL;
+    if (this->mSocket.get() != NULL) {
+        this->mSocket->Kill();
+        this->mSocket = NULL;
     }
 }
 // FUNCTION: WON 0x006b8230
-void UDPManager::Fn2B8230(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
+// Forwards a successful datagram receive to its UDP manager
+void UDPManager::StaticRecvCallback(AsyncOpPtr inOp, SmartPtr<RefCount> inParam)
 {
     if (!inOp->Succeeded())
         return;
-    static_cast<UDPManager*>(inParam.get())->Fn2B8320(static_cast<RecvBytesFromOp*>(inOp.get()));
+    static_cast<UDPManager*>(inParam.get())->RecvCallback(static_cast<RecvBytesFromOp*>(inOp.get()));
 }
 
 // FUNCTION: WON 0x006b79c0
-WONStatus UDPManager::Fn2B79C0(int inPort, bool inBroadcast)
+// Rebinds the manager to a local port (optionally broadcast) and starts receiving datagrams repeatedly
+WONStatus UDPManager::Bind(int inPort, bool inBroadcast)
 {
-    Close();
-    mSocket = new QueueSocket(1);
+    this->Close();
+    this->mSocket = new QueueSocket(1);
     if (inBroadcast)
-        mSocket->Fn2B0A50(true);
-    WONStatus aStatus = mSocket->Fn2B0D90(inPort, 0);
+        this->mSocket->SetBroadcast(true);
+    WONStatus aStatus = this->mSocket->Fn2B0D90(inPort, 0);
     if (aStatus == 0) {
-        mSocket->Fn2B3BF0(new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(Fn2B8230, this));
-        mSocket->Fn2B4500(new RecvBytesFromOp(mMaxRecvBytes, NULL));
+        this->mSocket->SetRepeatCompletion(new ParamCompletion<AsyncOpPtr, SmartPtr<RefCount> >(UDPManager::StaticRecvCallback, this));
+        this->mSocket->SetRepeatOp(new RecvBytesFromOp(this->mMaxRecvBytes, NULL));
     }
     return aStatus;
 }
 
 
-// SUPPORT-ONLY: actual iterator-preserving list erase2b8160; helper quota0.
-// FUNCTION: WON 0x006b81b0
 // FUNCTION: WON 0x006b8160
+// Erases a list op, first moving the clean-up cursor past it
 void UDPManager::Erase(const OpList::iterator& inItr)
 {
-    if (inItr == mCleanListItr)
-        ++mCleanListItr;
-    mOpList.erase(inItr);
+    if (inItr == this->mCleanListItr)
+        ++this->mCleanListItr;
+    this->mOpList.erase(inItr);
 }
 
-// SUPPORT-ONLY: actual iterator-preserving map erase2b81b0; helper quota0.
+// FUNCTION: WON 0x006b81b0
+// Erases a map op, first moving the clean-up cursor past it
 void UDPManager::Erase(const OpMap::iterator& inItr)
 {
-    if (inItr == mCleanMapItr)
-        ++mCleanMapItr;
-    mOpMap.erase(inItr);
+    if (inItr == this->mCleanMapItr)
+        ++this->mCleanMapItr;
+    this->mOpMap.erase(inItr);
 }
 
 // FUNCTION: WON 0x006b8320
-void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
+// Gives a datagram to the first waiting op for that sender whose message check accepts it, then to address-less ops,
+// else finishes the auto-receive op with it and arms a new one
+void UDPManager::RecvCallback(RecvBytesFromOp* inOp)
 {
     const ByteBuffer* aBuffer = inOp->GetBytes().get();
     ReadBuffer aMessage(aBuffer->data(), aBuffer->length());
-    if (!mOpMap.empty()) {
-        OpMap::iterator aMapItr = mOpMap.lower_bound(inOp->mFromAddress);
-        while (aMapItr != mOpMap.end() && !(aMapItr->first != inOp->mFromAddress)) {
+    if (!this->mOpMap.empty()) {
+        OpMap::iterator aMapItr = this->mOpMap.lower_bound(inOp->mFromAddress);
+        while (aMapItr != this->mOpMap.end() && !(aMapItr->first != inOp->mFromAddress)) {
             UDPManagerRecvOp* anOp = aMapItr->second.get();
-            if (anOp->GetStatus() != 100000) {
-                Erase(aMapItr++);
+            if (anOp->GetStatus() != WS_Pending) {
+                this->Erase(aMapItr++);
                 continue;
             }
             try {
                 aMessage.Rewind();
-                WONStatus aStatus = anOp->Virtual0C(aMessage);
-                if (aStatus == 100059)
-                    QueueOp(new UDPManagerRecvOp(anOp->mAddress), anOp->TimeLeft());
-                else if (aStatus != 100004) {
+                WONStatus aStatus = anOp->CheckMessage(aMessage);
+                if (aStatus == WS_ServerReq_Recv)
+                    this->QueueOp(new UDPManagerRecvOp(anOp->mAddress), anOp->TimeLeft());
+                else if (aStatus != WS_None) {
                     anOp->SetMsg(aBuffer);
-                    anOp->Fn29F220(aStatus);
-                    Erase(aMapItr);
+                    anOp->Finish(aStatus);
+                    this->Erase(aMapItr);
                     return;
                 }
             }
@@ -342,22 +368,22 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
             ++aMapItr;
         }
     }
-    if (!mOpList.empty()) {
-        OpList::iterator aListItr = mOpList.begin();
-        while (aListItr != mOpList.end()) {
+    if (!this->mOpList.empty()) {
+        OpList::iterator aListItr = this->mOpList.begin();
+        while (aListItr != this->mOpList.end()) {
             UDPManagerRecvOp* anOp = aListItr->get();
-            if (anOp->GetStatus() != 100000) {
-                Erase(aListItr++);
+            if (anOp->GetStatus() != WS_Pending) {
+                this->Erase(aListItr++);
                 continue;
             }
             try {
                 aMessage.Rewind();
-                WONStatus aStatus = anOp->Virtual0C(aMessage);
-                if (aStatus != 100004) {
+                WONStatus aStatus = anOp->CheckMessage(aMessage);
+                if (aStatus != WS_None) {
                     anOp->mAddress = inOp->mFromAddress;
                     anOp->SetMsg(aBuffer);
-                    anOp->Fn29F220(aStatus);
-                    Erase(aListItr);
+                    anOp->Finish(aStatus);
+                    this->Erase(aListItr);
                     return;
                 }
             }
@@ -366,12 +392,12 @@ void UDPManager::Fn2B8320(RecvBytesFromOp* inOp)
             ++aListItr;
         }
     }
-    if (mAutoRecvOp.get() != NULL) {
-        mAutoRecvOp->SetMsg(aBuffer);
-        mAutoRecvOp->mAddress = inOp->GetAddr();
-        mAutoRecvOp->SetCompletion(mDefaultCompletion);
-        mAutoRecvOp->ForceFinish(0);
-        mAutoRecvOp = new UDPManagerRecvOp;
+    if (this->mAutoRecvOp.get() != NULL) {
+        this->mAutoRecvOp->SetMsg(aBuffer);
+        this->mAutoRecvOp->mAddress = inOp->GetAddr();
+        this->mAutoRecvOp->SetCompletion(this->mDefaultCompletion);
+        this->mAutoRecvOp->ForceFinish(WS_Success);
+        this->mAutoRecvOp = new UDPManagerRecvOp;
     }
 }
 

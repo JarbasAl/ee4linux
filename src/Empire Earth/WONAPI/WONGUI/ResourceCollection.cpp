@@ -1,5 +1,5 @@
-// same-SDK ResourceCollection reader implementation.
-// Original family profile proposed for this missing unit; no Native ID/primary/physical claim.
+// Resource collection reader: table of contents, lookup by id or name, on-demand decoding of images, fonts and
+// binary data (not identified in the original exe; file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>
 #include <windows.h>
@@ -27,55 +27,55 @@ static const int RESOURCE_VERSION = 1;
 ResourceCollection::ResourceCollection()
 {
 //	mTrackByName = false;
-	mTrackByName = true;
-	mDoOutStringFilter = false;
-	mFileVersion = 0;
+	this->mTrackByName = true;
+	this->mDoOutStringFilter = false;
+	this->mFileVersion = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ResourceCollection::~ResourceCollection()
 {
-	Close();
+	this->Close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool ResourceCollection::Open(const void *theData, unsigned long theDataLen)
 {
-	Close();
-	mFileName = "";
-	mFileReader.Open(theData,theDataLen);
-	return ReadTableOfContents();
+	this->Close();
+	this->mFileName = "";
+	this->mFileReader.Open(theData,theDataLen);
+	return this->ReadTableOfContents();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool ResourceCollection::Open(const GUIString &theFileName)
 {
-	Close();
-	mFileName = theFileName;
+	this->Close();
+	this->mFileName = theFileName;
 	string aName = theFileName;
-	if(!mFileReader.Open(aName.c_str()))
+	if(!this->mFileReader.Open(aName.c_str()))
 		return false;
 	
-	return ReadTableOfContents();
+	return this->ReadTableOfContents();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollection::Close()
 {	
-	mFileReader.Close();
-	mResourceIdMap.clear();
-	mResourceNameMap.clear();
+	this->mFileReader.Close();
+	this->mResourceIdMap.clear();
+	this->mResourceNameMap.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollection::CloseFile()
 {
-	mFileReader.Close();
+	this->mFileReader.Close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,21 +89,21 @@ int ResourceCollection::GetLatestVersion()
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollection::DecodeAll(bool closeFile)
 {
-	for(ResourceIdMap::iterator anItr=mResourceIdMap.begin(); anItr!=mResourceIdMap.end(); ++anItr)
-		DecodeResource(anItr->second);
+	for(ResourceIdMap::iterator anItr=this->mResourceIdMap.begin(); anItr!=this->mResourceIdMap.end(); ++anItr)
+		this->DecodeResource(anItr->second);
 
 	if(closeFile)
-		CloseFile();
+		this->CloseFile();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 GUIString ResourceCollection::ReadWideString()
 {
-	unsigned short aLength = mFileReader.ReadShort();
+	unsigned short aLength = this->mFileReader.ReadShort();
 	GUIString aStr(aLength);
 	for(int i=0; i<aLength; i++)
-		aStr.append(mFileReader.ReadShort());
+		aStr.append(this->mFileReader.ReadShort());
 
 	return aStr;
 }
@@ -112,10 +112,10 @@ GUIString ResourceCollection::ReadWideString()
 ///////////////////////////////////////////////////////////////////////////////
 GUIString ResourceCollection::ReadAsciiString()
 {
-	unsigned short aLength = mFileReader.ReadShort();
+	unsigned short aLength = this->mFileReader.ReadShort();
 	GUIString aStr(aLength);
 	for(int i=0; i<aLength; i++)
-		aStr.append(mFileReader.ReadByte());
+		aStr.append(this->mFileReader.ReadByte());
 
 	return aStr;
 }
@@ -124,34 +124,33 @@ GUIString ResourceCollection::ReadAsciiString()
 ///////////////////////////////////////////////////////////////////////////////
 void ResourceCollection::AddEntry(ResourceEntry *theEntry)
 {
-	mResourceIdMap[theEntry->mId] = theEntry;
+	this->mResourceIdMap[theEntry->mId] = theEntry;
 
-	if(mTrackByName)
-		mResourceNameMap[theEntry->mName] = theEntry;
+	if(this->mTrackByName)
+		this->mResourceNameMap[theEntry->mName] = theEntry;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool ResourceCollection::RemoveEntry(const ResourceEntry *theEntry, bool doRemove)
 {
-	ResourceIdMap::iterator anItr = mResourceIdMap.find(theEntry->mId);
-	if(anItr!=mResourceIdMap.end() && anItr->second.get()==theEntry)
+	ResourceIdMap::iterator anItr = this->mResourceIdMap.find(theEntry->mId);
+	if(anItr==this->mResourceIdMap.end() || anItr->second.get()!=theEntry)
+		return false;
+	if(doRemove)
 	{
-		if(doRemove)
-		{
-			if(mTrackByName)
-				mResourceNameMap.erase(theEntry->mName);
+		if(this->mTrackByName)
+			this->mResourceNameMap.erase(theEntry->mName);
 
-			mResourceIdMap.erase(anItr);
-		}
-		else
-		{
-			ResourceEntry *anEntry = const_cast<ResourceEntry*>(theEntry);
-			anEntry->mUpdateType = ResourceUpdateType_Remove;
-		}
-		
-		return true;
+		this->mResourceIdMap.erase(anItr);
 	}
+	else
+	{
+		ResourceEntry *anEntry = const_cast<ResourceEntry*>(theEntry);
+		anEntry->mUpdateType = ResourceUpdateType_Remove;
+	}
+
+	return true;
 
 	return false;
 }
@@ -162,30 +161,30 @@ bool ResourceCollection::ReadTableOfContents()
 {
 	try
 	{
-		if(mFileReader.Available()>=7)
+		if(this->mFileReader.Available()>=7)
 		{
 			char aSig[4];
 			aSig[3] = '\0';
-			mFileReader.ReadBytes(aSig,3);
+			this->mFileReader.ReadBytes(aSig,3);
 			if(strcmp(aSig,"WRS")==0)
-				mFileVersion = mFileReader.ReadLong();
+				this->mFileVersion = this->mFileReader.ReadLong();
 			else
-				mFileReader.SetPos(0); // version 0
+				this->mFileReader.SetPos(0); // version 0
 		}
 
-		int aTableOffset = mFileReader.ReadLong();
-		mFileReader.SetPos(aTableOffset);
-		int aNumEntries = mFileReader.ReadLong();
+		int aTableOffset = this->mFileReader.ReadLong();
+		this->mFileReader.SetPos(aTableOffset);
+		int aNumEntries = this->mFileReader.ReadLong();
 		int *prevSize = NULL;
 		int prevOffset = 0;
 		for(int i=0; i<aNumEntries; i++)
 		{
 			ResourceEntryPtr anEntry = new ResourceEntry;
-			anEntry->mId = mFileReader.ReadLong();
-			anEntry->mType = (ResourceType)mFileReader.ReadShort();
-			anEntry->mFileOffset = mFileReader.ReadLong();
-			anEntry->mName = ReadAsciiString();
-			anEntry->mDesc = ReadWideString();
+			anEntry->mId = this->mFileReader.ReadLong();
+			anEntry->mType = (ResourceType)this->mFileReader.ReadShort();
+			anEntry->mFileOffset = this->mFileReader.ReadLong();
+			anEntry->mName = this->ReadAsciiString();
+			anEntry->mDesc = this->ReadWideString();
 
 			if(prevSize!=NULL)
 				*prevSize = anEntry->mFileOffset - prevOffset;
@@ -193,7 +192,7 @@ bool ResourceCollection::ReadTableOfContents()
 			prevSize = &anEntry->mFileSize;
 			prevOffset = anEntry->mFileOffset;
 
-			AddEntry(anEntry);
+			this->AddEntry(anEntry);
 		}
 		if(prevSize!=NULL)
 			*prevSize = aTableOffset - prevOffset;
@@ -213,7 +212,7 @@ bool ResourceCollection::HaveResource(const ResourceEntry *theEntry)
 	if(theEntry==NULL)
 		return false;
 
-	return GetResource(theEntry->mId,false)==theEntry;
+	return this->GetResource(theEntry->mId,false)==theEntry;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -320,7 +319,7 @@ RefCount* ResourceCollection::DecodeResource(const ResourceEntry *theEntry, Reso
 	}
 
 	ResourceEntry *anEntry = const_cast<ResourceEntry*>(theEntry);
-	FileReader *aFileReader = &mFileReader;
+	FileReader *aFileReader = &this->mFileReader;
 	FileReader aSeperateFile;
 	string aFilePath;
 	if(anEntry->mFileSize > 0)
@@ -334,47 +333,46 @@ RefCount* ResourceCollection::DecodeResource(const ResourceEntry *theEntry, Reso
 			aFileReader = &aSeperateFile;
 		}
 		else
-			mFileReader.SetPos(anEntry->mFileOffset);
+			this->mFileReader.SetPos(anEntry->mFileOffset);
 	}
 
 	switch(theEntry->mType)
 	{
 		case ResourceType_Image: 
 		{
-			if(mWindow.get()==NULL)
+			if(this->mWindow.get()==NULL)
 			{
-				mWindow = Window::GetDefaultWindow();
-				if(mWindow.get()==NULL)
+				this->mWindow = Window::GetDefaultWindow();
+				if(this->mWindow.get()==NULL)
 					return NULL;
 			}
 
-			if(mWindow->GetDisplayContext()==NULL)
+			if(this->mWindow->GetDisplayContext()==NULL)
 				return NULL;
 
-			// Current target initializes its BMP/WIM decoder in WindowManager construction.
-			// Later SDK lazy GetImageDecoder/AddImageDecoders VT is deliberately not invented.
-			MultiImageDecoder *aDecoder = &mWindow->GetWindowManager()->mImageDecoder;
+			// The image decoder is the window manager's own (its decoders are added when the window manager is built)
+			MultiImageDecoder *aDecoder = &this->mWindow->GetWindowManager()->mImageDecoder;
 			aDecoder->SetFileName(aFilePath.c_str());
 			if(altDecode)
 				anEntry->mAltData = aDecoder->ImageDecoder::DecodeRaw(*aFileReader);
 			else
-				anEntry->mData = aDecoder->ImageDecoder::Decode(mWindow->GetDisplayContext(),*aFileReader);
+				anEntry->mData = aDecoder->ImageDecoder::Decode(this->mWindow->GetDisplayContext(),*aFileReader);
 		}
 		break;
 
 		case ResourceType_String: break;
 		case ResourceType_Color: break;
-		case ResourceType_Font: anEntry->mData = DecodeFont(anEntry->mDesc); break;
+		case ResourceType_Font: anEntry->mData = this->DecodeFont(anEntry->mDesc); break;
 	
 		case ResourceType_Binary: 
 		{
 			try
 			{
-				WriteBuffer aBuf(0,true); // explicit genuine SDK constructor defaults
+				WriteBuffer aBuf(0,true);
 				aBuf.Reserve(anEntry->mFileSize);
 				aFileReader->ReadBytes(aBuf.data(),aBuf.capacity());
-				aBuf.Fn2A8260(aBuf.capacity()); // current exact SkipBytes API spelling
-				ConstSmartPtr<ByteBuffer> aByteBuffer = aBuf.ToByteBuffer(true); // explicit genuine SDK release default
+				aBuf.SkipBytes(aBuf.capacity());
+				ConstSmartPtr<ByteBuffer> aByteBuffer = aBuf.ToByteBuffer(true);
 				anEntry->mData = (ByteBuffer*)aByteBuffer.get();
 			}
 			catch(FileReaderException&)
@@ -394,12 +392,12 @@ RefCount* ResourceCollection::DecodeResource(const ResourceEntry *theEntry, Reso
 ///////////////////////////////////////////////////////////////////////////////
 const ResourceEntry* ResourceCollection::GetResource(int theId, bool decode, ResourceType theExpectedType)
 {
-	ResourceIdMap::iterator anItr = mResourceIdMap.find(theId);
-	if(anItr==mResourceIdMap.end())
+	ResourceIdMap::iterator anItr = this->mResourceIdMap.find(theId);
+	if(anItr==this->mResourceIdMap.end())
 		return NULL;
 		
 	if(decode)
-		DecodeResource(anItr->second, theExpectedType);
+		this->DecodeResource(anItr->second, theExpectedType);
 	
 	return anItr->second;	
 }
@@ -408,12 +406,12 @@ const ResourceEntry* ResourceCollection::GetResource(int theId, bool decode, Res
 ///////////////////////////////////////////////////////////////////////////////
 const ResourceEntry* ResourceCollection::GetResource(const GUIString &theName, bool decode, ResourceType theExpectedType)
 {
-	ResourceNameMap::iterator anItr = mResourceNameMap.find(theName);
-	if(anItr==mResourceNameMap.end())
+	ResourceNameMap::iterator anItr = this->mResourceNameMap.find(theName);
+	if(anItr==this->mResourceNameMap.end())
 		return NULL;
 
 	if(decode)
-		DecodeResource(anItr->second);
+		this->DecodeResource(anItr->second);
 
 	return anItr->second;	
 }
@@ -423,8 +421,8 @@ const ResourceEntry* ResourceCollection::GetResource(const GUIString &theName, b
 ///////////////////////////////////////////////////////////////////////////////
 SmartPtr<RawImage> ResourceCollection::GetRawImage(int theId)
 {
-	const ResourceEntry *anEntry = (ResourceEntry*)GetResource(theId,false);
-	RawImage *anImage = (RawImage*)DecodeResource(anEntry,ResourceType_Image,true);
+	const ResourceEntry *anEntry = const_cast<ResourceEntry*>(this->GetResource(theId,false));
+	RawImage *anImage = static_cast<RawImage*>(this->DecodeResource(anEntry,ResourceType_Image,true));
 	return anImage;
 }
 
@@ -432,7 +430,7 @@ SmartPtr<RawImage> ResourceCollection::GetRawImage(int theId)
 ///////////////////////////////////////////////////////////////////////////////
 SmartPtr<NativeImage> ResourceCollection::GetImage(int theId)
 {
-	const ResourceEntry *anEntry = GetResource(theId,true,ResourceType_Image);
+	const ResourceEntry *anEntry = this->GetResource(theId,true,ResourceType_Image);
 	if(anEntry==NULL)
 		return NULL;
 	else
@@ -464,32 +462,32 @@ GUIString ResourceCollection::OutStringFilter(const GUIString &theStr)
 ///////////////////////////////////////////////////////////////////////////////
 GUIString ResourceCollection::GetString(int theId)
 {
-	const ResourceEntry *anEntry = GetResource(theId,true,ResourceType_String);
+	const ResourceEntry *anEntry = this->GetResource(theId,true,ResourceType_String);
 	if(anEntry==NULL)
 		return "Invalid String";
 
-	if(!mDoOutStringFilter)
+	if(!this->mDoOutStringFilter)
 		return anEntry->mDesc;
 	else
-		return OutStringFilter(anEntry->mDesc);
+		return ResourceCollection::OutStringFilter(anEntry->mDesc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 DWORD ResourceCollection::GetColor(int theId)
 {
-	const ResourceEntry *anEntry = GetResource(theId,true,ResourceType_Color);
+	const ResourceEntry *anEntry = this->GetResource(theId,true,ResourceType_Color);
 	if(anEntry==NULL)
 		return 0;
 
-	return DecodeColor(anEntry->mDesc);
+	return ResourceCollection::DecodeColor(anEntry->mDesc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 SmartPtr<Font> ResourceCollection::GetFont(int theId)
 {
-	const ResourceEntry *anEntry = GetResource(theId,true,ResourceType_Color);
+	const ResourceEntry *anEntry = this->GetResource(theId,true,ResourceType_Color);
 	if(anEntry==NULL)
 		return WindowManager::GetDefaultWindowManager()->GetDefaultFont();
 

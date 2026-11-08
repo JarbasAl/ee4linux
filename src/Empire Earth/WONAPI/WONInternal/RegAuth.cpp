@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: literal same-SDK registry authentication settings algorithms.
+// No original address identified: WON SDK registry authentication settings
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include "ee/wonapi/WONRegAuth.h"
 
@@ -51,21 +51,20 @@ bool WONAPI::WriteAuthSettings(const string& theAuthAddress,
 							   const string& thePassword)
 {
 	RegKey aKey(1, KEY_TOOLS_AUTH, true, true);
-	if(aKey.IsOpen())
-	{
-		aKey.SetValue(VALUE_AUTHSERVERIP, theAuthAddress);
-		aKey.SetValue(VALUE_AUTHSERVERPORT, theAuthPort);
-		aKey.SetValue(VALUE_USERNAME, theLoginName);
-		aKey.SetValue(VALUE_COMMUNITY, theCommunityName);
+	if(!aKey.IsOpen())
+		return false;
+	aKey.SetValue(VALUE_AUTHSERVERIP, theAuthAddress);
+	aKey.SetValue(VALUE_AUTHSERVERPORT, theAuthPort);
+	aKey.SetValue(VALUE_USERNAME, theLoginName);
+	aKey.SetValue(VALUE_COMMUNITY, theCommunityName);
 
-		if(!thePassword.empty())
+	if(!thePassword.empty())
+	{
+		ByteBufferPtr aCryptReturnP = gPasswordKey.Encrypt((const char*)thePassword.c_str(), thePassword.size());
+		if(aCryptReturnP.get() != NULL)
 		{
-			ByteBufferPtr aCryptReturnP = gPasswordKey.Encrypt((const char*)thePassword.c_str(), thePassword.size());
-			if(aCryptReturnP.get() != NULL)
-			{
-				aKey.SetValue(VALUE_PASSWORD, aCryptReturnP->data(), aCryptReturnP->length());
-				return true;
-			}
+			aKey.SetValue(VALUE_PASSWORD, aCryptReturnP->data(), aCryptReturnP->length());
+			return true;
 		}
 	}
 	return false;
@@ -105,19 +104,18 @@ bool WONAPI::WriteAuthSettings(const string& theLoginName,
 							   const string& thePassword)
 {
 	RegKey aKey(1, KEY_TOOLS_AUTH, true, true);
-	if(aKey.IsOpen())
-	{
-		aKey.SetValue(VALUE_USERNAME, theLoginName);
-		aKey.SetValue(VALUE_COMMUNITY, theCommunityName);
+	if(!aKey.IsOpen())
+		return false;
+	aKey.SetValue(VALUE_USERNAME, theLoginName);
+	aKey.SetValue(VALUE_COMMUNITY, theCommunityName);
 
-		if(!thePassword.empty())
+	if(!thePassword.empty())
+	{
+		ByteBufferPtr aCryptReturnP = gPasswordKey.Encrypt((const char*)thePassword.c_str(), thePassword.size());
+		if(aCryptReturnP.get() != NULL)
 		{
-			ByteBufferPtr aCryptReturnP = gPasswordKey.Encrypt((const char*)thePassword.c_str(), thePassword.size());
-			if(aCryptReturnP.get() != NULL)
-			{
-				aKey.SetValue(VALUE_PASSWORD, aCryptReturnP->data(), aCryptReturnP->length());
-				return true;
-			}
+			aKey.SetValue(VALUE_PASSWORD, aCryptReturnP->data(), aCryptReturnP->length());
+			return true;
 		}
 	}
 	return false;

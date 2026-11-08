@@ -1,4 +1,4 @@
-// Genuine complete ComponentListItem adapters and retained component cleanup; support0.
+// ComponentListItem: a list item that hosts a component (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,66 +13,77 @@
 #include "ee/wonapi/WONLobbyComponentListItem.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006fa480
-void ComponentListItem::Virtual08(ListArea*)
+// Takes the item's size from its component, when it has one
+void ComponentListItem::CalcDimensions(ListArea*)
 {
-    if(mComponent.get()!=NULL) {
-        mL10=mComponent->Width();
-        mHeight=mComponent->Height();
+    if(this->mComponent.get()!=NULL) {
+        this->mWidth=this->mComponent->Width();
+        this->mHeight=this->mComponent->Height();
     }
 }
 // FUNCTION: WON 0x006fa4a0
-void ComponentListItem::Virtual0C(ListArea*,Container* viewport)
+// Parents the component to the list viewport and notifies it when attached
+void ComponentListItem::SetViewport(ListArea*,Container* viewport)
 {
-    mComponent->mParent=viewport;
-    if(viewport!=NULL) mComponent->Virtual6C();
+    this->mComponent->mParent=viewport;
+    if(viewport!=NULL) this->mComponent->AddedToParent();
 }
 // FUNCTION: WON 0x006fa4c0
-void ComponentListItem::Virtual18(int x,int y)
+// Moves the item and its component
+void ComponentListItem::SetPos(int x,int y)
 {
-    ListItem::Virtual18(x,y);
-    mComponent->Fn2F4B70(x,y);
+    ListItem::SetPos(x,y);
+    this->mComponent->SetPos(x,y);
 }
 // FUNCTION: WON 0x006fa4e0
-bool ComponentListItem::Virtual1C(int x,int y) { return mComponent->Contains(x,y); }
+// Tests the point against the component
+bool ComponentListItem::Contains(int x,int y) { return this->mComponent->Contains(x,y); }
 // FUNCTION: WON 0x006fa500
+// Does nothing (component items need no repaint check)
 void ComponentListItem::CheckInvalid(ListArea*) {}
 // FUNCTION: WON 0x006fd970
-void ComponentListItem::Virtual20(ListArea* area,int x,int y)
+// Forwards mouse enter to the component, then checks for repaint
+void ComponentListItem::MouseEnter(ListArea* area,int x,int y)
 {
-    mComponent->Virtual24(x,y);
-    CheckInvalid(area);
+    this->mComponent->MouseEnter(x,y);
+    this->CheckInvalid(area);
 }
 // FUNCTION: WON 0x006fd9a0
-void ComponentListItem::Virtual24(ListArea* area)
+// Forwards mouse exit to the component, then checks for repaint
+void ComponentListItem::MouseExit(ListArea* area)
 {
-    mComponent->Virtual28();
-    CheckInvalid(area);
+    this->mComponent->MouseExit();
+    this->CheckInvalid(area);
 }
 // FUNCTION: WON 0x006fd9c0
-void ComponentListItem::Virtual28(ListArea* area,int x,int y)
+// Forwards a mouse move to the component, then checks for repaint
+void ComponentListItem::MouseMove(ListArea* area,int x,int y)
 {
-    mComponent->Virtual34(x,y);
-    CheckInvalid(area);
+    this->mComponent->MouseMove(x,y);
+    this->CheckInvalid(area);
 }
 // FUNCTION: WON 0x006fd9f0
-void ComponentListItem::Virtual2C(ListArea* area,int x,int y)
+// Forwards a mouse drag to the component, then checks for repaint
+void ComponentListItem::MouseDrag(ListArea* area,int x,int y)
 {
-    mComponent->Virtual38(x,y);
-    CheckInvalid(area);
+    this->mComponent->MouseDrag(x,y);
+    this->CheckInvalid(area);
 }
 // FUNCTION: WON 0x006fda20
-void ComponentListItem::Virtual30(ListArea* area,int x,int y,int button)
+// Forwards a mouse press to the component, then checks for repaint
+void ComponentListItem::MouseDown(ListArea* area,int x,int y,int button)
 {
-    mComponent->Virtual2C(x,y,button);
-    CheckInvalid(area);
+    this->mComponent->MouseDown(x,y,button);
+    this->CheckInvalid(area);
 }
 // FUNCTION: WON 0x006fda50
-void ComponentListItem::Virtual34(ListArea* area,int x,int y,int button)
+// Forwards a mouse release to the component, then checks for repaint
+void ComponentListItem::MouseUp(ListArea* area,int x,int y,int button)
 {
-    mComponent->Virtual30(x,y,button);
-    CheckInvalid(area);
+    this->mComponent->MouseUp(x,y,button);
+    this->CheckInvalid(area);
 }
-// SUPPORT: EXE 0x006fdaa0; native100B, actual retained component then ListItem/RefCount cleanup.
+// Destroys the list item, releasing its component (emitted at 0x006fdaa0)
 ComponentListItem::~ComponentListItem() {}
 }
 

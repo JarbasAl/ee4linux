@@ -1,4 +1,4 @@
-// Genuine SDK NetStats.cpp static definitions; native data and CRT lifetime pinned privately.
+// WON SDK NetStats static definitions (socket counts and byte/message totals)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>
 #include <windows.h>

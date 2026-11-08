@@ -1,5 +1,4 @@
-// Original-backed send operation family; filename/grouping provisional.
-// Source-only scratch, no runtime authority and no compiler lease.
+// WONAPI socket send and receive ops: raw bytes, length-prefixed messages, datagrams (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <sys/utime.h>
@@ -9,147 +8,156 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x006b5e50
-WONStatus SendBytesOp::Virtual0C()
+// Starts sending the op's bytes from the beginning
+WONStatus SendBytesOp::Start()
 {
-    mReadBuffer.Rewind();
-    return Virtual10();
+    this->mReadBuffer.Rewind();
+    return this->Continue();
 }
 
 // FUNCTION: WON 0x006b5e70
-WONStatus SendBytesOp::Virtual10()
+// Sends the remaining bytes as the socket accepts them; returns WS_TimedOut when time runs out or the send error
+WONStatus SendBytesOp::Continue()
 {
-    while (mReadBuffer.pos() < mReadBuffer.length()) {
-        mSocket->Fn2B1360(TimeLeft());
+    while (this->mReadBuffer.pos() < this->mReadBuffer.length()) {
+        this->mSocket->WaitForWrite(this->TimeLeft());
         int aSent = 0;
-        WONStatus aStatus = mSocket->Send(mReadBuffer.data()+mReadBuffer.pos(),
-            mReadBuffer.length()-mReadBuffer.pos(), &aSent);
+        WONStatus aStatus = this->mSocket->Send(this->mReadBuffer.data()+this->mReadBuffer.pos(),
+            this->mReadBuffer.length()-this->mReadBuffer.pos(), &aSent);
         if (aSent > 0)
-            mReadBuffer.ReadBytes(aSent);
-        if (aStatus != 100001)
+            this->mReadBuffer.ReadBytes(aSent);
+        if (aStatus != WS_TimedOut)
             return aStatus;
-        if (TimeLeft() == 0)
-            return 100001;
+        if (this->TimeLeft() == 0)
+            return WS_TimedOut;
     }
-    return 0;
+    return WS_Success;
 }
 
 // FUNCTION: WON 0x006b5f10
-WONStatus SendBytesToOp::Virtual10()
+// Sends the op's datagram to its address, or on the connection if the socket is connected
+WONStatus SendBytesToOp::Continue()
 {
-    mSocket->Fn2B1360(TimeLeft());
-    if (mSocket->Fn2B08D0())
-        return mSocket->Send(mBuffer->data(), mBuffer->length(), NULL);
-    return mSocket->Fn2B1700(mBuffer->data(), mBuffer->length(), mAddress);
+    this->mSocket->WaitForWrite(this->TimeLeft());
+    if (this->mSocket->IsConnected())
+        return this->mSocket->Send(this->mBuffer->data(), this->mBuffer->length(), NULL);
+    return this->mSocket->SendTo(this->mBuffer->data(), this->mBuffer->length(), this->mAddress);
 }
 
 // FUNCTION: WON 0x006b5fa0
-WONStatus SendMsgOp::Virtual0C()
+// Runs the message through the socket's send transforms, then starts sending it
+WONStatus SendMsgOp::Start()
 {
-    mBuffer = mMessage;
-    WONStatus aStatus = mSocket->Fn2B07E0(mBuffer);
+    this->mBuffer = this->mMessage;
+    WONStatus aStatus = this->mSocket->TransformSendMsg(this->mBuffer);
     if (aStatus != 0)
         return aStatus;
-    mReadBuffer.SetData(mBuffer->data(), mBuffer->length());
-    return Virtual10();
+    this->mReadBuffer.SetData(this->mBuffer->data(), this->mBuffer->length());
+    return this->Continue();
 }
 
 // FUNCTION: WON 0x006b6020
-WONStatus SendMsgOp::Virtual10()
+// Continues sending the message and counts it as sent once it is complete
+WONStatus SendMsgOp::Continue()
 {
-    WONStatus aStatus = SendBytesOp::Virtual10();
-    if (aStatus == 0)
+    WONStatus aStatus = SendBytesOp::Continue();
+    if (aStatus == WS_Success)
         NetStats::IncrementMessagesSent(1);
     return aStatus;
 }
-// Round3 additional original operation behavior; source-only.
 
 // FUNCTION: WON 0x006b4de0
+// Creates an op that receives the given number of bytes (0 = until the peer closes) into memory
 RecvBytesOp::RecvBytesOp(unsigned long inLength, AsyncSocket* inSocket)
     : SocketOp(inSocket), mWriteBuffer(0, true)
 {
-    mB58[0] = true;
-    mLength = inLength;
-    mFile = NULL;
-    mAppend = false;
-    mBinary = true;
-    mB80 = false;
-    mFileModifyTime = 0;
+    this->mWaitForEvent[0] = true;
+    this->mLength = inLength;
+    this->mFile = NULL;
+    this->mAppend = false;
+    this->mBinary = true;
+    this->mSkipBytes = false;
+    this->mFileModifyTime = 0;
 }
 
 // FUNCTION: WON 0x006b5000
-WONStatus RecvBytesOp::Fn2B5000()
+// Starts a receive: opens the target file if a path is set (WS_FailedToOpenFile on failure) or reserves memory
+WONStatus RecvBytesOp::StartRecv()
 {
-    mBytesRead = 0;
-    mBytesSinceProgress = 0;
-    mOwnFile = false;
-    if (mFile == NULL && !mPath.empty()) {
-        if (mBinary)
-            mFile = fopen(mPath.c_str(), mAppend ? "a+b" : "wb");
+    this->mBytesRead = 0;
+    this->mBytesSinceProgress = 0;
+    this->mOwnFile = false;
+    if (this->mFile == NULL && !this->mPath.empty()) {
+        if (this->mBinary)
+            this->mFile = fopen(this->mPath.c_str(), this->mAppend ? "a+b" : "wb");
         else
-            mFile = fopen(mPath.c_str(), mAppend ? "a+" : "w");
-        if (mFile == NULL)
-            return 100007;
-        mOwnFile = true;
+            this->mFile = fopen(this->mPath.c_str(), this->mAppend ? "a+" : "w");
+        if (this->mFile == NULL)
+            return WS_FailedToOpenFile;
+        this->mOwnFile = true;
     }
-    if (mLength > 0 && mFile == NULL && !mB80)
-        mWriteBuffer.Reserve(mLength);
-    return Fn2B50C0();
+    if (this->mLength > 0 && this->mFile == NULL && !this->mSkipBytes)
+        this->mWriteBuffer.Reserve(this->mLength);
+    return this->ContinueRecv();
 }
 
 // FUNCTION: WON 0x006b50c0
-WONStatus RecvBytesOp::Fn2B50C0()
+// Receives into memory or the file until the length arrives (or the peer closes when no length),
+// reporting progress chunks; returns WS_TimedOut when time runs out or the socket error
+WONStatus RecvBytesOp::ContinueRecv()
 {
     for (;;) {
-        mSocket->Fn2B1410(TimeLeft());
+        this->mSocket->WaitForRead(this->TimeLeft());
         int aRead = 0;
         WONStatus aStatus;
-        if (mLength > 0 && mFile == NULL && !mB80) {
-            aStatus = mSocket->Fn2B15E0(mWriteBuffer.data() + mWriteBuffer.length(),
-                mWriteBuffer.capacity() - mWriteBuffer.length(), &aRead);
+        if (this->mLength > 0 && this->mFile == NULL && !this->mSkipBytes) {
+            aStatus = this->mSocket->Recv(this->mWriteBuffer.data() + this->mWriteBuffer.length(),
+                this->mWriteBuffer.capacity() - this->mWriteBuffer.length(), &aRead);
             if (aRead > 0)
-                mWriteBuffer.Fn2A8260(aRead);
+                this->mWriteBuffer.SkipBytes(aRead);
         }
         else {
             char aBuffer[1024];
             int aLength = 1024;
-            if (mLength > 0) {
-                aLength = mLength - mBytesRead;
+            if (this->mLength > 0) {
+                aLength = this->mLength - this->mBytesRead;
                 if (aLength > 1024) aLength = 1024;
                 else if (aLength < 0) aLength = 0;
             }
-            aStatus = mSocket->Fn2B15E0(aBuffer, aLength, &aRead);
-            if (aRead > 0 && !mB80) {
-                if (mFile != NULL) {
-                    if (fwrite(aBuffer, 1, aRead, mFile) != aRead)
-                        return Fn2B54A0(100008);
+            aStatus = this->mSocket->Recv(aBuffer, aLength, &aRead);
+            if (aRead > 0 && !this->mSkipBytes) {
+                if (this->mFile != NULL) {
+                    if (fwrite(aBuffer, 1, aRead, this->mFile) != aRead)
+                        return this->FinishRecv(WS_FailedToWriteToFile);
                 }
                 else
-                    mWriteBuffer.AppendBytes(aBuffer, aRead);
+                    this->mWriteBuffer.AppendBytes(aBuffer, aRead);
             }
         }
-        mBytesRead += aRead;
-        if (aRead > 0 && mProgressCompletion.get() != NULL) {
-            mBytesSinceProgress += aRead;
-            if (mBytesSinceProgress > mProgressInterval) {
+        this->mBytesRead += aRead;
+        if (aRead > 0 && this->mProgressCompletion.get() != NULL) {
+            this->mBytesSinceProgress += aRead;
+            if (this->mBytesSinceProgress > this->mProgressInterval) {
                 SmartPtr<RecvChunkOp> anOp = new RecvChunkOp(this);
-                anOp->mCompletion = mProgressCompletion;
-                long aMode = mRunMode;
-                anOp->Fn29F500(aMode, 0);
-                mBytesSinceProgress %= mProgressInterval;
+                anOp->mCompletion = this->mProgressCompletion;
+                long aMode = this->mRunMode;
+                anOp->Run(aMode, 0);
+                this->mBytesSinceProgress %= this->mProgressInterval;
             }
         }
-        if (mLength == 0) {
+        if (this->mLength == 0) {
             if (aStatus == 100020)
-                return Fn2B54A0(0);
+                return this->FinishRecv(WS_Success);
         }
-        else if (mBytesRead == mLength)
-            return Fn2B54A0(0);
+        else if (this->mBytesRead == this->mLength)
+            return this->FinishRecv(WS_Success);
         if (aStatus == 100001) {
-            if (TimeLeft() == 0)
-                return 100001;
+            if (this->TimeLeft() == 0)
+                return WS_TimedOut;
         }
         else if (aStatus != 0)
             return aStatus;
@@ -157,31 +165,35 @@ WONStatus RecvBytesOp::Fn2B50C0()
 }
 
 // FUNCTION: WON 0x006b54a0
-WONStatus RecvBytesOp::Fn2B54A0(WONStatus inStatus)
+// Finishes a receive: hands over the received bytes, or closes the target file; returns the status
+WONStatus RecvBytesOp::FinishRecv(WONStatus inStatus)
 {
-    if (mFile == NULL) {
-        mReceivedData = mWriteBuffer.ToByteBuffer(true);
+    if (this->mFile == NULL) {
+        this->mReceivedData = this->mWriteBuffer.ToByteBuffer(true);
         return inStatus;
     }
-    return Fn2B5410(inStatus);
+    return this->CloseFile(inStatus);
 }
 
 // FUNCTION: WON 0x006b5b00
-WONStatus RecvMsgOp::Virtual0C()
+// Starts receiving a message by reading its 1-, 2- or 4-byte length prefix
+WONStatus RecvMsgOp::Start()
 {
-    mState = 1;
-    mLength = mSocket->GetLengthFieldSize();
-    if (mLength != 1 && mLength != 2 && mLength != 4)
-        return 100023;
-    WONStatus aStatus = Fn2B5000();
-    return aStatus == 0 ? Fn2B5B50() : aStatus;
+    this->mState = 1;
+    this->mLength = this->mSocket->GetLengthFieldSize();
+    if (this->mLength != 1 && this->mLength != 2 && this->mLength != 4)
+        return WS_RecvMsg_InvalidLengthFieldSize;
+    WONStatus aStatus = this->StartRecv();
+    return aStatus == WS_Success ? this->StartRecvBody() : aStatus;
 }
 
 // FUNCTION: WON 0x006b5b50
-WONStatus RecvMsgOp::Fn2B5B50()
+// Reads the length prefix and starts receiving the body (a 2-byte 0xffff switches to a 4-byte prefix);
+// rejects lengths not above the prefix size or of 256000 and more
+WONStatus RecvMsgOp::StartRecvBody()
 {
-    mState = 2;
-    ByteBufferPtr aBuffer = GetBytes();
+    this->mState = 2;
+    ByteBufferPtr aBuffer = this->GetBytes();
     ReadBuffer aMessage(aBuffer->data(), aBuffer->length());
     unsigned long aLength;
     switch (aMessage.length()) {
@@ -192,141 +204,154 @@ WONStatus RecvMsgOp::Fn2B5B50()
     }
     if (aLength > aMessage.length() && aLength < 256000) {
         if (aLength == 65535 && aMessage.length() == 2) {
-            mLength = 4;
-            mState = 1;
-            WONStatus aStatus = Fn2B5000();
-            if (aStatus != 0)
+            this->mLength = 4;
+            this->mState = 1;
+            WONStatus aStatus = this->StartRecv();
+            if (aStatus != WS_Success)
                 return aStatus;
             else
-                return Fn2B5B50();
+                return this->StartRecvBody();
         }
-        mState = 2;
-        mLength = aLength - aMessage.length();
-        WONStatus aStatus = Fn2B5000();
-        if (aStatus == 0)
-            return Fn2B5D20();
+        this->mState = 2;
+        this->mLength = aLength - aMessage.length();
+        WONStatus aStatus = this->StartRecv();
+        if (aStatus == WS_Success)
+            return this->FinishRecvMsg();
         else
             return aStatus;
     }
     else {
 aBadLength:
-        return 100024;
+        return WS_RecvMsg_InvalidMessageLength;
     }
 }
 
 // FUNCTION: WON 0x006b5d20
-WONStatus RecvMsgOp::Fn2B5D20()
+// Counts the received message and runs it through the socket's receive transforms
+WONStatus RecvMsgOp::FinishRecvMsg()
 {
     NetStats::IncrementMessagesReceived(1);
-    mMessage = GetBytes();
-    return mSocket->Fn2B0730(mMessage);
+    this->mMessage = this->GetBytes();
+    return this->mSocket->TransformRecvMsg(this->mMessage);
 }
 
 // FUNCTION: WON 0x006b5e20
-WONStatus RecvMsgOp::Virtual10()
+// Continues receiving the length prefix or the body and moves to the next stage when it is complete
+WONStatus RecvMsgOp::Continue()
 {
-    WONStatus aStatus = Fn2B50C0();
-    if (aStatus != 0)
+    WONStatus aStatus = this->ContinueRecv();
+    if (aStatus != WS_Success)
         return aStatus;
-    return mState == 1 ? Fn2B5B50() : Fn2B5D20();
+    return this->mState == 1 ? this->StartRecvBody() : this->FinishRecvMsg();
 }
 // FUNCTION: WON 0x006b5410
-WONStatus RecvBytesOp::Fn2B5410(WONStatus inStatus)
+// Closes the target file if the op opened it and applies the requested modify time; returns the status
+WONStatus RecvBytesOp::CloseFile(WONStatus inStatus)
 {
-    if (mFile != NULL) {
-        if (mOwnFile && fclose(mFile) != 0)
-            inStatus = 100008;
-        if (mFileModifyTime != 0) {
+    if (this->mFile != NULL) {
+        if (this->mOwnFile && fclose(this->mFile) != 0)
+            inStatus = WS_FailedToWriteToFile;
+        if (this->mFileModifyTime != 0) {
             struct _utimbuf aTime;
-            aTime.actime = mFileModifyTime;
-            aTime.modtime = mFileModifyTime;
-            _utime(mPath.c_str(), &aTime);
+            aTime.actime = this->mFileModifyTime;
+            aTime.modtime = this->mFileModifyTime;
+            _utime(this->mPath.c_str(), &aTime);
         }
-        mFile = NULL;
+        this->mFile = NULL;
     }
     return inStatus;
 }
 
 // FUNCTION: WON 0x006b5580
-void RecvBytesOp::Virtual08()
+// Leaves the socket thread and closes the target file when the op ends
+void RecvBytesOp::CleanupHook()
 {
-    SocketOp::Virtual08();
-    Fn2B5410(mStatus);
+    SocketOp::CleanupHook();
+    this->CloseFile(this->mStatus);
 }
 
-// New original RecvBytesFromOp full ownership implementation; source-only.
 
 // FUNCTION: WON 0x006b55a0
+// Creates an op that receives one datagram of up to the given size
 RecvBytesFromOp::RecvBytesFromOp(unsigned short inMaxLength, AsyncSocket* inSocket)
     : SocketOp(inSocket)
 {
-    mB58[0] = true;
-    mMaxLength = inMaxLength;
-    mRawBuffer = NULL;
+    this->mWaitForEvent[0] = true;
+    this->mMaxLength = inMaxLength;
+    this->mRawBuffer = NULL;
 }
 // FUNCTION: WON 0x006b56f0
+// Destroys the op, freeing its receive buffer
 RecvBytesFromOp::~RecvBytesFromOp()
 {
-    delete mRawBuffer;
+    delete this->mRawBuffer;
 }
 // FUNCTION: WON 0x006b57d0
-void RecvBytesFromOp::Virtual04()
+// Allocates the receive buffer if needed, clears the last datagram and runs the op
+void RecvBytesFromOp::RunHook()
 {
-    if (mRawBuffer == NULL)
-        mRawBuffer = new char[mMaxLength];
-    mReceivedData = NULL;
-    SocketOp::Virtual04();
+    if (this->mRawBuffer == NULL)
+        this->mRawBuffer = new char[this->mMaxLength];
+    this->mReceivedData = NULL;
+    SocketOp::RunHook();
 }
 // FUNCTION: WON 0x006b5820
-WONStatus RecvBytesFromOp::Virtual10()
+// Receives one datagram and its sender (the peer address if connected) into a new byte buffer
+WONStatus RecvBytesFromOp::Continue()
 {
-    mSocket->Fn2B1410(TimeLeft());
+    this->mSocket->WaitForRead(this->TimeLeft());
     int aReceived = 0;
     WONStatus aStatus;
-    if (mSocket->Fn2B08D0()) {
-        mFromAddress = mSocket->GetDestAddr();
-        aStatus = mSocket->Fn2B15E0(mRawBuffer, mMaxLength, &aReceived);
+    if (this->mSocket->IsConnected()) {
+        this->mFromAddress = this->mSocket->GetDestAddr();
+        aStatus = this->mSocket->Recv(this->mRawBuffer, this->mMaxLength, &aReceived);
     }
     else
-        aStatus = mSocket->Fn2B1840(mRawBuffer, mMaxLength, &mFromAddress, &aReceived);
+        aStatus = this->mSocket->RecvFrom(this->mRawBuffer, this->mMaxLength, &this->mFromAddress, &aReceived);
     if (aStatus == 0) {
-        mReceivedData = new ByteBuffer(mRawBuffer, aReceived, true);
-        mRawBuffer = NULL;
+        this->mReceivedData = new ByteBuffer(this->mRawBuffer, aReceived, true);
+        this->mRawBuffer = NULL;
     }
     return aStatus;
 }
 }
 namespace WONAPI {
 // FUNCTION: WON 0x006b4f00
+// Returns a new receive-bytes op with the same length and socket
 AsyncOp* RecvBytesOp::Duplicate()
 {
-    return new RecvBytesOp(mLength,mSocket.get());
+    return new RecvBytesOp(this->mLength,this->mSocket.get());
 }
 // FUNCTION: WON 0x006ab3d0
+// Returns a new receive-message op on the same socket
 AsyncOp* RecvMsgOp::Duplicate()
 {
-    return new RecvMsgOp(mSocket.get());
+    return new RecvMsgOp(this->mSocket.get());
 }
 // FUNCTION: WON 0x006b5660
+// Returns a new receive-datagram op with the same size and socket
 AsyncOp* RecvBytesFromOp::Duplicate()
 {
-    return new RecvBytesFromOp(mMaxLength,mSocket.get());
+    return new RecvBytesFromOp(this->mMaxLength,this->mSocket.get());
 }
 // FUNCTION: WON 0x006b4f90
-void RecvBytesOp::Fn2B4F90(CompletionBase<AsyncOpPtr>* completion,long interval)
+// Sets the completion called after every interval bytes received
+void RecvBytesOp::SetProgressCompletion(CompletionBase<AsyncOpPtr>* completion,long interval)
 {
-    mProgressCompletion=completion;
-    mProgressInterval=interval;
+    this->mProgressCompletion=completion;
+    this->mProgressInterval=interval;
 }
 // FUNCTION: WON 0x006ab770
+// Returns the received message
 ByteBufferPtr RecvMsgOp::GetMsg() const
 {
-    return mMessage;
+    return this->mMessage;
 }
 // FUNCTION: WON 0x006aa920
+// Returns the received datagram
 SmartPtr<ByteBuffer> RecvBytesFromOp::GetBytes() const
 {
-    return mReceivedData;
+    return this->mReceivedData;
 }
 }
 
@@ -350,4 +375,3 @@ SmartPtr<ByteBuffer> RecvBytesFromOp::GetBytes() const
 // TEMPLATE: WON 0x006b4f70
 // (public: virtual void * __thiscall WONAPI::RecvBytesOp::`scalar deleting destructor'(unsigned int)    [??_GRecvBytesOp@WONAPI@@UAEPAXI@Z])
 
-// Compiler-generated and header-inline functions this unit emits:

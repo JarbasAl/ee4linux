@@ -1,4 +1,4 @@
-// Complete original-backed Component source completion; all selected methods support0.
+// Scroll area scroller hookup and the viewport container that holds the scrolled content
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,67 +11,75 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Genuine SDK implicit destructor supplied by actual complete class/real constructor; no authored body.
 // FUNCTION: WON 0x00705010
+// Attaches a scroller to the scroll area and points the scroller back at it
 void ScrollArea::SetScroller(Scroller* scroller)
 {
-    mScroller=scroller;
+    this->mScroller=scroller;
     if(scroller!=NULL) scroller->SetScrollArea(this);
 }
 // FUNCTION: WON 0x00705180
+// Handles a component event with the plain component behaviour
 void ScrollArea::HandleComponentEvent(ComponentEvent* event)
 {
     Component::HandleComponentEvent(event);
 }
-// FUNCTION: WON 0x00705c10; native95B, nested viewport translation and visible-rectangle invalidation.
+// FUNCTION: WON 0x00705c10
+// Repaints the scroll area if a rectangle, translated up through nested viewports, is in view
 void ScrollAreaViewport::InvalidateIfRectVisible(WONRectangle& rect)
 {
-    if(mParent==mScrollArea) {
-        if(mScrollArea->IsRectVisible(rect)) mScrollArea->Invalidate();
+    if(this->mParent==this->mScrollArea) {
+        if(this->mScrollArea->IsRectVisible(rect)) this->mScrollArea->Invalidate();
     } else {
-        Container* parent=mParent;
+        Container* parent=this->mParent;
         if(parent!=NULL) {
-            rect.x+=Left();
-            rect.y+=Top();
+            rect.x+=this->Left();
+            rect.y+=this->Top();
             static_cast<ScrollAreaViewport*>(parent)->InvalidateIfRectVisible(rect);
         }
     }
 }
 // FUNCTION: WON 0x00705c70
+// Drops every child, timer child and mouse/focus child and ends any popup it owns
 void ScrollAreaViewport::Reset()
 {
-    mMouseChild=mFocusChild=NULL;
-    mChildTimerSet.clear();
-    mChildList.clear();
+    this->mMouseChild=this->mFocusChild=NULL;
+    this->mChildTimerSet.clear();
+    this->mChildList.clear();
     WindowManager* manager=WONAPI::WindowManager::GetDefaultWindowManager();
     if(manager!=NULL) manager->CheckEndPopup(this);
 }
-// Genuine SDK implicit destructor supplied by actual complete class/real constructor; no authored body.
 // FUNCTION: WON 0x00705db0
-void ScrollAreaViewport::VirtualB4(Component* child) { Container::VirtualB4(child); }
+// Sets the focused child (container behaviour)
+void ScrollAreaViewport::SetFocusChild(Component* child) { Container::SetFocusChild(child); }
 // FUNCTION: WON 0x00705dc0
-void ScrollAreaViewport::VirtualB8(Component* child) { Container::VirtualB8(child); }
+// Registers a child for timer events (container behaviour)
+void ScrollAreaViewport::AddTimerChild(Component* child) { Container::AddTimerChild(child); }
 // FUNCTION: WON 0x00705dd0
-bool ScrollAreaViewport::Virtual44(int delta) { return Container::Virtual44(delta); }
+// Passes a timer tick to the timer children (container behaviour)
+bool ScrollAreaViewport::TimerEvent(int delta) { return Container::TimerEvent(delta); }
 // FUNCTION: WON 0x00705de0
-void ScrollAreaViewport::Virtual78(Cursor* cursor) { mScrollArea->Virtual78(cursor); }
+// Sets the cursor on the owning scroll area instead of the viewport
+void ScrollAreaViewport::SetCursor(Cursor* cursor) { this->mScrollArea->SetCursor(cursor); }
 // FUNCTION: WON 0x00705e00
+// Paints the children (container behaviour)
 void ScrollAreaViewport::Paint(Graphics& graphics) { Container::Paint(graphics); }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x00705d70
-bool ScrollAreaViewport::VirtualC0(Component* child)
+// Repaints the scroll area when an invalidated child is in view; returns false
+bool ScrollAreaViewport::ChildInvalidated(Component* child)
 {
     WONRectangle bounds=child->GetBounds();
-    InvalidateIfRectVisible(bounds);
+    this->InvalidateIfRectVisible(bounds);
     return false;
 }
 }
 
 namespace WONAPI {
-// Genuine SDK ChildChanged empty default, sharednative2fa500/3; primary/physicalnew0.
-void ScrollAreaViewport::VirtualBC(Component*) {}
+// Ignores child state changes (the linker folds this empty body into the identical one at 0x006fa500)
+void ScrollAreaViewport::ChildStateChanged(Component*) {}
 }
 
 // Compiler-generated and header-inline functions this unit emits:

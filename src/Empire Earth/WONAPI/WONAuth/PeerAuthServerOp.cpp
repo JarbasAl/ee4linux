@@ -1,4 +1,4 @@
-// Original peer authentication server operation on its complete actual owner.
+// PeerAuthServerOp: answers a peer's authentication handshake on an accepted socket
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <time.h>
@@ -11,26 +11,30 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONAuthPeerData.h"
+#include "ee/wonapi/WONStatus.h"
 
 namespace WONAPI {
 // FUNCTION: WON 0x006e8950
+// Creates a server-side peer auth op for an auth context and socket
 PeerAuthServerOp::PeerAuthServerOp(AuthContext* context,BlockingSocket* socket)
 {
-    mAuthContext=context;
-    mSocket=socket;
+    this->mAuthContext=context;
+    this->mSocket=socket;
 }
 
 // FUNCTION: WON 0x006e8bc0
+// Destroys the op (members only)
 PeerAuthServerOp::~PeerAuthServerOp()
 {
 }
 
 // FUNCTION: WON 0x006e8d70
+// Feeds each received message to the handshake, sends the reply and finishes after the last send
 bool PeerAuthServerOp::CallbackHook(AsyncOp* op,int type)
 {
-    if(op->mStatus!=0)
+    if(op->mStatus!=WS_Success)
     {
-        Fn29F220(op->mStatus);
+        this->Finish(op->mStatus);
         return true;
     }
     if(type==1) // PeerAuth_Track_Recv
@@ -41,94 +45,98 @@ bool PeerAuthServerOp::CallbackHook(AsyncOp* op,int type)
 
         ByteBufferPtr sendMsg;
         ByteBufferPtr recvMsg=recvOp->GetMsg();
-        WONStatus status=mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
+        WONStatus status=this->mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
         int sendType=0;
-        if(status==0 && mPeerAuthServer.GetState()==PeerAuthServer::STATE_NOT_STARTED)
+        if(status==WS_Success && this->mPeerAuthServer.GetState()==PeerAuthServer::STATE_NOT_STARTED)
             sendType=2; // PeerAuth_Track_LastSend
         if(sendMsg.get()!=NULL)
-            mSocket->Fn2B4740(static_cast<SocketOp*>(Track(new SendMsgOp(sendMsg.get()),sendType)),SendTime());
-        if(status!=0)
-            Fn29F220(status);
+            this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(new SendMsgOp(sendMsg.get()),sendType)),this->SendTime());
+        if(status!=WS_Success)
+            this->Finish(status);
         else if(sendType!=2)
-            mSocket->Fn2B4740(static_cast<SocketOp*>(Track(new RecvMsgOp,1)),RecvTime());
+            this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(new RecvMsgOp,1)),this->RecvTime());
     }
     else if(type==2)
-        Success();
+        this->Success();
     return true;
 }
 
 // FUNCTION: WON 0x006e8fa0
+// Finishes the op with the status and returns true unless it is success
 bool PeerAuthServerOp::CheckStatus(WONStatus status)
 {
     if(status==0)
         return false;
-    Fn29F220(status);
+    this->Finish(status);
     return true;
 }
 
 // FUNCTION: WON 0x006e8fc0
+// Queues the first receive on the socket
 void PeerAuthServerOp::AsyncRun()
 {
-    mSocket->Fn2B4740(static_cast<SocketOp*>(Track(new RecvMsgOp,1)),RecvTime());
+    this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(new RecvMsgOp,1)),this->RecvTime());
 }
 
 // FUNCTION: WON 0x006e9050
-void PeerAuthServerOp::Virtual04()
+// Runs the server handshake, asynchronously or as two blocking receive/reply rounds
+void PeerAuthServerOp::RunHook()
 {
-    mLengthFieldSize=mSocket->GetLengthFieldSize();
-    mPeerAuthServer.Start(mAuthContext->GetPeerData(),mLengthFieldSize);
-    if(mRunMode==1)
+    this->mLengthFieldSize=this->mSocket->GetLengthFieldSize();
+    this->mPeerAuthServer.Start(this->mAuthContext->GetPeerData(),this->mLengthFieldSize);
+    if(this->mRunMode==OP_MODE_ASYNC)
     {
-        AsyncRun();
+        this->AsyncRun();
         return;
     }
 
     ByteBufferPtr recvMsg;
-    WONStatus status=mSocket->RecvMsg(recvMsg,RecvTime());
-    if(CheckStatus(status))
+    WONStatus status=this->mSocket->RecvMsg(recvMsg,this->RecvTime());
+    if(this->CheckStatus(status))
         return;
 
     ByteBufferPtr sendMsg;
-    status=mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
-    CheckStatus(status);
+    status=this->mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
+    this->CheckStatus(status);
     if(sendMsg.get()==NULL)
         return;
 
-    status=mSocket->SendMsg(sendMsg.get(),SendTime());
-    CheckStatus(status);
-    if(mStatus!=100000) // WS_Pending
+    status=this->mSocket->SendMsg(sendMsg.get(),this->SendTime());
+    this->CheckStatus(status);
+    if(this->mStatus!=WS_Pending)
         return;
 
-    status=mSocket->RecvMsg(recvMsg,RecvTime());
-    if(CheckStatus(status))
+    status=this->mSocket->RecvMsg(recvMsg,this->RecvTime());
+    if(this->CheckStatus(status))
         return;
 
-    status=mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
-    CheckStatus(status);
+    status=this->mPeerAuthServer.HandleRecvMsg(recvMsg->data(),recvMsg->length(),sendMsg);
+    this->CheckStatus(status);
     if(sendMsg.get()==NULL)
         return;
 
-    status=mSocket->SendMsg(sendMsg.get(),SendTime());
+    status=this->mSocket->SendMsg(sendMsg.get(),this->SendTime());
     if(status==0)
-        Success();
+        this->Success();
     else
-        Fn29F220(status);
+        this->Finish(status);
 }
 
 // FUNCTION: WON 0x006e9370
+// Adds the session encryption to the socket when the auth type encrypts, then finishes with success
 void PeerAuthServerOp::Success()
 {
-    AuthSession* session=mPeerAuthServer.GetSession();
+    AuthSession* session=this->mPeerAuthServer.GetSession();
     AuthType type=session->GetAuthType();
     if(type==AUTH_TYPE_SESSION || type==AUTH_TYPE_PERSISTENT)
-        mSocket->Fn2B0620(new CryptTransform(session));
-    Fn29F220(0);
+        this->mSocket->AddMsgTransform(new CryptTransform(session));
+    this->Finish(WS_Success);
 }
 
 
-void PeerAuthServerOp::Virtual08()
+void PeerAuthServerOp::CleanupHook()
 {
-    AsyncOpWithTracker::Virtual08();
+    AsyncOpWithTracker::CleanupHook();
 }
 }
 

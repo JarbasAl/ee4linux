@@ -2357,7 +2357,7 @@ struct EEUUTargetSearch {
 };
 
 // 0x25000c: scores inTarget against the targeting table row of mMode; the best so far (EEIsAttackReachable finds a tile to
-// attack it from) becomes mBest, mB6D ends the search; a large unit is scored once (mScratch)
+// attack it from) becomes mBest, mSavedLobbyMusic ends the search; a large unit is scored once (mScratch)
 inline bool EEUUTargetSearch::Score(EEComplexUnit* inTarget)
 {
     bool theFinal = false;

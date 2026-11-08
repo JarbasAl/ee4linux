@@ -10,56 +10,62 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONComponentFlags.h"
 using namespace WONAPI;
 
 // FUNCTION: WON 0x007040d0
+// Creates the top-level container of a window: arrow cursor, window dragging allowed, tab focus kept inside
 RootContainer::RootContainer(Window *theWindow)
 {
-	mModalComponent = NULL;
-	mWindow = theWindow;
-	mCursorComponent = NULL;
-	SetDefaultCursor(Cursor::GetStandardCursor(StandardCursor_Arrow));
-	SetComponentFlags(0x8 | 0x40000,true);
+	this->mModalComponent = NULL;
+	this->mWindow = theWindow;
+	this->mCursorComponent = NULL;
+	this->SetDefaultCursor(Cursor::GetStandardCursor(StandardCursor_Arrow));
+	this->SetComponentFlags(0x8 | 0x40000,true);
 
-	mAllowDrag = true;
-	mDragX = mDragY = 0;
-	mDragging = false;
-	mIsolateTabFocus = true;
+	this->mAllowDrag = true;
+	this->mDragX = this->mDragY = 0;
+	this->mDragging = false;
+	this->mIsolateTabFocus = true;
 }
 
 // FUNCTION: WON 0x00704510
+// Queues a grabber's background image for drawing under the children (keyed by image order), then clears the grabber
 void RootContainer::AddBG(BackgroundGrabber *theGrabber)
 {
 	if(theGrabber==NULL || !theGrabber->NeedDrawBG())
 		return;
 
-	mBGStructMap[(int)theGrabber->mImageOrder] = BGStruct(theGrabber->mImageX,theGrabber->mImageY,theGrabber->mBGImage.get(), theGrabber->mClipRect);
+	this->mBGStructMap[(int)theGrabber->mImageOrder] = BGStruct(theGrabber->mImageX,theGrabber->mImageY,theGrabber->mBGImage.get(), theGrabber->mClipRect);
 	theGrabber->Clear();
 }
 
 // FUNCTION: WON 0x00704710
-Component* RootContainer::VirtualAC(int x, int y)
+// Returns the child at a point (plain container lookup)
+Component* RootContainer::FindChildAt(int x, int y)
 {
-	Component *aComponent = Container::VirtualAC(x,y);
+	Component *aComponent = Container::FindChildAt(x,y);
 
 
 	return aComponent;
 }
 
 // FUNCTION: WON 0x00704730
+// Lays out the children and marks the whole window as needing a repaint
 void RootContainer::Virtual08()
 {
 	Container::Virtual08();
-	mInvalidRect=mBounds;
+	this->mInvalidRect=this->mBounds;
 }
 
 // FUNCTION: WON 0x00704760
-void RootContainer::Virtual14(Graphics &g)
+// Draws the queued background images (highest order first), each clipped to its rectangle, then empties the queue
+void RootContainer::PrePaint(Graphics &g)
 {
 
-	Container::Virtual14(g);
-	std::map<int,BGStruct>::reverse_iterator anItr = mBGStructMap.rbegin();
-	while(anItr!=mBGStructMap.rend())
+	Container::PrePaint(g);
+	std::map<int,BGStruct>::reverse_iterator anItr = this->mBGStructMap.rbegin();
+	while(anItr!=this->mBGStructMap.rend())
 	{
 		BGStruct &aStruct = anItr->second;
 		WONRectangle anImageRect(aStruct.mImageX,aStruct.mImageY,aStruct.mImage->mWidth,aStruct.mImage->mHeight);
@@ -69,107 +75,114 @@ void RootContainer::Virtual14(Graphics &g)
 
 		++anItr;
 	}
-	mBGStructMap.clear();
+	this->mBGStructMap.clear();
 
 }
 
 // FUNCTION: WON 0x00704900
+// Paints the window's invalid rectangle with the container's color scheme, then clears that rectangle
 void RootContainer::Paint(Graphics &g)
 {
-	g.mColorScheme=GetColorScheme();
-	g.PushClipRect(mInvalidRect.x, mInvalidRect.y, mInvalidRect.width, mInvalidRect.height);
+	g.mColorScheme=this->GetColorScheme();
+	g.PushClipRect(this->mInvalidRect.x, this->mInvalidRect.y, this->mInvalidRect.width, this->mInvalidRect.height);
 	Container::Paint(g);
 	g.PopClipRect();
 
-	mInvalidRect.x = mInvalidRect.y = mInvalidRect.width = mInvalidRect.height = 0;
+	this->mInvalidRect.x = this->mInvalidRect.y = this->mInvalidRect.width = this->mInvalidRect.height = 0;
 }
 
 // FUNCTION: WON 0x00704970
-bool RootContainer::VirtualC0(Component *theChild)
+// Forwards a child's invalidation to the container base
+bool RootContainer::ChildInvalidated(Component *theChild)
 {
-	return Container::VirtualC0(theChild);
+	return Container::ChildInvalidated(theChild);
 }
 
 // FUNCTION: WON 0x00704980
-void RootContainer::Virtual60(WONRectangle &theRect)
+// Grows the window's invalid rectangle to include the given one
+void RootContainer::InvalidateRect(WONRectangle &theRect)
 {
-	mInvalidRect.DoUnion(theRect);
+	this->mInvalidRect.DoUnion(theRect);
 }
 
 // FUNCTION: WON 0x007049a0
-bool RootContainer::Virtual54(int theKey)
+// Passes a key press to the children, then to the keyboard listener (event 0); always handled
+bool RootContainer::KeyDown(int theKey)
 {
-	Container::Virtual54(theKey);
+	Container::KeyDown(theKey);
 
-	if(mKeyboardListener.get()!=NULL)
-		mKeyboardListener->KeyEvent(theKey,0);	
+	if(this->mKeyboardListener.get()!=NULL)
+		this->mKeyboardListener->KeyEvent(theKey,0);	
 
 	return true;
 }
 
 // FUNCTION: WON 0x007049d0
-bool RootContainer::Virtual58(int theKey)
+// Passes a key release to the children, then to the keyboard listener (event 1); always handled
+bool RootContainer::KeyUp(int theKey)
 {
-	Container::Virtual58(theKey);
-	if(mKeyboardListener.get()!=NULL)
-		mKeyboardListener->KeyEvent(theKey,1);
+	Container::KeyUp(theKey);
+	if(this->mKeyboardListener.get()!=NULL)
+		this->mKeyboardListener->KeyEvent(theKey,1);
 
 	return true;
 }
 
 // FUNCTION: WON 0x00704a00
-bool RootContainer::Virtual50(int theKey)
+// Passes a typed character to the children, then to the keyboard listener (event 2); always handled
+bool RootContainer::KeyChar(int theKey)
 {
-	Container::Virtual50(theKey);
-	if(mKeyboardListener.get()!=NULL)
-		mKeyboardListener->KeyEvent(theKey,2);
+	Container::KeyChar(theKey);
+	if(this->mKeyboardListener.get()!=NULL)
+		this->mKeyboardListener->KeyEvent(theKey,2);
 
 	return true;
 }
 
 // FUNCTION: WON 0x00704a30
-void RootContainer::Virtual34(int x, int y)
+// Handles a mouse move and moves the software cursor component to the pointer, repainting old and new spots
+void RootContainer::MouseMove(int x, int y)
 {
-	Container::Virtual34(x,y);
-	if(mCursorComponent!=NULL)
-	{
-		int mx,my;
-		mCurrentCursor->GetComponent(mx,my);
-		x-=mx; y-=my; 
+	Container::MouseMove(x,y);
+	if(this->mCursorComponent==NULL)
+		return;
+	int mx,my;
+	this->mCurrentCursor->GetComponent(mx,my);
+	x-=mx; y-=my; 
 
-		mCursorComponent->Invalidate();
-		mCursorComponent->Fn2F4B70(x,y);
-		WONRectangle aRect(x,y,mCursorComponent->Width(),mCursorComponent->Height());
-		Virtual60(aRect);
-	}
+	this->mCursorComponent->Invalidate();
+	this->mCursorComponent->SetPos(x,y);
+	WONRectangle aRect(x,y,this->mCursorComponent->Width(),this->mCursorComponent->Height());
+	this->InvalidateRect(aRect);
 }
 
 // FUNCTION: WON 0x00704ac0
-void RootContainer::Virtual38(int x, int y)
+// Drags the window by the mouse while a window drag is active; otherwise drags as usual and moves the cursor component
+void RootContainer::MouseDrag(int x, int y)
 {
-	if(!mDragging)
+	if(!this->mDragging)
 	{
-		Container::Virtual38(x,y);
-		if(mCursorComponent!=NULL)
+		Container::MouseDrag(x,y);
+		if(this->mCursorComponent!=NULL)
 		{
 			int mx,my;
-			mCurrentCursor->GetComponent(mx,my);
+			this->mCurrentCursor->GetComponent(mx,my);
 			x-=mx; y-=my; 
 
-			mCursorComponent->Invalidate();
-			mCursorComponent->Fn2F4B70(x,y);
-			WONRectangle aRect(x,y,mCursorComponent->Width(),mCursorComponent->Height());
-			Virtual60(aRect);
+			this->mCursorComponent->Invalidate();
+			this->mCursorComponent->SetPos(x,y);
+			WONRectangle aRect(x,y,this->mCursorComponent->Width(),this->mCursorComponent->Height());
+			this->InvalidateRect(aRect);
 		}
 	}
 	else
 	{
-		int aNewX = Left() + (x - mDragX);
-		int aNewY = Top() + (y - mDragY);
-		if(aNewX==Left() && aNewY==Top())
+		int aNewX = this->Left() + (x - this->mDragX);
+		int aNewY = this->Top() + (y - this->mDragY);
+		if(aNewX==this->Left() && aNewY==this->Top())
 			return;
 
-		Window *aWindow = mWindow;
+		Window *aWindow = this->mWindow;
 		WONRectangle r;
 		aWindow->GetRect(r,false);
 		aWindow->SetPosSize(r.x+aNewX,r.y+aNewY,-1,-1);
@@ -177,85 +190,88 @@ void RootContainer::Virtual38(int x, int y)
 }
 
 // FUNCTION: WON 0x00704bd0
-void RootContainer::Virtual2C(int x, int y, int theButton)
+// On a left press over a child flagged for parent dragging, starts dragging the window
+void RootContainer::MouseDown(int x, int y, int theButton)
 {
-	Container::Virtual2C(x,y,theButton);
-	if(theButton==0 && mAllowDrag)
-	{
-		Window *aWindow = mWindow;
-		Component *aMouseChild = mMouseChild;
-		if(aWindow->mIsOneComponentWindow && aMouseChild!=NULL)
-			aMouseChild = aMouseChild->Virtual98();
+	Container::MouseDown(x,y,theButton);
+	if(theButton!=0 || !this->mAllowDrag)
+		return;
+	Window *aWindow = this->mWindow;
+	Component *aMouseChild = this->mMouseChild;
+	if(aWindow->mIsOneComponentWindow && aMouseChild!=NULL)
+		aMouseChild = aMouseChild->GetMouseChild();
 
-		if(aMouseChild!=NULL)
-		{
-			if(aMouseChild->ComponentFlagSet(0x20))
-			{
-				mDragging = true;
-				mDragX = x;
-				mDragY = y;
-			}
-		}
-	}
+	if(aMouseChild==NULL)
+		return;
+	if(!aMouseChild->ComponentFlagSet(ComponentFlag_ParentDrag))
+		return;
+	this->mDragging = true;
+	this->mDragX = x;
+	this->mDragY = y;
 }
 
 // FUNCTION: WON 0x00704c40
-void RootContainer::Virtual24(int x, int y)
+// Handles the mouse entering the window (container behaviour)
+void RootContainer::MouseEnter(int x, int y)
 {
-	Container::Virtual24(x,y);
+	Container::MouseEnter(x,y);
 }
 
 // FUNCTION: WON 0x00704c60
-void RootContainer::Virtual28()
+// Ends any window drag and removes the cursor component when the mouse leaves the window
+void RootContainer::MouseExit()
 {
-	Container::Virtual28();
-	mDragging = false;
-	if(mCursorComponent!=NULL)
-		VirtualC4(mCursorComponent);
+	Container::MouseExit();
+	this->mDragging = false;
+	if(this->mCursorComponent!=NULL)
+		this->RemoveChild(this->mCursorComponent);
 }
 
 // FUNCTION: WON 0x00704c90
-void RootContainer::Virtual30(int x, int y, int theButton)
+// Handles a mouse release; releasing the left button ends a window drag
+void RootContainer::MouseUp(int x, int y, int theButton)
 {
-	Container::Virtual30(x,y,theButton);
+	Container::MouseUp(x,y,theButton);
 
 	if(theButton==0)
-		mDragging = false;
+		this->mDragging = false;
 }
 
 // FUNCTION: WON 0x00704cc0
-void RootContainer::VirtualC4(Component *theChild)
+// Removes a child, forgetting it first if it is the cursor component
+void RootContainer::RemoveChild(Component *theChild)
 {
 
-	if(theChild==mCursorComponent)
-		mCursorComponent = NULL;
+	if(theChild==this->mCursorComponent)
+		this->mCursorComponent = NULL;
 
-	Container::VirtualC4(theChild);
+	Container::RemoveChild(theChild);
 }
 
 // FUNCTION: WON 0x00704cf0
-void RootContainer::Virtual78(Cursor *theCursor)
+// Sets the cursor; a cursor drawn by a component gets that component placed at the mouse on top of all children
+void RootContainer::SetCursor(Cursor *theCursor)
 {
-	Container::Virtual78(theCursor);
+	Container::SetCursor(theCursor);
 	if(theCursor==NULL)
-		theCursor = Fn2F4B00();
+		theCursor = this->GetDefaultCursor();
 
 	Component *aComponent = NULL;
 	int mx = 0, my = 0;
 	if(theCursor!=NULL)
 		aComponent = theCursor->GetComponent(mx,my);
 
-	if(mCursorComponent!=aComponent)
+	if(this->mCursorComponent!=aComponent)
 	{
-		if(mCursorComponent!=NULL)
-			VirtualC4(mCursorComponent);
+		if(this->mCursorComponent!=NULL)
+			this->RemoveChild(this->mCursorComponent);
 
-		mCursorComponent = aComponent;
+		this->mCursorComponent = aComponent;
 		if(aComponent!=NULL)
 		{
 			if(aComponent->mParent!=NULL)
 			{
-				aComponent->mParent->VirtualC4(aComponent);
+				aComponent->mParent->RemoveChild(aComponent);
 				BackgroundGrabber *aBG = aComponent->GetGrabBG();
 				if(aBG!=NULL)
 				{
@@ -269,19 +285,19 @@ void RootContainer::Virtual78(Cursor *theCursor)
 			// LOST-DEBUG: none: exact only
 			EE_LOST_DEBUG(4);
 			
-			int x = mWindow->mMouseX-mx;
-			int y = mWindow->mMouseY-my;
-			aComponent->Fn2F4B70(x,y);
+			int x = this->mWindow->mMouseX-mx;
+			int y = this->mWindow->mMouseY-my;
+			aComponent->SetPos(x,y);
 
-			Fn2F6A60(aComponent);
-			Component *aTop = mChildList.back().get();
+			this->AddChild(aComponent);
+			Component *aTop = this->mChildList.back().get();
 			if(aTop!=aComponent)
 				aComponent->EnsureOnTopOf(aTop);
 		}
 	}
 }
 
-// Native complete destructor3043c0: actual map,set,listener members then external Container base.
+// The implicit destructor (0x007043c0) destroys the background map, the set and the keyboard listener, then the Container base.
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00704230

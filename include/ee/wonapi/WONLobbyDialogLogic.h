@@ -1,4 +1,4 @@
-// Original-backed DialogLogic layout; external GUI and core lifetimes remain retained.
+// DialogLogic: runs the lobby's modal dialogs (status, error, OK/Cancel, Yes/No) on a dialog stack
 #ifndef EE_WONAPI_WONLOBBYDIALOGLOGIC_H
 #define EE_WONAPI_WONLOBBYDIALOGLOGIC_H
 #include "ee/wonapi/WONLobbyLogic.h"

@@ -1,4 +1,4 @@
-// Original-backed WONDir family; grouping provisional, no runtime substitution authority.
+// WONAPI op that lists several directories in one request (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,85 +10,93 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONBuffer.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x006f1520
+// Sets 4-byte length fields and clears the failure count
 void GetMultiDirOp::Init()
 {
-    mLengthFieldSize=4;
-    mNumFailedRequests=0;
+    this->mLengthFieldSize=4;
+    this->mNumFailedRequests=0;
 }
 // FUNCTION: WON 0x6f1540
+// Creates a multi-directory request for a server context
 GetMultiDirOp::GetMultiDirOp(ServerContext* inContext)
     :ServerRequestOp(inContext),mCurRequest(NULL)
 {
-    Init();
+    this->Init();
 }
 
 // FUNCTION: WON 0x6f1790
-void GetMultiDirOp::Virtual18()
+// Forgets the entities each request received
+void GetMultiDirOp::Reset()
 {
     GetEntityRequestList::iterator i;
-    i=mRequestList.begin();
+    i=this->mRequestList.begin();
     while(true) {
-        if(i==mRequestList.end()) break;
+        if(i==this->mRequestList.end()) break;
         (*i)->Reset();
         ++i;
     }
 }
 // FUNCTION: WON 0x6f17c0
+// Adds a directory query to the request
 void GetMultiDirOp::AddRequest(GetEntityRequest* inRequest)
 {
-    mRequestList.push_back(inRequest);
+    this->mRequestList.push_back(inRequest);
 }
 // FUNCTION: WON 0x6f18f0
+// Adds a query for a path with the op's flags and data types
 void GetMultiDirOp::AddPath(const std::wstring& inPath)
 {
     GetEntityRequestPtr request=new GetEntityRequest;
     request->SetPath(inPath);
-    request->SetFlags(mFlags);
-    request->SetDataTypes(mDataTypes);
-    AddRequest(request.get());
+    request->SetFlags(this->mFlags);
+    request->SetDataTypes(this->mDataTypes);
+    this->AddRequest(request.get());
 }
 // FUNCTION: WON 0x6f1a30
-WONStatus GetMultiDirOp::Virtual10()
+// Builds the multi-get message holding every query and starts reading replies at the first
+WONStatus GetMultiDirOp::GetNextRequest()
 {
-    WriteBuffer message(mLengthFieldSize,true);
+    WriteBuffer message(this->mLengthFieldSize,true);
     message.AppendByte(5);
     message.AppendShort(2);
     message.AppendShort(113);
     message.AppendShort(0);
-    message.AppendByte(static_cast<unsigned char>(mRequestList.size()));
+    message.AppendByte(static_cast<unsigned char>(this->mRequestList.size()));
     GetEntityRequestList::iterator i;
-    i=mRequestList.begin();
+    i=this->mRequestList.begin();
     while(true) {
-        if(!(i!=mRequestList.end())) break;
+        if(!(i!=this->mRequestList.end())) break;
         (*i)->Pack(&message,GetEntityRequest::Pack_GetMultiDirOp);
         ++i;
     }
-    mRequest=message.ToByteBuffer(true);
-    mCurRequest=mRequestList.begin();
-    return 100059;
+    this->mRequest=message.ToByteBuffer(true);
+    this->mCurRequest=this->mRequestList.begin();
+    return WS_ServerReq_Recv;
 }
 // FUNCTION: WON 0x6f1b90
-WONStatus GetMultiDirOp::Virtual14()
+// Hands each reply to the current query; when all are done reports success, partial or total failure
+WONStatus GetMultiDirOp::CheckResponse()
 {
-    if(mCurRequest==mRequestList.end()) {
+    if(this->mCurRequest==this->mRequestList.end()) {
         GetEntityRequestPtr request=new GetEntityRequest;
-        return request->ParseMultiEntityReply(mResponse->data(),mResponse->length());
+        return request->ParseMultiEntityReply(this->mResponse->data(),this->mResponse->length());
     }
-    (*mCurRequest)->ParseMultiEntityReply(mResponse->data(),mResponse->length());
-    if((*mCurRequest)->GetStatus()!=100059) {
-        if((*mCurRequest)->GetStatus()!=0)
-            ++mNumFailedRequests;
-        ++mCurRequest;
+    (*this->mCurRequest)->ParseMultiEntityReply(this->mResponse->data(),this->mResponse->length());
+    if((*this->mCurRequest)->GetStatus()!=100059) {
+        if((*this->mCurRequest)->GetStatus()!=0)
+            ++this->mNumFailedRequests;
+        ++this->mCurRequest;
     }
-    if(mCurRequest==mRequestList.end()) {
-        if(mNumFailedRequests==0)
-            return 0;
-        return mNumFailedRequests==static_cast<int>(mRequestList.size())?-1224:-1223;
+    if(this->mCurRequest==this->mRequestList.end()) {
+        if(this->mNumFailedRequests==0)
+            return WS_Success;
+        return this->mNumFailedRequests==static_cast<int>(this->mRequestList.size())?-1224:-1223;
     }
-    return 100059;
+    return WS_ServerReq_Recv;
 }
 } // WONAPI
 

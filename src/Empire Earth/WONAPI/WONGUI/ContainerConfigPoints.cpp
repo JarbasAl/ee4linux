@@ -1,4 +1,4 @@
-// Native typed child layout-point config/map/manager insertion.
+// Container config: NEWLAYOUTPOINT (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,17 +13,19 @@
 #include "ee/wonapi/WONLobbyConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00789a70
+// Creates a named layout point for each name in a comma-separated list, registers its config and adds it
+// to the container
 bool ContainerConfig::HandleNewLayoutPoint()
 {
     while(true) {
         SmartPtr<ComponentConfig> config=new ComponentConfig;
         SmartPtr<LayoutPoint> point=new LayoutPoint;
-        config->Virtual34(point.get());
-        config->mL38=this;
-        mConfigMap[Fn3842F0(false)]=config;
-        mContainer->AddLayoutPoint(point.get());
-        if(EndOfString()) break;
-        EnsureComma();
+        config->SetComponent(point.get());
+        config->mParent=this;
+        this->mConfigMap[this->ReadString(false)]=config;
+        this->mContainer->AddLayoutPoint(point.get());
+        if(this->EndOfString()) break;
+        this->EnsureComma();
     }
     return true;
 }

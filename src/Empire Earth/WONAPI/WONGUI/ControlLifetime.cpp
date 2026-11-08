@@ -1,4 +1,4 @@
-// Complete original-backed Component source completion; all selected methods support0.
+// Constructors of the scroller, scrollbar-scroller, scrollbar and screen container (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,33 +11,31 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// SUPPORT: EXE 0x00705540; native28B, complete88 Container plus ScrollArea owner.
+// Creates a scroller with no scroll area (emitted at 0x00705540)
 Scroller::Scroller() :mScrollArea(NULL) {}
-// Genuine SDK implicit destructor supplied by actual complete class/real constructor; no authored body.
-// SUPPORT: EXE 0x00705700; native55B, true default scrollbar state.
+// Creates a scroller whose scrollbars are both enabled (emitted at 0x00705700)
 ScrollbarScroller::ScrollbarScroller()
 {
-    mVertCondition=mHorzCondition=ScrollbarCondition_Enable;
-    mSettingScrollbarConditions=false;
+    this->mVertCondition=this->mHorzCondition=ScrollbarCondition_Enable;
+    this->mSettingScrollbarConditions=false;
 }
-// Genuine SDK implicit destructor supplied by actual complete class/real constructor; no authored body.
-// SUPPORT: EXE 0x00705e10; native114B, completeb8 native defaults; drag coordinates untouched.
+// Creates an empty vertical or horizontal scrollbar with default line, page and thumb sizes; the drag
+// coordinates stay uninitialised (emitted at 0x00705e10)
 Scrollbar::Scrollbar(bool vertical)
 {
-    mPosition=0;
-    mPageSize=0;
-    mTotalSize=0;
-    mLineUpScrollSize=mLineDownScrollSize=10;
-    mPageScrollSize=50;
-    mResizeThumb=true;
-    mVertical=vertical;
-    mMinThumbSize=10;
+    this->mPosition=0;
+    this->mPageSize=0;
+    this->mTotalSize=0;
+    this->mLineUpScrollSize=this->mLineDownScrollSize=10;
+    this->mPageScrollSize=50;
+    this->mResizeThumb=true;
+    this->mVertical=vertical;
+    this->mMinThumbSize=10;
 }
-// SUPPORT: EXE 0x00705eb0; native227B, reverse thumb/rect/down/up owners then Container.
+// Destroys the scrollbar: thumb, track and the two arrow buttons, then the container (emitted at 0x00705eb0)
 Scrollbar::~Scrollbar() {}
-// Genuine SDK implicit destructor supplied by actual complete class/real constructor; no authored body.
-// SUPPORT: EXE 0x00706a20; native28B, complete88 with borrowed current-screen pointer.
-ScreenContainer::ScreenContainer() { mCurScreen=NULL; }
+// Creates a screen container showing no screen (emitted at 0x00706a20)
+ScreenContainer::ScreenContainer() { this->mCurScreen=NULL; }
 }
 
 // Compiler-generated and header-inline functions this unit emits:

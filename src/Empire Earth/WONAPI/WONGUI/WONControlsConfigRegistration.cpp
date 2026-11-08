@@ -1,4 +1,4 @@
-// Actual WON skin/control registration and its genuine file-static callbacks.
+// Resource table registration of the WON skin and skinned controls, with their factories
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -20,91 +20,120 @@ using namespace WONAPI;
 SmartPtr<WONSkin> gSkin;
 
 // FUNCTION: WON 0x00796d70
+// Returns a copy of the skin's push button
 static Component* PushButtonFactory() { return gSkin->GetPushButton(); }
 
 // FUNCTION: WON 0x00796d80
+// Returns a copy of the skin's radio button
 static Component* RadioButtonFactory() { return gSkin->GetRadioButton(); }
 
 // FUNCTION: WON 0x00796d90
+// Returns a copy of the skin's check box
 static Component* CheckboxFactory() { return gSkin->GetCheckbox(); }
 
 // FUNCTION: WON 0x00796da0
+// Returns a copy of the skin's tab button
 static Component* TabButtonFactory() { return gSkin->GetTabButton(); }
 
 // FUNCTION: WON 0x00796db0
+// Returns a copy of the skin's header button
 static Component* HeaderButtonFactory() { return gSkin->GetHeaderButton(); }
 
 // FUNCTION: WON 0x00796dc0
+// Returns a copy of the skin's close button
 static Component* CloseButtonFactory() { return gSkin->GetCloseButton(); }
 
 // FUNCTION: WON 0x00796dd0
+// Returns a copy of the skin's input box
 static Component* InputBoxFactory() { return gSkin->GetInputBox(); }
 
 // FUNCTION: WON 0x00796de0
+// Returns a copy of the skin's combo box
 static Component* ComboBoxFactory() { return gSkin->GetComboBox(); }
 
 // FUNCTION: WON 0x00796df0
+// Returns a copy of the skin's scroll container
 static Component* ScrollContainerFactory() { return gSkin->GetScrollContainer(); }
 
 // FUNCTION: WON 0x00796e00
+// Returns a copy of the skin's list control
 static Component* ListCtrlFactory() { return gSkin->GetListCtrl(); }
 
 // FUNCTION: WON 0x00796e10
+// Returns a copy of the skin's tab control
 static Component* TabCtrlFactory() { return gSkin->GetTabCtrl(); }
 
 // FUNCTION: WON 0x00796e20
+// Returns a new frame component
 static Component* WONFrameComponentFactory() { return new WONFrameComponent; }
 
 // FUNCTION: WON 0x00796e90
+// Returns a new frame component with the skin's popup background frame
 static Component* PopupBackFactory() { return gSkin->GetPopupBack(); }
 
 // FUNCTION: WON 0x00796ea0
+// Returns a new frame component with the skin's dialog background frame
 static Component* DialogBackFactory() { return gSkin->GetDialogBack(); }
 
 // FUNCTION: WON 0x00796eb0
+// Returns a new skinned button
 static Component* WONButtonSkinFactory() { return new WONButton; }
 
 // FUNCTION: WON 0x00796f10
+// Returns a new skinned header button
 static Component* WONHeaderButtonSkinFactory() { return new WONHeaderButton; }
 
 // FUNCTION: WON 0x00796f70
+// Returns a new simple (image-only) button
 static Component* WONSimpleButtonSkinFactory() { return new WONSimpleButton; }
 
 // FUNCTION: WON 0x00796fd0
+// Returns a new skinned scroll container
 static Component* WONScrollContainerSkinFactory() { return new WONScrollContainer; }
 
 // FUNCTION: WON 0x00797030
+// Returns a new skinned list control
 static Component* WONListCtrlSkinFactory() { return new WONListCtrl; }
 
 // FUNCTION: WON 0x00797090
+// Returns a new skinned tab control on the current skin
 static Component* WONTabCtrlSkinFactory() { return new WONTabCtrl(gSkin.get()); }
 
 // FUNCTION: WON 0x00797100
+// Returns a new skinned combo box
 static Component* WONComboBoxSkinFactory() { return new WONComboBox; }
 
 // FUNCTION: WON 0x00797160
+// Returns a new skinned scroll bar
 static Component* WONScrollbarSkinFactory() { return new WONScrollbar; }
 
 namespace WONAPI {
-// Genuine remaining SDK callbacks closing this existing registration table.
 // FUNCTION: WON 0x00796b50
+// Returns a new frame component configuration
 ComponentConfig* WONFrameComponentConfig::CfgFactory() { return new WONFrameComponentConfig; }
 // FUNCTION: WON 0x00796bc0
+// Returns a new skinned scroll bar configuration
 ComponentConfig* WONScrollbarConfig::CfgFactory() { return new WONScrollbarConfig; }
 // FUNCTION: WON 0x00796c20
+// Returns a new skinned scroll container configuration
 ComponentConfig* WONScrollContainerConfig::CfgFactory() { return new WONScrollContainerConfig; }
 // FUNCTION: WON 0x00796ca0
+// Returns a new skinned list control configuration
 ComponentConfig* WONListCtrlConfig::CfgFactory() { return new WONListCtrlConfig; }
 // FUNCTION: WON 0x00796d20
+// Returns a new WON skin configuration
 ComponentConfig* WONSkinConfig::CfgFactory() { return new WONSkinConfig; }
 
-// Genuine SDK allocation callbacks closing this existing registration table.
 // FUNCTION: WON 0x007969c0
+// Returns a new simple button configuration
 ComponentConfig* WONSimpleButtonConfig::CfgFactory() { return new WONSimpleButtonConfig; }
 // FUNCTION: WON 0x00796a30
+// Returns a new skinned button configuration
 ComponentConfig* WONButtonConfig::CfgFactory() { return new WONButtonConfig; }
 
 // FUNCTION: WON 0x00795fa0
+// Registers the WON skin and skinned control types (skin templates and skin-made controls) with their
+// configuration and component factories
 void WONControlsConfig_Init(ResourceConfigTable *theTable)
 {
 	theTable->AddAllocator("WONSkin",WONSkinConfig::CfgFactory,ComponentConfig::CompFactory);

@@ -1,4 +1,5 @@
-// New native HTTP session/connection family; source filename/grouping is provisional.
+// HTTPSession and HTTPConnection: per-host keep-alive connections with request pipelining
+// (file grouping inferred)
 
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
@@ -12,13 +13,15 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x006d28f0
+// Queues an HTTP get on the connection for its host, creating the connection on first use
 void HTTPSession::AddOp(HTTPGetOp* inOp)
 {
-    AutoCrit guard(mDataCrit);
-    ConnectionMap::iterator anItr = mConnectionMap.insert(ConnectionMap::value_type(inOp->mHost, HTTPConnectionPtr())).first;
+    AutoCrit guard(this->mDataCrit);
+    ConnectionMap::iterator anItr = this->mConnectionMap.insert(ConnectionMap::value_type(inOp->mHost, HTTPConnectionPtr())).first;
     HTTPConnectionPtr& stored = anItr->second;
     if (stored.get() == NULL) stored = new HTTPConnection(NULL);
     // LOST-DEBUG: none: exact only
@@ -28,111 +31,115 @@ void HTTPSession::AddOp(HTTPGetOp* inOp)
 }
 
 // FUNCTION: WON 0x006d2bc0
+// Kills every connection's running and queued requests
 void HTTPSession::KillAll()
 {
-    AutoCrit guard(mDataCrit);
-    ConnectionMap::iterator it=mConnectionMap.begin();
-    while(it!=mConnectionMap.end()) { it->second->Kill();
+    AutoCrit guard(this->mDataCrit);
+    ConnectionMap::iterator it=this->mConnectionMap.begin();
+    while(it!=this->mConnectionMap.end()) { it->second->Kill();
         ++it;
     }
 }
 
 // FUNCTION: WON 0x006d2c80
+// Creates an idle connection with pipelining on
 HTTPConnection::HTTPConnection(HTTPSession* inSession)
 {
-    mCurOp[1] = NULL;
-    mCurOp[0] = NULL;
-    mDoPipeline = true;
-    mSession = inSession;
-    mRetryMode = false;
-    mNumPipelineFailures = 0;
-    mNumPipelineSuccesses = 0;
+    this->mCurOp[1] = NULL;
+    this->mCurOp[0] = NULL;
+    this->mDoPipeline = true;
+    this->mSession = inSession;
+    this->mRetryMode = false;
+    this->mNumPipelineFailures = 0;
+    this->mNumPipelineSuccesses = 0;
 }
 
 // FUNCTION: WON 0x006d3600
+// Kills the running and queued requests (finishing queued ones as killed) and drops the socket
 void HTTPConnection::Kill()
 {
-    AutoCrit guard(mDataCrit);
-    mRetryMode = false;
-    mNumPipelineFailures = 0;
-    mNumPipelineSuccesses = 0;
-    mDoPipeline = true;
+    AutoCrit guard(this->mDataCrit);
+    this->mRetryMode = false;
+    this->mNumPipelineFailures = 0;
+    this->mNumPipelineSuccesses = 0;
+    this->mDoPipeline = true;
     for (int id=0; id<2; ++id) {
-        if (mCurOp[id] != NULL) {
-            mCurOp[id]->Kill(true);
-            mCurOp[id] = NULL;
-            mCurOpCompletion[id] = NULL;
+        if (this->mCurOp[id] != NULL) {
+            this->mCurOp[id]->Kill(true);
+            this->mCurOp[id] = NULL;
+            this->mCurOpCompletion[id] = NULL;
         }
-        for (OpQueue::iterator it=mOpQueue[id].begin(); it!=mOpQueue[id].end(); ++it) {
+        for (OpQueue::iterator it=this->mOpQueue[id].begin(); it!=this->mOpQueue[id].end(); ++it) {
             HTTPGetOp* op = it->get();
-            bool wasNotPending = op->mStatus != 100000;
+            bool wasNotPending = op->mStatus != WS_Pending;
             op->Kill(true);
-            if (wasNotPending) op->ForceFinish(100002);
+            if (wasNotPending) op->ForceFinish(WS_Killed);
         }
-        mOpQueue[id].clear();
+        this->mOpQueue[id].clear();
     }
-    if (mSocket.get() != NULL) {
-        mSocket->Close();
-        mSocket = NULL;
+    if (this->mSocket.get() != NULL) {
+        this->mSocket->Kill();
+        this->mSocket = NULL;
     }
 }
 
 // FUNCTION: WON 0x006d33a0
+// Queues a request as send-only on the pipeline queue, or as a full request when pipelining is off
 void HTTPConnection::QueueOp(HTTPGetOp* inOp)
 {
-    AutoCrit guard(mDataCrit);
-    if (mDoPipeline) {
+    AutoCrit guard(this->mDataCrit);
+    if (this->mDoPipeline) {
         inOp->mOnlySend = true;
         inOp->mOnlyRecv = false;
-        QueueOp(inOp,0);
+        this->QueueOp(inOp,0);
     } else {
         inOp->mOnlySend = false;
         inOp->mOnlyRecv = false;
-        QueueOp(inOp,1);
+        this->QueueOp(inOp,1);
     }
 }
 // FUNCTION: WON 0x006d3290
+// Appends a request to the send (0) or receive (1) queue and starts it when the queue was empty
 void HTTPConnection::QueueOp(HTTPGetOp* inOp,int inId)
 {
-    AutoCrit guard(mDataCrit);
-    mOpQueue[inId].push_back(inOp);
-    if (mOpQueue[inId].size() == 1) RunOp(inId);
+    AutoCrit guard(this->mDataCrit);
+    this->mOpQueue[inId].push_back(inOp);
+    if (this->mOpQueue[inId].size() == 1) this->RunOp(inId);
 }
 
 
-// Additional HTTP session source intent; existing six bodies preserved separately.
-// SCRATCH only, no canonical publication or normal capture yet.
-// Existing HTTPConnection64/HTTPSession2c records are complete.
+// HTTPConnection is 0x64 bytes, HTTPSession 0x2c bytes
 
 HTTPSession::HTTPSession()
 {
 }
 // FUNCTION: WON 0x006d3430
+// Starts the next request of a queue on the shared socket, routing its completion back to the connection
 void HTTPConnection::RunOp(int inId)
 {
-    AutoCrit guard(mDataCrit);
-    if (mRetryMode)
+    AutoCrit guard(this->mDataCrit);
+    if (this->mRetryMode)
         return;
-    if (mOpQueue[inId].empty())
+    if (this->mOpQueue[inId].empty())
         return;
-    if (mCurOp[inId]!=NULL)
+    if (this->mCurOp[inId]!=NULL)
         return;
-    SmartPtr<HTTPGetOp> op=mOpQueue[inId].front();
-    mOpQueue[inId].pop_front();
-    mCurOp[inId]=op.get();
-    mCurOpCompletion[inId]=mCurOp[inId]->GetCompletion();
-    mCurOp[inId]->mCompletion=new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
-        StaticOpCallback,SmartPtr<RefCount>(this));
-    mCurOp[inId]->SetCloseConnection(false);
-    mCurOp[inId]->SetDoRangeResume(false);
-    mCurOp[inId]->SetSocket(mSocket.get());
-    mCurOp[inId]->Run(mCurOp[inId]->GetTimeout());
+    SmartPtr<HTTPGetOp> op=this->mOpQueue[inId].front();
+    this->mOpQueue[inId].pop_front();
+    this->mCurOp[inId]=op.get();
+    this->mCurOpCompletion[inId]=this->mCurOp[inId]->GetCompletion();
+    this->mCurOp[inId]->mCompletion=new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
+        HTTPConnection::StaticOpCallback,SmartPtr<RefCount>(this));
+    this->mCurOp[inId]->SetCloseConnection(false);
+    this->mCurOp[inId]->SetDoRangeResume(false);
+    this->mCurOp[inId]->SetSocket(this->mSocket.get());
+    this->mCurOp[inId]->RunAsync(this->mCurOp[inId]->GetTimeout());
 }
 
 
-// New native callback behavior; scratch only, no canonical publication or CL.
 
 // FUNCTION: WON 0x006d2df0
+// Completion trampoline: passes a finished request to its connection's OpCallback
 void HTTPConnection::StaticOpCallback(AsyncOpPtr inOp,SmartPtr<RefCount> inConnection)
 {
     static_cast<HTTPConnection*>(inConnection.get())->OpCallback(
@@ -140,86 +147,87 @@ void HTTPConnection::StaticOpCallback(AsyncOpPtr inOp,SmartPtr<RefCount> inConne
 }
 
 // FUNCTION: WON 0x006d2e80
+// Handles a finished request: queues a sent one for its reply or completes it; requeues all when the pipeline drops
 void HTTPConnection::OpCallback(HTTPGetOp* inOp)
 {
     int anId;
     for (anId=0;anId<2;++anId)
-        if (inOp==mCurOp[anId])
+        if (inOp==this->mCurOp[anId])
             break;
     if (anId>=2)
         return;
-    mCurOp[anId]=NULL;
-    OpCompletionBasePtr aCompletion=mCurOpCompletion[anId];
-    mCurOpCompletion[anId]=NULL;
+    this->mCurOp[anId]=NULL;
+    OpCompletionBasePtr aCompletion=this->mCurOpCompletion[anId];
+    this->mCurOpCompletion[anId]=NULL;
     inOp->SetCompletion(aCompletion);
 
-    if (!mRetryMode) {
-        mSocket=inOp->GetSocket();
-        if (anId==1 && mSocket.get()!=NULL) {
-            if (++mNumPipelineSuccesses>2)
-                mNumPipelineFailures=0;
+    if (!this->mRetryMode) {
+        this->mSocket=inOp->GetSocket();
+        if (anId==1 && this->mSocket.get()!=NULL) {
+            if (++this->mNumPipelineSuccesses>2)
+                this->mNumPipelineFailures=0;
         }
-        if (mSocket.get()==NULL && mDoPipeline &&
-            (!mOpQueue[1].empty() || mCurOp[1]!=NULL || mCurOp[0]!=NULL)) {
-            AutoCrit aGuard(mDataCrit);
-            mRetryMode=true;
-            if (mCurOp[0]!=NULL)
-                mCurOp[0]->Kill(true);
-            if (mCurOp[1]!=NULL)
-                mCurOp[1]->Kill(true);
+        if (this->mSocket.get()==NULL && this->mDoPipeline &&
+            (!this->mOpQueue[1].empty() || this->mCurOp[1]!=NULL || this->mCurOp[0]!=NULL)) {
+            AutoCrit aGuard(this->mDataCrit);
+            this->mRetryMode=true;
+            if (this->mCurOp[0]!=NULL)
+                this->mCurOp[0]->Kill(true);
+            if (this->mCurOp[1]!=NULL)
+                this->mCurOp[1]->Kill(true);
         }
     }
 
-    if (mRetryMode) {
-        if (anId!=0 && inOp->GetStatus()==0) {
+    if (this->mRetryMode) {
+        if (anId!=0 && inOp->GetStatus()==WS_Success) {
             if (aCompletion.get()!=NULL)
                 aCompletion->Complete(AsyncOpPtr(inOp));
         }
         else
-            QueueOp(inOp);
+            this->QueueOp(inOp);
 
-        if (mCurOp[0]==NULL && mCurOp[1]==NULL) {
-            AutoCrit aGuard(mDataCrit);
+        if (this->mCurOp[0]==NULL && this->mCurOp[1]==NULL) {
+            AutoCrit aGuard(this->mDataCrit);
             int aLastQueue=1;
-            if (mDoPipeline && ++mNumPipelineFailures>2) {
-                mDoPipeline=false;
+            if (this->mDoPipeline && ++this->mNumPipelineFailures>2) {
+                this->mDoPipeline=false;
                 aLastQueue=0;
             }
             for (anId=1;anId>=aLastQueue;--anId) {
-                OpQueue aQueue=mOpQueue[anId];
-                mOpQueue[anId].clear();
+                OpQueue aQueue=this->mOpQueue[anId];
+                this->mOpQueue[anId].clear();
                 for (OpQueue::iterator anItr=aQueue.begin();anItr!=aQueue.end();++anItr)
-                    QueueOp(anItr->get());
+                    this->QueueOp(anItr->get());
             }
-            mRetryMode=false;
-            RunOp(mDoPipeline?0:1);
+            this->mRetryMode=false;
+            this->RunOp(this->mDoPipeline?0:1);
         }
         return;
     }
     else {
-        if (anId==0 && mSocket.get()!=NULL && inOp->GetStatus()==100097) {
+        if (anId==0 && this->mSocket.get()!=NULL && inOp->GetStatus()==WS_HTTP_SendSuccess) {
             inOp->SetOnlyRecv();
-            QueueOp(inOp,1);
+            this->QueueOp(inOp,1);
         }
         else {
             if (aCompletion.get()!=NULL)
                 aCompletion->Complete(AsyncOpPtr(inOp));
-            mLastUseTime=time(NULL);
+            this->mLastUseTime=time(NULL);
         }
-        RunOp(anId);
+        this->RunOp(anId);
     }
 }
 
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine missing session/profile/operation methods.
+// No original address identified: WON SDK request counting
 namespace WONAPI {
 int HTTPSession::GetNumOps()
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 	int aNumOps = 0;
-	ConnectionMap::iterator anItr = mConnectionMap.begin();
-	while(anItr!=mConnectionMap.end())
+	ConnectionMap::iterator anItr = this->mConnectionMap.begin();
+	while(anItr!=this->mConnectionMap.end())
 	{
 		HTTPConnection *aConnection = anItr->second;
 		aNumOps += aConnection->GetNumOps();
@@ -234,8 +242,8 @@ int HTTPConnection::GetNumOps()
 	int aNumOps = 0;
 	for(int i=0; i<2; i++)
 	{
-		aNumOps += mOpQueue[i].size();
-		if(mCurOp[i]!=NULL)
+		aNumOps += this->mOpQueue[i].size();
+		if(this->mCurOp[i]!=NULL)
 			aNumOps++;
 	}
 

@@ -1,5 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Original-backed port dialog; external GUI widget lifetimes remain retained.
+// Dialog that asks for the LAN broadcast port
 #include <windows.h>
 #include <stdio.h>
 #include <string>
@@ -11,64 +11,72 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
 namespace WONAPI {
-// Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
+// Empty constructor; its code is the compiler-generated one at 0x7f8580 (listed at the end of this file)
 LanPortDialog::LanPortDialog() {}
 // FUNCTION: WON 0x7f85d0
+// Destroys the LAN port dialog (members only)
 LanPortDialog::~LanPortDialog() {}
 // FUNCTION: WON 0x7f86c0
+// Looks up the numeric port input, game port label and OK button from the dialog layout
 void LanPortDialog::InitComponent(ComponentInit& inInit)
 {
-    if (inInit.mType == 2) {
-        ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(aConfig, mPortInput, "PortInput", __FILE__, 32);
-        mPortInput->mInputFilter = InputBox::NumericFilter;
-        SafeGetComponent(aConfig, mGamePortLabel, "GamePortLabel", __FILE__, 35);
-        SafeGetComponent(aConfig, mOkButton, "OKButton", __FILE__, 36);
-    }
+    if (inInit.mType != 2)
+        return;
+    ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(aConfig, this->mPortInput, "PortInput", __FILE__, 32);
+    this->mPortInput->mInputFilter = InputBox::NumericFilter;
+    SafeGetComponent(aConfig, this->mGamePortLabel, "GamePortLabel", __FILE__, 35);
+    SafeGetComponent(aConfig, this->mOkButton, "OKButton", __FILE__, 36);
 }
 // FUNCTION: WON 0x7f8730
+// Focuses the port input and updates the OK button
 void LanPortDialog::Reset()
 {
-    mPortInput->Fn2F5890();
-    CheckInput();
+    this->mPortInput->RequestFocus();
+    this->CheckInput();
 }
 // FUNCTION: WON 0x7f8750
+// Shows a port in the input, all text selected
 void LanPortDialog::SetPort(unsigned short inPort)
 {
     char aBuf[10];
     sprintf(aBuf, "%d", inPort);
-    mPortInput->SetText(GUIString(new GUIStringData(aBuf)), true);
-    mPortInput->SelectRange(0, -1);
+    this->mPortInput->SetText(GUIString(new GUIStringData(aBuf)), true);
+    this->mPortInput->SelectRange(0, -1);
 }
 // FUNCTION: WON 0x7f8840
+// Shows the game (lobby) port, which the LAN port may not equal
 void LanPortDialog::SetGamePort(unsigned short inPort)
 {
-    mGamePort = inPort;
+    this->mGamePort = inPort;
     char aBuf[10];
     sprintf(aBuf, "%d", inPort);
-    mGamePortLabel->SetText(GUIString(new GUIStringData(aBuf)), true);
+    this->mGamePortLabel->SetText(GUIString(new GUIStringData(aBuf)), true);
 }
 // FUNCTION: WON 0x7f8920
+// Returns the typed port
 unsigned short LanPortDialog::GetPort()
 {
-    return mPortInput->GetText().mData->ToInt(0);
+    return this->mPortInput->GetText().mData->ToInt(0);
 }
 // FUNCTION: WON 0x7f8940
+// Enables OK only for a port of 5000 to 65535 that differs from the game port
 void LanPortDialog::CheckInput()
 {
-    int aPort = mPortInput->GetText().mData->ToInt(0);
-    if (aPort != mGamePort && aPort > 4999 && aPort < 65536) {
-        if (mOkButton->IsDisabled())
-            mOkButton->SetEnabled(true);
+    int aPort = this->mPortInput->GetText().mData->ToInt(0);
+    if (aPort != this->mGamePort && aPort > 4999 && aPort < 65536) {
+        if (this->mOkButton->IsDisabled())
+            this->mOkButton->SetEnabled(true);
     }
-    else if (!mOkButton->IsDisabled())
-        mOkButton->SetEnabled(false);
+    else if (!this->mOkButton->IsDisabled())
+        this->mOkButton->SetEnabled(false);
 }
 // FUNCTION: WON 0x7f89b0
+// Rechecks the port on each edit of the input; passes other events to the dialog
 void LanPortDialog::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if (inEvent->mType == 21 && inEvent->mComponent == mPortInput.get())
-        CheckInput();
+    if (inEvent->mType == ComponentEvent_InputTextChanged && inEvent->mComponent == this->mPortInput.get())
+        this->CheckInput();
     else
         Dialog::HandleComponentEvent(inEvent);
 }

@@ -12,15 +12,17 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00793340
-bool ResourceConfig::Virtual0C(ConfigParser*)
+// Counts one more parse pass of the resource group (the generation stamped on resources added afterwards); always true
+bool ResourceConfig::PreParse(ConfigParser*)
 {
-    ++mParseCount;
+    ++this->mParseCount;
     return true;
 }
 // FUNCTION: WON 0x007934c0
+// Looks up a named string resource; copies it to the output and returns true when found
 bool ResourceConfig::GetString(const std::string& name,GUIString& output)
 {
-    ResourceConfig::StringMap& aMap=mStringMap;
+    ResourceConfig::StringMap& aMap=this->mStringMap;
     ResourceConfig::StringMap::iterator i=aMap.find(name);
     if(i!=aMap.end())
     {
@@ -30,9 +32,10 @@ bool ResourceConfig::GetString(const std::string& name,GUIString& output)
     return false;
 }
 // FUNCTION: WON 0x00793570
+// Looks up a named image resource; stores the image pointer and returns true when found
 bool ResourceConfig::GetImage(const std::string& name,Image*& output)
 {
-    ResourceConfig::ImageMap& aMap=mImageMap;
+    ResourceConfig::ImageMap& aMap=this->mImageMap;
     ResourceConfig::ImageMap::iterator i=aMap.find(name);
     if(i!=aMap.end())
     {
@@ -42,9 +45,10 @@ bool ResourceConfig::GetImage(const std::string& name,Image*& output)
     return false;
 }
 // FUNCTION: WON 0x007935d0
+// Looks up a named font resource; stores the font pointer and returns true when found
 bool ResourceConfig::GetFont(const std::string& name,Font*& output)
 {
-    ResourceConfig::FontMap& aMap=mFontMap;
+    ResourceConfig::FontMap& aMap=this->mFontMap;
     ResourceConfig::FontMap::iterator i=aMap.find(name);
     if(i!=aMap.end())
     {
@@ -54,9 +58,10 @@ bool ResourceConfig::GetFont(const std::string& name,Font*& output)
     return false;
 }
 // FUNCTION: WON 0x00793630
+// Looks up a named sound resource; stores the sound pointer and returns true when found
 bool ResourceConfig::GetSound(const std::string& name,Sound*& output)
 {
-    ResourceConfig::SoundMap& aMap=mSoundMap;
+    ResourceConfig::SoundMap& aMap=this->mSoundMap;
     ResourceConfig::SoundMap::iterator i=aMap.find(name);
     if(i!=aMap.end())
     {
@@ -66,9 +71,10 @@ bool ResourceConfig::GetSound(const std::string& name,Sound*& output)
     return false;
 }
 // FUNCTION: WON 0x007936a0
+// Looks up a named color resource; stores the color and returns true when found
 bool ResourceConfig::GetColor(const std::string& name,DWORD& output)
 {
-    ResourceConfig::ColorMap& aMap=mColorMap;
+    ResourceConfig::ColorMap& aMap=this->mColorMap;
     ResourceConfig::ColorMap::iterator i=aMap.find(name);
     if(i!=aMap.end())
     {
@@ -78,9 +84,10 @@ bool ResourceConfig::GetColor(const std::string& name,DWORD& output)
     return false;
 }
 // FUNCTION: WON 0x00793710
+// Looks up a named background resource; copies it to the output and returns true when found
 bool ResourceConfig::GetBackground(const std::string& name,Background& output)
 {
-    ResourceConfig::BackgroundMap& aMap=mBackgroundMap;
+    ResourceConfig::BackgroundMap& aMap=this->mBackgroundMap;
     ResourceConfig::BackgroundMap::iterator i=aMap.find(name);
     if(i!=aMap.end())
     {
@@ -90,9 +97,10 @@ bool ResourceConfig::GetBackground(const std::string& name,Background& output)
     return false;
 }
 // FUNCTION: WON 0x00793820
+// Looks up a named integer resource; stores the value and returns true when found
 bool ResourceConfig::GetInt(const std::string& name,int& output)
 {
-    ResourceConfig::IntMap& aMap=mIntMap;
+    ResourceConfig::IntMap& aMap=this->mIntMap;
     ResourceConfig::IntMap::iterator i=aMap.find(name);
     if(i!=aMap.end())
     {

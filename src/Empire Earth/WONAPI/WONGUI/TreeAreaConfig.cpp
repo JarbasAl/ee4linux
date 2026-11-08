@@ -1,4 +1,4 @@
-// WONGUI tree configuration instruction using actual existing ListArea reader.
+// Tree area configuration
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,11 +12,12 @@
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00795f10
+// Handles the LISTSORTTYPE config key for a tree area; passes other keys to the list area config
 bool TreeAreaConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="LISTSORTTYPE")
     {
-        mTreeArea->SetSortType(ReadSortType());
+        this->mTreeArea->SetSortType(this->ReadSortType());
         return true;
     }
     return ListAreaConfig::Virtual24(instruction);

@@ -1,4 +1,4 @@
-// Native-backed localized UTF-16 substitution core; no alias/wrapper definitions.
+// Localized string substitution: fills <s1>..<s9> placeholders in a GUI string (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <ctype.h>
@@ -12,6 +12,7 @@
 #include "ee/wonapi/WONStringLocalize.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00749f10
+// Returns the string with each <sN> tag replaced by substitution N (missing ones dropped); << gives a literal <
 GUIString StringLocalize::GetStr(const GUIString &theStr, const GUIString **subs, int numSubs)
 {
 	GUIString aNewStr;

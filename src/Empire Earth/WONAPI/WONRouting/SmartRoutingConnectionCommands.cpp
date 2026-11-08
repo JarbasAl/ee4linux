@@ -1,5 +1,5 @@
-// Genuine SDK smart-routing command and quoted-word parsing family.
-// SOURCE_ONLY_NO_NATIVE_ID: no Native/primary/physical credit or runtime substitution.
+// WON SDK smart-routing chat commands and quoted-word parsing
+// No original address identified
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <ctype.h>
@@ -14,10 +14,9 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONRoutingTypes.h"
 using namespace std;
 namespace WONAPI {
-// Exact used SDK RoutingTypes enum values, TU-local to avoid new shared API/layout.
-namespace { enum { RoutingId_Global=0xffff, RoutingClientFlag_IsModerator=1, RoutingClientFlag_IsAway=8, RoutingChatFlag_IsEmote=2, RoutingChatFlag_IsWhisper=4 }; }
 static bool Compare(const std::wstring &s1, const std::wstring &s2, bool &partialMatch)
 {
 	partialMatch = false;
@@ -109,7 +108,7 @@ SmartRoutingConnection::MatchResult SmartRoutingConnection::GetMemberByNameRef(R
 																 const std::wstring &theName, 
 																 RoutingMemberInfoPtr &theMemberOut)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 	MatchResult aResult = MatchResult_NotFound;
 
 	RoutingMemberMap::iterator anItr = theGroup->mMembers.begin();
@@ -150,40 +149,40 @@ SmartRoutingConnection::MatchResult SmartRoutingConnection::GetMemberByNameRef(u
 																 const std::wstring &theName, 
 																 RoutingMemberInfoPtr &theMemberOut)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
-	RoutingGroupInfoPtr aGroup = GetGroup(theGroupId);
+	RoutingGroupInfoPtr aGroup = this->GetGroup(theGroupId);
 	if(aGroup.get()==NULL)
 		return MatchResult_NotFound;
 	else
-		return GetMemberByNameRef(aGroup,theName,theMemberOut);
+		return this->GetMemberByNameRef(aGroup,theName,theMemberOut);
 }
 
 bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int theGroupIdContext)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 
 	int aPos = 1;
 	std::wstring aCommand = GetWord(theInput,aPos,true,false);
 	
-	CommandStringMap::iterator anItr = mCommandStringMap.find(aCommand);
-	if(anItr==mCommandStringMap.end())
+	CommandStringMap::iterator anItr = this->mCommandStringMap.find(aCommand);
+	if(anItr==this->mCommandStringMap.end())
 	{
-		mLastInputCommand = InputCommand_None;
-		mLastInputError = InputError_InvalidCommand;
+		this->mLastInputCommand = InputCommand_None;
+		this->mLastInputError = InputError_InvalidCommand;
 		return false;
 	}
 
-	mLastInputCommand = anItr->second;
+	this->mLastInputCommand = anItr->second;
 
 	// Extract name if needed
 	bool needName = false;
-	switch(mLastInputCommand)
+	switch(this->mLastInputCommand)
 	{
 		case InputCommand_Ignore:
 		case InputCommand_Unmute:
 		case InputCommand_ServerUnmute:
-			mLastMatchName = GetRestOfLine(theInput,aPos);
+			this->mLastMatchName = GetRestOfLine(theInput,aPos);
 			needName = true;
 			break;
 
@@ -194,7 +193,7 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		case InputCommand_ServerBan:
 		case InputCommand_Invite:
 		case InputCommand_Uninvite:
-			mLastMatchName = GetWord(theInput,aPos,false,true);
+			this->mLastMatchName = GetWord(theInput,aPos,false,true);
 			needName = true;
 			break;
 	}
@@ -207,34 +206,34 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		MatchResult aResult;
 		
 		// Is this a clientID or user name?
-		if (mLastMatchName.empty())
+		if (this->mLastMatchName.empty())
 		{
-			mLastInputError = InputError_ClientNotFound;
+			this->mLastInputError = InputError_ClientNotFound;
 			return false;
 		}
 
-		if (mLastInputCommand == InputCommand_ServerBan && (*mLastMatchName.begin() == '%'))
+		if (this->mLastInputCommand == InputCommand_ServerBan && (*this->mLastMatchName.begin() == '%'))
 		{
-			mLastMatchName.erase(mLastMatchName.begin());
-			aNonClientCDKeyIdToBan = atoi(WStringToString(mLastMatchName).c_str());
+			this->mLastMatchName.erase(this->mLastMatchName.begin());
+			aNonClientCDKeyIdToBan = atoi(WStringToString(this->mLastMatchName).c_str());
 		}
 		else
 		{		
-			if(mServerWideCommands)
-				aResult = FindClient(mLastMatchName, mLastTargetClient);
+			if(this->mServerWideCommands)
+				aResult = this->FindClient(this->mLastMatchName, this->mLastTargetClient);
 			else
 			{
-				aResult = GetMemberByNameRef(theGroupIdContext,mLastMatchName,mLastTargetMember);
-				if(mLastTargetMember.get()!=NULL)
-					mLastTargetClient = mLastTargetMember->mClientInfo;
+				aResult = this->GetMemberByNameRef(theGroupIdContext,this->mLastMatchName,this->mLastTargetMember);
+				if(this->mLastTargetMember.get()!=NULL)
+					this->mLastTargetClient = this->mLastTargetMember->mClientInfo;
 			}
 
-			if(aResult < mMatchTolerance)
+			if(aResult < this->mMatchTolerance)
 			{
 				if(aResult==MatchResult_Ambiguous)
-					mLastInputError = InputError_ClientAmbiguous;
+					this->mLastInputError = InputError_ClientAmbiguous;
 				else
-					mLastInputError = InputError_ClientNotFound;
+					this->mLastInputError = InputError_ClientNotFound;
 
 				return false;
 			}
@@ -243,7 +242,7 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 
 	SkipWhitespace(theInput,aPos);
 
-	switch(mLastInputCommand)
+	switch(this->mLastInputCommand)
 	{
 		///////////////////////////////////////////
 		///////////////////////////////////////////
@@ -251,12 +250,12 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		{
 			if(aPos>=theInput.length())
 			{
-				mLastInputError = InputError_NoChat;
+				this->mLastInputError = InputError_NoChat;
 				return false;
 			}
 
 			std::wstring aChat = theInput.substr(aPos);
-			SendChat(aChat,RoutingChatFlag_IsWhisper,mLastTargetClient->mClientId,NULL);
+			this->SendChat(aChat,RoutingChatFlag_IsWhisper,this->mLastTargetClient->mClientId,NULL);
 			return true;
 		}
 
@@ -266,12 +265,12 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		{
 			if(aPos>=theInput.length())
 			{
-				mLastInputError = InputError_NoChat;
+				this->mLastInputError = InputError_NoChat;
 				return false;
 			}
 
 			std::wstring aChat = theInput.substr(aPos-1);
-			SendChat(aChat,RoutingChatFlag_IsEmote,theGroupIdContext,NULL);
+			this->SendChat(aChat,RoutingChatFlag_IsEmote,theGroupIdContext,NULL);
 			return true;
 		}
 
@@ -279,7 +278,7 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		///////////////////////////////////////////
 		case InputCommand_Ignore:
 		{
-			IgnoreClient(mLastTargetClient,!((SmartRoutingClientInfo*)mLastTargetClient.get())->mIgnored);
+			this->IgnoreClient(this->mLastTargetClient,!((SmartRoutingClientInfo*)this->mLastTargetClient.get())->mIgnored);
 			return true;
 		}
 
@@ -287,8 +286,8 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		///////////////////////////////////////////
 		case InputCommand_Away:
 		{
-			bool away = (mMyClient->mFlags&RoutingClientFlag_IsAway)?true:false;
-			SetClientFlags(RoutingClientFlag_IsAway,away?0:RoutingClientFlag_IsAway,0,0,NULL);
+			bool away = (this->mMyClient->mFlags&RoutingClientFlag_IsAway)?true:false;
+			this->SetClientFlags(RoutingClientFlag_IsAway,away?0:RoutingClientFlag_IsAway,0,0,NULL);
 			return true;
 		}
 
@@ -298,8 +297,8 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		case InputCommand_Uninvite:
 		{
 			std::wstring aComment = theInput.substr(aPos);
-			bool isInvited = mLastInputCommand==InputCommand_Invite;
-			InviteClient(theGroupIdContext, mLastTargetClient->mClientId, isInvited, aComment,NULL);
+			bool isInvited = this->mLastInputCommand==InputCommand_Invite;
+			this->InviteClient(theGroupIdContext, this->mLastTargetClient->mClientId, isInvited, aComment,NULL);
 			return true;
 		}
 
@@ -307,7 +306,7 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		///////////////////////////////////////////
 		case InputCommand_BecomeModerator:
 		{
-			BecomeModerator(!(mMyClient->mFlags&RoutingClientFlag_IsModerator),NULL);
+			this->BecomeModerator(!(this->mMyClient->mFlags&RoutingClientFlag_IsModerator),NULL);
 			return true;
 		}
 
@@ -319,7 +318,7 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		case InputCommand_ServerBan:
 		{		
 			bool allowPerm = false;
-			if (mLastInputCommand == InputCommand_ServerMute || mLastInputCommand == InputCommand_ServerBan)
+			if (this->mLastInputCommand == InputCommand_ServerMute || this->mLastInputCommand == InputCommand_ServerBan)
 				allowPerm = true;
 
 			DWORD aSeconds = 3600; // 1 hour
@@ -340,38 +339,38 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 					case 'M': aSeconds*=60; 
 					case 'S': break;
 					default: 
-						mLastInputError = InputError_BadTime;
+						this->mLastInputError = InputError_BadTime;
 						return false;
 				}
 
 				if(aSeconds==0)
 				{
-					mLastInputError = InputError_BadTime;
+					this->mLastInputError = InputError_BadTime;
 					return false;
 				}
 			}
 			
 			// Get comment
 			wstring aComment = GetWord(theInput,aPos,false,true);
-			switch(mLastInputCommand)
+			switch(this->mLastInputCommand)
 			{
 				case InputCommand_Mute:
-					MuteClient(theGroupIdContext,true,aSeconds,aComment,mLastTargetClient->mClientId,NULL); 
+					this->MuteClient(theGroupIdContext,true,aSeconds,aComment,this->mLastTargetClient->mClientId,NULL); 
 					break;
 			
 				case InputCommand_ServerMute:
-					MuteClient(RoutingId_Global,true,aSeconds,aComment,mLastTargetClient->mClientId,NULL); 
+					this->MuteClient(RoutingId_Global,true,aSeconds,aComment,this->mLastTargetClient->mClientId,NULL); 
 					break;
 
 				case InputCommand_Ban:
-					BanClient(theGroupIdContext,true,aSeconds,aComment,mLastTargetClient->mClientId,NULL); 
+					this->BanClient(theGroupIdContext,true,aSeconds,aComment,this->mLastTargetClient->mClientId,NULL); 
 					break;
 
 				case InputCommand_ServerBan:
 					if (aNonClientCDKeyIdToBan == -1)
-						BanClient(RoutingId_Global,true,aSeconds,aComment,mLastTargetClient->mClientId,NULL);
+						this->BanClient(RoutingId_Global,true,aSeconds,aComment,this->mLastTargetClient->mClientId,NULL);
 					else
-						BanClientByCDKeyId(RoutingId_Global,true,aSeconds,aComment,aNonClientCDKeyIdToBan,NULL);
+						this->BanClientByCDKeyId(RoutingId_Global,true,aSeconds,aComment,aNonClientCDKeyIdToBan,NULL);
 					break;
 			}
 
@@ -384,10 +383,10 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 		case InputCommand_ServerUnmute:
 		{
 			int aGroupId = theGroupIdContext;
-			if(mLastInputCommand==InputCommand_ServerUnmute)
+			if(this->mLastInputCommand==InputCommand_ServerUnmute)
 				aGroupId = RoutingId_Global;
 
-			MuteClient(aGroupId,false,0,L"",mLastTargetClient->mClientId,NULL);
+			this->MuteClient(aGroupId,false,0,L"",this->mLastTargetClient->mClientId,NULL);
 			return true;
 		}
 		
@@ -398,64 +397,64 @@ bool SmartRoutingConnection::HandleCommand(const std::wstring &theInput, int the
 
 bool SmartRoutingConnection::HandleInput(const std::wstring &theInput, int theGroupIdContext)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 	
-	mLastInputError = InputError_None;
-	mLastTargetMember = NULL;
-	mLastTargetClient = NULL;
-	mLastMatchName.erase();
+	this->mLastInputError = InputError_None;
+	this->mLastTargetMember = NULL;
+	this->mLastTargetClient = NULL;
+	this->mLastMatchName.erase();
 
-	if(mMyClient.get()==NULL)
+	if(this->mMyClient.get()==NULL)
 	{
-		mLastInputError = InputError_NotLoggedIn;
+		this->mLastInputError = InputError_NotLoggedIn;
 		return false;
 	}
 		
 	if(theGroupIdContext==-1)
-		theGroupIdContext = mDefaultGroupId;
+		theGroupIdContext = this->mDefaultGroupId;
 
 	if(theInput[0]==L'/')
-		return HandleCommand(theInput, theGroupIdContext);
+		return this->HandleCommand(theInput, theGroupIdContext);
 	
-	if(mDoColonEmote && theInput[0]==L':')
+	if(this->mDoColonEmote && theInput[0]==L':')
 	{
-		mLastInputCommand = InputCommand_Emote;
+		this->mLastInputCommand = InputCommand_Emote;
 
 		wstring aChat = theInput.substr(1);
 		int aPos = 0;
 		SkipWhitespace(aChat,aPos);
 		if(aPos==aChat.length())
 		{
-			mLastInputError = InputError_NoChat;
+			this->mLastInputError = InputError_NoChat;
 			return false;
 		}
 
-		SendChat(aChat,RoutingChatFlag_IsEmote,theGroupIdContext,NULL);
+		this->SendChat(aChat,RoutingChatFlag_IsEmote,theGroupIdContext,NULL);
 		return true;
 	}
 
-	mLastInputCommand = InputCommand_Broadcast;
+	this->mLastInputCommand = InputCommand_Broadcast;
 
 	int aPos = 0;
 	SkipWhitespace(theInput,aPos);
 	if(aPos==theInput.length())
 	{
-		mLastInputError = InputError_NoChat;
+		this->mLastInputError = InputError_NoChat;
 		return false;
 	}
 
-	SendChat(theInput,0,theGroupIdContext,NULL);
+	this->SendChat(theInput,0,theGroupIdContext,NULL);
 	return true;
 }
 
 void SmartRoutingConnection::ClearCommandStrings()
 {
-	AutoCrit aCrit(mDataCrit);
-	mCommandStringMap.clear();
+	AutoCrit aCrit(this->mDataCrit);
+	this->mCommandStringMap.clear();
 }
 
 void SmartRoutingConnection::SetDoColonEmote(bool doColonEmote)
 {
-	mDoColonEmote = doColonEmote;	
+	this->mDoColonEmote = doColonEmote;	
 }
 }

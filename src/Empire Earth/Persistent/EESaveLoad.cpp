@@ -580,7 +580,7 @@ bool EECheckSavedGameOptions(EEGameOptions& inSaved, EEGameOptions& inCurrent, b
     return outMissing.size() == 0;
 }
 
-extern char gU4E5B98[];                 // 0x4e5b98 (the empty string; EECampaignProgress.cpp's declaration)
+extern char gEmptyString[];             // 0x4e5b98 (the empty string; EECampaignProgress.cpp's declaration)
 static bool Fn14DA7C(EEPSaveGameHeader& inHeader, UWideString& outErrorMessage, FSFile& inFile);
 
 // FUNCTION: EXE 0x54d946
@@ -592,7 +592,7 @@ bool EEValidateSaveGameFile(FSFile& inFile, UWideString& outErrorMessage)
     std::vector<long> theTags;
     FSMemoryFile theMemory(1000, true, 1);
     bool theResult = false;
-    outErrorMessage = gU4E5B98;
+    outErrorMessage = gEmptyString;
     inFile.Close();
     if (inFile.Open(kFileAccessRead) == kErrorOK) {
         if (theMemory.Load(inFile) == kErrorOK

@@ -1,4 +1,4 @@
-// Complete genuine fieldless8 SDK subclass; optional Source-only, no Native identity.
+// TGADecoder: fieldless (8 bytes), optional; not identified in the original exe.
 #ifndef EE_WONAPI_WONLOBBYTGADECODER_H
 #define EE_WONAPI_WONLOBBYTGADECODER_H
 #include "ee/EEWonNet.h"

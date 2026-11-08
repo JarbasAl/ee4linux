@@ -1,4 +1,4 @@
-// Original-backed protocol family; pending first ordinary full-COFF review.
+// WONAPI routing op that joins a group
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,53 +8,55 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 
 namespace WONAPI {
 // FUNCTION: WON 0x006c7140
+// Creates a join-group request with group 0 and no join or member flags
 RoutingJoinGroupOp::RoutingJoinGroupOp(RoutingConnection* inConnection)
     : RoutingOp(inConnection)
 {
-    mGroupId = 0;
-    mJoinFlags = 0;
-    mMemberFlags = 0;
+    this->mGroupId = 0;
+    this->mJoinFlags = 0;
+    this->mMemberFlags = 0;
 }
 
 // FUNCTION: WON 0x006c7370
-void RoutingJoinGroupOp::Virtual0C()
+// Sends the routing server the join request (group, password, comment, join and member flags)
+void RoutingJoinGroupOp::SendRequest()
 {
-    InitSendMsg(42);
-    mSendMsg.AppendShort(mGroupId);
-    mSendMsg.AppendWString(mGroupPassword, 2);
-    mSendMsg.AppendWString(mJoinComment, 2);
-    mSendMsg.AppendByte(mJoinFlags);
-    mSendMsg.AppendByte(mMemberFlags);
-    SendMsg();
-    AddOp();
+    this->InitSendMsg(42);
+    this->mSendMsg.AppendShort(this->mGroupId);
+    this->mSendMsg.AppendWString(this->mGroupPassword, 2);
+    this->mSendMsg.AppendWString(this->mJoinComment, 2);
+    this->mSendMsg.AppendByte(this->mJoinFlags);
+    this->mSendMsg.AppendByte(this->mMemberFlags);
+    this->SendMsg();
+    this->AddOp();
 }
 
-// Whole-family reply source intent retained until actual GetMembersOp78 lifetime
-// gate. All map assignment and operation ownership are real typed C++ objects.
 // FUNCTION: WON 0x006c73e0
-WONStatus RoutingJoinGroupOp::Virtual10(unsigned char inMsgType, ReadBuffer& inMsg)
+// Reads the join status for this group (waits on when pending or members follow) and the member list that follows
+WONStatus RoutingJoinGroupOp::HandleReply(unsigned char inMsgType, ReadBuffer& inMsg)
 {
     if (inMsgType == 41) {
         WONStatus status = inMsg.ReadShort();
         unsigned short groupId = inMsg.ReadShort();
-        if (groupId == mGroupId) {
-            inMsg.ReadWString(mJoinComment, 2);
-            if (status == (WONStatus)-2541) return (WONStatus)100105;
+        if (groupId == this->mGroupId) {
+            inMsg.ReadWString(this->mJoinComment, 2);
+            if (status == (WONStatus)-2541) return (WONStatus)WS_RoutingOp_NeedMoreReplies;
             if (status != 0) return status;
-            return (mJoinFlags & 1) ? (WONStatus)100105 : (WONStatus)0;
+            return (this->mJoinFlags & 1) ? (WONStatus)100105 : (WONStatus)0;
         }
     } else if (inMsgType == 29) {
         SmartPtr<RoutingGetMembersOfGroupOp> op =
-            new RoutingGetMembersOfGroupOp(mConnection.get());
-        op->SetGroupId(mGroupId);
-        WONStatus status = op->Virtual10(29, inMsg);
-        if (status == 0) mMemberMap = op->GetMembers();
+            new RoutingGetMembersOfGroupOp(this->mConnection.get());
+        op->SetGroupId(this->mGroupId);
+        WONStatus status = op->HandleReply(29, inMsg);
+        if (status == WS_Success) this->mMemberMap = op->GetMembers();
         return status;
     }
-    return (WONStatus)100104;
+    return (WONStatus)WS_RoutingOp_DontWantReply;
 }
 }
 

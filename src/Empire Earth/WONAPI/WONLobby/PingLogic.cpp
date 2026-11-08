@@ -1,5 +1,5 @@
-// Original-backed PingLogic/PingGameOp family; full COFF/EH/data capture required.
-// UDPManagerSendRecvOp and PingGameOp are complete before any allocation.
+// Game pings over the lobby UDP manager: timing a game host's reply (optionally with its summary and
+// details), queueing pings beyond the connection-speed limit, and answering pings for the hosted game
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,99 +15,107 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyLogic.h"
 #include "ee/wonapi/WONLobbyPing.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace WONAPI;
 
-// Source-local complete original global operation; admitted UDP88 prerequisite applies here.
+// One ping of a game host, retried by PingLogic (global namespace in the original's RTTI)
 class PingGameOp : public WONAPI::UDPManagerSendRecvOp {
 public:
-    PingGameOp(WONAPI::LobbyGame*, unsigned short, unsigned char); //3e5ed0
+    PingGameOp(WONAPI::LobbyGame*, unsigned short, unsigned char);
 
-    virtual void Virtual04(); //3e6240
-    virtual WONAPI::WONStatus Virtual0C(WONAPI::ReadBuffer&); //3e6360
-    WONAPI::SmartPtr<WONAPI::LobbyGame> mGame; //88
-    unsigned short mRequestId; //8c
-    unsigned short mPing; //8e, initialized by RunHook, not ctor
-    unsigned char mReplyFlags; //90
-    unsigned short mRetries; //92, natural alignment before member
-    WONAPI::ByteBufferPtr mReply; //94
+    virtual void RunHook();
+    virtual WONAPI::WONStatus CheckResponse(WONAPI::ReadBuffer&);
+    WONAPI::SmartPtr<WONAPI::LobbyGame> mGame; // 0x88
+    unsigned short mRequestId; // 0x8c
+    unsigned short mPing; // 0x8e, set by RunHook, not by the constructor
+    unsigned char mReplyFlags; // 0x90
+    unsigned short mRetries; // 0x92
+    WONAPI::ByteBufferPtr mReply; // 0x94
 };
 
 // FUNCTION: WON 0x007e5ed0
+// Creates a ping of a game's address with a request id and the summary/details flags to ask for
 PingGameOp::PingGameOp(LobbyGame* inGame, unsigned short inRequestId,
                        unsigned char inFlags)
 {
-    mGame = inGame;
-    mRetries = 0;
-    mRequestId = inRequestId;
-    mReplyFlags = inFlags;
-    mAddress = mGame->mAddress;
+    this->mGame = inGame;
+    this->mRetries = 0;
+    this->mRequestId = inRequestId;
+    this->mReplyFlags = inFlags;
+    this->mAddress = this->mGame->mAddress;
 }
 
 // FUNCTION: WON 0x007e6240
-void PingGameOp::Virtual04()
+// Builds the ping request (id, game type, flags), marks no reply yet and sends it
+void PingGameOp::RunHook()
 {
     WriteBuffer aBuffer(0, true);
     aBuffer.AppendByte(7);
-    aBuffer.AppendShort(mRequestId);
-    aBuffer.AppendByte(mGame->GetGameType());
-    aBuffer.AppendByte(mReplyFlags);
-    mOutgoing = aBuffer.ToByteBuffer(true);
-    mPing = 0xffff;
-    UDPManagerSendRecvOp::Virtual04();
+    aBuffer.AppendShort(this->mRequestId);
+    aBuffer.AppendByte(this->mGame->GetGameType());
+    aBuffer.AppendByte(this->mReplyFlags);
+    this->mOutgoing = aBuffer.ToByteBuffer(true);
+    this->mPing = 0xffff;
+    UDPManagerSendRecvOp::RunHook();
 }
 
 // FUNCTION: WON 0x007e6360
-WONStatus PingGameOp::Virtual0C(ReadBuffer& inBuffer)
+// Accepts the reply to this request: records the ping time and keeps any summary/details data
+WONStatus PingGameOp::CheckResponse(ReadBuffer& inBuffer)
 {
     if (inBuffer.ReadByte() != 8)
-        return 0x186a4; // original response-not-for-this-op status
-    if (inBuffer.ReadShort() != mRequestId)
-        return 0x186a4; // signed ReadShort promoted against unsigned-short member
-    unsigned long aStart = mStartTime;
-    mPing = GetTickCount() - aStart;
-    mReplyFlags = 0;
-    if (inBuffer.Available() > 0) {
-        mReplyFlags = inBuffer.ReadByte();
-        unsigned long aLength = inBuffer.Available();
-        mReply = new ByteBuffer(inBuffer.ReadBytes(aLength), aLength, false);
-    }
-    return 0;
+        return WS_None; // not a reply to this request
+    if (inBuffer.ReadShort() != this->mRequestId)
+        return WS_None; // the signed ReadShort is compared with the unsigned member
+    unsigned long aStart = this->mStartTime;
+    this->mPing = GetTickCount() - aStart;
+    this->mReplyFlags = 0;
+    if (!(inBuffer.Available() > 0))
+        return WS_Success;
+    this->mReplyFlags = inBuffer.ReadByte();
+    unsigned long aLength = inBuffer.Available();
+    this->mReply = new ByteBuffer(inBuffer.ReadBytes(aLength), aLength, false);
+    return WS_Success;
 }
 
 namespace WONAPI {
-// Canonical UDP contracts pending model placement. These are actual call-only APIs.
-UDPManager* LobbyFn35B8F0();
-unsigned short LobbyFn35E3A0(); // max simultaneous ping count, actual caller masks16
-void LobbyFn361EB0(LobbyGame*); // update game UI/status
+UDPManager* LobbyGetUDPManager();
+unsigned short LobbyGetConnectionSpeed(); // most pings in flight at once (0: no limit); callers use the low 16 bits
+void LobbyNotifyPingChange(LobbyGame*); // update game UI/status
 
 // FUNCTION: WON 0x007e6490
+// Creates the ping logic with request ids starting at 0
 PingLogic::PingLogic()
 {
-    mNextRequestId = 0;
+    this->mNextRequestId = 0;
 }
 
 // FUNCTION: WON 0x007e6520
+// Destroys the ping logic (members only)
 PingLogic::~PingLogic() {}
 
 // FUNCTION: WON 0x007e65d0
+// Routes unsolicited UDP packets to the ping request handler
 void PingLogic::InitComponent(ComponentConfig*)
 {
-    UDPManager* aManager = LobbyFn35B8F0();
+    UDPManager* aManager = LobbyGetUDPManager();
     if (aManager != NULL)
-        aManager->mDefaultCompletion = new LogicCompletion<PingLogic>(&PingLogic::Fn3E6810, this);
+        aManager->mDefaultCompletion = new LogicCompletion<PingLogic>(&PingLogic::HandleUDPRecv, this);
 }
 
 // FUNCTION: WON 0x007e6680
+// Pings a game when asked by a ping-game event
 void PingLogic::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if (inEvent->mType == 0x186c5) {
+    if (inEvent->mType == LobbyEvent_PingGame) {
         PingGameEvent* anEvent = static_cast<PingGameEvent*>(inEvent);
-        Fn3E6B50(anEvent->mGame.get(), anEvent->mFlag, false);
+        this->PingGame(anEvent->mGame.get(), anEvent->mFlag, false);
     }
 }
 
 // FUNCTION: WON 0x007e66a0
-void PingLogic::Fn3E66A0(ReadBuffer& inBuffer, const IPAddr& inAddress)
+// Host: answers a ping for the hosted game type with the requested summary/details (not in progress if barred)
+void PingLogic::HandlePingRequest(ReadBuffer& inBuffer, const IPAddr& inAddress)
 {
     LobbyGame* aGame = GetMyLobbyGame();
     if (aGame == NULL || !aGame->mIsHost)
@@ -116,7 +124,7 @@ void PingLogic::Fn3E66A0(ReadBuffer& inBuffer, const IPAddr& inAddress)
     unsigned char aKind = inBuffer.ReadByte();
     if (aGame->GetGameType() != aKind)
         return;
-    if (aGame->mB13) {
+    if (aGame->mInProgress) {
         LobbyConfig* aConfig = GetLobbyConfig();
         if (aConfig != NULL && aConfig->mNoPingInProgress)
             return;
@@ -129,17 +137,18 @@ void PingLogic::Fn3E66A0(ReadBuffer& inBuffer, const IPAddr& inAddress)
     if (aFlags & 1)
         aGame->WriteSummary(aBuffer);
     if (aFlags & 2)
-        aGame->Fn3A7240(aBuffer);
-    UDPManager* aManager = LobbyFn35B8F0();
+        aGame->WriteDetails(aBuffer);
+    UDPManager* aManager = LobbyGetUDPManager();
     if (aManager != NULL)
         aManager->Send(aBuffer.ToByteBuffer(true).get(), inAddress);
 }
 
 // FUNCTION: WON 0x007e6810
-void PingLogic::Fn3E6810(AsyncOp* inOp)
+// Dispatches an unsolicited UDP packet; only ping requests are handled
+void PingLogic::HandleUDPRecv(AsyncOp* inOp)
 {
     UDPManagerRecvOp* anOp = static_cast<UDPManagerRecvOp*>(inOp);
-    if (anOp->GetStatus() != 0 || anOp->mB39)
+    if (anOp->GetStatus() != WS_Success || anOp->mKilled)
         return;
     const ByteBuffer* aBuffer = anOp->mReceivedData.get();
     ReadBuffer aReadBuffer(aBuffer != NULL ? aBuffer->data() : NULL,
@@ -148,27 +157,28 @@ void PingLogic::Fn3E6810(AsyncOp* inOp)
     try {
         int aType = (char)aReadBuffer.ReadByte();
         switch (aType) {
-        case 7: Fn3E66A0(aReadBuffer, anAddr); break;
+        case 7: this->HandlePingRequest(aReadBuffer, anAddr); break;
         }
     }
     catch (ReadBufferException&) {}
 }
 
 // FUNCTION: WON 0x007e68b0
-void PingLogic::Fn3E68B0(AsyncOp* inOp)
+// Retries an unanswered ping up to 3 times, else records the result and starts queued pings up to the limit
+void PingLogic::PingGameDone(AsyncOp* inOp)
 {
     PingGameOp* anOp = static_cast<PingGameOp*>(inOp);
-    if (anOp->mB39)
+    if (anOp->mKilled)
         return;
     unsigned short aPing = anOp->mPing;
     LobbyGame* aGame = anOp->mGame.get();
     if (aPing != 0xffff)
-        aGame->mB18 = true;
+        aGame->mPingReplied = true;
     else if (anOp->mRetries < 3) {
         ++anOp->mRetries;
         LobbyConfig* aConfig = GetLobbyConfig();
         unsigned long aTimeout = aConfig != NULL ? aConfig->mPingCeiling : 5000;
-        RunTrackedOp(anOp, new LogicCompletion<PingLogic>(&PingLogic::Fn3E68B0, this), aTimeout);
+        this->RunTrackedOp(anOp, new LogicCompletion<PingLogic>(&PingLogic::PingGameDone, this), aTimeout);
         return;
     }
     aGame->SetPing(aPing);
@@ -181,88 +191,91 @@ void PingLogic::Fn3E68B0(AsyncOp* inOp)
         if ((aFlags & 2) && aReadOk)
             aGame->ReadDetails(aBuffer);
     }
-    LobbyFn359100(new GameChangedEvent(aGame, 2), true);
-    LobbyFn361EB0(aGame);
-    int aMaximum = LobbyFn35E3A0();
-    while (!mPending.empty()) {
-        if (static_cast<long>(mTracker.mMaps.mEntries.size()) >= aMaximum && aMaximum != 0)
+    LobbyBroadcastEvent(new GameChangedEvent(aGame, 2), true);
+    LobbyNotifyPingChange(aGame);
+    int aMaximum = LobbyGetConnectionSpeed();
+    while (!this->mPending.empty()) {
+        if (static_cast<long>(this->mTracker.mMaps.mEntries.size()) >= aMaximum && aMaximum != 0)
             break;
-        SmartPtr<LobbyGame> aPendingGame = mPending.front();
-        mPending.pop_front();
-        if (!aPendingGame->Fn3A6D70())
+        SmartPtr<LobbyGame> aPendingGame = this->mPending.front();
+        this->mPending.pop_front();
+        if (!aPendingGame->IsPinging())
             continue;
-        if (aPendingGame->Fn3A6D90())
+        if (aPendingGame->IsQueryingDetails())
             continue;
         aPendingGame->SetPing(0xfffe);
-        Fn3E6B50(aPendingGame.get(), false, true);
+        this->PingGame(aPendingGame.get(), false, true);
     }
 }
 
 // FUNCTION: WON 0x007e6b40
-int PingLogic::Fn3E6B40()
+// Returns the number of queued plus running pings
+int PingLogic::GetNumPingsToDo()
 {
-    return mPending.size() + mTracker.mMaps.mEntries.size();
+    return this->mPending.size() + this->mTracker.mMaps.mEntries.size();
 }
 
 // FUNCTION: WON 0x007e6b50
-void PingLogic::Fn3E6B50(LobbyGame* inGame, bool inDetails, bool inForce)
+// Pings a game (with details on request), or queues it when the connection-speed limit is reached
+void PingLogic::PingGame(LobbyGame* inGame, bool inDetails, bool inForce)
 {
     if (inGame == NULL)
         return;
-    if (inGame->mB13) {
+    if (inGame->mInProgress) {
         LobbyConfig* aConfig = GetLobbyConfig();
         if (aConfig != NULL && aConfig->mNoPingInProgress)
             return;
     }
     if (inDetails) {
-        if (inGame->Fn3A6D90())
+        if (inGame->IsQueryingDetails())
             return;
     }
-    else if (inGame->Fn3A6D70())
+    else if (inGame->IsPinging())
         return;
     if (!inForce && !inDetails) {
-        unsigned short aMaximum = LobbyFn35E3A0();
-        if (static_cast<long>(mTracker.mMaps.mEntries.size()) >= aMaximum && aMaximum > 0) {
-            inGame->mL64 = 0xfffd;
-            LobbyFn361EB0(inGame);
-            mPending.push_back(inGame);
+        unsigned short aMaximum = LobbyGetConnectionSpeed();
+        if (static_cast<long>(this->mTracker.mMaps.mEntries.size()) >= aMaximum && aMaximum > 0) {
+            inGame->mPing = 0xfffd;
+            LobbyNotifyPingChange(inGame);
+            this->mPending.push_back(inGame);
             return;
         }
     }
-    UDPManager* aManager = LobbyFn35B8F0();
+    UDPManager* aManager = LobbyGetUDPManager();
     if (aManager == NULL)
         return;
     inGame->SetPing(inDetails ? 0xfffc : 0xfffd);
-    LobbyFn361EB0(inGame);
+    LobbyNotifyPingChange(inGame);
     unsigned char aFlags = 0;
     if (inGame->GetGameType() == 3)
         aFlags = 1;
     if (inDetails)
         aFlags |= 2;
-    SmartPtr<PingGameOp> anOp = new PingGameOp(inGame, mNextRequestId++, aFlags);
+    SmartPtr<PingGameOp> anOp = new PingGameOp(inGame, this->mNextRequestId++, aFlags);
     anOp->SetUDPManager(aManager);
     LobbyConfig* aConfig = GetLobbyConfig();
     unsigned long aTimeout = aConfig != NULL ? aConfig->mPingCeiling : 5000;
-    RunTrackedOp(anOp.get(), new LogicCompletion<PingLogic>(&PingLogic::Fn3E68B0, this), aTimeout);
+    this->RunTrackedOp(anOp.get(), new LogicCompletion<PingLogic>(&PingLogic::PingGameDone, this), aTimeout);
 }
 
 // FUNCTION: WON 0x007e6db0
-void PingLogic::Fn3E6DB0(int)
+// Cancels every queued and running ping, marking those games as not pinged
+void PingLogic::KillPings(int)
 {
-    std::list<SmartPtr<LobbyGame> >::iterator aGameItr = mPending.begin();
+    std::list<SmartPtr<LobbyGame> >::iterator aGameItr = this->mPending.begin();
     while (true) {
-        if (aGameItr == mPending.end()) break;
+        if (aGameItr == this->mPending.end()) break;
         (*aGameItr)->SetPing(0xfffe);
         ++aGameItr;
     }
     AsyncOpTrackerMaps::EntryMap::iterator anItr;
-    for (anItr = mTracker.mMaps.mEntries.begin(); anItr != mTracker.mMaps.mEntries.end(); ++anItr) {
-        PingGameOp* anOp = dynamic_cast<PingGameOp*>((*anItr).second->mOp.get());
+    for (anItr = this->mTracker.mMaps.mEntries.begin(); anItr != this->mTracker.mMaps.mEntries.end(); ++anItr) {
+        PingGameOp* anOp = dynamic_cast<PingGameOp*>(anItr->second->mOp.get());
         if (anOp != NULL)
             anOp->mGame->SetPing(0xfffe);
     }
-    mPending.clear();
-    mTracker.KillAll();
+    this->mPending.clear();
+    this->mTracker.KillAll();
 }
 }
 

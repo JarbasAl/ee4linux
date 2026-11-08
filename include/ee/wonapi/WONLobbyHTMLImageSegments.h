@@ -2,8 +2,8 @@
 #define EE_WONAPI_WONLOBBYHTMLIMAGESEGMENTS_H
 #include "ee/wonapi/WONLobbyLineLayout.h"
 namespace WONAPI {
-// Actual complete18 owner, native allocation33a5ca and constructor stores33a5de.
-// Genuine inline SDK ctor; implicit cleanup33a9d0 releases Component14.
+// ComponentLineSegment (0x18 bytes; allocated at 0x0073a5ca, inline constructor stores at
+// 0x0073a5de). The implicit destructor (0x0073a9d0) releases the component at +0x14.
 class ComponentLineSegment : public LineSegment {
 public:
     SmartPtr<Component> mComponent; //14
@@ -22,7 +22,7 @@ public:
     virtual void Paint(Graphics&,int,int,ElementPaintInfo&);
     virtual void SetViewport(ScrollAreaViewport*,int,int);
 };
-// Actual complete2c owner, native33aa30/76 ctor, implicit cleanup33aaf0.
+// ImageLineSegment (0x2c bytes): constructor at 0x0073aa30, implicit destructor at 0x0073aaf0.
 class ImageLineSegment : public LineSegment {
 public:
     SmartPtr<Image> mImage; //14
@@ -34,8 +34,7 @@ public:
     virtual char GetVertAlign(); //33aac0
     virtual void Paint(Graphics&,int,int,ElementPaintInfo&); //30b390
 };
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK derived owner, two int fields.
-// Existing base2c and its virtual contract are unchanged; no Native allocation/VT claim.
+// ScaledImageLineSegment: two int fields over ImageLineSegment (not identified in the original exe).
 class ScaledImageLineSegment : public ImageLineSegment
 {
 public:
@@ -44,13 +43,13 @@ public:
 public:
 	ScaledImageLineSegment(Image *theImage, int theWidth, int theHeight) : ImageLineSegment(theImage), mWidth(theWidth), mHeight(theHeight) { }
 
-	virtual int GetWidth() { return mWidth + 2*mHSpace; }
-	virtual int GetHeight() { return mHeight + 2*mVSpace; }
+	virtual int GetWidth() { return this->mWidth + 2*this->mHSpace; }
+	virtual int GetHeight() { return this->mHeight + 2*this->mVSpace; }
 	virtual void Paint(Graphics &g, int x, int y, ElementPaintInfo &theInfo);
 };
 typedef SmartPtr<ScaledImageLineSegment> ScaledImageLineSegmentPtr;
-// Actual complete40 owner, native constructor inlined at33a690/33a743.
-// Implicit cleanup33ab70 releases3c,38,34 then inherited14, in that order.
+// 0x40 bytes; constructor inlined at 0x0073a690 and 0x0073a743. The implicit destructor (0x0073ab70)
+// releases +0x3c, +0x38, +0x34, then the inherited +0x14, in that order.
 class ImageLinkLineSegment : public ImageLineSegment {
 public:
     DWORD mNormalColor,mDownColor; //2c,30
@@ -60,7 +59,7 @@ public:
         :ImageLineSegment(image),mNormalColor(color),mDownColor(down),
          mCurLinkParam(param),mAnchorLinkParam(param)
     {
-        if(param!=NULL) param->mLinkList.push_back(this); //genuine SDK AddLink inline operation
+        if(param!=NULL) param->mLinkList.push_back(this); // inline AddLink
     }
     virtual void LinkDown();
     virtual void LinkUp();

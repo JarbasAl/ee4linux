@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// Button config constructor (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,6 +14,7 @@
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00781860
+// Creates a button config (base members only)
 ButtonConfig::ButtonConfig()
 {
 }

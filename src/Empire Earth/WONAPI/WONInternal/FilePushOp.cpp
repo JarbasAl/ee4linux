@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK file push state machine.
-// Missing unit proposed existing ServerOp/socket family profile.
+// No original address identified: WON SDK file push operation
 #include <windows.h>
 #include <string>
 #include <list>
@@ -11,6 +10,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONFilePush.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 
@@ -33,30 +33,30 @@ FilePushOp::~FilePushOp()
 ///////////////////////////////////////////////////////////////////////////////
 bool FilePushOp::CallbackHook(AsyncOp *theOp, int theId)
 {
-	if(theOp->GetStatus()!=0)
+	if(theOp->GetStatus()!=WS_Success)
 	{
-		Fn29F220(theOp->GetStatus());
+		this->Finish(theOp->GetStatus());
 		return true;
 	}
 
 	switch(theId)
 	{
 		case TRACK_AUTH: 
-			if(GetEncryptKey((PeerAuthOp*)theOp))
-				SendStreamFileRequest(); 
+			if(this->GetEncryptKey(static_cast<PeerAuthOp*>(theOp)))
+				this->SendStreamFileRequest(); 
 			return true;
 	
 		case TRACK_STATUS_REPLY: 
 		{
-			RecvMsgOp *anOp = (RecvMsgOp*)theOp;
-			HandleFactStatusReply(anOp->GetMsg());
+			RecvMsgOp *anOp = static_cast<RecvMsgOp*>(theOp);
+			this->HandleFactStatusReply(anOp->GetMsg());
 			return true;
 		}
 
 		case TRACK_ACK:
 		{
-			RecvBytesOp *anOp = (RecvBytesOp*)theOp;
-			HandleAck(anOp->GetBytes()->data()[0]);
+			RecvBytesOp *anOp = static_cast<RecvBytesOp*>(theOp);
+			this->HandleAck(anOp->GetBytes()->data()[0]);
 			return true;
 		}
 
@@ -71,7 +71,7 @@ bool FilePushOp::CheckError(WONStatus theStatus)
 {
 	if(theStatus!=(WONStatus)0)
 	{
-		Fn29F220(theStatus);
+		this->Finish(theStatus);
 		return true;
 	}
 
@@ -85,11 +85,11 @@ bool FilePushOp::GetEncryptKey(PeerAuthOp *theOp)
 	AuthSession *aSession = theOp->GetSession();
 	if(aSession==NULL)
 	{
-		Fn29F220((WONStatus)100013);
+		this->Finish((WONStatus)WS_AuthRequired);
 		return false;
 	}
 
-	mEncryptKey = aSession->GetKey();
+	this->mEncryptKey = aSession->GetKey();
 	return true;
 }
 
@@ -97,8 +97,8 @@ bool FilePushOp::GetEncryptKey(PeerAuthOp *theOp)
 ///////////////////////////////////////////////////////////////////////////////
 void FilePushOp::DoProgressCompletion()
 {
-	if(mProgressCompletion.get()!=NULL)
-		mProgressCompletion->Complete(this);
+	if(this->mProgressCompletion.get()!=NULL)
+		this->mProgressCompletion->Complete(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,19 +113,19 @@ bool FilePushOp::HandleFactStatusReply(const ByteBuffer *theReply)
 		unsigned short aServiceType = aReply.ReadShort();
 		unsigned short aMessageType = aReply.ReadShort();
 		aStatus = (WONStatus)aReply.ReadShort();
-		if(CheckError(aStatus))
+		if(this->CheckError(aStatus))
 			return false;
 	}
 	catch(ReadBufferException&)
 	{
-		Fn29F220((WONStatus)100012);
+		this->Finish((WONStatus)WS_MessageUnpackFailure);
 		return false;
 	}
 
-	if(mTotalBytesSent > 0) // this is the second status reply so we're done
+	if(this->mTotalBytesSent > 0) // this is the second status reply so we're done
 	{
-		DoProgressCompletion();
-		Fn29F220((WONStatus)0);
+		this->DoProgressCompletion();
+		this->Finish((WONStatus)WS_Success);
 		return false;
 	}
 	
@@ -136,18 +136,18 @@ bool FilePushOp::HandleFactStatusReply(const ByteBuffer *theReply)
 ///////////////////////////////////////////////////////////////////////////////
 bool FilePushOp::RecvFactStatusReply()
 {
-	if((mRunMode==OP_MODE_ASYNC))
+	if((this->mRunMode==OP_MODE_ASYNC))
 	{
-		RecvMsgAsync(TRACK_STATUS_REPLY);
+		this->RecvMsgAsync(TRACK_STATUS_REPLY);
 		return false;
 	}
 
 	ByteBufferPtr aReply;
-	WONStatus aStatus = mSocket->RecvMsg(aReply, RecvTime());
-	if(CheckError(aStatus))
+	WONStatus aStatus = this->mSocket->RecvMsg(aReply, this->RecvTime());
+	if(this->CheckError(aStatus))
 		return false;
 
-	return HandleFactStatusReply(aReply);
+	return this->HandleFactStatusReply(aReply);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -156,34 +156,34 @@ bool FilePushOp::HandleAck(char theAck)
 {
 	if(theAck==1)
 	{
-		DoProgressCompletion();
-		if((mRunMode==OP_MODE_ASYNC))
-			SendFileChunk();
+		this->DoProgressCompletion();
+		if((this->mRunMode==OP_MODE_ASYNC))
+			this->SendFileChunk();
 
 		return true;
 	}
 
-	return RecvFactStatusReply();
+	return this->RecvFactStatusReply();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool FilePushOp::RecvAck()
 {
-	if((mRunMode==OP_MODE_ASYNC))
+	if((this->mRunMode==OP_MODE_ASYNC))
 	{
-		SmartPtr<RecvBytesOp> anOp = new RecvBytesOp(1,mSocket);
-		Track(anOp, TRACK_ACK);
-		mSocket->Fn2B4740(anOp,-1);
+		SmartPtr<RecvBytesOp> anOp = new RecvBytesOp(1,this->mSocket);
+		this->Track(anOp, TRACK_ACK);
+		this->mSocket->QueueOp(anOp,-1);
 		return false;
 	}
 
 	ByteBufferPtr aByte;
-	WONStatus aStatus = mSocket->RecvBytes(aByte, 1,0xffffffff);
-	if(CheckError(aStatus))
+	WONStatus aStatus = this->mSocket->RecvBytes(aByte, 1,0xffffffff);
+	if(this->CheckError(aStatus))
 		return false;
 
-	return HandleAck(aByte->data()[0]);
+	return this->HandleAck(aByte->data()[0]);
 
 }
 
@@ -192,118 +192,118 @@ bool FilePushOp::RecvAck()
 bool FilePushOp::SendFileChunk()
 {		
 	WriteBuffer aBuf(4,false);
-	aBuf.Reserve(mBlockTransferSize + 20);
+	aBuf.Reserve(this->mBlockTransferSize + 20);
 
-	int aLen = fread(aBuf.data(),1,mBlockTransferSize,mFile.GetFile());
+	int aLen = fread(aBuf.data(),1,this->mBlockTransferSize,this->mFile.GetFile());
 	WONStatus aStatus = (WONStatus)100004;
 
 	// Encrypt bytes and pack them in aBuf
 	if(aLen > 0)
 	{
-		ByteBufferPtr anEncrypt = mEncryptKey.Encrypt(aBuf.data(),aLen);
+		ByteBufferPtr anEncrypt = this->mEncryptKey.Encrypt(aBuf.data(),aLen);
 		aBuf.AppendBytes(anEncrypt->data(), anEncrypt->length());
 	}
 
 	// Send bytes
-	mLastBytesSent = aLen;
-	mTotalBytesSent += aLen;
-	if((mRunMode==OP_MODE_ASYNC))
-		mSocket->Fn2B4740((SocketOp*)Track(new SendBytesOp(aBuf.ToByteBuffer(true)),0),-1);
+	this->mLastBytesSent = aLen;
+	this->mTotalBytesSent += aLen;
+	if((this->mRunMode==OP_MODE_ASYNC))
+		this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(new SendBytesOp(aBuf.ToByteBuffer(true)),0)),-1);
 	else
 	{
-		aStatus = mSocket->SendBytes(aBuf.ToByteBuffer(true), SendTime());
-		if(CheckError(aStatus))
+		aStatus = this->mSocket->SendBytes(aBuf.ToByteBuffer(true), this->SendTime());
+		if(this->CheckError(aStatus))
 			return false;
 	}
 
 	if(aLen>0)
-		return RecvAck();
+		return this->RecvAck();
 	else 
-		return RecvFactStatusReply();
+		return this->RecvFactStatusReply();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool FilePushOp::SendStreamFileRequest()
 {
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 	aMsg.AppendByte(5);					// Small Message
 	aMsg.AppendShort(5);				// Small Factory Service
 	aMsg.AppendShort(21);				// FactStreamFile Msg
-	aMsg.AppendString(mRemoteFileName);
-	aMsg.AppendBool(mIsCompress);
-	aMsg.AppendLong(mModifyTime.dwHighDateTime);
-	aMsg.AppendLong(mModifyTime.dwLowDateTime);
-	aMsg.AppendString(mComment);
+	aMsg.AppendString(this->mRemoteFileName);
+	aMsg.AppendBool(this->mIsCompress);
+	aMsg.AppendLong(this->mModifyTime.dwHighDateTime);
+	aMsg.AppendLong(this->mModifyTime.dwLowDateTime);
+	aMsg.AppendString(this->mComment);
 
-	if((mRunMode==OP_MODE_ASYNC))
+	if((this->mRunMode==OP_MODE_ASYNC))
 	{
-		SendMsgAsync(aMsg.ToByteBuffer(true),TRACK_STREAM_REQUEST);
-		RecvFactStatusReply();
-		RecvAck();
+		this->SendMsgAsync(aMsg.ToByteBuffer(true),TRACK_STREAM_REQUEST);
+		this->RecvFactStatusReply();
+		this->RecvAck();
 		return false;
 	}
 
-	WONStatus aStatus = mSocket->SendMsg(aMsg.ToByteBuffer(true), SendTime());
-	if(CheckError(aStatus))
+	WONStatus aStatus = this->mSocket->SendMsg(aMsg.ToByteBuffer(true), this->SendTime());
+	if(this->CheckError(aStatus))
 		return false;
 
-	if(!RecvFactStatusReply())
+	if(!this->RecvFactStatusReply())
 		return false;
 
-	return RecvAck();
+	return this->RecvAck();
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void FilePushOp::Virtual04(void)
+void FilePushOp::RunHook(void)
 {
-	mTotalBytesSent = 0;
-	mLastBytesSent = 0;
-	FILE *aFile = fopen(mFileName.c_str(),"rb");
-	mFile.Attach(aFile);
+	this->mTotalBytesSent = 0;
+	this->mLastBytesSent = 0;
+	FILE *aFile = fopen(this->mFileName.c_str(),"rb");
+	this->mFile.Attach(aFile);
 	if(aFile==NULL)
 	{
-		Fn29F220((WONStatus)100007);
+		this->Finish((WONStatus)WS_FailedToOpenFile);
 		return;
 	}
 
-	mSocket = new BlockingSocket(AsyncSocket::TCP);
-	mSocket->SetLengthFieldSize(mLengthFieldSize);
+	this->mSocket = new BlockingSocket(AsyncSocket::TCP);
+	this->mSocket->SetLengthFieldSize(this->mLengthFieldSize);
 
-	SmartPtr<PeerAuthOp> aPeerAuthOp = new PeerAuthOp(mConnectAddr, mAuthContext, mAuthType, mSocket,true);
+	SmartPtr<PeerAuthOp> aPeerAuthOp = new PeerAuthOp(this->mConnectAddr, this->mAuthContext, this->mAuthType, this->mSocket,true);
 	aPeerAuthOp->CopyMaxTimes(this);
-	if((mRunMode==OP_MODE_ASYNC))
+	if((this->mRunMode==OP_MODE_ASYNC))
 	{
-		Track(aPeerAuthOp,TRACK_AUTH);
-		aPeerAuthOp->Run(-1);
+		this->Track(aPeerAuthOp,TRACK_AUTH);
+		aPeerAuthOp->RunAsync(-1);
 		return;
 	}
 	
-	if(!aPeerAuthOp->RunBlock(TimeLeft()))
+	if(!aPeerAuthOp->RunBlock(this->TimeLeft()))
 	{
-		Fn29F220(aPeerAuthOp->GetStatus());
+		this->Finish(aPeerAuthOp->GetStatus());
 		return;
 	}
 
-	if(!GetEncryptKey(aPeerAuthOp))
+	if(!this->GetEncryptKey(aPeerAuthOp))
 		return;
 
-	if(!SendStreamFileRequest())
+	if(!this->SendStreamFileRequest())
 		return;
 
 	while(true)
 	{
-		if(!SendFileChunk())
+		if(!this->SendFileChunk())
 			break;
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void FilePushOp::Virtual08(void)
+void FilePushOp::CleanupHook(void)
 {
-	ServerOp::Virtual08();
-	mFile.Detach();
+	ServerOp::CleanupHook();
+	this->mFile.Detach();
 }

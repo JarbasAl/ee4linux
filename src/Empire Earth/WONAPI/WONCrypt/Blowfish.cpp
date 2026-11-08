@@ -1,4 +1,4 @@
-// Original-backed bounded cryptography implementation.
+// Blowfish: symmetric key schedule, block cipher and the WON length-prefixed CBC framing
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,109 +13,113 @@
 #include "ee/wonapi/WONLittleEndian.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007d5e20
+// Creates a cipher with no key
 Blowfish::Blowfish()
 {
-	mIsValid = false;
+	this->mIsValid = false;
 }
 
 // FUNCTION: WON 0x007d5e90
+// Runs the key schedule for a key of valid length and keeps the raw key; false when the length is invalid
 bool Blowfish::SetKey(const void *theKey, int theKeyLen)
 {	
     int i, j, k, l, len = theKeyLen;
-	const unsigned char* key = (const unsigned char*)theKey;
+	const unsigned char* key = static_cast<const unsigned char*>(theKey);
 
     int Ptemp[] = {0, 0};
-    int *Stemp[4] = {S0, S1, S2, S3};
+    int *Stemp[4] = {this->S0, this->S1, this->S2, this->S3};
 
     if(len < minKeyLen || len > maxKeyLen)
 	{
-		mIsValid = false;
+		this->mIsValid = false;
 		return false;
 	}
     
-	memcpy(P,Pinit,18*sizeof(int));
+	memcpy(this->P,Blowfish::Pinit,18*sizeof(int));
 
     for(i = 0, j = 0; j < 4; i += 256, j++)
-		memcpy(Stemp[j],Sinit + i,256*sizeof(int));
+		memcpy(Stemp[j],Blowfish::Sinit + i,256*sizeof(int));
 
     // Generate the P-values for this key
 
-    for (i = 0, j = 0, l = 0; i < 18; P[i++] ^= l)
+    for (i = 0, j = 0, l = 0; i < 18; this->P[i++] ^= l)
         for (k = 0; k < 4; k++, j++) l = (l << 8) | (key[j %= len] & 0xff);
 
-    encryptTwoIntegers(Ptemp, 0, P, 0);
+    this->encryptTwoIntegers(Ptemp, 0, this->P, 0);
 
-    for (i = 0; i < 16; i += 2) encryptTwoIntegers(P, i, P, i + 2);
+    for (i = 0; i < 16; i += 2) this->encryptTwoIntegers(this->P, i, this->P, i + 2);
 
     // Get rid of the slow P-array (ugly, but noticalby faster
     // for some godforsaken reason)
 
-    P0    = P[ 0];    P1    = P[ 1];    P2    = P[ 2];    P3    = P[ 3];
-    P4    = P[ 4];    P5    = P[ 5];    P6    = P[ 6];    P7    = P[ 7];
-    P8    = P[ 8];    P9    = P[ 9];    P10    = P[10];    P11    = P[11];
-    P12    = P[12];    P13    = P[13];    P14    = P[14];    P15    = P[15];
-    P16    = P[16];    P17    = P[17];
+    this->P0    = this->P[ 0];    this->P1    = this->P[ 1];    this->P2    = this->P[ 2];    this->P3    = this->P[ 3];
+    this->P4    = this->P[ 4];    this->P5    = this->P[ 5];    this->P6    = this->P[ 6];    this->P7    = this->P[ 7];
+    this->P8    = this->P[ 8];    this->P9    = this->P[ 9];    this->P10    = this->P[10];    this->P11    = this->P[11];
+    this->P12    = this->P[12];    this->P13    = this->P[13];    this->P14    = this->P[14];    this->P15    = this->P[15];
+    this->P16    = this->P[16];    this->P17    = this->P[17];
 
     // Generate the final S-values
 
-	encryptTwoIntegers(P, 16, S0, 0);		
+	this->encryptTwoIntegers(this->P, 16, this->S0, 0);		
     
     k = 0; l = 0;
 
 	for(i=0; i<4; i++)
 	{
 		for(j = 0; j<254; j+=2)
-			encryptTwoIntegers(Stemp[i],j,Stemp[i],j+2);
+			this->encryptTwoIntegers(Stemp[i],j,Stemp[i],j+2);
 	
 		if(i<3)
-			encryptTwoIntegers(Stemp[i],254,Stemp[i+1],0);
+			this->encryptTwoIntegers(Stemp[i],254,Stemp[i+1],0);
 	}
 			
-	mIsValid = true;
-	mRawKey.assign(key, theKeyLen);
+	this->mIsValid = true;
+	this->mRawKey.assign(key, theKeyLen);
 	return true;
 }
 
 // FUNCTION: WON 0x007d6240
+// Encrypts two 32-bit words with the current P and S tables (used by the key schedule)
 void Blowfish::encryptTwoIntegers(int in[], int inOff, int out[], int outOff) const 
 {
 
-    int L = in[inOff++] ^ P[0];
+    int L = in[inOff++] ^ this->P[0];
 	int R = in[inOff];
 	int i = 0;
 
     while(i < 16) {
-        R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P[++i];
-        L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P[++i];
+        R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P[++i];
+        L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P[++i];
     }
     
-    out[outOff++] = R ^ P[17];
+    out[outOff++] = R ^ this->P[17];
     out[outOff  ] = L;
 }
 
 // FUNCTION: WON 0x007d6320
+// Encrypts one 8-byte big-endian block
 void Blowfish::encryptBlock(const unsigned char *in, unsigned char *out) const
 {
-	unsigned int L = ((in[0] << 24) | (in[1] << 16) | (in[2] <<  8) | (in[3]))^P0;
+	unsigned int L = ((in[0] << 24) | (in[1] << 16) | (in[2] <<  8) | (in[3]))^this->P0;
 	unsigned int R = ((in[4] << 24) | (in[5] << 16) | (in[6] <<  8) | (in[7]));
 
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P1;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P2;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P3;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P4;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P5;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P6;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P7;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P8;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P9;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P10;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P11;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P12;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P13;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P14;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P15;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P16;
-    R ^= P17;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P1;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P2;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P3;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P4;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P5;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P6;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P7;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P8;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P9;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P10;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P11;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P12;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P13;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P14;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P15;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P16;
+    R ^= this->P17;
 	
     *out++ = R>>24;
     *out++ = R>>16;
@@ -129,28 +133,29 @@ void Blowfish::encryptBlock(const unsigned char *in, unsigned char *out) const
 }
 
 // FUNCTION: WON 0x007d67f0
+// Decrypts one 8-byte big-endian block
 void Blowfish::decryptBlock(const unsigned char *in, unsigned char *out) const
 {  
-	unsigned int L = ((in[0] << 24) | (in[1] << 16) | (in[2] <<  8) | (in[3]))^P17;
+	unsigned int L = ((in[0] << 24) | (in[1] << 16) | (in[2] <<  8) | (in[3]))^this->P17;
 	unsigned int R = ((in[4] << 24) | (in[5] << 16) | (in[6] <<  8) | (in[7]));
 		
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P16;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P15;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P14;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P13;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P12;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P11;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P10;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P9;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P8;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P7;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P6;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P5;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P4;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P3;
-    R ^= (((S0[(L>>24)&0xff]+S1[(L>>16)&0xff])^S2[(L>>8)&0xff])+S3[L&0xff])^P2;
-    L ^= (((S0[(R>>24)&0xff]+S1[(R>>16)&0xff])^S2[(R>>8)&0xff])+S3[R&0xff])^P1;
-    R ^= P0;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P16;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P15;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P14;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P13;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P12;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P11;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P10;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P9;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P8;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P7;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P6;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P5;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P4;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P3;
+    R ^= (((this->S0[(L>>24)&0xff]+this->S1[(L>>16)&0xff])^this->S2[(L>>8)&0xff])+this->S3[L&0xff])^this->P2;
+    L ^= (((this->S0[(R>>24)&0xff]+this->S1[(R>>16)&0xff])^this->S2[(R>>8)&0xff])+this->S3[R&0xff])^this->P1;
+    R ^= this->P0;
 
     *out++ = R >>24;
     *out++ = R >>16;
@@ -164,17 +169,19 @@ void Blowfish::decryptBlock(const unsigned char *in, unsigned char *out) const
 }
 
 // FUNCTION: WON 0x007d6cc0
+// Resets the chaining mask to all 0xff bytes
 void Blowfish::initXORMask() const
 {		
 
-	XOR_MASK.erase();
-	XOR_MASK.assign(blockLength,0xff);	
+	this->XOR_MASK.erase();
+	this->XOR_MASK.assign(blockLength,0xff);	
 }	
 
 // FUNCTION: WON 0x007d6dd0
+// Returns the data CBC-encrypted with a 4-byte length prefix and zero padding; NULL without a key
 ByteBufferPtr Blowfish::Encrypt(const void *inOrig, int inLen) const
 {	
-	if(!mIsValid)
+	if(!this->mIsValid)
 		return NULL;
 
 	int lengthSize = 4;
@@ -182,23 +189,23 @@ ByteBufferPtr Blowfish::Encrypt(const void *inOrig, int inLen) const
 
 	int outLen = 4 + inLen + padding; // length field + data + padding (to make 8 byte multiple)
 		  
-	initXORMask();
-	const unsigned char* in = (const unsigned char*)inOrig;
+	this->initXORMask();
+	const unsigned char* in = static_cast<const unsigned char*>(inOrig);
 	unsigned char *out = new unsigned char[outLen];
 
 	// Calc first 8 Bytes (includes length of encrypted block)
 	int j;
 	int littleEndianInLen = LongToLittleEndian(inLen);
 	for(j=0; j<4; j++)
-		XOR_MASK[j] ^= ((unsigned char*)&littleEndianInLen)[j];
+		this->XOR_MASK[j] ^= reinterpret_cast<unsigned char*>(&littleEndianInLen)[j];
 
 	for(j=0; j<4; j++)
-		XOR_MASK[j+4] ^= (j<inLen)?in[j]:0;
+		this->XOR_MASK[j+4] ^= (j<inLen)?in[j]:0;
 
-	encryptBlock(XOR_MASK.data(), out);
+	this->encryptBlock(this->XOR_MASK.data(), out);
 
-	for(j=0; j<XOR_MASK.length(); j++)
-		XOR_MASK[j] = out[j];
+	for(j=0; j<this->XOR_MASK.length(); j++)
+		this->XOR_MASK[j] = out[j];
 
 	int outOffset = 8;
 	int inOffset  = 4;
@@ -206,13 +213,13 @@ ByteBufferPtr Blowfish::Encrypt(const void *inOrig, int inLen) const
 	// Calc rest of data except the remainder pad
 	while(inLen - inOffset >= 8)
 	{
-		for(j=0; j<XOR_MASK.length(); j++)
-			XOR_MASK[j] ^= in[inOffset+j];
+		for(j=0; j<this->XOR_MASK.length(); j++)
+			this->XOR_MASK[j] ^= in[inOffset+j];
 			
-		encryptBlock(XOR_MASK.data(), out+outOffset);
+		this->encryptBlock(this->XOR_MASK.data(), out+outOffset);
 
-		for(j=0; j<XOR_MASK.length(); j++)
-			XOR_MASK[j] = out[outOffset+j];
+		for(j=0; j<this->XOR_MASK.length(); j++)
+			this->XOR_MASK[j] = out[outOffset+j];
 			
 		inOffset +=  8;
         outOffset += 8;
@@ -222,35 +229,36 @@ ByteBufferPtr Blowfish::Encrypt(const void *inOrig, int inLen) const
 	if(inLen > 4)
 	{
 		for(j=0; j<8; j++)
-			XOR_MASK[j] ^= (j+inOffset < inLen)?in[j+inOffset]:0;
+			this->XOR_MASK[j] ^= (j+inOffset < inLen)?in[j+inOffset]:0;
 
-		encryptBlock(XOR_MASK.data(), out+outOffset);
+		this->encryptBlock(this->XOR_MASK.data(), out+outOffset);
 	}
 
 	return new ByteBuffer(out,outLen,true);
 }
 
 // FUNCTION: WON 0x007d7150
+// Returns the CBC-decrypted data with the length prefix checked and removed; NULL on bad input
 ByteBufferPtr Blowfish::Decrypt(const void *inOrig, int inLen) const
 {
-	if(!mIsValid || (inLen % blockLength != 0) || inLen==0)
+	if(!this->mIsValid || (inLen % blockLength != 0) || inLen==0)
 		return NULL;
 
-	initXORMask();
+	this->initXORMask();
 	
 	unsigned char aBuf[8];
-	const unsigned char *in = (const unsigned char*)inOrig;
+	const unsigned char *in = static_cast<const unsigned char*>(inOrig);
 
 	// Decrypt first 8 bytes (first four bytes indicates size of encrypted data)
-	decryptBlock(in, aBuf);
+	this->decryptBlock(in, aBuf);
 	int j;
-	for(j=0; j<XOR_MASK.length(); j++)
+	for(j=0; j<this->XOR_MASK.length(); j++)
 	{
-		aBuf[j]^=XOR_MASK[j];
-		XOR_MASK[j] = in[j];
+		aBuf[j]^=this->XOR_MASK[j];
+		this->XOR_MASK[j] = in[j];
 	}			
 
-	int outLen = LongFromLittleEndian(*(long*)aBuf);
+	int outLen = LongFromLittleEndian(*reinterpret_cast<long*>(aBuf));
 	if(outLen<0)
 		return NULL;
 
@@ -270,12 +278,12 @@ ByteBufferPtr Blowfish::Decrypt(const void *inOrig, int inLen) const
 	// Decrypt everything but the remainder
 	while(outLen - outOffset >= 8)
 	{
-		decryptBlock(in+inOffset, out+outOffset);
+		this->decryptBlock(in+inOffset, out+outOffset);
 			
-		for(j=0; j<XOR_MASK.length(); j++)
+		for(j=0; j<this->XOR_MASK.length(); j++)
 		{
-			out[outOffset+j]^=XOR_MASK[j];
-			XOR_MASK[j] = in[inOffset+j];
+			out[outOffset+j]^=this->XOR_MASK[j];
+			this->XOR_MASK[j] = in[inOffset+j];
 		}			
 		
         inOffset  += 8;
@@ -285,9 +293,9 @@ ByteBufferPtr Blowfish::Decrypt(const void *inOrig, int inLen) const
 	// Decrypt the remainder
 	if(outOffset<outLen && inOffset<inLen)
 	{
-		decryptBlock(in+inOffset, aBuf);
-		for(j=0; j<XOR_MASK.length(); j++)
-			aBuf[j]^=XOR_MASK[j];
+		this->decryptBlock(in+inOffset, aBuf);
+		for(j=0; j<this->XOR_MASK.length(); j++)
+			aBuf[j]^=this->XOR_MASK[j];
 
 		memcpy(out+outOffset,aBuf,outLen-outOffset);
 	}
@@ -566,6 +574,7 @@ const int Blowfish::Sinit[] =
 
 
 // FUNCTION: WON 0x007d74f0
+// Sets a new random key of the given length; false when the length is invalid
 bool Blowfish::Create(int length)
 {
     if (length < minKeyLen || length > maxKeyLen)
@@ -573,15 +582,15 @@ bool Blowfish::Create(int length)
     Random random;
     RawBuffer key(length, static_cast<unsigned char>(0));
     random.nextBytes(key);
-    return SetKey(key.data(), key.length());
+    return this->SetKey(key.data(), key.length());
 }
 
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: SDK key constructor required by real RegAuth static key.
+// No original address identified: WON SDK key constructor, needed by the RegAuth static key
 Blowfish::Blowfish(const void *theKey, int theKeyLen)
 {
-	SetKey(theKey,theKeyLen);
+	this->SetKey(theKey,theKeyLen);
 }
 }

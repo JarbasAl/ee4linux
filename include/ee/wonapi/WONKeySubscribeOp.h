@@ -1,4 +1,4 @@
-// Literal complete same-SDK key-server operation owners. SOURCE_ONLY_NO_NATIVE_ID.
+// WON SDK key-server operations. No original address identified
 #include <winsock2.h>
 #include <windows.h>
 #include <time.h>
@@ -62,9 +62,9 @@ public:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 1 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18(){}
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset(){}
 
 	// Destructor
 protected:
@@ -87,29 +87,29 @@ public:
 	// ActivateDuration 0x0008
 	// ActivateUserSeq  0x0010
 
-	void SetAllocateDate	(time_t theAllocateDate)	 { mAllocateDate	 = theAllocateDate;		mUpdateFields |= 0x0001; }
-	void SetAllocateDuration(time_t theAllocateDuration) { mAllocateDuration = theAllocateDuration;	mUpdateFields |= 0x0002; }
-	void SetActivateTime	(time_t theActivateTime)	 { mActivateTime	 = theActivateTime;		mUpdateFields |= 0x0004; }
-	void SetActivateDuration(time_t theActivateDuration) { mActivateDuration = theActivateDuration;	mUpdateFields |= 0x0008; }
-	void SetActivateUserSeq	(time_t theActivateUserSeq)	 { mActivateUserSeq	 = theActivateUserSeq;	mUpdateFields |= 0x0010; }
+	void SetAllocateDate	(time_t theAllocateDate)	 { this->mAllocateDate	 = theAllocateDate;		this->mUpdateFields |= 0x0001; }
+	void SetAllocateDuration(time_t theAllocateDuration) { this->mAllocateDuration = theAllocateDuration;	this->mUpdateFields |= 0x0002; }
+	void SetActivateTime	(time_t theActivateTime)	 { this->mActivateTime	 = theActivateTime;		this->mUpdateFields |= 0x0004; }
+	void SetActivateDuration(time_t theActivateDuration) { this->mActivateDuration = theActivateDuration;	this->mUpdateFields |= 0x0008; }
+	void SetActivateUserSeq	(time_t theActivateUserSeq)	 { this->mActivateUserSeq	 = theActivateUserSeq;	this->mUpdateFields |= 0x0010; }
 
-	void UnsetAllocateDate		(void) { mAllocateDate		= -1;	mUpdateFields &= ~0x0001; }
-	void UnsetAllocateDuration	(void) { mAllocateDuration	=  0;	mUpdateFields &= ~0x0002; }
-	void UnsetActivateTime		(void) { mActivateTime		= -1;	mUpdateFields &= ~0x0004; }
-	void UnsetActivateDuration	(void) { mActivateDuration	=  0;	mUpdateFields &= ~0x0008; }
-	void UnsetActivateUserSeq	(void) { mActivateUserSeq	=  0;	mUpdateFields &= ~0x0010; }
+	void UnsetAllocateDate		(void) { this->mAllocateDate		= -1;	this->mUpdateFields &= ~0x0001; }
+	void UnsetAllocateDuration	(void) { this->mAllocateDuration	=  0;	this->mUpdateFields &= ~0x0002; }
+	void UnsetActivateTime		(void) { this->mActivateTime		= -1;	this->mUpdateFields &= ~0x0004; }
+	void UnsetActivateDuration	(void) { this->mActivateDuration	=  0;	this->mUpdateFields &= ~0x0008; }
+	void UnsetActivateUserSeq	(void) { this->mActivateUserSeq	=  0;	this->mUpdateFields &= ~0x0010; }
 
-	bool IsUpdateAllocDate	      (void) { return (mUpdateFields & 0x0001 != 0); }
-	bool IsUpdateAllocDuration    (void) { return (mUpdateFields & 0x0002 != 0); }
-	bool IsUpdateActivateDate     (void) { return (mUpdateFields & 0x0004 != 0); }
-	bool IsUpdateActivateDuration (void) { return (mUpdateFields & 0x0008 != 0); }
-	bool IsUpdateActivateUserSeq  (void) { return (mUpdateFields & 0x0010 != 0); }
+	bool IsUpdateAllocDate	      (void) { return (this->mUpdateFields & 0x0001 != 0); }
+	bool IsUpdateAllocDuration    (void) { return (this->mUpdateFields & 0x0002 != 0); }
+	bool IsUpdateActivateDate     (void) { return (this->mUpdateFields & 0x0004 != 0); }
+	bool IsUpdateActivateDuration (void) { return (this->mUpdateFields & 0x0008 != 0); }
+	bool IsUpdateActivateUserSeq  (void) { return (this->mUpdateFields & 0x0010 != 0); }
 
-	time_t        GetAllocDate	      (void) { return mAllocateDate; }
-	unsigned long GetAllocDuration    (void) { return mAllocateDuration; }
-	time_t        GetActivateDate     (void) { return mActivateTime; }
-	unsigned long GetActivateDuration (void) { return mActivateDuration; }
-	unsigned long GetActivateUserSeq  (void) { return mActivateUserSeq; }
+	time_t        GetAllocDate	      (void) { return this->mAllocateDate; }
+	unsigned long GetAllocDuration    (void) { return this->mAllocateDuration; }
+	time_t        GetActivateDate     (void) { return this->mActivateTime; }
+	unsigned long GetActivateDuration (void) { return this->mActivateDuration; }
+	unsigned long GetActivateUserSeq  (void) { return this->mActivateUserSeq; }
 
 protected:
 	unsigned short mUpdateFields;
@@ -122,9 +122,9 @@ protected:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 5 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18(){}
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset(){}
 
 	// Destructor
 protected:
@@ -144,9 +144,9 @@ public:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 7 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18(){}
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset(){}
 
 	// Destructor
 protected:
@@ -181,9 +181,9 @@ public:
 	// Overrides
 protected:
 	enum MSGTYPE { MSGTYPE = 3 };				// DO NOT MODIFY (MUST MATCH WITH SERVER)
-	virtual WONStatus Virtual14();			// Recv - For Extended Unpack
-	virtual void Virtual04();						// Send - For Extended Pack
-	virtual void Virtual18(){}
+	virtual WONStatus CheckResponse();			// Recv - For Extended Unpack
+	virtual void RunHook();						// Send - For Extended Pack
+	virtual void Reset(){}
 
 	// Destructor
 protected:

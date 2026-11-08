@@ -1,5 +1,5 @@
-// Genuine SDK StringParser collection algorithms on the existing complete12B owner.
-// SOURCE_ONLY_NO_NATIVE_ID: no Native RVA/primary/physical credit is asserted.
+// StringParser list and nested-list reads and formatting from the WON SDK
+// No original address identified
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,19 +12,17 @@
 #include "ee/wonapi/WONLobbyParser.h"
 
 namespace WONAPI {
-// API restoration only: these existing string scanners already implement the SDK TemplateReadString path.
-// Their scalar/escape/cursor behavior is not rewritten or counted as a new string-scanning algorithm.
+// String ReadValue forms forward to the existing ReadString scanners
 bool StringParser::ReadValue(std::string &theStr, bool stopAtWhitespace)
 {
-    return ReadString(theStr,stopAtWhitespace);
+    return this->ReadString(theStr,stopAtWhitespace);
 }
 bool StringParser::ReadValue(std::wstring &theStr, bool stopAtWhitespace)
 {
-    return ReadString(theStr,stopAtWhitespace);
+    return this->ReadString(theStr,stopAtWhitespace);
 }
 
-// Genuine SDK generic ReadList. String-only form already exists in StringParserLists.cpp;
-// this whole unit supplies the missing bool/int and nested-list dispatch without changing old callers.
+// Generic comma-separated list reader (the string-only form is in StringParserLists.cpp)
 template<class T>
 static bool ReadList(StringParser *theParser, std::list<T> &theList)
 {
@@ -47,7 +45,7 @@ bool StringParser::ReadValue(std::list<int> &theList) { return ReadList<int>(thi
 bool StringParser::ReadValue(std::list<std::string> &theList) { return ReadList<std::string>(this,theList); }
 bool StringParser::ReadValue(std::list<std::wstring> &theList) { return ReadList<std::wstring>(this,theList); }
 
-// Genuine missing SDK parenthesized-list parser. Failed elements/closing delimiters retain prior parsed groups.
+// Parenthesized list-of-lists reader; on a failed element or missing ')' the groups read so far stay
 template<class T>
 static bool ReadListList(StringParser *theParser, std::list<std::list<T> > &theList)
 {
@@ -71,7 +69,7 @@ bool StringParser::ReadValue(std::list<std::list<int> > &theList) { return ReadL
 bool StringParser::ReadValue(std::list<std::list<std::string> > &theList) { return ReadListList<std::string>(this,theList); }
 bool StringParser::ReadValue(std::list<std::list<std::wstring> > &theList) { return ReadListList<std::wstring>(this,theList); }
 
-// Genuine SDK generic flat-list formatter. Existing string-list method remains untouched.
+// Generic list formatter: values separated by ", "
 template<class T>
 static void ListToString(const std::list<T> &theList, std::string &theStr)
 {
@@ -89,7 +87,7 @@ void StringParser::ValueToString(const std::list<bool> &theVal,std::string &theS
 void StringParser::ValueToString(const std::list<int> &theVal,std::string &theStr) { ListToString<int>(theVal,theStr); }
 void StringParser::ValueToString(const std::list<std::wstring> &theVal,std::string &theStr) { ListToString<std::wstring>(theVal,theStr); }
 
-// Genuine missing SDK nested-list formatter; append semantics and delimiter placement are intentional.
+// Nested-list formatter: "(a, b), (c)"
 template<class T>
 static void ListListToString(const std::list<std::list<T> > &theList,std::string &theStr)
 {

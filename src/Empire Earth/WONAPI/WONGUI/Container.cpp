@@ -1,4 +1,4 @@
-// PROVISIONAL Container child-query family; original filename unproved.
+// Container painting, hit testing, mouse routing, child insertion and lookup (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include "LostDebug.h"
@@ -10,19 +10,22 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
-// Genuine SDK Container::SizeChanged, existing reduced virtual API.
+// Container::SizeChanged in the SDK
 // FUNCTION: WON 0x006f62b0
+// Handles a size change: notifies the base, then reruns the child layout instructions
 void Container::Virtual08()
 {
     Component::Virtual08();
-    mChildLayout.ExecuteInstructions(this);
+    this->mChildLayout.ExecuteInstructions(this);
 }
 // FUNCTION: WON 0x006f62d0
-void Container::Virtual0C(int& width, int& height)
+// Returns the size that just encloses every child (largest right and bottom edges)
+void Container::GetDesiredSize(int& width, int& height)
 {
     int right = 0, bottom = 0;
-    for(std::list<SmartPtr<Component> >::iterator i=mChildList.begin(); i!=mChildList.end(); ++i)
+    for(std::list<SmartPtr<Component> >::iterator i=this->mChildList.begin(); i!=this->mChildList.end(); ++i)
     {
         Component* child = i->get();
         if(child->Right() > right)
@@ -35,193 +38,208 @@ void Container::Virtual0C(int& width, int& height)
 }
 
 // FUNCTION: WON 0x006f6340
-void Container::Virtual14(Graphics& g)
+// Lets every child that needs painting capture its background, topmost first, then does its own
+void Container::PrePaint(Graphics& g)
 {
-    if(!mChildList.empty()) {
-        std::list<SmartPtr<Component> >::iterator i=mChildList.end();
+    if(!this->mChildList.empty()) {
+        std::list<SmartPtr<Component> >::iterator i=this->mChildList.end();
         do {
             --i;
             Component* child=i->get();
-            if(child->Virtual10()) {
+            if(child->NeedsPaint()) {
                 g.Translate(child->Left(),child->Top());
-                child->Virtual14(g);
+                child->PrePaint(g);
                 g.Translate(-child->Left(),-child->Top());
             }
-        } while(i!=mChildList.begin());
+        } while(i!=this->mChildList.begin());
     }
-    Component::Virtual14(g);
+    Component::PrePaint(g);
 }
 
 // FUNCTION: WON 0x006f6480
-void Container::Virtual8C(const ControlIdSet& ids, bool enabled)
+// Enables or disables the controls with the given ids in itself and every child
+void Container::EnableControlsById(const ControlIdSet& ids, bool enabled)
 {
-    Component::Virtual8C(ids,enabled);
-    for(std::list<SmartPtr<Component> >::iterator i=mChildList.begin(); i!=mChildList.end(); ++i)
-        (*i)->Virtual8C(ids,enabled);
+    Component::EnableControlsById(ids,enabled);
+    for(std::list<SmartPtr<Component> >::iterator i=this->mChildList.begin(); i!=this->mChildList.end(); ++i)
+        (*i)->EnableControlsById(ids,enabled);
 }
 
 // FUNCTION: WON 0x006f64d0
-void Container::Virtual84(bool visible)
+// Records root visibility, resets the dialog-key state and passes it on to every visible child
+void Container::NotifyRootVisibility(bool visible)
 {
-    Component::Virtual84(visible);
-    mHasUsedDialogKeys=false;
-    for(std::list<SmartPtr<Component> >::iterator i=mChildList.begin();i!=mChildList.end();++i) {
+    Component::NotifyRootVisibility(visible);
+    this->mHasUsedDialogKeys=false;
+    for(std::list<SmartPtr<Component> >::iterator i=this->mChildList.begin();i!=this->mChildList.end();++i) {
         Component* child=i->get();
-        if(child->IsVisible()) child->Virtual84(visible);
+        if(child->IsVisible()) child->NotifyRootVisibility(visible);
     }
 }
 
 // FUNCTION: WON 0x006f6520
-bool Container::Virtual20(int x,int y)
+// Returns whether a point hits the container; with child-only input, only points on a child count
+bool Container::HitTest(int x,int y)
 {
-    if(!Component::Virtual20(x,y)) return false;
-    if(mOnlyChildInput) {
-        std::list<SmartPtr<Component> >::iterator i=mChildList.end();
+    if(!Component::HitTest(x,y)) return false;
+    if(this->mOnlyChildInput) {
+        std::list<SmartPtr<Component> >::iterator i=this->mChildList.end();
         do {
-            --i; // Native intentionally has no preliminary empty-child guard on this branch.
+            --i; // No empty-list guard here (the original has none either)
             Component* child=i->get();
-            if(child->Contains(x,y) && child->Virtual20(x-child->Left(),y-child->Top())) return true;
-        } while(i!=mChildList.begin());
+            if(child->Contains(x,y) && child->HitTest(x-child->Left(),y-child->Top())) return true;
+        } while(i!=this->mChildList.begin());
         return false;
     }
     return true;
 }
 // FUNCTION: WON 0x006f65b0
-Component* Container::VirtualAC(int x,int y)
+// Returns the topmost child under a point, or NULL if that child is disabled or blocked by a modal child
+Component* Container::FindChildAt(int x,int y)
 {
-    if(!mChildList.empty()) {
-        std::list<SmartPtr<Component> >::iterator i=mChildList.end();
-        do {
-            --i;
-            Component* child=i->get();
-            if(child->Contains(x,y) && child->Virtual20(x-child->Left(),y-child->Top())) {
-                if(child->IsDisabled()) return NULL;
-                if(mModalCount>0 && !child->ComponentFlagSet(0x8000)) return NULL;
-                return child;
-            }
-        } while(i!=mChildList.begin());
-    }
+    if(this->mChildList.empty())
+        return NULL;
+    std::list<SmartPtr<Component> >::iterator i=this->mChildList.end();
+    do {
+        --i;
+        Component* child=i->get();
+        if(child->Contains(x,y) && child->HitTest(x-child->Left(),y-child->Top())) {
+            if(child->IsDisabled()) return NULL;
+            if(this->mModalCount>0 && !child->ComponentFlagSet(0x8000)) return NULL;
+            return child;
+        }
+    } while(i!=this->mChildList.begin());
     return NULL;
 }
 
 // FUNCTION: WON 0x006f6650
-void Container::Fn2F6650(int x,int y)
+// Tracks which child is under the mouse, sending exit and enter and restoring the cursor on a change
+void Container::UpdateMouseChild(int x,int y)
 {
-    Component* aChild=VirtualAC(x,y);
-    if(aChild!=mMouseChild) {
-        if(mMouseChild!=NULL) {
-            mMouseChild->Virtual28();
-            mMouseChild=aChild;
-            Virtual78(Fn2F4B00());
-        } else mMouseChild=aChild;
-        if(aChild!=NULL) aChild->Virtual24(x-aChild->Left(),y-aChild->Top());
-    }
+    Component* aChild=this->FindChildAt(x,y);
+    if(aChild==this->mMouseChild)
+        return;
+    if(this->mMouseChild!=NULL) {
+        this->mMouseChild->MouseExit();
+        this->mMouseChild=aChild;
+        this->SetCursor(this->GetDefaultCursor());
+    } else this->mMouseChild=aChild;
+    if(aChild!=NULL) aChild->MouseEnter(x-aChild->Left(),y-aChild->Top());
 }
 
-// Genuine SDK Container::MouseEnter; base cursor policy precedes child transition.
 // FUNCTION: WON 0x006f6700
-void Container::Virtual24(int x,int y)
+// Shows the default cursor, then enters the child under the mouse
+void Container::MouseEnter(int x,int y)
 {
-    Component::Virtual24(x,y);
-    Fn2F6650(x,y);
+    Component::MouseEnter(x,y);
+    this->UpdateMouseChild(x,y);
 }
-// Genuine SDK Container::MouseExit; borrowed child dispatch then owned cursor clear.
 // FUNCTION: WON 0x006f6730
-void Container::Virtual28()
+// Closes its tooltip, sends the exit on to the child under the mouse and forgets its cursor
+void Container::MouseExit()
 {
-    Component::Virtual28();
-    if(mMouseChild!=NULL)
+    Component::MouseExit();
+    if(this->mMouseChild!=NULL)
     {
-        mMouseChild->Virtual28();
-        mMouseChild=NULL;
+        this->mMouseChild->MouseExit();
+        this->mMouseChild=NULL;
     }
-    mCurrentCursor=NULL;
+    this->mCurrentCursor=NULL;
 }
 // FUNCTION: WON 0x006f6780
-void Container::Virtual34(int x,int y)
+// Updates the child under the mouse and passes the move to it in its own coordinates
+void Container::MouseMove(int x,int y)
 {
-    Fn2F6650(x,y);
-    Component* aChild=mMouseChild;
-    if(aChild!=NULL) aChild->Virtual34(x-aChild->Left(),y-aChild->Top());
+    this->UpdateMouseChild(x,y);
+    Component* aChild=this->mMouseChild;
+    if(aChild!=NULL) aChild->MouseMove(x-aChild->Left(),y-aChild->Top());
 }
 
 // FUNCTION: WON 0x006f6810
-void Container::Virtual38(int x,int y)
+// Passes a drag to the child under the mouse in its own coordinates
+void Container::MouseDrag(int x,int y)
 {
-    Component* aChild=mMouseChild;
-    if(aChild!=NULL) aChild->Virtual38(x-aChild->Left(),y-aChild->Top());
+    Component* aChild=this->mMouseChild;
+    if(aChild!=NULL) aChild->MouseDrag(x-aChild->Left(),y-aChild->Top());
 }
 
 // FUNCTION: WON 0x006f6840
-void Container::Virtual30(int x,int y,int button)
+// Passes a button release to the child under the mouse, only if it also got the press
+void Container::MouseUp(int x,int y,int button)
 {
-    Component* anOld=mMouseChild;
-    Fn2F6650(x,y);
-    Component* aChild=mMouseChild;
-    if(aChild!=NULL && aChild==anOld) aChild->Virtual30(x-aChild->Left(),y-aChild->Top(),button);
+    Component* anOld=this->mMouseChild;
+    this->UpdateMouseChild(x,y);
+    Component* aChild=this->mMouseChild;
+    if(aChild!=NULL && aChild==anOld) aChild->MouseUp(x-aChild->Left(),y-aChild->Top(),button);
 }
 
 // FUNCTION: WON 0x006f6880
-void Container::Virtual2C(int x,int y,int button)
+// Updates the child under the mouse and passes the button press to it
+void Container::MouseDown(int x,int y,int button)
 {
-    Fn2F6650(x,y);
-    Component* aChild=mMouseChild;
-    if(aChild!=NULL) aChild->Virtual2C(x-aChild->Left(),y-aChild->Top(),button);
+    this->UpdateMouseChild(x,y);
+    Component* aChild=this->mMouseChild;
+    if(aChild!=NULL) aChild->MouseDown(x-aChild->Left(),y-aChild->Top(),button);
 }
 
 
 // FUNCTION: WON 0x006f69d0
 // FUNCTION: WON 0x006f6a40
+// Returns the insert position at or below the given one that stays under the always-on-top children
 std::list<SmartPtr<Component> >::iterator Container::FindTop(std::list<SmartPtr<Component> >::iterator i)
 {
-    if(i==mChildList.begin()) return mChildList.begin();
+    if(i==this->mChildList.begin()) return this->mChildList.begin();
     do {
         --i;
-        if(!(*i)->ComponentFlagSet(0x1000)) return ++i;
-    } while(i!=mChildList.begin());
+        if(!(*i)->ComponentFlagSet(ComponentFlag_AlwaysOnTop)) return ++i;
+    } while(i!=this->mChildList.begin());
     return i;
 }
 
 
 std::list<SmartPtr<Component> >::iterator Container::FindTop()
 {
-    return FindTop(mChildList.end());
+    return this->FindTop(this->mChildList.end());
 }
 
 // FUNCTION: WON 0x006f6a60
-void Container::Fn2F6A60(Component* child)
+// Moves a component into this container, below any always-on-top children
+void Container::AddChild(Component* child)
 {
-    if(child->mParent!=NULL) child->mParent->VirtualC4(child);
+    if(child->mParent!=NULL) child->mParent->RemoveChild(child);
     child->mParent=this;
-    child->mChildListItr=mChildList.insert(FindTop(),SmartPtr<Component>(child));
+    child->mChildListItr=this->mChildList.insert(this->FindTop(),SmartPtr<Component>(child));
     // LOST-DEBUG: none: exact only (keeps list::_Buynode out of line).
     EE_LOST_DEBUG(1);
-    child->Virtual6C();
+    child->AddedToParent();
 }
 
 // FUNCTION: WON 0x006f6b50
+// Moves a component into this container at a list position, kept below any always-on-top children
 void Container::AddChildEx(Component* child,int position)
 {
-    if(child->mParent!=NULL) child->mParent->VirtualC4(child);
+    if(child->mParent!=NULL) child->mParent->RemoveChild(child);
     child->mParent=this;
-    std::list<SmartPtr<Component> >::iterator i=mChildList.begin();
-    for(int n=0;n<position && i!=mChildList.end();++n) ++i;
-    child->mChildListItr=mChildList.insert(FindTop(i),SmartPtr<Component>(child));
+    std::list<SmartPtr<Component> >::iterator i=this->mChildList.begin();
+    for(int n=0;n<position && i!=this->mChildList.end();++n) ++i;
+    child->mChildListItr=this->mChildList.insert(this->FindTop(i),SmartPtr<Component>(child));
     // LOST-DEBUG: none: exact only (keeps list::_Buynode out of line).
     EE_LOST_DEBUG(1);
-    child->Virtual6C();
+    child->AddedToParent();
 }
 
 // FUNCTION: WON 0x006f7320
-void Container::Virtual80(ComponentEvent* event)
+// Handles a broadcast event, then passes it to every child
+void Container::HandleBroadcastEvent(ComponentEvent* event)
 {
-    Component::Virtual80(event);
-    for(std::list<SmartPtr<Component> >::iterator i=mChildList.begin();i!=mChildList.end();++i)
-        (*i)->Virtual80(event);
+    Component::HandleBroadcastEvent(event);
+    for(std::list<SmartPtr<Component> >::iterator i=this->mChildList.begin();i!=this->mChildList.end();++i)
+        (*i)->HandleBroadcastEvent(event);
 }
 
 // FUNCTION: WON 0x006f7770
-Component* Container::VirtualC8(int inControlId)
+// Returns the first component with a control id in this container's tree, searched level by level, or NULL
+Component* Container::FindChildById(int inControlId)
 {
     std::list<Component*> pending;
     pending.push_back(this);
@@ -230,12 +248,12 @@ Component* Container::VirtualC8(int inControlId)
         if (component->mControlId==inControlId)
             return component;
         Container* container=dynamic_cast<Container*>(component);
-        if (container!=NULL) {
-            std::list<SmartPtr<Component> >::iterator child=container->mChildList.begin();
-            while(child!=container->mChildList.end()) {
-                pending.push_back(child->get());
-                ++child;
-            }
+        if (container==NULL)
+            continue;
+        std::list<SmartPtr<Component> >::iterator child=container->mChildList.begin();
+        while(child!=container->mChildList.end()) {
+            pending.push_back(child->get());
+            ++child;
         }
     }
     return NULL;

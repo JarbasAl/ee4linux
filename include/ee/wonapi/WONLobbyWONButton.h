@@ -2,49 +2,48 @@
 #define EE_WONAPI_WONLOBBYWONBUTTON_H
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// Complete actual100 WONButton, vtable4506d4. Reviewed skin allocations use
-// its genuine original constructor; no new copy or lifetime source bodies.
+// WONButton (0x100 bytes), vtable 0x008506d4; the skin code allocates it with its constructor.
 class WONButton : public Button {
 public:
     struct ButtonState {
         SmartPtr<WrappedText> mText;
         SmartPtr<Image> mImage;
         int mColor; //08
-        ButtonState() : mColor(-1) {} //317dd0 genuine default construction before map
+        ButtonState() : mColor(-1) {} // default construction (0x00717dd0) before the map
     };
     typedef std::map<Font*,SmartPtr<WrappedText> > FontTextMap;
-    WONButton(); //317c70 external full100, bounded F allocation
-    virtual void Virtual08(); //318100 actual SizeChanged08
-    virtual void Virtual0C(int&,int&); //318640 actual GetDesiredSize0c
-    virtual void Paint(Graphics&); //319080 actual18
-    virtual void VirtualB0(const GUIString&); //318060 actual SetTextHookb0
-    virtual const GUIString& GetText(); //3180e0 original external getterb8
-    virtual void GetTextSize(int&,int&); //318580 actual first added slotbc
+    WONButton(); // at 0x00717c70 (0x100 bytes)
+    virtual void Virtual08(); // SizeChanged (slot 0x08), at 0x00718100
+    virtual void GetDesiredSize(int&,int&); // GetDesiredSize (slot 0x0c), at 0x00718640
+    virtual void Paint(Graphics&); // slot 0x18, at 0x00719080
+    virtual void SetTextHook(const GUIString&); // SetTextHook (slot 0xb0), at 0x00718060
+    virtual const GUIString& GetText(); // getter (+0xb8), at 0x007180e0
+    virtual void GetTextSize(int&,int&); // first new slot (0xbc), at 0x00718580
     void AdjustHeightToFitText(); //3181a0
-    void SetAdjustHeightToFitText(bool); //318200 support0
+    void SetAdjustHeightToFitText(bool); // at 0x00718200
     void SetWrapText(bool); //318220
-    void SetTransparent(bool); //3182a0 support0
+    void SetTransparent(bool); // at 0x007182a0
     void SetButtonState(int,Image*,int,Font*,bool=false); //3182c0
     void SetHorzAlign(HorzAlign); //3186e0
     void SetTextColor(int); //318790
-    void SetVertAlign(VertAlign); //318780 actual external lowbyte store
-    void SetScaleImage(bool v) { mScaleImage=v; }
-    void SetHasCheck(bool v) { mHasCheck=v; } //genuineSDKinline, native3160e9 etc
-    void SetPushOffsets(int x,int y) { mPushDX=x; mPushDY=y; } //genuineSDKinline
-    void SetDefaultTextColor(int v) { mDefaultTextColor=v; }
-    void SetDrawGrayText(bool v) { mDrawGrayText=v; }
-    void SetFocusStyle(unsigned char v) { mFocusStyle=v; }
-    void SetTextPadding(int l,int t,int r,int b) { mLeftTextPad=l; mTopTextPad=t; mRightTextPad=r; mBottomTextPad=b; }
-    void SetFocusPadding(int l,int t,int r,int b) { mLeftFocusPad=l; mTopFocusPad=t; mRightFocusPad=r; mBottomFocusPad=b; }
-    int GetRightTextPad() { return mRightTextPad; }
-    void SetHorzTextPad(int l,int r) { mLeftTextPad=l; mRightTextPad=r; }
+    void SetVertAlign(VertAlign); // at 0x00718780 (stores the low byte)
+    void SetScaleImage(bool v) { this->mScaleImage=v; }
+    void SetHasCheck(bool v) { this->mHasCheck=v; } // inline (used at 0x007160e9 and elsewhere)
+    void SetPushOffsets(int x,int y) { this->mPushDX=x; this->mPushDY=y; } // inline
+    void SetDefaultTextColor(int v) { this->mDefaultTextColor=v; }
+    void SetDrawGrayText(bool v) { this->mDrawGrayText=v; }
+    void SetFocusStyle(unsigned char v) { this->mFocusStyle=v; }
+    void SetTextPadding(int l,int t,int r,int b) { this->mLeftTextPad=l; this->mTopTextPad=t; this->mRightTextPad=r; this->mBottomTextPad=b; }
+    void SetFocusPadding(int l,int t,int r,int b) { this->mLeftFocusPad=l; this->mTopFocusPad=t; this->mRightFocusPad=r; this->mBottomFocusPad=b; }
+    int GetRightTextPad() { return this->mRightTextPad; }
+    void SetHorzTextPad(int l,int r) { this->mLeftTextPad=l; this->mRightTextPad=r; }
     void SetFont(Font*); //3187e0
-    WONButton* Duplicate(); //318d40 genuine SDK raw duplicate provider
-    void CopyAttributes(WONButton*); //318970, actual text/image cloning algorithm
+    WONButton* Duplicate(); // at 0x00718d40
+    void CopyAttributes(WONButton*); // copies text and images, at 0x00718970
     void DrawButtonText(Graphics&,WrappedText*,int); //318db0
     void GetButtonState(Graphics&,int*,WrappedText** =NULL,Image** =NULL); //318f90
-    ButtonState mStates[5][2]; //44..bb ten actual0c records
-    FontTextMap mFontTextMap; //bc..c7 actual VC6 tree0c
+    ButtonState mStates[5][2]; // offsets 0x44..0xbb: ten 0x0c-byte records
+    FontTextMap mFontTextMap; // offsets 0xbc..0xc7 (VC6 map, 0x0c bytes)
     bool mAdjustHeightToFitText; //c8; natural c9..cb padding
     int mLeftTextPad,mTopTextPad,mRightTextPad,mBottomTextPad; //cc..db
     int mLeftFocusPad,mTopFocusPad,mRightFocusPad,mBottomFocusPad; //dc..eb

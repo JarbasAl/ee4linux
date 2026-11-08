@@ -1,4 +1,4 @@
-// Native text segment selection, wrapping, painting and hit position algorithms.
+// Text area segments: word wrap, selected text, painting and character hit tests
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,6 +13,8 @@
 #include "ee/wonapi/WONLobbyTextAreaConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00710aa0
+// Moves a segment that does not fit onto a new line (unless its line is empty), indented by the wrap
+// indent
 void TextSegmentBase::Wrap(TextArea *theTextArea, TextLine *theLine)
 {
 	if(!theLine->mSegmentList.empty())
@@ -23,51 +25,57 @@ void TextSegmentBase::Wrap(TextArea *theTextArea, TextLine *theLine)
 }
 
 // FUNCTION: WON 0x00710ae0
+// Appends a line break to the copied text when the selection spans this segment's line break
 void TextSegmentBase::GetSelText(TextArea *theTextArea, GUIString &theStr)
 {
-	if(mLineBreak && theTextArea->mSelStartChar<=mAbsStartChar && theTextArea->mSelEndChar>mAbsEndChar)
+	if(this->mLineBreak && theTextArea->mSelStartChar<=this->mAbsStartChar && theTextArea->mSelEndChar>this->mAbsEndChar)
 		theStr.append("\r\n");
 }
 
 // FUNCTION: WON 0x00710d70
+// Sizes the segment from its text width and its font's height and ascent
 void TextSegment::CalcDimensions()
 {
-	mWidth = mFont->GetStringWidth(mText);
-	mHeight = mFont->GetHeight();
-	mAscent = mFont->GetAscent();
+	this->mWidth = this->mFont->GetStringWidth(this->mText);
+	this->mHeight = this->mFont->GetHeight();
+	this->mAscent = this->mFont->GetAscent();
 }
 
 // FUNCTION: WON 0x710db0
+// Appends the selected part of the segment's text, plus a line break when the selection runs past
+// its line break
 void TextSegment::GetSelText(TextArea *theTextArea, GUIString &theStr)
 {
 	int aSelStartChar = theTextArea->mSelStartChar;
 	int aSelEndChar = theTextArea->mSelEndChar;
 
-	if(mAbsStartChar > aSelStartChar)
-		aSelStartChar = mAbsStartChar;
+	if(this->mAbsStartChar > aSelStartChar)
+		aSelStartChar = this->mAbsStartChar;
 
-	if(mAbsEndChar < aSelEndChar)
-		aSelEndChar = mAbsEndChar;
+	if(this->mAbsEndChar < aSelEndChar)
+		aSelEndChar = this->mAbsEndChar;
 
 	if(aSelStartChar >= aSelEndChar)
 		return;
 
-	aSelStartChar -= mAbsStartChar;
-	aSelEndChar -= mAbsStartChar;
+	aSelStartChar -= this->mAbsStartChar;
+	aSelEndChar -= this->mAbsStartChar;
 
-	theStr.append(mText, aSelStartChar, aSelEndChar-aSelStartChar);
-	if(mLineBreak && theTextArea->mSelEndChar>mAbsEndChar)
+	theStr.append(this->mText, aSelStartChar, aSelEndChar-aSelStartChar);
+	if(this->mLineBreak && theTextArea->mSelEndChar>this->mAbsEndChar)
 		theStr.append("\r\n");
 }
 
 // FUNCTION: WON 0x710fb0
+// Word-wraps the text into pieces over new lines of the text area, breaking at spaces (mid-word when
+// a word fills a whole line); the segment's line becomes the first line with a piece
 void TextSegment::Wrap(TextArea *theTextArea, TextLine *theLine)
 {
-	mLine = NULL; // set mLine to NULL then reset it to aLine on the first line to which we add a segment piece
+	this->mLine = NULL; // set mLine to NULL then reset it to aLine on the first line to which we add a segment piece
 
 	int aCurPos = 0;
-	GUIString &aStr = mText;
-	Font *aFM = mFont.get();
+	GUIString &aStr = this->mText;
+	Font *aFM = this->mFont.get();
 	int aTextBoxWidth = theTextArea->mScrollArea.width; 
 	TextLine *aLine = theLine;
 
@@ -80,7 +88,7 @@ void TextSegment::Wrap(TextArea *theTextArea, TextLine *theLine)
 		while(aCurPos < aStr.length())
 		{
 			int aChar = aStr[aCurPos];
-			aWidth += aFM->Virtual10(aChar);
+			aWidth += aFM->GetCharacterWidth(aChar);
 			if(aChar==' ') 
 			{
 				aBreakPos = aCurPos;
@@ -116,8 +124,8 @@ void TextSegment::Wrap(TextArea *theTextArea, TextLine *theLine)
 			if(aBreakPos!=aStartPos)
 			{
 				theTextArea->AddSeg(new TextSegmentPiece(this, aStartPos, aBreakPos, aBreakWidth/*aTextBoxWidth-aLine->mWidth*/));
-				if(mLine==NULL)
-					mLine = aLine;
+				if(this->mLine==NULL)
+					this->mLine = aLine;
 			}
 
 			aCurPos = aBreakPos;
@@ -128,27 +136,27 @@ void TextSegment::Wrap(TextArea *theTextArea, TextLine *theLine)
 		if(aCurPos>=aStr.length())
 			break;
 
-		aLine = theTextArea->AddLine(mHeight, mAscent);
+		aLine = theTextArea->AddLine(this->mHeight, this->mAscent);
 		if(theTextArea->mLineAlign==HorzAlign_Left)
 			aLine->mWidth = theTextArea->mWrapIndentSize;
 
 		aWidth = aFM->GetStringWidth(aStr, aCurPos, aStr.length()-aCurPos);
-		if(aWidth <= aTextBoxWidth - aLine->mWidth)
-		{
-			theTextArea->AddSeg(new TextSegmentPiece(this, aCurPos, aStr.length(), aWidth));
-			if(mLine==NULL)
-				mLine = aLine;
+		if(!(aWidth <= aTextBoxWidth - aLine->mWidth))
+			continue;
+		theTextArea->AddSeg(new TextSegmentPiece(this, aCurPos, aStr.length(), aWidth));
+		if(this->mLine==NULL)
+			this->mLine = aLine;
 
-			break;
-		}
+		break;
 	}
 }
 
 // FUNCTION: WON 0x711200
+// Paints a character range of the text, drawing its selected part in the area's selection colours
 void TextSegment::Paint(Graphics &g, TextArea *theTextArea, int theStartChar, int theEndChar, int xpos, int ypos, int lineHeight)
 {
-	int aSelStartChar = theTextArea->mSelStartChar - mAbsStartChar;
-	int aSelEndChar = theTextArea->mSelEndChar - mAbsStartChar;
+	int aSelStartChar = theTextArea->mSelStartChar - this->mAbsStartChar;
+	int aSelEndChar = theTextArea->mSelEndChar - this->mAbsStartChar;
 
 	if(theStartChar > aSelStartChar)
 		aSelStartChar = theStartChar;
@@ -156,33 +164,35 @@ void TextSegment::Paint(Graphics &g, TextArea *theTextArea, int theStartChar, in
 	if(theEndChar < aSelEndChar)
 		aSelEndChar = theEndChar;
 
-	g.SetColor(mColor);	
-	g.SetFont(mFont.get());
+	g.SetColor(this->mColor);	
+	g.SetFont(this->mFont.get());
 	
 	bool fullSelection = aSelStartChar==theStartChar && aSelEndChar==theEndChar;
 	if(!fullSelection)
-		g.DrawString(mText, theStartChar, theEndChar - theStartChar, xpos, ypos);
+		g.DrawString(this->mText, theStartChar, theEndChar - theStartChar, xpos, ypos);
 
-	if(aSelEndChar > aSelStartChar)
-	{
-		int x = xpos + mFont->GetStringWidth(mText,theStartChar,aSelStartChar-theStartChar);
-		int aWidth = mFont->GetStringWidth(mText,aSelStartChar,aSelEndChar-aSelStartChar);
+	if(!(aSelEndChar > aSelStartChar))
+		return;
+	int x = xpos + this->mFont->GetStringWidth(this->mText,theStartChar,aSelStartChar-theStartChar);
+	int aWidth = this->mFont->GetStringWidth(this->mText,aSelStartChar,aSelEndChar-aSelStartChar);
 
-		g.SetColor(theTextArea->mSelColor.GetBackgroundColor(g));
-		g.FillRect(x,0,aWidth,lineHeight);
-		
-		g.SetColor(theTextArea->mSelColor.GetForegroundColor(g,mColor));
-		g.DrawString(mText,aSelStartChar,aSelEndChar-aSelStartChar,x,ypos);
-	}
+	g.SetColor(theTextArea->mSelColor.GetBackgroundColor(g));
+	g.FillRect(x,0,aWidth,lineHeight);
+
+	g.SetColor(theTextArea->mSelColor.GetForegroundColor(g,this->mColor));
+	g.DrawString(this->mText,aSelStartChar,aSelEndChar-aSelStartChar,x,ypos);
 }
 
 // FUNCTION: WON 0x00711330
+// Paints the whole segment at its position on its line
 void TextSegment::Paint(Graphics &g, TextArea *theTextArea)
 {
-	Paint(g,theTextArea,0,mText.length(),mx,my,mLine->mHeight);
+	this->Paint(g,theTextArea,0,this->mText.length(),this->mx,this->my,this->mLine->mHeight);
 }
 
 // FUNCTION: WON 0x711360
+// Returns the text position nearest to a pixel offset within a character range (rounding at half a
+// character)
 int TextSegment::CharAt(int theWidth, int theStartChar, int theEndChar)
 {
 	int aPos = theStartChar;
@@ -191,7 +201,7 @@ int TextSegment::CharAt(int theWidth, int theStartChar, int theEndChar)
 	int aCharWidth = 0;
 	while(aPos<theEndChar && aWidth<theWidth)
 	{
-		aCharWidth = mFont->Virtual10(mText[aPos]);
+		aCharWidth = this->mFont->GetCharacterWidth(this->mText[aPos]);
 		aWidth+=aCharWidth;
 		aPos++;
 	}
@@ -199,24 +209,27 @@ int TextSegment::CharAt(int theWidth, int theStartChar, int theEndChar)
 	if(theWidth>=0 && theWidth<aWidth-aCharWidth/2)
 		aPos--;
 
-	return aPos + mAbsStartChar;	
+	return aPos + this->mAbsStartChar;	
 }
 
 // FUNCTION: WON 0x007113c0
+// Returns the text position nearest to x on the segment's line
 int TextSegment::CharAt(int x)
 {
-	return CharAt(x-mx, 0, mText.length());
+	return this->CharAt(x-this->mx, 0, this->mText.length());
 }
 
 // FUNCTION: WON 0x007114a0
+// Paints this piece's character range of its segment
 void TextSegmentPiece::Paint(Graphics &g, TextArea *theTextArea)
 {
-	mSeg->Paint(g,theTextArea,GetStartChar(),GetEndChar(),mx,my,mLine->mHeight);
+	this->mSeg->Paint(g,theTextArea,this->GetStartChar(),this->GetEndChar(),this->mx,this->my,this->mLine->mHeight);
 }
 
 // FUNCTION: WON 0x007114d0
+// Returns the text position nearest to x within this piece
 int TextSegmentPiece::CharAt(int x)
 {
-	return mSeg->CharAt(x-mx,GetStartChar(),GetEndChar());
+	return this->mSeg->CharAt(x-this->mx,this->GetStartChar(),this->GetEndChar());
 }
 }

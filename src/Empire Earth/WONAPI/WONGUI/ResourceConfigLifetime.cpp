@@ -12,20 +12,24 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00790740
+// Creates an empty resource config (no overwriting, parse count 0)
 ResourceConfig::ResourceConfig()
 {
-    mAllowOverwrite=false;
-    mParseCount=0;
+    this->mAllowOverwrite=false;
+    this->mParseCount=0;
 }
 // FUNCTION: WON 0x00790d10
+// Destroys the resource config and all its resource maps
 ResourceConfig::~ResourceConfig()
 {
 }
 // FUNCTION: WON 0x007938f0
+// Creates an empty table of resource configs
 ResourceConfigTable::ResourceConfigTable()
 {
 }
 // FUNCTION: WON 0x00793aa0
+// Destroys the table and the configs it holds
 ResourceConfigTable::~ResourceConfigTable()
 {
 }

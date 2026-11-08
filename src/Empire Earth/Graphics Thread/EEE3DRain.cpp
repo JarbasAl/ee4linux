@@ -1,5 +1,5 @@
 // C:\EEX\Empire Earth\Graphics Thread\EEE3DRain.cpp (no __FILE__; name from the RTTI class). 0xf7394..0xf8ceb: the
-// ctors .. Virtual78 (the sound helpers are inline COMDATs after their first users), then the template COMDATs of the
+// ctors .. SetCursor (the sound helpers are inline COMDATs after their first users), then the template COMDATs of the
 // two drop vectors.
 #include <windows.h>
 

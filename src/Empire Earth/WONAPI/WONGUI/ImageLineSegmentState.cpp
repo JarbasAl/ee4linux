@@ -1,4 +1,4 @@
-// Genuine complete HTML image-segment ownership and dimension queries, support only.
+// Size and alignment queries of an HTML image segment (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,10 +13,13 @@
 #include "ee/wonapi/WONLobbyHTMLImageSegments.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0073aa80
-int ImageLineSegment::GetWidth() { return mImage->mWidth+2*mHSpace+2*mBorder; }
+// Returns the image segment's width: image width plus horizontal spacing and border on both sides
+int ImageLineSegment::GetWidth() { return this->mImage->mWidth+2*this->mHSpace+2*this->mBorder; }
 // FUNCTION: WON 0x0073aaa0
-int ImageLineSegment::GetHeight() { return mImage->mHeight+2*mVSpace+2*mBorder; }
+// Returns the image segment's height: image height plus vertical spacing and border on both sides
+int ImageLineSegment::GetHeight() { return this->mImage->mHeight+2*this->mVSpace+2*this->mBorder; }
 // FUNCTION: WON 0x0073aac0
-char ImageLineSegment::GetVertAlign() { return mAlign; }
+// Returns the image segment's vertical alignment
+char ImageLineSegment::GetVertAlign() { return this->mAlign; }
 }
 

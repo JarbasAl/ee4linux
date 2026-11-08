@@ -1,4 +1,4 @@
-// Genuine default-member construction precedes the FontTextMap and body.
+// Skinned button constructor (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,29 +11,31 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyWONButton.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00717c70
-// Original348 bytes; lifecycle/default setup, support0.
+// Creates a skinned button: 8/4 text padding, centred text, scaled images, grey disabled text, a focus
+// rectangle, and wants focus
 WONButton::WONButton()
 {
-    mLeftTextPad=mRightTextPad=8;
-    mTopTextPad=mBottomTextPad=4;
-    mLeftFocusPad=mRightFocusPad=4;
-    mTopFocusPad=3;
-    mBottomFocusPad=4;
-    mPushDX=mPushDY=1;
-    mHasCheck=false;
-    mScaleImage=true;
-    mAdjustHeightToFitText=false;
-    mWrapText=false;
-    mDrawGrayText=true;
-    mIsTransparent=false;
-    mHAlign=HorzAlign_Center;
-    mVAlign=VertAlign_Center;
-    mFocusStyle=1;
-    Fn2F3370(1,true);
-    SetComponentFlags(8,true);
-    mDefaultTextColor=0x80000005;
+    this->mLeftTextPad=this->mRightTextPad=8;
+    this->mTopTextPad=this->mBottomTextPad=4;
+    this->mLeftFocusPad=this->mRightFocusPad=4;
+    this->mTopFocusPad=3;
+    this->mBottomFocusPad=4;
+    this->mPushDX=this->mPushDY=1;
+    this->mHasCheck=false;
+    this->mScaleImage=true;
+    this->mAdjustHeightToFitText=false;
+    this->mWrapText=false;
+    this->mDrawGrayText=true;
+    this->mIsTransparent=false;
+    this->mHAlign=HorzAlign_Center;
+    this->mVAlign=VertAlign_Center;
+    this->mFocusStyle=1;
+    this->SetButtonFlags(1,true);
+    this->SetComponentFlags(ComponentFlag_WantFocus,true);
+    this->mDefaultTextColor=0x80000005;
 }
 }
 

@@ -1,6 +1,5 @@
-// Reviewed original-backed controls, source-only; generated support has zeroquota.
+// Create-account dialog: user name, password, e-mail, birth date and newsletter fields with error labels
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SCRATCH whole original family. Source-kind, exact family flags and full COFF pending.
 #include <windows.h>
 #include <string>
 #include <list>
@@ -14,41 +13,43 @@
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "ee/wonapi/WONLobbyControls.h"
 namespace WONAPI {
-CreateAccountCtrl::CreateAccountCtrl() {} //3ba290,104B; empty ctor zeroquota
-// Implicit destructor3ba320,455B; fourteen reverse owned releases then Container.
-// Original3ba4f0..3ba67a,394B. Actual file lines30..43.
+CreateAccountCtrl::CreateAccountCtrl() {}
+// The implicit destructor (0x7ba320) releases the fourteen control pointers in reverse order, then
+// the Container base
 // FUNCTION: WON 0x007ba4f0
+// Looks up the account fields, their error labels and the create button from the layout, then validates
 void CreateAccountCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2) {
-        ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(config,mUserNameInput,"UserNameInput",__FILE__,30);
-        SafeGetComponent(config,mUserNameDesc,"UserNameDesc",__FILE__,31);
-        SafeGetComponent(config,mPasswordInput,"PasswordInput",__FILE__,32);
-        SafeGetComponent(config,mPasswordDesc,"PasswordDesc",__FILE__,33);
-        SafeGetComponent(config,mConfirmPasswordInput,"ConfirmPasswordInput",__FILE__,34);
-        SafeGetComponent(config,mConfirmPasswordDesc,"ConfirmPasswordDesc",__FILE__,35);
-        SafeGetComponent(config,mEmailInput,"EmailInput",__FILE__,36);
-        SafeGetComponent(config,mEmailDesc,"EmailDesc",__FILE__,37);
-        SafeGetComponent(config,mMonthInput,"MonthInput",__FILE__,38);
-        SafeGetComponent(config,mDayInput,"DayInput",__FILE__,39);
-        SafeGetComponent(config,mYearInput,"YearInput",__FILE__,40);
-        SafeGetComponent(config,mBirthdateDesc,"BirthdateDesc",__FILE__,41);
-        SafeGetComponent(config,mNewsletterCheck,"NewsletterCheck",__FILE__,42);
-        SafeGetComponent(config,mCreateButton,"CreateButton",__FILE__,43);
-        UpdateCreateButton();
-    }
+    if(inInit.mType!=2)
+        return;
+    ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(config,this->mUserNameInput,"UserNameInput",__FILE__,30);
+    SafeGetComponent(config,this->mUserNameDesc,"UserNameDesc",__FILE__,31);
+    SafeGetComponent(config,this->mPasswordInput,"PasswordInput",__FILE__,32);
+    SafeGetComponent(config,this->mPasswordDesc,"PasswordDesc",__FILE__,33);
+    SafeGetComponent(config,this->mConfirmPasswordInput,"ConfirmPasswordInput",__FILE__,34);
+    SafeGetComponent(config,this->mConfirmPasswordDesc,"ConfirmPasswordDesc",__FILE__,35);
+    SafeGetComponent(config,this->mEmailInput,"EmailInput",__FILE__,36);
+    SafeGetComponent(config,this->mEmailDesc,"EmailDesc",__FILE__,37);
+    SafeGetComponent(config,this->mMonthInput,"MonthInput",__FILE__,38);
+    SafeGetComponent(config,this->mDayInput,"DayInput",__FILE__,39);
+    SafeGetComponent(config,this->mYearInput,"YearInput",__FILE__,40);
+    SafeGetComponent(config,this->mBirthdateDesc,"BirthdateDesc",__FILE__,41);
+    SafeGetComponent(config,this->mNewsletterCheck,"NewsletterCheck",__FILE__,42);
+    SafeGetComponent(config,this->mCreateButton,"CreateButton",__FILE__,43);
+    this->UpdateCreateButton();
 }
-// Original3ba680..3ba698,24B. Receiver is intentionally unused.
+// Does not use the dialog itself
 // FUNCTION: WON 0x007ba680
-bool CreateAccountCtrl::Fn3BA680(bool inVisible,Label* inLabel)
+// Shows or hides an error label and returns whether it is shown
+bool CreateAccountCtrl::ShowErrorLabel(bool inVisible,Label* inLabel)
 {
     inLabel->SetVisible(inVisible);
     return inVisible;
 }
-// Original3ba6a0..3ba78f,239B; shared call-only name is Core owner's contract.
 // FUNCTION: WON 0x007ba6a0
-bool LobbyFn3BA6A0(const std::string& inEmail)
+// Returns whether an e-mail address has an @ after its first character and a dot with text after it
+bool LobbyIsValidEmail(const std::string& inEmail)
 {
     if(inEmail.empty()) return false;
     std::string::size_type at=inEmail.find('@',1);
@@ -59,59 +60,60 @@ bool LobbyFn3BA6A0(const std::string& inEmail)
     if(length>dot+1) return true;
     return false;
 }
-// Original3ba790..3ba800,112B, all three text/numeric reads occur before validation.
+// All three fields are read before any of them is checked
 // FUNCTION: WON 0x007ba790
-bool CreateAccountCtrl::Fn3BA790(InputBox* inMonth,InputBox* inDay,InputBox* inYear)
+// Returns whether month 1-12, day 1-31 and year 1890-1999 were entered (no per-month day check)
+bool CreateAccountCtrl::IsValidBirthDate(InputBox* inMonth,InputBox* inDay,InputBox* inYear)
 {
     int month=inMonth->GetText().mData->ToInt(0);
     int day=inDay->GetText().mData->ToInt(0);
     int year=inYear->GetText().mData->ToInt(0);
     if(month<=0||day<=0||year<=1889||month>12||day>31||year>1999) return false; return true;
 }
-// Original3ba800..3ba989,393B. Each validation executes, no boolean short-circuit chain.
+// Every check runs (and updates its label) even after one has failed
 // FUNCTION: WON 0x007ba800
+// Shows an error label for each invalid field and enables the create button only when all are valid
 void CreateAccountCtrl::UpdateCreateButton()
 {
     bool invalid=false;
-    if(Fn3BA680(mUserNameInput->GetText().length()<2,mUserNameDesc.get())) invalid=true;
-    if(Fn3BA680(mPasswordInput->GetText().length()<4,mPasswordDesc.get())) invalid=true;
+    if(this->ShowErrorLabel(this->mUserNameInput->GetText().length()<2,this->mUserNameDesc.get())) invalid=true;
+    if(this->ShowErrorLabel(this->mPasswordInput->GetText().length()<4,this->mPasswordDesc.get())) invalid=true;
     {
-        Label* desc=mConfirmPasswordDesc.get();
-        InputBox* confirm=mConfirmPasswordInput.get();
-        const GUIString& password=mPasswordInput->GetText();
-        if(Fn3BA680(password!=confirm->GetText(),desc)) invalid=true;
+        Label* desc=this->mConfirmPasswordDesc.get();
+        InputBox* confirm=this->mConfirmPasswordInput.get();
+        const GUIString& password=this->mPasswordInput->GetText();
+        if(this->ShowErrorLabel(password!=confirm->GetText(),desc)) invalid=true;
     }
     bool emailInvalid;
     {
-        const std::string& email=mEmailInput->GetText();
-        Label* desc=mEmailDesc.get();
-        emailInvalid=Fn3BA680(!LobbyFn3BA6A0(email),desc);
+        const std::string& email=this->mEmailInput->GetText();
+        Label* desc=this->mEmailDesc.get();
+        emailInvalid=this->ShowErrorLabel(!LobbyIsValidEmail(email),desc);
     }
     if(emailInvalid) invalid=true;
-    if(Fn3BA680(!Fn3BA790(mMonthInput.get(),mDayInput.get(),mYearInput.get()),mBirthdateDesc.get())) invalid=true;
-    mCreateButton->SetEnabled(!invalid);
+    if(this->ShowErrorLabel(!this->IsValidBirthDate(this->mMonthInput.get(),this->mDayInput.get(),this->mYearInput.get()),this->mBirthdateDesc.get())) invalid=true;
+    this->mCreateButton->SetEnabled(!invalid);
 }
-// Original3ba990..3bac0f,639B; actual canonical CreateAccountEvent58.
 // FUNCTION: WON 0x007ba990
+// Revalidates on typing; on the create button sends a create-account request with the entered details
 void CreateAccountCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if(inEvent->mType==21) { UpdateCreateButton(); return; }
-    if(inEvent->mType==15&&inEvent->mComponent==mCreateButton.get()) {
+    if(inEvent->mType==ComponentEvent_InputTextChanged) { this->UpdateCreateButton(); return; }
+    if(inEvent->mType==ComponentEvent_ButtonPressed&&inEvent->mComponent==this->mCreateButton.get()) {
         SmartPtr<CreateAccountEvent> event=new CreateAccountEvent;
-        event->mUserName=mUserNameInput->GetText();
-        event->mPassword=mPasswordInput->GetText();
-        event->mEmail=mEmailInput->GetText();
-        event->mDay=mDayInput->GetText().mData->ToInt(0);
-        event->mMonth=mMonthInput->GetText().mData->ToInt(0);
-        event->mYear=mYearInput->GetText().mData->ToInt(0);
-        event->mNewsletter=mNewsletterCheck->mChecked;
-        Fn2F53F0(event.get(),false);
+        event->mUserName=this->mUserNameInput->GetText();
+        event->mPassword=this->mPasswordInput->GetText();
+        event->mEmail=this->mEmailInput->GetText();
+        event->mDay=this->mDayInput->GetText().mData->ToInt(0);
+        event->mMonth=this->mMonthInput->GetText().mData->ToInt(0);
+        event->mYear=this->mYearInput->GetText().mData->ToInt(0);
+        event->mNewsletter=this->mNewsletterCheck->mChecked;
+        this->DeliverEvent(event.get(),false);
     } else Component::HandleComponentEvent(inEvent);
 }
 }
-// Event normal/deleting destructors3bac50/3bac30 are this producer's support.
-// Adjacent3bad40 is an unrelated ServerDetailsItem factory, excluded here.
-// Implicit source form requires full normal COFF proof;
+// CreateAccountEvent's destructor (0x7bac50) and deleting destructor (0x7bac30) are emitted here;
+// the function after them (0x7bad40) is a ServerDetailsItem factory from another file
 
 
 // Compiler-generated and header-inline functions this unit emits:

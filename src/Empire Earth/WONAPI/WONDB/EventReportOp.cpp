@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing unit: proposed existing server-operation family profile.
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK event-report protocol owner.
+// No original address identified: WON SDK event-report request
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,79 +9,80 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONEventReportOp.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace WONAPI;
 
 void EventReportOp::Init()
 {
-	mLengthFieldSize = 4;
-	mHasRelatedServer = false;
-	mHasRelatedClient = false;
-	mHasRelatedUser = false;
+	this->mLengthFieldSize = 4;
+	this->mHasRelatedServer = false;
+	this->mHasRelatedClient = false;
+	this->mHasRelatedUser = false;
 
-	mActivityType = 0;
+	this->mActivityType = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 EventReportOp::EventReportOp(ServerContext *theEventContext) : ServerRequestOp(theEventContext)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 EventReportOp::EventReportOp(const IPAddr &theAddr) : ServerRequestOp(theAddr)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus EventReportOp::Virtual10()
+WONStatus EventReportOp::GetNextRequest()
 {
-	WriteBuffer aBuf(mLengthFieldSize,true);
+	WriteBuffer aBuf(this->mLengthFieldSize,true);
 	aBuf.AppendByte(5);			// small message
 	aBuf.AppendShort(4);		// Event Service
 	aBuf.AppendShort(1);		// Report Event
 
 	unsigned char aContentFlags = 0;
-	if (mHasRelatedServer) aContentFlags |= 0x02;
-	if (mHasRelatedClient) aContentFlags |= 0x04;
-	if (mHasRelatedUser)   aContentFlags |= 0x08;
+	if (this->mHasRelatedServer) aContentFlags |= 0x02;
+	if (this->mHasRelatedClient) aContentFlags |= 0x04;
+	if (this->mHasRelatedUser)   aContentFlags |= 0x08;
 	aBuf.AppendByte(aContentFlags);
 
-	aBuf.AppendByte(mDetailList.size());
-	aBuf.AppendByte(mAttachmentList.size());
+	aBuf.AppendByte(this->mDetailList.size());
+	aBuf.AppendByte(this->mAttachmentList.size());
 	
 	// general info
-	aBuf.AppendShort(mActivityType);
+	aBuf.AppendShort(this->mActivityType);
 	
 	// server info
-	if (mHasRelatedServer)
+	if (this->mHasRelatedServer)
 	{
-		aBuf.AppendShort(mServerType);
-		aBuf.AppendWString(mServerLogicalName,2);
-		aBuf.AppendString(mServerNetAddress);
+		aBuf.AppendShort(this->mServerType);
+		aBuf.AppendWString(this->mServerLogicalName,2);
+		aBuf.AppendString(this->mServerNetAddress);
 	}
 
     // client info
-	if (mHasRelatedClient)
+	if (this->mHasRelatedClient)
 	{
-		aBuf.AppendWString(mClientName,2);
-		aBuf.AppendString(mClientNetAddress);
+		aBuf.AppendWString(this->mClientName,2);
+		aBuf.AppendString(this->mClientNetAddress);
 	}
 
 	// user info
-	if (mHasRelatedUser)
+	if (this->mHasRelatedUser)
 	{
 		aBuf.AppendShort(1); // Auth 1
-		aBuf.AppendLong(mUserId);
-		aBuf.AppendWString(mUserName,2);
+		aBuf.AppendLong(this->mUserId);
+		aBuf.AppendWString(this->mUserName,2);
 	}
 
 	// details
-	DetailList::iterator aDetailItr = mDetailList.begin();
-	while(aDetailItr!=mDetailList.end())
+	DetailList::iterator aDetailItr = this->mDetailList.begin();
+	while(aDetailItr!=this->mDetailList.end())
 	{
 		aBuf.AppendShort(aDetailItr->mDetailType);
 		aBuf.AppendByte(aDetailItr->mDataType);
@@ -96,8 +96,8 @@ WONStatus EventReportOp::Virtual10()
 	}
 
 	// attachments
-	AttachmentList::iterator anAttachmentItr = mAttachmentList.begin();
-	while(anAttachmentItr != mAttachmentList.end())
+	AttachmentList::iterator anAttachmentItr = this->mAttachmentList.begin();
+	while(anAttachmentItr != this->mAttachmentList.end())
 	{
 		aBuf.AppendWString(anAttachmentItr->mDescription,2);
 		aBuf.AppendByte(anAttachmentItr->mContentType);
@@ -106,20 +106,20 @@ WONStatus EventReportOp::Virtual10()
 		++anAttachmentItr;
 	}
 
-	mRequest = aBuf.ToByteBuffer(true);
-	return (WONStatus)100059;
+	this->mRequest = aBuf.ToByteBuffer(true);
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus EventReportOp::Virtual14()
+WONStatus EventReportOp::CheckResponse()
 {
-	ReadBuffer aMsg(mResponse->data(),mResponse->length());
+	ReadBuffer aMsg(this->mResponse->data(),this->mResponse->length());
 	unsigned char aHeaderType = aMsg.ReadByte();
 	unsigned short aServiceType = aMsg.ReadShort();
 	unsigned short aMessageType = aMsg.ReadShort();
 	if(aHeaderType!=5 || aServiceType!=4 || aMessageType!=2)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 
 
 	short aStatus = aMsg.ReadShort();
@@ -132,47 +132,47 @@ WONStatus EventReportOp::Virtual14()
 void EventReportOp::SetServerInfo(unsigned short theServerType, const std::wstring &theServerLogicalName, 
 								   const std::string &theServerNetAddr)
 {
-	mHasRelatedServer = true;
-	mServerType = theServerType;
-	mServerLogicalName = theServerLogicalName;
-	mServerNetAddress = theServerNetAddr;
+	this->mHasRelatedServer = true;
+	this->mServerType = theServerType;
+	this->mServerLogicalName = theServerLogicalName;
+	this->mServerNetAddress = theServerNetAddr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void EventReportOp::SetClientInfo(const std::wstring &theClientName, const std::string &theClientNetAddr)
 {
-	mHasRelatedClient = true;
-	mClientName = theClientName;
-	mClientNetAddress = theClientNetAddr;
+	this->mHasRelatedClient = true;
+	this->mClientName = theClientName;
+	this->mClientNetAddress = theClientNetAddr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void EventReportOp::SetUserInfo(unsigned long theUserId, const std::wstring &theUserName)
 {
-	mHasRelatedUser = true;
-	mUserId = theUserId;
-	mUserName = theUserName;
+	this->mHasRelatedUser = true;
+	this->mUserId = theUserId;
+	this->mUserName = theUserName;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void EventReportOp::AddDetail(unsigned short theDetailType, unsigned long theDetail)
 {
-	mDetailList.push_back(DetailStruct(theDetailType,theDetail));
+	this->mDetailList.push_back(DetailStruct(theDetailType,theDetail));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void EventReportOp::AddDetail(unsigned short theDetailType, const std::wstring &theDetail)
 {
-	mDetailList.push_back(DetailStruct(theDetailType,theDetail));
+	this->mDetailList.push_back(DetailStruct(theDetailType,theDetail));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void EventReportOp:: AddAttachment(const std::wstring &theDescription, unsigned char theType, const ByteBuffer *theData)
 {
-	mAttachmentList.push_back(AttachmentStruct(theDescription,theType,theData));	
+	this->mAttachmentList.push_back(AttachmentStruct(theDescription,theType,theData));	
 }

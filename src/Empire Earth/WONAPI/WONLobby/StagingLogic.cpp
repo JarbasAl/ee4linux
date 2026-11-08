@@ -1,4 +1,4 @@
-// WONAPI staging game flow; original-backed StagingLogic family.
+// The lobby's game staging: hosting, joining and leaving games, ready flags, pings, kicks and the start message
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -16,631 +16,676 @@
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/EELobbySound.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
-void LobbyFn361CB0(const ByteBuffer*);
-void LobbyFn361CD0(const ByteBuffer*);
-void LobbyFn361CF0(LobbyClient*, const ByteBuffer*);
-void LobbyFn361D50(LobbyClient*, bool);
-void LobbyFn361D70(bool);
+void LobbyNetSendToCaptain(const ByteBuffer*);
+void LobbyNetBroadcastToGame(const ByteBuffer*);
+void LobbyNetSendToClient(LobbyClient*, const ByteBuffer*);
+void LobbyNetKickClient(LobbyClient*, bool);
+void LobbyNetSetGameInProgress(bool);
 void LobbyMessageBox(const GUIString&, const GUIString&);
-bool LobbyFn3613A0();
+bool LobbyIAmReady();
 class Sound;
-void LobbyFn361D10(LobbyGame*);
-void LobbyFn361D30(LobbyGame*);
+void LobbyNetRemoveGameAdvertisement(LobbyGame*);
+void LobbyNetLeaveGame(LobbyGame*);
 
-// Actual original scope cleanup3f06d0, bool storage only; generated support, zero primary credit.
+// Leaves the half-joined or half-hosted game when it goes out of scope, unless cleared (the original's cleanup at
+// 0x7f06d0 holds only this bool) (provisional name)
 struct StagingLeaveOnError {
     bool mLeave;
     StagingLeaveOnError() : mLeave(true) {}
-    ~StagingLeaveOnError() { if (mLeave) LobbyFn361310(false); }
+    ~StagingLeaveOnError() { if (this->mLeave) LobbyLeaveGame(false); }
 };
 
 // FUNCTION: WON 0x007ef160
+// Creates the staging logic, not in a game room
 StagingLogic::StagingLogic()
 {
-    mInStaging = false;
-    mLastReadyTime = 0;
+    this->mInStaging = false;
+    this->mLastReadyTime = 0;
 }
 
 // FUNCTION: WON 0x007ef1b0
+// Destroys the staging logic (members only)
 StagingLogic::~StagingLogic() {}
 
 // FUNCTION: WON 0x007ef290
+// Looks up the create-game dialog from the lobby layout
 void StagingLogic::InitComponent(ComponentConfig* inConfig)
 {
-    SafeGetComponent(inConfig, mCreateGameDialog, "CreateGameDialog", __FILE__, 41);
+    SafeGetComponent(inConfig, this->mCreateGameDialog, "CreateGameDialog", __FILE__, 41);
 }
 
 // FUNCTION: WON 0x007ef2b0
-void StagingLogic::Fn3EF2B0(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Host: answers a client's request to join and announces the new player to the game, then re-advertises it
+void StagingLogic::HandleJoinRequest(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (inClient->Fn3A5580()) return;
-    ConstSmartPtr<ByteBuffer> aReply = mGame->Fn3A7830(inBuffer, inClient);
+    if (inClient->HasPlayer()) return;
+    ConstSmartPtr<ByteBuffer> aReply = this->mGame->GetJoinReply(inBuffer, inClient);
     if (aReply.get() == NULL) return;
-    Fn3EFDE0(inClient, aReply.get());
+    this->SendToClient(inClient, aReply.get());
     LobbyPlayer* aPlayer = inClient->mPlayer.get();
     if (aPlayer != NULL) {
         WriteBuffer aBuffer(0, true);
         aBuffer.AppendByte(3);
         aBuffer.AppendShort(inClient->GetClientId());
         aPlayer->WriteToBuffer(aBuffer);
-        Fn3EFDA0(aBuffer.ToByteBuffer(true).get());
-        LobbyFn361260();
+        this->BroadcastToGame(aBuffer.ToByteBuffer(true).get());
+        LobbyNetAdvertiseGame();
         return;
     }
 }
 
 // FUNCTION: WON 0x007ef410
-void StagingLogic::Fn3EF410(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Takes the host's answer to our join request and finishes the waiting join
+void StagingLogic::HandleJoinReply(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (inClient->Fn3A54E0(1)) {
-        mJoinStatus = mGame->Fn3A78E0(inBuffer);
-        if (mJoinOp.get() != NULL) mJoinOp->Fn29F220(0);
+    if (inClient->IsCaptain(1)) {
+        this->mJoinStatus = this->mGame->HandleJoinReply(inBuffer);
+        if (this->mJoinOp.get() != NULL) this->mJoinOp->Finish(WS_Success);
     }
 }
 
 // FUNCTION: WON 0x007ef450
-void StagingLogic::Fn3EF450(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Adds a player announced by the host to its client, reports the change and plays the joined sound
+void StagingLogic::HandlePlayerJoined(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (!inClient->Fn3A54E0(1)) return;
+    if (!inClient->IsCaptain(1)) return;
     unsigned short aClientId = inBuffer.ReadShort();
-    LobbyClient* aClient = mGame->FindClient(aClientId);
+    LobbyClient* aClient = this->mGame->FindClient(aClientId);
     if (aClient == NULL) return;
-    if (!aClient->Fn3A5580()) {
+    if (!aClient->HasPlayer()) {
         SmartPtr<LobbyPlayer> aPlayer = LobbyPlayer::CreatePlayer();
         if (!aPlayer->ReadFromBuffer(inBuffer)) return;
-        aClient->Fn3A5520(aPlayer.get());
-    } else if (!Fn3EFE10()) return;
-    LobbyFn359100(new PlayerChangedEvent(aClient, 0), true);
-    if (aClient->Fn3A55C0(mMyClient.get()))
-        LobbyFn359100(new PlayerTeamChangedEvent(aClient, 0), true);
-    mGame->Fn3A74D0(aClient);
-    if (LobbyFn35E340()) LobbyFn35B9A0(::LobbyGlobal_PlayerJoined_Sound.get());
-    if (mLastAllReady && !aClient->Fn3A5590()) mLastAllReady = false;
-    Fn3F11F0();
+        aClient->SetPlayer(aPlayer.get());
+    } else if (!this->IAmCaptain()) return;
+    LobbyBroadcastEvent(new PlayerChangedEvent(aClient, 0), true);
+    if (aClient->IsTeammate(this->mMyClient.get()))
+        LobbyBroadcastEvent(new PlayerTeamChangedEvent(aClient, 0), true);
+    this->mGame->HandlePlayerJoined(aClient);
+    if (LobbyGetStagingSoundEffects()) LobbyPlaySound(::LobbyGlobal_PlayerJoined_Sound.get());
+    if (this->mLastAllReady && !aClient->IsReady()) this->mLastAllReady = false;
+    this->NotifyStagingChange();
 }
 
 // FUNCTION: WON 0x007ef620
-void StagingLogic::Fn3EF620(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Host: broadcasts a player's changed ready flag to the game
+void StagingLogic::HandleReadyRequest(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (Fn3EFE10() && inClient->Fn3A5580()) {
-        bool aReady = inBuffer.ReadBool();
-        if (inClient->Fn3A5590() != aReady) {
-            WriteBuffer aBuffer(0, true);
-            aBuffer.AppendByte(5);
-            aBuffer.AppendShort(inClient->GetClientId());
-            aBuffer.AppendBool(aReady);
-            Fn3EFDA0(aBuffer.ToByteBuffer(true).get());
-        }
-    }
+    if (!this->IAmCaptain() || !inClient->HasPlayer())
+        return;
+    bool aReady = inBuffer.ReadBool();
+    if (inClient->IsReady() == aReady)
+        return;
+    WriteBuffer aBuffer(0, true);
+    aBuffer.AppendByte(5);
+    aBuffer.AppendShort(inClient->GetClientId());
+    aBuffer.AppendBool(aReady);
+    this->BroadcastToGame(aBuffer.ToByteBuffer(true).get());
 }
 
 // FUNCTION: WON 0x007ef720
-void StagingLogic::Fn3EF720(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Sets a player's ready flag as announced by the host and updates the all-ready state
+void StagingLogic::HandleReadyChanged(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (inClient->Fn3A54E0(1)) {
-        unsigned short anId = inBuffer.ReadShort();
-        bool aReady = inBuffer.ReadBool();
-        LobbyClient* aClient = mGame->FindClient(anId);
-        if (aClient != NULL && aClient->mPlayer.get() != NULL) {
-            aClient->mPlayer->mBA = aReady;
-            Fn3F1200();
-            LobbyFn359100(new PlayerChangedEvent(aClient, 2), true);
-        }
-    }
+    if (!inClient->IsCaptain(1))
+        return;
+    unsigned short anId = inBuffer.ReadShort();
+    bool aReady = inBuffer.ReadBool();
+    LobbyClient* aClient = this->mGame->FindClient(anId);
+    if (aClient == NULL || aClient->mPlayer.get() == NULL)
+        return;
+    aClient->mPlayer->mIsReady = aReady;
+    this->UpdateReadyState();
+    LobbyBroadcastEvent(new PlayerChangedEvent(aClient, 2), true);
 }
 
 // FUNCTION: WON 0x007ef7d0
-void StagingLogic::Fn3EF7D0(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Host: broadcasts the ping a player reported to the game
+void StagingLogic::HandlePingReport(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (Fn3EFE10()) {
-        unsigned short aPing = inBuffer.ReadShort();
-        if (inClient->mPlayer.get() != NULL) {
-            WriteBuffer aBuffer(0, true);
-            aBuffer.AppendByte(9);
-            aBuffer.AppendShort(inClient->GetClientId());
-            aBuffer.AppendShort(aPing);
-            Fn3EFDA0(aBuffer.ToByteBuffer(true).get());
-        }
-    }
+    if (!this->IAmCaptain())
+        return;
+    unsigned short aPing = inBuffer.ReadShort();
+    if (inClient->mPlayer.get() == NULL)
+        return;
+    WriteBuffer aBuffer(0, true);
+    aBuffer.AppendByte(9);
+    aBuffer.AppendShort(inClient->GetClientId());
+    aBuffer.AppendShort(aPing);
+    this->BroadcastToGame(aBuffer.ToByteBuffer(true).get());
 }
 
 // FUNCTION: WON 0x007ef8c0
-void StagingLogic::Fn3EF8C0(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Sets a player's ping as announced by the host
+void StagingLogic::HandlePingChanged(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (inClient->Fn3A54E0(1)) {
-        unsigned short anId = inBuffer.ReadShort();
-        unsigned short aPing = inBuffer.ReadShort();
-        LobbyClient* aClient = mGame->FindClient(anId);
-        if (aClient != NULL && aClient->mPlayer.get() != NULL) {
-            aClient->mPlayer->mPlayerId = aPing;
-            LobbyFn359100(new PlayerChangedEvent(aClient, 2), true);
-        }
+    if (!inClient->IsCaptain(1))
+        return;
+    unsigned short anId = inBuffer.ReadShort();
+    unsigned short aPing = inBuffer.ReadShort();
+    LobbyClient* aClient = this->mGame->FindClient(anId);
+    if (aClient != NULL && aClient->mPlayer.get() != NULL) {
+        aClient->mPlayer->mPing = aPing;
+        LobbyBroadcastEvent(new PlayerChangedEvent(aClient, 2), true);
     }
 }
 
 // FUNCTION: WON 0x007ef970
-void StagingLogic::Fn3EF970(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Leaves the game and tells the player when the host dissolved it
+void StagingLogic::HandleGameDissolved(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (inClient->Fn3A54E0(1) && !Fn3EFE10()) {
-        Fn3F0C60(false);
+    if (inClient->IsCaptain(1) && !this->IAmCaptain()) {
+        this->LeaveGame(false);
         LobbyMessageBox(::RoutingLogic_GameDissolvedTitle_String, ::RoutingLogic_GameDissolvedDetails_String);
     }
 }
 
 // FUNCTION: WON 0x007ef9b0
-void StagingLogic::Fn3EF9B0()
+// Clears every player's ready flag in the game and updates the all-ready state
+void StagingLogic::ResetReadyFlags()
 {
-    if (mGame.get() == NULL) return;
-    LobbyClientSetIterator anItr(mGame->mClients.get());
+    if (this->mGame.get() == NULL) return;
+    LobbyClientSetIterator anItr(this->mGame->mClients.get());
     while (anItr.HasMore()) {
         LobbyClient* aClient = NULL;
         LobbyPlayer* aPlayer = anItr.Next(&aClient);
         if (aPlayer != NULL && aClient != NULL) {
-            aPlayer->mBA = false;
-            LobbyFn359100(new PlayerChangedEvent(aClient, 2), true);
+            aPlayer->mIsReady = false;
+            LobbyBroadcastEvent(new PlayerChangedEvent(aClient, 2), true);
         }
     }
-    Fn3F1200();
+    this->UpdateReadyState();
 }
 
 // FUNCTION: WON 0x007efa80
-void StagingLogic::Fn3EFA80(bool inValue)
+// Host: marks the game as in progress or not and re-advertises it
+void StagingLogic::SetGameInProgress(bool inInProgress)
 {
-    if (mGame.get() != NULL && mGame->mB13 != inValue && Fn3EFE10()) {
-        mGame->mB13 = inValue;
-        LobbyFn361D70(inValue);
-        LobbyFn361260();
-    }
+    if (this->mGame.get() == NULL || this->mGame->mInProgress == inInProgress || !this->IAmCaptain())
+        return;
+    this->mGame->mInProgress = inInProgress;
+    LobbyNetSetGameInProgress(inInProgress);
+    LobbyNetAdvertiseGame();
 }
 
 // FUNCTION: WON 0x007efac0
-void StagingLogic::Fn3EFAC0(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Leaves the lobby to start the game when the host says so; the host also marks the game in progress
+void StagingLogic::HandleStartGame(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (inClient->Fn3A54E0(1)) {
-        if (Fn3EFE10()) {
-            Fn3EFA80(true);
-            LobbyFn3627F0(2);
-        } else LobbyFn3627F0(1);
-    }
+    if (!inClient->IsCaptain(1))
+        return;
+    if (this->IAmCaptain()) {
+        this->SetGameInProgress(true);
+        LobbyExit(2);
+    } else LobbyExit(1);
 }
 
 // FUNCTION: WON 0x007efb00
-void StagingLogic::Fn3EFB00(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Handles the host's announcement that a client was kicked or banned
+void StagingLogic::HandleClientKicked(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (inClient->Fn3A54E0(1)) {
-        unsigned short anId = inBuffer.ReadShort();
-        bool aFlag = inBuffer.ReadBool();
-        LobbyClient* aClient = mGame->FindClient(anId);
-        if (aClient != NULL) Fn3F0E10(aClient, aFlag);
-    }
+    if (!inClient->IsCaptain(1))
+        return;
+    unsigned short anId = inBuffer.ReadShort();
+    bool aFlag = inBuffer.ReadBool();
+    LobbyClient* aClient = this->mGame->FindClient(anId);
+    if (aClient != NULL) this->HandleKicked(aClient, aFlag);
 }
 
 // FUNCTION: WON 0x007efb50
-void StagingLogic::Fn3EFB50(ReadBuffer& inBuffer, LobbyClient* inClient)
+// Dispatches a game room message by type, passing unknown types to the game; while joining only the reply counts
+void StagingLogic::HandleMessage(ReadBuffer& inBuffer, LobbyClient* inClient)
 {
-    if (mGame.get() == NULL || inClient == NULL) return;
+    if (this->mGame.get() == NULL || inClient == NULL) return;
     try {
         unsigned char aType = inBuffer.ReadByte();
-        if (mJoinStatus == 1 && aType != 2) return;
+        if (this->mJoinStatus == 1 && aType != 2) return;
         switch (aType) {
-        case 1: Fn3EF2B0(inBuffer, inClient); break;
-        case 2: Fn3EF410(inBuffer, inClient); break;
-        case 3: Fn3EF450(inBuffer, inClient); break;
-        case 4: Fn3EF620(inBuffer, inClient); break;
-        case 5: Fn3EF720(inBuffer, inClient); break;
-        case 6: Fn3EF970(inBuffer, inClient); break;
-        case 7: Fn3EFAC0(inBuffer, inClient); break;
-        case 8: Fn3EF7D0(inBuffer, inClient); break;
-        case 9: Fn3EF8C0(inBuffer, inClient); break;
-        case 10: Fn3EFB00(inBuffer, inClient); break;
-        default: mGame->Fn3A79E0(aType, inBuffer, inClient); break;
+        case 1: this->HandleJoinRequest(inBuffer, inClient); break;
+        case 2: this->HandleJoinReply(inBuffer, inClient); break;
+        case 3: this->HandlePlayerJoined(inBuffer, inClient); break;
+        case 4: this->HandleReadyRequest(inBuffer, inClient); break;
+        case 5: this->HandleReadyChanged(inBuffer, inClient); break;
+        case 6: this->HandleGameDissolved(inBuffer, inClient); break;
+        case 7: this->HandleStartGame(inBuffer, inClient); break;
+        case 8: this->HandlePingReport(inBuffer, inClient); break;
+        case 9: this->HandlePingChanged(inBuffer, inClient); break;
+        case 10: this->HandleClientKicked(inBuffer, inClient); break;
+        default: this->mGame->HandleGameMessage(aType, inBuffer, inClient); break;
         }
     } catch (ReadBufferException&) {}
 }
 
 // FUNCTION: WON 0x007efd20
-void StagingLogic::Fn3EFD20(const ByteBuffer* inMessage, LobbyClient* inClient)
+// Handles a game room message held in a byte buffer
+void StagingLogic::HandleMessageBuffer(const ByteBuffer* inMessage, LobbyClient* inClient)
 {
     if (inMessage != NULL) {
         ReadBuffer aBuffer(inMessage->data(), inMessage->length());
-        Fn3EFB50(aBuffer, inClient);
+        this->HandleMessage(aBuffer, inClient);
     }
 }
 
 // FUNCTION: WON 0x007efd60
-void StagingLogic::Fn3EFD60(const ByteBuffer* inMessage)
+// Sends a message to the host; the host handles its own message directly
+void StagingLogic::SendToCaptain(const ByteBuffer* inMessage)
 {
-    if (mGame.get() != NULL) {
-        if (Fn3EFE10()) Fn3EFD20(inMessage, mMyClient.get());
-        else LobbyFn361CB0(inMessage);
+    if (this->mGame.get() != NULL) {
+        if (this->IAmCaptain()) this->HandleMessageBuffer(inMessage, this->mMyClient.get());
+        else LobbyNetSendToCaptain(inMessage);
     }
 }
 
 // FUNCTION: WON 0x007efda0
-void StagingLogic::Fn3EFDA0(const ByteBuffer* inMessage)
+// Host: handles a message itself and sends it to every client in the game
+void StagingLogic::BroadcastToGame(const ByteBuffer* inMessage)
 {
-    if (mGame.get() != NULL && Fn3EFE10()) {
-        Fn3EFD20(inMessage, mMyClient.get());
-        LobbyFn361CD0(inMessage);
+    if (this->mGame.get() != NULL && this->IAmCaptain()) {
+        this->HandleMessageBuffer(inMessage, this->mMyClient.get());
+        LobbyNetBroadcastToGame(inMessage);
     }
 }
 
 // FUNCTION: WON 0x007efde0
-void StagingLogic::Fn3EFDE0(LobbyClient* inClient, const ByteBuffer* inMessage)
+// Host: sends a message to one client in the game
+void StagingLogic::SendToClient(LobbyClient* inClient, const ByteBuffer* inMessage)
 {
-    if (mGame.get() != NULL && Fn3EFE10()) LobbyFn361CF0(inClient, inMessage);
+    if (this->mGame.get() != NULL && this->IAmCaptain()) LobbyNetSendToClient(inClient, inMessage);
 }
 
 // FUNCTION: WON 0x007efe10
-bool StagingLogic::Fn3EFE10()
+// Returns whether we host the current game
+bool StagingLogic::IAmCaptain()
 {
-    return mGame.get() != NULL && mGame->mIsHost;
+    return this->mGame.get() != NULL && this->mGame->mIsHost;
 }
 
 // FUNCTION: WON 0x007efe30
-bool StagingLogic::Fn3EFE30()
+// Returns whether our own player is ready
+bool StagingLogic::IAmReady()
 {
-    return mMyClient.get() != NULL && mMyClient->Fn3A5590();
+    return this->mMyClient.get() != NULL && this->mMyClient->IsReady();
 }
 
 // FUNCTION: WON 0x007efe50
+// Runs the host, leave, logout and start/ready buttons
 void StagingLogic::HandleControlEvent(int inControlId)
 {
     switch (inControlId) {
-    case 0x30d4b: Fn3F0410(); return;
-    case 0x30d4e: Fn3F0C60(true); return;
-    case 0x30d4a: Fn3F0110(true); return;
-    case 0x30d4f: Fn3F0390(); return;
+    case ID_HostGame: this->HostGame(); return;
+    case ID_LeaveGame: this->LeaveGame(true); return;
+    case ID_Logout: this->Logout(true); return;
+    case ID_StartGame: this->ToggleReady(); return;
     }
 }
 
 // FUNCTION: WON 0x007efeb0
+// Handles join-game and game-action events from the game lists
 void StagingLogic::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch (inEvent->mType) {
-    case 0x186bb: Fn3F08A0(inEvent); break;
-    case 0x186b1: Fn3EFFA0(inEvent); break;
+    case LobbyEvent_JoinGame: this->HandleJoinGameEvent(inEvent); break;
+    case LobbyEvent_GameAction: this->HandleGameAction(inEvent); break;
     }
 }
 
 // FUNCTION: WON 0x007efee0
-void StagingLogic::Fn3EFEE0(LobbyGame* inGame)
+// Opens a popup with a game's options
+void StagingLogic::ShowGameOptions(LobbyGame* inGame)
 {
-    if (inGame != NULL) {
-        SmartPtr<GameOptionsPopup> aPopup = new GameOptionsPopup;
-        aPopup->Init(inGame);
-        LobbyFn358DF0(aPopup.get(), 0x23e7, -1, -1);
-    }
+    if (inGame == NULL)
+        return;
+    SmartPtr<GameOptionsPopup> aPopup = new GameOptionsPopup;
+    aPopup->Init(inGame);
+    LobbyOpenPopup(aPopup.get(), PopupFlag_StandardPopup, -1, -1);
 }
 
 // FUNCTION: WON 0x007effa0
-void StagingLogic::Fn3EFFA0(ComponentEvent* inEvent)
+// Runs a game list action: options, join, ping, show or hide details, direct connect
+void StagingLogic::HandleGameAction(ComponentEvent* inEvent)
 {
     GameActionEvent* anEvent = static_cast<GameActionEvent*>(inEvent);
     LobbyGame* aGame = anEvent->mGame.get();
     if (aGame == NULL) return;
     switch (anEvent->mAction) {
-    case 7: Fn3EFEE0(aGame); break;
-    case 1: Fn3F08B0(aGame); break;
+    case 7: this->ShowGameOptions(aGame); break;
+    case 1: this->JoinGame(aGame); break;
     case 2:
-        LobbyFn35B900(aGame, true);
-        LobbyFn359100(new GameChangedEvent(aGame, 2), true);
+        LobbyPingGame(aGame, true);
+        LobbyBroadcastEvent(new GameChangedEvent(aGame, 2), true);
         break;
     case 3:
     case 4:
-        LobbyFn35B920(aGame);
-        aGame->mB16 = true;
-        LobbyFn359100(new GameChangedEvent(aGame, 2), true);
+        LobbyQueryGameDetails(aGame);
+        aGame->mShowDetails = true;
+        LobbyBroadcastEvent(new GameChangedEvent(aGame, 2), true);
         break;
     case 5:
-        aGame->mB16 = false;
-        LobbyFn359100(new GameChangedEvent(aGame, 2), true);
+        aGame->mShowDetails = false;
+        LobbyBroadcastEvent(new GameChangedEvent(aGame, 2), true);
         break;
     case 6:
         if (aGame->GetGameType() == 3)
-            LobbyFn359300(new ChangeDirectConnectEvent(1, aGame));
+            LobbyDispatchEvent(new ChangeDirectConnectEvent(1, aGame));
         break;
     }
 }
 
 // FUNCTION: WON 0x007f0110
-bool StagingLogic::Fn3F0110(bool inConfirm)
+// Leaves the game (confirming if asked), logs out, saves the settings and returns to the login screen
+bool StagingLogic::Logout(bool inConfirm)
 {
-    if (!Fn3F0C60(inConfirm)) return false;
-    mCreateGameDialog->Reset(true);
-    LobbyFn361DD0();
-    LobbyFn35B960(0);
-    LobbyFn361020();
-    LobbyFn35E660(false);
-    LobbyFn35E680(false);
+    if (!this->LeaveGame(inConfirm)) return false;
+    this->mCreateGameDialog->Reset(true);
+    LobbyNetLogout();
+    LobbyKillPings(0);
+    LobbyShowLoginScreen();
+    LobbySaveGlobalPrefs(false);
+    LobbySaveUserPrefs(false);
     ::LobbyGlobal_SierraLogon_Sound->Stop();
     return true;
 }
 
 // FUNCTION: WON 0x007f0170
-void StagingLogic::Fn3F0170(bool inReady)
+// Asks the host to set our ready flag
+void StagingLogic::SendReady(bool inReady)
 {
     WriteBuffer aBuffer(0, true);
     aBuffer.AppendByte(4);
     aBuffer.AppendBool(inReady);
-    Fn3EFD60(aBuffer.ToByteBuffer(true).get());
+    this->SendToCaptain(aBuffer.ToByteBuffer(true).get());
 }
 
 // FUNCTION: WON 0x007f0230
-void StagingLogic::Fn3F0230()
+// Host: tells every client in the game that it is dissolved
+void StagingLogic::SendGameDissolved()
 {
-    if (Fn3EFE10()) {
-        WriteBuffer aBuffer(0, true);
-        aBuffer.AppendByte(6);
-        Fn3EFDA0(aBuffer.ToByteBuffer(true).get());
-    }
+    if (!this->IAmCaptain())
+        return;
+    WriteBuffer aBuffer(0, true);
+    aBuffer.AppendByte(6);
+    this->BroadcastToGame(aBuffer.ToByteBuffer(true).get());
 }
 
 // FUNCTION: WON 0x007f02e0
-void StagingLogic::Fn3F02E0()
+// Tells every client in the game to start it
+void StagingLogic::SendStartGame()
 {
     WriteBuffer aBuffer(0, true);
     aBuffer.AppendByte(7);
-    Fn3EFDA0(aBuffer.ToByteBuffer(true).get());
+    this->BroadcastToGame(aBuffer.ToByteBuffer(true).get());
 }
 
 // FUNCTION: WON 0x007f0390
-void StagingLogic::Fn3F0390()
+// Host: starts the game when it can; others toggle their ready flag if the game allows it
+void StagingLogic::ToggleReady()
 {
-    if (mMyClient.get() == NULL || mGame.get() == NULL) return;
-    if (Fn3EFE10()) {
-        if (mGame->Fn3A7490() && mGame->Fn3A74C0()) Fn3F02E0();
+    if (this->mMyClient.get() == NULL || this->mGame.get() == NULL) return;
+    if (this->IAmCaptain()) {
+        if (this->mGame->CanStartGame() && this->mGame->TryStartGame()) this->SendStartGame();
     } else {
-        bool aReady = !mMyClient->Fn3A5590();
-        if (aReady && !mGame->Fn3A74B0()) return;
-        mLastReady = aReady;
-        Fn3F0170(aReady);
+        bool aReady = !this->mMyClient->IsReady();
+        if (aReady && !this->mGame->CanReady()) return;
+        this->mLastReady = aReady;
+        this->SendReady(aReady);
     }
 }
 
 // FUNCTION: WON 0x007f0410
-void StagingLogic::Fn3F0410()
+// Hosts a new game from the create-game dialog after firewall warnings, entering its game room
+void StagingLogic::HostGame()
 {
-    if (!Fn3F0C60(true)) return;
-    int aGameType = LobbyFn361190();
+    if (!this->LeaveGame(true)) return;
+    int aGameType = LobbyGetGameScreenType();
     if (aGameType == 0) return;
-    if (aGameType != 1 && LobbyFn35E360()) {
+    if (aGameType != 1 && LobbyGetShowConfirmations()) {
         int aResult = 0x186a1;
-        if (!LobbyFn361B40()) aResult = LobbyFn358EF0(::GameStagingLogic_ConnectWarningTitle1_String, ::GameStagingLogic_ConnectWarningDetails1_String, true);
-        else if (LobbyFn361B20()) aResult = LobbyFn358EF0(::GameStagingLogic_ConnectWarningTitle2_String, ::GameStagingLogic_ConnectWarningDetails2_String, true);
+        if (!LobbyIsFirewallTestDone()) aResult = LobbyDoYesNoDialog(::GameStagingLogic_ConnectWarningTitle1_String, ::GameStagingLogic_ConnectWarningDetails1_String, true);
+        else if (LobbyIsBehindFirewall()) aResult = LobbyDoYesNoDialog(::GameStagingLogic_ConnectWarningTitle2_String, ::GameStagingLogic_ConnectWarningDetails2_String, true);
         if (aResult != 0x186a1) return;
     }
-    mCreateGameDialog->SetGameType(aGameType);
-    mCreateGameDialog->Reset(false);
-    if (LobbyDoDialog(mCreateGameDialog.get()) != 0x186a1) return;
-    SmartPtr<LobbyGame> aGame = mCreateGameDialog->GetGame();
-    aGame->SetAddress(LobbyFn3617A0(aGameType));
-    mGame = aGame;
-    mJoinStatus = 0;
+    this->mCreateGameDialog->SetGameType(aGameType);
+    this->mCreateGameDialog->Reset(false);
+    if (LobbyDoDialog(this->mCreateGameDialog.get()) != 0x186a1) return;
+    SmartPtr<LobbyGame> aGame = this->mCreateGameDialog->GetGame();
+    aGame->SetAddress(LobbyGetMyAddress(aGameType));
+    this->mGame = aGame;
+    this->mJoinStatus = 0;
     StagingLeaveOnError aCleanup;
-    if (!aGame->Fn3A6DC0()) return;
-    if (!LobbyFn361C30(aGame.get())) return;
-    mMyClient = LobbyFn361C90();
-    if (mMyClient.get() == NULL) return;
+    if (!aGame->PreNetCreateGame()) return;
+    if (!LobbyNetHostGame(aGame.get())) return;
+    this->mMyClient = LobbyGetNetMyClient();
+    if (this->mMyClient.get() == NULL) return;
     aGame->SetIsHost(true);
-    aGame->SetCaptainId(mMyClient->GetClientId());
-    mMyClient->Fn3A5500(true, true);
-    if (!aGame->Fn3A6DD0()) return;
-    aGame->mClients->Fn3A5CC0(mMyClient.get());
-    aGame->Fn3A7360(mMyClient.get());
+    aGame->SetCaptainId(this->mMyClient->GetClientId());
+    this->mMyClient->SetCaptain(true, true);
+    if (!aGame->PostNetCreateGame()) return;
+    aGame->mClients->AddClient(this->mMyClient.get());
+    aGame->HandleHostGame(this->mMyClient.get());
     aCleanup.mLeave = false;
-    mInStaging = true;
-    mLastReadyTime = 0;
-    mLastAllReady = aGame->Fn3A7400();
-    mLastReady = LobbyFn3613A0();
-    LobbyFn361260();
-    LobbyFn359120(0x186bd, true);
+    this->mInStaging = true;
+    this->mLastReadyTime = 0;
+    this->mLastAllReady = aGame->AreAllReady();
+    this->mLastReady = LobbyIAmReady();
+    LobbyNetAdvertiseGame();
+    LobbyBroadcastLobbyEvent(0x186bd, true);
 }
 
 // FUNCTION: WON 0x007f06e0
-bool StagingLogic::Fn3F06E0(LobbyGame* inGame)
+// For an Internet game not yet pinged, waits for a ping reply or asks to join anyway; returns whether to join
+bool StagingLogic::VerifyPingBeforeJoin(LobbyGame* inGame)
 {
-    if (inGame->GetGameType() == 2 && !inGame->mB18) {
-        LobbyConfig* aConfig = GetLobbyConfig();
-        if (aConfig != NULL && !aConfig->mAllowJoinGameWithoutPing) {
-            LobbyFn35B900(inGame, true);
-            LobbyFn359100(new GameChangedEvent(inGame, 2), true);
-            while (inGame->Fn3A6D70()) {
-                SmartPtr<AsyncOp> anOp = new AsyncOp;
-                LobbyFn358E70(anOp.get(), ::GameStagingLogic_VerifyingPingTitle_String, ::GameStagingLogic_VerifyingPingDetails_String, 2, 500);
-                if (anOp->mB39) return false;
-            }
-            if (!inGame->mB18) {
-                LobbyMessageBox(::GameStagingLogic_JoinGameErrorTitle_String, ::GameStagingLogic_NoPingReplyError_String);
-                return false;
-            }
-        } else if (LobbyFn35E360()) {
-            return LobbyFn358EF0(::GameStagingLogic_ConnectWarningTitle3_String, ::GameStagingLogic_ConnectWarningDetails3_String, true) == 0x186a1;
+    if (inGame->GetGameType() != 2 || inGame->mPingReplied)
+        return true;
+    LobbyConfig* aConfig = GetLobbyConfig();
+    if (aConfig != NULL && !aConfig->mAllowJoinGameWithoutPing) {
+        LobbyPingGame(inGame, true);
+        LobbyBroadcastEvent(new GameChangedEvent(inGame, 2), true);
+        while (inGame->IsPinging()) {
+            SmartPtr<AsyncOp> anOp = new AsyncOp;
+            LobbyRunOpWithStatus(anOp.get(), ::GameStagingLogic_VerifyingPingTitle_String, ::GameStagingLogic_VerifyingPingDetails_String, 2, 500);
+            if (anOp->mKilled) return false;
         }
+        if (!inGame->mPingReplied) {
+            LobbyMessageBox(::GameStagingLogic_JoinGameErrorTitle_String, ::GameStagingLogic_NoPingReplyError_String);
+            return false;
+        }
+    } else if (LobbyGetShowConfirmations()) {
+        return LobbyDoYesNoDialog(::GameStagingLogic_ConnectWarningTitle3_String, ::GameStagingLogic_ConnectWarningDetails3_String, true) == 0x186a1;
     }
     return true;
 }
 
 // FUNCTION: WON 0x007f08a0
-void StagingLogic::Fn3F08A0(ComponentEvent* inEvent)
+// Joins the game named by a join-game event
+void StagingLogic::HandleJoinGameEvent(ComponentEvent* inEvent)
 {
-    Fn3F08B0(static_cast<JoinGameEvent*>(inEvent)->mGame.get());
+    this->JoinGame(static_cast<JoinGameEvent*>(inEvent)->mGame.get());
 }
 
 // FUNCTION: WON 0x007f08b0
-void StagingLogic::Fn3F08B0(LobbyGame* inGame)
+// Joins a game from the list: checks ping and status, connects, waits for the host's reply and enters the room
+void StagingLogic::JoinGame(LobbyGame* inGame)
 {
     if (inGame == NULL) return;
-    if (mGame.get() != NULL && inGame->Fn3A6D00(mGame.get())) {
+    if (this->mGame.get() != NULL && inGame->IsSameGame(this->mGame.get())) {
         LobbyMessageBox(::RoutingLogic_AlreadyJoinedTitle_String, ::RoutingLogic_AlreadyInGame_String);
         return;
     }
-    if (!Fn3F06E0(inGame)) return;
+    if (!this->VerifyPingBeforeJoin(inGame)) return;
     short aStatus = inGame->GetJoinStatus();
     if (aStatus != 0) {
-        if (aStatus != 1) LobbyMessageBox(::GameStagingLogic_JoinGameErrorTitle_String, inGame->Fn3A7A90(aStatus));
+        if (aStatus != 1) LobbyMessageBox(::GameStagingLogic_JoinGameErrorTitle_String, inGame->GetStatusString(aStatus));
         return;
     }
-    if (!Fn3F0C60(true)) return;
+    if (!this->LeaveGame(true)) return;
     StagingLeaveOnError aCleanup;
     SmartPtr<LobbyGame> aGame = LobbyGame::CreateGame(static_cast<LobbyGameType>(inGame->GetGameType()));
     aGame->CopyFrom(inGame);
-    mGame = aGame;
-    mJoinStatus = 1;
-    if (!aGame->Fn3A6DA0()) return;
-    if (!LobbyFn361C60(aGame.get())) return;
-    mMyClient = LobbyFn361C90();
-    if (mMyClient.get() == NULL) return;
-    if (!aGame->Fn3A6DB0()) return;
-    mJoinOp = new AsyncOp;
-    ConstSmartPtr<ByteBuffer> aMessage = mGame->Fn3A72C0();
-    Fn3EFD60(aMessage.get());
-    LobbyFn358E70(mJoinOp.get(), ::GameStagingLogic_GettingGameInfoTitle_String, ::GameStagingLogic_GettingGameInfoDetails_String, 1, 0);
-    mJoinOp = NULL;
-    if (mJoinStatus != 0) {
-        if (mJoinStatus != 1) LobbyMessageBox(::GameStagingLogic_JoinGameErrorTitle_String, inGame->Fn3A7A90(mJoinStatus));
+    this->mGame = aGame;
+    this->mJoinStatus = 1;
+    if (!aGame->PreNetJoinGame()) return;
+    if (!LobbyNetJoinGame(aGame.get())) return;
+    this->mMyClient = LobbyGetNetMyClient();
+    if (this->mMyClient.get() == NULL) return;
+    if (!aGame->PostNetJoinGame()) return;
+    this->mJoinOp = new AsyncOp;
+    ConstSmartPtr<ByteBuffer> aMessage = this->mGame->GetJoinRequest();
+    this->SendToCaptain(aMessage.get());
+    LobbyRunOpWithStatus(this->mJoinOp.get(), ::GameStagingLogic_GettingGameInfoTitle_String, ::GameStagingLogic_GettingGameInfoDetails_String, 1, 0);
+    this->mJoinOp = NULL;
+    if (this->mJoinStatus != 0) {
+        if (this->mJoinStatus != 1) LobbyMessageBox(::GameStagingLogic_JoinGameErrorTitle_String, inGame->GetStatusString(this->mJoinStatus));
         return;
     }
     aCleanup.mLeave = false;
-    mInStaging = true;
-    mLastReadyTime = 0;
-    mLastAllReady = aGame->Fn3A7400();
-    mLastReady = LobbyFn3613A0();
+    this->mInStaging = true;
+    this->mLastReadyTime = 0;
+    this->mLastAllReady = aGame->AreAllReady();
+    this->mLastReady = LobbyIAmReady();
     // LOST-DEBUG: none: exact only
-    EE_LOST_TRACE(mGame.get());
-    LobbyFn359120(0x186bd, true);
+    EE_LOST_TRACE(this->mGame.get());
+    LobbyBroadcastLobbyEvent(0x186bd, true);
 }
 
 // FUNCTION: WON 0x007f0c60
-bool StagingLogic::Fn3F0C60(bool inConfirm)
+// Leaves or dissolves the current game, confirming if asked; returns false only when the player cancels
+bool StagingLogic::LeaveGame(bool inConfirm)
 {
-    if (mGame.get() != NULL) {
-        if (inConfirm && LobbyFn35E360()) {
-            int aResult;
-            if (Fn3EFE10()) aResult = LobbyFn358EF0(::GameStagingLogic_DissolveGame_String, ::GameStagingLogic_DissolveGameConfirm_String, true);
-            else aResult = LobbyFn358EF0(::GameStagingLogic_LeaveGame_String, ::GameStagingLogic_LeaveGameConfirm_String, true);
-            if (aResult != 0x186a1) return false;
-        }
-        if (mGame.get() != NULL) {
-            if (Fn3EFE10()) {
-                Fn3F0230();
-                LobbyFn361D10(mGame.get());
-            }
-            if (mGame.get() != NULL) {
-                if (mJoinOp.get() != NULL) {
-                    mJoinOp->Kill(true);
-                    mJoinOp = NULL;
-                }
-                SmartPtr<LobbyGame> aGame = mGame;
-                mGame = NULL;
-                aGame->Fn3A6C90();
-                mMyClient = NULL;
-                aGame->Fn3A6DE0();
-                LobbyFn361D30(aGame.get());
-                aGame->Fn3A6DF0();
-                mLastReadyTime = 0;
-                if (mInStaging) {
-                    LobbyFn359120(0x186c0, true);
-                    mInStaging = false;
-                }
-            }
-        }
+    if (this->mGame.get() == NULL)
+        return true;
+    if (inConfirm && LobbyGetShowConfirmations()) {
+        int aResult;
+        if (this->IAmCaptain()) aResult = LobbyDoYesNoDialog(::GameStagingLogic_DissolveGame_String, ::GameStagingLogic_DissolveGameConfirm_String, true);
+        else aResult = LobbyDoYesNoDialog(::GameStagingLogic_LeaveGame_String, ::GameStagingLogic_LeaveGameConfirm_String, true);
+        if (aResult != 0x186a1) return false;
+    }
+    if (this->mGame.get() == NULL)
+        return true;
+    if (this->IAmCaptain()) {
+        this->SendGameDissolved();
+        LobbyNetRemoveGameAdvertisement(this->mGame.get());
+    }
+    if (this->mGame.get() == NULL)
+        return true;
+    if (this->mJoinOp.get() != NULL) {
+        this->mJoinOp->Kill(true);
+        this->mJoinOp = NULL;
+    }
+    SmartPtr<LobbyGame> aGame = this->mGame;
+    this->mGame = NULL;
+    aGame->ClearPlayers();
+    this->mMyClient = NULL;
+    aGame->PreNetLeaveGame();
+    LobbyNetLeaveGame(aGame.get());
+    aGame->PostNetLeaveGame();
+    this->mLastReadyTime = 0;
+    if (this->mInStaging) {
+        LobbyBroadcastLobbyEvent(0x186c0, true);
+        this->mInStaging = false;
     }
     return true;
 }
 
 // FUNCTION: WON 0x007f0de0
-void StagingLogic::Fn3F0DE0(bool inShowError)
+// Leaves the game after losing the connection, optionally telling the player
+void StagingLogic::HandleDisconnect(bool inShowError)
 {
-    if (mGame.get() != NULL) {
-        Fn3F0C60(false);
+    if (this->mGame.get() != NULL) {
+        this->LeaveGame(false);
         if (inShowError) LobbyMessageBox(::StagingLogic_DisconnectedTitle_String, ::StagingLogic_DisconnectedDetails_String);
     }
 }
 
 // FUNCTION: WON 0x007f0e10
-void StagingLogic::Fn3F0E10(LobbyClient* inClient, bool inFlag)
+// Reports a kick or ban from the game; when it is us, leaves the game and tells the player
+void StagingLogic::HandleKicked(LobbyClient* inClient, bool inBan)
 {
-    LobbyGame* aGame = mGame.get();
+    LobbyGame* aGame = this->mGame.get();
     if (inClient == NULL || aGame == NULL) return;
-    int aKind = !inFlag;
-    bool isMe = inClient == mMyClient.get();
+    int aKind = !inBan;
+    bool isMe = inClient == this->mMyClient.get();
     int aFlags = aGame->GetGameType() == 2 ? 6 : 10;
-    LobbyFn359100(new ClientModeratedEvent(inClient, aFlags, mGame->mName,
+    LobbyBroadcastEvent(new ClientModeratedEvent(inClient, aFlags, this->mGame->mName,
         aKind, 0, isMe, gEmptyGUIString), true);
-    if (isMe) {
-        Fn3F0C60(false);
-        if (inFlag) LobbyMessageBox(::StagingLogic_BannedTitle_String, ::StagingLogic_BannedDetails_String);
-        else LobbyMessageBox(::StagingLogic_KickedTitle_String, ::StagingLogic_KickedDetails_String);
-    }
+    if (!isMe)
+        return;
+    this->LeaveGame(false);
+    if (inBan) LobbyMessageBox(::StagingLogic_BannedTitle_String, ::StagingLogic_BannedDetails_String);
+    else LobbyMessageBox(::StagingLogic_KickedTitle_String, ::StagingLogic_KickedDetails_String);
 }
 
 // FUNCTION: WON 0x007f0f10
-void StagingLogic::Fn3F0F10(LobbyClient* inClient)
+// Removes a departed player from the game, reports it and re-advertises the game when hosting
+void StagingLogic::HandleClientLeft(LobbyClient* inClient)
 {
-    if (inClient->Fn3A5580() && mGame.get() != NULL) {
-        LobbyFn359100(new PlayerChangedEvent(inClient, 1), true);
-        if (inClient->Fn3A55C0(mMyClient.get()))
-            LobbyFn359100(new PlayerTeamChangedEvent(inClient, 1), true);
-        mGame->RemoveClient(inClient);
-        if (Fn3EFE10()) LobbyFn361260();
-        Fn3F11F0();
-    }
+    if (!inClient->HasPlayer() || this->mGame.get() == NULL)
+        return;
+    LobbyBroadcastEvent(new PlayerChangedEvent(inClient, 1), true);
+    if (inClient->IsTeammate(this->mMyClient.get()))
+        LobbyBroadcastEvent(new PlayerTeamChangedEvent(inClient, 1), true);
+    this->mGame->RemoveClient(inClient);
+    if (this->IAmCaptain()) LobbyNetAdvertiseGame();
+    this->NotifyStagingChange();
 }
 
 // FUNCTION: WON 0x007f1000
-void StagingLogic::Fn3F1000(LobbyGame* inGame)
+// Reports our new ping to the current game's host
+void StagingLogic::NotifyPingChange(LobbyGame* inGame)
 {
-    if (mGame.get() != NULL && !Fn3EFE10() && inGame->Fn3A6D00(mGame.get())) {
-        WriteBuffer aBuffer(0, true);
-        aBuffer.AppendByte(8);
-        aBuffer.AppendShort(inGame->GetPing());
-        Fn3EFD60(aBuffer.ToByteBuffer(true).get());
-    }
+    if (this->mGame.get() == NULL || this->IAmCaptain() || !inGame->IsSameGame(this->mGame.get()))
+        return;
+    WriteBuffer aBuffer(0, true);
+    aBuffer.AppendByte(8);
+    aBuffer.AppendShort(inGame->GetPing());
+    this->SendToCaptain(aBuffer.ToByteBuffer(true).get());
 }
 
 // FUNCTION: WON 0x007f10f0
-void StagingLogic::Fn3F10F0(LobbyClient* inClient, bool inFlag)
+// Host: kicks or bans a client from the game and tells everyone
+void StagingLogic::KickClient(LobbyClient* inClient, bool inBan)
 {
-    if (inClient != NULL && mGame.get() != NULL && Fn3EFE10()) {
-        WriteBuffer aBuffer(0, true);
-        aBuffer.AppendByte(10);
-        aBuffer.AppendShort(inClient->GetClientId());
-        aBuffer.AppendBool(inFlag);
-        Fn3EFDA0(aBuffer.ToByteBuffer(true).get());
-        LobbyFn361D50(inClient, inFlag);
-    }
+    if (inClient == NULL || this->mGame.get() == NULL || !this->IAmCaptain())
+        return;
+    WriteBuffer aBuffer(0, true);
+    aBuffer.AppendByte(10);
+    aBuffer.AppendShort(inClient->GetClientId());
+    aBuffer.AppendBool(inBan);
+    this->BroadcastToGame(aBuffer.ToByteBuffer(true).get());
+    LobbyNetKickClient(inClient, inBan);
 }
 
 // FUNCTION: WON 0x007f11f0
-void StagingLogic::Fn3F11F0()
+// Tells the lobby screens that the game room changed
+void StagingLogic::NotifyStagingChange()
 {
-    LobbyFn359120(0x186dd, true);
+    LobbyBroadcastLobbyEvent(0x186dd, true);
 }
 
 // FUNCTION: WON 0x007f1200
-void StagingLogic::Fn3F1200()
+// Plays the all-ready sound (at most every 15 s) or the not-ready sound when the game's ready state changes
+void StagingLogic::UpdateReadyState()
 {
-    Fn3F11F0();
-    LobbyGame* aGame = mGame.get();
+    this->NotifyStagingChange();
+    LobbyGame* aGame = this->mGame.get();
     if (aGame == NULL) return;
-    bool isReady = aGame->Fn3A7400();
+    bool isReady = aGame->AreAllReady();
     if (isReady) {
-        if (mLastAllReady != isReady) {
+        if (this->mLastAllReady != isReady) {
             long aTime = time(NULL);
-            if (aTime - mLastReadyTime >= 15) {
-                mLastReadyTime = aTime;
-                if (LobbyFn35E340()) {
-                    LobbyFn35B9A0(::LobbyGlobal_AllReady_Sound.get());
+            if (aTime - this->mLastReadyTime >= 15) {
+                this->mLastReadyTime = aTime;
+                if (LobbyGetStagingSoundEffects()) {
+                    LobbyPlaySound(::LobbyGlobal_AllReady_Sound.get());
                 }
             }
         }
-    } else if (!aGame->mIsHost && mLastReady != LobbyFn3613A0()) {
-        mLastReady = LobbyFn3613A0();
-        if (!mLastReady && LobbyFn35E340()) LobbyFn35B9A0(::LobbyGlobal_AllNotReady_Sound.get());
+    } else if (!aGame->mIsHost && this->mLastReady != LobbyIAmReady()) {
+        this->mLastReady = LobbyIAmReady();
+        if (!this->mLastReady && LobbyGetStagingSoundEffects()) LobbyPlaySound(::LobbyGlobal_AllNotReady_Sound.get());
     }
-    mLastAllReady = isReady;
+    this->mLastAllReady = isReady;
 }
 }
 

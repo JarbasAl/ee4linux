@@ -1,4 +1,4 @@
-// Actual standard MS control painting on original-owned receivers.
+// Paint methods of the Windows-style header button, close button, scroll thumb and label
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,6 +12,8 @@
 
 namespace WONAPI {
 // FUNCTION: WON 0x006ff000
+// Paints a list header button and, when its column is sorted, a small up or down triangle after the text
+// (shifted by one pixel while pressed)
 void MSHeaderButton::Paint(Graphics& g)
 {
     MSButton::Paint(g);
@@ -20,11 +22,11 @@ void MSHeaderButton::Paint(Graphics& g)
         return;
     g.SetSysColor(StandardColor_ButtonText);
     int x;
-    if(mText->GetWidth()==0)
-        x=(Width()-4)/2;
+    if(this->mText->GetWidth()==0)
+        x=(this->Width()-4)/2;
     else
-        x=mText->GetWidth()+10+mLeftTextPad;
-    int y=Height()/2-2;
+        x=this->mText->GetWidth()+10+this->mLeftTextPad;
+    int y=this->Height()/2-2;
     int offset=(mButtonFlags&0x20)!=0?1:0;
     x+=offset;
     y+=offset;
@@ -41,33 +43,36 @@ void MSHeaderButton::Paint(Graphics& g)
 }
 
 // FUNCTION: WON 0x006ff2a0
+// Paints a close button: face background, a raised or sunken 3D frame and the X, shifted while pressed
 void MSCloseButton::Paint(Graphics& g)
 {
     Button::Paint(g);
     bool down=(mButtonFlags&0x20)!=0;
     int offset=down?1:0;
     g.SetSysColor(StandardColor_3DFace);
-    g.FillRect(0,0,Width(),Height());
-    LobbyDraw3DFrame(g,0,0,Width(),Height(),down);
-    MSGraphicsUtil::DrawCloseX(g,offset,offset,Width(),Height());
+    g.FillRect(0,0,this->Width(),this->Height());
+    LobbyDraw3DFrame(g,0,0,this->Width(),this->Height(),down);
+    MSGraphicsUtil::DrawCloseX(g,offset,offset,this->Width(),this->Height());
 }
 
 // FUNCTION: WON 0x006ff360
+// Paints a scrollbar thumb: face background with a raised frame
 void MSScrollThumb::Paint(Graphics& g)
 {
     Component::Paint(g);
     g.SetSysColor(StandardColor_3DFace);
-    g.FillRect(0,0,Width(),Height());
-    LobbyDrawFrame(g,0,0,Width(),Height(),false);
+    g.FillRect(0,0,this->Width(),this->Height());
+    LobbyDrawFrame(g,0,0,this->Width(),this->Height(),false);
 }
 
 // FUNCTION: WON 0x006ff7d0
+// Paints a label: face background unless transparent, then the text
 void MSLabel::Paint(Graphics& g)
 {
     MSButtonBase::Paint(g);
     g.SetSysColor(StandardColor_3DFace);
-    if(!mIsTransparent)
-        g.FillRect(0,0,Width(),Height());
-    DrawButtonText(g,0,0);
+    if(!this->mIsTransparent)
+        g.FillRect(0,0,this->Width(),this->Height());
+    this->DrawButtonText(g,0,0);
 }
 }

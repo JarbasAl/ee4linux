@@ -3,26 +3,25 @@
 #include "ee/wonapi/WONLobbyMSRemainingPainters.h"
 #include "ee/wonapi/WONLobbyLayout.h"
 namespace WONAPI {
-// Fieldless actual MSDialog98, native ctor300550, RTTI44ea4c.
-// Original constructor remains external; implicit destruction follows real Dialog98 owner graph.
+// MSDialog: fieldless Dialog (0x98 bytes), constructor at 0x00700550, RTTI 0x0084ea4c; implicit destructor.
 class MSDialog : public Dialog {
 public:
-    MSDialog(); //actual300550, no additional fields or virtual entries
+    MSDialog(); // at 0x00700550; no extra fields or virtual entries
 };
-// Complete actual MSMessageBoxb0: original Msg301fd0 allocb0 and invokes3016f0.
-// All owners independently matched to ctor/dtor; scalar CreateFlagsac remains naturally uninitialized.
+// MSMessageBox (0xb0 bytes): Msg (0x00701fd0) allocates it and calls 0x007016f0.
+// mCreateFlags (+0xac) is left uninitialized.
 class MSMessageBox : public MSDialog {
 protected:
-    SmartPtr<MSButton> mButton1,mButton2,mButton3; //98,9c,a0, real complete60 children
+    SmartPtr<MSButton> mButton1,mButton2,mButton3; // offsets 0x98, 0x9c, 0xa0 (0x60-byte buttons)
     SmartPtr<MSLabel> mLabel; //a4, real complete fieldless5c child
     GUIString mTitle; //a8
-    int mCreateFlags; //ac, exact primarySDK scalar, actualfullb0; unaccessed by3016f0
+    int mCreateFlags; // offset 0xac; not read by 0x007016f0
 public:
-    MSMessageBox(const GUIString&,const GUIString&,const GUIString&,const GUIString&,const GUIString&); //3016f0, RET14
+    MSMessageBox(const GUIString&,const GUIString&,const GUIString&,const GUIString&,const GUIString&); // at 0x007016f0
     static int Msg(Window*,const GUIString&,const GUIString&,const GUIString&,const GUIString&,const GUIString&); //301fd0, cdecl plain RET, six arguments
-    SmartPtr<Window> PrepareWindow(Window*); //302090, hidden SmartPtr return, RET8
-    int DoDialog(Window*); //3021b0, RET4
-    // Original ordinary lifetime301ea0 is implicit member/base cleanup, not a hand-written body.
+    SmartPtr<Window> PrepareWindow(Window*); // at 0x00702090 (returns the SmartPtr through a hidden pointer)
+    int DoDialog(Window*); // at 0x007021b0
+    // The destructor (0x00701ea0) is implicit member and base cleanup.
 };
 }
 #endif

@@ -1,4 +1,4 @@
-// Complete native singleton orchestration; genuine external lifetime providers.
+// Free lobby functions that forward to the lobby's logic objects (dialogs, pings, routing, CD key, terms of use)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -25,59 +25,70 @@
 #include "ee/wonapi/WONCRC16.h"
 #include "ee/wonapi/EELobbySound.h"
 namespace WONAPI {
-// Genuine SDK GetDefaultTimeout: native 35b5a0 returns a constant, with no state.
+// (SDK GetDefaultTimeout)
 // FUNCTION: WON 0x0075b5a0
-int LobbyFn35B5A0() { return 60000; }
+// Returns the default timeout for lobby network operations: 60 seconds
+int LobbyGetDefaultTimeout() { return 60000; }
 // FUNCTION: WON 0x00758ef0
-int LobbyFn358EF0(const GUIString& title,const GUIString& text,bool sound)
+// Shows an OK/Cancel dialog and returns the button pressed; 100002 (cancel) without a lobby
+int LobbyDoYesNoDialog(const GUIString& title,const GUIString& text,bool sound)
 {
     return gLobbyData.get()!=NULL?gLobbyData->mDialogLogic->ShowOkCancel(title,text,sound):100002;
 }
 // FUNCTION: WON 0x00758e70
-void LobbyFn358E70(AsyncOp* op,const GUIString& title,const GUIString& text,int mode,unsigned long timeout)
+// Runs the network operation behind a status dialog with the given title and text
+void LobbyRunOpWithStatus(AsyncOp* op,const GUIString& title,const GUIString& text,int mode,unsigned long timeout)
 {
     if(gLobbyData.get()!=NULL) {
         DialogLogic* logic=gLobbyData->mDialogLogic.get();
-        logic->RunOpWithStatus(op,LobbyFn35B5A0(),title,text,mode,timeout);
+        logic->RunOpWithStatus(op,LobbyGetDefaultTimeout(),title,text,mode,timeout);
     }
 }
 // FUNCTION: WON 0x00758ed0
-void LobbyFn358ED0(const GUIString& title,WONStatus status)
+// Shows an error dialog describing the given WON status
+void LobbyDoErrorDialog(const GUIString& title,WONStatus status)
 {
     if(gLobbyData.get()!=NULL) gLobbyData->mDialogLogic->ShowError(title,status);
 }
 // FUNCTION: WON 0x0075b9a0
-void LobbyFn35B9A0(Sound* sound)
+// Plays the lobby sound unless the lobby is missing or suspended
+void LobbyPlaySound(Sound* sound)
 {
-    if(gLobbyData.get()!=NULL && !gLobbyData->mSuspended && sound!=NULL) sound->Fn329BD0();
+    if(gLobbyData.get()!=NULL && !gLobbyData->mSuspended && sound!=NULL) sound->Play();
 }
 // FUNCTION: WON 0x0075b900
-void LobbyFn35B900(LobbyGame* game,bool force)
+// Pings the game to measure its latency; inForce sends the ping now even when the ping queue is full
+void LobbyPingGame(LobbyGame* game,bool force)
 {
-    if(gLobbyData.get()!=NULL) gLobbyData->mPingLogic->Fn3E6B50(game,false,force);
+    if(gLobbyData.get()!=NULL) gLobbyData->mPingLogic->PingGame(game,false,force);
 }
 // FUNCTION: WON 0x0075b920
-void LobbyFn35B920(LobbyGame* game)
+// Asks the game's host for the game's details
+void LobbyQueryGameDetails(LobbyGame* game)
 {
-    if(gLobbyData.get()!=NULL) gLobbyData->mPingLogic->Fn3E6B50(game,true,true);
+    if(gLobbyData.get()!=NULL) gLobbyData->mPingLogic->PingGame(game,true,true);
 }
 // FUNCTION: WON 0x0075b960
-void LobbyFn35B960(int unused)
+// Cancels every queued and running game ping, marking those games ping unknown
+void LobbyKillPings(int unused)
 {
-    if(gLobbyData.get()!=NULL) gLobbyData->mPingLogic->Fn3E6DB0(unused);
+    if(gLobbyData.get()!=NULL) gLobbyData->mPingLogic->KillPings(unused);
 }
 // FUNCTION: WON 0x0075b710
-ChatCommandParser* LobbyFn35B710()
+// Returns the lobby's chat command parser, or NULL without a lobby
+ChatCommandParser* LobbyGetChatCommandParser()
 {
     return gLobbyData.get()!=NULL?gLobbyData->mChatCommandParser.get():NULL;
 }
 // FUNCTION: WON 0x0075b8f0
-UDPManager* LobbyFn35B8F0()
+// Returns the lobby's UDP manager (LAN and ping traffic), or NULL without a lobby
+UDPManager* LobbyGetUDPManager()
 {
     return gLobbyData.get()!=NULL?gLobbyData->mUDPManager.get():NULL;
 }
 // FUNCTION: WON 0x0075b600
-void LobbyFn35B600(long& systemTime,long& gameTime)
+// Passes out the times of the system and game terms of use; leaves them unchanged without a lobby
+void LobbyGetTOUTimes(long& systemTime,long& gameTime)
 {
     if(gLobbyData.get()!=NULL) {
         systemTime=gLobbyData->mSysTOUTime;
@@ -85,35 +96,39 @@ void LobbyFn35B600(long& systemTime,long& gameTime)
     }
 }
 // FUNCTION: WON 0x0075b980
-void LobbyFn35B980()
+// Stops the firewall test the lobby runs at login
+void LobbyKillFirewallTest()
 {
     if(gLobbyData.get()!=NULL) gLobbyData->mInitLogic->KillFirewallTest();
 }
 // FUNCTION: WON 0x0075b6b0
-LobbyServerList* LobbyFn35B6B0()
+// Returns the list of lobby servers, or NULL without a lobby
+LobbyServerList* LobbyGetServerList()
 {
     return gLobbyData.get()!=NULL?gLobbyData->mRoutingLogic->mServerList.get():NULL;
 }
 // FUNCTION: WON 0x0075b6d0
-LobbyGroup* LobbyFn35B6D0()
+// Returns the chat room the player is in, or NULL
+LobbyGroup* LobbyGetChatGroup()
 {
     return gLobbyData.get()!=NULL?gLobbyData->mRoutingLogic->mChatGroup.get():NULL;
 }
 }
 
 namespace WONAPI {
-// Genuine missing SDK namespace entry points; retained canonical ABI spellings.
 // FUNCTION: WON 0x0075b6f0
-LobbyServer* LobbyFn35B6F0()
+// Returns the lobby server the player is on, or NULL
+LobbyServer* LobbyGetCurrentServer()
 {
     return gLobbyData.get()!=NULL?gLobbyData->mRoutingLogic->mCurrentServer.get():NULL;
 }
 }
 
 namespace WONAPI {
-// GenuineSDKStringUtil.h declaration, source-local only. Provider body is the separate real StringUtil.cpp unit below.
+// Declared as in the SDK's StringUtil.h; defined in StringUtil.cpp
 const std::string& GetEmptyStr();
 // FUNCTION: WON 0x0075b580
+// Returns the product id the lobby stamps on its game listings, or 0 without a lobby
 unsigned short GetLobbyProductId()
 {
     if(gLobbyData.get()!=NULL) return gLobbyData->mLanProductId;
@@ -121,53 +136,60 @@ unsigned short GetLobbyProductId()
 }
 // (SDK LobbyMisc::DoCDKeyCheck)
 // FUNCTION: WON 0x0075b540
-bool LobbyFn35B540() { return gLobbyData.get()!=NULL?gLobbyData->mConfig->mCDKeyCheck:false; }
+// Returns whether the lobby configuration asks for a CD key check
+bool LobbyDoCDKeyCheck() { return gLobbyData.get()!=NULL?gLobbyData->mConfig->mCDKeyCheck:false; }
 // (SDK LobbyMisc::IsCDKeyValid)
 // FUNCTION: WON 0x0075b560
-bool LobbyFn35B560() { return gLobbyData.get()!=NULL?gLobbyData->mCDKey.mValid:false; }
-// SUPPORT-ONLY: genuine SDK CPP LobbyMisc::GetSysTOUPath; actual native20B, zero primary.
-const std::string& LobbyFn35B630() { return gLobbyData.get()!=NULL?gLobbyData->mSysTOUPath:GetEmptyStr(); }
-// SUPPORT-ONLY: genuine SDK CPP LobbyMisc::GetGameTOUPath; actual native20B, zero primary.
-const std::string& LobbyFn35B650() { return gLobbyData.get()!=NULL?gLobbyData->mGameTOUPath:GetEmptyStr(); }
+// Returns whether the player's CD key is valid
+bool LobbyIsCDKeyValid() { return gLobbyData.get()!=NULL?gLobbyData->mCDKey.mValid:false; }
+// Returns the path of the system terms-of-use file, or an empty string without a lobby (SDK LobbyMisc::GetSysTOUPath)
+const std::string& LobbyGetSysTOUPath() { return gLobbyData.get()!=NULL?gLobbyData->mSysTOUPath:GetEmptyStr(); }
+// Returns the path of the game terms-of-use file, or an empty string without a lobby (SDK LobbyMisc::GetGameTOUPath)
+const std::string& LobbyGetGameTOUPath() { return gLobbyData.get()!=NULL?gLobbyData->mGameTOUPath:GetEmptyStr(); }
 // (SDK LobbyMisc::GetNumPingsToDo)
 // FUNCTION: WON 0x0075b940
-int LobbyFn35B940() { return gLobbyData.get()!=NULL?gLobbyData->mPingLogic->Fn3E6B40():0; }
+// Returns the number of game pings still to send
+int LobbyGetNumPingsToDo() { return gLobbyData.get()!=NULL?gLobbyData->mPingLogic->GetNumPingsToDo():0; }
 // (SDK LobbyDialog::UserCanceledLastStatusOp)
 // FUNCTION: WON 0x00758f50
-bool LobbyFn358F50() { return gLobbyData.get()!=NULL?gLobbyData->mDialogLogic->mStatusCancelled:false; }
+// Returns whether the player cancelled the last operation run behind a status dialog
+bool LobbyUserCanceledLastStatusOp() { return gLobbyData.get()!=NULL?gLobbyData->mDialogLogic->mStatusCancelled:false; }
 }
 
 namespace WONAPI {
-// Genuine SDK LobbyDialog::DoDialog; original27B. Borrowed generic Component, no local ownership.
+// (SDK LobbyDialog::DoDialog)
 // FUNCTION: WON 0x00758e50
+// Shows the dialog modally and returns its result; -1 without a lobby
 int LobbyDoDialog(Component* inDialog)
 {
     return gLobbyData.get()!=NULL ? gLobbyData->mDialogLogic->DoDialog(inDialog) : -1;
 }
-// Genuine SDK LobbyDialog::DoErrorDialog; original28B.
+// (SDK LobbyDialog::DoErrorDialog)
 // FUNCTION: WON 0x00758eb0
+// Shows an error dialog with the given title and text
 void LobbyMessageBox(const GUIString& inTitle,const GUIString& inText)
 {
     if(gLobbyData.get()!=NULL) gLobbyData->mDialogLogic->ShowError(inTitle,inText);
 }
-// Genuine SDK LobbyDialog::DoYesNoDialog; original39B, cancel100002 without lobby.
+// (SDK LobbyDialog::DoYesNoDialog)
 // FUNCTION: WON 0x00758f20
+// Shows a Yes/No dialog and returns the button pressed; 100002 (cancel) without a lobby
 int LobbyMessageBoxYesNo(const GUIString& inTitle,const GUIString& inText,bool inWarningSound)
 {
     return gLobbyData.get()!=NULL ? gLobbyData->mDialogLogic->ShowYesNo(inTitle,inText,inWarningSound) : 100002;
 }
-// Genuine SDK LobbyMisc::RunOp; original24B. Existing canonical Run is native29f6d0/SDKRunAsync.
-// Canonical RunAsync29f610 is the distinct timer operation and must not be substituted here.
+// (SDK LobbyMisc::RunOp) It calls AsyncOp::RunAsync (0x69f6d0), not the timer variant RunAsTimer (0x69f610).
 // FUNCTION: WON 0x0075b5b0
-void LobbyFn35B5B0(AsyncOp* inOp,unsigned long inTimeout)
+// Starts the network operation asynchronously, with the default timeout when none is given
+void LobbyRunOp(AsyncOp* inOp,unsigned long inTimeout)
 {
-    if(inTimeout==0) inTimeout=LobbyFn35B5A0();
-    inOp->Run(static_cast<long>(inTimeout));
+    if(inTimeout==0) inTimeout=LobbyGetDefaultTimeout();
+    inOp->RunAsync(static_cast<long>(inTimeout));
 }
 }
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x0075b630
-// (class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const & __cdecl WONAPI::LobbyFn35B630(void)    [?LobbyFn35B630)
+// (class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const & __cdecl WONAPI::LobbyFn35B630(void)    [?LobbyGetSysTOUPath)
 // TEMPLATE: WON 0x0075b650
-// (class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const & __cdecl WONAPI::LobbyFn35B650(void)    [?LobbyFn35B650)
+// (class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const & __cdecl WONAPI::LobbyFn35B650(void)    [?LobbyGetGameTOUPath)

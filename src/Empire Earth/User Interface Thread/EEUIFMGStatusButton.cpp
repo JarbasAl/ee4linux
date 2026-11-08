@@ -283,7 +283,7 @@ void EEUIFMGStatusButton::ReleaseButton()
 // FUNCTION: EXE 0x66e734
 // Snapshots the button for drawing: whether it is available, its icon and the queued count
 // The availability of the button: a command button by its own test (mB148), else its technology through the
-// player's Virtual54, or for a calamity with a cost whether a selected unit can pay it (each branch stores
+// player's WriteDetailsHook, or for a calamity with a cost whether a selected unit can pay it (each branch stores
 // mAvailable; VC6 merges the stores)
 long EEUIFMGStatusButton::CopyData()
 {

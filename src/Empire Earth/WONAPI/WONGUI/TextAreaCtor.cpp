@@ -1,4 +1,4 @@
-// Complete native3117c0 owner initialization, support0.
+// Text area constructor
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,30 +9,33 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyTextAreaConfig.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007117c0
+// Creates an empty text area with word wrap and selection on, the named TextArea/TextAreaLink fonts
+// (an underlined text font when the link font is the default) and 5-pixel padding
 TextArea::TextArea()
 {
-    mSearchLine=new TextLine;
-    mTextFlags=TextFlag_WordWrap|TextFlag_AllowSelection|TextFlag_ShowPartialLines|TextFlag_ScrollOnBottom;
-    mHasBeenVisible=false;
-    mTextColor=0x8000000e;
-    SetFont(GetNamedFont("TextArea"));
-    mLinkColor=0x0000ff;
-    SetLinkFont(GetNamedFont("TextAreaLink"));
-    if(mLinkFont.get()==GetRoot()->GetWindowManager()->GetDefaultFont())
+    this->mSearchLine=new TextLine;
+    this->mTextFlags=TextFlag_WordWrap|TextFlag_AllowSelection|TextFlag_ShowPartialLines|TextFlag_ScrollOnBottom;
+    this->mHasBeenVisible=false;
+    this->mTextColor=0x8000000e;
+    this->SetFont(this->GetNamedFont("TextArea"));
+    this->mLinkColor=0x0000ff;
+    this->SetLinkFont(this->GetNamedFont("TextAreaLink"));
+    if(this->mLinkFont.get()==this->GetRoot()->GetWindowManager()->GetDefaultFont())
     {
-        FontDescriptor descriptor=mFont->GetDescriptor();
+        FontDescriptor descriptor=this->mFont->GetDescriptor();
         descriptor.mStyle|=FontStyle_Underline;
-        SetLinkFont(GetFont(descriptor));
+        this->SetLinkFont(this->GetFont(descriptor));
     }
-    SetComponentFlags(8,true);
-    mMaxChars=80*2000;
-    mMaxLines=0;
-    mWrapIndentSize=0;
-    mLineAlign=HorzAlign_Left;
-    mTopPad=mLeftPad=mRightPad=mBottomPad=5;
-    Reset(false);
+    this->SetComponentFlags(ComponentFlag_WantFocus,true);
+    this->mMaxChars=80*2000;
+    this->mMaxLines=0;
+    this->mWrapIndentSize=0;
+    this->mLineAlign=HorzAlign_Left;
+    this->mTopPad=this->mLeftPad=this->mRightPad=this->mBottomPad=5;
+    this->Reset(false);
 }
 }
 

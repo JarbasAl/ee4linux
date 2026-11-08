@@ -1,4 +1,5 @@
-// Native resource value parsing with per-parse-generation duplicate policy.
+// Resource config handlers for named colors, fonts, sounds, strings, images and backgrounds (file name inferred).
+// A key defined twice in one parse throws; one kept from an earlier parse is left as it is
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -38,65 +39,71 @@ bool ResourceConfig_AddToMap(const char* typeName,StringParser& value,Map& value
     return false;
 }
 // FUNCTION: WON 0x007923d0
+// Defines a named color resource from the config line
 bool ResourceConfig::HandleColor(StringParser& value)
 {
     DWORD* output;
-    if(ResourceConfig_AddToMap("Color",value,mColorMap,mParseCount,output)) {
-        *output=SafeReadColor(value);
+    if(ResourceConfig_AddToMap("Color",value,this->mColorMap,this->mParseCount,output)) {
+        *output=ResourceConfig::SafeReadColor(value);
     }
     return true;
 }
 
 // FUNCTION: WON 0x00792410
+// Defines a named font resource from the config line
 bool ResourceConfig::HandleFont(StringParser& value)
 {
     SmartPtr<Font>* output;
-    if(ResourceConfig_AddToMap("Font",value,mFontMap,mParseCount,output)) {
-        *output=SafeReadFont(value);
+    if(ResourceConfig_AddToMap("Font",value,this->mFontMap,this->mParseCount,output)) {
+        *output=ResourceConfig::SafeReadFont(value);
     }
     return true;
 }
 
 // FUNCTION: WON 0x00792820
+// Defines a named sound resource from the config line
 bool ResourceConfig::HandleSound(StringParser& value)
 {
     SmartPtr<Sound>* output;
-    if(ResourceConfig_AddToMap("Sound",value,mSoundMap,mParseCount,output)) {
-        *output=SafeReadSound(value);
+    if(ResourceConfig_AddToMap("Sound",value,this->mSoundMap,this->mParseCount,output)) {
+        *output=ResourceConfig::SafeReadSound(value);
     }
     return true;
 }
 
 // FUNCTION: WON 0x00792ac0
+// Defines a named text string resource from the config line
 bool ResourceConfig::HandleString(StringParser& value)
 {
     GUIString* output;
-    if(ResourceConfig_AddToMap("String",value,mStringMap,mParseCount,output)) {
-        std::wstring text;
-        value.ReadString(text,false);
-        *output=text;
-    }
+    if(!ResourceConfig_AddToMap("String",value,this->mStringMap,this->mParseCount,output))
+        return true;
+    std::wstring text;
+    value.ReadString(text,false);
+    *output=text;
     return true;
 }
 
 // FUNCTION: WON 0x00792d90
+// Defines a named image resource from the config line
 bool ResourceConfig::HandleImage(StringParser& value)
 {
     SmartPtr<Image>* output;
-    if(ResourceConfig_AddToMap("Image",value,mImageMap,mParseCount,output)) {
-        *output=SafeReadImage(value);
+    if(ResourceConfig_AddToMap("Image",value,this->mImageMap,this->mParseCount,output)) {
+        *output=ResourceConfig::SafeReadImage(value);
     }
     return true;
 }
 
 // FUNCTION: WON 0x00793020
+// Defines a named background resource from the config line
 bool ResourceConfig::HandleBackground(StringParser& value)
 {
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(1);
     Background* output;
-    if(ResourceConfig_AddToMap("Background",value,mBackgroundMap,mParseCount,output)) {
-        *output=SafeReadBackground(value);
+    if(ResourceConfig_AddToMap("Background",value,this->mBackgroundMap,this->mParseCount,output)) {
+        *output=ResourceConfig::SafeReadBackground(value);
     }
     return true;
 }

@@ -1,2 +1,2 @@
-// ComponentCursor moved into Cursor.cpp (same original object as Cursor; L1 won_r1).
+// ComponentCursor is defined in Cursor.cpp (same original object as Cursor)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233

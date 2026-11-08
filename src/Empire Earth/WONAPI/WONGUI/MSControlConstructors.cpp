@@ -1,4 +1,4 @@
-// Genuine SDK MS control constructor completion; support0.
+// Constructors and destructors of the Windows-style controls, and helpers they inline (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,56 +12,62 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyRoomServer.h"
 #include "ee/wonapi/WONLobbySkinnedContainers.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f5560
+// Sets or clears the given component flags
 void Component::SetComponentFlags(int flags,bool on)
 {
-    if(on) mComponentBits|=flags;
-    else mComponentBits&=~flags;
+    if(on) this->mComponentBits|=flags;
+    else this->mComponentBits&=~flags;
 }
 // FUNCTION: WON 0x006f7910
+// Creates a focusable, draggable dialog that grabs its background, stays inside the root window and ignores Escape
 Dialog::Dialog()
 {
-    mDragX=mDragY=0;
-    SetComponentFlags(0x118,true);
-    mAllowDrag=true;
-    mKeepInRoot=true;
-    mEndOnEscape=false;
-    mEscapeId=-1;
+    this->mDragX=this->mDragY=0;
+    this->SetComponentFlags(0x118,true);
+    this->mAllowDrag=true;
+    this->mKeepInRoot=true;
+    this->mEndOnEscape=false;
+    this->mEscapeId=-1;
 }
-// SUPPORT: EXE 0x006ff0c0; native86B, true Direction retained after real Button base.
+// Creates an arrow button pointing the given way that repeats while held (emitted at 0x006ff0c0)
 MSArrowButton::MSArrowButton(Direction direction)
 {
-    mDirection=direction;
-    Fn2F3370(2,true);
+    this->mDirection=direction;
+    this->SetButtonFlags(2,true);
 }
-// SUPPORT: EXE 0x006fee20; native135B, text setup precedes fill flags and vertical alignment.
+// Creates a tab button (a radio button that activates on press) with the given text, lower amount and fill mode
+// (emitted at 0x006fee20)
 MSTabButton::MSTabButton(const GUIString& text,bool fillWhole,int lower)
 {
-    mLowerAmount=lower;
+    this->mLowerAmount=lower;
     if(text.length()!=0) {
-        mText->SetText(text);
-        Fn2F4E90(0,0);
+        this->mText->SetText(text);
+        this->SetDesiredSize(0,0);
     }
-    mIsTransparent=!fillWhole;
-    Fn2F3370(0x48,true);
-    SetVertAlign(VertAlign_Center);
+    this->mIsTransparent=!fillWhole;
+    this->SetButtonFlags(0x48,true);
+    this->SetVertAlign(VertAlign_Center);
 }
 // FUNCTION: WON 0x00700780
+// Creates a 3D frame of the given type, raised or sunken, that ignores input
 MS3DFrame::MS3DFrame(int type,bool up)
 {
-    mType=type;
-    mIsUp=up;
-    SetComponentFlags(0x800,true);
+    this->mType=type;
+    this->mIsUp=up;
+    this->SetComponentFlags(ComponentFlag_NoInput,true);
 }
 // FUNCTION: WON 0x007006a0
+// Creates a separator of the given height
 MSSeperator::MSSeperator(int height)
 {
-    Fn2F4B90(Width(),height);
+    this->SetSize(this->Width(),height);
 }
 }
 
-// Genuine MSControls.cpp explicit setup and retained child composition.
+// Push button, header and list control setup
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -77,60 +83,63 @@ MSSeperator::MSSeperator(int height)
 #include "ee/wonapi/WONLobbyMSRemainingPainters.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006febf0
+// Sets a push button's padding (8 across, 4 down), makes it take focus and become the default button while focused
 void MSButton::Init()
 {
-    mLeftTextPad=mRightTextPad=8;
-    mTopTextPad=mBottomTextPad=4;
-    SetComponentFlags(8,true);
-    Fn2F3370(0x400,true);
-    mUseFrame2=false;
+    this->mLeftTextPad=this->mRightTextPad=8;
+    this->mTopTextPad=this->mBottomTextPad=4;
+    this->SetComponentFlags(ComponentFlag_WantFocus,true);
+    this->SetButtonFlags(0x400,true);
+    this->mUseFrame2=false;
 }
-// SUPPORT: EXE 0x006fec30; explicit SDK default constructor,73B.
-MSButton::MSButton() { Init(); }
-// SUPPORT: EXE 0x006feca0; explicit SDK text constructor,99B.
+// Creates a push button with no text (emitted at 0x006fec30)
+MSButton::MSButton() { this->Init(); }
+// Creates a push button sized to the given text (emitted at 0x006feca0)
 MSButton::MSButton(const GUIString& text)
 {
-    Init();
-    mText->SetText(text);
-    Fn2F4E90(0,0);
+    this->Init();
+    this->mText->SetText(text);
+    this->SetDesiredSize(0,0);
 }
-// SUPPORT: EXE 0x006fef40; explicit SDK header button constructor,139B.
+// Creates a left-aligned list header button that takes no focus, sized to its text if any (emitted at 0x006fef40)
 MSHeaderButton::MSHeaderButton(const GUIString& text)
 {
-    SetComponentFlags(8,false);
-    SetUseFrame2(true);
-    IncrementHorzTextPad(2,0);
-    SetHorzAlign(HorzAlign_Left);
+    this->SetComponentFlags(ComponentFlag_WantFocus,false);
+    this->SetUseFrame2(true);
+    this->IncrementHorzTextPad(2,0);
+    this->SetHorzAlign(HorzAlign_Left);
     if(text.length()!=0) {
-        mText->SetText(text);
-        Fn2F4E90(0,0);
+        this->mText->SetText(text);
+        this->SetDesiredSize(0,0);
     }
 }
-// SUPPORT: EXE 0x00700d10; fullb0 real owner,35B.
+// Creates a list header for the given list area with no left text padding (emitted at 0x00700d10)
 MSHeaderControl::MSHeaderControl(MultiListArea* area) : MultiListHeader(area)
 {
-    mTextLeftPad=0;
+    this->mTextLeftPad=0;
 }
 // FUNCTION: WON 0x00700dd0
+// Puts a new header button with the given title on a column
 void MSHeaderControl::SetColumn(int column,const GUIString& title)
 {
     SmartPtr<MSButton> button=new MSHeaderButton(title);
-    SetColumnItem(column,button.get());
+    this->SetColumnItem(column,button.get());
 }
-// SUPPORT: EXE 0x00700e80; fulla8 retained header child composition,277B.
+// Creates a list control (a new list area when none is given) with a 15-pixel column header (emitted at 0x00700e80)
 MSListCtrl::MSListCtrl(MultiListArea* area)
     : MSScrollContainer(area ? area : new MultiListArea)
 {
-    mHeader=new MSHeaderControl(GetListArea());
-    Fn2F6A60(mHeader.get());
-    mHeaderHeight=15;
+    this->mHeader=new MSHeaderControl(this->GetListArea());
+    this->AddChild(this->mHeader.get());
+    this->mHeaderHeight=15;
 }
 // FUNCTION: WON 0x007010b0
+// Relays out the list control, placing the header just above the scroll area
 void MSListCtrl::Virtual08()
 {
     MSScrollContainer::Virtual08();
-    mHeader->Fn2F4BF0(mScrollArea->Left(),mScrollArea->Top()-mHeaderHeight,
-                     mScrollArea->Width(),mHeaderHeight);
+    this->mHeader->SetPosSize(this->mScrollArea->Left(),this->mScrollArea->Top()-this->mHeaderHeight,
+                     this->mScrollArea->Width(),this->mHeaderHeight);
 }
 }
 
@@ -139,85 +148,90 @@ void MSListCtrl::Virtual08()
 namespace WONAPI {
 
 // FUNCTION: WON 0x006ff3b0
+// Sets a check box's left-aligned text after the box, its focus rectangle around the text, and focus
 void MSCheckbox::Init()
 {
-    mStandardTextColor=StandardColor_Text;
-    mTextColor=-1;
-    mHAlign=HorzAlign_Left;
-    mFocusStyle=FocusStyle_AroundText;
-    mLeftTextPad=mCheckboxWidth+4;
-    SetComponentFlags(8,true);
+    this->mStandardTextColor=StandardColor_Text;
+    this->mTextColor=-1;
+    this->mHAlign=HorzAlign_Left;
+    this->mFocusStyle=FocusStyle_AroundText;
+    this->mLeftTextPad=MSCheckbox::mCheckboxWidth+4;
+    this->SetComponentFlags(ComponentFlag_WantFocus,true);
 }
 // FUNCTION: WON 0x006ff3e0
-MSCheckbox::MSCheckbox() { Init(); }
+// Creates a check box
+MSCheckbox::MSCheckbox() { this->Init(); }
 inline void MSRadioButton::Init()
 {
-    Fn2F3370(8,true);
-    mHAlign=HorzAlign_Left;
-    mFocusStyle=FocusStyle_AroundText;
-    mLeftTextPad=mRadioWidth+4;
+    this->SetButtonFlags(8,true);
+    this->mHAlign=HorzAlign_Left;
+    this->mFocusStyle=FocusStyle_AroundText;
+    this->mLeftTextPad=MSRadioButton::mRadioWidth+4;
 }
 // FUNCTION: WON 0x006ff530
-MSRadioButton::MSRadioButton() { Init(); }
-// SUPPORT: EXE 0x006ff6c0; genuine explicit SDK constructor,107B.
+// Creates a radio button with left-aligned text after the circle
+MSRadioButton::MSRadioButton() { this->Init(); }
+// Creates an unpadded left-aligned label that never activates (emitted at 0x006ff6c0)
 MSLabel::MSLabel()
 {
-    mStandardTextColor=StandardColor_Text;
-    mTextColor=-1;
-    mTopTextPad=mRightTextPad=mLeftTextPad=mBottomTextPad=0;
-    mHAlign=HorzAlign_Left;
-    Fn2F3370(0x200,true);
+    this->mStandardTextColor=StandardColor_Text;
+    this->mTextColor=-1;
+    this->mTopTextPad=this->mRightTextPad=this->mLeftTextPad=this->mBottomTextPad=0;
+    this->mHAlign=HorzAlign_Left;
+    this->SetButtonFlags(0x200,true);
 }
-// SUPPORT: EXE 0x006ff740; genuine explicit SDK text constructor,131B.
+// Creates an unpadded, never-activating label sized to the given text; unlike the default constructor it keeps the
+// centred alignment (emitted at 0x006ff740)
 MSLabel::MSLabel(const GUIString& text)
 {
-    mStandardTextColor=StandardColor_Text;
-    mTextColor=-1;
-    mTopTextPad=mRightTextPad=mLeftTextPad=mBottomTextPad=0;
-    Fn2F3370(0x200,true);
-    SetText(text,true);
-    Fn2F4E90(0,0);
+    this->mStandardTextColor=StandardColor_Text;
+    this->mTextColor=-1;
+    this->mTopTextPad=this->mRightTextPad=this->mLeftTextPad=this->mBottomTextPad=0;
+    this->SetButtonFlags(0x200,true);
+    this->SetText(text,true);
+    this->SetDesiredSize(0,0);
 }
-// SUPPORT: EXE 0x006ff200; genuine explicit SDK constructor,77B.
-MSCloseButton::MSCloseButton() { Fn2F4B90(16,14); }
+// Creates a 16 x 14 close button (emitted at 0x006ff200)
+MSCloseButton::MSCloseButton() { this->SetSize(16,14); }
 
-// SUPPORT: EXE 0x007008d0; genuine default constructor,201B.
+// Creates an etched frame group with a centred title label (emitted at 0x007008d0)
 MSEtchedFrameGroup::MSEtchedFrameGroup()
 {
-    mLabel=new Label;
-    mLabel->SetHorzAlign(HorzAlign_Center);
+    this->mLabel=new Label;
+    this->mLabel->SetHorzAlign(HorzAlign_Center);
 }
 }
 
 #include "ee/wonapi/WONLobbyMSMessageBox.h"
 #include "ee/wonapi/WONLobbyMSPainters.h"
 namespace WONAPI {
-// SUPPORT: EXE 0x00700550; genuine SDK explicit child composition,191B.
+// Creates a dialog with a dialog background that fills it (emitted at 0x00700550)
 MSDialog::MSDialog()
 {
     SmartPtr<MSDlgBack> back=new MSDlgBack;
-    Fn2F6140(back.get(),3,this,0,0,0,0,0);
-    Fn2F6A60(back.get());
+    this->Fn2F6140(back.get(),3,this,0,0,0,0,0);
+    this->AddChild(back.get());
 }
 }
 
 #include "ee/wonapi/WONLobbyMSBorderPainters.h"
 #include "ee/wonapi/WONLobbyMSRemainingPainters.h"
 namespace WONAPI {
-// SUPPORT: EXE 0x006fed10; genuine explicit SDK body, 11B native.
+// Destroys the push button (emitted at 0x006fed10)
 MSButton::~MSButton() {}
-// SUPPORT: EXE 0x006ff140; genuine explicit SDK body, 11B native.
+// Destroys the arrow button (emitted at 0x006ff140)
 MSArrowButton::~MSArrowButton() {}
-// SUPPORT: EXE 0x006ff420; genuine explicit SDK body, 11B native.
+// Destroys the check box (emitted at 0x006ff420)
 MSCheckbox::~MSCheckbox() {}
-// SUPPORT: EXE 0x006ff5b0; genuine explicit SDK body, 11B native.
+// Destroys the radio button (emitted at 0x006ff5b0)
 MSRadioButton::~MSRadioButton() {}
-// SUPPORT: EXE 0x006ff350; genuine explicit SDK body, 11B native.
+// Destroys the scrollbar thumb (emitted at 0x006ff350)
 MSScrollThumb::~MSScrollThumb() {}
-// SUPPORT: EXE 0x006ff310; genuine explicit SDK body, 18B native.
+// Creates a scrollbar thumb (emitted at 0x006ff310)
 MSScrollThumb::MSScrollThumb() {}
 // FUNCTION: WON 0x00700840
-MSEtchedFrame::MSEtchedFrame() { SetComponentFlags(0x800,true); }
+// Creates an etched frame that ignores input
+MSEtchedFrame::MSEtchedFrame() { this->SetComponentFlags(ComponentFlag_NoInput,true); }
 }
 
 // Compiler-generated and header-inline functions this unit emits:

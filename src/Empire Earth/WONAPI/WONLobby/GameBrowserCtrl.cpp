@@ -1,4 +1,4 @@
-// Scratch whole browser consumer; BrowserComponent remains GUI-owned reference only.
+// The lobby's web browser tab (help and news): navigation buttons, find box and status line
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,114 +12,118 @@
 #include "ee/wonapi/WONLobbyControlConfig.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
-// Original3bbdc0..3bbebe,254B. Home assignment follows default-owned members.
+// The home location is assigned in the body, after the members are built
 // FUNCTION: WON 0x007bbdc0
+// Creates the browser tab with its home page, to be loaded on first paint
 GameBrowserCtrl::GameBrowserCtrl(const GUIString& inHome)
 {
-    mHomeLocation=inHome;
-    mIsReset=true;
+    this->mHomeLocation=inHome;
+    this->mIsReset=true;
 }
 
-// Original3bc0b0..3bc244,404B.
 // FUNCTION: WON 0x007bc0b0
+// Finds the browser, navigation, find and status controls in the layout and numbers the buttons
 void GameBrowserCtrl::InitComponent(ComponentInit& inInit)
 {
     if(inInit.mType!=2) return;
     ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-    SafeGetComponent(config,mBrowser,"Browser",__FILE__,27);
-    SafeGetComponent(config,mBackButton,"BackButton",__FILE__,28);
-    SafeGetComponent(config,mForwardButton,"ForwardButton",__FILE__,29);
-    SafeGetComponent(config,mStopButton,"StopButton",__FILE__,30);
-    SafeGetComponent(config,mHomeButton,"HomeButton",__FILE__,31);
-    SafeGetComponent(config,mRefreshButton,"RefreshButton",__FILE__,32);
-    SafeGetComponent(config,mFindInput,"FindInput",__FILE__,33);
-    SafeGetComponent(config,mFindNextButton,"FindNextButton",__FILE__,34);
-    SafeGetComponent(config,mFindPrevButton,"FindPrevButton",__FILE__,35);
-    SafeGetComponent(config,mCaseSensitiveCheck,"CaseSensitiveCheck",__FILE__,36);
-    SafeGetComponent(config,mStatusLabel,"StatusLabel",__FILE__,37);
-    mBackButton->mControlId=2;
-    mForwardButton->mControlId=3;
-    mStopButton->mControlId=5;
-    mRefreshButton->mControlId=1;
-    mHomeButton->mControlId=4;
-    mFindNextButton->mControlId=7;
-    mFindPrevButton->mControlId=8;
-    EnableButtons();
+    SafeGetComponent(config,this->mBrowser,"Browser",__FILE__,27);
+    SafeGetComponent(config,this->mBackButton,"BackButton",__FILE__,28);
+    SafeGetComponent(config,this->mForwardButton,"ForwardButton",__FILE__,29);
+    SafeGetComponent(config,this->mStopButton,"StopButton",__FILE__,30);
+    SafeGetComponent(config,this->mHomeButton,"HomeButton",__FILE__,31);
+    SafeGetComponent(config,this->mRefreshButton,"RefreshButton",__FILE__,32);
+    SafeGetComponent(config,this->mFindInput,"FindInput",__FILE__,33);
+    SafeGetComponent(config,this->mFindNextButton,"FindNextButton",__FILE__,34);
+    SafeGetComponent(config,this->mFindPrevButton,"FindPrevButton",__FILE__,35);
+    SafeGetComponent(config,this->mCaseSensitiveCheck,"CaseSensitiveCheck",__FILE__,36);
+    SafeGetComponent(config,this->mStatusLabel,"StatusLabel",__FILE__,37);
+    this->mBackButton->mControlId=2;
+    this->mForwardButton->mControlId=3;
+    this->mStopButton->mControlId=5;
+    this->mRefreshButton->mControlId=1;
+    this->mHomeButton->mControlId=4;
+    this->mFindNextButton->mControlId=7;
+    this->mFindPrevButton->mControlId=8;
+    this->EnableButtons();
 }
-// Original3bc250..3bc2ad,93B. Button receiver snapshot precedes browser predicate.
+// Each button pointer is loaded before the browser is asked
 // FUNCTION: WON 0x007bc250
+// Enables back, forward and stop as the browser allows
 void GameBrowserCtrl::EnableButtons()
 {
-    Button* button=mBackButton.get();
-    button->SetEnabled(mBrowser->BackButtonEnabled());
-    button=mForwardButton.get();
-    button->SetEnabled(mBrowser->ForwardButtonEnabled());
-    BrowserComponent* browser=mBrowser.get();
-    Button* stop=mStopButton.get();
+    Button* button=this->mBackButton.get();
+    button->SetEnabled(this->mBrowser->BackButtonEnabled());
+    button=this->mForwardButton.get();
+    button->SetEnabled(this->mBrowser->ForwardButtonEnabled());
+    BrowserComponent* browser=this->mBrowser.get();
+    Button* stop=this->mStopButton.get();
     stop->SetEnabled(browser->StopButtonEnabled());
 }
-// Original3bc2b0..3bc2e4,52B. Browser/input receiver snapshots before GetText.
+// The check box, input and browser pointers are loaded before GetText
 // FUNCTION: WON 0x007bc2b0
+// Finds the typed text forwards or backwards in the page, case-sensitive if ticked
 void GameBrowserCtrl::DoFind(bool inNext)
 {
-    Button* check=mCaseSensitiveCheck.get();
-    InputBox* input=mFindInput.get();
-    BrowserComponent* browser=mBrowser.get();
+    Button* check=this->mCaseSensitiveCheck.get();
+    InputBox* input=this->mFindInput.get();
+    BrowserComponent* browser=this->mBrowser.get();
     browser->FindStr(input->GetText(),inNext,check->mChecked!=0);
 }
-// Original3bc2f0..3bc307,23B.
 // FUNCTION: WON 0x007bc2f0
-void GameBrowserCtrl::Fn3BC2F0()
+// Clears the browser so the home page loads again on the next paint
+void GameBrowserCtrl::ResetBrowser()
 {
-    mBrowser->Reset();
-    mIsReset=true;
+    this->mBrowser->Reset();
+    this->mIsReset=true;
 }
-// Original3bc310..3bc327,23B.
 // FUNCTION: WON 0x007bc310
+// Loads the home page once after a reset
 void GameBrowserCtrl::GoHomeIfReset()
 {
-    if(mIsReset) {
-        mIsReset=false;
-        GoHome();
+    if(this->mIsReset) {
+        this->mIsReset=false;
+        this->GoHome();
     }
 }
-// Original3bc330..3bc349,25B.
 // FUNCTION: WON 0x007bc330
+// Loads the home page
 void GameBrowserCtrl::GoHome()
 {
-    mBrowser->Go(mHomeLocation,false,0,-1);
+    this->mBrowser->Go(this->mHomeLocation,false,0,-1);
 }
-// Original3bc350..3bc408,184B; separate owned32B switch table excluded.
 // FUNCTION: WON 0x007bc350
+// Handles browser state changes and the navigation and find buttons; every other event is dropped
 void GameBrowserCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType) {
-    case 33: EnableButtons(); return;
-    case 31: mStatusLabel->SetText(mBrowser->GetCurStatus(),true); return;
-    case 15:
+    case ComponentEvent_BrowserButtonChange: this->EnableButtons(); return;
+    case ComponentEvent_BrowserStatusChange: this->mStatusLabel->SetText(this->mBrowser->GetCurStatus(),true); return;
+    case ComponentEvent_ButtonPressed:
         switch(inEvent->GetControlId()) {
-        case 2: mBrowser->Back(); break;
-        case 3: mBrowser->Forward(); break;
-        case 5: mBrowser->Stop(); break;
-        case 1: mBrowser->Refresh(); break;
-        case 4: GoHome(); break;
-        case 7: DoFind(true); break;
-        case 8: DoFind(false); break;
+        case 2: this->mBrowser->Back(); break;
+        case 3: this->mBrowser->Forward(); break;
+        case 5: this->mBrowser->Stop(); break;
+        case 1: this->mBrowser->Refresh(); break;
+        case 4: this->GoHome(); break;
+        case 7: this->DoFind(true); break;
+        case 8: this->DoFind(false); break;
         }
         return;
     }
 }
-// Original3bc430..3bc448,24B.
 // FUNCTION: WON 0x007bc430
+// Loads the home page if the browser was reset, then draws the tab
 void GameBrowserCtrl::Paint(Graphics& inGraphics)
 {
-    GoHomeIfReset();
+    this->GoHomeIfReset();
     Container::Paint(inGraphics);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x00765460
+// Creates a config for a browser tab in the layout file
 ComponentConfig* GameBrowserCtrlConfig::CfgFactory()
 {
     return new GameBrowserCtrlConfig;
@@ -129,17 +133,18 @@ ComponentConfig* GameBrowserCtrlConfig::CfgFactory()
 #include "ee/wonapi/WONURL.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007bc450
+// Reads the HOMELOCATION layout key, resolving a file URL to the resource file path
 bool GameBrowserCtrlConfig::Virtual24(const std::string& instruction)
 {
     if(ContainerConfig::Virtual24(instruction))
         return true;
     if(instruction=="HOMELOCATION")
     {
-        std::string path=Fn3842F0(false);
+        std::string path=this->ReadString(false);
         URL url=path;
         if(url.GetType()==URLType_File)
             path=ComponentConfig::GetResourceFile(path);
-        mBrowser->SetHomeLocation(path);
+        this->mBrowser->SetHomeLocation(path);
     }
     else
         return false;

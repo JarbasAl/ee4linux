@@ -1,4 +1,4 @@
-// Actual separator rendering and complete owned component-list-item insertion.
+// Menu separator drawing and component list item painting (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,28 +14,29 @@
 #include "ee/wonapi/WONLobbyComponentListItem.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00700720
+// Draws an etched horizontal line (shadow over highlight) across the middle of the separator
 void MSSeperator::Paint(Graphics& g)
 {
     Component::Paint(g);
-    int y=Height()/2-1;
+    int y=this->Height()/2-1;
     if(y<0) y=0;
     g.SetSysColor(StandardColor_3DShadow);
-    g.DrawLine(0,y,Width()-1,y);
+    g.DrawLine(0,y,this->Width()-1,y);
     ++y;
     g.SetSysColor(StandardColor_3DHilight);
-    g.DrawLine(0,y,Width()-1,y);
+    g.DrawLine(0,y,this->Width()-1,y);
 }
 
 // FUNCTION: WON 0x006fa510
-void ComponentListItem::Virtual04(Graphics& g,ListArea* area)
+// Draws the item's component, first stretching it to the list's paint width when the item is sizable
+void ComponentListItem::Paint(Graphics& g,ListArea* area)
 {
-    if(mComponent.get()!=NULL)
-    {
-        if(mIsSizable)
-            mComponent->Fn2F4B90(area->mL12C,mComponent->Height());
-        mComponent->Virtual68();
-        mComponent->Paint(g);
-    }
+    if(this->mComponent.get()==NULL)
+        return;
+    if(this->mIsSizable)
+        this->mComponent->SetSize(area->mPaintWidth,this->mComponent->Height());
+    this->mComponent->MarkInvalid();
+    this->mComponent->Paint(g);
 }
 
 }

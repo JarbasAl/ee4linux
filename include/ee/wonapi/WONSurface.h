@@ -1,5 +1,5 @@
-// Complete genuine optional SDK software-surface family; SOURCE_ONLY_NO_NATIVE_ID.
-// SDK WIN32_NOT_XBOX conditional is preserved, no macro/slot/provider forcing.
+// Software surface classes (optional; not identified in the original exe).
+// The SDK's WIN32_NOT_XBOX conditional is kept.
 #ifndef EE_WONAPI_WONSURFACE_H
 #define EE_WONAPI_WONSURFACE_H
 #include <windows.h>
@@ -82,22 +82,22 @@ public:
 	virtual void Create(int theWidth, int theHeight);
 	virtual void Free();
 	virtual int GetPixelSize()=0;
-	SurfaceFormat GetSurfaceFormat() { return mFormat; }
-	int GetBytesPerRow() { return mBytesPerRow; }
-	int GetPixelsPerRow() { return mPixelsPerRow; }
+	SurfaceFormat GetSurfaceFormat() { return this->mFormat; }
+	int GetBytesPerRow() { return this->mBytesPerRow; }
+	int GetPixelsPerRow() { return this->mPixelsPerRow; }
 
 #ifdef WIN32_NOT_XBOX
 	void BlitToDC(HDC theDC, int x, int y, int left, int top, int width, int height);
 	void BlitToDC(HDC theDC);
 #endif
 
-	int GetWidth() { return mWidth; }
-	int GetHeight() { return mHeight; }
+	int GetWidth() { return this->mWidth; }
+	int GetHeight() { return this->mHeight; }
 
 	void SetClipRect(int x, int y, int width, int height);
 	void ClearClipRect();
 
-	void* GetPixelsBase() { return mImageBase; }
+	void* GetPixelsBase() { return this->mImageBase; }
 
 	virtual SurfaceBasePtr Duplicate()=0;
 
@@ -105,12 +105,12 @@ public:
 	static SurfaceBasePtr GetNewSurface(SurfaceFormat theFormat);
 	static SurfaceBasePtr GetNewDefaultSurface();
 
-	int GetClipX1() { return mClipX1; }
-	int GetClipX2() { return mClipX2; }
-	int GetClipY1() { return mClipY1; }
-	int GetClipY2() { return mClipY2; }
-	void GetClipRect(int &cx1, int &cy1, int &cx2, int &cy2) { cx1 = mClipX1; cx2 = mClipX2; cy1 = mClipY1; cy2 = mClipY2; }
-	inline bool NotClipped(int x, int y) { 	return x>=mClipX1 && y>=mClipY1 && x<=mClipX2 && y<=mClipY2; }
+	int GetClipX1() { return this->mClipX1; }
+	int GetClipX2() { return this->mClipX2; }
+	int GetClipY1() { return this->mClipY1; }
+	int GetClipY2() { return this->mClipY2; }
+	void GetClipRect(int &cx1, int &cy1, int &cx2, int &cy2) { cx1 = this->mClipX1; cx2 = this->mClipX2; cy1 = this->mClipY1; cy2 = this->mClipY2; }
+	inline bool NotClipped(int x, int y) { 	return x>=this->mClipX1 && y>=this->mClipY1 && x<=this->mClipX2 && y<=this->mClipY2; }
 };
 typedef SmartPtr<SurfaceBase> SurfaceBasePtr;
 
@@ -153,8 +153,8 @@ public:
 	void DrawVertLine(int x, int y1, int y2);
 	void DrawLine(int x1, int y1, int x2, int y2);
 
-	PixelType* GetPixels() { return mImage; }
-	PixelType GetColor() { return mColor; }
+	PixelType* GetPixels() { return this->mImage; }
+	PixelType GetColor() { return this->mColor; }
 
 	void DrawRect(int x, int y, int width, int height);
 	void FillRect(int x, int y, int width, int height);
@@ -162,8 +162,8 @@ public:
 
 	inline void PutPixel(int x, int y, PixelType *thePtr)
 	{
-		if(NotClipped(x,y))
-			*thePtr = mColor;
+		if(this->NotClipped(x,y))
+			*thePtr = this->mColor;
 	}
 
 	SurfaceBasePtr Duplicate();

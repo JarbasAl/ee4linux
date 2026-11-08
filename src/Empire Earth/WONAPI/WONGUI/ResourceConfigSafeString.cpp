@@ -1,4 +1,4 @@
-// Genuine ResourceConfig string lookup on the complete native b0 owner.
+// ResourceConfig lookups that throw when a named resource is missing
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -13,6 +13,8 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007a2680
+// Returns the named entry of a resource map, or throws "<type> resource not found: <key> (ResourceGroup: <group>)"
+// (this address holds the string instance; the image and sound instances follow at 0x007a27f0 and 0x007a2960)
 template<class Map>
 static Map::referent_type::first_type& ResourceConfig_SafeGetRes(
     const char* typeName,const std::string& key,Map& values,ResourceConfig* config)
@@ -20,49 +22,52 @@ static Map::referent_type::first_type& ResourceConfig_SafeGetRes(
     Map::iterator found=values.find(key);
     if(found!=values.end()) return found->second.first;
     char text[512];
-    // Established ConfigObject::mS18 is SDK mName/GetName(); native reads its data at +1c.
+    // mName is the config object's name (ConfigObject::GetName); the original reads its text at +0x1c.
     sprintf(text,"%s resource not found: %s (ResourceGroup: %s)",
-        typeName,key.c_str(),config->mS18.c_str());
+        typeName,key.c_str(),config->mName.c_str());
     throw ConfigObjectException(text);
 }
 // FUNCTION: WON 0x00793890
+// Returns the named string resource; throws when it is missing
 const GUIString& ResourceConfig::SafeGetString(const std::string& key)
 {
-    return ResourceConfig_SafeGetRes("String",key,mStringMap,this);
+    return ResourceConfig_SafeGetRes("String",key,this->mStringMap,this);
 }
 
 // FUNCTION: WON 0x007938b0
+// Returns the named image resource; throws when it is missing
 Image* ResourceConfig::SafeGetImage(const std::string& key)
 {
-    return ResourceConfig_SafeGetRes("Image",key,mImageMap,this).get();
+    return ResourceConfig_SafeGetRes("Image",key,this->mImageMap,this).get();
 }
 // FUNCTION: WON 0x007938d0
+// Returns the named sound resource; throws when it is missing
 Sound* ResourceConfig::SafeGetSound(const std::string& key)
 {
-    return ResourceConfig_SafeGetRes("Sound",key,mSoundMap,this).get();
+    return ResourceConfig_SafeGetRes("Sound",key,this->mSoundMap,this).get();
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: same-snapshot SDK compatible resource API completion.
+// Font, color, background and int lookups that throw when missing (not identified in the original exe)
 Font* ResourceConfig::SafeGetFont(const std::string &theKey)
 {
-	return ResourceConfig_SafeGetRes("Font",theKey,mFontMap,this);
+	return ResourceConfig_SafeGetRes("Font",theKey,this->mFontMap,this);
 }
 
 DWORD ResourceConfig::SafeGetColor(const std::string &theKey)
 {
-	return ResourceConfig_SafeGetRes("Color",theKey,mColorMap,this);
+	return ResourceConfig_SafeGetRes("Color",theKey,this->mColorMap,this);
 
 }
 
 const Background& ResourceConfig::SafeGetBackground(const std::string &theKey)
 {
-	return ResourceConfig_SafeGetRes("Background",theKey,mBackgroundMap,this);
+	return ResourceConfig_SafeGetRes("Background",theKey,this->mBackgroundMap,this);
 
 }
 
 int ResourceConfig::SafeGetInt(const std::string &theKey)
 {
-	return ResourceConfig_SafeGetRes("Int",theKey,mIntMap,this);
+	return ResourceConfig_SafeGetRes("Int",theKey,this->mIntMap,this);
 }
 
 // Compiler-generated and header-inline functions this unit emits:

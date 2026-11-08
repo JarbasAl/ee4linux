@@ -1,5 +1,4 @@
-// Original-backed blocking operation family; source only, no runtime authority.
-// SendBytes/SendMsg const-ownership candidates are excluded entirely.
+// ServerConnection: persistent authenticated server socket with keep-alive and message callbacks
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,180 +7,195 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006aab10
+// Creates an unauthenticated server connection with a 300-second keep-alive
 ServerConnection::ServerConnection() : BlockingSocket(0)
 {
-    mAuthType=AUTH_TYPE_NONE;
-    mKeepAlivePeriod=300;
+    this->mAuthType=AUTH_TYPE_NONE;
+    this->mKeepAlivePeriod=300;
 }
 // FUNCTION: WON 0x006aaf10
+// Restarts the keep-alive timer (none when the period is 0)
 void ServerConnection::StartKeepAlive()
 {
-    AutoCrit aCrit(mDataCrit);
-    if(mKeepAliveOp.get()!=NULL) {
-        mKeepAliveOp->Kill(true);
-        mKeepAliveOp=NULL;
+    AutoCrit aCrit(this->mDataCrit);
+    if(this->mKeepAliveOp.get()!=NULL) {
+        this->mKeepAliveOp->Kill(true);
+        this->mKeepAliveOp=NULL;
     }
-    if(mKeepAlivePeriod!=0) {
-        mKeepAliveOp=new AsyncOp;
-        mKeepAliveOp->mCompletion=new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
-            StaticKeepAliveCallback,SmartPtr<RefCount>(this));
-        mKeepAliveOp->Run(mKeepAlivePeriod*1000);
+    if(this->mKeepAlivePeriod!=0) {
+        this->mKeepAliveOp=new AsyncOp;
+        this->mKeepAliveOp->mCompletion=new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
+            ServerConnection::StaticKeepAliveCallback,SmartPtr<RefCount>(this));
+        this->mKeepAliveOp->RunAsync(this->mKeepAlivePeriod*1000);
     }
 }
 // FUNCTION: WON 0x006ab0a0
-void ServerConnection::Fn2AB0A0(AuthContext* inContext,AuthType inType)
+// Sets the auth context and auth type used when connecting
+void ServerConnection::SetAuth(AuthContext* inContext,AuthType inType)
 {
-    AutoCrit aCrit(mDataCrit);
-    mAuthContext=inContext;
-    mAuthType=inType;
+    AutoCrit aCrit(this->mDataCrit);
+    this->mAuthContext=inContext;
+    this->mAuthType=inType;
 }
-// Native static callback2ab160: generated-looking lifetime expansion, support0.
 // FUNCTION: WON 0x006ab160
+// Forwards the peer auth completion to its connection
 void ServerConnection::StaticConnectCallback(AsyncOpPtr inOp,SmartPtr<RefCount> inParam)
 {
-    ((ServerConnection*)inParam.get())->Virtual14((PeerAuthOp*)inOp.get());
+    ((ServerConnection*)inParam.get())->ConnectCallback((PeerAuthOp*)inOp.get());
 }
 // FUNCTION: WON 0x006ab1f0
-void ServerConnection::Virtual14(PeerAuthOp* inOp)
+// Reports the connect result; on success starts receiving messages and the keep-alive timer
+void ServerConnection::ConnectCallback(PeerAuthOp* inOp)
 {
-    AutoCrit aCrit(mDataCrit);
-    if(inOp!=mPeerAuthOp.get()) return;
-    OpCompletionBasePtr aCompletion=mConnectCompletion;
-    mPeerAuthOp=NULL;
+    AutoCrit aCrit(this->mDataCrit);
+    if(inOp!=this->mPeerAuthOp.get()) return;
+    OpCompletionBasePtr aCompletion=this->mConnectCompletion;
+    this->mPeerAuthOp=NULL;
     aCrit.Leave();
     if(aCompletion.get()!=NULL) aCompletion->Complete(AsyncOpPtr(inOp));
-    if(inOp->GetStatus()==0) {
-        Fn2B3BF0(new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
-            StaticMsgCallback,SmartPtr<RefCount>(this)));
-        Fn2B4500(new RecvMsgOp);
-        StartKeepAlive();
+    if(inOp->GetStatus()==WS_Success) {
+        this->SetRepeatCompletion(new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
+            ServerConnection::StaticMsgCallback,SmartPtr<RefCount>(this)));
+        this->SetRepeatOp(new RecvMsgOp);
+        this->StartKeepAlive();
     }
 }
 // FUNCTION: WON 0x006ab6a0
+// Passes each successfully received message to the connection's MsgCallback
 void ServerConnection::StaticMsgCallback(AsyncOpPtr inOp,SmartPtr<RefCount> inParam)
 {
     RecvMsgOp* anOp=(RecvMsgOp*)inOp.get();
     ServerConnection* aConnection=(ServerConnection*)inParam.get();
-    if(anOp->GetStatus()==0) aConnection->Virtual18(anOp->GetMsg().get());
+    if(anOp->GetStatus()==WS_Success) aConnection->MsgCallback(anOp->GetMsg().get());
 }
-// Native static callback2ab7b0 owning dispatch, support0.
 // FUNCTION: WON 0x006ab7b0
+// Forwards the keep-alive timer completion to its connection
 void ServerConnection::StaticKeepAliveCallback(AsyncOpPtr inOp,SmartPtr<RefCount> inParam)
 {
     ((ServerConnection*)inParam.get())->KeepAliveCallback(inOp.get());
 }
 // FUNCTION: WON 0x006ab840
+// Sends a no-op message and restarts the timer when the current keep-alive timer fires
 void ServerConnection::KeepAliveCallback(AsyncOp* inOp)
 {
-    AutoCrit aCrit(mDataCrit);
-    if(inOp==mKeepAliveOp.get()) {
-        mKeepAliveOp=NULL;
-        if(inOp->mB39) return;
-        SendNoOp();
-        StartKeepAlive();
+    AutoCrit aCrit(this->mDataCrit);
+    if(inOp==this->mKeepAliveOp.get()) {
+        this->mKeepAliveOp=NULL;
+        if(inOp->mKilled) return;
+        this->SendNoOp();
+        this->StartKeepAlive();
     }
 }
 // FUNCTION: WON 0x006ab910
+// Queues a no-op message to keep the connection alive
 void ServerConnection::SendNoOp()
 {
-    WriteBuffer aBuf(mLengthFieldSize,true);
+    WriteBuffer aBuf(this->mLengthFieldSize,true);
     aBuf.AppendByte(3);
     aBuf.AppendByte(1);
     aBuf.AppendByte(7);
-    Fn2B4740(new SendMsgOp(aBuf.ToByteBuffer(true).get()),-1);
+    this->QueueOp(new SendMsgOp(aBuf.ToByteBuffer(true).get()),-1);
 }
 // FUNCTION: WON 0x006abdc0
+// Sets the completion called when a connect finishes
 void ServerConnection::SetConnectCompletion(CompletionBase<AsyncOpPtr>* inCompletion)
 {
-    AutoCrit aCrit(mDataCrit);
-    mConnectCompletion=inCompletion;
+    AutoCrit aCrit(this->mDataCrit);
+    this->mConnectCompletion=inCompletion;
 }
 // FUNCTION: WON 0x006abe70
-void ServerConnection::Virtual08()
+// Stops the keep-alive timer and a pending connect, drops the message callback and closes the socket
+void ServerConnection::CloseHook()
 {
-    if(mKeepAliveOp.get()!=NULL) {
-        mKeepAliveOp->Kill(true);
-        mKeepAliveOp=NULL;
+    if(this->mKeepAliveOp.get()!=NULL) {
+        this->mKeepAliveOp->Kill(true);
+        this->mKeepAliveOp=NULL;
     }
-    if(mPeerAuthOp.get()!=NULL) {
-        mPeerAuthOp->mCompletion=mConnectCompletion;
-        if(mPeerAuthOp->GetStatus()==100000) mPeerAuthOp->Kill(true);
-        mPeerAuthOp=NULL;
+    if(this->mPeerAuthOp.get()!=NULL) {
+        this->mPeerAuthOp->mCompletion=this->mConnectCompletion;
+        if(this->mPeerAuthOp->GetStatus()==WS_Pending) this->mPeerAuthOp->Kill(true);
+        this->mPeerAuthOp=NULL;
     }
-    Fn2B3BF0(NULL);
-    QueueSocket::Virtual08();
+    this->SetRepeatCompletion(NULL);
+    QueueSocket::CloseHook();
 }
 // FUNCTION: WON 0x006abf50
-void ServerConnection::Virtual0C()
+// Kills the socket and drops the connect completion and auth context
+void ServerConnection::KillHook()
 {
-    QueueSocket::Virtual0C();
-    mConnectCompletion=NULL;
-    mAuthContext=NULL;
+    QueueSocket::KillHook();
+    this->mConnectCompletion=NULL;
+    this->mAuthContext=NULL;
 }
 // FUNCTION: WON 0x006abfc0
+// Creates an op that connects a server connection to an address
 ServerConnectionConnectOp::ServerConnectionConnectOp(ServerConnection* inConnection,const IPAddr& inAddr)
     : mConnection(inConnection),mAddr(inAddr)
 {
 }
-// Native owning callback2ac240, support0.
 // FUNCTION: WON 0x006ac240
+// Forwards the connect completion to its op
 void ServerConnectionConnectOp::StaticConnectCompletion(AsyncOpPtr inOp,SmartPtr<RefCount> inParam)
 {
     ((ServerConnectionConnectOp*)inParam.get())->ConnectCompletion(inOp.get());
 }
 // FUNCTION: WON 0x006ac2d0
+// Finishes the pending op with the connect status
 void ServerConnectionConnectOp::ConnectCompletion(AsyncOp* inOp)
 {
-    if(GetStatus()!=100000) return;
-    Fn29F220(inOp->GetStatus());
+    if(this->GetStatus()!=WS_Pending) return;
+    this->Finish(inOp->GetStatus());
 }
 // FUNCTION: WON 0x006ac2f0
-void ServerConnectionConnectOp::Virtual04()
+// Starts an asynchronous connect, completing the op when it finishes
+void ServerConnectionConnectOp::RunHook()
 {
-    mConnection->SetConnectCompletion(new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
-        StaticConnectCompletion,SmartPtr<RefCount>(this)));
-    mConnection->ConnectAsync(mAddr,mTimeout);
+    this->mConnection->SetConnectCompletion(new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
+        ServerConnectionConnectOp::StaticConnectCompletion,SmartPtr<RefCount>(this)));
+    this->mConnection->ConnectAsync(this->mAddr,this->mTimeout);
 }
-// Native CleanupHook2ac380 delegates completion clearing, support0.
 // FUNCTION: WON 0x006ac380
-void ServerConnectionConnectOp::Virtual08()
+// Removes the op's connect completion from the connection
+void ServerConnectionConnectOp::CleanupHook()
 {
-    mConnection->SetConnectCompletion(NULL);
+    this->mConnection->SetConnectCompletion(NULL);
 }
 
 // FUNCTION: WON 0x006abc40
+// Closes the socket and starts an asynchronous authenticated connect; returns the peer auth op
 PeerAuthOp* ServerConnection::ConnectAsync(const IPAddr& address,unsigned long timeout)
 {
-    AutoCrit aCrit(mDataCrit);
-    Fn2B1AD0();
-    mPeerAuthOp=new PeerAuthOp(address,mAuthContext.get(),mAuthType,this,true);
-    mPeerAuthOp->mCompletion=new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
-        StaticConnectCallback,SmartPtr<RefCount>(this));
-    mPeerAuthOp->Run(timeout);
-    return mPeerAuthOp.get();
+    AutoCrit aCrit(this->mDataCrit);
+    this->Close();
+    this->mPeerAuthOp=new PeerAuthOp(address,this->mAuthContext.get(),this->mAuthType,this,true);
+    this->mPeerAuthOp->mCompletion=new ParamCompletion<AsyncOpPtr,SmartPtr<RefCount> >(
+        ServerConnection::StaticConnectCallback,SmartPtr<RefCount>(this));
+    this->mPeerAuthOp->RunAsync(timeout);
+    return this->mPeerAuthOp.get();
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing executable methods.
+// No original address identified: WON SDK methods
 namespace WONAPI {
 void ServerConnection::SetKeepAlivePeriod(DWORD theSeconds)
 {
-	AutoCrit aCrit(mDataCrit);
-	mKeepAlivePeriod = theSeconds;
+	AutoCrit aCrit(this->mDataCrit);
+	this->mKeepAlivePeriod = theSeconds;
 }
 
 WONStatus ServerConnection::ConnectBlock(const IPAddr &theAddr, DWORD theTimeout)
 {
-	AutoCrit aCrit(mDataCrit);
-	Fn2B1AD0();
-	mPeerAuthOp = new PeerAuthOp(theAddr, mAuthContext, mAuthType, this,true);
-	SmartPtr<PeerAuthOp> aPeerAuthOp = mPeerAuthOp;
+	AutoCrit aCrit(this->mDataCrit);
+	this->Close();
+	this->mPeerAuthOp = new PeerAuthOp(theAddr, this->mAuthContext, this->mAuthType, this,true);
+	SmartPtr<PeerAuthOp> aPeerAuthOp = this->mPeerAuthOp;
 	aCrit.Leave();
 
 	aPeerAuthOp->RunBlock(theTimeout);
-	Virtual14(aPeerAuthOp);
+	this->ConnectCallback(aPeerAuthOp);
 	return aPeerAuthOp->GetStatus();
 }
 }

@@ -1,4 +1,4 @@
-// Complete same-SDK directory protocol operations; no Native layout or runtime replacement claim.
+// WON SDK directory protocol operations; no original address identified
 #ifndef EE_WONAPI_WONDIREXTENDED_H
 #define EE_WONAPI_WONDIREXTENDED_H
 #include "ee/wonapi/WONBuffer.h"
@@ -95,7 +95,7 @@ enum DirFindFlags
 	DIR_FF_RECURSIVE = 0x04   // Search directories recursively for matches
 };
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK AddEntityOp family.
+// No original address identified: WON SDK AddEntityOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class AddEntityOp : public ServerRequestOp
@@ -114,27 +114,27 @@ protected:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	AddEntityOp(ServerContext *theDirContext, bool isService);
 	AddEntityOp(const IPAddr &theAddr, bool isService);
 
 	// DirUpdateFlags defined in DirTypes.h
-	void SetFlags(DWORD theFlags) { mFlags = theFlags; } 	
-	void SetPath(const std::wstring &thePath) { mPath = thePath; } 
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetDisplayName(const std::wstring &theDisplayName) { mDisplayName = theDisplayName; }
-	void SetLifespan(unsigned long theLifespan) { mLifespan = theLifespan; }
-	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mDataObjects.push_back(anObject); }
-	void ClearDataObjects() { mDataObjects.clear(); }
+	void SetFlags(DWORD theFlags) { this->mFlags = theFlags; } 	
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; } 
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetDisplayName(const std::wstring &theDisplayName) { this->mDisplayName = theDisplayName; }
+	void SetLifespan(unsigned long theLifespan) { this->mLifespan = theLifespan; }
+	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; this->mDataObjects.push_back(anObject); }
+	void ClearDataObjects() { this->mDataObjects.clear(); }
 	
-	DWORD GetFlags() const { return mFlags; }
-	const std::wstring& GetPath() const { return mPath; }
-	const std::wstring& GetName() const { return mName; }
-	const std::wstring& GetDisplayName() const { return mDisplayName; }
-	const DirDataObjectList& GetDataObjects() const { return mDataObjects; }
+	DWORD GetFlags() const { return this->mFlags; }
+	const std::wstring& GetPath() const { return this->mPath; }
+	const std::wstring& GetName() const { return this->mName; }
+	const std::wstring& GetDisplayName() const { return this->mDisplayName; }
+	const DirDataObjectList& GetDataObjects() const { return this->mDataObjects; }
 };
 
 typedef SmartPtr<AddEntityOp> AddEntityOpPtr;
@@ -147,11 +147,11 @@ public:
 	AddServiceOp(ServerContext *theDirContext) : AddEntityOp(theDirContext, true) {}
 	AddServiceOp(const IPAddr &theAddr) : AddEntityOp(theAddr, true) {}
 
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 	void SetNetAddrPort(unsigned short thePort);
 
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
 };
 
 typedef SmartPtr<AddServiceOp> AddServiceOpPtr;
@@ -167,7 +167,7 @@ public:
 
 typedef SmartPtr<AddDirOp> AddDirOpPtr;
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK ModifyEntityOp family.
+// No original address identified: WON SDK ModifyEntityOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class ModifyEntityOp : public ServerRequestOp
@@ -189,29 +189,29 @@ protected:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	ModifyEntityOp(ServerContext *theDirContext, bool isService);
 	ModifyEntityOp(const IPAddr &theAddr, bool isService);
 
 	// DirUpdateFlags defined in DirTypes.h
-	void SetFlags(DWORD theFlags) { mFlags = theFlags; } 
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }
+	void SetFlags(DWORD theFlags) { this->mFlags = theFlags; } 
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }
 
-	void SetNewName(const std::wstring &theNewName) { mNewName = theNewName; }
-	void SetNewDisplayName(const std::wstring &theNewDisplayName) { mNewDisplayName = theNewDisplayName; }
-	void SetNewLifespan(unsigned long theLifespan) { mNewLifespan = theLifespan; }
-	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mDataObjects.push_back(anObject); }
-	void ClearDataObjects() { mDataObjects.clear(); }
+	void SetNewName(const std::wstring &theNewName) { this->mNewName = theNewName; }
+	void SetNewDisplayName(const std::wstring &theNewDisplayName) { this->mNewDisplayName = theNewDisplayName; }
+	void SetNewLifespan(unsigned long theLifespan) { this->mNewLifespan = theLifespan; }
+	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; this->mDataObjects.push_back(anObject); }
+	void ClearDataObjects() { this->mDataObjects.clear(); }
 	
-	DWORD GetFlags() const { return mFlags; }
-	const std::wstring& GetPath() const { return mPath; }
-	const std::wstring& GetNewName() const { return mNewName; }
-	const std::wstring& GetNewDisplayName() const { return mNewDisplayName; }
-	unsigned long GetNewLifespan() const { return mNewLifespan; }
-	const DirDataObjectList& GetDataObjects() const { return mDataObjects; }
+	DWORD GetFlags() const { return this->mFlags; }
+	const std::wstring& GetPath() const { return this->mPath; }
+	const std::wstring& GetNewName() const { return this->mNewName; }
+	const std::wstring& GetNewDisplayName() const { return this->mNewDisplayName; }
+	unsigned long GetNewLifespan() const { return this->mNewLifespan; }
+	const DirDataObjectList& GetDataObjects() const { return this->mDataObjects; }
 };
 
 typedef SmartPtr<ModifyEntityOp> ModifyEntityOpPtr;
@@ -224,15 +224,15 @@ public:
 	ModifyServiceOp(ServerContext *theDirContext) : ModifyEntityOp(theDirContext, true) {}
 	ModifyServiceOp(const IPAddr &theAddr) : ModifyEntityOp(theAddr, true) {}
 
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
-	void SetNewNetAddr(ByteBufferPtr theNetAddr) { mNewNetAddr = theNetAddr; }
-	void SetNewNetAddr(const IPAddr& theNetAddr) { mNewNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetNewNetAddr(ByteBufferPtr theNetAddr) { this->mNewNetAddr = theNetAddr; }
+	void SetNewNetAddr(const IPAddr& theNetAddr) { this->mNewNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
-	const std::wstring& GetName() const { return mName; }
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
-	const ByteBuffer* GetNewNetAddr() const { return mNewNetAddr; }
+	const std::wstring& GetName() const { return this->mName; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
+	const ByteBuffer* GetNewNetAddr() const { return this->mNewNetAddr; }
 };
 
 typedef SmartPtr<ModifyServiceOp> ModifyServiceOpPtr;
@@ -248,7 +248,7 @@ public:
 
 typedef SmartPtr<ModifyDirOp> ModifyDirOpPtr;
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK RemoveEntityOp family.
+// No original address identified: WON SDK RemoveEntityOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class RemoveEntityOp : public ServerRequestOp
@@ -262,15 +262,15 @@ protected:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	RemoveEntityOp(ServerContext *theDirContext, bool isService);
 	RemoveEntityOp(const IPAddr &theAddr, bool isService);
 
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }	
-	const std::wstring& GetPath() const { return mPath; }
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }	
+	const std::wstring& GetPath() const { return this->mPath; }
 };
 
 typedef SmartPtr<RemoveEntityOp> RemoveEntityOpPtr;
@@ -283,13 +283,13 @@ public:
 	RemoveServiceOp(ServerContext *theDirContext) : RemoveEntityOp(theDirContext, true) {}
 	RemoveServiceOp(const IPAddr &theAddr) : RemoveEntityOp(theAddr, true) {}
 
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
 
-	const std::wstring& GetName() const { return mName; }
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
+	const std::wstring& GetName() const { return this->mName; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
 };
 
 typedef SmartPtr<RemoveServiceOp> RemoveServiceOpPtr;
@@ -308,7 +308,7 @@ typedef SmartPtr<RemoveDirOp> RemoveDirOpPtr;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK RenewEntityOp family.
+// No original address identified: WON SDK RenewEntityOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class RenewEntityOp : public ServerRequestOp
@@ -323,18 +323,18 @@ protected:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	RenewEntityOp(ServerContext *theDirContext, bool isService);
 	RenewEntityOp(const IPAddr &theAddr, bool isService);
 
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }	
-	void SetLifespan(unsigned long theLifespan) { mLifespan = theLifespan; }
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }	
+	void SetLifespan(unsigned long theLifespan) { this->mLifespan = theLifespan; }
 
-	const std::wstring& GetPath() const { return mPath; }
-	unsigned long GetLifespan() { return mLifespan; }
+	const std::wstring& GetPath() const { return this->mPath; }
+	unsigned long GetLifespan() { return this->mLifespan; }
 };
 
 typedef SmartPtr<RenewEntityOp> RenewEntityOpPtr;
@@ -347,13 +347,13 @@ public:
 	RenewServiceOp(ServerContext *theDirContext) : RenewEntityOp(theDirContext, true) {}
 	RenewServiceOp(const IPAddr &theAddr) : RenewEntityOp(theAddr, true) {}
 
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
 
-	const std::wstring& GetName() const { return mName; }
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
+	const std::wstring& GetName() const { return this->mName; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
 };
 
 typedef SmartPtr<RenewServiceOp> RenewServiceOpPtr;
@@ -372,7 +372,7 @@ typedef SmartPtr<RenewDirOp> RenewDirOpPtr;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK RenameEntityOp family.
+// No original address identified: WON SDK RenameEntityOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class RenameEntityOp : public ServerRequestOp
@@ -389,21 +389,21 @@ protected:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	RenameEntityOp(ServerContext *theDirContext, bool isService);
 	RenameEntityOp(const IPAddr &theAddr, bool isService);
 
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }	
-	void SetNewDisplayName(const std::wstring &theName) { mNewDisplayName = theName; }
-	void SetUnique(bool requireUniqueDisplayName) { mIsUnique = requireUniqueDisplayName; }	
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }	
+	void SetNewDisplayName(const std::wstring &theName) { this->mNewDisplayName = theName; }
+	void SetUnique(bool requireUniqueDisplayName) { this->mIsUnique = requireUniqueDisplayName; }	
 
 
-	const std::wstring& GetPath() const { return mPath; }
-	const std::wstring& GetNewDisplayName() const { return mNewDisplayName; }
-	bool GetUnique() const { return mIsUnique; }
+	const std::wstring& GetPath() const { return this->mPath; }
+	const std::wstring& GetNewDisplayName() const { return this->mNewDisplayName; }
+	bool GetUnique() const { return this->mIsUnique; }
 };
 
 typedef SmartPtr<RenameEntityOp> RenameEntityOpPtr;
@@ -416,13 +416,13 @@ public:
 	RenameServiceOp(ServerContext *theDirContext) : RenameEntityOp(theDirContext, true) {}
 	RenameServiceOp(const IPAddr &theAddr) : RenameEntityOp(theAddr, true) {}
 
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
 
-	const std::wstring& GetName() const { return mName; }
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
+	const std::wstring& GetName() const { return this->mName; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
 };
 
 typedef SmartPtr<RenameServiceOp> RenameServiceOpPtr;
@@ -441,7 +441,7 @@ typedef SmartPtr<RenameDirOp> RenameDirOpPtr;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK EntitySetDataObjectsOp family.
+// No original address identified: WON SDK EntitySetDataObjectsOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -459,23 +459,23 @@ protected:
 
 protected:
 	void Init();
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	EntitySetDataObjectsOp(ServerContext *theDirContext, bool isService);
 	EntitySetDataObjectsOp(const IPAddr &theAddr, bool isService);
 
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }
 
 	// DataObjectSetMode defined in DirTypes.h
-	void SetDataObjectMode(DirDataObjectSetMode theMode) { mDataObjectMode = theMode; }
-	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mDataObjects.push_back(anObject); }
-	void ClearDataObjects() { mDataObjects.clear(); }
+	void SetDataObjectMode(DirDataObjectSetMode theMode) { this->mDataObjectMode = theMode; }
+	void AddDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; this->mDataObjects.push_back(anObject); }
+	void ClearDataObjects() { this->mDataObjects.clear(); }
 	
-	const std::wstring& GetPath() const { return mPath; }
-	DirDataObjectSetMode GetDataObjectMode() { return mDataObjectMode; }
-	const DirDataObjectList& GetDataObjects() const { return mDataObjects; }
+	const std::wstring& GetPath() const { return this->mPath; }
+	DirDataObjectSetMode GetDataObjectMode() { return this->mDataObjectMode; }
+	const DirDataObjectList& GetDataObjects() const { return this->mDataObjects; }
 };
 
 typedef SmartPtr<EntitySetDataObjectsOp> EntitySetDataObjectsOpPtr;
@@ -488,12 +488,12 @@ public:
 	ServiceSetDataObjectsOp(ServerContext *theDirContext) : EntitySetDataObjectsOp(theDirContext, true) {}
 	ServiceSetDataObjectsOp(const IPAddr &theAddr) : EntitySetDataObjectsOp(theAddr, true) {}
 
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
-	const std::wstring& GetName() const { return mName; }
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
+	const std::wstring& GetName() const { return this->mName; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
 };
 
 typedef SmartPtr<ServiceSetDataObjectsOp> ServiceSetDataObjectsOpPtr;
@@ -509,7 +509,7 @@ public:
 
 typedef SmartPtr<DirSetDataObjectsOp> DirSetDataObjectsOpPtr;
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK EntityClearDataObjectsOp family.
+// No original address identified: WON SDK EntityClearDataObjectsOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -527,18 +527,18 @@ protected:
 
 protected:
 	void Init();
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	EntityClearDataObjectsOp(ServerContext *theDirContext, bool isService);
 	EntityClearDataObjectsOp(const IPAddr &theAddr, bool isService);
 
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }
-	void AddDataType(const std::string &theType) { mDataTypes.insert(theType); }
-	void ClearDataTypes() { mDataTypes.clear(); }
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }
+	void AddDataType(const std::string &theType) { this->mDataTypes.insert(theType); }
+	void ClearDataTypes() { this->mDataTypes.clear(); }
 	
-	const std::wstring& GetPath() const { return mPath; }
+	const std::wstring& GetPath() const { return this->mPath; }
 };
 
 typedef SmartPtr<EntityClearDataObjectsOp> EntityClearDataObjectsOpPtr;
@@ -551,12 +551,12 @@ public:
 	ServiceClearDataObjectsOp(ServerContext *theDirContext) : EntityClearDataObjectsOp(theDirContext, true) {}
 	ServiceClearDataObjectsOp(const IPAddr &theAddr) : EntityClearDataObjectsOp(theAddr, true) {}
 
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
-	const std::wstring& GetName() const { return mName; }
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
+	const std::wstring& GetName() const { return this->mName; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
 };
 
 typedef SmartPtr<ServiceClearDataObjectsOp> ServiceClearDataObjectsOpPtr;
@@ -572,7 +572,7 @@ public:
 
 typedef SmartPtr<DirClearDataObjectsOp> DirClearDataObjectsOpPtr;
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK EntityModifyDataObjectsOp family.
+// No original address identified: WON SDK EntityModifyDataObjectsOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class EntityModifyDataObjectsOp : public ServerRequestOp
@@ -585,7 +585,7 @@ private:
 		bool mIsInsert;
 		unsigned short mOffset;
 
-		DataObjectMod() { mIsInsert = false; mOffset = 0; }
+		DataObjectMod() { this->mIsInsert = false; this->mOffset = 0; }
 		DataObjectMod(const DirDataObject &theObj, bool isInsert, unsigned short theOffset) :
 			mObject(theObj), mIsInsert(isInsert), mOffset(theOffset) {}
 	};
@@ -602,23 +602,23 @@ protected:
 
 protected:
 	void Init();
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
 
 public:
 	EntityModifyDataObjectsOp(ServerContext *theDirContext, bool isService);
 	EntityModifyDataObjectsOp(const IPAddr &theAddr, bool isService);
 
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }
 
 	void AddDataObjectMod(const std::string &theType, 
 		const ByteBuffer* theData, 
 		bool isInsert, 
-		unsigned short theOffset) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mDataObjectMods.push_back(DataObjectMod(anObject,isInsert,theOffset)); }
+		unsigned short theOffset) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; this->mDataObjectMods.push_back(DataObjectMod(anObject,isInsert,theOffset)); }
 	
-	void ClearDataObjectMods() { mDataObjectMods.clear(); }
+	void ClearDataObjectMods() { this->mDataObjectMods.clear(); }
 	
-	const std::wstring& GetPath() const { return mPath; }
+	const std::wstring& GetPath() const { return this->mPath; }
 };
 
 typedef SmartPtr<EntityModifyDataObjectsOp> EntityModifyDataObjectsOpPtr;
@@ -631,12 +631,12 @@ public:
 	ServiceModifyDataObjectsOp(ServerContext *theDirContext) : EntityModifyDataObjectsOp(theDirContext, true) {}
 	ServiceModifyDataObjectsOp(const IPAddr &theAddr) : EntityModifyDataObjectsOp(theAddr, true) {}
 
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
-	const std::wstring& GetName() const { return mName; }
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
+	const std::wstring& GetName() const { return this->mName; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
 };
 
 typedef SmartPtr<ServiceModifyDataObjectsOp> ServiceModifyDataObjectsOpPtr;
@@ -652,7 +652,7 @@ public:
 
 typedef SmartPtr<DirModifyDataObjectsOp> DirModifyDataObjectsOpPtr;
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK FindEntityOp family.
+// No original address identified: WON SDK FindEntityOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class FindEntityOp : public ServerRequestOp
@@ -677,42 +677,42 @@ protected:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
-	virtual void Virtual18();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
+	virtual void Reset();
 
 public:
 	FindEntityOp(ServerContext *theDirContext, bool isService);
 	FindEntityOp(const IPAddr &theAddr, bool isService);
 
 	// DirGetFlags defined in DirTypes.h
-	void SetGetFlags(DWORD theFlags) { mGetFlags = theFlags; } 
-	void SetMatchMode(DirFindMatchMode theMode) { mMatchMode = theMode; }
+	void SetGetFlags(DWORD theFlags) { this->mGetFlags = theFlags; } 
+	void SetMatchMode(DirFindMatchMode theMode) { this->mMatchMode = theMode; }
 
 	// DirFindFlags defined in DirTypes.h
-	void SetFindFlags(unsigned char theFlags) { mFindFlags = theFlags; }
+	void SetFindFlags(unsigned char theFlags) { this->mFindFlags = theFlags; }
 
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }
 
-	void SetMatchName(const std::wstring &theName) { mName = theName; }
-	void SetMatchDisplayName(const std::wstring &theDisplayName) { mDisplayName = theDisplayName; }
+	void SetMatchName(const std::wstring &theName) { this->mName = theName; }
+	void SetMatchDisplayName(const std::wstring &theDisplayName) { this->mDisplayName = theDisplayName; }
 	
-	void AddFindDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; mFindDataObjects.push_back(anObject); }
-	void ClearFindDataObjects() { mFindDataObjects.clear(); }	
+	void AddFindDataObject(const std::string &theType, const ByteBuffer* theData) { DirDataObject anObject; anObject.mDataType=theType; anObject.mData=theData; this->mFindDataObjects.push_back(anObject); }
+	void ClearFindDataObjects() { this->mFindDataObjects.clear(); }	
 
-	void AddGetDataObject(const std::string &theType) { mGetDataTypes.insert(theType); }
-	void ClearGetDataObjects() { mGetDataTypes.clear(); }
+	void AddGetDataObject(const std::string &theType) { this->mGetDataTypes.insert(theType); }
+	void ClearGetDataObjects() { this->mGetDataTypes.clear(); }
 
-	DWORD GetGetFlags() { return mGetFlags; }
-	DirFindMatchMode GetMatchMode() { return mMatchMode; }
-	unsigned char GetFindFlags() { return mFindFlags; }
-	const std::wstring& GetPath() const { return mPath; }
-	const std::wstring& GetName() const { return mName; }
-	const std::wstring& GetDisplayName() const { return mDisplayName; }
+	DWORD GetGetFlags() { return this->mGetFlags; }
+	DirFindMatchMode GetMatchMode() { return this->mMatchMode; }
+	unsigned char GetFindFlags() { return this->mFindFlags; }
+	const std::wstring& GetPath() const { return this->mPath; }
+	const std::wstring& GetName() const { return this->mName; }
+	const std::wstring& GetDisplayName() const { return this->mDisplayName; }
 
 	// Result Methods
-	DirEntityPtr GetService() const { return mService; }
-	const DirEntityList GetDirEntityList() const { return mDirEntityList; }
+	DirEntityPtr GetService() const { return this->mService; }
+	const DirEntityList GetDirEntityList() const { return this->mDirEntityList; }
 };
 
 typedef SmartPtr<FindEntityOp> FindEntityOpPtr;
@@ -725,10 +725,10 @@ public:
 	FindServiceOp(ServerContext *theDirContext) : FindEntityOp(theDirContext, true) {}
 	FindServiceOp(const IPAddr &theAddr) : FindEntityOp(theAddr, true) {}
 
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }
 };
 
 typedef SmartPtr<FindServiceOp> FindServiceOpPtr;
@@ -744,7 +744,7 @@ public:
 
 typedef SmartPtr<FindDirOp> FindDirOpPtr;
 
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK GetServiceOp family.
+// No original address identified: WON SDK GetServiceOp family
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class GetServiceOp : public ServerRequestOp
@@ -761,34 +761,34 @@ private:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
-	virtual void Virtual18();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
+	virtual void Reset();
 
 public:
 	GetServiceOp(ServerContext *theDirContext);
 	GetServiceOp(const IPAddr &theAddr);
 
 	// Path/Name/NetAddr of the service
-	void SetPath(const std::wstring &thePath) { mPath = thePath; }
-	void SetName(const std::wstring &theName) { mName = theName; }
-	void SetNetAddr(ByteBufferPtr theNetAddr) { mNetAddr = theNetAddr; }
-	void SetNetAddr(const IPAddr& theNetAddr) { mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
+	void SetPath(const std::wstring &thePath) { this->mPath = thePath; }
+	void SetName(const std::wstring &theName) { this->mName = theName; }
+	void SetNetAddr(ByteBufferPtr theNetAddr) { this->mNetAddr = theNetAddr; }
+	void SetNetAddr(const IPAddr& theNetAddr) { this->mNetAddr = new ByteBuffer(theNetAddr.GetSixByte(),6,false); }
 
-	const std::wstring& GetPath() { return mPath; }
-	const std::wstring& GetName() const { return mName; }
-	const ByteBuffer* GetNetAddr() const { return mNetAddr; }	
+	const std::wstring& GetPath() { return this->mPath; }
+	const std::wstring& GetName() const { return this->mName; }
+	const ByteBuffer* GetNetAddr() const { return this->mNetAddr; }	
 
 	// DirGetFlags defined in DirTypes.h
-	void SetFlags(DWORD theFlags) { mFlags = theFlags; }
-	DWORD GetFlags() { return mFlags; }
+	void SetFlags(DWORD theFlags) { this->mFlags = theFlags; }
+	DWORD GetFlags() { return this->mFlags; }
 
 	// Datatypes of DataObjects to retrieve
-	void AddDataType(const std::string &theType) { mDataTypes.insert(theType); }
-	void ClearDataTypes() { mDataTypes.clear(); }
+	void AddDataType(const std::string &theType) { this->mDataTypes.insert(theType); }
+	void ClearDataTypes() { this->mDataTypes.clear(); }
 
 	// The retrieved service
-	DirEntityPtr GetService() { return mService; }
+	DirEntityPtr GetService() { return this->mService; }
 };
 
 typedef SmartPtr<GetServiceOp> GetServiceOpPtr;

@@ -1,4 +1,4 @@
-// Native image codec adapters; source-only, no runtime substitution authority.
+// PNG image decoder on libpng 1.0.12 (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -20,6 +20,7 @@
 using namespace WONAPI;
 
 // FUNCTION: WON 0x007d2630
+// libpng read callback: reads from the decoder's file reader and raises a libpng error on a short read
 static void png_filereader_read_data(png_structp png,png_bytep data,png_size_t length)
 {
     int count=((FileReader*)png->io_ptr)->ReadMaxBytes(data,length);
@@ -27,17 +28,19 @@ static void png_filereader_read_data(png_structp png,png_bytep data,png_size_t l
         png_error(png,"Read Error");
 }
 namespace WONAPI {
-// Native registration107 at3d24e0 andDuplicate80 support0, complete fieldless8 owners.
 // FUNCTION: WON 0x007d24e0
+// Registers a PNG decoder for the "png" extension with a multi-format decoder
 void PNGDecoder::Add(MultiImageDecoder* decoder)
 {
     PNGDecoder* png=new PNGDecoder;
     decoder->AddDecoder(png,"png");
 }
 // FUNCTION: WON 0x007d29d0
+// Returns a new PNG decoder
 ImageDecoder* PNGDecoder::Duplicate() { return new PNGDecoder; }
 
 // FUNCTION: WON 0x007d2550
+// Reads the PNG header for the image size; returns false on any libpng error
 bool PNGDecoder::DoGetAttrib(ImageAttributes& attributes)
 {
     png_structp png=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
@@ -51,7 +54,7 @@ bool PNGDecoder::DoGetAttrib(ImageAttributes& attributes)
         png_destroy_read_struct(&png,&info,NULL);
         return false;
     }
-    png_set_read_fn(png,mFileReader,png_filereader_read_data);
+    png_set_read_fn(png,this->mFileReader,png_filereader_read_data);
     png_read_info(png,info);
     png_uint_32 width,height;
     int bitDepth,colorType,interlaceType;
@@ -63,6 +66,8 @@ bool PNGDecoder::DoGetAttrib(ImageAttributes& attributes)
 }
 
 // FUNCTION: WON 0x007d2660
+// Decodes the PNG into a 32-bit ARGB raw image (transparent when it has alpha or tRNS); NULL on a libpng error,
+// which leaks the row buffers already allocated
 SmartPtr<RawImage> PNGDecoder::DoDecodeRaw()
 {
     png_structp png=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
@@ -76,7 +81,7 @@ SmartPtr<RawImage> PNGDecoder::DoDecodeRaw()
         png_destroy_read_struct(&png,&info,NULL);
         return NULL;
     }
-    png_set_read_fn(png,mFileReader,png_filereader_read_data);
+    png_set_read_fn(png,this->mFileReader,png_filereader_read_data);
     png_read_info(png,info);
     png_uint_32 width,height;
     int bitDepth,colorType,interlaceType;
@@ -89,18 +94,17 @@ SmartPtr<RawImage> PNGDecoder::DoDecodeRaw()
         png_set_expand(png);
     if(png_get_valid(png,info,PNG_INFO_tRNS))
         png_set_expand(png);
-    // Target1.0.12 converts gray/gray-alpha and always reads RGBA rows.
+    // Gray and gray-alpha become RGB; rows are always read as RGBA
     if(colorType==PNG_COLOR_TYPE_GRAY || colorType==PNG_COLOR_TYPE_GRAY_ALPHA)
         png_set_gray_to_rgb(png);
     png_set_filler(png,0xff,PNG_FILLER_AFTER);
     png_bytepp rows=new png_bytep[height];
-    // Original target queries rowbytes, then allocates actual width*4 per row.
+    // The original queries the row size but allocates width*4 bytes per row
     (void)png_get_rowbytes(png,info);
     int y;
     for(y=0;y<height;++y)
         rows[y]=new png_byte[width*4];
     png_read_image(png,rows);
-    // Target directly allocates the complete concrete24B RawImage32 owner.
     SmartPtr<RawImage32> image=new RawImage32(width,height);
     if((colorType&PNG_COLOR_MASK_ALPHA) || png_get_valid(png,info,PNG_INFO_tRNS))
         image->SetDoTransparency(true);

@@ -101,7 +101,7 @@ EEClient::EEClient()
 #include "LostDebug.h"                      // NOT original source: EE_LOST_DEBUG stand-in (0x4b7722)
 #include "ee/EEStringIDs.h"
 extern UString gCampaignExtension;          // 0x530b78 (ee/EECampaignFormManager.h, which needs the UI form headers)
-void EELobbyFn295CE3(bool inFlag);          // 0x295ce3 (EELobbyInit.cpp; provisional name)
+void EELobbyPostConnectStatus(bool inConnected);  // 0x295ce3 (EELobbyInit.cpp; provisional name)
 
 // FUNCTION: EXE 0x4b7278
 // Destroys the client, stopping its threads and releasing the fast-selection lock
@@ -139,7 +139,7 @@ void EEClient::SetConnectionState(long inState)
     switch (inState) {
     case 0:
         if (EECheck2989A9(true))
-            EELobbyFn295CE3(false);
+            EELobbyPostConnectStatus(false);
         else {
             gUserInterface->CloseForm(NULL);
             if (gWonNet != NULL && gUIManager->IsFormVisible(gUIManager->GetFormByID(kFormAvailableGames))) {
@@ -307,7 +307,7 @@ bool EEClient::IsPlaybackRecordingSession()
 // Returns the connect timeout, kept in the global at 0x5308a0
 unsigned long EEClient::GetConnectTimeout()
 {
-    return gU5308A0;
+    return gNetworkAdapter;
 }
 
 // FUNCTION: EXE 0x4b79aa
@@ -382,7 +382,7 @@ void EEClient::HandleMessage(NEMessage* inMessage)
             this->mUISlotNumber = theResponse->GetUISlotNumber();
             gLocalPlayerOut = false;
             if (EECheck2989A9(true))
-                EELobbyFn295CE3(true);
+                EELobbyPostConnectStatus(true);
             else
                 gUserInterface->OpenForm(gUIManager->GetFormByID(kFormLobby));
             gCommunications->SetNumberOfCTsProcessedInPhysics(theResponse->GetCurrentCT());
@@ -390,7 +390,7 @@ void EEClient::HandleMessage(NEMessage* inMessage)
             unsigned long theCT = gCommunications->GetNumberOfCTsProcessedInPhysics();
         } else if (this->mUISlotNumber == 0xff) {
             if (EECheck2989A9(true))
-                EELobbyFn295CE3(false);
+                EELobbyPostConnectStatus(false);
             else if (theResponse->GetError() == kConnectionNameInUse) {
                 if (gWonNet != NULL) {
                     gWonNet->ClearGameList();

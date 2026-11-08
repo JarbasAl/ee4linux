@@ -75,7 +75,7 @@
 #include "LostDebug.h"
 #include "ee/EEStringIDs.h"
 extern GEFont* gU531938;                    // 0x531938 (Empire Earth.cpp's fonts)
-extern char gU4E5B98[];                     // 0x4e5b98 (pooled "")
+extern char gEmptyString[];                 // 0x4e5b98 (pooled "")
 
 // FUNCTION: EXE 0x5705a2
 // Posts the import action for the file the question carries (the import question's yes) and frees
@@ -442,10 +442,10 @@ void EESEInstructions::Load()
             this->mLocalizationEditBox->SetText(theName);
             theFile.Close();
         } else {
-            this->mLocalizationEditBox->SetText(gU4E5B98);
+            this->mLocalizationEditBox->SetText(gEmptyString);
         }
     } else {
-        this->mLocalizationEditBox->SetText(gU4E5B98);
+        this->mLocalizationEditBox->SetText(gEmptyString);
     }
 }
 

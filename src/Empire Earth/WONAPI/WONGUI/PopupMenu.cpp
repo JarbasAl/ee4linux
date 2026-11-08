@@ -1,4 +1,4 @@
-// Popup menu default configuration and real background ownership; support0.
+// Popup menu constructor (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,17 +13,18 @@
 #include "ee/wonapi/WONLobbyMSPainters.h"
 #include "LostDebug.h"
 namespace WONAPI {
-// Native2fd150/458, initialization-only support0; mLastX/Y intentionally untouched.
+// Creates a popup menu with the menu font and colors, a popup background and 4-pixel padding; mLastX/Y stay
+// unset (emitted at 0x006fd150)
 PopupMenu::PopupMenu()
 {
-    SetFont(GetNamedFont("Menu"));
-    Fn2FB600(0x806,true);
-    SetBackground(new MSPopup);
-    mTextColor=0x8000000c;
-    mMouseUpCount=0;
-    mTimerAcc=0;
-    mKeyboardMode=false;
-    SetBorderPadding(4,4,4,4);
+    this->SetFont(this->GetNamedFont("Menu"));
+    this->SetListFlags(0x806,true);
+    this->SetBackground(new MSPopup);
+    this->mTextColor=0x8000000c;
+    this->mMouseUpCount=0;
+    this->mTimerAcc=0;
+    this->mKeyboardMode=false;
+    this->SetBorderPadding(4,4,4,4);
     // LOST-DEBUG: none: exact only; 2 free sites after the string temp (assign and ~string refused)
     EE_LOST_DEBUG(2);
 }

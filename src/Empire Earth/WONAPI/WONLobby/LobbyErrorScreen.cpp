@@ -1,4 +1,4 @@
-// Native error-screen construction using complete original GUI owners.
+// The lobby's top container, or the "Lobby Error" dialog shown when the lobby failed to start
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -16,15 +16,16 @@
 #include "ee/wonapi/WONLobbyMSPainters.h"
 #include "LostDebug.h"
 namespace WONAPI {
-extern SmartPtr<Dialog> gLobbyFailureDialog5662F4;
-extern GUIString gLobbyInitError5662FC;
-extern bool gLobbyInitFailed56633C;
+extern SmartPtr<Dialog> gLobbyFailureDialog;
+extern GUIString gLobbyInitError;
+extern bool gLobbyInitFailed;
 // FUNCTION: WON 0x00762250
-Container* LobbyFn362250()
+// Returns the lobby container; after a failed start builds once and returns a dialog showing the error and Ok
+Container* LobbyGetContainer()
 {
     if(gLobbyData.get()!=NULL) return gLobbyData->mLobbyContainer.get();
-    if(gLobbyInitFailed56633C) {
-    if(gLobbyFailureDialog5662F4.get()==NULL) {
+    if(gLobbyInitFailed) {
+    if(gLobbyFailureDialog.get()==NULL) {
         SmartPtr<Dialog> dialog=new Dialog;
         dialog->SetEndOnEscape(0);
         SmartPtr<MSDlgBack> background=new MSDlgBack;
@@ -33,12 +34,12 @@ Container* LobbyFn362250()
         label->SetHorzAlign(HorzAlign_Center);
         label->SetAdjustHeightToFitText(true);
         GUIString text("Lobby Error\n\n");
-        text.append(gLobbyInitError5662FC);
+        text.append(gLobbyInitError);
         label->SetText(text,true);
         SmartPtr<MSButton> button=new MSButton(GUIString("Ok"));
-        button->Fn2F3370(0x100,true);
-        button->Fn2F4BC0(100,0);
-        button->Fn2F5890();
+        button->SetButtonFlags(0x100,true);
+        button->SetSizeAtLeast(100,0);
+        button->RequestFocus();
         dialog->Fn2F6140(background.get(),3,dialog.get(),0,0,0,0,0);
         dialog->Fn2F6140(label.get(),0x1001,dialog.get(),10,0,-20,0,0);
         dialog->AddChildLayout(new CenterLayout(dialog.get(),button.get(),true,false),0);
@@ -46,10 +47,10 @@ Container* LobbyFn362250()
         CenterLayout* vertical=new CenterLayout(dialog.get(),label.get(),false,true);
         vertical->Add(button.get());
         dialog->AddChildLayout(vertical,0);
-        dialog->Fn2F6A60(background.get());
-        dialog->Fn2F6A60(label.get());
-        dialog->Fn2F6A60(button.get());
-        gLobbyFailureDialog5662F4=dialog;
+        dialog->AddChild(background.get());
+        dialog->AddChild(label.get());
+        dialog->AddChild(button.get());
+        gLobbyFailureDialog=dialog;
         // LOST-DEBUG: none: exact only
         EE_LOST_TRACE(dialog.get());
         EE_LOST_TRACE(dialog.get());
@@ -57,7 +58,7 @@ Container* LobbyFn362250()
         EE_LOST_TRACE(dialog.get());
         EE_LOST_TRACE(dialog.get());
     }
-    return gLobbyFailureDialog5662F4.get();
+    return gLobbyFailureDialog.get();
     }
     return NULL;
 }

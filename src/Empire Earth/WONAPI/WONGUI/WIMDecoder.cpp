@@ -1,4 +1,4 @@
-// Source-only WIM image reader; no runtime substitution authority.
+// WIM image decoder: "WIM" signature, 32-bit RGBA pixels (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <cstring>
@@ -14,44 +14,48 @@
 #include "ee/wonapi/WONLobbyImageDecoder.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0074a560
+// Reads a WIM header and returns its width and height; false when the signature or bit depth (32) is wrong
 bool WIMDecoder::DoGetAttrib(ImageAttributes& attributes)
 {
     char signature[4];
-    mFileReader->ReadBytes(signature,3);
+    this->mFileReader->ReadBytes(signature,3);
     signature[3]=0;
     if(strcmp(signature,"WIM")!=0) return false;
-    if((unsigned long)mFileReader->ReadLong()!=32) return false;
-    mFileReader->ReadByte();
-    unsigned long width=mFileReader->ReadLong();
-    unsigned long height=mFileReader->ReadLong();
+    if((unsigned long)this->mFileReader->ReadLong()!=32) return false;
+    this->mFileReader->ReadByte();
+    unsigned long width=this->mFileReader->ReadLong();
+    unsigned long height=this->mFileReader->ReadLong();
     attributes.mWidth=width;
     attributes.mHeight=height;
     return true;
 }
 // FUNCTION: WON 0x0074a600
+// Decodes a WIM file into a 32-bit raw image with its transparency flag; returns NULL on a bad header,
+// too little data or a read error
 SmartPtr<RawImage> WIMDecoder::DoDecodeRaw()
 {
     try
     {
         char signature[4];
-        mFileReader->ReadBytes(signature,3);
+        this->mFileReader->ReadBytes(signature,3);
         signature[3]=0;
         if(strcmp(signature,"WIM")!=0) return NULL;
-        if((unsigned long)mFileReader->ReadLong()!=32) return NULL;
-        bool transparency=mFileReader->ReadByte()!=0;
-        unsigned long width=mFileReader->ReadLong();
-        unsigned long height=mFileReader->ReadLong();
+        if((unsigned long)this->mFileReader->ReadLong()!=32) return NULL;
+        bool transparency=this->mFileReader->ReadByte()!=0;
+        unsigned long width=this->mFileReader->ReadLong();
+        unsigned long height=this->mFileReader->ReadLong();
         unsigned long numBytes=width*height*4;
-        if(mFileReader->Available()<numBytes) return NULL;
+        if(this->mFileReader->Available()<numBytes) return NULL;
 
         SmartPtr<RawImage32> image=new RawImage32(width,height);
         image->mDoTransparency=transparency;
-        mFileReader->ReadBytes(image->GetImageData(),numBytes);
+        this->mFileReader->ReadBytes(image->GetImageData(),numBytes);
         return image.get();
     }
     catch(FileReaderException&) {}
     return NULL;
 }
 // FUNCTION: WON 0x0072ba40
-ImageDecoder* WIMDecoder::Duplicate() { return new WIMDecoder; } //ordinary support allocator0
+// Returns a new WIM decoder
+ImageDecoder* WIMDecoder::Duplicate() { return new WIMDecoder; }
 }

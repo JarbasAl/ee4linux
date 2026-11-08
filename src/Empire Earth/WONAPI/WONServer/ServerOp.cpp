@@ -1,5 +1,4 @@
-// Original-backed blocking operation family; source only, no runtime authority.
-// SendBytes/SendMsg const-ownership candidates are excluded entirely.
+// ServerOp: base of the server operations (per-step connect/send/receive time limits)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,63 +9,69 @@
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006acc10
+// Creates a server op with 60-second connect, send and receive limits and an 8-byte key size
 ServerOp::ServerOp()
 {
-    mMaxConnectTime=60000;
-    mMaxSendTime=60000;
-    mMaxRecvTime=60000;
-    mClientKeySize=8;
-    mUseClientKey=false;
+    this->mMaxConnectTime=60000;
+    this->mMaxSendTime=60000;
+    this->mMaxRecvTime=60000;
+    this->mClientKeySize=8;
+    this->mUseClientKey=false;
 }
 // FUNCTION: WON 0x006ace20
+// Sets the connect, send and receive time limits
 void ServerOp::SetMaxTimes(int inConnect,int inSend,int inRecv)
 {
-    mMaxConnectTime=inConnect;
-    mMaxSendTime=inSend;
-    mMaxRecvTime=inRecv;
+    this->mMaxConnectTime=inConnect;
+    this->mMaxSendTime=inSend;
+    this->mMaxRecvTime=inRecv;
 }
 // FUNCTION: WON 0x006ace50
+// Returns the connect time limit, capped by the time left when blocking
 DWORD ServerOp::ConnectTime()
 {
-    DWORD aTime=mMaxConnectTime;
-    if(mRunMode!=1 && TimeLeft()<aTime) aTime=TimeLeft();
+    DWORD aTime=this->mMaxConnectTime;
+    if(this->mRunMode!=OP_MODE_ASYNC && this->TimeLeft()<aTime) aTime=this->TimeLeft();
     return aTime;
 }
 // FUNCTION: WON 0x006ace80
+// Returns the send time limit, capped by the time left when blocking
 DWORD ServerOp::SendTime()
 {
-    DWORD aTime=mMaxSendTime;
-    if(mRunMode!=1 && TimeLeft()<aTime) aTime=TimeLeft();
+    DWORD aTime=this->mMaxSendTime;
+    if(this->mRunMode!=OP_MODE_ASYNC && this->TimeLeft()<aTime) aTime=this->TimeLeft();
     return aTime;
 }
 // FUNCTION: WON 0x006aceb0
+// Returns the receive time limit, capped by the time left when blocking
 DWORD ServerOp::RecvTime()
 {
-    DWORD aTime=mMaxRecvTime;
-    if(mRunMode!=1 && TimeLeft()<aTime) aTime=TimeLeft();
+    DWORD aTime=this->mMaxRecvTime;
+    if(this->mRunMode!=OP_MODE_ASYNC && this->TimeLeft()<aTime) aTime=this->TimeLeft();
     return aTime;
 }
 // FUNCTION: WON 0x006acee0
+// Copies the time limits of another server op
 void ServerOp::CopyMaxTimes(ServerOp* inSource)
 {
-    SetMaxTimes(inSource->mMaxConnectTime,inSource->mMaxSendTime,inSource->mMaxRecvTime);
+    this->SetMaxTimes(inSource->mMaxConnectTime,inSource->mMaxSendTime,inSource->mMaxRecvTime);
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine missing session/profile/operation methods.
+// No original address identified: WON SDK methods
 namespace WONAPI {
 void ServerOp::SendMsgAsync(ByteBufferPtr theMsg, int theTrackId)
 {
-	SmartPtr<SendMsgOp> anOp = new SendMsgOp(theMsg, mSocket);
-	Track(anOp,theTrackId);
-	mSocket->Fn2B4740(anOp,-1);
+	SmartPtr<SendMsgOp> anOp = new SendMsgOp(theMsg, this->mSocket);
+	this->Track(anOp,theTrackId);
+	this->mSocket->QueueOp(anOp,-1);
 }
 
 void ServerOp::RecvMsgAsync(int theTrackId)
 {
-	SmartPtr<RecvMsgOp> anOp = new RecvMsgOp(mSocket);
-	Track(anOp,theTrackId);
-	mSocket->Fn2B4740(anOp,-1);
+	SmartPtr<RecvMsgOp> anOp = new RecvMsgOp(this->mSocket);
+	this->Track(anOp,theTrackId);
+	this->mSocket->QueueOp(anOp,-1);
 }
 }
 

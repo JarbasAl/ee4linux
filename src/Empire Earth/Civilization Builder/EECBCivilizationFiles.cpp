@@ -84,7 +84,7 @@
 #include "ee/EEPhysics.h"
 #include "ee/EECivilizationBuilder.h"
 #include "ee/EEStringIDs.h"
-extern char gU4E5B98[];                     // 0x4e5b98 (pooled "")
+extern char gEmptyString[];                 // 0x4e5b98 (pooled "")
 
 // chain at 0x67fdfe (wrapper)
 //   object 0x965478  ctor __imp_??0UString@@QAE@PBD@Z  dtor __imp_??1UString@@UAE@XZ
@@ -448,7 +448,7 @@ long EELoadCivilization(const UString& inName, const UString& inDirectory, UWide
         theResult = theFile->Read(theLength);
         if (theResult == 0) {
             if (theLength == 0) {
-                outName = gU4E5B98;
+                outName = gEmptyString;
             } else {
                 memset(theBuffer, 0, sizeof(theBuffer));
                 if (theFile->Read(theBuffer, theLength, theRead) == kErrorOK)

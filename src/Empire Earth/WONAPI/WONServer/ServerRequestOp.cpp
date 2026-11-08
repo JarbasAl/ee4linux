@@ -1,5 +1,4 @@
-// Original-backed blocking operation family; source only, no runtime authority.
-// SendBytes/SendMsg const-ownership candidates are excluded entirely.
+// ServerRequestOp: request/reply exchange with the first answering server of a list, with optional peer auth
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,309 +7,325 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
-// Native Init2acf10, support0.
 // FUNCTION: WON 0x006acf10
+// Sets the defaults: 4-byte length field, no auth, 20-second limits, auth2 and close-after-use
 void ServerRequestOp::Init()
 {
-    mLengthFieldSize=4;
-    mAuthType=AUTH_TYPE_NONE;
-    mMaxRecvTime=mMaxSendTime=mMaxConnectTime=20000;
-    mLastServerError=mGetCertStatus=100004;
-    mUseAuth2=true;
-    mUseLastServerErrorForFinishStatus=false;
-    mCloseConnection=true;
+    this->mLengthFieldSize=4;
+    this->mAuthType=AUTH_TYPE_NONE;
+    this->mMaxRecvTime=this->mMaxSendTime=this->mMaxConnectTime=20000;
+    this->mLastServerError=this->mGetCertStatus=WS_None;
+    this->mUseAuth2=true;
+    this->mUseLastServerErrorForFinishStatus=false;
+    this->mCloseConnection=true;
 }
 // FUNCTION: WON 0x006acf60
+// Creates a request that tries the servers of a server context
 ServerRequestOp::ServerRequestOp(ServerContext* inContext) : mAddrItr(AddrList::iterator())
 {
-    Init();
-    SetServerContext(inContext);
+    this->Init();
+    this->SetServerContext(inContext);
 }
 // FUNCTION: WON 0x006ad050
+// Creates a request for a single server address
 ServerRequestOp::ServerRequestOp(const IPAddr& inAddress) : mAddrItr(AddrList::iterator())
 {
-    Init();
-    SetAddr(inAddress);
+    this->Init();
+    this->SetAddr(inAddress);
 }
 // FUNCTION: WON 0x006ad110
+// Destroys the request (members only)
 ServerRequestOp::~ServerRequestOp()
 {
 }
-// Native owning setter2ad2e0, support0.
 // FUNCTION: WON 0x006ad2e0
+// Sets the server context whose addresses are tried
 void ServerRequestOp::SetServerContext(ServerContext* inContext)
 {
-    mServerContext=inContext;
+    this->mServerContext=inContext;
 }
 // FUNCTION: WON 0x006ad340
+// Targets a single server address, dropping the server context
 void ServerRequestOp::SetAddr(const IPAddr& inAddress)
 {
-    mServerContext=NULL;
-    mAddrList.clear();
-    mAddrList.push_back(inAddress);
+    this->mServerContext=NULL;
+    this->mAddrList.clear();
+    this->mAddrList.push_back(inAddress);
 }
-// Native getter2ad410; quota0.
 // FUNCTION: WON 0x006ad410
+// Returns the first server address, or an empty address
 IPAddr ServerRequestOp::GetAddr() const
 {
-    if(mAddrList.empty()) return IPAddr();
-    return mAddrList.front();
+    if(this->mAddrList.empty()) return IPAddr();
+    return this->mAddrList.front();
 }
 // FUNCTION: WON 0x006ad5b0
+// Finishes with the status and caches the auth session for reuse when sessioned
 void ServerRequestOp::FinishSaveSession(WONStatus inStatus)
 {
-    Fn29F220(inStatus);
-    if(mAuthType==AUTH_TYPE_SESSION) mAuthContext->PutSession(mCurAddr,mCurSession.get());
-    mUsedSession=mCurSession;
-    mCurSession=NULL;
+    this->Finish(inStatus);
+    if(this->mAuthType==AUTH_TYPE_SESSION) this->mAuthContext->PutSession(this->mCurAddr,this->mCurSession.get());
+    this->mUsedSession=this->mCurSession;
+    this->mCurSession=NULL;
 }
 // FUNCTION: WON 0x006ad660
+// Records a server error; the final status uses it only while every server failed the same way
 void ServerRequestOp::SetLastServerError(WONStatus inError)
 {
-    if(mLastServerError==100004) mUseLastServerErrorForFinishStatus=true;
-    else if(inError!=mLastServerError) mUseLastServerErrorForFinishStatus=false;
-    mLastServerError=inError;
+    if(this->mLastServerError==WS_None) this->mUseLastServerErrorForFinishStatus=true;
+    else if(inError!=this->mLastServerError) this->mUseLastServerErrorForFinishStatus=false;
+    this->mLastServerError=inError;
 }
-// Native InvalidReplyHeader2ad6a0; support0.
 // FUNCTION: WON 0x006ad6a0
+// Records an invalid reply header and asks to try the next server
 WONStatus ServerRequestOp::InvalidReplyHeader()
 {
-    SetLastServerError(100063);
-    return 100057;
+    this->SetLastServerError(WS_ServerReq_InvalidReplyHeader);
+    return WS_ServerReq_TryNextServer;
 }
 // FUNCTION: WON 0x006ad6b0
+// Connects to the current server (reusing a cached session), then sends when asynchronous
 bool ServerRequestOp::TryConnect()
 {
-    if(mCurSession.get()!=NULL) {
-        mSocket->Fn2B0620(new CryptTransform(mCurSession.get()));
-        mReusingSession=true;
+    if(this->mCurSession.get()!=NULL) {
+        this->mSocket->AddMsgTransform(new CryptTransform(this->mCurSession.get()));
+        this->mReusingSession=true;
     }
-    if(mRunMode==1) {
-        ConnectOp* aConnectOp=new ConnectOp(mCurAddr);
-        QueueSocketOp(aConnectOp,ConnectTime());
-        Send();
+    if(this->mRunMode==OP_MODE_ASYNC) {
+        ConnectOp* aConnectOp=new ConnectOp(this->mCurAddr);
+        this->QueueSocketOp(aConnectOp,this->ConnectTime());
+        this->Send();
         return true;
     }
-    WONStatus aStatus=mSocket->Connect(mCurAddr,ConnectTime());
+    WONStatus aStatus=this->mSocket->Connect(this->mCurAddr,this->ConnectTime());
     if(aStatus==0) return true;
-    SetLastServerError(aStatus);
+    this->SetLastServerError(aStatus);
     return false;
 }
 // FUNCTION: WON 0x006add80
+// Moves to the next server address and connects or authenticates; finishes when none are left
 bool ServerRequestOp::TryNextServer()
 {
-    if(mStatus!=100000) return false;
+    if(this->mStatus!=WS_Pending) return false;
     for(;;) {
-        mTracker.KillAll();
-        Virtual18();
-        if(mSocket.get()!=NULL) {
-            mSocket->Fn2B1AD0();
-            mSocket=NULL;
+        this->mTracker.KillAll();
+        this->Reset();
+        if(this->mSocket.get()!=NULL) {
+            this->mSocket->Close();
+            this->mSocket=NULL;
         }
-        if(mAddrItr!=mAddrList.begin() && !mSessionExpired && mServerContext.get()!=NULL)
-            mServerContext->NotifyFailed(mCurAddr);
-        if(mAddrItr==mAddrList.end()) {
-            if(mUseLastServerErrorForFinishStatus)
-                Fn29F220(mLastServerError);
+        if(this->mAddrItr!=this->mAddrList.begin() && !this->mSessionExpired && this->mServerContext.get()!=NULL)
+            this->mServerContext->NotifyFailed(this->mCurAddr);
+        if(this->mAddrItr==this->mAddrList.end()) {
+            if(this->mUseLastServerErrorForFinishStatus)
+                this->Finish(this->mLastServerError);
             else
-                Fn29F220(100054);
+                this->Finish(WS_ServerReq_FailedAllServers);
             return false;
         }
-        mSocket=new BlockingSocket(0);
-        mSocket->SetLengthFieldSize(mLengthFieldSize);
-        mCurAddr=*mAddrItr;
-        bool wasReusingSession=mReusingSession;
-        mReusingSession=false;
-        mSessionExpired=false;
-        ++mAddrItr;
-        if(!wasReusingSession && mAuthType==AUTH_TYPE_SESSION)
-            mCurSession=mAuthContext->GetSession(mCurAddr);
-        else mCurSession=NULL;
-        if(mCurSession.get()!=NULL || mAuthType==AUTH_TYPE_NONE) {
-            if(TryConnect()) return true;
+        this->mSocket=new BlockingSocket(0);
+        this->mSocket->SetLengthFieldSize(this->mLengthFieldSize);
+        this->mCurAddr=*this->mAddrItr;
+        bool wasReusingSession=this->mReusingSession;
+        this->mReusingSession=false;
+        this->mSessionExpired=false;
+        ++this->mAddrItr;
+        if(!wasReusingSession && this->mAuthType==AUTH_TYPE_SESSION)
+            this->mCurSession=this->mAuthContext->GetSession(this->mCurAddr);
+        else this->mCurSession=NULL;
+        if(this->mCurSession.get()!=NULL || this->mAuthType==AUTH_TYPE_NONE) {
+            if(this->TryConnect()) return true;
         } else {
-            if(TryPeerToPeerAuth()) return true;
-            if(GetStatus()!=100000) return false;
+            if(this->TryPeerToPeerAuth()) return true;
+            if(this->GetStatus()!=WS_Pending) return false;
         }
-        if(TimeLeft()<=0) {
-            Fn29F220(100001);
+        if(this->TimeLeft()<=0) {
+            this->Finish(WS_TimedOut);
             return false;
         }
     }
 }
 // FUNCTION: WON 0x006ae050
+// Sends the requests GetNextRequest builds until one needs a reply; returns the next step
 WONStatus ServerRequestOp::Send()
 {
     for(;;) {
-        WONStatus aReqStatus=Virtual10();
-        if(aReqStatus!=100058 && aReqStatus!=100059) return aReqStatus;
-        if(mRunMode==1) {
-            SendMsgOp* aSendOp=new SendMsgOp(mRequest.get());
-            QueueSocketOp(aSendOp,SendTime());
+        WONStatus aReqStatus=this->GetNextRequest();
+        if(aReqStatus!=WS_ServerReq_Send && aReqStatus!=WS_ServerReq_Recv) return aReqStatus;
+        if(this->mRunMode==OP_MODE_ASYNC) {
+            SendMsgOp* aSendOp=new SendMsgOp(this->mRequest.get());
+            this->QueueSocketOp(aSendOp,this->SendTime());
         } else {
-            WONStatus aStatus=mSocket->SendMsg(mRequest.get(),SendTime());
+            WONStatus aStatus=this->mSocket->SendMsg(this->mRequest.get(),this->SendTime());
             if(aStatus!=0) {
-                SetLastServerError(aStatus);
-                return 100057;
+                this->SetLastServerError(aStatus);
+                return WS_ServerReq_TryNextServer;
             }
         }
-        if(aReqStatus==100059) {
-            if(IsAsync()) {
-                RecvMsgOp* aRecvOp=new RecvMsgOp;
-                QueueSocketOp(aRecvOp,RecvTime());
-            }
-            return aReqStatus;
+        if(aReqStatus!=WS_ServerReq_Recv)
+            continue;
+        if(this->IsAsync()) {
+            RecvMsgOp* aRecvOp=new RecvMsgOp;
+            this->QueueSocketOp(aRecvOp,this->RecvTime());
         }
+        return aReqStatus;
     }
 }
 // FUNCTION: WON 0x006ae200
+// Returns true (and retries the same server) when a reused session was rejected as expired
 bool ServerRequestOp::CheckExpiredSession()
 {
-    if(!mReusingSession || mResponse->length()<10) return false;
+    if(!this->mReusingSession || this->mResponse->length()<10) return false;
     try {
-        ReadBuffer aBuf(mResponse->data(),mResponse->length());
+        ReadBuffer aBuf(this->mResponse->data(),this->mResponse->length());
         unsigned long aServiceType=aBuf.ReadLong();
         unsigned long aMessageType=aBuf.ReadLong();
         if(aServiceType==1 && aMessageType==15) {
-            mSessionExpired=true;
-            --mAddrItr;
+            this->mSessionExpired=true;
+            --this->mAddrItr;
             return true;
         }
     } catch(ReadBufferException&) {}
     return false;
 }
 // FUNCTION: WON 0x006ae2d0
+// Receives replies and checks them until the exchange moves on; returns the next step
 WONStatus ServerRequestOp::Recv()
 {
     for(;;) {
-        WONStatus aStatus=mSocket->RecvMsg(mResponse,RecvTime());
+        WONStatus aStatus=this->mSocket->RecvMsg(this->mResponse,this->RecvTime());
         if(aStatus!=0) {
-            SetLastServerError(aStatus);
-            return 100057;
+            this->SetLastServerError(aStatus);
+            return WS_ServerReq_TryNextServer;
         }
-        if(CheckExpiredSession()) return 100061;
+        if(this->CheckExpiredSession()) return WS_ServerReq_SessionExpired;
         try {
-            aStatus=Virtual14();
+            aStatus=this->CheckResponse();
             if(aStatus!=100059) return aStatus;
         } catch(ReadBufferException&) {
-            SetLastServerError(100064);
-            return 100057;
+            this->SetLastServerError(WS_ServerReq_UnpackFailure);
+            return WS_ServerReq_TryNextServer;
         }
     }
 }
 // FUNCTION: WON 0x006ae390
-void ServerRequestOp::Virtual04()
+// Runs the request: asynchronously, or blocking over each server until one completes
+void ServerRequestOp::RunHook()
 {
-    mLastServerError=mGetCertStatus=100004;
-    mUseLastServerErrorForFinishStatus=false;
-    mUsedSession=NULL;
-    if(mServerContext.get()!=NULL) mServerContext->CopyAddresses(mAddrList);
-    if(mAddrList.empty()) {
-        Fn29F220(100055);
+    this->mLastServerError=this->mGetCertStatus=WS_None;
+    this->mUseLastServerErrorForFinishStatus=false;
+    this->mUsedSession=NULL;
+    if(this->mServerContext.get()!=NULL) this->mServerContext->CopyAddresses(this->mAddrList);
+    if(this->mAddrList.empty()) {
+        this->Finish(WS_ServerReq_NoServersSpecified);
         return;
     }
-    mAddrItr=mAddrList.begin();
-    mReusingSession=false;
-    mSessionExpired=false;
-    if(mAuthType!=AUTH_TYPE_NONE && mAuthContext.get()==NULL) {
-        Fn29F220(100056);
+    this->mAddrItr=this->mAddrList.begin();
+    this->mReusingSession=false;
+    this->mSessionExpired=false;
+    if(this->mAuthType!=AUTH_TYPE_NONE && this->mAuthContext.get()==NULL) {
+        this->Finish(WS_ServerReq_NeedAuthContext);
         return;
     }
-    if(IsAsync()) {
-        TryNextServer();
+    if(this->IsAsync()) {
+        this->TryNextServer();
         return;
     }
-    while(TryNextServer()) {
+    while(this->TryNextServer()) {
         for(;;) {
             WONStatus aStatus;
-            do { aStatus=Send(); } while(aStatus==100058);
+            do { aStatus=this->Send(); } while(aStatus==100058);
             if(aStatus==100057) break;
-            do { aStatus=Recv(); } while(aStatus==100059);
+            do { aStatus=this->Recv(); } while(aStatus==100059);
             if(aStatus==100057 || aStatus==100061) break;
             if(aStatus==100058) continue;
-            FinishSaveSession(aStatus);
+            this->FinishSaveSession(aStatus);
             return;
         }
-        if(TimeLeft()<=0) {
-            Fn29F220(100001);
+        if(this->TimeLeft()<=0) {
+            this->Finish(WS_TimedOut);
             return;
         }
     }
 }
 // FUNCTION: WON 0x006ae4c0
-void ServerRequestOp::Virtual08()
+// Marks a timed-out or killed server as failed and closes the socket unless it should stay open
+void ServerRequestOp::CleanupHook()
 {
-    AsyncOpWithTracker::Virtual08();
-    if(GetStatus()!=0 && (GetStatus()==100001 || mB39) && mServerContext.get()!=NULL)
-        mServerContext->NotifyFailed(mCurAddr);
-    if(mSocket.get()!=NULL && (mCloseConnection || GetStatus()!=0 || mB39)) {
-        mSocket->Fn2B1AD0();
-        mSocket=NULL;
+    AsyncOpWithTracker::CleanupHook();
+    if(this->GetStatus()!=WS_Success && (this->GetStatus()==WS_TimedOut || this->mKilled) && this->mServerContext.get()!=NULL)
+        this->mServerContext->NotifyFailed(this->mCurAddr);
+    if(this->mSocket.get()!=NULL && (this->mCloseConnection || this->GetStatus()!=WS_Success || this->mKilled)) {
+        this->mSocket->Close();
+        this->mSocket=NULL;
     }
-    mCurSession=NULL;
+    this->mCurSession=NULL;
 }
 
 // FUNCTION: WON 0x006ad950
+// Runs peer authentication with the current server; true when started or done, false on failure
 bool ServerRequestOp::TryPeerToPeerAuth()
 {
-    SmartPtr<PeerAuthOp> peerAuth=new PeerAuthOp(mCurAddr,mAuthContext.get(),mAuthType,mSocket.get(),mUseAuth2);
+    SmartPtr<PeerAuthOp> peerAuth=new PeerAuthOp(this->mCurAddr,this->mAuthContext.get(),this->mAuthType,this->mSocket.get(),this->mUseAuth2);
     peerAuth->CopyMaxTimes(this);
-    peerAuth->SetClientKeySize(mClientKeySize,mUseClientKey);
-    if(mRunMode==1) {
-        Track(peerAuth.get(),2);
-        peerAuth->Run(-1);
+    peerAuth->SetClientKeySize(this->mClientKeySize,this->mUseClientKey);
+    if(this->mRunMode==OP_MODE_ASYNC) {
+        this->Track(peerAuth.get(),2);
+        peerAuth->RunAsync(-1);
         return true;
     }
-    if(peerAuth->RunBlock(TimeLeft())) {
-        mCurSession=peerAuth->GetSession();
+    if(peerAuth->RunBlock(this->TimeLeft())) {
+        this->mCurSession=peerAuth->GetSession();
         return true;
     }
-    if(peerAuth->GetStatus()==100053) {
-        mGetCertStatus=peerAuth->GetGetCertStatus();
-        Fn29F220(100062);
-    } else SetLastServerError(peerAuth->GetStatus());
+    if(peerAuth->GetStatus()==WS_PeerAuth_GetCertFailure) {
+        this->mGetCertStatus=peerAuth->GetGetCertStatus();
+        this->Finish(WS_ServerReq_GetCertFailure);
+    } else this->SetLastServerError(peerAuth->GetStatus());
     return false;
 }
 // FUNCTION: WON 0x006adb10
+// Advances the asynchronous exchange on peer auth and socket completions; false for unknown ops
 bool ServerRequestOp::CallbackHook(AsyncOp* op,int param)
 {
-    if(op->mB39) {
-        Kill(true);
+    if(op->mKilled) {
+        this->Kill(true);
         return true;
     }
-    if(op->GetStatus()!=0) {
-        if(param==2 && op->GetStatus()==100053) {
-            mGetCertStatus=((PeerAuthOp*)op)->GetGetCertStatus();
-            Fn29F220(100062);
+    if(op->GetStatus()!=WS_Success) {
+        if(param==2 && op->GetStatus()==WS_PeerAuth_GetCertFailure) {
+            this->mGetCertStatus=static_cast<PeerAuthOp*>(op)->GetGetCertStatus();
+            this->Finish(WS_ServerReq_GetCertFailure);
             return true;
         }
-        SetLastServerError(op->GetStatus());
-        TryNextServer();
+        this->SetLastServerError(op->GetStatus());
+        this->TryNextServer();
         return true;
     }
     switch(param) {
     case 2:
-        mCurSession=((PeerAuthOp*)op)->GetSession();
-        Send();
+        this->mCurSession=static_cast<PeerAuthOp*>(op)->GetSession();
+        this->Send();
         break;
     case 1: {
         RecvMsgOp* receive=dynamic_cast<RecvMsgOp*>(op);
         if(receive!=NULL) {
-            mResponse=receive->GetMsg();
-            if(CheckExpiredSession()) {
-                TryNextServer();
+            this->mResponse=receive->GetMsg();
+            if(this->CheckExpiredSession()) {
+                this->TryNextServer();
                 return true;
             }
             try {
-                WONStatus status=Virtual14();
-                if(status==100057) TryNextServer();
-                else if(status==100058) Send();
-                else if(status==100059) QueueSocketOp(new RecvMsgOp,RecvTime());
-                else if(status!=100060) FinishSaveSession(status);
+                WONStatus status=this->CheckResponse();
+                if(status==WS_ServerReq_TryNextServer) this->TryNextServer();
+                else if(status==WS_ServerReq_Send) this->Send();
+                else if(status==WS_ServerReq_Recv) this->QueueSocketOp(new RecvMsgOp,this->RecvTime());
+                else if(status!=WS_ServerReq_ExitCommunicationLoop) this->FinishSaveSession(status);
             } catch(ReadBufferException&) {
-                SetLastServerError(100064);
-                TryNextServer();
+                this->SetLastServerError(WS_ServerReq_UnpackFailure);
+                this->TryNextServer();
             }
         }
         break;
@@ -323,19 +338,21 @@ bool ServerRequestOp::CallbackHook(AsyncOp* op,int param)
 
 namespace WONAPI {
 // FUNCTION: WON 0x006adae0
+// Queues a tracked socket op on the current socket
 void ServerRequestOp::QueueSocketOp(SocketOp* op,DWORD timeout)
 {
-    mSocket->Fn2B4740(static_cast<SocketOp*>(Track(op,1)),timeout);
+    this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(op,1)),timeout);
 }
 }
 
 namespace WONAPI {
-// Genuine SDK explicitly authored default virtual methods. Native contexts are
+// WON SDK default virtual methods
 
 // FUNCTION: WON 0x006ad020
-WONStatus ServerRequestOp::Virtual10() { return 100059; }
-WONStatus ServerRequestOp::Virtual14() { return 0; }
-void ServerRequestOp::Virtual18() {}
+// Builds no request and asks to receive (default)
+WONStatus ServerRequestOp::GetNextRequest() { return WS_ServerReq_Recv; }
+WONStatus ServerRequestOp::CheckResponse() { return WS_Success; }
+void ServerRequestOp::Reset() {}
 }
 
 // Compiler-generated and header-inline functions this unit emits:

@@ -9,36 +9,39 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyDialogs.h"
 namespace WONAPI {
-// Natural empty constructor: automatic vptr/defaultmember initialization, zero substantive body credit.
+// Add-direct-connection dialog: a name and an address for a server to connect to directly
 DirectConnectDialog::DirectConnectDialog() {}
 
 // FUNCTION: WON 0x7f7aa0
+// Looks up the name and address fields and the add and cancel buttons from the layout
 void DirectConnectDialog::InitComponent(ComponentInit& inInit)
 {
-    if (inInit.mType == 2) {
-        ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(aConfig, mNameInput, "NameInput", __FILE__, 25);
-        SafeGetComponent(aConfig, mAddressInput, "AddressInput", __FILE__, 26);
-        SafeGetComponent(aConfig, mAddButton, "AddButton", __FILE__, 27);
-        SafeGetComponent(aConfig, mCancelButton, "CancelButton", __FILE__, 28);
-    }
+    if (inInit.mType != 2)
+        return;
+    ComponentConfig* aConfig = static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(aConfig, this->mNameInput, "NameInput", __FILE__, 25);
+    SafeGetComponent(aConfig, this->mAddressInput, "AddressInput", __FILE__, 26);
+    SafeGetComponent(aConfig, this->mAddButton, "AddButton", __FILE__, 27);
+    SafeGetComponent(aConfig, this->mCancelButton, "CancelButton", __FILE__, 28);
 }
 // FUNCTION: WON 0x7f7b20
+// Clears both fields and puts the focus on the name
 void DirectConnectDialog::Reset()
 {
-    mNameInput->Fn2F5890();
-    mNameInput->Clear(false);
-    mAddressInput->Clear(false);
+    this->mNameInput->RequestFocus();
+    this->mNameInput->Clear(false);
+    this->mAddressInput->Clear(false);
 }
 // FUNCTION: WON 0x7f7b50
+// Returns the entered address
 const GUIString& DirectConnectDialog::GetAddress()
 {
-    return mAddressInput->GetText();
+    return this->mAddressInput->GetText();
 }
-// Natural ordinary shared getter; no duplicate physical body credit or marker. Root alias gate pending.
+// Returns the entered name; the linker folds it into GetAddress above (same code)
 const GUIString& DirectConnectDialog::GetName()
 {
-    return mNameInput->GetText();
+    return this->mNameInput->GetText();
 }
 
 }

@@ -1,6 +1,6 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: missing SDK patch-server request/reply implementation.
-// Missing unit uses proposed existing DBProxy/patch-server family profile.
+// ReportPatchStatusOp: reports a patch download result to the patch server (WON SDK)
+// No original address identified (file grouping inferred)
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,6 +10,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONPatchProtocol.h"
+#include "ee/wonapi/WONStatus.h"
 
 using namespace WONAPI;
 
@@ -19,84 +20,84 @@ ReportPatchStatusOp::ReportPatchStatusOp(const IPAddr& theAddr)
 	: DBProxyOp(theAddr),
 	  mMsgType(19)
 {
-	Init();
+	this->Init();
 } 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus ReportPatchStatusOp::Virtual14()
+WONStatus ReportPatchStatusOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
-	if (mSubMessageReplyType != mMsgType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mMsgType+1)
+		return this->InvalidReplyHeader();
 	
 	// Do extended unpack
 
 	// Finished
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ReportPatchStatusOp::Virtual04()
+void ReportPatchStatusOp::RunHook()
 {
-	mMessageType=1004;
-	mSubMessageType=mMsgType;
+	this->mMessageType=1004;
+	this->mSubMessageType=this->mMsgType;
 
 	// Pack the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendString(mProductName);
-	requestData.AppendString(mConfigName);
-	requestData.AppendString(mFromVersion);
-	requestData.AppendString(mToVersion);
-	requestData.AppendString(mNetAddress);		// patch url
-	requestData.AppendByte(mPatchStatus);
+	requestData.AppendString(this->mProductName);
+	requestData.AppendString(this->mConfigName);
+	requestData.AppendString(this->mFromVersion);
+	requestData.AppendString(this->mToVersion);
+	requestData.AppendString(this->mNetAddress);		// patch url
+	requestData.AppendByte(this->mPatchStatus);
 
 	// Pack and call base class implementation
-	mRequestData=requestData.ToByteBuffer(true);
+	this->mRequestData=requestData.ToByteBuffer(true);
 
-	if(mUDPSocket.get()==NULL) // just do TCP ServerRequest
+	if(this->mUDPSocket.get()==NULL) // just do TCP ServerRequest
 	{
-		DBProxyOp::Virtual04();
+		DBProxyOp::RunHook();
 		return;
 	}
 
 	// Do UDP server request
 
-	IPAddr anAddr = GetAddr();
+	IPAddr anAddr = this->GetAddr();
 	if(!anAddr.IsValid())
 	{
-		Fn29F220((WONStatus)100055);
+		this->Finish((WONStatus)WS_ServerReq_NoServersSpecified);
 		return;
 	}
 
-	Virtual18();
-	unsigned char aLengthFieldSize = mLengthFieldSize;
-	mLengthFieldSize=0;
-	Virtual10();
-	mLengthFieldSize=aLengthFieldSize;
-	SmartPtr<SendBytesToOp> anOp = new SendBytesToOp(mRequest, anAddr, mUDPSocket);
-	anOp->Fn29F500(mRunMode,mTimeout);
-	Fn29F220((WONStatus)0);
+	this->Reset();
+	unsigned char aLengthFieldSize = this->mLengthFieldSize;
+	this->mLengthFieldSize=0;
+	this->GetNextRequest();
+	this->mLengthFieldSize=aLengthFieldSize;
+	SmartPtr<SendBytesToOp> anOp = new SendBytesToOp(this->mRequest, anAddr, this->mUDPSocket);
+	anOp->Run(this->mRunMode,this->mTimeout);
+	this->Finish((WONStatus)WS_Success);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ReportPatchStatusOp::Init()
 {
-	Virtual18();
+	this->Reset();
 	ServerRequestOp::mLengthFieldSize = 4;
 
-	mProductName	= "";
-	mConfigName		= "";
-	mFromVersion	= "";
-	mToVersion		= "";
-	mNetAddress		= "";		// patch url
-	mPatchStatus	= 0;
+	this->mProductName	= "";
+	this->mConfigName		= "";
+	this->mFromVersion	= "";
+	this->mToVersion		= "";
+	this->mNetAddress		= "";		// patch url
+	this->mPatchStatus	= 0;
 }
 

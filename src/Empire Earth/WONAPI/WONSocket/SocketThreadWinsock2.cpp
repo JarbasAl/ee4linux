@@ -1,5 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: literal same-SDK Windows backend, no backend-selection/runtime claim.
-// Missing-unit proposed family profile: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
+// No original address identified: WON SDK Winsock2 event-based socket thread backend
+// (written for the WONSocket flags: -O2 -MD -GR -GX -DEE_DINKUM_SXL233)
 #include "ee/wonapi/WONSocketThreadWinsock2.h"
 #include <crtdbg.h>
 using namespace WONAPI;
@@ -12,9 +12,9 @@ static bool gThreadConstructed = false;
 ///////////////////////////////////////////////////////////////////////////////
 SocketWaitThread::SocketWaitThread(CriticalSection &theCrit) 
 {
-	mNumObjects = 1;
+	this->mNumObjects = 1;
 #ifndef __WON_SINGLETHREADED__
-	mWaitArray[0] = mSignalEvent.mEvent;
+	this->mWaitArray[0] = this->mSignalEvent.mEvent;
 #endif
 }
 
@@ -23,13 +23,13 @@ SocketWaitThread::SocketWaitThread(CriticalSection &theCrit)
 SocketWaitThread::~SocketWaitThread()
 {
 	AutoCrit aCrit(gDataCrit);
-	for(int i=1; i<mNumObjects; i++)
+	for(int i=1; i<this->mNumObjects; i++)
 	{
-		AsyncSocket *aSocket = mSocketArray[i];
-		RemoveSocket(aSocket);
+		AsyncSocket *aSocket = this->mSocketArray[i];
+		this->RemoveSocket(aSocket);
 	}
 
-	ReleaseSockets();
+	this->ReleaseSockets();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,38 +38,38 @@ void SocketWaitThread::ReleaseSockets(void)
 {
 	AutoCrit aCrit(gDataCrit);
 
-	if(mReleaseSet.empty())
+	if(this->mReleaseSet.empty())
 		return;
 
-	ReverseSet::iterator anItr = mReleaseSet.begin();
+	ReverseSet::iterator anItr = this->mReleaseSet.begin();
 	int aCount = 0;
-	while(anItr!=mReleaseSet.end()) 
+	while(anItr!=this->mReleaseSet.end()) 
 	{
 		int aPos = *anItr;
 
-		CloseHandle(mWaitArray[aPos]);
+		CloseHandle(this->mWaitArray[aPos]);
 //		mSocketArray[aPos]->SetThreadData(NULL);
 
-		if(aPos!=mNumObjects-1)
+		if(aPos!=this->mNumObjects-1)
 		{
 			// Swap released handled with the last handle (mNumObjects-1)
-			AsyncSocket* aSocket = mSocketArray[mNumObjects-1];
-			mSocketArray[aPos] = aSocket;
+			AsyncSocket* aSocket = this->mSocketArray[this->mNumObjects-1];
+			this->mSocketArray[aPos] = aSocket;
 
 			// Maintain invariant on the non-released handle
 			SocketData* aData = (SocketData*)aSocket->mThreadData.get();
 			aData->mArrayPos = aPos;
-			mWaitArray[aPos] = aData->mEvent;
+			this->mWaitArray[aPos] = aData->mEvent;
 		}
 
-		mNumObjects--;
-		mSocketArray[mNumObjects] = NULL;
+		this->mNumObjects--;
+		this->mSocketArray[this->mNumObjects] = NULL;
 
 		++anItr;
 		++aCount;
 	}
 
-	mReleaseSet.clear();
+	this->mReleaseSet.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,7 +79,7 @@ void SocketWaitThread::ThreadFunc()
 	int aHandleIndex;
 	while(true)
 	{
-		DWORD aWaitResult = WaitForMultipleObjects(mNumObjects, mWaitArray, false, INFINITE);
+		DWORD aWaitResult = WaitForMultipleObjects(this->mNumObjects, this->mWaitArray, false, INFINITE);
 		switch(aWaitResult) 
 		{
 			case WAIT_FAILED:				
@@ -95,12 +95,12 @@ void SocketWaitThread::ThreadFunc()
 				aHandleIndex = (aWaitResult - WAIT_OBJECT_0);
 				if(aHandleIndex==0)  // REHUP
 				{
-					if(mStopped)
+					if(this->mStopped)
 						return;
 				}
 				else
 				{
-					SmartPtr<AsyncSocket> aSocket = mSocketArray[aHandleIndex];
+					SmartPtr<AsyncSocket> aSocket = this->mSocketArray[aHandleIndex];
 					aCrit.Leave();
 
 					// Make sure to enter the socket critical section first since DoOp will probably enter
@@ -125,7 +125,7 @@ void SocketWaitThread::ThreadFunc()
 			}
 		}
 
-		ReleaseSockets();
+		this->ReleaseSockets();
 	}
 }
 
@@ -136,10 +136,10 @@ bool SocketWaitThread::AddSocket(AsyncSocket *theSocket)
 {
 	AutoCrit aCrit(gDataCrit);
 
-	if(mNumObjects==MAXIMUM_WAIT_OBJECTS)
+	if(this->mNumObjects==MAXIMUM_WAIT_OBJECTS)
 		return false;
 
-	int aPos = mNumObjects;
+	int aPos = this->mNumObjects;
 
 	SocketDataPtr aData = new SocketData(this);
 	aData->mEvent = CreateEvent(NULL,false,false,NULL);
@@ -147,12 +147,12 @@ bool SocketWaitThread::AddSocket(AsyncSocket *theSocket)
 	aData->mArrayPos = aPos;
 	theSocket->mThreadData = aData.get();
 
-	mSocketArray[aPos] = theSocket;
-	mWaitArray[aPos] = aData->mEvent;
-	mNumObjects++;
+	this->mSocketArray[aPos] = theSocket;
+	this->mWaitArray[aPos] = aData->mEvent;
+	this->mNumObjects++;
 
 	aCrit.Leave();
-	mSignalEvent.Set();
+	this->mSignalEvent.Set();
 	return true;
 }
 
@@ -166,7 +166,7 @@ void SocketWaitThread::RemoveSocket(AsyncSocket *theSocket)
 	if(aData==NULL)
 		return;
 
-	mReleaseSet.insert(aData->mArrayPos);
+	this->mReleaseSet.insert(aData->mArrayPos);
 	OpList::iterator anItr = aData->mOps.begin();
 	while(anItr!=aData->mOps.end())
 	{
@@ -178,16 +178,16 @@ void SocketWaitThread::RemoveSocket(AsyncSocket *theSocket)
 	theSocket->mThreadCloseCallback = NULL;
 
 	aCrit.Leave();
-	mSignalEvent.Set();
+	this->mSignalEvent.Set();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 SocketWaitThread::SocketData::SocketData(SocketWaitThread *theThread)
 {
-	mThread = theThread;
-	mEvent = NULL;
-	mArrayPos = -1;
+	this->mThread = theThread;
+	this->mEvent = NULL;
+	this->mArrayPos = -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,22 +202,22 @@ SocketThreadWinsock2::SocketThreadWinsock2()
 SocketThreadWinsock2::~SocketThreadWinsock2()
 {
 	gThreadConstructed = false;
-	PurgeOps();
+	this->PurgeOps();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void SocketThreadWinsock2::PurgeOps()
 {
-	ThreadList::iterator anItr = mThreadList.begin();
-	while(anItr!=mThreadList.end())
+	ThreadList::iterator anItr = this->mThreadList.begin();
+	while(anItr!=this->mThreadList.end())
 	{
 		SocketWaitThread *aThread = *anItr;
 		aThread->Stop();
 		delete aThread;
 		++anItr;
 	}
-	mThreadList.clear();
+	this->mThreadList.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -247,17 +247,17 @@ void SocketThreadWinsock2::AddSocketOp(SocketOp *theOp)
 	bool foundThread = false;
 	if(aData==NULL)
 	{
-		aSocket->mThreadCloseCallback = StaticSocketCloseCallback;
-		ThreadList::iterator anItr = mThreadList.begin();
-		while(anItr!=mThreadList.end())
+		aSocket->mThreadCloseCallback = SocketThreadWinsock2::StaticSocketCloseCallback;
+		ThreadList::iterator anItr = this->mThreadList.begin();
+		while(anItr!=this->mThreadList.end())
 		{
 			if((*anItr)->AddSocket(aSocket))
 			{
 				foundThread = true;
-				if(anItr!=mThreadList.begin())
+				if(anItr!=this->mThreadList.begin())
 				{
-					mThreadList.push_front(*anItr);
-					mThreadList.erase(anItr++);
+					this->mThreadList.push_front(*anItr);
+					this->mThreadList.erase(anItr++);
 				}
 				break;
 			}
@@ -267,15 +267,15 @@ void SocketThreadWinsock2::AddSocketOp(SocketOp *theOp)
 
 		if(!foundThread)
 		{
-			mThreadList.push_front(new SocketWaitThread(gDataCrit));
-			mThreadList.front()->Start();
-			mThreadList.front()->AddSocket(aSocket);
+			this->mThreadList.push_front(new SocketWaitThread(gDataCrit));
+			this->mThreadList.front()->Start();
+			this->mThreadList.front()->AddSocket(aSocket);
 		}
 	}
 
 	aData = (SocketWaitThread::SocketData *)aSocket->mThreadData.get();
 	aData->mOps.insert(theOp);
-	theOp->mB44 = true;
+	theOp->mInSocketThread = true;
 	SetEvent(aData->mEvent);
 }
 
@@ -286,7 +286,7 @@ void SocketThreadWinsock2::RemoveSocketOp(SocketOp *theOp)
 	AutoCrit aCrit(gDataCrit);
 	AsyncSocket* aSocket = theOp->GetSocket();
 	SocketWaitThread::SocketData* aData = (SocketWaitThread::SocketData *)aSocket->mThreadData.get();
-	theOp->mB44 = false;
+	theOp->mInSocketThread = false;
 	if(aData!=NULL)
 	{
 		aData->mOps.erase(theOp);

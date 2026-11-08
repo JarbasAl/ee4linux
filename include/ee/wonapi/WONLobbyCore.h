@@ -4,109 +4,105 @@
 #include "ee/wonapi/WONLobbyResource.h"
 namespace WONAPI {
 class Component;
-int LobbyDoDialog(Component* inDialog); //358e50; genuine SDK borrowed generic Component contract
-// Individually original-backed call contracts only. No object-ownership grouping inferred.
-WONStatus LobbyFn35B520(); //35b520; code70 or100004 when no lobby
-int LobbyFn358EF0(const GUIString& inTitle, const GUIString& inText, bool inPlaySound); //358ef0; all5directcallerspass1,calleeconsumesbyte
-void LobbyFn3627F0(int inScreen); //3627f0
-void LobbyFn3610D0(); //3610d0
-void LobbyFn3610F0(); //3610f0
-void LobbyFn361110(); //361110
-void LobbyFn35B500(WONStatus inStatus); //35b500
-ServerContext* LobbyFn35B1F0(); //35b1f0
-ServerContext* LobbyFn35B250(); //35b250
-ServerContext* LobbyFn35B370(); //35b370
-ServerContext* LobbyFn35B3D0(); //35b3d0
-void LobbyFn35B430(); //35b430
-// Reviewed original-backed shared call contracts; definitions remain with their actual families.
+int LobbyDoDialog(Component* inDialog); // 0x758e50
+WONStatus LobbyGetVersionStatus(); // 0x75b520 (status 70, or 100004 without a lobby)
+int LobbyDoYesNoDialog(const GUIString& inTitle, const GUIString& inText, bool inPlaySound); // 0x758ef0 (callers pass true)
+void LobbyExit(int inScreen);     // 0x7627f0
+void LobbyShowCreateAccount(); // 0x7610d0
+void LobbyShowLostPassword(); // 0x7610f0
+void LobbyShowLostUsername(); // 0x761110
+void LobbySetVersionStatus(WONStatus inStatus); // 0x75b500
+ServerContext* LobbyGetAccountServers(); // 0x75b1f0
+ServerContext* LobbyGetAuthServers(); // 0x75b250
+ServerContext* LobbyGetFirewallDetectServers(); // 0x75b370
+ServerContext* LobbyGetPatchServers(); // 0x75b3d0
+void LobbyResetRoomDirServers(); // 0x75b430
 class Container;
 class ChatCommandParser;
 class UDPManager;
 class LobbyGame;
 class LobbyClient;
 Container* GetLobbyRoot();
-void LobbyFn358DF0(Component* inPopup, int inFlags, int inX, int inY);
-void LobbyFn35B9A0(Sound* inSound);
-void LobbyFn35B900(LobbyGame* inGame, bool inForce);
-void LobbyFn35B920(LobbyGame* inGame);
-void LobbyFn35B960(int inUnused);
-void LobbyFn361020();
-ChatCommandParser* LobbyFn35B710();
-UDPManager* LobbyFn35B8F0();
+void LobbyOpenPopup(Component* inPopup, int inFlags, int inX, int inY);
+void LobbyPlaySound(Sound* inSound);
+void LobbyPingGame(LobbyGame* inGame, bool inForce);
+void LobbyQueryGameDetails(LobbyGame* inGame);
+void LobbyKillPings(int inUnused);
+void LobbyShowLoginScreen();
+ChatCommandParser* LobbyGetChatCommandParser();
+UDPManager* LobbyGetUDPManager();
 AuthContext* GetLobbyAuthContext();
-const std::string& LobbyFn35B630();
-const std::string& LobbyFn35B650();
-void LobbyFn35B600(long& outSystemTime, long& outGameTime);
-GUIString LobbyFn366170(WONStatus inStatus);
-IPAddr LobbyFn361990();
-bool LobbyFn361170();
-bool LobbyFn361150();
-bool LobbyFn361B40();
-void LobbyFn358E70(AsyncOp* inOp, const GUIString& inTitle, const GUIString& inStatus, int inStatusMode, unsigned long inTimeout);
-int LobbyFn35B940();
-void LobbyFn3612D0(LobbyGame* inGame);
-void LobbyFn3612F0();
+const std::string& LobbyGetSysTOUPath();
+const std::string& LobbyGetGameTOUPath();
+void LobbyGetTOUTimes(long& outSystemTime, long& outGameTime);
+GUIString GetWONStatusString(WONStatus inStatus);
+IPAddr LobbyGetPublicAddress();
+bool LobbyOnLoginScreen();
+bool LobbyOnLanScreen();
+bool LobbyIsFirewallTestDone();
+void LobbyRunOpWithStatus(AsyncOp* inOp, const GUIString& inTitle, const GUIString& inStatus, int inStatusMode, unsigned long inTimeout);
+int LobbyGetNumPingsToDo();
+void LobbyJoinGame(LobbyGame* inGame);
+void LobbyHostGame();
 class ComponentEvent;
-void LobbyFn359260(ComponentEvent* inEvent, Component* inTarget);
-ChatCommandParser* LobbyFn35B730(int inRoomSpec);
-void LobbyFn361E50(bool inShowError);
-void LobbyFn35B850(LobbyClient* inClient, bool inFlag, unsigned int inRoomSpec);
-void LobbyFn35B7B0(LobbyClient* inClient, bool inFlag, unsigned int inRoomSpec);
-bool LobbyFn3BA6A0(const std::string& inEmail) throw(); // STAND-IN (owner 2026-11-06): no unwind state around the temporary in the caller 0x7ca0a0
-void LobbyFn361BC0(LobbyClient* inClient, bool inIsBan);
-int LobbyFn361190();
+void LobbySendEventTo(ComponentEvent* inEvent, Component* inTarget);
+ChatCommandParser* LobbyGetRoomChatParser(int inRoomSpec);
+void LobbyGameDisconnected(bool inShowError);
+void LobbySetClientBlocked(LobbyClient* inClient, bool inBlocked, unsigned int inRoomSpec);
+void LobbySetClientIgnored(LobbyClient* inClient, bool inIgnored, unsigned int inRoomSpec);
+bool LobbyIsValidEmail(const std::string& inEmail) throw(); // STAND-IN (owner 2026-11-06): no unwind state around the temporary in the caller 0x7ca0a0
+void LobbyKickClient(LobbyClient* inClient, bool inIsBan);
+int LobbyGetGameScreenType();
 class Window;
-void LobbyFn358ED0(const GUIString& inTitle, WONStatus inStatus);
-void LobbyFn359300(ComponentEvent* inEvent);
-bool LobbyFn35B540();
-bool LobbyFn35B560(); //35b560 native19B private90 flag getter, call-only
-bool LobbyFn35B670(long,long); //35b670 native49B signed by-value terms timestamps check, call-only
-void LobbyFn35B980();
-void LobbyFn360F90();
-Window* LobbyFn361230();
-void LobbyFn361ED0(bool inJoinDefaultRoom);
-void LobbyFn361DD0();
-bool LobbyFn361C30(LobbyGame* inGame);
-bool LobbyFn361C60(LobbyGame* inGame);
-LobbyClient* LobbyFn361C90();
-IPAddr LobbyFn3617A0(int inRoomSpec);
-void LobbyFn361E10(const ByteBuffer* inData, LobbyClient* inClient);
-void LobbyFn361E70(LobbyClient* inClient);
-void LobbyFn361E90(LobbyClient* inClient, bool inIsBan);
-void LobbyFn3610B0();
-bool LobbyFn361130();
-// Individually closed dialog/window contracts.
-bool LobbyFn3628B0(); //private suspended byte54, nullfalse
+void LobbyDoErrorDialog(const GUIString& inTitle, WONStatus inStatus);
+void LobbyDispatchEvent(ComponentEvent* inEvent);
+bool LobbyDoCDKeyCheck();
+bool LobbyIsCDKeyValid(); // 0x75b560 (a flag of the lobby's private state)
+bool LobbyIsTOUNewer(long,long); // 0x75b670 (signed compare of the terms-of-use timestamps)
+void LobbyKillFirewallTest();
+void LobbyShowLanScreen();
+Window* LobbyGetRootWindow();
+void LobbyEnterInternetScreen(bool inJoinDefaultRoom);
+void LobbyNetLogout();
+bool LobbyNetHostGame(LobbyGame* inGame);
+bool LobbyNetJoinGame(LobbyGame* inGame);
+LobbyClient* LobbyGetNetMyClient();
+IPAddr LobbyGetMyAddress(int inRoomSpec);
+void LobbyHandleStagingMessage(const ByteBuffer* inData, LobbyClient* inClient);
+void LobbyClientLeftGame(LobbyClient* inClient);
+void LobbyClientKicked(LobbyClient* inClient, bool inIsBan);
+void LobbyShowLobbyTab();
+bool LobbyOnInternetScreen();
+bool LobbyIsSuspended(); // the private state's byte at 0x54; false without a lobby
 class ColorScheme;
-ColorScheme* LobbyFn361210(); //actual Component GetColorScheme2f5970, not a listener
-void LobbyFn359080(Component* inComponent); //actual AddListener2f4b10 wrapper
-void LobbyFn361E30(ReadBuffer& inData, LobbyClient* inClient); //actual Staging3efb50 forwarding
-unsigned short LobbyFn361400(); //actual privateLobbyPortb8, nullzero
-Component* LobbyFn360EA0(); //original360ea0, actual zero-offset component return
-void LobbyFn35B9C0(long inAddress); //original35b9c0, numeric IPv4 address
-ServerContext* LobbyFn35B2B0(); //original35b2b0, borrowed ServerContext at private60
-ServerContext* LobbyFn35B310(); //original35b310, borrowed ServerContext at private64
-void LobbyFn35B5D0(long inSysTime, long inGameTime); //original35b5d0, stores privatebc/c0
-void LobbyFn35E640(); //original singleton guard then tail Load35f7b0
-void LobbyFn35BA00(); //original no-argument UDP/config-port setup; caller ignores incidental EAX
-void LobbyFn361420(unsigned short inPort); //361420 actual cdecl plainRET; nullguard and private LobbyPortb8 wordstore
-void LobbyFn360F00(); //original no-argument screen/event wrapper, no incoming receiver
-void LobbyFn359040(); //359040 genuine namespace event/timer teardown, cdecl void/noargs
-bool LobbyFn358F50(); //358f50 actual DialogLogic active-state byte getter, call-only
-bool LobbyFn361330(bool); //361330 actual StagingLogic Fn3F0110 bool forward, call-only
+ColorScheme* LobbyGetColorScheme(); // Component::GetColorScheme 0x6f5970
+void LobbyAddLogicListener(Component* inComponent); // wraps AddListener 0x6f4b10
+void LobbyHandleStagingReadBuffer(ReadBuffer& inData, LobbyClient* inClient); // staging logic 0x7efb50
+unsigned short LobbyGetLobbyPort(); // the private state's 0xb8; 0 without a lobby
+Component* LobbyGetCurrentScreen(); // 0x760ea0
+void LobbySetNetworkAdapter(long inAddress); // 0x75b9c0 (a numeric IPv4 address)
+ServerContext* LobbyGetDirServers(); // 0x75b2b0 (not owned; the private state's 0x60)
+ServerContext* LobbyGetRoomDirServers(); // 0x75b310 (not owned; the private state's 0x64)
+void LobbySetTOUTimes(long inSysTime, long inGameTime); // 0x75b5d0 (stores the private state's 0xbc / 0xc0)
+void LobbyLoadGlobalPrefs(); // checks the lobby exists, then Load 0x75f7b0
+void LobbyBindUDPPort(); // sets up the UDP port from the config
+void LobbySetLobbyPort(unsigned short inPort); // 0x761420 (stores the private state's 0xb8; nothing without a lobby)
+void LobbyShowInternetScreen();
+void LobbyRemoveEventHooks(); // 0x759040 (removes the lobby's event and timer hooks)
+bool LobbyUserCanceledLastStatusOp(); // 0x758f50 (the dialog logic's active-state byte)
+bool LobbyLogout(bool);   // 0x761330 (forwards to StagingLogic's Logout)
 struct LobbyUserInfo;
-LobbyUserInfo* LobbyFn35CDE0(); //borrowed current user record; null when no matching file ID
-GUIString LobbyFn34A170(const GUIString& inFormat, const GUIString& inFirst,
-    const GUIString& inSecond, const GUIString& inThird); //cdecl hidden GUIString result plus four references
+LobbyUserInfo* LobbyGetCurrentUser(); // not owned; NULL when no record matches the file ID
+GUIString LobbyFormatString3(const GUIString& inFormat, const GUIString& inFirst,
+    const GUIString& inSecond, const GUIString& inThird);
 
 class LobbyServerList;
 class LobbyGroup;
-LobbyServerList* LobbyFn35B6B0(); //35b6b0: Routing.mServerList54
-LobbyGroup* LobbyFn35B6D0(); //35b6d0: Routing.mChatGroup6c
-// actual caller/callee contracts; no wrapper implementations.
-GUIString LobbyFn34A130(const GUIString& inFormat, const GUIString& inFirst, const GUIString& inSecond);
-void LobbyFn361440();
-void LobbyFn3615E0(const IPAddr& inAddress);
-void LobbyFn361770(bool inBehindFirewall);
+LobbyServerList* LobbyGetServerList(); // 0x75b6b0: the routing logic's mServerList (0x54)
+LobbyGroup* LobbyGetChatGroup(); // 0x75b6d0: the routing logic's mChatGroup (0x6c)
+GUIString LobbyFormatString2(const GUIString& inFormat, const GUIString& inFirst, const GUIString& inSecond);
+void LobbyResetFirewallTest();
+void LobbySetPublicAddress(const IPAddr& inAddress);
+void LobbySetBehindFirewall(bool inBehindFirewall);
 }
 #endif

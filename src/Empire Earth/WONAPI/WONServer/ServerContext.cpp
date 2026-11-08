@@ -1,5 +1,4 @@
-// RECONSTRUCTION: new native WONAPI class family; exact original filename/grouping unproved.
-// Unmatched code/support remains original-carved; no runtime authority.
+// ServerContext: a lock-protected, shuffled list of server addresses to try (file grouping inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,45 +13,46 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
-// scratch NEW ServerContext behaviors. Complete3c fields already canonical.
-// Actual AutoCrit8 protects map/list and preserves original mutation order.
 // FUNCTION: WON 0x006ac390
+// Removes every server address and re-enables the one-time shuffle
 void ServerContext::Clear()
 {
-    AutoCrit guard(mLock);
-    mPingMap.clear();
-    mAddresses.clear();
-    mB08 = true;
-    mB09 = false;
+    AutoCrit guard(this->mLock);
+    this->mPingMap.clear();
+    this->mAddresses.clear();
+    this->mShuffleAddresses = true;
+    this->mAddressesShuffled = false;
 }
 // FUNCTION: WON 0x006ac4b0
+// Appends a valid address not yet in the list; returns whether it was added
 bool ServerContext::AddAddress(const IPAddr& inAddress)
 {
-    if (inAddress.IsValid()) {
-        AutoCrit guard(mLock);
-        typedef std::map<IPAddr,AddrList::iterator> AddrMap;
-        std::pair<AddrMap::iterator,bool> inserted =
-            mPingMap.insert(AddrMap::value_type(inAddress,mAddresses.end()));
-        if (inserted.second) {
-            inserted.first->second = mAddresses.insert(mAddresses.end(),inAddress);
-            return true;
-        }
+    if (!inAddress.IsValid())
+        return false;
+    AutoCrit guard(this->mLock);
+    typedef std::map<IPAddr,AddrList::iterator> AddrMap;
+    std::pair<AddrMap::iterator,bool> inserted =
+        this->mPingMap.insert(AddrMap::value_type(inAddress,this->mAddresses.end()));
+    if (inserted.second) {
+        inserted.first->second = this->mAddresses.insert(this->mAddresses.end(),inAddress);
+        return true;
     }
     return false;
 }
 
 // FUNCTION: WON 0x006ac980
+// Moves a server that failed to the end of the list
 void ServerContext::NotifyFailed(const IPAddr& inAddress)
 {
-    AutoCrit guard(mLock);
-    std::map<IPAddr,AddrList::iterator>::iterator it=mPingMap.find(inAddress);
-    if (it==mPingMap.end()) return;
-    mAddresses.erase(it->second);
-    it->second=mAddresses.insert(mAddresses.end(),it->first);
+    AutoCrit guard(this->mLock);
+    std::map<IPAddr,AddrList::iterator>::iterator it=this->mPingMap.find(inAddress);
+    if (it==this->mPingMap.end()) return;
+    this->mAddresses.erase(it->second);
+    it->second=this->mAddresses.insert(this->mAddresses.end(),it->first);
 }
 
-// Next ServerContext directory source; uses only proven reference prefix, no new DirEntity.
 // FUNCTION: WON 0x006acab0
+// Adds the addresses of the directory's services (optionally only those with the given name)
 bool ServerContext::AddAddressesFromDir(const DirEntityList& inEntities,const wchar_t* inNameFilter)
 {
     bool added=false;
@@ -62,61 +62,63 @@ bool ServerContext::AddAddressesFromDir(const DirEntityList& inEntities,const wc
         DirEntity* entity=it->get();
         if (entity->mType=='D') continue;
         if (!filter.empty() && !(filter==entity->mName)) continue;
-        if (AddAddress(entity->GetNetAddrAsIP())) added=true;
+        if (this->AddAddress(entity->GetNetAddrAsIP())) added=true;
     }
     return added;
 }
 
 // FUNCTION: WON 0x006ac6d0
+// Copies the address list, shuffling it randomly the first time
 void ServerContext::CopyAddresses(AddrList& inCopy)
 {
-    AutoCrit aGuard(mLock);
-    if (mB08 && !mB09) {
+    AutoCrit aGuard(this->mLock);
+    if (this->mShuffleAddresses && !this->mAddressesShuffled) {
         std::vector<IPAddr> anAddresses;
-        anAddresses.reserve(mAddresses.size());
-        for (AddrList::iterator anItr=mAddresses.begin();anItr!=mAddresses.end();++anItr)
+        anAddresses.reserve(this->mAddresses.size());
+        for (AddrList::iterator anItr=this->mAddresses.begin();anItr!=this->mAddresses.end();++anItr)
             anAddresses.push_back(*anItr);
         srand(time(NULL));
         std::random_shuffle(anAddresses.begin(),anAddresses.end());
-        mPingMap.clear();
-        mAddresses.clear();
+        this->mPingMap.clear();
+        this->mAddresses.clear();
         for (std::vector<IPAddr>::iterator aPos=anAddresses.begin();aPos!=anAddresses.end();++aPos) {
-            AddrList::iterator aLast=mAddresses.insert(mAddresses.end(),*aPos);
-            mPingMap[*aPos]=aLast;
+            AddrList::iterator aLast=this->mAddresses.insert(this->mAddresses.end(),*aPos);
+            this->mPingMap[*aPos]=aLast;
         }
-        mB09=true;
+        this->mAddressesShuffled=true;
     }
-    inCopy=mAddresses;
+    inCopy=this->mAddresses;
 }
 
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x006acc00
-void ServerContext::RemoveAllAddresses() { Clear(); }
+// Removes every server address
+void ServerContext::RemoveAllAddresses() { this->Clear(); }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine complete owner/API address-management algorithms.
+// No original address identified: WON SDK address-management methods
 namespace WONAPI {
 bool ServerContext::RemoveAddress(const IPAddr &theAddr)
 {
-	AutoCrit aCrit(mLock);
-	std::map<IPAddr,AddrList::iterator>::iterator anItr = mPingMap.find(theAddr);
-	if(anItr==mPingMap.end())
+	AutoCrit aCrit(this->mLock);
+	std::map<IPAddr,AddrList::iterator>::iterator anItr = this->mPingMap.find(theAddr);
+	if(anItr==this->mPingMap.end())
 		return false;
 
-	mAddresses.erase(anItr->second);
-	mPingMap.erase(anItr);
+	this->mAddresses.erase(anItr->second);
+	this->mPingMap.erase(anItr);
 	return true;
 }
 
 void ServerContext::CopyAddresses(AddrSet &theCopy)
 {
-	AutoCrit aCrit(mLock);
+	AutoCrit aCrit(this->mLock);
 	theCopy.clear();
-	std::map<IPAddr,AddrList::iterator>::iterator aMapItr = mPingMap.begin();
+	std::map<IPAddr,AddrList::iterator>::iterator aMapItr = this->mPingMap.begin();
 	AddrSet::iterator aSetItr = theCopy.begin();
-	while(aMapItr!=mPingMap.end())
+	while(aMapItr!=this->mPingMap.end())
 	{
 		aSetItr = theCopy.insert(aSetItr,aMapItr->first);
 		++aMapItr;
@@ -129,21 +131,21 @@ bool ServerContext::AddAddressesFromDir(const DirEntityMap &theDir, const std::w
 	if(anItr==theDir.end())
 		return false;
 	else
-		return AddAddressesFromDir(anItr->second,theNameFilter);
+		return this->AddAddressesFromDir(anItr->second,theNameFilter);
 }
 
 bool ServerContext::AtomicClearAndAddAddressesFromDir(const DirEntityList &theDir, const wchar_t *theNameFilter)
 {
-	AutoCrit aCrit(mLock);
-	Clear();
-	return AddAddressesFromDir(theDir, theNameFilter);
+	AutoCrit aCrit(this->mLock);
+	this->Clear();
+	return this->AddAddressesFromDir(theDir, theNameFilter);
 }
 
 bool ServerContext::AtomicClearAndAddAddressesFromDir(const DirEntityMap &theDir, const std::wstring &thePath, const wchar_t *theNameFilter)
 {
-	AutoCrit aCrit(mLock);
-	Clear();
-	return AddAddressesFromDir(theDir, thePath, theNameFilter);	
+	AutoCrit aCrit(this->mLock);
+	this->Clear();
+	return this->AddAddressesFromDir(theDir, thePath, theNameFilter);	
 }
 }
 

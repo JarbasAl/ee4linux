@@ -14,6 +14,7 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x0073F020
+// Converts text (or a file) to a document and appends it as a parameter or to the output; false when it fails
 bool HTMLDocumentGen::AddDocPrv(const GUIString &theText, int theFlags, bool addToVector)
 {
 	SmartPtr<HTMLDocument> aDocument;
@@ -21,17 +22,19 @@ bool HTMLDocumentGen::AddDocPrv(const GUIString &theText, int theFlags, bool add
 	aDocument = aGen.Generate(theText,theFlags);
 	
 	if(addToVector)
-		mDocumentVector.push_back(aDocument);
+		this->mDocumentVector.push_back(aDocument);
 	else
-		mDocument->AddDocument(aDocument.get());
+		this->mDocument->AddDocument(aDocument.get());
 
 	return aDocument.get()!=NULL;
 }
 
 // FUNCTION: WON 0x0073f170
+// Destroys a text-to-HTML converter, releasing its document and pending text
 // (??1HTMLFromText@WONAPI@@QAE@XZ)
 
 // FUNCTION: WON 0x0073F230
+// Builds the output from a format: text between %N% markers is added as HTML, %N% inserts parameter N, %% a %
 void HTMLDocumentGen::printf(const GUIString &theText)
 {
 	int aStartPos = 0;
@@ -44,12 +47,12 @@ void HTMLDocumentGen::printf(const GUIString &theText)
 		if(theText[anEndPos+1]=='%')
 		{
 			anEndPos++;
-			AddDoc(theText.substr(aStartPos,anEndPos-aStartPos),HTMLDocGenFlag_IsHTML);
+			this->AddDoc(theText.substr(aStartPos,anEndPos-aStartPos),HTMLDocGenFlag_IsHTML);
 			aStartPos = anEndPos+1;
 			continue;
 		}
 			
-		AddDoc(theText.substr(aStartPos,anEndPos-aStartPos),HTMLDocGenFlag_IsHTML);
+		this->AddDoc(theText.substr(aStartPos,anEndPos-aStartPos),HTMLDocGenFlag_IsHTML);
 
 		anEndPos++;
 		aStartPos = anEndPos;
@@ -58,8 +61,8 @@ void HTMLDocumentGen::printf(const GUIString &theText)
 
 		GUIString aNumber = theText.substr(aStartPos,anEndPos-aStartPos);
 		int aParamNum = aNumber.ToInt()-1;
-		if(aParamNum>=0 && aParamNum<mDocumentVector.size())
-			mDocument->AddDocument(mDocumentVector[aParamNum].get());
+		if(aParamNum>=0 && aParamNum<this->mDocumentVector.size())
+			this->mDocument->AddDocument(this->mDocumentVector[aParamNum].get());
 
 		aStartPos = anEndPos+1;
 		if(aStartPos>=theText.length())
@@ -67,55 +70,58 @@ void HTMLDocumentGen::printf(const GUIString &theText)
 	}
 
 	if(aStartPos<theText.length())
-		AddDoc(theText.substr(aStartPos),HTMLDocGenFlag_IsHTML);
+		this->AddDoc(theText.substr(aStartPos),HTMLDocGenFlag_IsHTML);
 	// LOST-DEBUG: none: exact only
 	EE_LOST_DEBUG(4);
 }
 
 
 // FUNCTION: WON 0x0073f1f0
+// Converts text to a document and appends it to the output
 bool HTMLDocumentGen::AddDoc(const GUIString &theText, int theFlags)
 {
-	return AddDocPrv(theText,theFlags,false);
+	return this->AddDocPrv(theText,theFlags,false);
 }
 // FUNCTION: WON 0x0073f210
+// Converts text to a document and stores it as the next printf parameter
 bool HTMLDocumentGen::AddDocParam(const GUIString &theText, int theFlags)
 {
-	return AddDocPrv(theText,theFlags,true);
+	return this->AddDocPrv(theText,theFlags,true);
 }
 }
 
 namespace WONAPI {
-// Genuine SDK authored constructor/API, support only; no implicit lifetime body.
 // FUNCTION: WON 0x0073efc0
+// Creates a document generator writing into the given document (a new empty one when NULL)
 HTMLDocumentGen::HTMLDocumentGen(HTMLDocument* document)
 {
-    SetDocument(document);
+    this->SetDocument(document);
 }
 // FUNCTION: WON 0x0073f440
+// Sets the output document, creating an empty one when NULL
 void HTMLDocumentGen::SetDocument(HTMLDocument* document)
 {
-    if(document==NULL) mDocument=new HTMLDocument(gEmptyGUIString);
-    else mDocument=document;
+    if(document==NULL) this->mDocument=new HTMLDocument(gEmptyGUIString);
+    else this->mDocument=document;
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable API body, zero Native/primary/physical credit.
+// Appends a tag to the output document (ignored when NULL; not identified in the original exe)
 void HTMLDocumentGen::AddTag(HTMLTag *theTag)
 {
 	if(theTag!=NULL)
-		mDocument->AddTag(theTag);
+		this->mDocument->AddTag(theTag);
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK executable API body, zero Native/primary/physical credit.
+// Stores a single tag as the next printf parameter (not identified in the original exe)
 void HTMLDocumentGen::AddTagParam(HTMLTag *theTag)
 {
 	SmartPtr<HTMLDocument> aDoc = new HTMLDocument(gEmptyGUIString);
 	if(theTag!=NULL)
 		aDoc->AddTag(theTag);
 
-	mDocumentVector.push_back(aDoc);
+	this->mDocumentVector.push_back(aDoc);
 }
 }
 

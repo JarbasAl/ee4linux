@@ -14,27 +14,30 @@ using namespace WONAPI;
 
 // Defined before AddLine in the original object (no delete-on-throw guard around `new TextLine`).
 // FUNCTION: WON 0x00711690
+// Creates an empty text line at the origin with zero size
 TextLine::TextLine()
 {
-    mx=my=0;
-    mHeight=0;
-    mWidth=0;
-    mBaseline=0;
-    mDescent=0;
+    this->mx=this->my=0;
+    this->mHeight=0;
+    this->mWidth=0;
+    this->mBaseline=0;
+    this->mDescent=0;
 }
 // FUNCTION: WON 0x007124e0
+// Appends a line of the given height and baseline below the last line, grows the total height and
+// returns the line
 TextLine* TextArea::AddLine(int height,int baseline)
 {
     SmartPtr<TextLine> line=new TextLine;
     line->mHeight=height;
     line->mBaseline=baseline;
-    if(!mLineVector.empty())
+    if(!this->mLineVector.empty())
     {
-        TextLine* previous=mLineVector.back().get();
+        TextLine* previous=this->mLineVector.back().get();
         line->my=previous->my+previous->mHeight;
     }
-    mLineVector.push_back(line);
-    mTotalHeight+=height;
+    this->mLineVector.push_back(line);
+    this->mTotalHeight+=height;
     return line.get();
 }
 

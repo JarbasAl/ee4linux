@@ -1,4 +1,4 @@
-// Source-only reconstructed WONGUI StretchImage; no runtime substitution authority.
+// Stretch images: nine-piece border images whose center and sides stretch or tile to any size (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <cstring>
@@ -26,6 +26,7 @@ inline void CopyRawImageInfo(RawImage32* dst,RawImage32* src) { dst->mDoTranspar
 template <class ImageType, class PixelType> 
 // FUNCTION: WON 0x00755280
 // FUNCTION: WON 0x00755560
+// Copies a rectangle of pixels row by row between raw images (8-bit instance at 0x00755280, 32-bit at 0x00755560)
 static void CopyRawImage(ImageType *src, ImageType *dst, int destx, int desty, int x, int y, int width, int height)
 {
 	for(int i = 0; i<height; i++)
@@ -41,6 +42,7 @@ static void CopyRawImage(ImageType *src, ImageType *dst, int destx, int desty, i
 template <class ImageType, class PixelType> 
 // FUNCTION: WON 0x00755170
 // FUNCTION: WON 0x00755410
+// Tiles a source rectangle across a row from x1 to x2, clipping the last one (8-bit 0x00755170, 32-bit 0x00755410)
 static void RawTileHorz(ImageType *src, ImageType *dst, int x1, int x2, int y, int tileLeft, int tileTop, int tileWidth, int tileHeight)
 {
 	int endX = x2 - tileWidth;
@@ -88,6 +90,7 @@ static void RawTileHorzVert(ImageType *src, ImageType *dst, int x1, int x2, int 
 template <class ImageType, class PixelType> 
 // FUNCTION: WON 0x00755060
 // FUNCTION: WON 0x007552f0
+// Stretches a source rectangle into a destination rectangle by nearest pixel (8-bit 0x00755060, 32-bit 0x007552f0)
 static void RawStretch(ImageType *src, ImageType *dst, int x1, int x2, int y1, int y2, int tileLeft, int tileTop, int tileWidth, int tileHeight)
 {
 	int theNewWidth = x2 - x1;
@@ -130,18 +133,23 @@ static void RawStretch(ImageType *src, ImageType *dst, int x1, int x2, int y1, i
 }
 
 // FUNCTION: WON 0x00749720
+// Deleting destructor of a stretch image (compiler-generated)
 // (??_GStretchImage@WONAPI@@MAEPAXI@Z)
 
 // FUNCTION: WON 0x00749e60
+// Deleting destructor of a stretch-center image (compiler-generated)
 // (??_GStretchCenterImage@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x00749e80
+// Destroys a stretch-center image, releasing its stretch and center images (compiler-generated)
 // (??1StretchCenterImage@WONAPI@@UAE@XZ)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007529b0
 // FUNCTION: WON 0x007535d0
+// Builds a new image of the filter's size from nine pieces: corners copied, sides and center stretched or tiled
+// (8-bit instance at 0x007529b0, 32-bit at 0x007535d0)
 template <class ImageType, class PixelType> 
 static SmartPtr<ImageType> DoFilter(ImageType *theImage, StretchImageFilter *theFilter)
 {
@@ -267,13 +275,14 @@ static SmartPtr<ImageType> DoFilter(ImageType *theImage, StretchImageFilter *the
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749570
+// Returns the nine-piece stretched copy of an 8-bit or 32-bit raw image; NULL for other image types
 SmartPtr<RawImage> StretchImageFilter::Filter(RawImage *theImage)
 {
 
 	switch(theImage->mType)
 	{
-		case 1: return DoFilter<RawImage8,unsigned char>((RawImage8*)theImage,this).get(); 
-		case 2: return DoFilter<RawImage32,DWORD>((RawImage32*)theImage,this).get(); 
+		case 1: return DoFilter<RawImage8,unsigned char>(static_cast<RawImage8*>(theImage),this).get(); 
+		case 2: return DoFilter<RawImage32,DWORD>(static_cast<RawImage32*>(theImage),this).get(); 
 		default: return NULL;
 	}
 };
@@ -282,29 +291,31 @@ SmartPtr<RawImage> StretchImageFilter::Filter(RawImage *theImage)
 
 StretchImageFilter::StretchImageFilter()
 {
-	mWidth = mHeight = 0;
-	mLeftWidth = mRightWidth = mTopHeight = mBottomHeight = 0;
-	mTileHorz = mTileVert = true;
-	mSkipCenter = false;
+	this->mWidth = this->mHeight = 0;
+	this->mLeftWidth = this->mRightWidth = this->mTopHeight = this->mBottomHeight = 0;
+	this->mTileHorz = this->mTileVert = true;
+	this->mSkipCenter = false;
 }
 
 // FUNCTION: WON 0x00749650
+// Creates a stretch image over a raw image with the given border sizes, tiling both ways, size 0x0
 StretchImage::StretchImage(RawImage *theImage, int leftWidth, int topHeight, int rightWidth, int bottomHeight)
 {
-	mImage = theImage;
-	mWidth = mHeight = 0;
-	mLeftWidth = leftWidth;
-	mRightWidth = rightWidth;
-	mTopHeight = topHeight;
-	mBottomHeight = bottomHeight;
-	mNeedRecalc = true;
-	mTileHorz = mTileVert = true;
-	mSkipCenter = false;
+	this->mImage = theImage;
+	this->mWidth = this->mHeight = 0;
+	this->mLeftWidth = leftWidth;
+	this->mRightWidth = rightWidth;
+	this->mTopHeight = topHeight;
+	this->mBottomHeight = bottomHeight;
+	this->mNeedRecalc = true;
+	this->mTileHorz = this->mTileVert = true;
+	this->mSkipCenter = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749740
+// Destroys the stretch image, releasing its source and cached images
 StretchImage::~StretchImage()
 {
 }
@@ -312,14 +323,15 @@ StretchImage::~StretchImage()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007497e0
+// Sets the image size, marking the cached image for rebuild when it changes
 void StretchImage::SetSize(int theWidth, int theHeight)
 {
-	if(theWidth==mWidth && theHeight==mHeight)
+	if(theWidth==this->mWidth && theHeight==this->mHeight)
 		return;
 
-	mWidth = theWidth;
-	mHeight = theHeight;
-	mNeedRecalc = true;
+	this->mWidth = theWidth;
+	this->mHeight = theHeight;
+	this->mNeedRecalc = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -329,143 +341,153 @@ void StretchImage::SetSize(int theWidth, int theHeight)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749810
+// Rebuilds the cached native image by running the stretch filter over the source image at the current size
 void StretchImage::CalcImage(DisplayContext *context)
 {
 	SmartPtr<StretchImageFilter> aFilter = new StretchImageFilter;
-	aFilter->SetBorders(mLeftWidth,mTopHeight,mRightWidth,mBottomHeight);
-	aFilter->SetSize(GetWidth(),GetHeight());
-	aFilter->SetTile(mTileHorz,mTileVert);
-	aFilter->SetSkipCenter(mSkipCenter);
-	mCachedImage = aFilter->Filter(mImage.get())->GetNative(context);
-	mNeedRecalc = false;
+	aFilter->SetBorders(this->mLeftWidth,this->mTopHeight,this->mRightWidth,this->mBottomHeight);
+	aFilter->SetSize(this->GetWidth(),this->GetHeight());
+	aFilter->SetTile(this->mTileHorz,this->mTileVert);
+	aFilter->SetSkipCenter(this->mSkipCenter);
+	this->mCachedImage = aFilter->Filter(this->mImage.get())->GetNative(context);
+	this->mNeedRecalc = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x007499a0
+// Draws the cached image (rebuilding it first if needed); with skip-center only the four border strips are drawn
 void StretchImage::Paint(Graphics &g)
 {
-	if(mNeedRecalc)
-		CalcImage(g.mDisplayContext.get());
+	if(this->mNeedRecalc)
+		this->CalcImage(g.mDisplayContext.get());
 
-	if(mSkipCenter)
+	if(this->mSkipCenter)
 	{
-		if(mLeftWidth>0)
+		if(this->mLeftWidth>0)
 		{
-			g.PushClipRect(0,0,mLeftWidth,mHeight); // Left part
-			g.DrawImage(mCachedImage.get(),0,0);
+			g.PushClipRect(0,0,this->mLeftWidth,this->mHeight); // Left part
+			g.DrawImage(this->mCachedImage.get(),0,0);
 			g.PopClipRect();
 		}
 
-		if(mRightWidth>0)
+		if(this->mRightWidth>0)
 		{
-			g.PushClipRect(mWidth-mRightWidth,0,mRightWidth,mHeight); // right part
-			g.DrawImage(mCachedImage.get(),0,0);
+			g.PushClipRect(this->mWidth-this->mRightWidth,0,this->mRightWidth,this->mHeight); // right part
+			g.DrawImage(this->mCachedImage.get(),0,0);
 			g.PopClipRect();
 		}
 
-		if(mTopHeight>0)
+		if(this->mTopHeight>0)
 		{	
-			g.PushClipRect(0,0,mWidth,mTopHeight); // top part
-			g.DrawImage(mCachedImage.get(),0,0);
+			g.PushClipRect(0,0,this->mWidth,this->mTopHeight); // top part
+			g.DrawImage(this->mCachedImage.get(),0,0);
 			g.PopClipRect();
 		}
 
-		if(mBottomHeight>0)
+		if(this->mBottomHeight>0)
 		{
-			g.PushClipRect(0,mHeight-mBottomHeight,mWidth,mBottomHeight);
-			g.DrawImage(mCachedImage.get(),0,0);
+			g.PushClipRect(0,this->mHeight-this->mBottomHeight,this->mWidth,this->mBottomHeight);
+			g.DrawImage(this->mCachedImage.get(),0,0);
 			g.PopClipRect();
 		}
 	}
 	else
-		g.DrawImage(mCachedImage.get(),0,0);
+		g.DrawImage(this->mCachedImage.get(),0,0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749ab0
+// Sets the source image (the cached image is not marked for rebuild)
 void StretchImage::SetImage(RawImage *theImage)
 {
-	mImage = theImage;
+	this->mImage = theImage;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749b10
+// Sets the four border sizes (the cached image is not marked for rebuild)
 void StretchImage::SetBorders(int left, int top, int right, int bottom)
 {
-	mLeftWidth = left;
-	mTopHeight = top;
-	mRightWidth = right;
-	mBottomHeight = bottom;
+	this->mLeftWidth = left;
+	this->mTopHeight = top;
+	this->mRightWidth = right;
+	this->mBottomHeight = bottom;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749b30
+// Copies borders, tiling, skip-center and size from another stretch image (not the source image)
 void StretchImage::CopyAttributes(StretchImage *from)
 {
-	mLeftWidth = from->mLeftWidth;
-	mTopHeight = from->mTopHeight; 
-	mRightWidth = from->mRightWidth;
-	mBottomHeight = from->mBottomHeight;
-	mTileHorz = from->mTileHorz;
-	mTileVert = from->mTileVert;
-	mSkipCenter = from->mSkipCenter;
-	mWidth = from->mWidth;
-	mHeight = from->mHeight;
+	this->mLeftWidth = from->mLeftWidth;
+	this->mTopHeight = from->mTopHeight; 
+	this->mRightWidth = from->mRightWidth;
+	this->mBottomHeight = from->mBottomHeight;
+	this->mTileHorz = from->mTileHorz;
+	this->mTileVert = from->mTileVert;
+	this->mSkipCenter = from->mSkipCenter;
+	this->mWidth = from->mWidth;
+	this->mHeight = from->mHeight;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749b80
+// Returns a new stretch image with the same source, borders, tiling and skip-center (size 0x0)
 SmartPtr<Image> StretchImage::Duplicate()
 {
-	SmartPtr<StretchImage> aCopy = new StretchImage(mImage.get(),mLeftWidth,mTopHeight,mRightWidth,mBottomHeight);
-	aCopy->SetTile(mTileHorz,mTileVert);
-	aCopy->SetSkipCenter(mSkipCenter);
+	SmartPtr<StretchImage> aCopy = new StretchImage(this->mImage.get(),this->mLeftWidth,this->mTopHeight,this->mRightWidth,this->mBottomHeight);
+	aCopy->SetTile(this->mTileHorz,this->mTileVert);
+	aCopy->SetSkipCenter(this->mSkipCenter);
 	return aCopy.get();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749c60
+// Returns the cached native image, rebuilding it first if needed
 SmartPtr<NativeImage> StretchImage::GetNative(DisplayContext *theContext)
 {
-	if(mNeedRecalc)
-		CalcImage(theContext);
+	if(this->mNeedRecalc)
+		this->CalcImage(theContext);
 
-	return mCachedImage;
+	return this->mCachedImage;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749cb0
+// Draws the stretch image, then the center image centered on it when it fits
 void StretchCenterImage::Paint(Graphics &g)
 {
-	g.DrawImage(mStretchImage.get(),0,0);
+	g.DrawImage(this->mStretchImage.get(),0,0);
 	
-	if(mCenterImage->mWidth<=mWidth && mCenterImage->mHeight<=mHeight)
-		g.DrawImage(mCenterImage.get(),(mWidth-mCenterImage->mWidth)/2,(mHeight-mCenterImage->mHeight)/2);
+	if(this->mCenterImage->mWidth<=this->mWidth && this->mCenterImage->mHeight<=this->mHeight)
+		g.DrawImage(this->mCenterImage.get(),(this->mWidth-this->mCenterImage->mWidth)/2,(this->mHeight-this->mCenterImage->mHeight)/2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749d20
+// Sets the size and resizes the stretch image to match
 void StretchCenterImage::SetSize(int theWidth, int theHeight)
 {
-	mWidth = theWidth;
-	mHeight = theHeight;
-	mStretchImage->SetSize(theWidth,theHeight);
+	this->mWidth = theWidth;
+	this->mHeight = theHeight;
+	this->mStretchImage->SetSize(theWidth,theHeight);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00749d40
+// Returns a new stretch-center image with a copy of the stretch image and the same center image
 SmartPtr<Image> StretchCenterImage::Duplicate()
 {
-	return new StretchCenterImage(mStretchImage->Duplicate().get(),mCenterImage.get());
+	return new StretchCenterImage(this->mStretchImage->Duplicate().get(),this->mCenterImage.get());
 }
 
 // Compiler-generated and header-inline functions this unit emits:

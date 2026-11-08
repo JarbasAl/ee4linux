@@ -1,4 +1,5 @@
-// Original-backed LobbyLogic family; source filename has no embedded target anchor.
+// Base class of the lobby logic objects: runs network operations and tracks them so they can be killed
+// (file name inferred: no __FILE__)
 
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
@@ -13,16 +14,16 @@
 #include "ee/wonapi/WONLobbyLogic.h"
 
 namespace WONAPI {
-// Original namespace runner; exact return is void in both callers.
-void LobbyFn35B5B0(AsyncOp* inOp, unsigned long inTimeout);
+// Defined in another unit; returns void
+void LobbyRunOp(AsyncOp* inOp, unsigned long inTimeout);
 
-// Original initializes complete tracker lock/maps/flags with true,false.
-// Canonical Maps constructor remains an original callee; its out-of-line shape
-// is retained honestly until ordinary COFF calibration proves any refinement.
+// The tracker's maps are built by an out-of-line constructor call, as in the original
 // FUNCTION: WON 0x007e5930
-LobbyLogic::LobbyLogic() { mKilled = false; }
+// Creates the logic object, not killed, with an empty operation tracker
+LobbyLogic::LobbyLogic() { this->mKilled = false; }
 
 // FUNCTION: WON 0x007e5a40
+// Destroys the logic object (members only)
 LobbyLogic::~LobbyLogic() {}
 
 
@@ -33,41 +34,43 @@ void LobbyLogic::HandleControlEvent(int) {}
 void LobbyLogic::HandleComponentEvent(ComponentEvent*) {}
 
 // FUNCTION: WON 0x007e5b00
+// Marks the logic killed, kills every tracked operation and runs the subclass kill hook
 void LobbyLogic::Kill()
 {
-    mKilled = true;
-    mTracker.KillAll();
-    KillHook();
+    this->mKilled = true;
+    this->mTracker.KillAll();
+    this->KillHook();
 }
 
 // FUNCTION: WON 0x007e5b20
+// Runs a network operation with its completion, tracking it so Kill can cancel it
 void LobbyLogic::RunTrackedOp(AsyncOp* inOp, LogicCompletionBase* inCompletion,
                              unsigned long inTimeout)
 {
     inOp->mCompletion = inCompletion;
     if (inCompletion != NULL)
         inCompletion->mCheckTracker = true;
-    mTracker.AddOp(inOp, 0);
-    LobbyFn35B5B0(inOp, inTimeout);
+    this->mTracker.AddOp(inOp, 0);
+    LobbyRunOp(inOp, inTimeout);
 }
 
 // FUNCTION: WON 0x007e5ba0
+// Runs a network operation with its completion, untracked
 void LobbyLogic::RunOp(AsyncOp* inOp, CompletionBase<AsyncOpPtr>* inCompletion,
                       unsigned long inTimeout)
 {
     inOp->mCompletion = inCompletion;
-    LobbyFn35B5B0(inOp, inTimeout);
+    LobbyRunOp(inOp, inTimeout);
 }
 
 // FUNCTION: WON 0x007e5c00
-bool LobbyLogic::Fn3E5C00(AsyncOp* inOp)
+// Stops tracking an operation; returns whether it was tracked
+bool LobbyLogic::RemoveTrackedOp(AsyncOp* inOp)
 {
-    return mTracker.RemoveOp(inOp);
+    return this->mTracker.RemoveOp(inOp);
 }
 
-// NetLogic's original five-byte destructor3dfe00 has no own-vptr store and is
-// likely an implicit generated destructor. Leave it as original-carved support
-// until ordinary full LanLogic emission establishes the natural source shape.
+// NetLogic's five-byte destructor (0x7dfe00) stores no vtable of its own: probably an implicit destructor
 }
 
 // Compiler-generated and header-inline functions this unit emits:

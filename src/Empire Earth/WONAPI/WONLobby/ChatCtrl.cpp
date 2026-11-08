@@ -1,8 +1,6 @@
-// Reviewed original-backed controls; source-only, near code/support remain carved.
+// ChatCtrl: a lobby chat panel (output, input line, Send button) and the clickable links it prints
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 
-// Blocker: canonical rich-text/TextArea reference contracts, event declarations,
-// typed model/parser contracts and independent per-family flags calibration.
 #include <windows.h>
 #include <string>
 #include <map>
@@ -23,126 +21,136 @@
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/WONLobbyControls.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONLobbyChatCommands.h"
 using namespace WONAPI;
-// Actual original RTTI is global namespace ChatLink, VT452df8, allocation8c.
+// A clickable link in the chat output (a client, friend, room or Accept/Reject). The original's RTTI names it in
+// the global namespace (vtable 0x852df8, 0x8c bytes).
 class ChatLink : public WONAPI::TextLink {
 public:
     ChatLink(WONAPI::LobbyClient* inClient,WONAPI::Font* inFont,int inColor) : mKind(3)
     {
-        mClient=inClient;
-        mText=inClient->mName;
-        mColor=inColor;
-        mFont=inFont;
-        mEnabled=true;
-        mPrevious=NULL;
+        this->mClient=inClient;
+        this->mText=inClient->mName;
+        this->mColor=inColor;
+        this->mFont=inFont;
+        this->mEnabled=true;
+        this->mPrevious=NULL;
     }
     ChatLink(const WONAPI::GUIString& inText,unsigned short inId,WONAPI::LobbyServer* inServer,
         WONAPI::Font* inFont,int inColor) : mKind(0)
     {
-        mText=inText;
-        mGroupId=inId;
-        mColor=inColor;
-        mFont=inFont;
-        mEnabled=true;
-        mPrevious=NULL;
-        if(inServer!=NULL) mAddress=inServer->mAddress;
+        this->mText=inText;
+        this->mGroupId=inId;
+        this->mColor=inColor;
+        this->mFont=inFont;
+        this->mEnabled=true;
+        this->mPrevious=NULL;
+        if(inServer!=NULL) this->mAddress=inServer->mAddress;
     }
     ChatLink(WONAPI::LobbyFriend* inFriend,WONAPI::Font* inFont,int inColor) : mKind(4)
     {
-        mFriend=inFriend;
-        mText=inFriend->mName;
-        mColor=inColor;
-        mFont=inFont;
-        mEnabled=true;
-        mPrevious=NULL;
+        this->mFriend=inFriend;
+        this->mText=inFriend->mName;
+        this->mColor=inColor;
+        this->mFont=inFont;
+        this->mEnabled=true;
+        this->mPrevious=NULL;
     }
     ChatLink(WONAPI::LobbyFriend* inFriend,const WONAPI::GUIString& inText,
         const WONAPI::IPAddr& inAddress,WONAPI::Font* inFont,int inColor) : mKind(5)
     {
-        mFriend=inFriend;
-        mAddress=inAddress;
-        mText=inText;
-        mColor=inColor;
-        mFont=inFont;
-        mEnabled=true;
-        mPrevious=NULL;
+        this->mFriend=inFriend;
+        this->mAddress=inAddress;
+        this->mText=inText;
+        this->mColor=inColor;
+        this->mFont=inFont;
+        this->mEnabled=true;
+        this->mPrevious=NULL;
     }
     ChatLink(int inKind,WONAPI::LobbyClient* inClient,const WONAPI::GUIString& inText,
         WONAPI::Font* inFont,int inColor) : mKind(inKind)
     {
-        mClient=inClient;
-        mText=inText;
-        mColor=inColor;
-        mFont=inFont;
-        mEnabled=true;
-        mPrevious=NULL;
+        this->mClient=inClient;
+        this->mText=inText;
+        this->mColor=inColor;
+        this->mFont=inFont;
+        this->mEnabled=true;
+        this->mPrevious=NULL;
     }
-    // implicit normal destructor3b7190: original no own-vptr store; zero handwritten credit
-    virtual bool IsLink(); //3b7160
-    int mKind; //48
-    WONAPI::IPAddr mAddress; //4c..74
-    unsigned short mGroupId; //74
-    WONAPI::SmartPtr<WONAPI::LobbyClient> mClient; //78
-    WONAPI::SmartPtr<WONAPI::LobbyFriend> mFriend; //7c
-    bool mEnabled; //80
-    WONAPI::SmartPtr<ChatLink> mNext; //84 owned forward chain
-    ChatLink* mPrevious; //88 borrowed; destructor never releases
+    // implicit destructor (0x7b7190): the original stores no vptr of its own
+    virtual bool IsLink(); // 0x7b7160
+    int mKind; // 0x48: kind (0 room, 1 accept, 2 reject, 3 client, 4 friend, 5 friend's location)
+    WONAPI::IPAddr mAddress; // 0x4c..0x74: server or friend's address
+    unsigned short mGroupId; // 0x74: room (group) id
+    WONAPI::SmartPtr<WONAPI::LobbyClient> mClient; // 0x78
+    WONAPI::SmartPtr<WONAPI::LobbyFriend> mFriend; // 0x7c
+    bool mEnabled; // 0x80: still clickable
+    WONAPI::SmartPtr<ChatLink> mNext; // 0x84: next link in the chain (counted reference)
+    ChatLink* mPrevious; // 0x88: previous link (not counted, never released)
 };
 
 // FUNCTION: WON 0x007b7160
-bool ChatLink::IsLink() { return mEnabled; } //3b7160 7B
+// Returns whether the link can still be clicked
+bool ChatLink::IsLink() { return this->mEnabled; }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007b6b80
-ChatCtrl::ChatCtrl() : mRoomName(GetEmptyGUIStringData()) //3b6b80 251B
+// Creates a chat panel with its default text colors, no room joined and no room kind set
+ChatCtrl::ChatCtrl() : mRoomName(GetEmptyGUIStringData())
 {
-    mDefaultColor=0;
-    mAcceptColor=0;
-    mRoomSpecFlags=0;
-    mErrorColor=0xff0000;
-    mHelpColor=0x404040;
-    mUserColor=0x800000;
-    mEmoteColor=0x800080;
-    mWhisperColor=0x8000;
-    mWarningColor=0xff8000;
-    mGroupColor=0x80;
-    mMessageColor=0xff;
-    mRejectColor=0xa0a0a0;
-    mClientId=0xffff;
+    this->mDefaultColor=0;
+    this->mAcceptColor=0;
+    this->mRoomSpecFlags=0;
+    this->mErrorColor=0xff0000;
+    this->mHelpColor=0x404040;
+    this->mUserColor=0x800000;
+    this->mEmoteColor=0x800080;
+    this->mWhisperColor=0x8000;
+    this->mWarningColor=0xff8000;
+    this->mGroupColor=0x80;
+    this->mMessageColor=0xff;
+    this->mRejectColor=0xa0a0a0;
+    this->mClientId=0xffff;
 }
-ChatCtrl::~ChatCtrl() {} //3b6ca0301B; ownVTstore3b6cbf,zeroquota,normalCOFFpending
+ChatCtrl::~ChatCtrl() {} // explicit: the original destructor (0x7b6ca0) stores the ChatCtrl vptr at 0x7b6cbf
 // FUNCTION: WON 0x007b6f00
-bool ChatCtrl::Fn3B6F00() { return (mRoomSpecFlags&16)!=0 ? true : false; } //12B
+// Returns whether this is a team chat panel (room flag 0x10, set by GROUPTYPE TEAM)
+bool ChatCtrl::IsTeamRoom() { return (this->mRoomSpecFlags&16)!=0 ? true : false; }
 
 // FUNCTION: WON 0x007b6f10
-void ChatCtrl::Fn3B6F10(const GUIString& inFormat,const GUIString*const* inStrings,int inNumStrings,
-    TextSegmentBase*const* inSegments,int inNumSegments,bool inLineBreak) //3b6f10 185B
+// Appends formatted text to the chat output, filling in strings and links with the panel's colors and fonts
+void ChatCtrl::AddFormattedText(const GUIString& inFormat,const GUIString*const* inStrings,int inNumStrings,
+    TextSegmentBase*const* inSegments,int inNumSegments,bool inLineBreak)
 {
-    int aColors[9]={mDefaultColor,mUserColor,mWhisperColor,mEmoteColor,mWarningColor,
-        mErrorColor,mHelpColor,mGroupColor,mMessageColor};
-    Font* aFonts[3]={mChatOutput->mFont.get(),mFont84.get(),mFont88.get()};
-    LobbyFn34A1C0(mChatOutput.get(),inFormat,inStrings,inNumStrings,aColors,9,aFonts,3,
+    int aColors[9]={this->mDefaultColor,this->mUserColor,this->mWhisperColor,this->mEmoteColor,this->mWarningColor,
+        this->mErrorColor,this->mHelpColor,this->mGroupColor,this->mMessageColor};
+    Font* aFonts[3]={this->mChatOutput->mFont.get(),this->mBoldFont.get(),this->mItalicFont.get()};
+    LobbyAppendFormattedText(this->mChatOutput.get(),inFormat,inStrings,inNumStrings,aColors,9,aFonts,3,
         inSegments,inNumSegments,inLineBreak);
 }
 // FUNCTION: WON 0x007b6fd0
-void ChatCtrl::Fn3B6FD0(const GUIString& inFormat,const GUIString& inText,bool inLineBreak) //37B
+// Appends formatted text with one string argument to the chat output
+void ChatCtrl::AddTextLine(const GUIString& inFormat,const GUIString& inText,bool inLineBreak)
 {
     const GUIString* aText=&inText;
-    Fn3B6F10(inFormat,&aText,1,NULL,0,inLineBreak);
+    this->AddFormattedText(inFormat,&aText,1,NULL,0,inLineBreak);
 }
 // FUNCTION: WON 0x007b7000
-void ChatCtrl::Fn3B7000(const GUIString& inFormat,TextSegmentBase* inSegment,bool inLineBreak) //37B
+// Appends formatted text with one link argument to the chat output
+void ChatCtrl::AddLinkLine(const GUIString& inFormat,TextSegmentBase* inSegment,bool inLineBreak)
 {
     TextSegmentBase* aSegment=inSegment;
-    Fn3B6F10(inFormat,NULL,0,&aSegment,1,inLineBreak);
+    this->AddFormattedText(inFormat,NULL,0,&aSegment,1,inLineBreak);
 }
 // FUNCTION: WON 0x007b7030
-SmartPtr<ChatLink> ChatCtrl::Fn3B7030(LobbyClient* inClient) //3b7030 296B; ctor allocationguard
+// Creates a clickable link for a client's name in the user color
+SmartPtr<ChatLink> ChatCtrl::MakeClientLink(LobbyClient* inClient)
 {
-    return new ChatLink(inClient,mChatOutput->mFont.get(),mUserColor);
+    return new ChatLink(inClient,this->mChatOutput->mFont.get(),this->mUserColor);
 }
 // FUNCTION: WON 0x007b98a0
-void ChatCtrl::Fn3B98A0(ChatLink* inLink,int inColor,int inLinkedColor) //99B
+// Disables a clicked link and every link chained to it, recoloring them, and redraws the chat output
+void ChatCtrl::DisableLinkChain(ChatLink* inLink,int inColor,int inLinkedColor)
 {
     inLink->mColor=inColor;
     inLink->mEnabled=false;
@@ -158,75 +166,75 @@ void ChatCtrl::Fn3B98A0(ChatLink* inLink,int inColor,int inLinkedColor) //99B
         aLink->mColor=inLinkedColor;
         aLink=aLink->mPrevious;
     }
-    mChatOutput->Invalidate();
+    this->mChatOutput->Invalidate();
 }
-//3b6dd0..3b6ef9,297B; SafeGet types proved by actual RTTI targets.
+// The component types passed to SafeGetComponent are the ones the original's RTTI names
 // FUNCTION: WON 0x007b6dd0
+// Looks up the chat input, Send button and chat output, makes bold and italic fonts, and listens to broadcasts
 void ChatCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2) {
-        ComponentConfig* aConfig=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(aConfig,mChatInput,"ChatInput",__FILE__,160);
-        SafeGetComponent(aConfig,mSendButton,"SendButton",__FILE__,161);
-        SafeGetComponent(aConfig,mChatOutput,"ChatOutput",__FILE__,162);
-        mFont84=Fn2F5A30(mChatOutput->mFont.get(),1,0);
-        mFont88=Fn2F5A30(mChatOutput->mFont.get(),2,0);
-        Fn2F5360(1);
-    }
+    if(inInit.mType!=2)
+        return;
+    ComponentConfig* aConfig=static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(aConfig,this->mChatInput,"ChatInput",__FILE__,160);
+    SafeGetComponent(aConfig,this->mSendButton,"SendButton",__FILE__,161);
+    SafeGetComponent(aConfig,this->mChatOutput,"ChatOutput",__FILE__,162);
+    this->mBoldFont=this->GetFontMod(this->mChatOutput->mFont.get(),1,0);
+    this->mItalicFont=this->GetFontMod(this->mChatOutput->mFont.get(),2,0);
+    this->SubscribeToBroadcast(1);
 }
-// Canonical globals pending root names/data validation; original producer type GUIString.
-//3b72e0..3b765e,894B; full allocation guards and 16-state local cleanup pending COFF.
 // FUNCTION: WON 0x007b72e0
-void ChatCtrl::Fn3B72E0(AnnounceClientLocationEvent* inEvent)
+// Prints where a client is (anonymous, in a game and/or chat room, or not on the server) with links to join
+void ChatCtrl::HandleAnnounceClientLocation(AnnounceClientLocationEvent* inEvent)
 {
-    if(inEvent->mHandled || (mRoomSpecFlags&inEvent->mRoomId)!=inEvent->mRoomId) return;
-    LobbyClient* initialClient=inEvent->mClient.get(); //borrowed snapshot3b731e/23
-    if(initialClient==NULL || !Fn2F5600()) return;
+    if(inEvent->mHandled || (this->mRoomSpecFlags&inEvent->mRoomId)!=inEvent->mRoomId) return;
+    LobbyClient* initialClient=inEvent->mClient.get(); // borrowed; the original reads it once (0x7b731e)
+    if(initialClient==NULL || !this->IsRootVisible()) return;
     inEvent->mHandled=true;
-    LobbyServer* aServer=LobbyFn35B6F0();
-    SmartPtr<ChatLink> aClientLink=Fn3B7030(inEvent->mClient.get());
-    SmartPtr<ChatLink> aRoomLink=new ChatLink(inEvent->mRoom,initialClient->GetGroupId20(),
-        aServer,mChatOutput->mLinkFont.get(),mGroupColor);
-    SmartPtr<ChatLink> aServerLink=new ChatLink(inEvent->mServer,initialClient->GetGroupId1E(),
-        aServer,mChatOutput->mLinkFont.get(),mGroupColor);
+    LobbyServer* aServer=LobbyGetCurrentServer();
+    SmartPtr<ChatLink> aClientLink=this->MakeClientLink(inEvent->mClient.get());
+    SmartPtr<ChatLink> aRoomLink=new ChatLink(inEvent->mRoom,initialClient->GetGameGroupId(),
+        aServer,this->mChatOutput->mLinkFont.get(),this->mGroupColor);
+    SmartPtr<ChatLink> aServerLink=new ChatLink(inEvent->mServer,initialClient->GetChatGroupId(),
+        aServer,this->mChatOutput->mLinkFont.get(),this->mGroupColor);
     TextSegmentBase* aLinks[3]={aClientLink.get(),aRoomLink.get(),aServerLink.get()};
     GUIString aFormat(GetEmptyGUIStringData());
     bool hasRoom=inEvent->mRoom.length()!=0;
     bool hasServer=inEvent->mServer.length()!=0;
-    if(initialClient->Fn3A5470()) aFormat=::ChatCtrl_ClientIsAnonymous_String;
+    if(initialClient->IsAnonymous()) aFormat=::ChatCtrl_ClientIsAnonymous_String;
     else if(hasRoom && hasServer) aFormat=::ChatCtrl_ClientInGameAndChat_String;
     else if(hasServer) aFormat=::ChatCtrl_ClientInChat_String;
     else if(hasRoom) aFormat=::ChatCtrl_ClientInGame_String;
     else aFormat=::ChatCtrl_ClientNotOnServer_String;
-    Fn3B6F10(aFormat,NULL,0,aLinks,3,true);
+    this->AddFormattedText(aFormat,NULL,0,aLinks,3,true);
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(1);
 }
 
-//3b7660..3b7c5a,1530B; original31 cleanup states, independent branch allocation guards.
 // FUNCTION: WON 0x007b7660
-void ChatCtrl::Fn3B7660(AnnounceFriendEvent* inEvent)
+// Prints a friend joining or leaving, or where a friend is (chatting, staging, playing, on, offline) with links
+void ChatCtrl::HandleAnnounceFriend(AnnounceFriendEvent* inEvent)
 {
-    if((mRoomSpecFlags&inEvent->mLocation)!=inEvent->mLocation || inEvent->mFriend.get()==NULL) return;
+    if((this->mRoomSpecFlags&inEvent->mLocation)!=inEvent->mLocation || inEvent->mFriend.get()==NULL) return;
     LobbyFriend* aFriend=inEvent->mFriend.get();
     if(inEvent->IsAdd()) {
-        SmartPtr<ChatLink> aLink=new ChatLink(aFriend,mChatOutput->mFont.get(),mUserColor);
-        Fn3B7000(::ChatCtrl_FriendJoined_String,aLink.get(),true);
+        SmartPtr<ChatLink> aLink=new ChatLink(aFriend,this->mChatOutput->mFont.get(),this->mUserColor);
+        this->AddLinkLine(::ChatCtrl_FriendJoined_String,aLink.get(),true);
         return;
     }
     if(inEvent->IsDelete()) {
-        SmartPtr<ChatLink> aLink=new ChatLink(aFriend,mChatOutput->mFont.get(),mUserColor);
-        Fn3B7000(::ChatCtrl_FriendLeft_String,aLink.get(),true);
+        SmartPtr<ChatLink> aLink=new ChatLink(aFriend,this->mChatOutput->mFont.get(),this->mUserColor);
+        this->AddLinkLine(::ChatCtrl_FriendLeft_String,aLink.get(),true);
         return;
     }
-    if(inEvent->mHandled || !Fn2F5600()) return;
+    if(inEvent->mHandled || !this->IsRootVisible()) return;
     inEvent->mHandled=true;
     IPAddr aAddress=aFriend->mAddress;
     GUIString aLocation=aFriend->mLocation;
     bool hasLocation=(aFriend->mFlags&3)!=0 && aAddress.IsValid() && aLocation.length()!=0;
-    SmartPtr<ChatLink> aFriendLink=new ChatLink(aFriend,mChatOutput->mFont.get(),mUserColor);
+    SmartPtr<ChatLink> aFriendLink=new ChatLink(aFriend,this->mChatOutput->mFont.get(),this->mUserColor);
     SmartPtr<ChatLink> aLocationLink;
-    if(hasLocation) aLocationLink=new ChatLink(aFriend,aLocation,aAddress,mChatOutput->mFont.get(),mUserColor);
+    if(hasLocation) aLocationLink=new ChatLink(aFriend,aLocation,aAddress,this->mChatOutput->mFont.get(),this->mUserColor);
     TextSegmentBase* aLinks[2]={aFriendLink.get(),aLocationLink.get()};
     GUIString aFormat(GetEmptyGUIStringData());
     if(!hasLocation) aFormat=::ChatCtrl_FriendIsNotOnline_String;
@@ -235,125 +243,129 @@ void ChatCtrl::Fn3B7660(AnnounceFriendEvent* inEvent)
         else aFormat=::ChatCtrl_FriendIsChatting_String;
     } else if((aFriend->mFlags&2)!=0) aFormat=::ChatCtrl_FriendIsPlaying_String;
     else aFormat=::ChatCtrl_FriendIsOn_String;
-    Fn3B6F10(aFormat,NULL,0,aLinks,2,true);
+    this->AddFormattedText(aFormat,NULL,0,aLinks,2,true);
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(2);
 }
 
-//3b9910..3b9b7b,619B normal code; table24B starts3b9b7c, excluded credit.
+// The switch's jump table (0x7b9b7c, 24 bytes) follows the code
 // FUNCTION: WON 0x007b9910
-void ChatCtrl::Fn3B9910(TextLinkActivatedEvent* inEvent)
+// Acts on a clicked chat link: client or friend menu, join a friend's room, jump to a room, accept or reject
+void ChatCtrl::HandleTextLinkActivated(TextLinkActivatedEvent* inEvent)
 {
     ChatLink* aLink=dynamic_cast<ChatLink*>(inEvent->mLink.get());
     if(aLink==NULL) return;
     ComponentEvent* anEvent;
     switch(aLink->mKind) {
     case 3:
-        anEvent=new ClientActionEvent(18,mRoomSpecFlags,aLink->mClient.get());
+        anEvent=new ClientActionEvent(18,this->mRoomSpecFlags,aLink->mClient.get());
         break;
     case 4:
-        anEvent=new FriendActionEvent(5,aLink->mFriend.get(),mRoomSpecFlags);
+        anEvent=new FriendActionEvent(5,aLink->mFriend.get(),this->mRoomSpecFlags);
         break;
     case 5:
         anEvent=new JoinFriendsRoomEvent(aLink->mFriend.get());
         break;
     case 0:
-        Fn2F53F0(new JumpToRoomEvent(aLink->mText,aLink->mGroupId,aLink->mAddress),false);
+        this->DeliverEvent(new JumpToRoomEvent(aLink->mText,aLink->mGroupId,aLink->mAddress),false);
         return;
     case 1:
-        Fn3B98A0(aLink,mAcceptColor,mRejectColor);
+        this->DisableLinkChain(aLink,this->mAcceptColor,this->mRejectColor);
         anEvent=new AcceptClientEvent(aLink->mClient.get(),true);
         break;
     case 2:
-        Fn3B98A0(aLink,mAcceptColor,mRejectColor);
+        this->DisableLinkChain(aLink,this->mAcceptColor,this->mRejectColor);
         anEvent=new AcceptClientEvent(aLink->mClient.get(),false);
         break;
     default: return;
     }
-    Fn2F53F0(anEvent,false);
+    this->DeliverEvent(anEvent,false);
 }
 
-//3b81f0,248B; separate branch temporaries survive formatting then release.
+// Each branch's link temporary lives until the line is printed, then is released
 // FUNCTION: WON 0x007b81f0
-void ChatCtrl::Fn3B81F0(PlayerTeamChangedEvent* inEvent)
+// Prints a teammate joining or leaving the team (team panels only)
+void ChatCtrl::HandlePlayerTeamChanged(PlayerTeamChangedEvent* inEvent)
 {
-    if(!Fn3B6F00()) return;
-    if(inEvent->IsAdd()) Fn3B7000(::ChatCtrl_TeamMemberJoined_String,Fn3B7030(inEvent->mClient.get()).get(),true);
-    else if(inEvent->IsDelete()) Fn3B7000(::ChatCtrl_TeamMemberLeft_String,Fn3B7030(inEvent->mClient.get()).get(),true);
+    if(!this->IsTeamRoom()) return;
+    if(inEvent->IsAdd()) this->AddLinkLine(::ChatCtrl_TeamMemberJoined_String,this->MakeClientLink(inEvent->mClient.get()).get(),true);
+    else if(inEvent->IsDelete()) this->AddLinkLine(::ChatCtrl_TeamMemberLeft_String,this->MakeClientLink(inEvent->mClient.get()).get(),true);
 }
-//3b85b0,819B. Repeated predicates retained as original calls, no cached semantic assumptions.
+// The original calls the event's flag tests again at each use (no cached results).
 // FUNCTION: WON 0x007b85b0
-void ChatCtrl::Fn3B85B0(RecvChatEvent* inEvent)
+// Prints a received chat line as normal, team, emote, whisper or warning text with sender and target links;
+// a team panel shows only whispers, warnings and team chat
+void ChatCtrl::HandleRecvChat(RecvChatEvent* inEvent)
 {
-    if(inEvent->mSender.get()==NULL || mClientId==0xffff) return;
+    if(inEvent->mSender.get()==NULL || this->mClientId==0xffff) return;
     if(inEvent->IsTeam()) {
-        if(((mRoomSpecFlags|16)&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
+        if(((this->mRoomSpecFlags|16)&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
     } else {
-        if((mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
-        if(Fn3B6F00() && !inEvent->IsEmote() && !inEvent->IsWarning()) return;
+        if((this->mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
+        if(this->IsTeamRoom() && !inEvent->IsWhisper() && !inEvent->IsWarning()) return;
     }
-    bool crossRoom=inEvent->IsTeam() && !Fn3B6F00();
-    SmartPtr<ChatLink> aSender=Fn3B7030(inEvent->mSender.get());
+    bool crossRoom=inEvent->IsTeam() && !this->IsTeamRoom();
+    SmartPtr<ChatLink> aSender=this->MakeClientLink(inEvent->mSender.get());
     SmartPtr<ChatLink> aTarget;
     TextSegmentBase* aLinks[2]={aSender.get(),NULL};
     int count=1;
     if(inEvent->mTarget.get()!=NULL) {
-        aLinks[1]=(aTarget=Fn3B7030(inEvent->mTarget.get())).get();
+        aLinks[1]=(aTarget=this->MakeClientLink(inEvent->mTarget.get())).get();
         count=2;
     }
     const GUIString* aText=&inEvent->mText;
     GUIString aFormat(GetEmptyGUIStringData());
-    if(inEvent->IsWhisper()) aFormat=crossRoom?::ChatCtrl_TeamEmote_String : ::ChatCtrl_Emote_String;
-    else if(inEvent->IsEmote() && inEvent->mTarget.get()!=NULL) {
-        if(inEvent->mSender->GetClientId()==mClientId)
-            if(inEvent->mTarget->mClientId==mClientId) aFormat=::ChatCtrl_YouWhisperToYourself_String;
+    if(inEvent->IsEmote()) aFormat=crossRoom?::ChatCtrl_TeamEmote_String : ::ChatCtrl_Emote_String;
+    else if(inEvent->IsWhisper() && inEvent->mTarget.get()!=NULL) {
+        if(inEvent->mSender->GetClientId()==this->mClientId)
+            if(inEvent->mTarget->mClientId==this->mClientId) aFormat=::ChatCtrl_YouWhisperToYourself_String;
             else aFormat=::ChatCtrl_YouWhisper_String;
         else aFormat=::ChatCtrl_SomeoneWhispersToYou_String;
     } else if(inEvent->IsWarning() && inEvent->mTarget.get()!=NULL) {
-        if(inEvent->mSender->GetClientId()==mClientId)
-            if(inEvent->mTarget->mClientId==mClientId) aFormat=::ChatCtrl_YouWarnYourself_String;
+        if(inEvent->mSender->GetClientId()==this->mClientId)
+            if(inEvent->mTarget->mClientId==this->mClientId) aFormat=::ChatCtrl_YouWarnYourself_String;
             else aFormat=::ChatCtrl_YouWarnSomeone_String;
-        else if(inEvent->mTarget->mClientId==mClientId) aFormat=::ChatCtrl_SomeoneWarnsYou_String;
+        else if(inEvent->mTarget->mClientId==this->mClientId) aFormat=::ChatCtrl_SomeoneWarnsYou_String;
         else aFormat=::ChatCtrl_SomeoneWarnsSomeone_String;
     } else aFormat=crossRoom?::ChatCtrl_TeamChat_String : ::ChatCtrl_NormalChat_String;
-    if(aFormat.length()!=0) Fn3B6F10(aFormat,&aText,1,aLinks,count,true);
+    if(aFormat.length()!=0) this->AddFormattedText(aFormat,&aText,1,aLinks,count,true);
 }
-//3b88f0,161B.
 // FUNCTION: WON 0x007b88f0
-void ChatCtrl::Fn3B88F0(JoinedRoomEvent* inEvent)
+// Records the joined room and our client id, enables Send and prints the entering-room line
+void ChatCtrl::HandleJoinedRoom(JoinedRoomEvent* inEvent)
 {
-    if((mRoomSpecFlags&inEvent->mRoomSpec)==inEvent->mRoomSpec) {
-        mClientId=inEvent->mClientId;
-        mRoomName=inEvent->mGroupName;
-        mSendButton->SetEnabled(true);
-        Fn3B6FD0(::ChatCtrl_EnteringRoom_String,inEvent->mGroupName,true);
-        mChatOutput->LineBreak(10);
-    }
+    if((this->mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec)
+        return;
+    this->mClientId=inEvent->mClientId;
+    this->mRoomName=inEvent->mGroupName;
+    this->mSendButton->SetEnabled(true);
+    this->AddTextLine(::ChatCtrl_EnteringRoom_String,inEvent->mGroupName,true);
+    this->mChatOutput->LineBreak(10);
 }
-//3b89a0,115B.
 // FUNCTION: WON 0x007b89a0
-void ChatCtrl::Fn3B89A0(LeftRoomEvent* inEvent)
+// Forgets our client id, disables Send and, when asked, prints a leaving-room or disconnected line
+void ChatCtrl::HandleLeftRoom(LeftRoomEvent* inEvent)
 {
-    if((mRoomSpecFlags&inEvent->mRoomSpec)==inEvent->mRoomSpec) {
-        mClientId=0xffff;
-        mSendButton->SetEnabled(false);
-        if(inEvent->mFlag) {
-            if(inEvent->mForced) Fn3B6FD0(::ChatCtrl_Disconnected_String,mRoomName,true);
-            else Fn3B6FD0(::ChatCtrl_LeavingRoom_String,mRoomName,true);
-            mChatOutput->LineBreak(10);
-        }
-    }
+    if((this->mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec)
+        return;
+    this->mClientId=0xffff;
+    this->mSendButton->SetEnabled(false);
+    if(!inEvent->mFlag)
+        return;
+    if(inEvent->mForced) this->AddTextLine(::ChatCtrl_Disconnected_String,this->mRoomName,true);
+    else this->AddTextLine(::ChatCtrl_LeavingRoom_String,this->mRoomName,true);
+    this->mChatOutput->LineBreak(10);
 }
-//3b8bd0,31B.
 // FUNCTION: WON 0x007b8bd0
-void ChatCtrl::Fn3B8BD0(ChatCommandErrorEvent* inEvent)
+// Prints a chat command error in the error color
+void ChatCtrl::HandleChatCommandError(ChatCommandErrorEvent* inEvent)
 {
-    mChatOutput->AddSegment(inEvent->mText,mErrorColor,true);
+    this->mChatOutput->AddSegment(inEvent->mText,this->mErrorColor,true);
 }
 
-//3b94f0..3b9673,387B. Actual cdecl unsigned duration/unit helper; no EH.
 // FUNCTION: WON 0x007b94f0
-unsigned char LobbyCtrlFn3B94F0(unsigned long inSeconds,bool inRoundUp,unsigned long* outValue)
+// Splits seconds into a count and a unit (0/1 minute(s), 2/3 hour(s), 4/5 day(s), 6 none), rounding up or down
+unsigned char LobbySplitDuration(unsigned long inSeconds,bool inRoundUp,unsigned long* outValue)
 {
     if(inSeconds==0) { *outValue=0;return 6; }
     if(inRoundUp) {
@@ -382,11 +394,12 @@ unsigned char LobbyCtrlFn3B94F0(unsigned long inSeconds,bool inRoundUp,unsigned 
     *outValue=inSeconds/86400;
     return 5;
 }
-//3b9680,541B. AlertEvent canonical neutral field names retained (room/result/duration here).
+// AlertEvent's field names are neutral (inferred): GetValue is the alert kind, mSeverity the seconds
 // FUNCTION: WON 0x007b9680
-void ChatCtrl::Fn3B9680(AlertEvent* inEvent)
+// Prints a server alert, a shutdown countdown or a shutdown-aborted notice, then the alert's comment
+void ChatCtrl::HandleAlert(AlertEvent* inEvent)
 {
-    if((mRoomSpecFlags&inEvent->GetKind())!=inEvent->GetKind()) return;
+    if((this->mRoomSpecFlags&inEvent->GetKind())!=inEvent->GetKind()) return;
     GUIString aFormat;
     const GUIString& aTextRef=inEvent->GetText();
     const GUIString* aText=&aTextRef;
@@ -396,88 +409,92 @@ void ChatCtrl::Fn3B9680(AlertEvent* inEvent)
         break;
     case 1: {
         unsigned long value=0;
-        aFormat=::LobbyResource_GetString((LobbyResourceId)(LobbyCtrlFn3B94F0(inEvent->mSeverity,false,&value)+0x86));
+        aFormat=::LobbyResource_GetString((LobbyResourceId)(LobbySplitDuration(inEvent->mSeverity,false,&value)+0x86));
         if(value!=0) {
             char text[20];
             sprintf(text,"%lu",value);
             GUIString number(text);
             const GUIString* arg=&number;
-            Fn3B6F10(aFormat,&arg,1,NULL,0,true);
+            this->AddFormattedText(aFormat,&arg,1,NULL,0,true);
             aFormat=::ChatCtrl_AlertComment_String;
         }
         break;
     }
     default:
         aFormat=::ChatCtrl_ServerShutdownAborted_String;
-        Fn3B6F10(aFormat,NULL,0,NULL,0,true);
+        this->AddFormattedText(aFormat,NULL,0,NULL,0,true);
         aFormat=::ChatCtrl_AlertComment_String;
         break;
     }
-    if(!aTextRef.empty()) Fn3B6F10(aFormat,&aText,1,NULL,0,true);
+    if(!aTextRef.empty()) this->AddFormattedText(aFormat,&aText,1,NULL,0,true);
 }
 
-//3b82f0,695B. The handled write precedes parser lookup and all later failures.
+// The event is marked handled before the parser lookup, so a later failure still consumes it
 // FUNCTION: WON 0x007b82f0
-void ChatCtrl::Fn3B82F0(SetChatInputEvent* inEvent)
+// Fills the chat input with a command addressed to a name (prefix, command, quoted name), keeping a typed message
+void ChatCtrl::HandleSetChatInput(SetChatInputEvent* inEvent)
 {
-    if(inEvent->mHandled || (mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec || !Fn2F5600()) return;
+    if(inEvent->mHandled || (this->mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec || !this->IsRootVisible()) return;
     inEvent->mHandled=true;
-    ChatCommandParser* parser=LobbyFn35B710();
+    ChatCommandParser* parser=LobbyGetChatCommandParser();
     if(parser==NULL) return;
-    mChatInput->Fn2F5890();
+    this->mChatInput->RequestFocus();
     GUIString input(GetEmptyGUIStringData());
     input.append(parser->mPrefix);
     input.append(parser->GetCommandString(inEvent->mCommand));
     input.append(GUIString(" \""));
     input.append(inEvent->mText);
     input.append(GUIString(new GUIStringData("\" ")));
-    mChatInput->SetText(input,false);
-    mChatInput->SelectRange(-1,-1);
-    if(mChatInput->GetText().find(input,0)!=-1) return;
-    if(mChatInput->GetText()[0]!=parser->GetPrefix())
-        input.append(mChatInput->GetText());
-    mChatInput->SetText(input,false);
-    mChatInput->SelectRange(-1,-1);
+    this->mChatInput->SetText(input,false);
+    this->mChatInput->SelectRange(-1,-1);
+    if(this->mChatInput->GetText().find(input,0)!=-1) return;
+    if(this->mChatInput->GetText()[0]!=parser->GetPrefix())
+        input.append(this->mChatInput->GetText());
+    this->mChatInput->SetText(input,false);
+    this->mChatInput->SelectRange(-1,-1);
 }
 
-//3b7c60,593B. New-room constructor argument evaluation remains under raw allocation guard.
+// The room link's constructor arguments are evaluated after the allocation, inside its cleanup guard
 // FUNCTION: WON 0x007b7c60
-void ChatCtrl::Fn3B7C60(GroupInvitationEvent* inEvent)
+// Prints a game invitation (or its withdrawal) with links to the client and the game, plus any comment
+void ChatCtrl::HandleGroupInvitation(GroupInvitationEvent* inEvent)
 {
-    if((mRoomSpecFlags&inEvent->mKind)!=inEvent->mKind) return;
-    SmartPtr<ChatLink> aClient=Fn3B7030(inEvent->mClient.get());
+    if((this->mRoomSpecFlags&inEvent->mKind)!=inEvent->mKind) return;
+    SmartPtr<ChatLink> aClient=this->MakeClientLink(inEvent->mClient.get());
     SmartPtr<ChatLink> aRoom=new ChatLink(inEvent->mGameName,inEvent->mGameId,
-        LobbyFn35B6F0(),mChatOutput->mLinkFont.get(),mGroupColor);
+        LobbyGetCurrentServer(),this->mChatOutput->mLinkFont.get(),this->mGroupColor);
     TextSegmentBase* aLinks[2]={aClient.get(),aRoom.get()};
     const GUIString* aText[2]={&inEvent->mGameName,&inEvent->mComment};
     int id=!inEvent->mFlag?(inEvent->mInvite?0x8d:0x8e):(inEvent->mInvite?0x8f:0x90);
     if(inEvent->mComment.length()!=0) id+=4;
     GUIString aFormat(::LobbyResource_GetString((LobbyResourceId)(id)));
-    Fn3B6F10(aFormat,aText,2,aLinks,2,true);
+    this->AddFormattedText(aFormat,aText,2,aLinks,2,true);
 }
-//3b7ec0,805B. Forward chain retains accept; reverse chain borrows decline, avoiding ownership cycle.
+// The Reject link holds the Accept link (mNext, counted); Accept points back without a reference
 // FUNCTION: WON 0x007b7ec0
-void ChatCtrl::Fn3B7EC0(GroupJoinAttemptEvent* inEvent)
+// Prints a client's request to join our game with Accept and Reject links (not in team panels)
+void ChatCtrl::HandleGroupJoinAttempt(GroupJoinAttemptEvent* inEvent)
 {
-    if((mRoomSpecFlags&inEvent->mKind)!=inEvent->mKind || Fn3B6F00()) return;
-    SmartPtr<ChatLink> aClient=Fn3B7030(inEvent->mClient.get());
+    if((this->mRoomSpecFlags&inEvent->mKind)!=inEvent->mKind || this->IsTeamRoom()) return;
+    SmartPtr<ChatLink> aClient=this->MakeClientLink(inEvent->mClient.get());
     SmartPtr<ChatLink> aAccept=new ChatLink(1,inEvent->mClient.get(),::ChatCtrl_Accept_String,
-        mChatOutput->mLinkFont.get(),mMessageColor);
+        this->mChatOutput->mLinkFont.get(),this->mMessageColor);
     SmartPtr<ChatLink> aDecline=new ChatLink(2,inEvent->mClient.get(),::ChatCtrl_Reject_String,
-        mChatOutput->mLinkFont.get(),mMessageColor);
+        this->mChatOutput->mLinkFont.get(),this->mMessageColor);
     aAccept->mPrevious=aDecline.get();
     aDecline->mNext=aAccept.get();
     const GUIString* aText=&inEvent->mComment;
     TextSegmentBase* aLinks[3]={aClient.get(),aAccept.get(),aDecline.get()};
     GUIString aFormat(inEvent->mComment.length()==0?::ChatCtrl_SomeoneAsksToJoin_String : ::ChatCtrl_SomeoneAsksToJoinExpl_String);
-    Fn3B6F10(aFormat,&aText,1,aLinks,3,true);
+    this->AddFormattedText(aFormat,&aText,1,aLinks,3,true);
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(1);
 }
 
-//3b8a20,390B code; separate7-entry table3b8ba8..3b8bc4, excluded primary credit.
+// The switch's 7-entry table (0x7b8ba8..0x7b8bc4) follows the code
 // FUNCTION: WON 0x007b8a20
-void ChatCtrl::Fn3B8A20(ChatCommandParser* inParser)
+// Prints the parser's error (unknown or ambiguous name, bad command, name required, bad time) or a generic one
+void ChatCtrl::ShowParserError(ChatCommandParser* inParser)
 {
     GUIString error(GetEmptyGUIStringData());
     switch(inParser->mError) {
@@ -488,101 +505,103 @@ void ChatCtrl::Fn3B8A20(ChatCommandParser* inParser)
     case 7:error=::RoutingLogic_BadTimeSpec_String;break;
     }
     if(error.length()==0) error=::RoutingLogic_Error_String;
-    mChatOutput->AddSegment(error,mErrorColor,true);
+    this->mChatOutput->AddSegment(error,this->mErrorColor,true);
 }
-//3b9240,674B. Number temporary dies before optional comment output; format lives across both.
+// The number string dies before the comment is printed; the format string lives across both
 // FUNCTION: WON 0x007b9240
-void ChatCtrl::Fn3B9240(ClientModeratedEvent* inEvent)
+// Prints that we or another client were muted or banned (with duration), unmuted or kicked, plus the comment
+void ChatCtrl::HandleClientModerated(ClientModeratedEvent* inEvent)
 {
-    if((mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
+    if((this->mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
     GUIString format(GetEmptyGUIStringData());
-    SmartPtr<ChatLink> client=Fn3B7030(inEvent->mClient.get());
+    SmartPtr<ChatLink> client=this->MakeClientLink(inEvent->mClient.get());
     TextSegmentBase* link=client.get();
     unsigned long value=0;
     if(inEvent->mFlag) {
         switch(inEvent->mModerationKind) {
-        case 0:format=::LobbyResource_GetString((LobbyResourceId)(LobbyCtrlFn3B94F0(inEvent->mDuration,true,&value)+0x64));break;
-        case 2:format=::LobbyResource_GetString((LobbyResourceId)(LobbyCtrlFn3B94F0(inEvent->mDuration,true,&value)+0x74));break;
+        case 0:format=::LobbyResource_GetString((LobbyResourceId)(LobbySplitDuration(inEvent->mDuration,true,&value)+0x64));break;
+        case 2:format=::LobbyResource_GetString((LobbyResourceId)(LobbySplitDuration(inEvent->mDuration,true,&value)+0x74));break;
         case 3:format=::ChatCtrl_YouWereUnmuted_String;break;
         default:format=::ChatCtrl_YouWereKicked_String;break;
         }
     } else {
         switch(inEvent->mModerationKind) {
-        case 0:format=::LobbyResource_GetString((LobbyResourceId)(LobbyCtrlFn3B94F0(inEvent->mDuration,true,&value)+0x6c));break;
-        case 2:format=::LobbyResource_GetString((LobbyResourceId)(LobbyCtrlFn3B94F0(inEvent->mDuration,true,&value)+0x7c));break;
+        case 0:format=::LobbyResource_GetString((LobbyResourceId)(LobbySplitDuration(inEvent->mDuration,true,&value)+0x6c));break;
+        case 2:format=::LobbyResource_GetString((LobbyResourceId)(LobbySplitDuration(inEvent->mDuration,true,&value)+0x7c));break;
         case 3:format=::ChatCtrl_SomeoneWasUnmuted_String;break;
         default:format=::ChatCtrl_SomeoneWasKicked_String;break;
         }
     }
     if(value==0) {
         const GUIString* text=&inEvent->mRoomName;
-        Fn3B6F10(format,&text,1,&link,1,true);
+        this->AddFormattedText(format,&text,1,&link,1,true);
     } else {
         char text[20];
         sprintf(text,"%lu",value);
         GUIString number(text);
         const GUIString* args[2]={&inEvent->mRoomName,&number};
-        Fn3B6F10(format,args,2,&link,1,true);
+        this->AddFormattedText(format,args,2,&link,1,true);
     }
     const GUIString& aComment=inEvent->mComment;
     if(aComment.length()!=0) {
         const GUIString* text=&aComment;
         format=::ChatCtrl_ModeratorComment_String;
-        Fn3B6F10(format,&text,1,NULL,0,true);
+        this->AddFormattedText(format,&text,1,NULL,0,true);
     }
 }
 
-//3b8bf0,1562B code; jump/selector payload3b920c..3b9235 excluded primary credit.
+// The switch's tables (0x7b920c..0x7b9235) follow the code
 // FUNCTION: WON 0x007b8bf0
-void ChatCtrl::Fn3B8BF0()
+// Handles the typed line: help, clear, reply, team and ignore lists run locally; anything else goes to the lobby
+void ChatCtrl::SendInput()
 {
-    if(mChatInput->GetText().empty() || mSendButton->IsDisabled()) return;
-    ChatCommandParser* parser=LobbyFn35B730(mRoomSpecFlags);
+    if(this->mChatInput->GetText().empty() || this->mSendButton->IsDisabled()) return;
+    ChatCommandParser* parser=LobbyGetRoomChatParser(this->mRoomSpecFlags);
     if(parser==NULL) return;
-    GUIString input=mChatInput->GetText();
-    mChatInput->Fn2F9140(input,true);
-    mChatInput->Clear(true);
+    GUIString input=this->mChatInput->GetText();
+    this->mChatInput->AddInputHistory(input,true);
+    this->mChatInput->Clear(true);
     if(!parser->HandleInput(input)) {
-        Fn3B8A20(parser);
+        this->ShowParserError(parser);
         return;
     }
     switch(parser->GetCommand()) {
-    case 20:
-        Fn3B6F10(parser->GetHelp(mClientId),NULL,0,NULL,0,true);
+    case LobbyChatCommand_Help:
+        this->AddFormattedText(parser->GetHelp(this->mClientId),NULL,0,NULL,0,true);
         return;
-    case 19:
-        mChatOutput->Reset(false);
+    case LobbyChatCommand_Clear:
+        this->mChatOutput->Reset(false);
         return;
-    case 18:
+    case LobbyChatCommand_Reply:
         if(parser->GetText().length()!=0) break;
         {
             GUIString command;
             command.append(parser->mPrefix);
-            command.append(parser->GetCommandString(2));
+            command.append(parser->GetCommandString(LobbyChatCommand_Whisper));
             command.append(GUIString(" \""));
             command.append(parser->mTargetName);
             command.append(GUIString("\" "));
-            mChatInput->SetText(command,false);
-            mChatInput->SelectRange(-1,-1);
+            this->mChatInput->SetText(command,false);
+            this->mChatInput->SelectRange(-1,-1);
         }
         return;
-    case 21: {
+    case LobbyChatCommand_ShowTeam: {
         LobbyClientIterator iterator(parser->GetClients());
-        LobbyClient* me=LobbyFn361370();
+        LobbyClient* me=GetMyLobbyClient();
         if(me!=NULL) {
             GUIString names;
             while(iterator.HasMore()) {
                 LobbyClient* client=iterator.Next();
-                if(me->Fn3A55C0(client)) {
+                if(me->IsTeammate(client)) {
                     if(names.length()!=0) names.append(GUIString(", "));
                     names.append(client->GetName());
                 }
             }
-            Fn3B6FD0(::ChatCtrl_TeamMembers_String,names,true);
+            this->AddTextLine(::ChatCtrl_TeamMembers_String,names,true);
         }
         return;
     }
-    case 5:
+    case LobbyChatCommand_Ignore:
         if(parser->mTargetName.length()!=0) break;
         {
             GUIString names;
@@ -590,109 +609,96 @@ void ChatCtrl::Fn3B8BF0()
                 if(names.length()!=0) names.append(GUIString(", "));
                 names.append(*i);
             }
-            Fn3B6FD0(::ChatCtrl_IgnoreList_String,names,true);
+            this->AddTextLine(::ChatCtrl_IgnoreList_String,names,true);
         }
         return;
     }
-    Fn2F5380(100012,1);
+    this->Fn2F5380(100012,1);
 }
 
 
-// Original3b9c80,330B; owned selector/table ends3b9e0c are not body credit.
+// The switch's tables follow the code, up to 0x7b9e0c
 // FUNCTION: WON 0x007b9c80
+// Routes Send, Enter, link clicks and lobby events (chat, rooms, friends, alerts, moderation) to the handlers
 void ChatCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType) {
-    case 17: Fn3B9910(static_cast<TextLinkActivatedEvent*>(inEvent)); return;
-    case 15:
-        if(inEvent->mComponent==mSendButton.get()) { Fn3B8BF0(); return; }
+    case ComponentEvent_TextLinkActivated: this->HandleTextLinkActivated(static_cast<TextLinkActivatedEvent*>(inEvent)); return;
+    case ComponentEvent_ButtonPressed:
+        if(inEvent->mComponent==this->mSendButton.get()) { this->SendInput(); return; }
         break;
-    case 20:
-        if(inEvent->mComponent==mChatInput.get()) { Fn3B8BF0(); return; }
+    case ComponentEvent_InputReturn:
+        if(inEvent->mComponent==this->mChatInput.get()) { this->SendInput(); return; }
         break;
-    case 100001: Fn3B9680(static_cast<AlertEvent*>(inEvent)); return;
-    case 100003: Fn3B7660(static_cast<AnnounceFriendEvent*>(inEvent)); return;
-    case 100004: Fn3B72E0(static_cast<AnnounceClientLocationEvent*>(inEvent)); return;
-    case 100007: Fn3B9240(static_cast<ClientModeratedEvent*>(inEvent)); return;
-    case 100009: Fn3B8BD0(static_cast<ChatCommandErrorEvent*>(inEvent)); return;
-    case 100022: Fn3B7C60(static_cast<GroupInvitationEvent*>(inEvent)); return;
-    case 100023: Fn3B7EC0(static_cast<GroupJoinAttemptEvent*>(inEvent)); return;
-    case 100030: Fn3B88F0(static_cast<JoinedRoomEvent*>(inEvent)); return;
-    case 100033: Fn3B89A0(static_cast<LeftRoomEvent*>(inEvent)); return;
-    case 100039: Fn3B81F0(static_cast<PlayerTeamChangedEvent*>(inEvent)); return;
-    case 100044: Fn3B85B0(static_cast<RecvChatEvent*>(inEvent)); return;
-    case 100048: Fn3B82F0(static_cast<SetChatInputEvent*>(inEvent)); return;
-    case 100054: mRoomSpecFlags|=static_cast<SetRoomSpecFlagsEvent*>(inEvent)->mFlags; return;
+    case LobbyEvent_Alert: this->HandleAlert(static_cast<AlertEvent*>(inEvent)); return;
+    case LobbyEvent_AnnounceFriend: this->HandleAnnounceFriend(static_cast<AnnounceFriendEvent*>(inEvent)); return;
+    case LobbyEvent_AnnounceClientLocation: this->HandleAnnounceClientLocation(static_cast<AnnounceClientLocationEvent*>(inEvent)); return;
+    case LobbyEvent_ClientModerated: this->HandleClientModerated(static_cast<ClientModeratedEvent*>(inEvent)); return;
+    case LobbyEvent_ChatCommandError: this->HandleChatCommandError(static_cast<ChatCommandErrorEvent*>(inEvent)); return;
+    case LobbyEvent_GroupInvitation: this->HandleGroupInvitation(static_cast<GroupInvitationEvent*>(inEvent)); return;
+    case LobbyEvent_GroupJoinAttempt: this->HandleGroupJoinAttempt(static_cast<GroupJoinAttemptEvent*>(inEvent)); return;
+    case LobbyEvent_JoinedRoom: this->HandleJoinedRoom(static_cast<JoinedRoomEvent*>(inEvent)); return;
+    case LobbyEvent_LeftRoom: this->HandleLeftRoom(static_cast<LeftRoomEvent*>(inEvent)); return;
+    case LobbyEvent_PlayerTeamChanged: this->HandlePlayerTeamChanged(static_cast<PlayerTeamChangedEvent*>(inEvent)); return;
+    case LobbyEvent_RecvChat: this->HandleRecvChat(static_cast<RecvChatEvent*>(inEvent)); return;
+    case LobbyEvent_SetChatInput: this->HandleSetChatInput(static_cast<SetChatInputEvent*>(inEvent)); return;
+    case LobbyEvent_SetRoomSpecFlags: this->mRoomSpecFlags|=static_cast<SetRoomSpecFlagsEvent*>(inEvent)->mFlags; return;
     }
     Component::HandleComponentEvent(inEvent);
 }
 
 }
 
-/* Rejected source-kind candidates; zero handwritten credit.
-ChatLink::~ChatLink() {}
-JumpToRoomEvent::~JumpToRoomEvent() {}
-Blocker: complete originals3b7190..3b72d6 and3b9bc0..3b9c78 have no own
-452df8/452e30 vptr stores. Implicit member/base destruction is retained.
-Normal COFF must establish exact generated bodies/EH before admission.
-*/
 
-/* Rejected earlier implicit-source inference; zero handwritten credit.
-The blanket removal of an explicit declaration was wrong for ChatCtrl.
-Actual3b6cbf stores452d28 before reverse member cleanup. The explicit empty body
-above is the corrected natural candidate. Full normal COFF must confirm all
-actions/hot writes; no destructor marker or quota is added. ChatLink and
-JumpToRoomEvent separately have no own-derived-vptr store and stay implicit candidates.
-*/
 
 namespace WONAPI {
-// REFERENCE ONLY actual ChatCtrlConfig9c/VT451c38, ContainerConfig98/14slots.
-// Never allocate, construct, sizeof, copy/pass by value, or claim factory/vtable authority.
-// ChatCtrlConfig declaration hoisted to WONLobbyControlConfig.h; existing bodies unchanged.
-// Original3b9e10..3ba288,1144B, no switch table or cold continuation.
+// ChatCtrlConfig is declared in WONLobbyControlConfig.h (0x9c bytes, vtable 0x851c38; its base ContainerConfig
+// is 0x98 bytes).
 // FUNCTION: WON 0x007b9e10
+// Reads a chat panel layout key: GROUPTYPE (CHAT, GAME or TEAM) or a text color; false for an unknown key
 bool ChatCtrlConfig::Virtual24(const std::string& inKey)
 {
     if(ContainerConfig::Virtual24(inKey))
         return true;
     if(inKey=="GROUPTYPE") {
-        GUIString group=Fn3842F0(false);
+        GUIString group=this->ReadString(false);
         if(group.CompareNoCase("CHAT")==0) {
-            ChatCtrl* aCtrl=mChatCtrl; aCtrl->mRoomSpecFlags=1; }
+            ChatCtrl* aCtrl=this->mChatCtrl; aCtrl->mRoomSpecFlags=1; }
         else if(group.CompareNoCase("GAME")==0) {
-            ChatCtrl* aCtrl=mChatCtrl; aCtrl->mRoomSpecFlags=2; }
+            ChatCtrl* aCtrl=this->mChatCtrl; aCtrl->mRoomSpecFlags=2; }
         else if(group.CompareNoCase("TEAM")==0) {
-            ChatCtrl* aCtrl=mChatCtrl; aCtrl->mRoomSpecFlags=0x12; }
+            ChatCtrl* aCtrl=this->mChatCtrl; aCtrl->mRoomSpecFlags=0x12; }
         else {
             throw ConfigObjectException("Invalid Group Type: "+(std::string)group);
         }
     }
     else if(inKey=="CTRLLINKID")
         ;
-    else if(inKey=="COLOR_DEFAULT") mChatCtrl->mDefaultColor=Fn385510();
-    else if(inKey=="COLOR_ERROR") mChatCtrl->mErrorColor=Fn385510();
-    else if(inKey=="COLOR_HELP") mChatCtrl->mHelpColor=Fn385510();
-    else if(inKey=="COLOR_USER") mChatCtrl->mUserColor=Fn385510();
-    else if(inKey=="COLOR_EMOTE") mChatCtrl->mEmoteColor=Fn385510();
-    else if(inKey=="COLOR_WHISPER") mChatCtrl->mWhisperColor=Fn385510();
-    else if(inKey=="COLOR_WARNING") mChatCtrl->mWarningColor=Fn385510();
-    else if(inKey=="COLOR_GROUP") mChatCtrl->mGroupColor=Fn385510();
-    else if(inKey=="COLOR_MESSAGE") mChatCtrl->mMessageColor=Fn385510();
-    else if(inKey=="COLOR_ACCEPT") mChatCtrl->mAcceptColor=Fn385510();
-    else if(inKey=="COLOR_REJECT") mChatCtrl->mRejectColor=Fn385510();
+    else if(inKey=="COLOR_DEFAULT") this->mChatCtrl->mDefaultColor=this->ReadColor();
+    else if(inKey=="COLOR_ERROR") this->mChatCtrl->mErrorColor=this->ReadColor();
+    else if(inKey=="COLOR_HELP") this->mChatCtrl->mHelpColor=this->ReadColor();
+    else if(inKey=="COLOR_USER") this->mChatCtrl->mUserColor=this->ReadColor();
+    else if(inKey=="COLOR_EMOTE") this->mChatCtrl->mEmoteColor=this->ReadColor();
+    else if(inKey=="COLOR_WHISPER") this->mChatCtrl->mWhisperColor=this->ReadColor();
+    else if(inKey=="COLOR_WARNING") this->mChatCtrl->mWarningColor=this->ReadColor();
+    else if(inKey=="COLOR_GROUP") this->mChatCtrl->mGroupColor=this->ReadColor();
+    else if(inKey=="COLOR_MESSAGE") this->mChatCtrl->mMessageColor=this->ReadColor();
+    else if(inKey=="COLOR_ACCEPT") this->mChatCtrl->mAcceptColor=this->ReadColor();
+    else if(inKey=="COLOR_REJECT") this->mChatCtrl->mRejectColor=this->ReadColor();
     else return false;
     return true;
 }
-// Original3c8380..3c8399,25B; source-kind registry/template uncertainty, zeroquota.
-void ChatCtrlConfig::Virtual34(Component* inComponent)
+// Remembers the configured component as the chat panel (the original's body is at 0x7c8380; no marker)
+void ChatCtrlConfig::SetComponent(Component* inComponent)
 {
-    ContainerConfig::Virtual34(inComponent);
-    mChatCtrl=static_cast<ChatCtrl*>(inComponent);
+    ContainerConfig::SetComponent(inComponent);
+    this->mChatCtrl=static_cast<ChatCtrl*>(inComponent);
 }
 } //namespace WONAPI
 
 namespace WONAPI {
 // FUNCTION: WON 0x007651e0
+// Creates the layout reader for a chat panel
 ComponentConfig* ChatCtrlConfig::CfgFactory()
 {
     return new ChatCtrlConfig;

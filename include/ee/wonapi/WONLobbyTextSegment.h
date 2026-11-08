@@ -5,45 +5,44 @@ namespace WONAPI {
 struct ElementSelectionInfo {
     int mStartSelSegment,mEndSelSegment;
     int mStartSelSegmentPos,mEndSelSegmentPos;
-}; //actual10 hex plain value; original selection readers use all four fields
-// Actual complete find-info34 value: native30cd70 constructs/copies full record,
-// owned GUIString10 +caseSensitive14/findPrev15 and ordinary scalar outputs.
+}; // 0x10 bytes; the selection readers use all four fields
+// ElementFindInfo (0x34 bytes; 0x0070cd70 constructs and copies the whole record): owned GUIString
+// at +0x10, case-sensitive flag at +0x14, find-previous flag at +0x15, and scalar outputs.
 struct ElementFindInfo {
     int mStartSelSegment,mEndSelSegment;
     int mStartSelSegmentPos,mEndSelSegmentPos;
     GUIString mFindText; //10
-    bool mCaseSensitive,mFindPrev; //14,15 actual native30ce3c/30ce42
+    bool mCaseSensitive,mFindPrev; // offsets 0x14, 0x15 (read at 0x0070ce3c and 0x0070ce42)
     int mCurFoundLength; //18
     int mFoundStartSegment,mFoundEndSegment; //1c,20
     int mFoundStartChar,mFoundEndChar; //24,28
     int mFoundX,mFoundY; //2c,30
 };
-// Complete actual TextLineSegment28 with genuine SDK inline initialization.
-// No invented standalone constructor provider; source lifetime/copy bodies remain original-owned.
+// TextLineSegment (0x28 bytes), initialized inline.
 class TextLineSegment : public LineSegment {
 public:
-    TextLineSegment() :mWidth(0),mMinWidth(0) {} //genuine SDK default, no standalone RVA/primary credit
+    TextLineSegment() :mWidth(0),mMinWidth(0) {} // inline default constructor
     TextLineSegment(const GUIString& text,int color,Font* font)
-        :mText(text),mColor(color),mFont(font),mWidth(0),mMinWidth(0) {} //actual339595..3395cd; support0
-    virtual int GetWidth(); //309ed0 support0 cached getter
+        :mText(text),mColor(color),mFont(font),mWidth(0),mMinWidth(0) {} // inline (as at 0x00739595..0x007395cd)
+    virtual int GetWidth(); // cached getter (0x00709ed0)
     virtual int GetMinWidth(); //309e70
-    virtual int GetHeight(); //339720 original external
-    virtual int GetAscent(); //339730 original external
+    virtual int GetHeight(); // at 0x00739720
+    virtual int GetAscent(); // at 0x00739730
     virtual int GetFirstWrapWidth(); //309f00
-    virtual void MouseEnter(int,int); //30b310 original external
-    virtual int GetSelChar(int,int); //309f90 support0 forwarding overload
+    virtual void MouseEnter(int,int); // at 0x0070b310
+    virtual int GetSelChar(int,int); // forwarding overload (0x00709f90)
     int GetSelChar(int,int,int,int); //309f40 substantive hit-position algorithm
     virtual bool GetSelCharPos(int&,int&,int,int); //30a260
     virtual void GetSelText(GUIString&,ElementSelectionInfo&); //309fc0
-    virtual bool FindStr(ElementFindInfo&); //30a3f0 original external, no implementation in this cohort
+    virtual bool FindStr(ElementFindInfo&); // at 0x0070a3f0
     bool FindPartial(ElementFindInfo&,int,int); //30a320
-    virtual void Wrap(MultiLineBuilder*,bool); //30a590 original external
-    virtual void Paint(Graphics&,int,int,ElementPaintInfo&); //30a900 support0 forwarding overload
-    void Paint(Graphics&,int,int,int,int,int,int,int,ElementPaintInfo&); //30a950 complete target text/selection painter
-    void PaintSelection(Graphics&,int,int,int,int,int,int,int,ElementPaintInfo&); //genuine SDK nonvirtual background-only painter; SOURCE_ONLY_NO_NATIVE_ID
-    GUIString mText; //14, actual retained GUIString
+    virtual void Wrap(MultiLineBuilder*,bool); // at 0x0070a590
+    virtual void Paint(Graphics&,int,int,ElementPaintInfo&); // forwarding overload (0x0070a900)
+    void Paint(Graphics&,int,int,int,int,int,int,int,ElementPaintInfo&); // paints the text and selection, at 0x0070a950
+    void PaintSelection(Graphics&,int,int,int,int,int,int,int,ElementPaintInfo&); // paints the selection background only
+    GUIString mText; // offset 0x14, retained
     int mColor; //18
-    SmartPtr<Font> mFont; //1c retained original owner
+    SmartPtr<Font> mFont; // offset 0x1c, retained
     int mWidth,mMinWidth; //20,24
 };
 }

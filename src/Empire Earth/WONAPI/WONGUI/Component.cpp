@@ -1,4 +1,4 @@
-// PROVISIONAL Component event-propagation and geometry family; original filename unproved.
+// Component event delivery, position, size, visibility and enable state (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,19 +9,23 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f52d0
-void Component::Fn2F52D0(ComponentEvent* event)
+// Marks the event as a broadcast and hands it to this component's broadcast handler
+void Component::BroadcastEventDown(ComponentEvent* event)
 {
     SmartPtr<ComponentEvent> eventRef = event;
     event->mBroadcast = true;
-    Virtual80(event);
+    this->HandleBroadcastEvent(event);
 }
 
 // FUNCTION: WON 0x006f53f0
-void Component::Fn2F53F0(ComponentEvent* event, bool sendNow)
+// Sends the event now (broadcast through the window manager or bubbled up from here) or queues it on the
+// root window; drops it when there is no open root window
+void Component::DeliverEvent(ComponentEvent* event, bool sendNow)
 {
-    Window* window = Fn2F5940();
+    Window* window = this->GetRootWindow();
     if(window == NULL || window->mWindowState != 0)
     {
         SmartPtr<ComponentEvent> eventRef = event;
@@ -35,75 +39,81 @@ void Component::Fn2F53F0(ComponentEvent* event, bool sendNow)
         if(event->mBroadcast)
         {
             WindowManager* aManager = window->mManager;
-            aManager->Fn32F680(event);
+            aManager->BroadcastEvent(event);
         }
         else
-            Fn2F54E0(event);
+            this->BubbleEvent(event);
     }
     else
-        window->Virtual48(event);
+        window->QueueEvent(event);
 }
 
 // FUNCTION: WON 0x006f4b70
-void Component::Fn2F4B70(int x, int y)
+// Moves the component within its parent and notifies the position change
+void Component::SetPos(int x, int y)
 {
-    mBounds.x = x;
-    mBounds.y = y;
-    Virtual04();
+    this->mBounds.x = x;
+    this->mBounds.y = y;
+    this->PositionChanged();
 }
 
 // FUNCTION: WON 0x006f4b90
-void Component::Fn2F4B90(int width, int height)
+// Resizes the component (negative sizes become 0) and notifies the size change when it differs
+void Component::SetSize(int width, int height)
 {
     if(width < 0) width = 0;
     if(height < 0) height = 0;
-    if(width != Width() || height != Height())
-    {
-        mBounds.height = height;
-        mBounds.width = width;
-        Virtual08();
-    }
+    if(width == this->Width() && height == this->Height())
+        return;
+    this->mBounds.height = height;
+    this->mBounds.width = width;
+    this->Virtual08();
 }
 
 // FUNCTION: WON 0x006f4bc0
-void Component::Fn2F4BC0(int width, int height)
+// Grows the component to at least the given width and height; never shrinks it
+void Component::SetSizeAtLeast(int width, int height)
 {
-    if(width < Width()) width = Width();
-    if(height < Height()) height = Height();
-    if(width > Width() || height > Height())
-        Fn2F4B90(width,height);
+    if(width < this->Width()) width = this->Width();
+    if(height < this->Height()) height = this->Height();
+    if(width > this->Width() || height > this->Height())
+        this->SetSize(width,height);
 }
 
 
 // FUNCTION: WON 0x006f4bf0
-void Component::Fn2F4BF0(int x, int y, int width, int height)
+// Moves and resizes the component
+void Component::SetPosSize(int x, int y, int width, int height)
 {
-    Fn2F4B70(x,y);
-    Fn2F4B90(width,height);
+    this->SetPos(x,y);
+    this->SetSize(width,height);
 }
 
 // FUNCTION: WON 0x006f4e90
-void Component::Fn2F4E90(int extraWidth,int extraHeight)
+// Resizes the component to its desired size plus the extra width and height
+void Component::SetDesiredSize(int extraWidth,int extraHeight)
 {
     int width = 0, height = 0;
-    Virtual0C(width,height);
-    Fn2F4B90(width+extraWidth,height+extraHeight);
+    this->GetDesiredSize(width,height);
+    this->SetSize(width+extraWidth,height+extraHeight);
 }
 
 // FUNCTION: WON 0x006f4ee0
+// Sets the component's width to its desired width plus the padding, keeping its height
 void Component::SetDesiredWidth(int padding)
 {
     int width = 0, height = 0;
-    Virtual0C(width,height);
-    Fn2F4B90(width+padding,Height());
+    this->GetDesiredSize(width,height);
+    this->SetSize(width+padding,this->Height());
 }
 
 // FUNCTION: WON 0x006f56d0
-void Component::Fn2F56D0(int& x,int& y)
+// Converts a point in the component's coordinates to root window coordinates
+void Component::LocalToRoot(int& x,int& y)
 {
-    x += Left();
-    y += Top();
-    for(Component* parent=mParent; parent!=NULL; parent=parent->mParent)
+    x += this->Left();
+    y += this->Top();
+    for(Component* parent=this->mParent; parent!=NULL; parent=parent->mParent)
     {
         x += parent->Left();
         y += parent->Top();
@@ -111,76 +121,81 @@ void Component::Fn2F56D0(int& x,int& y)
 }
 
 // FUNCTION: WON 0x006f50e0
-void Component::Virtual60(WONRectangle& rect)
+// Passes a dirty rectangle up to the parent, offset by this component's position (changes the rectangle)
+void Component::InvalidateRect(WONRectangle& rect)
 {
-    if(mParent != NULL)
-    {
-        rect.x += Left();
-        rect.y += Top();
-        mParent->Virtual60(rect);
-    }
+    if(this->mParent == NULL)
+        return;
+    rect.x += this->Left();
+    rect.y += this->Top();
+    this->mParent->InvalidateRect(rect);
 }
 
 // FUNCTION: WON 0x006f5660
-void Component::Virtual8C(const ControlIdSet& ids,bool enabled)
+// Enables or disables the component when its control id is in the set
+void Component::EnableControlsById(const ControlIdSet& ids,bool enabled)
 {
-    if(mControlId!=0)
+    if(this->mControlId!=0)
     {
-        int id=mControlId;
-        if(ids.find(id)!=ids.end()) SetEnabled(enabled);
+        int id=this->mControlId;
+        if(ids.find(id)!=ids.end()) this->SetEnabled(enabled);
     }
 }
 
 // FUNCTION: WON 0x006f5080
+// Returns whether the point (in parent coordinates) lies inside the component
 bool Component::Contains(int x,int y)
 {
-    return x>=Left() && x<Left()+Width() && y>=Top() && y<Top()+Height();
+    return x>=this->Left() && x<this->Left()+this->Width() && y>=this->Top() && y<this->Top()+this->Height();
 }
 
 // FUNCTION: WON 0x006f55b0
+// Shows or hides the component, telling the parent, redrawing and notifying the change of visibility
 void Component::SetVisible(bool visible)
 {
-    if(visible != IsVisible()) {
-        SetComponentFlags(1,!visible);
-        mInvalidState=0;
-        if(mParent!=NULL) mParent->VirtualBC(this);
-        Invalidate();
-        Virtual84(visible);
-    }
+    if(visible == this->IsVisible())
+        return;
+    this->SetComponentFlags(ComponentFlag_Invisible,!visible);
+    this->mInvalidState=0;
+    if(this->mParent!=NULL) this->mParent->ChildStateChanged(this);
+    this->Invalidate();
+    this->NotifyRootVisibility(visible);
 }
 
 // FUNCTION: WON 0x006f5610
+// Enables or disables the component, notifying itself and its parent and redrawing
 void Component::SetEnabled(bool enabled)
 {
-    if(enabled != !IsDisabled()) {
-        SetComponentFlags(0x80,!enabled);
-        Virtual74(enabled);
-        if(mParent!=NULL) mParent->VirtualBC(this);
-        Invalidate();
-    }
+    if(enabled == !this->IsDisabled())
+        return;
+    this->SetComponentFlags(ComponentFlag_Disabled,!enabled);
+    this->EnabledChanged(enabled);
+    if(this->mParent!=NULL) this->mParent->ChildStateChanged(this);
+    this->Invalidate();
 }
 }
 
-// Genuine SDK Component.cpp constructor: real embedded Rectangle16 initializes at+10 before body.
 // FUNCTION: WON 0x006f49e0
+// Creates a component with no parent, no flags, no control id and no extra data
 namespace WONAPI {
 Component::Component()
 {
-    mParent=NULL;
-    mComponentBits=0;
-    mInvalidState=0;
-    mControlId=0;
-    mTimerFlags=0;
-    mFocusId=0;
-    mExtraStuff=NULL;
+    this->mParent=NULL;
+    this->mComponentBits=0;
+    this->mInvalidState=0;
+    this->mControlId=0;
+    this->mTimerFlags=0;
+    this->mFocusId=0;
+    this->mExtraStuff=NULL;
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x006f50c0
+// Returns whether the component's bounds overlap the other component's bounds
 bool Component::Intersects(Component* component)
 {
-    return mBounds.Intersects(component->mBounds);
+    return this->mBounds.Intersects(component->mBounds);
 }
 }
 

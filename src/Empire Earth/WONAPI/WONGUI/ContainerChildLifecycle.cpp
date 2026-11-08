@@ -1,4 +1,4 @@
-// Native container child lifetime, modal and focus transitions.
+// Container modal state, child removal and reordering, and focus changes (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include "LostDebug.h"
@@ -11,103 +11,111 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f6210
+// Enters modal mode: drops mouse and focus from children that are not allowed while modal
 void Container::EnterModal()
 {
-    ++mModalCount;
-    if(mMouseChild!=NULL && !mMouseChild->ComponentFlagSet(0x8000)) MouseAt();
-    if(mFocusChild!=NULL && !mFocusChild->ComponentFlagSet(0x8000)) SetFocusToLastFocusChild();
+    ++this->mModalCount;
+    if(this->mMouseChild!=NULL && !this->mMouseChild->ComponentFlagSet(0x8000)) this->MouseAt();
+    if(this->mFocusChild!=NULL && !this->mFocusChild->ComponentFlagSet(0x8000)) this->SetFocusToLastFocusChild();
 }
 // FUNCTION: WON 0x006f6260
+// Leaves modal mode completely (the count drops to zero), rechecking the mouse child and restoring focus
 void Container::LeaveModal()
 {
-    if(mModalCount>0) {
-        mModalCount=0;
-        MouseAt();
-        if(mFocusChild==NULL) SetFocusToLastFocusChild();
-    }
+    if(!(this->mModalCount>0))
+        return;
+    this->mModalCount=0;
+    this->MouseAt();
+    if(this->mFocusChild==NULL) this->SetFocusToLastFocusChild();
 }
 // FUNCTION: WON 0x006f6c60
-void Container::VirtualC4(Component* child)
+// Removes a child: repaints the area it covered, drops it from the layout, and moves focus and mouse off it
+void Container::RemoveChild(Component* child)
 {
     if(child->mParent!=this) return;
     SmartPtr<Component> holder; // never assigned: its frame slot and EH state 0 are in the function
-    if(!mRemovingAllChildren && child->ComponentFlagSet(0x100)) {
+    if(!this->mRemovingAllChildren && child->ComponentFlagSet(ComponentFlag_GrabBG)) {
         child->Invalidate();
-        RootContainer* root=Fn2F58F0();
+        RootContainer* root=this->GetRootContainer();
         if(root!=NULL) root->AddBG(child->GetGrabBG());
-    } else Invalidate();
+    } else this->Invalidate();
     SmartPtr<Component> keep=child;
-    mChildList.erase(child->mChildListItr);
+    this->mChildList.erase(child->mChildListItr);
     // LOST-DEBUG: none: exact only (keeps ~SmartPtr out of line inside erase).
     EE_LOST_DEBUG(1);
-    if(!mRemovingAllChildren) mChildLayout.RemoveComponent(child);
-    if(child==mFocusChild) SetFocusToLastFocusChild();
-    if(child==mMouseChild) MouseAt();
+    if(!this->mRemovingAllChildren) this->mChildLayout.RemoveComponent(child);
+    if(child==this->mFocusChild) this->SetFocusToLastFocusChild();
+    if(child==this->mMouseChild) this->MouseAt();
     child->mParent=NULL;
 }
 // FUNCTION: WON 0x006f6d80
+// Removes every child, clears the child layout and resets the cursor
 void Container::RemoveAllChildren()
 {
-    mRemovingAllChildren=true;
-    while(!mChildList.empty()) VirtualC4(mChildList.front().get());
-    mChildLayout.Clear();
-    mRemovingAllChildren=false;
-    Virtual78(NULL);
+    this->mRemovingAllChildren=true;
+    while(!this->mChildList.empty()) this->RemoveChild(this->mChildList.front().get());
+    this->mChildLayout.Clear();
+    this->mRemovingAllChildren=false;
+    this->SetCursor(NULL);
 }
 // FUNCTION: WON 0x006f6dd0
+// Moves a child to the top of the drawing order, below any always-on-top children, and repaints it
 void Container::BringToTop(Component* child)
 {
     if(child->mParent!=this) return;
     SmartPtr<Component> keep=child;
     BackgroundGrabber* grabber=child->GetGrabBG();
-    RootContainer* root=Fn2F58F0();
+    RootContainer* root=this->GetRootContainer();
     bool needInvalidate=true;
     if(grabber!=NULL) {
         child->Invalidate();
         root->AddBG(grabber);
         needInvalidate=false;
     }
-    mChildList.erase(child->mChildListItr);
+    this->mChildList.erase(child->mChildListItr);
     // LOST-DEBUG: none: exact only (keeps the node dtor out of line inside erase).
     EE_LOST_DEBUG(1);
-    child->mChildListItr=mChildList.insert(FindTop(),SmartPtr<Component>(child));
-    if(needInvalidate) Invalidate();
+    child->mChildListItr=this->mChildList.insert(this->FindTop(),SmartPtr<Component>(child));
+    if(needInvalidate) this->Invalidate();
 }
 // FUNCTION: WON 0x006f7440
-void Container::VirtualB4(Component* child)
+// Gives focus to a child, taking it from the previous one and claiming focus from the parent chain
+void Container::SetFocusChild(Component* child)
 {
-    if(!IsVisible() || IsDisabled()) return;
-    if(mFocusChild==child && ComponentFlagSet(0x10)) return;
-    if(mModalCount>0 && child!=NULL && !child->ComponentFlagSet(0x8000)) return;
-    if(mFocusChild!=NULL && ComponentFlagSet(0x10)) mFocusChild->Virtual4C();
-    mFocusChild=child;
-    // Actual native write precedes its null test; no new null guard is introduced.
-    child->mFocusId=GetNextFocusId();
-    if(child!=NULL) {
-        if(!ComponentFlagSet(0x10) && mParent!=NULL) mParent->VirtualB4(this);
-        else {
-            SetComponentFlags(0x10,true);
-            if(mParent==NULL && Fn2F58F0()==this) {
-                Window* window=GetRoot(); //existing physical2f5920 is genuine GetWindow
-                if(window->mManager->mFocusWindow!=window) return;
-            }
-            child->Virtual48();
+    if(!this->IsVisible() || this->IsDisabled()) return;
+    if(this->mFocusChild==child && this->ComponentFlagSet(ComponentFlag_HasFocus)) return;
+    if(this->mModalCount>0 && child!=NULL && !child->ComponentFlagSet(0x8000)) return;
+    if(this->mFocusChild!=NULL && this->ComponentFlagSet(ComponentFlag_HasFocus)) this->mFocusChild->LostFocus();
+    this->mFocusChild=child;
+    // The original writes the focus id before its NULL test: a NULL child crashes here
+    child->mFocusId=this->GetNextFocusId();
+    if(child==NULL)
+        return;
+    if(!this->ComponentFlagSet(ComponentFlag_HasFocus) && this->mParent!=NULL) this->mParent->SetFocusChild(this);
+    else {
+        this->SetComponentFlags(ComponentFlag_HasFocus,true);
+        if(this->mParent==NULL && this->GetRootContainer()==this) {
+            Window* window=this->GetRoot(); // GetWindow in the SDK
+            if(window->mManager->mFocusWindow!=window) return;
         }
+        child->GotFocus();
     }
 }
 // FUNCTION: WON 0x006f7510
-void Container::VirtualBC(Component* child)
+// Reacts to a child being hidden or disabled: takes its focus away and rechecks the child under the mouse
+void Container::ChildStateChanged(Component* child)
 {
     bool bad=child->IsDisabled() || !child->IsVisible();
-    if(mFocusChild==child && bad) {
-        mFocusChild->Virtual4C();
-        mFocusChild=NULL;
+    if(this->mFocusChild==child && bad) {
+        this->mFocusChild->LostFocus();
+        this->mFocusChild=NULL;
     }
-    if(Fn2F58F0()==NULL) return;
+    if(this->GetRootContainer()==NULL) return;
     int x,y;
-    GetMousePos(x,y);
-    if(child->Contains(x,y) || (mMouseChild==child && bad)) Fn2F6650(x,y);
+    this->GetMousePos(x,y);
+    if(child->Contains(x,y) || (this->mMouseChild==child && bad)) this->UpdateMouseChild(x,y);
 }
 }

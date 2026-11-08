@@ -18,7 +18,8 @@
 #include "ee/wonapi/WONLobbyLan.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075b730
-ChatCommandParser* LobbyFn35B730(int flags)
+// Returns the chat command parser, pointed at the user list of the Internet or LAN screen showing
+ChatCommandParser* LobbyGetRoomChatParser(int flags)
 {
     if(gLobbyData.get()==NULL) return NULL;
     ChatCommandParser* parser=gLobbyData->mChatCommandParser.get();
@@ -26,38 +27,42 @@ ChatCommandParser* LobbyFn35B730(int flags)
     if(gLobbyData->mLobbyContainer->OnInternetScreen())
         clients=gLobbyData->mRoutingLogic->GetClientList();
     else if(gLobbyData->mLobbyContainer->OnLanScreen())
-        clients=gLobbyData->mLanLogic->Fn3E0170();
+        clients=gLobbyData->mLanLogic->GetClientList();
     parser->SetClientList(clients,flags);
     return parser;
 }
 // FUNCTION: WON 0x00760ea0
-Component* LobbyFn360EA0()
+// Returns the Internet, LAN or login screen, whichever is showing, or NULL
+Component* LobbyGetCurrentScreen()
 {
     if(gLobbyData.get()==NULL) return NULL;
-    if(LobbyFn361130()) return gLobbyData->mLobbyContainer->mInternetScreen.get();
-    if(LobbyFn361150()) return gLobbyData->mLobbyContainer->mLanScreen.get();
-    if(LobbyFn361170()) return gLobbyData->mLobbyContainer->mLoginScreen.get();
+    if(LobbyOnInternetScreen()) return gLobbyData->mLobbyContainer->mInternetScreen.get();
+    if(LobbyOnLanScreen()) return gLobbyData->mLobbyContainer->mLanScreen.get();
+    if(LobbyOnLoginScreen()) return gLobbyData->mLobbyContainer->mLoginScreen.get();
     return NULL;
 }
 // FUNCTION: WON 0x00760f00
-void LobbyFn360F00()
+// Switches the lobby to the Internet screen and tells its controls they were entered
+void LobbyShowInternetScreen()
 {
-    if(gLobbyData.get()!=NULL) {
-        gLobbyData->mLobbyContainer->ShowInternetScreen();
-        LobbyEvent* event=new LobbyEvent(100014);
-        gLobbyData->mLobbyContainer->mInternetScreen->Fn2F52D0(event);
-    }
+    if(gLobbyData.get()==NULL)
+        return;
+    gLobbyData->mLobbyContainer->ShowInternetScreen();
+    LobbyEvent* event=new LobbyEvent(100014);
+    gLobbyData->mLobbyContainer->mInternetScreen->BroadcastEventDown(event);
 }
 // FUNCTION: WON 0x00760f90
-void LobbyFn360F90()
+// Switches the lobby to the LAN screen and tells its controls they were entered
+void LobbyShowLanScreen()
 {
-    if(gLobbyData.get()!=NULL) {
-        gLobbyData->mLobbyContainer->ShowLanScreen();
-        LobbyEvent* event=new LobbyEvent(100014);
-        gLobbyData->mLobbyContainer->mLanScreen->Fn2F52D0(event);
-    }
+    if(gLobbyData.get()==NULL)
+        return;
+    gLobbyData->mLobbyContainer->ShowLanScreen();
+    LobbyEvent* event=new LobbyEvent(100014);
+    gLobbyData->mLobbyContainer->mLanScreen->BroadcastEventDown(event);
 }
 // FUNCTION: WON 0x007611b0
+// Returns the lobby's root container, or NULL before the lobby exists
 Container* GetLobbyRoot()
 {
     return gLobbyData.get()!=NULL?gLobbyData->mLobbyContainer:SmartPtr<LobbyContainer>();

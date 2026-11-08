@@ -1,5 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine optional WinMM channel family; no backend selection executed.
+// WinMM (waveOut) sound channel for the WON sound thread (not identified in the original exe)
 #include <windows.h>
 #include <Mmsystem.h>
 #include <string>
@@ -14,8 +14,8 @@
 #include "ee/wonapi/WONLobbyWONSound.h"
 #include "ee/wonapi/WONLobbyMSSound.h"
 using namespace WONAPI;
-// The original complete MSSoundChannel declaration is CPP-local below, exactly as SDK.
-// Legacy MSSound/MSSoundDecoder branch is outside this selected compatible channel family.
+// The channel class is declared in this file, as in the SDK; the older MSSound/MSSoundDecoder classes are
+// not part of it
 class MSSoundChannel : public WONSoundChannel
 {
 protected:
@@ -42,55 +42,60 @@ typedef SmartPtr<MSSoundChannel> MSSoundChannelPtr;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Creates a channel with no wave device or headers
 MSSoundChannel::MSSoundChannel()
 {
-	mWaveHeader = NULL;
-	mWaveOut = NULL;
+	this->mWaveHeader = NULL;
+	this->mWaveOut = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Destroys the channel: resets and closes the wave device and deletes the header array (with scalar delete)
 MSSoundChannel::~MSSoundChannel()
 {
-	if(mWaveOut!=NULL)
+	if(this->mWaveOut!=NULL)
 	{
-		waveOutReset(mWaveOut);
-		waveOutClose(mWaveOut);
+		waveOutReset(this->mWaveOut);
+		waveOutClose(this->mWaveOut);
 	}
 
-	if(mWaveHeader!=NULL)
-		delete mWaveHeader;
+	if(this->mWaveHeader!=NULL)
+		delete this->mWaveHeader;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// waveOut callback: forwards to the channel passed as instance data
 void CALLBACK MSSoundChannel::waveOutProc(HWAVEOUT hwo,UINT uMsg,DWORD dwInstance,DWORD dwParam1,DWORD dwParam2)
 {
-	MSSoundChannel *aChannel = (MSSoundChannel*)dwInstance;
+	MSSoundChannel *aChannel = reinterpret_cast<MSSoundChannel*>(dwInstance);
 	aChannel->waveOutProcPrv(hwo,uMsg,dwInstance,dwParam1,dwParam2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Marks the finished buffer free and wakes the sound thread when the device reports a buffer done
 void MSSoundChannel::waveOutProcPrv(HWAVEOUT hwo,UINT uMsg,DWORD dwInstance,DWORD dwParam1,DWORD dwParam2)
 {
-	if(uMsg==WOM_DONE)
+	if(uMsg!=WOM_DONE)
+		return;
+	for(int i=0; i<this->NUM_BUFFERS; i++)
 	{
-		for(int i=0; i<NUM_BUFFERS; i++)
+		if(dwParam1==reinterpret_cast<DWORD>(&this->mWaveHeader[i]))
 		{
-			if(dwParam1==(DWORD)&mWaveHeader[i])
-			{
-				mBufferFree[i] = true;
-				break;
-			}
+			this->mBufferFree[i] = true;
+			break;
 		}
-
-		WONSoundThread::WakeUp();
 	}
+
+	WONSoundThread::WakeUp();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Picks the first format the wave mapper accepts, from 44/22/11 kHz stereo 16-bit down to mono 8-bit;
+// the byte rate and block align ignore the channel count
 bool MSSoundChannel::CalcSettings()
 {
 	WAVEOUTCAPS aCaps;
@@ -127,14 +132,13 @@ bool MSSoundChannel::CalcSettings()
 		wfx.cbSize = sizeof(wfx);
 
 		aResult = waveOutOpen(NULL,WAVE_MAPPER,&wfx,0,0,WAVE_FORMAT_QUERY);
-		if(aResult==MMSYSERR_NOERROR)
-		{		
-			mFrequency = frequency[i];
-			mIsStereo = stereo[i];
-			mNumBytesPerSample = numbytespersample[i];
+		if(aResult!=MMSYSERR_NOERROR)
+			continue;
+		this->mFrequency = frequency[i];
+		this->mIsStereo = stereo[i];
+		this->mNumBytesPerSample = numbytespersample[i];
 
-			return true;
-		}
+		return true;
 	}
 
 	return false;
@@ -142,32 +146,33 @@ bool MSSoundChannel::CalcSettings()
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Opens the wave mapper in the chosen format with the callback; false when no format works or open fails
 bool MSSoundChannel::OpenHook()
 {
 	MMRESULT aResult;
 
-	if(!CalcSettings())
+	if(!this->CalcSettings())
 		return false;
 
-	mSoundFlags = 0;
-	if(mIsStereo)
-		mSoundFlags |= WONSoundFlag_IsStereo;
-	if(mNumBytesPerSample==2)
-		mSoundFlags |= WONSoundFlag_IsSixteenBit;
+	this->mSoundFlags = 0;
+	if(this->mIsStereo)
+		this->mSoundFlags |= WONSoundFlag_IsStereo;
+	if(this->mNumBytesPerSample==2)
+		this->mSoundFlags |= WONSoundFlag_IsSixteenBit;
 
 	WAVEFORMATEX	wfx;
 	wfx.wFormatTag = 1;		// PCM standard
-	wfx.nChannels = mIsStereo?2:1;		
-	wfx.nSamplesPerSec = mFrequency;
-	wfx.nAvgBytesPerSec = mFrequency*mNumBytesPerSample;
-	wfx.nBlockAlign = mNumBytesPerSample;
-	wfx.wBitsPerSample = mNumBytesPerSample*8;
+	wfx.nChannels = this->mIsStereo?2:1;		
+	wfx.nSamplesPerSec = this->mFrequency;
+	wfx.nAvgBytesPerSec = this->mFrequency*this->mNumBytesPerSample;
+	wfx.nBlockAlign = this->mNumBytesPerSample;
+	wfx.wBitsPerSample = this->mNumBytesPerSample*8;
 	wfx.cbSize = sizeof(wfx);
-	aResult = waveOutOpen(			&mWaveOut,
+	aResult = waveOutOpen(			&this->mWaveOut,
 									WAVE_MAPPER,
 									&wfx,
-									(DWORD)waveOutProc,
-									(DWORD)this,					// User data.
+									(DWORD)MSSoundChannel::waveOutProc,
+									reinterpret_cast<DWORD>(this),					// User data.
 									(DWORD)CALLBACK_FUNCTION);
 //									(DWORD)NULL,					// User data.
 //									(DWORD)CALLBACK_NULL);
@@ -181,64 +186,69 @@ bool MSSoundChannel::OpenHook()
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Allocates the wave headers and sample buffers (buffer duration in ms) and prepares each header
 void MSSoundChannel::SetBuffersHook()
 {
-	mWaveHeader = new WAVEHDR[NUM_BUFFERS];
+	this->mWaveHeader = new WAVEHDR[this->NUM_BUFFERS];
 
-	mBufferSize = ((mBufferDuration * mFrequency) / 1000) * mNumBytesPerSample;
+	this->mBufferSize = ((this->mBufferDuration * this->mFrequency) / 1000) * this->mNumBytesPerSample;
 	
-	if(mIsStereo)
-		mBufferSize*=2;
+	if(this->mIsStereo)
+		this->mBufferSize*=2;
 
 
 	// Alloc the sample buffers.
-	for (int i=0; i<NUM_BUFFERS; i++)
+	for (int i=0; i<this->NUM_BUFFERS; i++)
 	{
-		mSoundBuffer[i] = new char[mBufferSize];
-		mWaveHeader[i].lpData = mSoundBuffer[i];
-		mWaveHeader[i].dwBufferLength = mBufferSize;
-		mWaveHeader[i].dwFlags = 0;
-		mWaveHeader[i].dwLoops = 0;
+		this->mSoundBuffer[i] = new char[this->mBufferSize];
+		this->mWaveHeader[i].lpData = this->mSoundBuffer[i];
+		this->mWaveHeader[i].dwBufferLength = this->mBufferSize;
+		this->mWaveHeader[i].dwFlags = 0;
+		this->mWaveHeader[i].dwLoops = 0;
 
-		waveOutPrepareHeader(mWaveOut,&mWaveHeader[i],sizeof(WAVEHDR));
+		waveOutPrepareHeader(this->mWaveOut,&this->mWaveHeader[i],sizeof(WAVEHDR));
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Sets the device volume on both channels from the 0-255 volume
 void MSSoundChannel::SetVolumeHook(unsigned char theVolume)
 {
-	if(mWaveOut!=NULL)
+	if(this->mWaveOut!=NULL)
 	{
 		unsigned long aVolume = theVolume<<8 | theVolume<<24;
-		waveOutSetVolume(mWaveOut,aVolume);
+		waveOutSetVolume(this->mWaveOut,aVolume);
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Stops playback, returning every queued buffer
 void MSSoundChannel::StopHook()
 {
-	if(mWaveOut!=NULL)
-		waveOutReset(mWaveOut);
+	if(this->mWaveOut!=NULL)
+		waveOutReset(this->mWaveOut);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Re-prepares the buffer's header and queues it on the wave device
 void MSSoundChannel::PlaySoundsHook(int theBuf)
 {
-	if (mWaveHeader[theBuf].dwFlags&WHDR_PREPARED)
-		waveOutUnprepareHeader(mWaveOut,&mWaveHeader[theBuf],sizeof(WAVEHDR));
+	if (this->mWaveHeader[theBuf].dwFlags&WHDR_PREPARED)
+		waveOutUnprepareHeader(this->mWaveOut,&this->mWaveHeader[theBuf],sizeof(WAVEHDR));
 
-	mWaveHeader[theBuf].lpData = mSoundBuffer[theBuf];
-	mWaveHeader[theBuf].dwBufferLength = mBufferSize;
-	waveOutPrepareHeader(mWaveOut,&mWaveHeader[theBuf],sizeof(WAVEHDR));
+	this->mWaveHeader[theBuf].lpData = this->mSoundBuffer[theBuf];
+	this->mWaveHeader[theBuf].dwBufferLength = this->mBufferSize;
+	waveOutPrepareHeader(this->mWaveOut,&this->mWaveHeader[theBuf],sizeof(WAVEHDR));
 
-	waveOutWrite(mWaveOut,&mWaveHeader[theBuf],sizeof(WAVEHDR));
+	waveOutWrite(this->mWaveOut,&this->mWaveHeader[theBuf],sizeof(WAVEHDR));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Starts the sound thread with WinMM channels
 void WONAPI::WONSound_InitMS()
 {
 	WONSoundThread::Init(MSSoundChannel::Factory);
@@ -246,6 +256,7 @@ void WONAPI::WONSound_InitMS()
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Stops the sound thread
 void WONAPI::WONSound_DestroyMS()
 {
 	WONSoundThread::Destroy();

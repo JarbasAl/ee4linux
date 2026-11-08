@@ -1,4 +1,4 @@
-// Existing CenterLayout20 borrowed geometry algorithm; no allocation or owner changes.
+// Centre layout: centres a group of components in their parent or in a centre box (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,13 +13,15 @@
 #include "ee/wonapi/WONLobbyLayout.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007375a0
+// Moves the layout's components together so their bounding box is centred horizontally and/or
+// vertically in the parent, or in the centre box when one is set
 void CenterLayout::Execute(Component* parent)
 {
-    if(mComponentList.empty())
+    if(this->mComponentList.empty())
         return;
     std::list<Component*>::iterator it;
     WONRectangle rectangle;
-    for(it=mComponentList.begin();it!=mComponentList.end();++it)
+    for(it=this->mComponentList.begin();it!=this->mComponentList.end();++it)
     {
         Component* child=*it;
         rectangle.DoUnion(child->GetBounds());
@@ -27,20 +29,20 @@ void CenterLayout::Execute(Component* parent)
     }
     int dx=0,dy=0;
     Component* center=parent;
-    if(mCenterBox!=NULL && mCenterBox!=parent)
+    if(this->mCenterBox!=NULL && this->mCenterBox!=parent)
     {
-        center=mCenterBox;
-        if(mHorz) dx=center->Left();
-        if(mVert) dy=center->Top();
+        center=this->mCenterBox;
+        if(this->mHorz) dx=center->Left();
+        if(this->mVert) dy=center->Top();
     }
-    if(mHorz) dx+=(center->Width()-rectangle.width)/2-rectangle.x;
-    if(mVert) dy+=(center->Height()-rectangle.height)/2-rectangle.y;
+    if(this->mHorz) dx+=(center->Width()-rectangle.width)/2-rectangle.x;
+    if(this->mVert) dy+=(center->Height()-rectangle.height)/2-rectangle.y;
     if(dx==0 && dy==0)
         return;
-    for(it=mComponentList.begin();it!=mComponentList.end();++it)
+    for(it=this->mComponentList.begin();it!=this->mComponentList.end();++it)
     {
         Component* child=*it;
-        child->Fn2F4B70(child->Left()+dx,child->Top()+dy);
+        child->SetPos(child->Left()+dx,child->Top()+dy);
     }
 }
 }

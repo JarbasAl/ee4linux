@@ -1,5 +1,5 @@
-// Genuine same-snapshot optional TGA decoder, SOURCE_ONLY_NO_NATIVE_ID.
-// Known SDK defects/preconditions retained; no runtime/Native equivalence claim.
+// TGA image decoder (not identified in the original exe); kept as the SDK wrote it, defects included
+// (e.g. TGA_16_TO_32 puts the alpha bit into the low byte instead of the top byte)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -384,7 +384,7 @@ static bool TGA_CheckTransparency(FileReader &theReader, RawImage32 *theImage, T
 ///////////////////////////////////////////////////////////////////////////////
 SmartPtr<RawImage> TGADecoder::DoDecodeRaw()
 {
-	TGAHeader aHeader = TGA_ReadHeader(*mFileReader);
+	TGAHeader aHeader = TGA_ReadHeader(*this->mFileReader);
 	DWORD *palette = NULL;
 
 	int paletteSize = aHeader.colormaplength;
@@ -393,7 +393,7 @@ SmartPtr<RawImage> TGADecoder::DoDecodeRaw()
 
 	if(hasPalette)
 	{
-		palette = TGA_ReadColorMap(aHeader,*mFileReader);
+		palette = TGA_ReadColorMap(aHeader,*this->mFileReader);
 		if(palette==NULL)
 			return NULL;
 	}
@@ -404,18 +404,18 @@ SmartPtr<RawImage> TGADecoder::DoDecodeRaw()
 
 	if(datatype==1 || datatype==2)
 	{
-		if(!TGA_DecodeUncompressedImage(*mFileReader,anImage,palette,aHeader))
+		if(!TGA_DecodeUncompressedImage(*this->mFileReader,anImage,palette,aHeader))
 			return NULL;
 	}
 	else if(datatype==9 || datatype==10)
 	{
-		if(!TGA_DecodeCompressedImage(*mFileReader,anImage,palette,aHeader))
+		if(!TGA_DecodeCompressedImage(*this->mFileReader,anImage,palette,aHeader))
 			return NULL;
 	}
 	else
 		return NULL;
 
-	TGA_CheckTransparency(*mFileReader,anImage,aHeader);
+	TGA_CheckTransparency(*this->mFileReader,anImage,aHeader);
 
 	bool upsideDown = !((aHeader.imagedescriptor >> 5) & 0x01);
 	if(upsideDown)
@@ -429,7 +429,7 @@ SmartPtr<RawImage> TGADecoder::DoDecodeRaw()
 ///////////////////////////////////////////////////////////////////////////////
 bool TGADecoder::DoGetAttrib(ImageAttributes &theAttrib)
 {
-	TGAHeader aHeader = TGA_ReadHeader(*mFileReader);
+	TGAHeader aHeader = TGA_ReadHeader(*this->mFileReader);
 	theAttrib.mWidth = aHeader.width;
 	theAttrib.mHeight = aHeader.height;
 	return true;

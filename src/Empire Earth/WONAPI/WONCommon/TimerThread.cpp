@@ -1,4 +1,4 @@
-// Native TimerThread timeout map owner and wraparound behavior.
+// TimerThread: times out async ops, with a second map for deadlines past the tick-count wrap
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -7,92 +7,101 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONTimerThread.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006a02a0
-TimerThread::TimerThread() { mLastTick=0; }
+// Creates a timer thread with no pending timers
+TimerThread::TimerThread() { this->mLastTick=0; }
 // FUNCTION: WON 0x006a0480
-TimerThread::~TimerThread() {PurgeOps();}
+// Destroys the timer thread, killing every pending op first
+TimerThread::~TimerThread() {this->PurgeOps();}
 // FUNCTION: WON 0x006a0540
+// Kills every op waiting in either timer map and empties both
 void TimerThread::PurgeOps()
 {
-    AutoCrit lock(mDataCrit);
-    AsyncOpTimeoutMap::iterator i=mTimerMap.begin();
-    while(i!=mTimerMap.end()) {
+    AutoCrit lock(this->mDataCrit);
+    AsyncOpTimeoutMap::iterator i=this->mTimerMap.begin();
+    while(i!=this->mTimerMap.end()) {
         AsyncOp* op=i->second;
         op->RemoveFromTimerMap(false);
         op->Kill(true);
         ++i;
     }
-    i=mWrapAroundMap.begin();
-    while(i!=mWrapAroundMap.end()) {
+    i=this->mWrapAroundMap.begin();
+    while(i!=this->mWrapAroundMap.end()) {
         AsyncOp* op=i->second;
         op->RemoveFromTimerMap(false);
         op->Kill(true);
         ++i;
     }
-    mTimerMap.clear();
-    mWrapAroundMap.clear();
-    mLastTick=0;
+    this->mTimerMap.clear();
+    this->mWrapAroundMap.clear();
+    this->mLastTick=0;
 }
 // FUNCTION: WON 0x006a0700
+// Schedules the op to time out after the given milliseconds (in the wrap map past the tick wrap)
 void TimerThread::AddTimerOp(AsyncOp* op,unsigned long timeout)
 {
-    AutoCrit lock(mDataCrit);
+    AutoCrit lock(this->mDataCrit);
     unsigned long now=GetTickCount();
     unsigned long untilWrap=0xffffffff-now;
-    if(timeout>untilWrap) op->AddToTimerMap(mWrapAroundMap,timeout-untilWrap);
-    else op->AddToTimerMap(mTimerMap,now+timeout);
-    Signal();
+    if(timeout>untilWrap) op->AddToTimerMap(this->mWrapAroundMap,timeout-untilWrap);
+    else op->AddToTimerMap(this->mTimerMap,now+timeout);
+    this->Signal();
 }
 // FUNCTION: WON 0x006a0790
+// Cancels the op's pending timeout
 void TimerThread::RemoveTimerOp(AsyncOp* op)
 {
-    AutoCrit lock(mDataCrit);
+    AutoCrit lock(this->mDataCrit);
     op->RemoveFromTimerMap(true);
 }
 // FUNCTION: WON 0x006a0800
+// Times out every due op; after a tick-count wrap times out the old map and switches to the wrap map
 void TimerThread::Pump()
 {
-    AutoCrit lock(mDataCrit);
+    AutoCrit lock(this->mDataCrit);
     unsigned long now=GetTickCount();
     AsyncOpTimeoutMap::iterator i;
-    if(now<mLastTick) {
-        for(i=mTimerMap.begin();i!=mTimerMap.end();++i) {
+    if(now<this->mLastTick) {
+        for(i=this->mTimerMap.begin();i!=this->mTimerMap.end();++i) {
             AsyncOp* op=i->second;
             op->RemoveFromTimerMap(false);
-            op->Fn29F220(100001);
+            op->Finish(WS_TimedOut);
         }
-        mTimerMap=mWrapAroundMap;
-        mWrapAroundMap.clear();
+        this->mTimerMap=this->mWrapAroundMap;
+        this->mWrapAroundMap.clear();
     }
-    mLastTick=now;
-    i=mTimerMap.begin();
-    while(i!=mTimerMap.end() && i->first<=mLastTick) {
+    this->mLastTick=now;
+    i=this->mTimerMap.begin();
+    while(i!=this->mTimerMap.end() && i->first<=this->mLastTick) {
         AsyncOp* op=i->second;
         op->RemoveFromTimerMap(false);
-        op->Fn29F220(100001);
-        mTimerMap.erase(i++);
+        op->Finish(WS_TimedOut);
+        this->mTimerMap.erase(i++);
     }
 }
 // FUNCTION: WON 0x006a0970
+// Returns the milliseconds until the next deadline, or until just past the tick wrap when none is set
 unsigned long TimerThread::GetWaitTime()
 {
-    AutoCrit lock(mDataCrit);
-    unsigned long waitTime=9-mLastTick;
-    if(!mTimerMap.empty()) {
-        unsigned long deadline=mTimerMap.begin()->first;
-        waitTime=deadline<=mLastTick ? 0 : deadline-mLastTick;
+    AutoCrit lock(this->mDataCrit);
+    unsigned long waitTime=9-this->mLastTick;
+    if(!this->mTimerMap.empty()) {
+        unsigned long deadline=this->mTimerMap.begin()->first;
+        waitTime=deadline<=this->mLastTick ? 0 : deadline-this->mLastTick;
     }
     return waitTime;
 }
 // FUNCTION: WON 0x006a09c0
+// Thread loop: waits for the next deadline or a signal and pumps the timers until stopped
 void TimerThread::ThreadFunc()
 {
-    mLastTick=GetTickCount();
+    this->mLastTick=GetTickCount();
     for(;;) {
-        mSignalEvent.WaitFor(GetWaitTime());
-        if(mStopped) break;
-        Pump();
+        this->mSignalEvent.WaitFor(this->GetWaitTime());
+        if(this->mStopped) break;
+        this->Pump();
     }
 }
 }

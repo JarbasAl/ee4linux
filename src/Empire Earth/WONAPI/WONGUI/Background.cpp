@@ -1,4 +1,4 @@
-// Source-only reconstructed WONGUI Background; no runtime substitution authority.
+// Component backgrounds: fill colour, border colour, tiled or stretched image, or a painted component
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -18,108 +18,115 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00735cb0
+// Resets the background to no colour, no border, tiled image with offsets, no grab
 void Background::Init()
 {
-	mColor = -1;
-	mBorderColor = -1;
-	mUseOffsets = true;
-	mStretchImage = false;
-	mWantGrabBG = false;
+	this->mColor = -1;
+	this->mBorderColor = -1;
+	this->mUseOffsets = true;
+	this->mStretchImage = false;
+	this->mWantGrabBG = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 Background::Background()
 {
-	Init();
-	mColor = (int)0x8000000d;
+	this->Init();
+	this->mColor = (int)0x8000000d;
 }
 
 // FUNCTION: WON 0x00735cd0
+// Creates a default background filled with the system window colour (constructor body above)
 // (??0Background@WONAPI@@QAE@XZ)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00735cf0
+// Creates a background that tiles an image
 Background::Background(Image *theImage)
 {
-	Init();
-	mImage = theImage;
+	this->Init();
+	this->mImage = theImage;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 Background::Background(int theColor, int theBorderColor)
 {
-	Init();
-	mColor = theColor;
-	mBorderColor = theBorderColor;
+	this->Init();
+	this->mColor = theColor;
+	this->mBorderColor = theBorderColor;
 }
 
 // FUNCTION: WON 0x00735d80
+// Creates a background with a fill colour and a border colour (constructor body above)
 // (??0Background@WONAPI@@QAE@HH@Z)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00735db0
+// Creates a background drawn by a component
 Background::Background(Component *theComponent)
 {
-	Init();
-	mComponent = theComponent;
+	this->Init();
+	this->mComponent = theComponent;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00735e50
+// Sets the fill colour (-1 for none)
 void Background::SetColor(int theColor)
 {
-	mColor = theColor;
+	this->mColor = theColor;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00735e60
+// Paints a rectangle: stretched image alone, or fill, border, tiled image (scrolled by the offsets) and component
 void Background::Paint(Graphics &g, int xpos, int ypos, int width, int height, int xoff, int yoff)
 {
-	if(mStretchImage && mImage.get()!=NULL)
+	if(this->mStretchImage && this->mImage.get()!=NULL)
 	{
-		if(mImage->mWidth!=width || mImage->mHeight!=height)
-			mImage->SetSize(width,height);
+		if(this->mImage->mWidth!=width || this->mImage->mHeight!=height)
+			this->mImage->SetSize(width,height);
 
-		g.DrawImage(mImage.get(),xpos,ypos);
+		g.DrawImage(this->mImage.get(),xpos,ypos);
 		return;
 	}
 
 	g.Translate(xpos,ypos);
 
-	if(mColor!=-1)
+	if(this->mColor!=-1)
 	{
-		g.SetColor(mColor);
+		g.SetColor(this->mColor);
 		g.FillRect(0,0,width,height);
 	}
 
-	if(mBorderColor!=-1)
+	if(this->mBorderColor!=-1)
 	{
-		g.SetColor(mBorderColor);
+		g.SetColor(this->mBorderColor);
 		g.DrawRect(0,0,width,height);
 	}
 	
-	if(mImage.get()!=NULL)
+	if(this->mImage.get()!=NULL)
 	{
 		g.PushClipRect(0,0,width,height);
-		int startX = mUseOffsets?-(xoff%mImage->mWidth):0;
-		int startY = mUseOffsets?-(yoff%mImage->mHeight):0;
-		for(int y = startY; y<height; y+=mImage->mHeight)
-			for(int x = startX; x<width; x+=mImage->mWidth)
-				g.DrawImage(mImage.get(), x, y);
+		int startX = this->mUseOffsets?-(xoff%this->mImage->mWidth):0;
+		int startY = this->mUseOffsets?-(yoff%this->mImage->mHeight):0;
+		for(int y = startY; y<height; y+=this->mImage->mHeight)
+			for(int x = startX; x<width; x+=this->mImage->mWidth)
+				g.DrawImage(this->mImage.get(), x, y);
 
 		g.PopClipRect();
 	}
 
-	if(mComponent.get()!=NULL)
+	if(this->mComponent.get()!=NULL)
 	{
-		mComponent->Fn2F4B90(width,height);
-		mComponent->Invalidate();
-		mComponent->Paint(g);
+		this->mComponent->SetSize(width,height);
+		this->mComponent->Invalidate();
+		this->mComponent->Paint(g);
 	}
 	
 	g.Translate(-xpos,-ypos);

@@ -1,4 +1,4 @@
-// Complete genuine same-SDK source-only version/directory operation owner. No Native layout claim.
+// WON SDK version/directory op; no original address identified
 #ifndef __WON_GETVERSIONOP_H__
 #define __WON_GETVERSIONOP_H__
 #include <winsock2.h>
@@ -61,25 +61,25 @@ protected:
 	void BuildVersionFilterSet(const std::string &theVersionString, FilterStringSet &theVersionFilterSet);
 
 public:
-	VersionBaseOp() { mVersionCompare = DefaultVersionCompare; }
+	VersionBaseOp() { this->mVersionCompare = VersionBaseOp::DefaultVersionCompare; }
 
-	void SetDirServers(ServerContext *theDirServers) { mDirServers = theDirServers; }
-	void SetProduct(const std::string &theProduct) { mProduct = theProduct; }
-	void SetExtraConfig(const std::string &theExtraConfig) { mExtraConfig = theExtraConfig; }
+	void SetDirServers(ServerContext *theDirServers) { this->mDirServers = theDirServers; }
+	void SetProduct(const std::string &theProduct) { this->mProduct = theProduct; }
+	void SetExtraConfig(const std::string &theExtraConfig) { this->mExtraConfig = theExtraConfig; }
 
-	const std::string& GetProduct() { return mProduct; }
-	const std::string& GetExtraConfig() { return mExtraConfig; }
-	ServerContext* GetDirServers() { return mDirServers; }
+	const std::string& GetProduct() { return this->mProduct; }
+	const std::string& GetExtraConfig() { return this->mExtraConfig; }
+	ServerContext* GetDirServers() { return this->mDirServers; }
 	
-	void SetValidVersionSet(const VersionSet &theSet) { mValidVersionSet = theSet; }
-	void SetFiltereVersionSet(const VersionSet &theSet) { mFilteredVersionSet = theSet; }
-	const VersionSet& GetValidVersionSet() { return mValidVersionSet; }
-	const VersionSet& GetFilteredVersionSet() { return mFilteredVersionSet; }
-	const std::string& GetHighestValidVersion() { return mHighestValidVersion; }
+	void SetValidVersionSet(const VersionSet &theSet) { this->mValidVersionSet = theSet; }
+	void SetFiltereVersionSet(const VersionSet &theSet) { this->mFilteredVersionSet = theSet; }
+	const VersionSet& GetValidVersionSet() { return this->mValidVersionSet; }
+	const VersionSet& GetFilteredVersionSet() { return this->mFilteredVersionSet; }
+	const std::string& GetHighestValidVersion() { return this->mHighestValidVersion; }
 
-	const VersionDescriptionMap& GetVersionDescriptionMap() { return mVersionDescriptionMap; }
+	const VersionDescriptionMap& GetVersionDescriptionMap() { return this->mVersionDescriptionMap; }
 
-	void SetVersionCompare(VersionCompare theCompareFunc) { mVersionCompare = theCompareFunc; }
+	void SetVersionCompare(VersionCompare theCompareFunc) { this->mVersionCompare = theCompareFunc; }
 
 	void SetFilterString(const std::string &theFilterString);
 	bool IsFiltered(const std::string &theVersion, const std::string &theVersionData);
@@ -96,7 +96,7 @@ protected:
 	void DoFinish(GetDirOp *theOp);
 
 	virtual bool CallbackHook(AsyncOp *theOp, int theId);
-	virtual void Virtual04();
+	virtual void RunHook();
 
 public:
 	GetVersionOp(ServerContext *theDirServers, const std::string &theProduct);

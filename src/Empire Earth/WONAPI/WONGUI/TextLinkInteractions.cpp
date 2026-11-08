@@ -1,4 +1,4 @@
-// Actual text hyperlink interaction and original retained event ownership.
+// Mouse handling of hyperlink line segments in rich text tables
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,56 +12,62 @@
 #include "ee/wonapi/WONLobbyTextLinkSegment.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0070abc0
+// Shows the link in its pressed colour and repaints the table
 void TextLinkLineSegment::LinkDown()
 {
-	mColor = mDownColor;
-	mTableContext->Invalidate();
+	this->mColor = this->mDownColor;
+	LineSegment::mTableContext->Invalidate();
 }
 
 
 // FUNCTION: WON 0x0070abe0
+// Restores the link's normal colour and repaints the table if it was changed
 void TextLinkLineSegment::LinkUp()
 {
-	if(mColor!=mNormalColor)
+	if(this->mColor!=this->mNormalColor)
 	{
-		mColor = mNormalColor;
-		mTableContext->Invalidate();
+		this->mColor = this->mNormalColor;
+		LineSegment::mTableContext->Invalidate();
 	}
 }
 
 
 // FUNCTION: WON 0x70ac00
+// Shows the hand cursor and sends a hyperlink-over event for this link
 void TextLinkLineSegment::MouseEnter(int x, int y)
 {
-	mTableContext->Virtual78(Cursor::GetStandardCursor(StandardCursor_Hand));
-	mTableContext->Fn2F53F0(new HyperLinkEvent(mTableContext,ComponentEvent_HyperLinkOver,mLinkParam.get()),false);
+	LineSegment::mTableContext->SetCursor(Cursor::GetStandardCursor(StandardCursor_Hand));
+	LineSegment::mTableContext->DeliverEvent(new HyperLinkEvent(LineSegment::mTableContext,ComponentEvent_HyperLinkOver,this->mLinkParam.get()),false);
 }
 
 
 // FUNCTION: WON 0x0070ad70
+// Presses the link on a left-button press
 void TextLinkLineSegment::MouseDown(int x, int y, MouseButton theButton)
 {
 	if(theButton==MouseButton_Left)
-		mLinkParam->LinkDown();
+		this->mLinkParam->LinkDown();
 }
 
 
 // FUNCTION: WON 0x70ad90
+// On a left-button release, releases the link and sends a hyperlink-activated event if it was pressed
 void TextLinkLineSegment::MouseUp(int x, int y, MouseButton theButton)
 {
 	if(theButton==MouseButton_Left)
 	{
-		if(mLinkParam->LinkUp())
-			mTableContext->Fn2F53F0(new HyperLinkEvent(mTableContext,ComponentEvent_HyperLinkActivated,mLinkParam.get()),false);
+		if(this->mLinkParam->LinkUp())
+			LineSegment::mTableContext->DeliverEvent(new HyperLinkEvent(LineSegment::mTableContext,ComponentEvent_HyperLinkActivated,this->mLinkParam.get()),false);
 	}
 }
 
 
 // FUNCTION: WON 0x70ae40
+// Releases the link and sends a hyperlink-over event with no link
 void TextLinkLineSegment::MouseExit()
 {
-	mLinkParam->LinkUp();
-	mTableContext->Fn2F53F0(new HyperLinkEvent(mTableContext,ComponentEvent_HyperLinkOver,NULL),false);
+	this->mLinkParam->LinkUp();
+	LineSegment::mTableContext->DeliverEvent(new HyperLinkEvent(LineSegment::mTableContext,ComponentEvent_HyperLinkOver,NULL),false);
 }
 
 }

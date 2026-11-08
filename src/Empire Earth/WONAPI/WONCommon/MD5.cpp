@@ -1,50 +1,48 @@
-// Original-backed separate WONCommon MD5; primary SDK body checked against native target.
+// MD5 message digest (WON SDK)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <string.h>
 #include "ee/wonapi/WONMD5.h"
 using namespace WONAPI;
-// SUPPORT: EXE 0x006a26b0 (12B constructor forwarding, quota0)
+// 0x6a26b0 (emitted from the list below): creates a digest in its initial state
 MD5::MD5()
 {
-	Reset();
+	this->Reset();
 }
 
 // FUNCTION: WON 0x006a26c0
+// Resets the digest to the MD5 initial state with no bytes counted
 void MD5::Reset()
 {
-	m_buf[0] = 0x67452301;
-	m_buf[1] = 0xefcdab89;
-	m_buf[2] = 0x98badcfe;
-	m_buf[3] = 0x10325476;
+	this->m_buf[0] = 0x67452301;
+	this->m_buf[1] = 0xefcdab89;
+	this->m_buf[2] = 0x98badcfe;
+	this->m_buf[3] = 0x10325476;
 
-	m_bits[0] = 0;
-	m_bits[1] = 0;
+	this->m_bits[0] = 0;
+	this->m_bits[1] = 0;
 }
 
 
-//----------------------------------------------------------------------------
-// Update context to reflect the concatenation of another buffer full
-// of bytes.
-//----------------------------------------------------------------------------
 // FUNCTION: WON 0x006a26f0
+// Adds the given bytes to the digest, transforming every completed 64-byte block
 void MD5::Update(const void *theBuf, unsigned long len)
 {
-	const unsigned char *buf = (const unsigned char*)theBuf;
+	const unsigned char *buf = static_cast<const unsigned char*>(theBuf);
 
 	uint32 t;
 
 	// Update bitcount
-	t = m_bits[0];
-	if ((m_bits[0] = t + ((uint32)len << 3)) < t)
-		m_bits[1]++;	// Carry from low to high
-	m_bits[1] += len >> 29;
+	t = this->m_bits[0];
+	if ((this->m_bits[0] = t + ((uint32)len << 3)) < t)
+		this->m_bits[1]++;	// Carry from low to high
+	this->m_bits[1] += len >> 29;
 
 	t = (t >> 3) & 0x3f;	// Bytes already in shsInfo->data.
 
 	// Handle any leading odd-sized chunks
 	if (t) 
 	{
-		unsigned char *p = (unsigned char *)m_in + t;
+		unsigned char *p = (unsigned char *)this->m_in + t;
 
 		t = 64-t;
 		if (len < t) 
@@ -54,7 +52,7 @@ void MD5::Update(const void *theBuf, unsigned long len)
 		}
 		memcpy(p, buf, t);
 
-		Transform(m_buf, (uint32 *)m_in);
+		this->Transform(this->m_buf, (uint32 *)this->m_in);
 		buf += t;
 		len -= t;
 	}
@@ -62,35 +60,33 @@ void MD5::Update(const void *theBuf, unsigned long len)
 	// Process data in SHS_BLOCKSIZE chunks
 	while (len >= 64) 
 	{
-		memcpy(m_in, buf, 64);
+		memcpy(this->m_in, buf, 64);
 
-		Transform(m_buf, (uint32 *)m_in);
+		this->Transform(this->m_buf, (uint32 *)this->m_in);
 		buf += 64;
 		len -= 64;
 	}
 
 	// Handle any remaining bytes of data.
-	memcpy(m_in, buf, len);
+	memcpy(this->m_in, buf, len);
 }
 
 
 
-//----------------------------------------------------------------------------
-// Final wrapup - pad to 64-byte boundary with the bit pattern
-// 1 0* (64-bit count of bits processed, MSB-first).
-//----------------------------------------------------------------------------
+// Pads with the bit pattern 1 0* and the 64-bit count of bits processed
 // FUNCTION: WON 0x006a27d0
+// Pads the data to a 64-byte boundary with the bit count and writes the 16-byte digest
 void MD5::Digest(unsigned char digest[16])
 {
 	unsigned count;
 	unsigned char *p;
 
 	// Compute number of bytes mod 64.
-	count = (m_bits[0] >> 3) & 0x3F;
+	count = (this->m_bits[0] >> 3) & 0x3F;
 
 	// Set the first char of padding to 0x80.  This is safe since there is
 	// always at least one byte free.
-	p = m_in + count;
+	p = this->m_in + count;
 	*p++ = 0x80;
 
 	// Bytes of padding needed to make 64 bytes.
@@ -102,10 +98,10 @@ void MD5::Digest(unsigned char digest[16])
 		// Two lots of padding:  Pad the first block to 64 bytes.
 		memset(p, 0, count);
 
-		Transform(m_buf, (uint32 *)m_in);
+		this->Transform(this->m_buf, (uint32 *)this->m_in);
 
 		// Now fill the next block with 56 bytes.
-		memset(m_in, 0, 56);
+		memset(this->m_in, 0, 56);
 	} 
 	else 
 	{
@@ -115,11 +111,11 @@ void MD5::Digest(unsigned char digest[16])
 
 
 	// Append length in bits and transform.
-	((uint32 *)m_in)[ 14 ] = m_bits[0];
-	((uint32 *)m_in)[ 15 ] = m_bits[1];
+	((uint32 *)this->m_in)[ 14 ] = this->m_bits[0];
+	((uint32 *)this->m_in)[ 15 ] = this->m_bits[1];
 
-	Transform(m_buf, (uint32 *)m_in);
-	memcpy(digest, m_buf, 16);
+	this->Transform(this->m_buf, (uint32 *)this->m_in);
+	memcpy(digest, this->m_buf, 16);
 
 }
 
@@ -142,12 +138,8 @@ void MD5::Digest(unsigned char digest[16])
 #define MD5STEP(f, w, x, y, z, data, s) ( w += f(x, y, z) + data,  w = w<<s | w>>(32-s),  w += x )
 
 
-//----------------------------------------------------------------------------
-// The core of the MD5 algorithm, this alters an existing MD5 hash to
-// reflect the addition of 16 longwords of new data.  MD5Update blocks
-// the data and converts bytes into longwords for this routine.
-//----------------------------------------------------------------------------
 // FUNCTION: WON 0x006a2870
+// Mixes one 64-byte block of input into the MD5 state (the four MD5 rounds)
 void MD5::Transform(uint32 buf[4], uint32 in[16])
 {
 	register uint32 a, b, c, d;

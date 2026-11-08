@@ -15,26 +15,29 @@
 #include "ee/wonapi/WONLobbySkinTab.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00717ae0
+// Returns a copy of the simple button: state images, scaling, mouse-down check, attributes and size
 WONSimpleButton* WONSimpleButton::Duplicate()
 {
     WONSimpleButton* button=new WONSimpleButton;
-    for(int i=0;i<4;++i) button->mImages[i]=mImages[i];
-    button->mScaleImage=mScaleImage;
-    button->mCheckMouseButtonDown=mCheckMouseButtonDown;
+    for(int i=0;i<4;++i) button->mImages[i]=this->mImages[i];
+    button->mScaleImage=this->mScaleImage;
+    button->mCheckMouseButtonDown=this->mCheckMouseButtonDown;
     button->CopyAttributes(this);
-    button->Fn2F4B90(Width(),Height());
+    button->SetSize(this->Width(),this->Height());
     return button;
 }
 // FUNCTION: WON 0x007199e0
+// Returns a new skinned combo box with the same frame and frame options
 WONComboBox* WONComboBox::Duplicate()
 {
     WONComboBox* combo=new WONComboBox;
-    combo->SetFrame(mFrame);
-    combo->mDrawFrame=mDrawFrame;
-    combo->mButtonInFrame=mButtonInFrame;
+    combo->SetFrame(this->mFrame);
+    combo->mDrawFrame=this->mDrawFrame;
+    combo->mButtonInFrame=this->mButtonInFrame;
     return combo;
 }
 // FUNCTION: WON 0x00719f00
+// Returns a new skinned scroll container with the same attributes
 WONScrollContainer* WONScrollContainer::Duplicate()
 {
     WONScrollContainer* container=new WONScrollContainer;
@@ -42,12 +45,13 @@ WONScrollContainer* WONScrollContainer::Duplicate()
     return container;
 }
 // FUNCTION: WON 0x0071ad20
+// Returns a new skinned tab control on the same skin with the same attributes, transparency and frame
 WONTabCtrl* WONTabCtrl::Duplicate()
 {
-    WONTabCtrl* tab=new WONTabCtrl(mSkin.get());
+    WONTabCtrl* tab=new WONTabCtrl(this->mSkin.get());
     tab->CopyAttributes(this);
-    tab->SetTransparent(mIsTransparent);
-    tab->SetFrame(mFrame);
+    tab->SetTransparent(this->mIsTransparent);
+    tab->SetFrame(this->mFrame);
     return tab;
 }
 }

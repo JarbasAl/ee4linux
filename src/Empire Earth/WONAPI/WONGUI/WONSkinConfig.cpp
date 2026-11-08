@@ -1,4 +1,4 @@
-// Original release skin configuration dispatch, retained templates and image cursors.
+// Skin-file instructions that replace the global skin's template controls and set image cursors (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -17,24 +17,27 @@
 #include "LostDebug.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00798f90
+// Reads an orientation word; true for "Vert" (any case), false for anything else
 bool WONSkinConfig::ReadVert()
 {
-    GUIString text=Fn3842F0(false);
+    GUIString text=this->ReadString(false);
     return text.CompareNoCase("Vert")==0;
 }
 // FUNCTION: WON 0x00799010
-bool WONSkinConfig::Virtual0C(ConfigParser* parser)
+// Runs the base pre-parse and creates the global skin as the Windows-look skin when there is none
+bool WONSkinConfig::PreParse(ConfigParser* parser)
 {
-    if(!ComponentConfig::Virtual0C(parser))
+    if(!ComponentConfig::PreParse(parser))
         return false;
     if(gSkin.get()==NULL)
         gSkin=new WONMSSkin;
     return true;
 }
 // FUNCTION: WON 0x007990e0
+// Reads a sound and sets it as the click sound of the skin's template buttons and every named button type
 void WONSkinConfig::HandleButtonClickSound()
 {
-    SmartPtr<Sound> sound=ReadSound();
+    SmartPtr<Sound> sound=this->ReadSound();
     gSkin->mPushButton->SetClickSound(sound.get());
     gSkin->mCheckbox->SetClickSound(sound.get());
     gSkin->mRadioButton->SetClickSound(sound.get());
@@ -47,6 +50,8 @@ void WONSkinConfig::HandleButtonClickSound()
         it->second->SetClickSound(sound.get());
 }
 // FUNCTION: WON 0x00799210
+// Handles the skin keys that replace the global skin's template controls, add named button types, set the
+// click sound and image cursors; false for other keys (WINSKIN is accepted and ignored)
 bool WONSkinConfig::Virtual24(const std::string &theInstruction)
 {
 	if(theInstruction=="WINSKIN")
@@ -55,75 +60,75 @@ bool WONSkinConfig::Virtual24(const std::string &theInstruction)
 	}
 	else if(theInstruction=="ADDBUTTONTYPE")
 	{
-		GUIString aName = Fn3842F0(false); EnsureComma();
-		WONButton* aButton = SafeConfigGetComponent<WONButton*>(ReadComponent(),"WONButton");
+		GUIString aName = this->ReadString(false); this->EnsureComma();
+		WONButton* aButton = SafeConfigGetComponent<WONButton*>(this->ReadComponent(),"WONButton");
 		gSkin->mButtonTypeMap[aName] = aButton;
 	}
 	else if(theInstruction=="ADDSIMPLEBUTTONTYPE")
 	{
-		GUIString aName = Fn3842F0(false); EnsureComma();
-		WONSimpleButton* aButton = SafeConfigGetComponent<WONSimpleButton*>(ReadComponent(),"WONSimpleButton");
+		GUIString aName = this->ReadString(false); this->EnsureComma();
+		WONSimpleButton* aButton = SafeConfigGetComponent<WONSimpleButton*>(this->ReadComponent(),"WONSimpleButton");
 		gSkin->mSimpleButtonTypeMap[aName] = aButton;
 	}
 	else if(theInstruction=="SETPUSHBUTTON")
-		gSkin->mPushButton = SafeConfigGetComponent<WONButton*>(ReadComponent(),"WONButton");
+		gSkin->mPushButton = SafeConfigGetComponent<WONButton*>(this->ReadComponent(),"WONButton");
 	else if(theInstruction=="SETCHECKBOX")
-		gSkin->mCheckbox = SafeConfigGetComponent<WONButton*>(ReadComponent(),"WONButton");
+		gSkin->mCheckbox = SafeConfigGetComponent<WONButton*>(this->ReadComponent(),"WONButton");
 	else if(theInstruction=="SETRADIOBUTTON")
 	{
-		gSkin->mRadioButton = SafeConfigGetComponent<WONButton*>(ReadComponent(),"WONButton");
-		gSkin->mRadioButton->Fn2F3370(8,true);
+		gSkin->mRadioButton = SafeConfigGetComponent<WONButton*>(this->ReadComponent(),"WONButton");
+		gSkin->mRadioButton->SetButtonFlags(8,true);
 	}
 	else if(theInstruction=="SETHEADERBUTTON")
-		gSkin->mHeaderButton = SafeConfigGetComponent<WONHeaderButton*>(ReadComponent(),"WONHeaderButton");
+		gSkin->mHeaderButton = SafeConfigGetComponent<WONHeaderButton*>(this->ReadComponent(),"WONHeaderButton");
 	else if(theInstruction=="SETTABBUTTON")
-		gSkin->mTabButton = SafeConfigGetComponent<WONButton*>(ReadComponent(),"WONButton");
+		gSkin->mTabButton = SafeConfigGetComponent<WONButton*>(this->ReadComponent(),"WONButton");
 	else if(theInstruction=="SETARROWBUTTON")
 	{
-		Direction aDirection = ReadDirection(); EnsureComma();
-		gSkin->mArrowButton[aDirection] = SafeConfigGetComponent<WONSimpleButton*>(ReadComponent(),"WONSimpleButton");
+		Direction aDirection = this->ReadDirection(); this->EnsureComma();
+		gSkin->mArrowButton[aDirection] = SafeConfigGetComponent<WONSimpleButton*>(this->ReadComponent(),"WONSimpleButton");
 
 	}
 	else if(theInstruction=="SETCOMBOBUTTON")
-		gSkin->mComboButton = SafeConfigGetComponent<WONSimpleButton*>(ReadComponent(),"WONSimpleButton");
+		gSkin->mComboButton = SafeConfigGetComponent<WONSimpleButton*>(this->ReadComponent(),"WONSimpleButton");
 	else if(theInstruction=="SETCLOSEBUTTON")
-		gSkin->mCloseButton = SafeConfigGetComponent<WONSimpleButton*>(ReadComponent(),"WONSimpleButton");
+		gSkin->mCloseButton = SafeConfigGetComponent<WONSimpleButton*>(this->ReadComponent(),"WONSimpleButton");
 	else if(theInstruction=="SETSCROLLGUTTER")
 	{
-		bool isVert = ReadVert(); EnsureComma();
-		gSkin->mScrollGutter[isVert?1:0] = SafeConfigGetComponent<WONSimpleButton*>(ReadComponent(),"WONSimpleButton");
+		bool isVert = this->ReadVert(); this->EnsureComma();
+		gSkin->mScrollGutter[isVert?1:0] = SafeConfigGetComponent<WONSimpleButton*>(this->ReadComponent(),"WONSimpleButton");
 	}
 	else if(theInstruction=="SETSCROLLTHUMB")
 	{
-		bool isVert = ReadVert(); EnsureComma();
-		gSkin->mScrollThumb[isVert?1:0] = SafeConfigGetComponent<WONSimpleButton*>(ReadComponent(),"WONSimpleButton");
+		bool isVert = this->ReadVert(); this->EnsureComma();
+		gSkin->mScrollThumb[isVert?1:0] = SafeConfigGetComponent<WONSimpleButton*>(this->ReadComponent(),"WONSimpleButton");
 	}
 	else if(theInstruction=="SETSCROLLBAR")
 	{
-		bool isVert = ReadVert(); EnsureComma();
-		gSkin->mScrollbar[isVert?1:0] = SafeConfigGetComponent<WONScrollbar*>(ReadComponent(),"WONScrollbar");
+		bool isVert = this->ReadVert(); this->EnsureComma();
+		gSkin->mScrollbar[isVert?1:0] = SafeConfigGetComponent<WONScrollbar*>(this->ReadComponent(),"WONScrollbar");
 	}
 	else if(theInstruction=="SETSCROLLCONTAINER")
-		gSkin->mScrollContainer = SafeConfigGetComponent<WONScrollContainer*>(ReadComponent(),"WONScrollContainer");
+		gSkin->mScrollContainer = SafeConfigGetComponent<WONScrollContainer*>(this->ReadComponent(),"WONScrollContainer");
 	else if(theInstruction=="SETLISTCTRL")
-		gSkin->mListCtrl = SafeConfigGetComponent<WONListCtrl*>(ReadComponent(),"WONListCtrl");
+		gSkin->mListCtrl = SafeConfigGetComponent<WONListCtrl*>(this->ReadComponent(),"WONListCtrl");
 	else if(theInstruction=="SETTABCTRL")
 	{
-		gSkin->mTabCtrl = SafeConfigGetComponent<WONTabCtrl*>(ReadComponent(),"WONTabCtrl");
+		gSkin->mTabCtrl = SafeConfigGetComponent<WONTabCtrl*>(this->ReadComponent(),"WONTabCtrl");
 		gSkin->mTabCtrl->mSkin=NULL;
 	}
 	else if(theInstruction=="SETCOMBOBOX")
-		gSkin->mComboBox = SafeConfigGetComponent<WONComboBox*>(ReadComponent(),"WONComboBox");
+		gSkin->mComboBox = SafeConfigGetComponent<WONComboBox*>(this->ReadComponent(),"WONComboBox");
 	else if(theInstruction=="SETPOPUPBACK")
-		gSkin->mPopupBack = SafeConfigGetComponent<WONFrameComponent*>(ReadComponent(),"WONPopupBack");
+		gSkin->mPopupBack = SafeConfigGetComponent<WONFrameComponent*>(this->ReadComponent(),"WONPopupBack");
 	else if(theInstruction=="SETDIALOGBACK")
-		gSkin->mDialogBack = SafeConfigGetComponent<WONFrameComponent*>(ReadComponent(),"WONDialogBack");
+		gSkin->mDialogBack = SafeConfigGetComponent<WONFrameComponent*>(this->ReadComponent(),"WONDialogBack");
 	else if(theInstruction=="BUTTONCLICKSOUND")
-		HandleButtonClickSound();
+		this->HandleButtonClickSound();
 	else if(theInstruction=="IMAGECURSOR")
 	{
-		StandardCursor aType = ReadStandardCursor(); EnsureComma();
-		SmartPtr<Image> anImage = ReadImage(false);
+		StandardCursor aType = this->ReadStandardCursor(); this->EnsureComma();
+		SmartPtr<Image> anImage = this->ReadImage(false);
 		SmartPtr<Cursor> aCursor = new ComponentCursor(new ImageComponent(anImage.get()));
 		Cursor::SetStandardCursor(aType,aCursor.get());
 	}

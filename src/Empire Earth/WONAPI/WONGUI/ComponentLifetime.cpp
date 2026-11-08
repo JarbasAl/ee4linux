@@ -1,4 +1,4 @@
-// Complete original-backed Component source completion; all selected methods support0.
+// Component extra state and destructors (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,19 +12,21 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f4890
+// Creates the extra component state with no background grabber and tooltips allowed
 ComponentExtra::ComponentExtra()
 {
-    mGrabBG=NULL;
-    mDontDoTip=false;
+    this->mGrabBG=NULL;
+    this->mDontDoTip=false;
 }
-// SUPPORT: EXE 0x006f48d0; native263B, delete BG before reverse SmartPtr member cleanup.
-ComponentExtra::~ComponentExtra() { delete mGrabBG; }
-// SUPPORT: EXE 0x006f4a70; native78B, unique Extra owner then RefCount base cleanup.
-Component::~Component() { delete mExtraStuff; }
+// Destroys the extra state, deleting its background grabber before the other members (emitted at 0x006f48d0)
+ComponentExtra::~ComponentExtra() { delete this->mGrabBG; }
+// Destroys the component, deleting its extra state (emitted at 0x006f4a70)
+Component::~Component() { delete this->mExtraStuff; }
 // FUNCTION: WON 0x006f4ac0
+// Allocates the extra component state on first use
 void Component::AllocateExtraStuff()
 {
-    if(mExtraStuff==NULL) mExtraStuff=new ComponentExtra;
+    if(this->mExtraStuff==NULL) this->mExtraStuff=new ComponentExtra;
 }
 }
 

@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: exact complete SDK contest owner; const buffer aliases expanded.
+// No original address identified: WON SDK contest op; const buffer aliases expanded
 #ifndef EE_WONAPI_WONCONTESTCALLOP_H
 #define EE_WONAPI_WONCONTESTCALLOP_H
 #include "ee/wonapi/WONRouting.h"
@@ -19,20 +19,20 @@ private:
 	void Init();
 
 protected:
-	virtual WONStatus Virtual10();
-	virtual WONStatus Virtual14();
-	virtual void Virtual04();
+	virtual WONStatus GetNextRequest();
+	virtual WONStatus CheckResponse();
+	virtual void RunHook();
 
 public:
 	ContestCallOp(ServerContext *theContestContext);
 	ContestCallOp(const IPAddr &theAddr);
 
-	void SetProcNum(unsigned short theNum) { mProcNum = theNum; }
-	void SetRequestData(const ByteBuffer *theData) { mRequestData = theData; }
+	void SetProcNum(unsigned short theNum) { this->mProcNum = theNum; }
+	void SetRequestData(const ByteBuffer *theData) { this->mRequestData = theData; }
 
-	unsigned short GetProcNum() const { return mProcNum; }
-	ConstSmartPtr<ByteBuffer> GetRequestData() const { return mRequestData; }
-	ConstSmartPtr<ByteBuffer> GetReplyData() const { return mReplyData; }
+	unsigned short GetProcNum() const { return this->mProcNum; }
+	ConstSmartPtr<ByteBuffer> GetRequestData() const { return this->mRequestData; }
+	ConstSmartPtr<ByteBuffer> GetReplyData() const { return this->mReplyData; }
 };
 
 typedef SmartPtr<ContestCallOp> ContestCallOpPtr;

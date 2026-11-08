@@ -1,4 +1,4 @@
-// Genuine LineElement dimension and selection endpoint queries, support only.
+// Size and selection-end queries of an HTML line element (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,15 +13,19 @@
 #include "ee/wonapi/WONLobbyLineLayout.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00711470
-int LineElement::GetWidth() { return mWidth; }
+// Returns the line's width
+int LineElement::GetWidth() { return this->mWidth; }
 // FUNCTION: WON 0x0071a670
-int LineElement::GetHeight() { return mHeight; }
+// Returns the line's height
+int LineElement::GetHeight() { return this->mHeight; }
 // FUNCTION: WON 0x0070b870
-int LineElement::GetAscent() { return mBaseline; }
+// Returns the line's ascent (baseline offset)
+int LineElement::GetAscent() { return this->mBaseline; }
 // FUNCTION: WON 0x0070baf0
+// Returns the selection index after the line's last segment (the start index for an empty line)
 int LineElement::GetEndSelIndex()
 {
-    if(!mSegmentList.empty()) return mSegmentList.back()->GetEndSelIndex();
-    else return mStartSelIndex;
+    if(!this->mSegmentList.empty()) return this->mSegmentList.back()->GetEndSelIndex();
+    else return this->mStartSelIndex;
 }
 }

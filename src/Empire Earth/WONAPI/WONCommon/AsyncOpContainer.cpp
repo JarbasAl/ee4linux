@@ -1,4 +1,4 @@
-// Native async ownership and queue family, source-only.
+// AsyncOpContainer: a queue of async ops pumped by its owner
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -7,56 +7,62 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 
 // FUNCTION: WON 0x0069f730
-AsyncOpContainer::AsyncOpContainer() { mPurging=false; }
+// Creates an empty op container
+AsyncOpContainer::AsyncOpContainer() { this->mPurging=false; }
 // FUNCTION: WON 0x0069f830
-AsyncOpContainer::~AsyncOpContainer() { PurgeOps(); }
+// Destroys the container, killing and completing every queued op first
+AsyncOpContainer::~AsyncOpContainer() { this->PurgeOps(); }
 // FUNCTION: WON 0x0069f900
+// Empties the queue, killing every running op and delivering each op's completion
 void AsyncOpContainer::PurgeOps()
 {
-    mPurging=true;
-    while(!mOpQueue.empty()) {
-        mCurPumpOp=mOpQueue.front();
-        mOpQueue.pop_front();
-        if(mCurPumpOp->mStatus==100000) mCurPumpOp->Kill(true);
-        mCurPumpOp->Complete();
+    this->mPurging=true;
+    while(!this->mOpQueue.empty()) {
+        this->mCurPumpOp=this->mOpQueue.front();
+        this->mOpQueue.pop_front();
+        if(this->mCurPumpOp->mStatus==WS_Pending) this->mCurPumpOp->Kill(true);
+        this->mCurPumpOp->Complete();
     }
-    mPurging=false;
+    this->mPurging=false;
 }
 // FUNCTION: WON 0x0069f9b0
+// Queues an op (not the one being pumped unless it is still running) and signals the first entry
 void AsyncOpContainer::QueueOp(AsyncOp* op)
 {
-    AutoCrit lock(mDataCrit);
-    if(op==mCurPumpOp.get() && (op->mStatus!=100000 || mPurging)) return;
-    mOpQueue.push_back(op);
-    if(mOpQueue.size()==1) SetEvent(mSignal.mEvent);
+    AutoCrit lock(this->mDataCrit);
+    if(op==this->mCurPumpOp.get() && (op->mStatus!=WS_Pending || this->mPurging)) return;
+    this->mOpQueue.push_back(op);
+    if(this->mOpQueue.size()==1) SetEvent(this->mSignal.mEvent);
 }
 // FUNCTION: WON 0x0069fad0
+// Runs and completes queued ops, waiting up to waitTime for work, until maxOps ran or the wait expired
 void AsyncOpContainer::Pump(unsigned long waitTime,int maxOps)
 {
-    AutoCrit lock(mDataCrit);
+    AutoCrit lock(this->mDataCrit);
     unsigned long start=GetTickCount();
     int remaining=maxOps;
-    if(remaining<0) remaining=mOpQueue.size();
-    if(mOpQueue.empty() && waitTime>0) {
+    if(remaining<0) remaining=this->mOpQueue.size();
+    if(this->mOpQueue.empty() && waitTime>0) {
         lock.Leave();
-        mSignal.WaitFor(waitTime);
+        this->mSignal.WaitFor(waitTime);
         lock.Enter();
     }
-    while(!mOpQueue.empty()) {
-        mCurPumpOp=mOpQueue.front();
-        mOpQueue.pop_front();
+    while(!this->mOpQueue.empty()) {
+        this->mCurPumpOp=this->mOpQueue.front();
+        this->mOpQueue.pop_front();
         lock.Leave();
-        if(mCurPumpOp->mStatus==100000) mCurPumpOp->StartRunAsync();
-        if(mCurPumpOp->mCompletionPending) mCurPumpOp->Complete();
-        mCurPumpOp=NULL;
+        if(this->mCurPumpOp->mStatus==WS_Pending) this->mCurPumpOp->StartRunAsync();
+        if(this->mCurPumpOp->mCompletionPending) this->mCurPumpOp->Complete();
+        this->mCurPumpOp=NULL;
         lock.Enter();
         if(remaining>0 && --remaining==0) break;
         if(waitTime>0 && GetTickCount()-start>=waitTime) break;
     }
-    mCurPumpOp=NULL;
+    this->mCurPumpOp=NULL;
 }
 }
 

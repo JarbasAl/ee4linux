@@ -1,6 +1,5 @@
-// Reviewed original-backed controls; source-only, near code/support remain carved.
+// Lost-user-name page: enter an e-mail address and ask the server to send the account's user name
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SCRATCH ONLY; canonical events/email-validator GUI D gate and independent flags pending.
 #include <windows.h>
 #include <string>
 #include <map>
@@ -14,49 +13,40 @@
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "ee/wonapi/WONLobbyControls.h"
 namespace WONAPI {
-//32B empty source-kind candidate; zero primary credit pending normal COFF form comparison.
 LostUserNameCtrl::LostUserNameCtrl() {}
-//147B empty source-kind candidate; zero primary credit pending normal COFF form comparison.
-// Implicit destructor support is generated from the actual class/vtable.
-//3c0830..3c0881,81B. Unlike LostPasswordCtrl this original has no Fn2F5360 call.
+// The destructor is implicit. Unlike LostPasswordCtrl it does not subscribe to broadcasts
 // FUNCTION: WON 0x007c0830
+// Looks up the e-mail field and retrieve button from the layout and updates the button
 void LostUserNameCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2) {
-        ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(config,mEmailInput,"EmailInput",__FILE__,27);
-        SafeGetComponent(config,mRetrieveButton,"RetrieveButton",__FILE__,28);
-        UpdateRetrieveButton();
-    }
+    if(inInit.mType!=2)
+        return;
+    ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(config,this->mEmailInput,"EmailInput",__FILE__,27);
+    SafeGetComponent(config,this->mRetrieveButton,"RetrieveButton",__FILE__,28);
+    this->UpdateRetrieveButton();
 }
-//3c0890..3c0930,160B. Actual std::string temporary spans validator and SetEnabled.
+// The std::string temporary lives until after SetEnabled
 // FUNCTION: WON 0x007c0890
+// Enables the retrieve button only while the e-mail address looks valid
 void LostUserNameCtrl::UpdateRetrieveButton()
 {
-    mRetrieveButton->SetEnabled(LobbyFn3BA6A0(mEmailInput->GetText()));
+    this->mRetrieveButton->SetEnabled(LobbyIsValidEmail(this->mEmailInput->GetText()));
 }
-//3c0930..3c0a83,339B. Five event-construction cleanup states; null new skips GetText.
 // FUNCTION: WON 0x007c0930
+// Updates the button on typing and requests the lost user name for the e-mail address on retrieve
 void LostUserNameCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
-    if(inEvent->mType==21)
-        UpdateRetrieveButton();
-    else if(inEvent->mType==15 && inEvent->mComponent==mRetrieveButton.get())
-        Fn2F53F0(new GetLostUserNameEvent(mEmailInput->GetText()),false);
+    if(inEvent->mType==ComponentEvent_InputTextChanged)
+        this->UpdateRetrieveButton();
+    else if(inEvent->mType==ComponentEvent_ButtonPressed && inEvent->mComponent==this->mRetrieveButton.get())
+        this->DeliverEvent(new GetLostUserNameEvent(this->mEmailInput->GetText()),false);
     else
         Component::HandleComponentEvent(inEvent);
 }
 }
-/* Generated zero-primary support only: GetLostUserNameEvent implicit normal dtor3c0ab0,
-143B, no own453b14 vptr store; deleting3c0a90. Canonical event declaration belongs core.
-*/
+// GetLostUserNameEvent's destructor is implicit: 0x7c0ab0 (no store of its own vtable 0x853b14), scalar deleting destructor 0x7c0a90
 
-/* Rejected empty explicit destructor candidates; zero handwritten credit.
-LostUserNameCtrl::~LostUserNameCtrl() {}
-Blocker: complete original normal destructors contain no own derived-vptr store.
-Implicit member/base destruction is the source candidate; require actual normal
-COFF functions/relocations/EH actions before admission.
-*/
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007c0ab0

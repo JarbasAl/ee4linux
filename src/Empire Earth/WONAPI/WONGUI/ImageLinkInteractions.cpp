@@ -1,4 +1,4 @@
-// Native retained-owner HTML segment interaction policy.
+// Mouse and link-state handling of a linked HTML image (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,87 +13,96 @@
 #include "ee/wonapi/WONLobbyHTMLImageSegments.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0070af30
+// Shows the linked image's border in the pressed colour and repaints the table
 void ImageLinkLineSegment::LinkDown()
 {
-	mBorderColor = mDownColor;
-	mTableContext->Invalidate();
+	this->mBorderColor = this->mDownColor;
+	LineSegment::mTableContext->Invalidate();
 }
 
 // FUNCTION: WON 0x0070af50
+// Restores the linked image's normal border colour, repainting only when it changed
 void ImageLinkLineSegment::LinkUp()
 {
-	if(mBorderColor!=mNormalColor)
+	if(this->mBorderColor!=this->mNormalColor)
 	{
-		mBorderColor = mNormalColor;
-		mTableContext->Invalidate();
+		this->mBorderColor = this->mNormalColor;
+		LineSegment::mTableContext->Invalidate();
 	}
 }
 
 // FUNCTION: WON 0x0070af70
+// On mouse entry, hit-tests the image map if there is one; otherwise shows the hand cursor and sends a
+// link-over event for the image's link
 void ImageLinkLineSegment::MouseEnter(int x, int y)
 {
-	if(mImageMap.get()!=NULL)
+	if(this->mImageMap.get()!=NULL)
 	{
-		mCurLinkParam = NULL;
-		MouseMove(x,y);
+		this->mCurLinkParam = NULL;
+		this->MouseMove(x,y);
 		return;
 	}
 
-	mTableContext->Virtual78(Cursor::GetStandardCursor(StandardCursor_Hand));
-	mTableContext->Fn2F53F0(new HyperLinkEvent(mTableContext,ComponentEvent_HyperLinkOver,mCurLinkParam.get()),false);
+	LineSegment::mTableContext->SetCursor(Cursor::GetStandardCursor(StandardCursor_Hand));
+	LineSegment::mTableContext->DeliverEvent(new HyperLinkEvent(LineSegment::mTableContext,ComponentEvent_HyperLinkOver,this->mCurLinkParam.get()),false);
 }
 
 // FUNCTION: WON 0x0070b080
+// Tracks the image-map area under the mouse (falling back to the anchor link); on a change, updates the
+// cursor and sends a link-over event
 void ImageLinkLineSegment::MouseMove(int x, int y)
 {
-	if(mImageMap.get()==NULL)
+	if(this->mImageMap.get()==NULL)
 		return;
 
-	TextLinkParam *aParam = mImageMap->GetLink(x,y);
+	TextLinkParam *aParam = this->mImageMap->GetLink(x,y);
 	if(aParam==NULL)
-		aParam = mAnchorLinkParam.get();
+		aParam = this->mAnchorLinkParam.get();
 
-	if(aParam!=mCurLinkParam.get())
-	{
-		mCurLinkParam = aParam;
-		mTableContext->Virtual78(aParam!=NULL ? Cursor::GetStandardCursor(StandardCursor_Hand) : NULL);
-		mTableContext->Fn2F53F0(new HyperLinkEvent(mTableContext,ComponentEvent_HyperLinkOver,mCurLinkParam.get()),false);
-	}
+	if(aParam==this->mCurLinkParam.get())
+		return;
+	this->mCurLinkParam = aParam;
+	LineSegment::mTableContext->SetCursor(aParam!=NULL ? Cursor::GetStandardCursor(StandardCursor_Hand) : NULL);
+	LineSegment::mTableContext->DeliverEvent(new HyperLinkEvent(LineSegment::mTableContext,ComponentEvent_HyperLinkOver,this->mCurLinkParam.get()),false);
 
 }
 
 // FUNCTION: WON 0x0070b1b0
+// Presses the current link on a left-button press
 void ImageLinkLineSegment::MouseDown(int x, int y, MouseButton theButton)
 {
-	if(mCurLinkParam.get()==NULL)
+	if(this->mCurLinkParam.get()==NULL)
 		return;
 
 	if(theButton==MouseButton_Left)
-		mCurLinkParam->LinkDown();
+		this->mCurLinkParam->LinkDown();
 }
 
 // FUNCTION: WON 0x0070b1d0
+// Releases the current link on a left-button release and sends a link-activated event if it was pressed
 void ImageLinkLineSegment::MouseUp(int x, int y, MouseButton theButton)
 {
-	if(mCurLinkParam.get()==NULL)
+	if(this->mCurLinkParam.get()==NULL)
 		return;
 
 	if(theButton==MouseButton_Left)
 	{
-		if(mCurLinkParam->LinkUp())
-			mTableContext->Fn2F53F0(new HyperLinkEvent(mTableContext,ComponentEvent_HyperLinkActivated,mCurLinkParam.get()),false);
+		if(this->mCurLinkParam->LinkUp())
+			LineSegment::mTableContext->DeliverEvent(new HyperLinkEvent(LineSegment::mTableContext,ComponentEvent_HyperLinkActivated,this->mCurLinkParam.get()),false);
 	}
 }
 
 // FUNCTION: WON 0x0070b280
+// On mouse exit, releases the current link and sends a link-over event with no link
 void ImageLinkLineSegment::MouseExit()
 {
-	if(mCurLinkParam.get()==NULL)
+	if(this->mCurLinkParam.get()==NULL)
 		return;
 
-	mCurLinkParam->LinkUp();
-	mTableContext->Fn2F53F0(new HyperLinkEvent(mTableContext,ComponentEvent_HyperLinkOver,NULL),false);
+	this->mCurLinkParam->LinkUp();
+	LineSegment::mTableContext->DeliverEvent(new HyperLinkEvent(LineSegment::mTableContext,ComponentEvent_HyperLinkOver,NULL),false);
 }
-// SUPPORT: EXE 0x0070a7b0; genuine class-specific false default, shared physical native provider.
+// A linked image never starts a text selection; the linker folds this body into the identical one
+// at 0x0070a7b0
 bool ImageLinkLineSegment::CanStartSelection() { return false; }
 }

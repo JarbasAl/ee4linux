@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK patch/version DBProxy protocol unit.
-// Missing unit proposed existing DBProxy/patch-server family profile.
+// No original address identified: WON SDK patch/version DBProxy operation
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,6 +9,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONPatchAdmin.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 using namespace WONAPI;
@@ -20,7 +20,7 @@ GetPatchServerModuleListOp::GetPatchServerModuleListOp(ServerContext* theContext
 	: DBProxyOp(theContext),
 	  mMsgType(1)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -29,47 +29,47 @@ GetPatchServerModuleListOp::GetPatchServerModuleListOp(const IPAddr& theAddr)
 	: DBProxyOp(theAddr),
 	  mMsgType(1)
 {
-	Init();
+	this->Init();
 } 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Exceptions handled by ServerRequestOp
-WONStatus GetPatchServerModuleListOp::Virtual14()
+WONStatus GetPatchServerModuleListOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
-	if (mMessageReplyType != 7)
-		return InvalidReplyHeader();
+	if (this->mMessageReplyType != 7)
+		return this->InvalidReplyHeader();
 	
 	// Do extended unpack
-	ReadBuffer aReadBuf(mReplyData->data(), mReplyData->length());
+	ReadBuffer aReadBuf(this->mReplyData->data(), this->mReplyData->length());
 	unsigned short numModules = aReadBuf.ReadShort();
 
 	// Read in each module
 	for (int i=0; i < numModules; i++)
 	{
 		unsigned long moduleID = aReadBuf.ReadLong();
-		mModuleList.push_back(moduleID);
+		this->mModuleList.push_back(moduleID);
 	}
 
 	// Finished
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void GetPatchServerModuleListOp::Virtual04()
+void GetPatchServerModuleListOp::RunHook()
 {
-	mMessageType=6;
-	mSubMessageType=mMsgType;
+	this->mMessageType=6;
+	this->mSubMessageType=this->mMsgType;
 
 	// Call base class implementation
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 
@@ -77,7 +77,7 @@ void GetPatchServerModuleListOp::Virtual04()
 ///////////////////////////////////////////////////////////////////////////////
 void GetPatchServerModuleListOp::Init()
 {
-	Virtual18();
+	this->Reset();
 	ServerRequestOp::mLengthFieldSize = 4;
 }
 
@@ -86,8 +86,8 @@ void GetPatchServerModuleListOp::Init()
 ///////////////////////////////////////////////////////////////////////////////
 bool GetPatchServerModuleListOp::IsModuleAvailable(unsigned short theMsgType, unsigned short theSubMsgType)
 {
-	std::list<unsigned long>::const_iterator anItr = mModuleList.begin();
-	for (; anItr != mModuleList.end(); ++anItr)
+	std::list<unsigned long>::const_iterator anItr = this->mModuleList.begin();
+	for (; anItr != this->mModuleList.end(); ++anItr)
 	{
 		// Search for this message type and sub message type
 		if (theMsgType == LOWORD(*anItr) && theSubMsgType == HIWORD(*anItr))

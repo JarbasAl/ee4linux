@@ -1,4 +1,4 @@
-// WONGUI InputBox configuration, borrowed control only; no control lifetime source.
+// Input box configuration keys (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,34 +14,36 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x0078cd60
+// Handles the input box configuration keys (text, password char, selection, max chars, char width, backgrounds,
+// icon, colours, select-on-focus, history size, cursor blink rate); passes other keys to the base configuration
 bool InputBoxConfig::Virtual24(const std::string& inInstruction)
 {
-    if(inInstruction=="TEXT") mInputBox->SetText(Fn3842F0(false),true);
-    else if(inInstruction=="PASSWORDCHAR") mInputBox->SetPasswordChar(ReadChar());
-    else if(inInstruction=="ALLOWSELECTION") mInputBox->Fn2F84B0(Fn3837F0());
-    else if(inInstruction=="MAXCHARS") mInputBox->mMaxChars=ReadInt();
-    else if(inInstruction=="CHARWIDTH") mInputBox->SetCharWidth(ReadInt());
-    else if(inInstruction=="BACKGROUND") mInputBox->SetBackground(ReadBackground());
-    else if(inInstruction=="DISABLEDBACKGROUND") mInputBox->SetDisabledBackground(ReadBackground());
-    else if(inInstruction=="ICON") mInputBox->SetIcon(ReadImage(false).get());
-    else if(inInstruction=="TEXTCOLOR") mInputBox->mTextColor=Fn385510();
-    else if(inInstruction=="DISABLEDTEXTCOLOR") mInputBox->mDisabledTextColor=Fn385510();
-    else if(inInstruction=="SELCOLOR") mInputBox->mSelColor=ReadSelectionColor();
-    else if(inInstruction=="SELONFOCUS") mInputBox->mSelectOnFocus=Fn3837F0();
-    else if(inInstruction=="MAXINPUTHISTORY") mInputBox->mMaxInputHistory=ReadInt();
-    else if(inInstruction=="USEDISABLEDCOLORS") mInputBox->mUseDisabledColors=Fn3837F0();
+    if(inInstruction=="TEXT") this->mInputBox->SetText(this->ReadString(false),true);
+    else if(inInstruction=="PASSWORDCHAR") this->mInputBox->SetPasswordChar(this->ReadChar());
+    else if(inInstruction=="ALLOWSELECTION") this->mInputBox->SetAllowSelection(this->ReadBool());
+    else if(inInstruction=="MAXCHARS") this->mInputBox->mMaxChars=this->ReadInt();
+    else if(inInstruction=="CHARWIDTH") this->mInputBox->SetCharWidth(this->ReadInt());
+    else if(inInstruction=="BACKGROUND") this->mInputBox->SetBackground(this->ReadBackground());
+    else if(inInstruction=="DISABLEDBACKGROUND") this->mInputBox->SetDisabledBackground(this->ReadBackground());
+    else if(inInstruction=="ICON") this->mInputBox->SetIcon(this->ReadImage(false).get());
+    else if(inInstruction=="TEXTCOLOR") this->mInputBox->mTextColor=this->ReadColor();
+    else if(inInstruction=="DISABLEDTEXTCOLOR") this->mInputBox->mDisabledTextColor=this->ReadColor();
+    else if(inInstruction=="SELCOLOR") this->mInputBox->mSelColor=this->ReadSelectionColor();
+    else if(inInstruction=="SELONFOCUS") this->mInputBox->mSelectOnFocus=this->ReadBool();
+    else if(inInstruction=="MAXINPUTHISTORY") this->mInputBox->mMaxInputHistory=this->ReadInt();
+    else if(inInstruction=="USEDISABLEDCOLORS") this->mInputBox->mUseDisabledColors=this->ReadBool();
     else if(inInstruction=="CURSORBLINKRATE")
     {
-        int on=ReadInt();
+        int on=this->ReadInt();
         int off;
-        if(!EndOfString())
+        if(!this->EndOfString())
         {
-            EnsureComma();
-            off=ReadInt();
+            this->EnsureComma();
+            off=this->ReadInt();
         }
         else
             off=on;
-        mInputBox->SetCursorBlinkRate(on,off);
+        this->mInputBox->SetCursorBlinkRate(on,off);
     }
     else return ComponentConfig::Virtual24(inInstruction);
     // LOST-DEBUG: none: exact only

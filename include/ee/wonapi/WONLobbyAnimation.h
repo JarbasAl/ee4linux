@@ -1,4 +1,4 @@
-// Complete source owner contract: SDK Animation.h, original ctor335340/335540 and RTTI.
+// Animation (SDK Animation.h): constructors at 0x00735340 / 0x00735540, with RTTI.
 #ifndef EE_WONAPI_WONLOBBYANIMATION_H
 #define EE_WONAPI_WONLOBBYANIMATION_H
 #include <list>
@@ -9,7 +9,7 @@ public:
     SmartPtr<Image> mImage; //08
     int mDelayTime; //0c
     int mLeft, mTop; //10,14
-    DisposalMethod mDisposalMethod; //18; complete1c
+    DisposalMethod mDisposalMethod; // offset 0x18; class size 0x1c
     AnimationFrame(Image* = NULL,int = 0);
     void Draw(Graphics&,int,int);
     SmartPtr<AnimationFrame> Duplicate();
@@ -22,21 +22,21 @@ private:
     int mNumLoops,mLoopCount; //18,1c
     bool mNeedAccumulate,mCopyFirstImageToAccumulate; //20,21
     SmartPtr<NativeImage> mAccumulateImage; //24
-    int mWidth,mHeight; //28,2c; complete30
+    int mWidth,mHeight; // offsets 0x28, 0x2c; class size 0x30
 public:
     Animation(const AnimationFrameList&,int = -1,int = -1);
     void RealizeNative(DisplayContext*);
     void Rewind(bool = true);
     bool NextFrame();
     int GetFrameDelayTime();
-    int GetNumFrames() { return (int)mFrameList.size(); } //native count+10 used3488af, helper0
+    int GetNumFrames() { return (int)this->mFrameList.size(); } // inline (frame list size, read at 0x007488af)
     void Draw(Graphics&,int,int);
     SmartPtr<Animation> Duplicate();
-    int GetWidth() { return mWidth; } //actual SDK inline getter, nativeconsumer306e78/7b
-    int GetHeight() { return mHeight; } //actual SDK inline getter, no storage/layout change
-    void SetNumLoops(int n) { mNumLoops=n; }
-    void SetNeedAccumulate(bool b) { mNeedAccumulate=b; }
-    void SetCopyFirstImageToAccumulate(bool b) { mCopyFirstImageToAccumulate=b; }
+    int GetWidth() { return this->mWidth; } // inline getter (used at 0x00706e78)
+    int GetHeight() { return this->mHeight; } // inline getter
+    void SetNumLoops(int n) { this->mNumLoops=n; }
+    void SetNeedAccumulate(bool b) { this->mNeedAccumulate=b; }
+    void SetCopyFirstImageToAccumulate(bool b) { this->mCopyFirstImageToAccumulate=b; }
 };
 }
 #endif

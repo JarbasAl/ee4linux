@@ -1,6 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK directory executable implementation.
-// Missing-unit proposed family profile: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// No FUNCTION/Native address or primary/physical byte credit is claimed.
+// No original address identified: WON SDK directory server set-data-objects request
+// Expected flags: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>
 #include <windows.h>
 #include <string>
@@ -11,6 +10,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONDirExtended.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace std;
 using namespace WONAPI;
 
@@ -18,8 +18,8 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 void EntitySetDataObjectsOp::Init()
 {
-	mLengthFieldSize = 4;
-	mDataObjectMode = DIR_DO_ADDREPLACE;
+	this->mLengthFieldSize = 4;
+	this->mDataObjectMode = DIR_DO_ADDREPLACE;
 }
 
 
@@ -27,59 +27,59 @@ void EntitySetDataObjectsOp::Init()
 ///////////////////////////////////////////////////////////////////////////////
 EntitySetDataObjectsOp::EntitySetDataObjectsOp(ServerContext *theDirContext, bool isService) : ServerRequestOp(theDirContext)
 {
-	mIsService = isService;
-	Init();
+	this->mIsService = isService;
+	this->Init();
 }
    
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 EntitySetDataObjectsOp::EntitySetDataObjectsOp(const IPAddr &theAddr, bool isService) : ServerRequestOp(theAddr)
 {
-	mIsService = isService;
-	Init();
+	this->mIsService = isService;
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus EntitySetDataObjectsOp::Virtual10()
+WONStatus EntitySetDataObjectsOp::GetNextRequest()
 {
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 	aMsg.AppendByte(5);						// Small message
 	aMsg.AppendShort(2);					// Directory Server
-	aMsg.AppendShort(mIsService?301:300);	// ServiceSetDataObjects : DirSetDataObjects
-	aMsg.AppendByte(mDataObjectMode);
-	aMsg.AppendWString(mPath,2);				// Directory path
+	aMsg.AppendShort(this->mIsService?301:300);	// ServiceSetDataObjects : DirSetDataObjects
+	aMsg.AppendByte(this->mDataObjectMode);
+	aMsg.AppendWString(this->mPath,2);				// Directory path
 
-	if(mIsService)
+	if(this->mIsService)
 	{
-		aMsg.AppendWString(mName,2);				// Entity name
-		aMsg.AppendBuffer(mNetAddr,1);
+		aMsg.AppendWString(this->mName,2);				// Entity name
+		aMsg.AppendBuffer(this->mNetAddr,1);
 	}
 
-	aMsg.AppendShort(mDataObjects.size());
-	DirDataObjectList::iterator anItr = mDataObjects.begin();
-	while(anItr!=mDataObjects.end())
+	aMsg.AppendShort(this->mDataObjects.size());
+	DirDataObjectList::iterator anItr = this->mDataObjects.begin();
+	while(anItr!=this->mDataObjects.end())
 	{
 		aMsg.AppendString(anItr->mDataType,1);
 		aMsg.AppendBuffer(anItr->mData,2);
 		++anItr;
 	}
 
-	mRequest = aMsg.ToByteBuffer(true);
-	return (WONStatus)100059;
+	this->mRequest = aMsg.ToByteBuffer(true);
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus EntitySetDataObjectsOp::Virtual14()
+WONStatus EntitySetDataObjectsOp::CheckResponse()
 {
-	ReadBuffer aMsg(mResponse->data(),mResponse->length());
+	ReadBuffer aMsg(this->mResponse->data(),this->mResponse->length());
 	unsigned char aHeaderType = aMsg.ReadByte();
 	unsigned short aServiceType = aMsg.ReadShort();
 	unsigned short aMessageType = aMsg.ReadShort();
 
 	if(aHeaderType!=5 || aServiceType!=2 || aMessageType!=1)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 
 
 	short aStatus = aMsg.ReadShort();

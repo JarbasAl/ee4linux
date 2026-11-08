@@ -1,4 +1,4 @@
-// Native container configuration component/layout instruction algorithms.
+// Container config instructions: ADD, layout points and the LAYOUT family (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,50 +13,54 @@
 #include "ee/wonapi/WONLobbyConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00788840
+// Reads a comma-separated list of components and adds each to the container
 bool ContainerConfig::HandleAdd()
 {
 	while(true)
 	{
-		Component *aComp = ReadComponent();
-		mContainer->Fn2F6A60(aComp);
-		if(EndOfString())
+		Component *aComp = this->ReadComponent();
+		this->mContainer->AddChild(aComp);
+		if(this->EndOfString())
 			break;
 
-		EnsureComma();
+		this->EnsureComma();
 	}
 
 
 	return true;
 }
 // FUNCTION: WON 0x00788870
+// Reads a comma-separated list of layout points and adds each to the container
 bool ContainerConfig::HandleAddLayoutPoint()
 {
 	while(true)
 	{
-		LayoutPoint *aPoint = SafeConfigGetComponent<LayoutPoint*>(ReadComponent(),"LayoutPoint");
-		mContainer->AddLayoutPoint(aPoint);
-		if(EndOfString())
+		LayoutPoint *aPoint = SafeConfigGetComponent<LayoutPoint*>(this->ReadComponent(),"LayoutPoint");
+		this->mContainer->AddLayoutPoint(aPoint);
+		if(this->EndOfString())
 			break;
 
-		EnsureComma();
+		this->EnsureComma();
 	}
 
 
 	return true;
 }
 // FUNCTION: WON 0x007888b0
+// Reads a layout rule (target, instruction names, reference, up to four offsets) and adds it to the container;
+// chain and repeat forms reuse the previous rule's instructions and reference
 bool ContainerConfig::HandleLayout(bool chain, bool repeat)
 {
-	Component *target = ReadComponent(); 
+	Component *target = this->ReadComponent(); 
 	int instructions = 0;
 	Component *ref;
 
 	if(!chain && !repeat)
 	{
-		EnsureComma();
+		this->EnsureComma();
 		while(true)
 		{
-			GUIString aStr = Fn3842F0(true);
+			GUIString aStr = this->ReadString(true);
 			if(aStr.length()==0)
 				break;
 
@@ -80,110 +84,112 @@ bool ContainerConfig::HandleLayout(bool chain, bool repeat)
 		}
 	}
 	else
-		instructions = mLayoutInstruction;
+		instructions = this->mLayoutInstruction;
 
-	if(chain || (repeat && EndOfString()))
+	if(chain || (repeat && this->EndOfString()))
 	{
-		if(mLayoutRef==NULL)
+		if(this->mLayoutRef==NULL)
 			throw ConfigObjectException("Invalid LayoutChain");
 
-		ref = mLayoutRef;
+		ref = this->mLayoutRef;
 	}
 	else
 	{
-		EnsureComma();
-		ref = ReadComponent();
+		this->EnsureComma();
+		ref = this->ReadComponent();
 	}
 
-	if(!EndOfString())
-		EnsureComma();
+	if(!this->EndOfString())
+		this->EnsureComma();
 
 	int i;
 	for(i=0; i<4; i++)
 	{
-		if(EndOfString())
+		if(this->EndOfString())
 			break;
 
-		mLayoutParams[i] = ReadInt();
-		if(!EndOfString())
-			EnsureComma();
+		this->mLayoutParams[i] = this->ReadInt();
+		if(!this->EndOfString())
+			this->EnsureComma();
 	}
 
 	if((!chain && !repeat) || i!=0)
 	{
 		for(; i<4; i++)
-			mLayoutParams[i] = 0;
+			this->mLayoutParams[i] = 0;
 	}
 
-	mContainer->Fn2F6140(target,instructions,ref,mLayoutParams[0],mLayoutParams[1],
-		mLayoutParams[2],mLayoutParams[3],mCurLayoutId);
+	this->mContainer->Fn2F6140(target,instructions,ref,this->mLayoutParams[0],this->mLayoutParams[1],
+		this->mLayoutParams[2],this->mLayoutParams[3],this->mCurLayoutId);
 
 	if(repeat)
-		mLayoutRef = ref;
+		this->mLayoutRef = ref;
 	else
-		mLayoutRef = target;
+		this->mLayoutRef = target;
 
-	mLayoutInstruction = instructions;
+	this->mLayoutInstruction = instructions;
 
 	return true;
 }
 // FUNCTION: WON 0x00789c80
+// Handles the container config instructions (ADD, LAYOUT and its variants, layout ids, tab focus,
+// child-only input); other instructions go to the base config
 bool ContainerConfig::Virtual24(const std::string& theInstruction)
 {
 	if(theInstruction=="ADD")
-		return HandleAdd();
+		return this->HandleAdd();
 	else if(theInstruction=="ADDLAYOUTPOINT")
-		return HandleAddLayoutPoint();
+		return this->HandleAddLayoutPoint();
 	else if(theInstruction=="NEWLAYOUTPOINT")
-		return HandleNewLayoutPoint();
+		return this->HandleNewLayoutPoint();
 	else if(theInstruction=="LAYOUT")
-		return HandleLayout();
+		return this->HandleLayout();
 	else if(theInstruction=="SETLAYOUTID")
-		mCurLayoutId = ReadInt();
+		this->mCurLayoutId = this->ReadInt();
 	else if(theInstruction=="ENABLELAYOUT")
 	{
-		bool enable = Fn3837F0();
+		bool enable = this->ReadBool();
 		while(true)
 		{
-			EnsureComma();
-			int anId = ReadInt();
-			mContainer->Fn2F6120(anId,enable);
-			if(EndOfString())
+			this->EnsureComma();
+			int anId = this->ReadInt();
+			this->mContainer->EnableLayoutInstructions(anId,enable);
+			if(this->EndOfString())
 				break;
 		}
 	}
 	else if(theInstruction=="RECALCLAYOUT")
-		mContainer->Fn2F6290();
+		this->mContainer->Relayout();
 	else if(theInstruction=="CHAINLAYOUT")
-		return HandleLayout(true);
+		return this->HandleLayout(true);
 	else if(theInstruction=="REPEATLAYOUT")
-		return HandleLayout(false,true);
+		return this->HandleLayout(false,true);
 	else if(theInstruction=="SAMESIZELAYOUT")
-		return HandleSameSizeLayout(true,true);
+		return this->HandleSameSizeLayout(true,true);
 	else if(theInstruction=="SAMEWIDTHLAYOUT")
-		return HandleSameSizeLayout(true,false);
+		return this->HandleSameSizeLayout(true,false);
 	else if(theInstruction=="SAMEHEIGHTLAYOUT")
-		return HandleSameSizeLayout(false,true);
+		return this->HandleSameSizeLayout(false,true);
 	else if(theInstruction=="CENTERLAYOUT")
-		return HandleCenterLayout(true,true);
+		return this->HandleCenterLayout(true,true);
 	else if(theInstruction=="HORZCENTERLAYOUT")
-		return HandleCenterLayout(true,false);
+		return this->HandleCenterLayout(true,false);
 	else if(theInstruction=="VERTCENTERLAYOUT")
-		return HandleCenterLayout(false,true);
+		return this->HandleCenterLayout(false,true);
 	else if(theInstruction=="HORZSPACEEVENLYLAYOUT")
-		return HandleSpaceEvenlyLayout(true);
+		return this->HandleSpaceEvenlyLayout(true);
 	else if(theInstruction=="VERTSPACEEVENLYLAYOUT")
-		return HandleSpaceEvenlyLayout(false);
+		return this->HandleSpaceEvenlyLayout(false);
 	else if(theInstruction=="CLEARRIGHTLAYOUT")
-		return HandleClearRightLayout();
+		return this->HandleClearRightLayout();
 	else if(theInstruction=="NOOVERLAPLAYOUT")
-		return HandleNoOverlapLayout();
+		return this->HandleNoOverlapLayout();
 	else if(theInstruction=="SIZEATLEASTLAYOUT")
-		return HandleSizeAtLeastLayout();
+		return this->HandleSizeAtLeastLayout();
 	else if(theInstruction=="ISOLATETABFOCUS")
-		mContainer->SetIsolateTabFocus(Fn3837F0());
+		this->mContainer->SetIsolateTabFocus(this->ReadBool());
 	else if(theInstruction=="ONLYCHILDINPUT")
-		mContainer->SetOnlyChildInput(Fn3837F0());
+		this->mContainer->SetOnlyChildInput(this->ReadBool());
 	else
 		return ComponentConfig::Virtual24(theInstruction);
 

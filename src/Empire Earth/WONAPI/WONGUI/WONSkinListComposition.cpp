@@ -1,4 +1,4 @@
-// Original skinned list/header/area composition; raw owned results follow the native API.
+// Skin factory for multi-column list controls (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,15 +13,16 @@
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00715b20
+// Returns a new list control from the skin template with a skinned header, a multi-column list area and scrollbars
 WONListCtrl* WONSkin::GetListCtrl()
 {
-    WONListCtrl* list=mListCtrl->Duplicate();
-    list->CopyAttributes(mScrollContainer.get());
+    WONListCtrl* list=this->mListCtrl->Duplicate();
+    list->CopyAttributes(this->mScrollContainer.get());
     list->SetHeader(new WONHeaderControl(this));
     MultiListArea* area=new MultiListArea;
     list->SetScrollArea(area);
-    list->SetScrollbar(GetScrollbar(true));
-    list->SetScrollbar(GetScrollbar(false));
+    list->SetScrollbar(this->GetScrollbar(true));
+    list->SetScrollbar(this->GetScrollbar(false));
     list->GetHeader()->SetMultiListArea(area);
     return list;
 }

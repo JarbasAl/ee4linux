@@ -1,4 +1,4 @@
-// Native directory entity behavior; no runtime substitution authority.
+// WONAPI directory server entity (directory or service record)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,29 +12,32 @@
 #include "ee/wonapi/WONBuffer.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006f0190
+// Creates an empty directory entity (no type, times, CRC or addresses)
 DirEntity::DirEntity()
 {
-    mType = 0;
-    mLifespan = 0;
-    mCreated = 0;
-    mTouched = 0;
-    mCRC = 0;
-    mCreateIP = 0;
-    mTouchIP = 0;
-    mCreateId = 0;
-    mTouchId = 0;
-    mReqUnique = false;
+    this->mType = 0;
+    this->mLifespan = 0;
+    this->mCreated = 0;
+    this->mTouched = 0;
+    this->mCRC = 0;
+    this->mCreateIP = 0;
+    this->mTouchIP = 0;
+    this->mCreateId = 0;
+    this->mTouchId = 0;
+    this->mReqUnique = false;
 }
 // FUNCTION: WON 0x006f0290
+// Destroys the entity, releasing its names, address, data objects and ACLs
 DirEntity::~DirEntity()
 {
 }
 // FUNCTION: WON 0x006f0400
+// Returns the service's network address as an IP address and port (empty when shorter than 6 bytes)
 IPAddr DirEntity::GetNetAddrAsIP() const
 {
     IPAddr result;
-    if (mNetAddr.get() != NULL && mNetAddr->length() >= 6)
-        result.SetSixByte(mNetAddr->data());
+    if (this->mNetAddr.get() != NULL && this->mNetAddr->length() >= 6)
+        result.SetSixByte(this->mNetAddr->data());
     return result;
 }
 }

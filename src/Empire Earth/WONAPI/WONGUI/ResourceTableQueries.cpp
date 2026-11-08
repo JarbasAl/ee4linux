@@ -1,4 +1,4 @@
-// Genuine ResourceConfigTable20 query/glue/factory operations; original global maps only.
+// Resource config table queries, glue functions and component allocators, plus scroll area/scroller config parsers
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,35 +13,39 @@
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00793e50
+// Returns the named resource group; throws "Resource group not found: <name>" when it is missing
 ResourceConfig* ResourceConfigTable::SafeGetConfig(const std::string &theName)
 {
-	ResourceMap::iterator anItr = mResourceMap.find(theName);
-	if(anItr!=mResourceMap.end())
+	ResourceMap::iterator anItr = this->mResourceMap.find(theName);
+	if(anItr!=this->mResourceMap.end())
 		return anItr->second.get();
 	else
 		throw ConfigObjectException("Resource group not found: " + theName);
 }
 // FUNCTION: WON 0x00793f40
+// Registers a function to run when resources are glued together
 void ResourceConfigTable::RegisterGlueResourceFunc(GlueResourceFunc theFunc)
 {
-	mGlueResourceFuncSet.insert(theFunc);
+	this->mGlueResourceFuncSet.insert(theFunc);
 }
 // FUNCTION: WON 0x00793fe0
+// Calls every registered glue function with this table
 void ResourceConfigTable::SafeGlueResources()
 {
-	GlueResourceFuncSet::const_iterator anItr = mGlueResourceFuncSet.begin();
+	GlueResourceFuncSet::const_iterator anItr = this->mGlueResourceFuncSet.begin();
 	while(true)
 	{
-		if(anItr==mGlueResourceFuncSet.end())
+		if(anItr==this->mGlueResourceFuncSet.end())
 			break;
 		(*anItr)(this);
 		++anItr;
 	}
 }
 // FUNCTION: WON 0x00794040
+// Registers the config and component factories for a component type name; the first registration wins
 void ResourceConfigTable::AddAllocator(const std::string &theName, ComponentConfigFactory theConfigFactory, ComponentFactory theComponentFactory)
 {
-	ConfigAllocatorMap::iterator anItr = mConfigAllocatorMap.insert(ConfigAllocatorMap::value_type(theName,ConfigAllocator(NULL,NULL))).first;
+	ConfigAllocatorMap::iterator anItr = ResourceConfigTable::mConfigAllocatorMap.insert(ConfigAllocatorMap::value_type(theName,ConfigAllocator(NULL,NULL))).first;
 	ConfigAllocator &anAlloc = anItr->second;
 	if(anAlloc.mConfigFactory==NULL)
 	{
@@ -50,15 +54,17 @@ void ResourceConfigTable::AddAllocator(const std::string &theName, ComponentConf
 	}
 }
 // FUNCTION: WON 0x007941d0
+// Maps a control name to its numeric id
 void ResourceConfigTable::RegisterControlId(const std::string &theName, int theVal)
 {
-	mControlIdMap[theName] = theVal;
+	ResourceConfigTable::mControlIdMap[theName] = theVal;
 }
 // FUNCTION: WON 0x007941f0
+// Creates a new config and component for a registered type name; false if the type is unknown
 bool ResourceConfigTable::AllocateConfig(const std::string &theName, SmartPtr<ComponentConfig> &theConfig, SmartPtr<Component> &theComponent)
 {
-	ConfigAllocatorMap::iterator anItr = mConfigAllocatorMap.find(theName);
-	if(anItr==mConfigAllocatorMap.end())
+	ConfigAllocatorMap::iterator anItr = ResourceConfigTable::mConfigAllocatorMap.find(theName);
+	if(anItr==ResourceConfigTable::mConfigAllocatorMap.end())
 		return false;
 
 	ConfigAllocator &anAlloc = anItr->second;
@@ -67,26 +73,27 @@ bool ResourceConfigTable::AllocateConfig(const std::string &theName, SmartPtr<Co
 	return true;
 }
 // FUNCTION: WON 0x007942f0
+// Looks up a control name's numeric id; returns true when found
 bool ResourceConfigTable::GetControlId(const std::string &theName, int &theVal)
 {
-	ControlIdMap::iterator anItr = mControlIdMap.find(theName);
-	if(anItr==mControlIdMap.end())
+	ControlIdMap::iterator anItr = ResourceConfigTable::mControlIdMap.find(theName);
+	if(anItr==ResourceConfigTable::mControlIdMap.end())
 		return false;
 	
 	theVal = anItr->second;
 	return true;	
 }
 
-// Genuine original SDK class-static object definitions; data only, zero authored CPP function bodies.
+// Class-static maps of control ids and component allocators
 ResourceConfigTable::ControlIdMap ResourceConfigTable::mControlIdMap;
 ResourceConfigTable::ConfigAllocatorMap ResourceConfigTable::mConfigAllocatorMap;
 
 
-// SOURCE_ONLY_NO_NATIVE_ID: same-snapshot SDK compatible resource API completion.
+// Resource group lookup and clear functions (not identified in the original exe)
 ResourceConfig* ResourceConfigTable::GetConfig(const std::string &theName)
 {
-	ResourceMap::iterator anItr = mResourceMap.find(theName);
-	if(anItr!=mResourceMap.end())
+	ResourceMap::iterator anItr = this->mResourceMap.find(theName);
+	if(anItr!=this->mResourceMap.end())
 		return anItr->second;
 	else
 		return NULL;
@@ -94,88 +101,92 @@ ResourceConfig* ResourceConfigTable::GetConfig(const std::string &theName)
 
 void ResourceConfigTable::ClearGlueResourceFuncs()
 {
-	mGlueResourceFuncSet.clear();
+	this->mGlueResourceFuncSet.clear();
 }
 
 void ResourceConfigTable::ClearAllocators()
 {
-	mConfigAllocatorMap.clear();
+	ResourceConfigTable::mConfigAllocatorMap.clear();
 }
 
 void ResourceConfigTable::ClearControlIds()
 {
-	mControlIdMap.clear();
+	ResourceConfigTable::mControlIdMap.clear();
 }
 
 void ResourceConfigTable::ClearResources()
 {
-	mResourceMap.clear();
+	this->mResourceMap.clear();
 }
 
 void ResourceConfigTable::ClearAll()
 {
-	ClearGlueResourceFuncs();
-	ClearAllocators();
-	ClearControlIds();
-	ClearResources();
+	this->ClearGlueResourceFuncs();
+	this->ClearAllocators();
+	this->ClearControlIds();
+	this->ClearResources();
 }
 
 
 // Compiler-generated and header-inline functions this unit emits:
 // FUNCTION: WON 0x00794360
+// Handles BACKGROUND and BORDERPADDING (left,top,right,bottom) for a scroll area; else defers to the container parser
 bool ScrollAreaConfig::Virtual24(const std::string& instruction)
 {
-    if(instruction=="BACKGROUND") mScrollArea->SetBackground(ReadBackground());
+    if(instruction=="BACKGROUND") this->mScrollArea->SetBackground(this->ReadBackground());
     else if(instruction=="BORDERPADDING")
     {
-        int left=ReadInt();EnsureComma();
-        int top=ReadInt();EnsureComma();
-        int right=ReadInt();EnsureComma();
-        int bottom=ReadInt();
-        mScrollArea->SetBorderPadding(left,top,right,bottom);
+        int left=this->ReadInt();this->EnsureComma();
+        int top=this->ReadInt();this->EnsureComma();
+        int right=this->ReadInt();this->EnsureComma();
+        int bottom=this->ReadInt();
+        this->mScrollArea->SetBorderPadding(left,top,right,bottom);
     }
     else return ContainerConfig::Virtual24(instruction);
     return true;
 }
 // FUNCTION: WON 0x00794540
+// Handles SCROLLAREA, attaching the named scroll area (throws if it is not one); else defers to the container parser
 bool ScrollerConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="SCROLLAREA")
     {
-        ScrollArea* area=dynamic_cast<ScrollArea*>(ReadComponent());
+        ScrollArea* area=dynamic_cast<ScrollArea*>(this->ReadComponent());
         if(area==NULL) throw ConfigObjectException("Expecting ScrollArea");
-        mScroller->SetScrollArea(area);
+        this->mScroller->SetScrollArea(area);
         return true;
     }
     return ContainerConfig::Virtual24(instruction);
 }
 // FUNCTION: WON 0x007946e0
+// Reads DISABLE, ENABLE or CONDITIONAL (any case) as a scrollbar condition; throws on anything else
 ScrollbarCondition ScrollbarScrollerConfig::GetScrollbarCondition()
 {
-    GUIString condition=Fn3842F0(false);
+    GUIString condition=this->ReadString(false);
     if(condition.CompareNoCase("DISABLE")==0) return ScrollbarCondition_Disable;
     if(condition.CompareNoCase("ENABLE")==0) return ScrollbarCondition_Enable;
     if(condition.CompareNoCase("CONDITIONAL")==0) return ScrollbarCondition_Conditional;
     throw ConfigObjectException("Invalid scrollbar condition: "+(std::string)condition);
 }
 // FUNCTION: WON 0x007948a0
+// Handles SCROLLBARCONDITIONS (horizontal,vertical); else defers to the scroller parser
 bool ScrollbarScrollerConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="SCROLLBARCONDITIONS")
     {
-        ScrollbarCondition horz=GetScrollbarCondition();EnsureComma();
-        ScrollbarCondition vert=GetScrollbarCondition();
-        mScrollbarScroller->SetScrollbarConditions(horz,vert);
+        ScrollbarCondition horz=this->GetScrollbarCondition();this->EnsureComma();
+        ScrollbarCondition vert=this->GetScrollbarCondition();
+        this->mScrollbarScroller->SetScrollbarConditions(horz,vert);
         return true;
     }
     return ScrollerConfig::Virtual24(instruction);
 }
 
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK button-scroller configuration policy.
+// Button-scroller condition parsing and SCROLLBARCONDITIONS (not identified in the original exe)
 ScrollButtonCondition ButtonScrollerConfig::GetScrollButtonCondition()
 {
-	GUIString aStr = Fn3842F0(false);
+	GUIString aStr = this->ReadString(false);
 	if(aStr.CompareNoCase("DISABLE")==0)
 		return ScrollButtonCondition_Disable;
 	else if(aStr.CompareNoCase("ENABLE")==0)
@@ -195,9 +206,9 @@ bool ButtonScrollerConfig::Virtual24(const std::string &theInstruction)
 	if(theInstruction=="SCROLLBARCONDITIONS")
 	{
 		ScrollButtonCondition horz, vert;
-		horz = GetScrollButtonCondition(); EnsureComma();
-		vert = GetScrollButtonCondition();
-		mButtonScroller->SetScrollButtonConditions(horz,vert);
+		horz = this->GetScrollButtonCondition(); this->EnsureComma();
+		vert = this->GetScrollButtonCondition();
+		this->mButtonScroller->SetScrollButtonConditions(horz,vert);
 	}
 	else
 		return ScrollerConfig::Virtual24(theInstruction);

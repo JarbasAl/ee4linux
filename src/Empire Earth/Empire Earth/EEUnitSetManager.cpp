@@ -20,7 +20,7 @@ struct EEUnitSetRecord {
     long mUnitTypes[8];                     // +0x8c (only the positive ones are added)
     long mIncludedSet;                      // +0xac (index of the set's mL30)
     long mExcludedSet;                      // +0xb0 (index of the set's mL34)
-    bool mShowInEditor;                     // +0xb4 (the set's mB39)
+    bool mShowInEditor;                     // +0xb4 (the set's mKilled)
 };
 
 // FUNCTION: EXE 0x536f4c

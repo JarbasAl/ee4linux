@@ -1,5 +1,4 @@
-// complete genuine SDK ResourceCollection/ResourceEntry/Writer owners.
-// SOURCE_ONLY_NO_NATIVE_ID: no target layout/allocation/Native-byte identity claim.
+// ResourceCollection, ResourceEntry and Writer (not identified in the original exe).
 #ifndef EE_WONAPI_WONRESOURCECOLLECTION_H
 #define EE_WONAPI_WONRESOURCECOLLECTION_H
 #include <map>
@@ -57,8 +56,8 @@ struct ResourceEntry : public RefCount
 
 	ResourceEntry() : mType(ResourceType_None), mId(0), mRefId(0), mFileOffset(0), mFileSize(0), mUpdateType(ResourceUpdateType_None) { }
 
-	bool NeedUpdate() const { return mUpdateType!=ResourceUpdateType_None; }
-	bool NeedRemove() const { return mUpdateType==ResourceUpdateType_Remove; }
+	bool NeedUpdate() const { return this->mUpdateType!=ResourceUpdateType_None; }
+	bool NeedRemove() const { return this->mUpdateType==ResourceUpdateType_Remove; }
 };
 typedef ConstSmartPtr<ResourceEntry> ConstResourceEntryPtr;
 typedef SmartPtr<ResourceEntry> ResourceEntryPtr;
@@ -102,13 +101,13 @@ public:
 	int GetLatestVersion();
 	void DecodeAll(bool closeFile = true);
 
-	void SetWindow(Window *theWindow) { mWindow = theWindow; }
-	int GetFileVersion() { return mFileVersion; }
+	void SetWindow(Window *theWindow) { this->mWindow = theWindow; }
+	int GetFileVersion() { return this->mFileVersion; }
 
-	const ResourceIdMap& GetResourceIdMap() const { return mResourceIdMap; }
-	const ResourceNameMap& GetResourceNameMap() const { return mResourceNameMap; }
+	const ResourceIdMap& GetResourceIdMap() const { return this->mResourceIdMap; }
+	const ResourceNameMap& GetResourceNameMap() const { return this->mResourceNameMap; }
 
-	const int GetNumResources(void) const { return mResourceIdMap.size(); }
+	const int GetNumResources(void) const { return this->mResourceIdMap.size(); }
 
 	bool HaveResource(const ResourceEntry *theEntry);
 	RefCount* DecodeResource(const ResourceEntry *theEntry, ResourceType theExpectedType = ResourceType_None, bool altDecode = false);
@@ -161,7 +160,7 @@ public:
 	bool IsModified();
 	bool IsHeaderModified();
 
-	void SetDoInStringFilter(bool doFilter) { mDoInStringFilter = doFilter; }
+	void SetDoInStringFilter(bool doFilter) { this->mDoInStringFilter = doFilter; }
 
 	bool OpenNew(const GUIString &theFileName);
 	virtual bool Open(const GUIString &theFileName);
@@ -178,7 +177,7 @@ public:
 	bool UpdateResource(const ResourceEntry *theEntry);
 	bool DeleteResource(const ResourceEntry *theEntry);
 
-	const ResourceEntry* GetCollisionEntry() { return mCollisionEntry; }
+	const ResourceEntry* GetCollisionEntry() { return this->mCollisionEntry; }
 
 
 };

@@ -1,7 +1,8 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine same-SDK new derived operation.
+// No original address identified: WON SDK derived op
 #ifndef EE_WONAPI_WONROUTINGDETECTFIREWALLOP_H
 #define EE_WONAPI_WONROUTINGDETECTFIREWALLOP_H
 #include "ee/wonapi/WONRouting.h"
+#include "ee/wonapi/WONRoutingOpTypes.h"
 
 namespace WONAPI
 {
@@ -17,22 +18,22 @@ private:
 	bool mDoListen;
 	bool mWaitingForStatusReply;
 
-	virtual void Virtual0C();
-	virtual WONStatus Virtual10(unsigned char theMsgType, ReadBuffer &theMsg);
-	virtual void Virtual08();
+	virtual void SendRequest();
+	virtual WONStatus HandleReply(unsigned char theMsgType, ReadBuffer &theMsg);
+	virtual void CleanupHook();
 
 public:
 	RoutingDetectFirewallOp(RoutingConnection *theConnection);
 
-	void SetListenPort(unsigned short thePort) { mListenPort = thePort; }
-	void SetMaxConnectWaitTime(unsigned long theNumSeconds) { mMaxConnectWaitTime = theNumSeconds; }
-	void SetDoListen(bool doListen) { mDoListen = doListen; }
+	void SetListenPort(unsigned short thePort) { this->mListenPort = thePort; }
+	void SetMaxConnectWaitTime(unsigned long theNumSeconds) { this->mMaxConnectWaitTime = theNumSeconds; }
+	void SetDoListen(bool doListen) { this->mDoListen = doListen; }
 
-	unsigned short GetListenPort() const { return mListenPort; }
-	unsigned long GetMaxConnectWaitTime() const { return mMaxConnectWaitTime; }
-	bool GetDoListen() { return mDoListen; }
+	unsigned short GetListenPort() const { return this->mListenPort; }
+	unsigned long GetMaxConnectWaitTime() const { return this->mMaxConnectWaitTime; }
+	bool GetDoListen() { return this->mDoListen; }
 
-	virtual RoutingOpType GetType() const { return (RoutingOpType)17; // SDK RoutingOp_DetectFirewall
+	virtual RoutingOpType GetType() const { return (RoutingOpType)RoutingOp_DetectFirewall; // SDK RoutingOp_DetectFirewall
  }
 };
 

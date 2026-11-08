@@ -1,6 +1,5 @@
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing unit: proposed existing server-operation family profile.
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK authenticated contest request/reply.
+// No original address identified: WON SDK authenticated contest request/reply
 #include <windows.h>
 #include <string>
 #include <list>
@@ -10,76 +9,77 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONContestCallOp.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace WONAPI;
 
 void ContestCallOp::Init()
 {
-	mProcNum = 0;
-	mLengthFieldSize = 2;
-	mUseAuth2 = false;
+	this->mProcNum = 0;
+	this->mLengthFieldSize = 2;
+	this->mUseAuth2 = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ContestCallOp::ContestCallOp(ServerContext *theContestContext) : ServerRequestOp(theContestContext)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ContestCallOp::ContestCallOp(const IPAddr &theAddr) : ServerRequestOp(theAddr)
 {
-	Init();
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ContestCallOp::Virtual04()
+void ContestCallOp::RunHook()
 {
-	if(mAuthType==AUTH_TYPE_NONE)
+	if(this->mAuthType==AUTH_TYPE_NONE)
 	{
-		Fn29F220((WONStatus)100056);
+		this->Finish((WONStatus)WS_ServerReq_NeedAuthContext);
 		return;
 	}
 
-	ServerRequestOp::Virtual04();
+	ServerRequestOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus ContestCallOp::Virtual10()
+WONStatus ContestCallOp::GetNextRequest()
 {
-	WriteBuffer aBuf(mLengthFieldSize,true);
+	WriteBuffer aBuf(this->mLengthFieldSize,true);
 
 	aBuf.AppendByte(3);			// mini message
 	aBuf.AppendByte(4);		// Contest Service
 	aBuf.AppendByte(1);		// ContestDBCall
 
-	aBuf.AppendLong(mAuthContext->GetPeerData()->GetCertificate()->GetUserId()); // WONUserSeq
-	aBuf.AppendShort(mProcNum); // Contest DB Procedure number
+	aBuf.AppendLong(this->mAuthContext->GetPeerData()->GetCertificate()->GetUserId()); // WONUserSeq
+	aBuf.AppendShort(this->mProcNum); // Contest DB Procedure number
 
 	for(int i=0; i<16; i++) // 16 Byte GUID (not needed)
 		aBuf.AppendByte(0);
 
-	aBuf.AppendBuffer(mRequestData);
-	mRequest = aBuf.ToByteBuffer(true);
-	return (WONStatus)100059;
+	aBuf.AppendBuffer(this->mRequestData);
+	this->mRequest = aBuf.ToByteBuffer(true);
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus ContestCallOp::Virtual14()
+WONStatus ContestCallOp::CheckResponse()
 {
-	ReadBuffer aMsg(mResponse->data(),mResponse->length());
+	ReadBuffer aMsg(this->mResponse->data(),this->mResponse->length());
 	unsigned char aHeaderType = aMsg.ReadByte();
 	unsigned short aServiceType = aMsg.ReadByte();
 	unsigned short aMessageType = aMsg.ReadByte();
 	if(aHeaderType!=3 || aServiceType!=4 || aMessageType!=2)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 
 	short aStatus = aMsg.ReadShort();
-	mReplyData = new ByteBuffer(aMsg.data() + aMsg.pos(), aMsg.Available(),false);
+	this->mReplyData = new ByteBuffer(aMsg.data() + aMsg.pos(), aMsg.Available(),false);
 
 	return (WONStatus)aStatus;
 }

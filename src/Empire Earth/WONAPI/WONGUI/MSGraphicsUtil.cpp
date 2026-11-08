@@ -1,4 +1,4 @@
-// Native raster frame/glyph utilities over the existing complete Graphics38 interface.
+// Windows-style drawing helpers: 3D frames, arrows, check boxes, radio circles, tabs and the close X
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,6 +11,7 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006fdcd0
+// Draws a two-pixel 3D frame, raised or sunken (down), at the given position
 void LobbyDraw3DFrame(Graphics &g, int x, int y, int width, int height, bool down)
 {
 	g.Translate(x,y);
@@ -46,6 +47,7 @@ void LobbyDraw3DFrame(Graphics &g, int x, int y, int width, int height, bool dow
 }
 
 // FUNCTION: WON 0x006fddf0
+// Draws a raised button frame, or a flat shadow-coloured rectangle when down
 void LobbyDrawFrame(Graphics &g, int x, int y, int width, int height, bool down)
 {
 	g.Translate(x,y);
@@ -74,6 +76,7 @@ void LobbyDrawFrame(Graphics &g, int x, int y, int width, int height, bool down)
 }
 
 // FUNCTION: WON 0x006fdee0
+// Draws a sunken frame inside a dark outline (the down flag is ignored)
 void MSGraphicsUtil::DrawFrame3(Graphics &g, int x, int y, int width, int height, bool down)
 {
 	g.Translate(x,y);
@@ -94,6 +97,8 @@ void MSGraphicsUtil::DrawFrame3(Graphics &g, int x, int y, int width, int height
 }
 
 // FUNCTION: WON 0x006fdfb0
+// Draws a small four-stroke arrow centred in width x height, grey with a highlight when disabled; the x
+// and y offsets are ignored (shadowed by the centre locals)
 void MSGraphicsUtil::DrawArrow(Graphics &g, Direction theDirection, int x, int y, int width, int height, bool disabled)
 {
 	int i = 0;
@@ -103,7 +108,7 @@ void MSGraphicsUtil::DrawArrow(Graphics &g, Direction theDirection, int x, int y
 	else
 		g.SetSysColor(StandardColor_ButtonText);
 
-	// Actualtarget uses fixedfour strokes evenfor small/negative dimensions.
+	// Always four strokes, even for small or negative sizes
 	int arrow_size = 4;
 
 	int arrow_size2 = arrow_size/2;
@@ -127,16 +132,15 @@ void MSGraphicsUtil::DrawArrow(Graphics &g, Direction theDirection, int x, int y
 		for(i=0; i<arrow_size; i++)
 		{
 			g.DrawLine(x+(3-i), y-i, x+(3-i), y+i);	
-			if(disabled && i<3)
-			{
-				g.SetSysColor(StandardColor_3DHilight);
-				g.DrawLine(x+(arrow_size-i-1),y+i+1,x+(arrow_size-i-1),y+i+2);
-				g.SetSysColor(StandardColor_GrayText);
-			}
+			if(!disabled || i>=3)
+				continue;
+			g.SetSysColor(StandardColor_3DHilight);
+			g.DrawLine(x+(arrow_size-i-1),y+i+1,x+(arrow_size-i-1),y+i+2);
+			g.SetSysColor(StandardColor_GrayText);
 		}
 
 		if(disabled)
-			g.SetPixel(x+4,y+1,g.Fn326D20(StandardColor_3DHilight));
+			g.SetPixel(x+4,y+1,g.GetStandardColor(StandardColor_3DHilight));
 	}
 	else if(theDirection==Direction_Up)
 	{
@@ -156,20 +160,20 @@ void MSGraphicsUtil::DrawArrow(Graphics &g, Direction theDirection, int x, int y
 		for(i=0; i<arrow_size; i++)
 		{
 			g.DrawLine(x-(arrow_size-i-1), y+i, x+(arrow_size-i-1), y+i);	
-			if(disabled && i>0)
-			{
-				g.SetSysColor(StandardColor_3DHilight);
-				g.DrawLine(x+(arrow_size-i-1)+1,y+i,x+(arrow_size-i-1)+2,y+i);
-				g.SetSysColor(StandardColor_GrayText);
-			}
+			if(!disabled || i<=0)
+				continue;
+			g.SetSysColor(StandardColor_3DHilight);
+			g.DrawLine(x+(arrow_size-i-1)+1,y+i,x+(arrow_size-i-1)+2,y+i);
+			g.SetSysColor(StandardColor_GrayText);
 		}
 
 		if(disabled)
-			g.SetPixel(x+1,y+arrow_size,g.Fn326D20(StandardColor_3DHilight));
+			g.SetPixel(x+1,y+arrow_size,g.GetStandardColor(StandardColor_3DHilight));
 	}
 }
 
 // FUNCTION: WON 0x006fe250
+// Draws a sunken check box (face colour while pressed, window colour otherwise) with a tick if checked
 void MSGraphicsUtil::DrawCheck(Graphics &g, int x, int y, int width, int height, bool down, bool checked)
 {
 	g.Translate(x,y);
@@ -214,6 +218,7 @@ void MSGraphicsUtil::DrawCheck(Graphics &g, int x, int y, int width, int height,
 }
 
 // FUNCTION: WON 0x006fe3b0
+// Draws a sunken radio circle (face colour while pressed, window colour otherwise) with a dot if checked
 void MSGraphicsUtil::DrawRadio(Graphics &g, int x, int y, int width, int height, bool down, bool checked)
 {
 	g.Translate(x,y);
@@ -245,6 +250,7 @@ void MSGraphicsUtil::DrawRadio(Graphics &g, int x, int y, int width, int height,
 }
 
 // FUNCTION: WON 0x006fe4d0
+// Draws a tab with rounded top corners, highlight on the left and top and shadows on the right
 void MSGraphicsUtil::DrawTab(Graphics &g, int x, int y, int width, int height)
 {
 	g.SetSysColor(StandardColor_3DFace);
@@ -254,17 +260,18 @@ void MSGraphicsUtil::DrawTab(Graphics &g, int x, int y, int width, int height)
 
 	g.SetSysColor(StandardColor_3DHilight);
 	g.DrawLine(x,y+2,x,height-1);
-	g.SetPixel(x+1,y+1,g.Fn326D20(StandardColor_3DHilight));
+	g.SetPixel(x+1,y+1,g.GetStandardColor(StandardColor_3DHilight));
 	g.DrawLine(x+2,y,width-2,y);
 
 	g.SetSysColor(StandardColor_3DShadow);
 	g.DrawLine(width-2,y+2,width-2,height-1);
 	g.SetSysColor(StandardColor_3DDarkShadow);
-	g.SetPixel(width-2,y+1,g.Fn326D20(StandardColor_3DDarkShadow));
+	g.SetPixel(width-2,y+1,g.GetStandardColor(StandardColor_3DDarkShadow));
 	g.DrawLine(width-1,y+2,width-1,height-1);
 }
 
 // FUNCTION: WON 0x006fe5e0
+// Draws the 8 x 8 close X centred in the area, offset by x and y
 void MSGraphicsUtil::DrawCloseX(Graphics &g, int x, int y, int width, int height)
 {
 	g.Translate(x,y);

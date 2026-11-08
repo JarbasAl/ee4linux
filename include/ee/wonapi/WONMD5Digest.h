@@ -1,4 +1,4 @@
-// Original-backed MD5 owner: RawBuffer00, data10, digest50, tmp60, counta0, extenta8.
+// MD5Digest: RawBuffer at 00, data at 10, digest at 50, tmp at 60, count at a0; size a8
 #ifndef __WON_MINICRYPT_MD5DIGEST_H__
 #define __WON_MINICRYPT_MD5DIGEST_H__
 

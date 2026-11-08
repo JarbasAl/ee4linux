@@ -1,7 +1,6 @@
-// Reviewed original-backed controls, source-only; generated support has zeroquota.
+// Direct-connection panel: the list of direct-connect servers with Add and Remove buttons
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 
-// Actual ServerListCtrl reference-only contract requires root header gate.
 #include <windows.h>
 #include <string>
 #include <map>
@@ -16,43 +15,40 @@
 #include "ee/wonapi/WONLobbyControls.h"
 
 namespace WONAPI {
-// Reference-only contract: actual RTTI ServerListCtrl>Container>Component>RefCount,
-// VT453fec exactly51slots. No sizeof/new/ctor/copy/byvalue allowed for this view.
-// It overrides only1c/44/7c plus deleting destructor00. Full field ownership
-// remains future ServerListCtrl family; direct external getter needs no fake gaps.
-// Use the sole canonical ServerListCtrl from WONLobbyRoomServer.h.
-// DirectConnectCtrl declaration hoisted to WONLobbyControlConfig.h; existing bodies unchanged.
+// The connection list is a ServerListCtrl (WONLobbyRoomServer.h); this file only calls its getter.
+// DirectConnectCtrl itself is declared in WONLobbyControlConfig.h
 }
 
 namespace WONAPI {
-DirectConnectCtrl::DirectConnectCtrl() {} //3bada0,38B,zeroemptyctorquota
-// Original3badf0 releasesRemove8c,Add88,Connection84,thenContainer; ownVT3bae0f.
-DirectConnectCtrl::~DirectConnectCtrl() {} //explicitemptycandidatezeroquota
-// Original3baeb0..3baf1c,108B. Resource assertions lines34..36.
+DirectConnectCtrl::DirectConnectCtrl() {}
+// The destructor (0x7badf0) stores its own vptr (0x7bae0f), then releases the remove button (+0x8c),
+// the add button (+0x88) and the connection list (+0x84), then the Container
+DirectConnectCtrl::~DirectConnectCtrl() {}
 // FUNCTION: WON 0x007baeb0
+// Looks up the connection list and the add and remove buttons from the layout and listens for broadcasts
 void DirectConnectCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2) {
-        ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(config,mConnectionList,"ConnectionList",__FILE__,34);
-        SafeGetComponent(config,mAddButton,"AddButton",__FILE__,35);
-        SafeGetComponent(config,mRemoveButton,"RemoveButton",__FILE__,36);
-        Fn2F5360(1);
-    }
+    if(inInit.mType!=2)
+        return;
+    ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(config,this->mConnectionList,"ConnectionList",__FILE__,34);
+    SafeGetComponent(config,this->mAddButton,"AddButton",__FILE__,35);
+    SafeGetComponent(config,this->mRemoveButton,"RemoveButton",__FILE__,36);
+    this->SubscribeToBroadcast(1);
 }
-// Original3baf20..3baffe,222B. No callback between borrowed selectedgame and retain.
 // FUNCTION: WON 0x007baf20
+// Asks to add a direct connection on Add, or to remove the selected one on Remove; the rest goes to Component
 void DirectConnectCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType) {
-    case 15:
-        if(inEvent->mComponent==mAddButton.get()) {
-            Fn2F53F0(new ChangeDirectConnectEvent(0,NULL),false);
+    case ComponentEvent_ButtonPressed:
+        if(inEvent->mComponent==this->mAddButton.get()) {
+            this->DeliverEvent(new ChangeDirectConnectEvent(0,NULL),false);
         }
-        else if(inEvent->mComponent==mRemoveButton.get()) {
-            LobbyGame* game=mConnectionList->GetSelGame();
+        else if(inEvent->mComponent==this->mRemoveButton.get()) {
+            LobbyGame* game=this->mConnectionList->GetSelGame();
             if(game!=NULL)
-                Fn2F53F0(new ChangeDirectConnectEvent(1,game),false);
+                this->DeliverEvent(new ChangeDirectConnectEvent(1,game),false);
         }
         else break;
         return;
@@ -60,10 +56,6 @@ void DirectConnectCtrl::HandleComponentEvent(ComponentEvent* inEvent)
     Component::HandleComponentEvent(inEvent);
 }
 }
-// Specific blockers: canonical source gate for reference-only ServerListCtrl and
-// Component::Fn2F53F0(ComponentEvent*,bool) call-only method; normal fullTU COFF,
-// both new/delete state guards0/1 and inherited table/static payload review.
-// No full ServerList allocation is reconstructed. Empty destructor has zeroquota.
 // TEMPLATE: WON 0x007cdba0
 
 // Compiler-generated and header-inline functions this unit emits:

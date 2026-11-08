@@ -82,7 +82,7 @@ public:
     void GetUnits(std::vector<EEComplexUnit*>& outUnits, unsigned short inContinent, bool inWater);
     // 0x815bc (ret 8): the living units on the map (on inContinent unless 0)
     void GetAllUnits(unsigned short inContinent, std::vector<EEComplexUnit*>& outUnits);
-    // 0x81654 (ret 8): the player's units (its buildings first, Virtual54) as locations, best target first
+    // 0x81654 (ret 8): the player's units (its buildings first, WriteDetailsHook) as locations, best target first
     void GetTargets(std::vector<EECPILocation>& outLocations, long inArg);
     long GetInfluence(long inX, long inY, long inRadius);   // 0x819c0 (ret 0xc): our influence around tile (inX, inY)
     void AddFamily(EEUnit* inUnit);         // 0x81aaa (ret 4)

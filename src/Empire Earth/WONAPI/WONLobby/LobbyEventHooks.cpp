@@ -1,4 +1,4 @@
-// Native lobby event registration and bounded teardown.
+// Installs and removes the lobby's logic event listener and its timer
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,9 +14,10 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyScreens.h"
 namespace WONAPI {
-void LobbyFn3590E0(ComponentEvent*);
+void LobbyLogicEventHook(ComponentEvent*);
 
 // FUNCTION: WON 0x00759020
+// Passes the lobby timer tick to the lobby logic
 void LobbyTimerCallback(int)
 {
     if(gLobbyData.get()!=NULL)
@@ -24,17 +25,19 @@ void LobbyTimerCallback(int)
 }
 
 // FUNCTION: WON 0x00758f70
-void LobbyFn358F70()
+// Routes the lobby container's events to the lobby logic and starts the lobby timer
+void LobbyInstallEventHooks()
 {
     if(gLobbyData.get()==NULL)
         return;
-    LobbyFn359080(gLobbyData->mLobbyContainer.get());
+    LobbyAddLogicListener(gLobbyData->mLobbyContainer.get());
     gLobbyData->mTimerEvent=new UserEvent(LobbyTimerCallback,0);
     WONAPI::WindowManager::GetDefaultWindowManager()->AddTimerEvent(gLobbyData->mTimerEvent.get());
 }
 
 // FUNCTION: WON 0x00759040
-void LobbyFn359040()
+// Detaches the lobby logic from the lobby container, stops the timer and clears window subscriptions
+void LobbyRemoveEventHooks()
 {
     if(gLobbyData.get()==NULL)
         return;
@@ -47,14 +50,16 @@ void LobbyFn359040()
 }
 
 // FUNCTION: WON 0x00759080
-void LobbyFn359080(Component* component)
+// Makes a component send its events to the lobby logic
+void LobbyAddLogicListener(Component* component)
 {
     if(component!=NULL)
-        component->AddListener(new ComponentListenerFunc(LobbyFn3590E0));
+        component->AddListener(new ComponentListenerFunc(LobbyLogicEventHook));
 }
 
 // FUNCTION: WON 0x007590e0
-void LobbyFn3590E0(ComponentEvent* event)
+// Hands a component event to the lobby logic
+void LobbyLogicEventHook(ComponentEvent* event)
 {
     if(gLobbyData.get()!=NULL)
         gLobbyData->mLogicMgr.HandleComponentEvent(event);

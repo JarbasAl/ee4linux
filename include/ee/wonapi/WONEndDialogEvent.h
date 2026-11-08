@@ -1,4 +1,4 @@
-// Complete genuine SDK dialog-completion event owner; SOURCE_ONLY_NO_NATIVE_ID.
+// Dialog-end event (not identified in the original exe).
 #ifndef EE_WONAPI_WONENDDIALOGEVENT_H
 #define EE_WONAPI_WONENDDIALOGEVENT_H
 #include "ee/wonapi/WONLobbyResource.h"

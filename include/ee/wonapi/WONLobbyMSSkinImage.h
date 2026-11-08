@@ -7,31 +7,30 @@
 namespace WONAPI {
 class WONHeaderButton; class WONScrollbar; class WONInputBox; class WONComboBox;
 class WONScrollContainer; class WONListCtrl; class WONTabCtrl; class WONFrameComponent;
-// Actual80 original-owned outer skin, complete SDK field graph/native3152d0.
-// Complete80 base member graph: natural base/member initialization permitted
-// for the reviewed WONMSSkin constructor. Original own lifetime/copy providers retained.
+// WONSkin (0x80 bytes), the outer skin; field layout as at 0x007152d0. Members are initialized
+// naturally for the WONMSSkin constructor; the destructor and copy are out of line.
 class WONSkin : public RefCount {
 public:
-    WONInputBox* GetInputBox(); //315890 genuine SDK external API; call-only
-    WONFrameComponent* GetDialogBack(); //3155f0 genuine SDK external API; call-only
-    WONFrameComponent* GetPopupBack(); //315580 genuine SDK external API; call-only
-    WONSimpleButton* GetCloseButton(); //315540 genuine SDK external API; call-only
-    WONHeaderButton* GetHeaderButton(); //315520 genuine SDK external API; call-only
-    WONButton* GetRadioButton(); //315510 genuine SDK external API; call-only
-    WONButton* GetCheckbox(); //315500 genuine SDK external API; call-only
-    WONButton* GetPushButton(); //3154f0 genuine SDK external API; call-only
-    virtual ~WONSkin(); //3152d0 original external normal
-    bool CopyButtonType(const GUIString&,WONButton*); //315c90 original external
-    bool CopySimpleButtonType(const GUIString&,WONSimpleButton*); //315d00 original external
-    WONListCtrl* GetListCtrl(); //315b20 actual225B composition
-    WONButton* GetTabButton(); //315530 true original8B raw owned duplicate factory
-    WONScrollbar* GetScrollbar(bool); //3156a0 true493B raw-result composition
-    WONComboBox* GetComboBox(); //3158a0 true329B raw-result composition
-    WONScrollContainer* GetScrollContainer(); //315ae0/53 support0
-    WONTabCtrl* GetTabCtrl(); //315c10/114 support0
-    WONSimpleButton* GetArrowButton(Direction); //315550 actual raw duplicate provider
-    WONSimpleButton* GetScrollThumb(bool); //315660 actual raw duplicate provider
-    WONSimpleButton* GetScrollGutter(bool); //315680 actual raw duplicate provider
+    WONInputBox* GetInputBox(); // at 0x00715890
+    WONFrameComponent* GetDialogBack(); // at 0x007155f0
+    WONFrameComponent* GetPopupBack(); // at 0x00715580
+    WONSimpleButton* GetCloseButton(); // at 0x00715540
+    WONHeaderButton* GetHeaderButton(); // at 0x00715520
+    WONButton* GetRadioButton(); // at 0x00715510
+    WONButton* GetCheckbox(); // at 0x00715500
+    WONButton* GetPushButton(); // at 0x007154f0
+    virtual ~WONSkin(); // at 0x007152d0
+    bool CopyButtonType(const GUIString&,WONButton*); // at 0x00715c90
+    bool CopySimpleButtonType(const GUIString&,WONSimpleButton*); // at 0x00715d00
+    WONListCtrl* GetListCtrl(); // at 0x00715b20
+    WONButton* GetTabButton(); // at 0x00715530; returns an owned duplicate
+    WONScrollbar* GetScrollbar(bool); // at 0x007156a0
+    WONComboBox* GetComboBox(); // at 0x007158a0
+    WONScrollContainer* GetScrollContainer(); // at 0x00715ae0
+    WONTabCtrl* GetTabCtrl(); // at 0x00715c10
+    WONSimpleButton* GetArrowButton(Direction); // at 0x00715550
+    WONSimpleButton* GetScrollThumb(bool); // at 0x00715660
+    WONSimpleButton* GetScrollGutter(bool); // at 0x00715680
     SmartPtr<WONButton> mPushButton,mCheckbox,mRadioButton;
     SmartPtr<WONHeaderButton> mHeaderButton;
     SmartPtr<WONButton> mTabButton;
@@ -46,13 +45,13 @@ public:
     SmartPtr<WONFrameComponent> mPopupBack,mDialogBack;
     typedef std::map<GUIString,SmartPtr<WONButton>,GUIStringLessNoCase> ButtonTypeMap;
     typedef std::map<GUIString,SmartPtr<WONSimpleButton>,GUIStringLessNoCase> SimpleButtonTypeMap;
-    ButtonTypeMap mButtonTypeMap; //68..73 actual VC6 tree0c
+    ButtonTypeMap mButtonTypeMap; // offsets 0x68..0x73 (VC6 map, 0x0c bytes)
     SimpleButtonTypeMap mSimpleButtonTypeMap; //74..7f
 };
 class WONMSSkin : public WONSkin {
 public:
-    WONMSSkin(); //315d70 complete runtime state-image/widget/frame composition
-    // Genuine SDK implicit destructor: no derived owned fields; automatic WONSkin base cleanup.
+    WONMSSkin(); // at 0x00715d70: builds the state images, widgets and frames
+    // Implicit destructor: no own members; WONSkin base cleanup.
     enum MSImageFlag { MSImageFlag_Down=1,MSImageFlag_Default=2,MSImageFlag_Disabled=4,MSImageFlag_Checked=8 };
     enum MSImageType {
         MSImageType_Frame1,MSImageType_Frame2,MSImageType_Frame3,
@@ -62,19 +61,18 @@ public:
         MSImageType_ListHeader,MSImageType_TabButton,MSImageType_TabCtrlFrame,
         MSImageType_ComboPopupFrame,MSImageType_CloseButton
     };
-    // Actual14 nested renderer, ProgramImage10 +two bytes10/11 +natural padding.
-    // Borrowed-only receiver. Natural implicit destructor matches generic328770;
-    // no allocation/constructor/duplicate body is authored by this cohort.
+    // MSImage (0x14 bytes): ProgramImage (0x10) + two bytes at +0x10/+0x11 + padding.
+    // Implicit destructor (same body as 0x00728770).
     class MSImage : public ProgramImage {
     public:
         unsigned char mImageType,mImageFlags;
-        MSImage(unsigned char t,unsigned char f=0,int w=0,int h=0) : ProgramImage(w,h),mImageType(t),mImageFlags(f) {} //genuineSDKinline, actualnew14/ProgramImage328790+bytes10/11
-        virtual SmartPtr<Image> Duplicate(); //315a10 original external
-        virtual void Paint(Graphics&); //3172b0 actual14
+        MSImage(unsigned char t,unsigned char f=0,int w=0,int h=0) : ProgramImage(w,h),mImageType(t),mImageFlags(f) {} // inline: 0x14 bytes, ProgramImage constructor 0x00728790, then the bytes at +0x10/+0x11
+        virtual SmartPtr<Image> Duplicate(); // at 0x00715a10
+        virtual void Paint(Graphics&); // slot 0x14, at 0x007172b0
         void DrawPushButton(Graphics&,bool,bool=false);
         void DrawArrowButton(Graphics&,Direction);
         void DrawCloseButton(Graphics&);
-        bool FlagSet(unsigned char flags) { return mImageFlags&flags?true:false; }
+        bool FlagSet(unsigned char flags) { return this->mImageFlags&flags?true:false; }
     };
 };
 }

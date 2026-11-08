@@ -1,5 +1,4 @@
-// Genuine SDK EndDialogEvent constructor/explicit destructor/delivery family.
-// SOURCE_ONLY_NO_NATIVE_ID; no Native/primary/physical attribution.
+// EndDialogEvent: ends a dialog with a result when delivered (not identified in the original exe)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,7 +13,7 @@ using namespace WONAPI;
 EndDialogEvent::EndDialogEvent(int theResult, Window *theWindow, Component *theComponent) :
   mResult(theResult), mWindowRef(theWindow), mComponent(theComponent) 
 {
-	mWindow = theWindow; 
+	this->mWindow = theWindow; 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,5 +26,5 @@ EndDialogEvent::~EndDialogEvent()
 ///////////////////////////////////////////////////////////////////////////////
 void EndDialogEvent::Deliver()
 {
-	mWindow->Fn32B0A0(mResult,mComponent);
+	this->mWindow->EndDialog(this->mResult,this->mComponent);
 }

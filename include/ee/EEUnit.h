@@ -31,7 +31,7 @@ class SESMInstanceNode;                 // lle/SESMInstanceNode.h (EEComplexUnit
 class EEOrbital;                            // ee/EEGraphicObject.h (EEComplexUnit+0x1b8)
 class EEWheel;                              // ee/EEWheel.h (EEComplexUnit+0x1bc)
 class EEGraphicObject;                      // ee/EEGraphicObject.h
-typedef EEGraphicObject EEModel;            // (see below: Virtual54's)
+typedef EEGraphicObject EEModel;            // (see below: WriteDetailsHook's)
 class EEActiveGroup;
 struct EECPASGFlags;                        // ee/EECPAttackSubGroup.h (EEUnitClass::GetTerrainFlags)
 class EEFleeFromLocationScreenBase;         // ee/EEFleeFromLocationScreenBase.h (EEComplexUnit::FindFleePoint)
@@ -627,7 +627,7 @@ public:
     // 0x229314: a free tile near inUnit for this unit (EEMPathTo; returns a distance; provisional name)
 
     // 0xc7486 (EEMessage.cpp's range; EEActiveGroup::SpreadAroundUnit/SpreadAroundResource call it): stats +0xd8 > 0 and the table
-    // gU4E8708 [inClass +0x1c8][class +0x1cc] > 0 for a class whose Virtual68 holds (can attack it) (provisional name)
+    // gU4E8708 [inClass +0x1c8][class +0x1cc] > 0 for a class whose MarkInvalid holds (can attack it) (provisional name)
     bool CanAttackClass(EEUnitClass* inClass);
     EETown* FindNearestTown();              // 0x1fa856 (the owner's town (EEPlayer +0x7d0) nearest the unit that contains it: EEMPatrol, EECPUnitManager, EECPCombatManager) (provisional name)
     float DistanceSquaredToTileXY(long inTileX, long inTileY);  // 0x4211d (squared distance from the transformation (+0x13c/+0x14c) to a tile; EEPPatrolGroup::GetNearest; provisional name)
@@ -644,10 +644,10 @@ public:
     void QueueResearch(long inTechnology, bool inFront);  // 0x1f5f97 (EEMResearchTechnology; provisional name)
     // inline (out-of-line COMDAT 0x940eb, 26 callers)
     unsigned long GetBuildQueueSize() { return this->mBuildQueue.size(); }
-    // inline (the per-class Virtual74/B8 switches and EEUCGate::IsPartLeftOut read the current command through it;
+    // inline (the per-class EnabledChanged/B8 switches and EEUCGate::IsPartLeftOut read the current command through it;
     // provisional name)
     unsigned long GetCommandType() const { return this->mCommand ? this->mCommand->mType : 0; }
-    // inline (GetEffectHeight 0x1fa4dc loads mFirstFrame2 before the Virtual54 call that indexes the models with it)
+    // inline (GetEffectHeight 0x1fa4dc loads mFirstFrame2 before the WriteDetailsHook call that indexes the models with it)
     unsigned long GetAnimation() const { return this->mAnimation; }
     void OrderRepair(EEUnit* inTarget);     // 0x1f60ea (EEMRepairUnit, EEMBuildUnit; provisional name)
     void AddBuildTarget(EEUnit* inTarget);  // 0x1f61c8 (EEMRepairUnit, EEMBuildUnit; provisional name)
@@ -679,7 +679,7 @@ public:
     virtual void DescribeLong(UWideString& ioString);  // +0x14 (ICF-folded empty `ret 4` 0x157269)
     virtual long Load(unsigned long inMajorVersion, unsigned long inMinorVersion, FSFile& inFile);   // +0x1c 0x1f2452
     virtual void Clear();                   // +0x20 0x1f5b6e
-    virtual void SightOffHere();            // +0x24 0x1f5b8e: Virtual68(tile)
+    virtual void SightOffHere();            // +0x24 0x1f5b8e: MarkInvalid(tile)
     virtual long RepairPointers(unsigned long, unsigned long);  // +0x28 0x1f353f
     virtual long Save(unsigned long inMajorVersion, unsigned long inMinorVersion, FSFile& outFile);  // +0x2c 0x1f417e
     virtual void FreeNode();                // +0x30 0x1f8a43
@@ -877,7 +877,7 @@ public:
     EEComplexUnit* GetContainer() const { return this->mContainer; }  // inline (0x61c806 budget) r37_big B2
     EEComplexUnit* mContainer;              // +0x1d8 provisional name (aircraft in an airport: its position is the holder's)
     EEComplexUnit* mLastAttacker;                 // +0x1dc (released by Virtual04)
-    void SetLastAttacker(EEComplexUnit* inUnit);  // 0x22a3d8 (Virtual74 0x229de2; set-if-different with Reference) (provisional name)
+    void SetLastAttacker(EEComplexUnit* inUnit);  // 0x22a3d8 (EnabledChanged 0x229de2; set-if-different with Reference) (provisional name)
     EEComplexUnit* mOwner;                        // +0x1e0 provisional name (SetOwner; referenced)
     EEComplexUnit* GetHolder() const { return this->mHolder; }
     EEComplexUnit* mHolder;                 // +0x1e4 (Virtual04: mRegeneration->ReleaseHeld(this))
@@ -1008,7 +1008,7 @@ public:
     bool mB34F;                             // +0x34f
     bool GetIsRegrowing() const { return this->mIsRegrowing; }
     bool mIsRegrowing;                      // +0x350
-    bool mIsFoundation;                     // +0x351 (Virtual84 sets it)
+    bool mIsFoundation;                     // +0x351 (NotifyRootVisibility sets it)
     bool mCanBeHidden;                      // +0x352
     bool mIsCitizen;                        // +0x353
     bool mIsPacked;                         // +0x354
@@ -1212,7 +1212,7 @@ public:
     bool IsTransport();                     // 0x4292 (categories 0x10..: a transport class; EEMImmediateCargoUnload)
     bool IsAirBase();                       // 0x4229 (+0x28 set and +0x1b8 2, 0x15 or 0x20: the icon bar's aircraft carrier test) (provisional name)
     // 0x1fdf06 (inline in the real header? its COMDAT follows EEComplexUnit::StartProduction; EEUnitClass 0x231b55
-    // calls it too): mAirTrafficType set, not Virtual54, category not 0x15/0x20 (provisional name)
+    // calls it too): mAirTrafficType set, not WriteDetailsHook, category not 0x15/0x20 (provisional name)
     bool IsAircraft();
     // inline (COMDAT 0x221b9, first emitted by EEAIContinentManager.cpp; every caller passes it to an EEDebugTrace
     // and calls it out of line) (provisional name)
@@ -1449,7 +1449,7 @@ public:
     float GetHealThreshold() const { return this->mHealThreshold; }
     float mHealThreshold;                   // +0x1a0 the ctor stores it (a float: the heal goal fld's it as the health fraction to heal below)
     float mHealRange;                       // +0x1a4 the ctor stores it (the heal range: squared against a distance)
-    float mHealDelay;                       // +0x1a8 the ctor stores it (a float: Virtual78 compares it with the unit's +0x22c)
+    float mHealDelay;                       // +0x1a8 the ctor stores it (a float: SetCursor compares it with the unit's +0x22c)
     float mLoadRange;                       // +0x1ac the ctor stores it (a float: the load goals add it to their distance)
     float mUnloadRange;                     // +0x1b0 the ctor stores it (a float: the unload goal squares it as its range)
     long mIsComplex;                        // +0x1b4 the ctor stores it
@@ -1594,7 +1594,7 @@ public:
     bool mCanPatrol;                        // +0x321 the ctor stores it
     bool mIsMedic;                          // +0x322 (untouched by the ctor)
     bool mSkipsLineOfFireCheck;             // +0x323 the ctor stores it
-    bool mIsFlare;                          // +0x324 (untouched by the ctor; Virtual68; the doppelganger manager)
+    bool mIsFlare;                          // +0x324 (untouched by the ctor; MarkInvalid; the doppelganger manager)
     bool mIsBoobyTrap;                      // +0x325 (untouched by the ctor; the doppelganger manager)
     bool mIsParatrooperBomber;              // +0x326 (untouched by the ctor)
     bool mHasSpecialAttack;                 // +0x327 the ctor stores it

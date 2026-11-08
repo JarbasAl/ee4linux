@@ -1,4 +1,5 @@
-// Complete original SDK stateful child-layout helper; SOURCE_ONLY_NO_NATIVE_ID.
+// Child layout helper that remembers the last instruction's settings for repeats
+// (not identified in the original exe)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,7 +14,7 @@
 namespace WONAPI {
 LayoutHelper::LayoutHelper(Container *theParent)
 {
-	mContainer = theParent;
+	this->mContainer = theParent;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,28 +22,28 @@ LayoutHelper::LayoutHelper(Container *theParent)
 void LayoutHelper::Add()
 {
 	ChildLayoutInstruction *anInstr = new ChildLayoutInstruction;
-	anInstr->mFlags				= mType;	
-	anInstr->mChild			= mTarget;
-	anInstr->mReference			= mReference;
-	anInstr->mX		= mHorzPosPad;
-	anInstr->mY		= mVertPosPad;
-	anInstr->mWidth		= mHorzSizePad;
-	anInstr->mHeight		= mVertSizePad;
-	mContainer->AddChildLayout(anInstr);
+	anInstr->mFlags				= this->mType;	
+	anInstr->mChild			= this->mTarget;
+	anInstr->mReference			= this->mReference;
+	anInstr->mX		= this->mHorzPosPad;
+	anInstr->mY		= this->mVertPosPad;
+	anInstr->mWidth		= this->mHorzSizePad;
+	anInstr->mHeight		= this->mVertSizePad;
+	this->mContainer->AddChildLayout(anInstr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void LayoutHelper::Add(Component *target, int theType, Component *ref, int horzPosPad, int vertPosPad, int horzSizePad, int vertSizePad)
 {
-	mType = theType;
-	mTarget = target;
-	mReference = ref;
-	mHorzPosPad = horzPosPad;
-	mVertPosPad = vertPosPad;
-	mHorzSizePad = horzSizePad;
-	mVertSizePad = vertSizePad;
-	Add();
+	this->mType = theType;
+	this->mTarget = target;
+	this->mReference = ref;
+	this->mHorzPosPad = horzPosPad;
+	this->mVertPosPad = vertPosPad;
+	this->mHorzSizePad = horzSizePad;
+	this->mVertSizePad = vertSizePad;
+	this->Add();
 }
 
 
@@ -50,45 +51,45 @@ void LayoutHelper::Add(Component *target, int theType, Component *ref, int horzP
 ///////////////////////////////////////////////////////////////////////////////
 void LayoutHelper::Repeat(Component *target)
 {
-	mTarget = target;
-	Add();
+	this->mTarget = target;
+	this->Add();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void LayoutHelper::Repeat(Component *target, Component *ref)
 {
-	mTarget = target;
-	mReference = ref;
-	Add();
+	this->mTarget = target;
+	this->mReference = ref;
+	this->Add();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void LayoutHelper::Repeat(Component *target, int horzPosPad, int vertPosPad, int horzSizePad, int vertSizePad)
 {
-	mTarget = target;
-	mHorzPosPad = horzPosPad;
-	mVertPosPad = vertPosPad;
-	mHorzSizePad = horzSizePad;
-	mVertSizePad = vertSizePad;
-	Add();
+	this->mTarget = target;
+	this->mHorzPosPad = horzPosPad;
+	this->mVertPosPad = vertPosPad;
+	this->mHorzSizePad = horzSizePad;
+	this->mVertSizePad = vertSizePad;
+	this->Add();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void LayoutHelper::FlowRepeat(Component *target)
 {
-	mReference = mTarget;
-	Repeat(target);
+	this->mReference = this->mTarget;
+	this->Repeat(target);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void LayoutHelper::FlowRepeat(Component *target, int horzPosPad, int vertPosPad, int horzSizePad, int vertSizePad)
 {	
-	mReference = mTarget;
-	Repeat(target,horzPosPad,vertPosPad,horzSizePad,vertSizePad);
+	this->mReference = this->mTarget;
+	this->Repeat(target,horzPosPad,vertPosPad,horzSizePad,vertSizePad);
 }
 
 }

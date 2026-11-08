@@ -1,5 +1,4 @@
-// Complete actual TextLinkLineSegment34; genuine inline constructor for real factory339540.
-// Actual source lifetime/copy bodies remain original-owned; no fabricated external constructor.
+// TextLinkLineSegment (0x34 bytes); its inline constructor is used by the factory at 0x00739540.
 #ifndef EE_WONAPI_WONLOBBYTEXTLINKSEGMENT_H
 #define EE_WONAPI_WONLOBBYTEXTLINKSEGMENT_H
 #include <ctype.h>
@@ -7,13 +6,13 @@
 namespace WONAPI {
 class TextLinkLineSegment : public TextLineSegment {
 public:
-    DWORD mNormalColor,mDownColor; //28,2c; actual normal then down, not reversed
-    SmartPtr<TextLinkParam> mLinkParam; //30, sole derived retained owner; full34
+    DWORD mNormalColor,mDownColor; // offsets 0x28, 0x2c: normal, then down
+    SmartPtr<TextLinkParam> mLinkParam; // offset 0x30, retained; class size 0x34
     TextLinkLineSegment(TextLinkParam* param,const GUIString& text,int color,int downColor,Font* font)
         :TextLineSegment(text,color,font),mNormalColor(color),mDownColor(downColor),mLinkParam(param)
     {
-        mLinkParam->mLinkList.push_back(this); //genuine SDK AddLink inline body; borrowed list payload
-        if(mText.length()==1 && isspace(mText[0])) mText.erase(); //native unguarded CRT classification
+        this->mLinkParam->mLinkList.push_back(this); // inline AddLink
+        if(this->mText.length()==1 && isspace(this->mText[0])) this->mText.erase(); // isspace on the raw char, unguarded (as in the original)
     }
     virtual void MouseEnter(int,int); //28=30ac00
     virtual void MouseExit(); //2c=30ae40
@@ -21,8 +20,8 @@ public:
     virtual void MouseUp(int,int,MouseButton); //34=30ad90
     virtual void LinkDown(); //40=30abc0
     virtual void LinkUp(); //44=30abe0
-    virtual bool CanStartSelection() { return false; } //48=30a7b0 inherited/shared helper0
-    // No Paint override: true inherited TextLineSegment30a900 remains external.
+    virtual bool CanStartSelection() { return false; } // slot 0x48 (shared body at 0x0070a7b0)
+    // No Paint override: inherits TextLineSegment's (0x0070a900).
 };
 }
 #endif

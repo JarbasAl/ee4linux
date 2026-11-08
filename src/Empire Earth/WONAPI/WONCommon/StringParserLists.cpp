@@ -1,4 +1,4 @@
-// Actual static ReadList<T> algorithm from SDK StringParser; no new STL implementation.
+// StringParser string-list reads (the WON SDK's static ReadList<T>)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,6 +15,7 @@ using namespace WONAPI;
 
 // FUNCTION: WON 0x006a9fb0
 // FUNCTION: WON 0x006aa0e0
+// Reads comma-separated strings into the list until no comma follows; false when an element fails
 template<class T>
 static bool ReadList(StringParser* parser,std::list<T>& values)
 {
@@ -32,14 +33,15 @@ static bool ReadList(StringParser* parser,std::list<T>& values)
     return true;
 }
 
-// List overloads of ReadValue.
 // FUNCTION: WON 0x006a57e0
+// Reads a comma-separated list of strings
 bool StringParser::ReadValue(std::list<std::string>& values)
 {
     return ReadList<std::string>(this,values);
 }
 
 // FUNCTION: WON 0x006a5800
+// Reads a comma-separated list of wide strings
 bool StringParser::ReadValue(std::list<std::wstring>& values)
 {
     return ReadList<std::wstring>(this,values);

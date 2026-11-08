@@ -1,4 +1,4 @@
-// Native ComboBox configuration dispatch using complete original-owned ComboBox controls.
+// Combo box configuration: resource-file keys and the predefined list area and input box children
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,50 +13,55 @@
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00782050
+// Creates a combo box configuration (base members only)
 ComboBoxConfig::ComboBoxConfig()
 {
 }
 
 // FUNCTION: WON 0x007821b0
+// Handles a combo box configuration key (list box size, text, items, selection, no-typing, max chars,
+// button-when-disabled); passes other keys to the container configuration
 bool ComboBoxConfig::Virtual24(const std::string& key)
 {
     if(key=="LISTBOXWIDTH") {
-        int width=ReadInt(); mComboBox->SetListBoxWidth(width);
+        int width=this->ReadInt(); this->mComboBox->SetListBoxWidth(width);
     } else if(key=="LISTBOXHEIGHT") {
-        int height=ReadInt(); mComboBox->SetListBoxHeight(height);
+        int height=this->ReadInt(); this->mComboBox->SetListBoxHeight(height);
     } else if(key=="LISTBOXSIZE") {
-        int width=ReadInt();
-        int height=ReadInt();
-        mComboBox->SetListBoxDimensions(width,height);
+        int width=this->ReadInt();
+        int height=this->ReadInt();
+        this->mComboBox->SetListBoxDimensions(width,height);
     } else if(key=="TEXT") {
-        mComboBox->SetText(Fn3842F0(false),true);
+        this->mComboBox->SetText(this->ReadString(false),true);
     } else if(key=="TEXTITEM") {
-        while(!EndOfString()) {
-            mComboBox->AddString(Fn3842F0(false),-1);
-            if(!EndOfString()) EnsureComma();
+        while(!this->EndOfString()) {
+            this->mComboBox->AddString(this->ReadString(false),-1);
+            if(!this->EndOfString()) this->EnsureComma();
         }
     } else if(key=="SELITEM") {
-        mComboBox->SetSelItem(ReadInt(),true);
+        this->mComboBox->SetSelItem(this->ReadInt(),true);
     } else if(key=="NOTYPE") {
-        mComboBox->SetNoType(Fn3837F0());
+        this->mComboBox->SetNoType(this->ReadBool());
     } else if(key=="MAXCHARS") {
-        InputBox* input=mComboBox->mEdit.get();
-        input->mMaxChars=ReadInt();
+        InputBox* input=this->mComboBox->mEdit.get();
+        input->mMaxChars=this->ReadInt();
     } else if(key=="SHOWBUTTONWHENDISABLED") {
-        bool show=Fn3837F0(); mComboBox->mShowButtonWhenDisabled=show;
+        bool show=this->ReadBool(); this->mComboBox->mShowButtonWhenDisabled=show;
     } else return ContainerConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x00782070
-bool ComboBoxConfig::Virtual28(const std::string& name,ComponentConfig*& config,Component*& component)
+// Returns the configuration and component for the predefined LISTAREA and INPUTBOX children; passes other
+// names to the container configuration
+bool ComboBoxConfig::GetPredefinedComponent(const std::string& name,ComponentConfig*& config,Component*& component)
 {
     if(name=="LISTAREA") {
         config=ListAreaConfig::CfgFactory();
-        component=mComboBox->mListArea.get();
+        component=this->mComboBox->mListArea.get();
     } else if(name=="INPUTBOX") {
         config=InputBoxConfig::CfgFactory();
-        component=mComboBox->mEdit.get();
-    } else return ContainerConfig::Virtual28(name,config,component);
+        component=this->mComboBox->mEdit.get();
+    } else return ContainerConfig::GetPredefinedComponent(name,config,component);
     return true;
 }
 

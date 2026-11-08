@@ -1,6 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK ping family; no Native/primary/physical claim.
+// No original address identified: WON SDK ping operations
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing unit: proposed existing server-operation family profile.
 #include <windows.h>
 #include <time.h>
 #include <stdlib.h>
@@ -12,6 +11,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONPing.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace WONAPI;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,70 +19,70 @@ using namespace WONAPI;
 PingOp::PingOp(const IPAddr &theAddr, unsigned char theLengthFieldSize, bool extended) 
 	: ServerRequestOp(theAddr), mExtended(extended) 
 {
-	mLengthFieldSize = theLengthFieldSize;
+	this->mLengthFieldSize = theLengthFieldSize;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-WONStatus PingOp::Virtual10()
+WONStatus PingOp::GetNextRequest()
 {
-	WriteBuffer aBuf(mLengthFieldSize,true);
+	WriteBuffer aBuf(this->mLengthFieldSize,true);
 	aBuf.AppendByte(3);					// mini message
 	aBuf.AppendByte(1);					// common service
 	aBuf.AppendByte(5);					// ping message
 	aBuf.AppendLong(GetTickCount());	// start tick
-	aBuf.AppendBool(mExtended);			// extended ping flag
-	mRequest = aBuf.ToByteBuffer(true);
-	return (WONStatus)100059;
+	aBuf.AppendBool(this->mExtended);			// extended ping flag
+	this->mRequest = aBuf.ToByteBuffer(true);
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-WONStatus PingOp::Virtual14()
+WONStatus PingOp::CheckResponse()
 {
-	ReadBuffer aMsg(mResponse->data(),mResponse->length());
+	ReadBuffer aMsg(this->mResponse->data(),this->mResponse->length());
 	unsigned char aHeaderType = aMsg.ReadByte();
 	unsigned char aServiceType = aMsg.ReadByte();
 	unsigned char aMessageType = aMsg.ReadByte();
 	if(aHeaderType!=3 || aServiceType!=1 || aMessageType!=6)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 
 	// Read startTick and determine lag
-	mLag = GetTickCount() - aMsg.ReadLong();
+	this->mLag = GetTickCount() - aMsg.ReadLong();
 
 	if(aMsg.Available()>0)
 	{
-		aMsg.ReadString(mAppName);
-		aMsg.ReadString(mLogicalName);
-		mVersion = aMsg.ReadLong();
-		aMsg.ReadString(mImage);
-		mPID = aMsg.ReadLong();
-		aMsg.ReadString(mPorts);
-		mIsAuth = aMsg.ReadBool();
+		aMsg.ReadString(this->mAppName);
+		aMsg.ReadString(this->mLogicalName);
+		this->mVersion = aMsg.ReadLong();
+		aMsg.ReadString(this->mImage);
+		this->mPID = aMsg.ReadLong();
+		aMsg.ReadString(this->mPorts);
+		this->mIsAuth = aMsg.ReadBool();
 		if (aMsg.Available()>0)
 		{
-			aMsg.ReadString(mRegData);
-			aMsg.ReadString(mServData);
+			aMsg.ReadString(this->mRegData);
+			aMsg.ReadString(this->mServData);
 		}
 	}
 
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 	
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void PingOp::Virtual18()
+void PingOp::Reset()
 {
-	mAppName.erase();
-	mLogicalName.erase();
-	mVersion = 0;
-	mImage.erase();
-	mPID = 0;
-	mPorts.erase();
-	mIsAuth = false;
-	mRegData.erase();
-	mServData.erase();
+	this->mAppName.erase();
+	this->mLogicalName.erase();
+	this->mVersion = 0;
+	this->mImage.erase();
+	this->mPID = 0;
+	this->mPorts.erase();
+	this->mIsAuth = false;
+	this->mRegData.erase();
+	this->mServData.erase();
 }

@@ -1,6 +1,6 @@
 // WONAPI GUI / lobby framework classes as the game's lobby glue sees them.
 // WONAPI proper (0x29deb0..) is not decompiled: bases come from the RTTI class hierarchy descriptors, sizes from the
-// glue's `new` calls; every other name PROVISIONAL (by behaviour); `_gap` arrays are undecoded. Requires <string>,
+// glue's `new` calls; other names are inferred from behaviour (provisional names); `_gap` arrays are undecoded. Requires <string>,
 // ee/EEWonNet.h, ee/wonapi/WONLobbyResource.h.
 #ifndef EE_WONAPI_WONLOBBYGUI_H
 #define EE_WONAPI_WONLOBBYGUI_H
@@ -17,7 +17,7 @@
 
 namespace WONAPI {
 
-// Genuine SDK LobbyTypes enum; original wire values0/1/2/3.
+// SDK LobbyTypes enum; wire values 0/1/2/3
 enum LobbyGameType
 {
 	LobbyGameType_None,
@@ -26,7 +26,7 @@ enum LobbyGameType
 	LobbyGameType_DirectConnect
 };
 
-// Genuine SDK EventTypes.h ControlIdType; native registrar passes100001/100002.
+// SDK EventTypes.h ControlIdType; the registrar passes 100001/100002
 enum ControlIdType
 	{
 		ControlId_LibMin	= 100000,
@@ -48,7 +48,7 @@ enum Direction { Direction_Left, Direction_Right, Direction_Up, Direction_Down }
 enum HorzAlign { HorzAlign_Left, HorzAlign_Center, HorzAlign_Right };
 enum VertAlign { VertAlign_Top, VertAlign_Center, VertAlign_Bottom };
 
-// Pinned SDK nominal event/flag constants; native input1..14 and popup bit tests corroborate.
+// SDK event and flag constants; the input event ids 1..14 and the popup bit tests in the exe agree.
 enum WindowEventType
 	{
 		WindowEventType_None,
@@ -130,38 +130,38 @@ enum StandardCursor {
     StandardCursor_EastWest,StandardCursor_NorthSouth,StandardCursor_NorthSouthEastWest,
     StandardCursor_Max
 };
-// Complete native Cursor RefCount8; native326540 stores only inherited refcount/vptr.
+// Cursor (RefCount, 8 bytes); the constructor 0x326540 stores only the inherited refcount and vptr
 class Cursor : public RefCount {
 protected:
-    virtual ~Cursor(); //native external
+    virtual ~Cursor(); // out of line
 public:
-    Cursor(); //326540 complete8
-    virtual Cursor* GetNative(); //slot04 native external
-    virtual Component* GetComponent(int&,int&); //slot08 native external
-    static Cursor* GetStandardCursor(StandardCursor); //326550 borrowed result
+    Cursor(); // 0x326540
+    virtual Cursor* GetNative(); // vtable +0x04, out of line
+    virtual Component* GetComponent(int&,int&); // vtable +0x08, out of line
+    static Cursor* GetStandardCursor(StandardCursor); // 0x326550: returns a shared cursor (not owned by the caller)
     static void SetStandardCursor(StandardCursor,Cursor*); //326560 mutable sharedreference
 };
-// Complete0c indirection owner: nativeSetStandard326577 new0c and storesownedcursor8.
+// Holds a cursor (0x0c bytes): SetStandardCursor (0x326577) allocates it and stores the owned cursor at +0x08
 class CursorRef : public Cursor {
 protected:
     SmartPtr<Cursor> mCursor; //08
 public:
     CursorRef(Cursor* cursor) : mCursor(cursor) {}
-    virtual Cursor* GetNative() { return mCursor->GetNative(); } //326660 support0
-    virtual Component* GetComponent(int& x,int& y) { return mCursor->GetComponent(x,y); } //326670 support0
-    void SetCursor(Cursor* cursor) { mCursor=cursor; }
+    virtual Cursor* GetNative() { return this->mCursor->GetNative(); } // 0x326660
+    virtual Component* GetComponent(int& x,int& y) { return this->mCursor->GetComponent(x,y); } // 0x326670
+    void SetCursor(Cursor* cursor) { this->mCursor=cursor; }
 };
-// Complete10 native platformcursor; original3d0941/3d0271 new10 and vtable45471c.
+// Platform cursor (0x10 bytes); allocated at 0x3d0941/0x3d0271, vtable 0x45471c
 class MSCursor : public Cursor {
 protected:
     virtual ~MSCursor(); //3d0320 conditionalDestroyCursor thenbase
 public:
     HCURSOR mNativeCursor; //08
-    bool mDoDestroy; //0c, nativeCtor scalarpadding0d..0f
+    bool mDoDestroy; // at +0x0c; +0x0d..0x0f padding
     MSCursor(HCURSOR cursor,bool destroy=false) : mNativeCursor(cursor),mDoDestroy(destroy) {}
-    virtual Cursor* GetNative() { return this; } //3d02f0 support0
+    virtual Cursor* GetNative() { return this; } // 0x3d02f0
 };
-// Borrowed target prefix; native326ce0 reads17DWORDs from+08.
+// Only the prefix is declared; 0x326ce0 reads 17 DWORDs from +0x08
 enum StandardColor
 {
 	StandardColor_3DDarkShadow = 0,
@@ -195,10 +195,10 @@ enum { COLOR_INVALID = 0xffffffff };
 class ColorScheme : public RefCount {
 public:
     DWORD mColors[17];
-    ColorScheme() { memset(mColors,0,sizeof(mColors)); } //native32b973..86 actual17zero constructor
-    static DWORD GetColorRef(StandardColor theColor) { return 0x80000000 + theColor; } // genuine SDK inline
-    DWORD GetStandardColor(int i) { return mColors[i]; }
-    void SetStandardColor(int i,DWORD color) { mColors[i]=color; }
+    ColorScheme() { memset(this->mColors,0,sizeof(this->mColors)); } // zeroes all 17 colors (0x32b973..0x32b986)
+    static DWORD GetColorRef(StandardColor theColor) { return 0x80000000 + theColor; } // inline
+    DWORD GetStandardColor(int i) { return this->mColors[i]; }
+    void SetStandardColor(int i,DWORD color) { this->mColors[i]=color; }
 };
 class Font;
 class Image;
@@ -241,7 +241,7 @@ struct ComponentInit {
 };
 
 struct ComponentConfigInit : public ComponentInit {
-    ComponentConfigInit(ComponentConfig*); //38aa40 actualexternal18B, type2 and borrowedconfig4
+    ComponentConfigInit(ComponentConfig*); // 0x38aa40: type 2 and the config at +0x04
     ComponentConfig* mConfig;               // +0x04
 };
 
@@ -258,15 +258,15 @@ class WONRectangle {
 public:
     WONRectangle();                         // 0x349300
     WONRectangle(int inX, int inY, int inWidth, int inHeight);    // 0x349310
-    void DoIntersect(const WONRectangle&); //349330, native3271b1 call
-    void DoUnion(const WONRectangle&); //3493b0 nativeRoot30498b external
-    bool Intersects(const WONRectangle&) const; //349450 native complete69B predicate
-    int Left() const { return x; }
-    int Top() const { return y; }
-    int Width() const { return width; }
-    int Height() const { return height; }
-    int Right() const { return x+width; }
-    int Bottom() const { return y+height; }
+    void DoIntersect(const WONRectangle&); // 0x349330, called from 0x3271b1
+    void DoUnion(const WONRectangle&); // 0x3493b0 (called from RootContainer at 0x30498b)
+    bool Intersects(const WONRectangle&) const; // 0x349450
+    int Left() const { return this->x; }
+    int Top() const { return this->y; }
+    int Width() const { return this->width; }
+    int Height() const { return this->height; }
+    int Right() const { return this->x+this->width; }
+    int Bottom() const { return this->y+this->height; }
 
     int x;                                  // +0x00
     int y;                                  // +0x04
@@ -278,136 +278,136 @@ class Component : public RefCount {
 public:
     Component();                            // 0x2f49e0 (WONAPI)
     virtual ~Component();                   // 0x2f4a70 (WONAPI)
-    virtual void Virtual04();
+    virtual void PositionChanged();
     virtual void Virtual08();
-    virtual void Virtual0C(int& outWidth, int& outHeight);     // (EELobbyColorChooser 0x2908af: 120 x 120)
-    virtual bool Virtual10();
-    virtual void Virtual14(Graphics& inGraphics);
+    virtual void GetDesiredSize(int& outWidth, int& outHeight);  // (EELobbyColorChooser 0x2908af: 120 x 120)
+    virtual bool NeedsPaint();
+    virtual void PrePaint(Graphics& inGraphics);
     virtual void Paint(Graphics& inGraphics);                  // +0x18 (0x2f5020)
-    virtual void InitComponent(ComponentInit& inInit) {} //genuine SDK empty InitComponent, native156dd8/3 RET4
-    virtual bool Virtual20(int inX, int inY);
-    virtual void Virtual24(int inA, int inB);                  // +0x24 (0x2f4cc0)
-    virtual void Virtual28();                                  // +0x28 (0x2f4ce0: the mouse left?)
-    virtual void Virtual2C(int,int,int) {} //genuine SDK MouseDown empty inline default, native3a6880/3
-    virtual void Virtual30(int inA, int inB, int inC) {}       // +0x30 0x2907a3 (emitted with EELobbyColorChooser)
-    virtual void Virtual34(int inX, int inY) {}                // +0x34 (the mouse moved); genuine SDK inline empty MouseMove
-    virtual void Virtual38(int inX, int inY);
-    virtual bool Virtual3C(int inParam) { return false; }      // +0x3c 0x29059d
-    virtual void Virtual40(unsigned long inDelta);
-    virtual bool Virtual44(int inDelta);
-    virtual void Virtual48();
-    virtual void Virtual4C();
-    virtual bool Virtual50(int inParam) { return false; }      // +0x50 (ICF: 0x29059d)
-    virtual bool Virtual54(int inParam) { return false; }      // +0x54 (ICF: 0x29059d)
-    virtual bool Virtual58(int inParam) { return false; }      // +0x58 (ICF: 0x29059d)
-    virtual bool Virtual5C();
-    virtual void Virtual60(WONRectangle& ioRect);
-    virtual void Invalidate();                                 // +0x64 (after a visible change; PROVISIONAL)
-    virtual void Virtual68();
-    virtual void Virtual6C();                                  // +0x6c (0x2f5160: when the popup opens?)
-    virtual void Virtual70();
-    virtual void Virtual74(bool inFlag);
-    virtual void Virtual78(Cursor* inCursor);
+    virtual void InitComponent(ComponentInit& inInit) {} // empty inline (the vtable slot holds the shared ret 4 at 0x156dd8)
+    virtual bool HitTest(int inX, int inY);
+    virtual void MouseEnter(int inA, int inB);                 // +0x24 (0x2f4cc0)
+    virtual void MouseExit();                                  // +0x28 (0x2f4ce0: the mouse left?)
+    virtual void MouseDown(int,int,int) {} // empty inline (the vtable slot holds the shared 3-byte body at 0x3a6880)
+    virtual void MouseUp(int inX, int inY, int inButton) {}    // +0x30 0x2907a3 (emitted with EELobbyColorChooser)
+    virtual void MouseMove(int inX, int inY) {}                // +0x34 (the mouse moved); empty inline
+    virtual void MouseDrag(int inX, int inY);
+    virtual bool MouseWheel(int inAmount) { return false; }    // +0x3c 0x29059d
+    virtual void MouseHover(unsigned long inDelta);
+    virtual bool TimerEvent(int inDelta);
+    virtual void GotFocus();
+    virtual void LostFocus();
+    virtual bool KeyChar(int inKey) { return false; }          // +0x50 (ICF: 0x29059d)
+    virtual bool KeyDown(int inKey) { return false; }          // +0x54 (ICF: 0x29059d)
+    virtual bool KeyUp(int inKey) { return false; }            // +0x58 (ICF: 0x29059d)
+    virtual bool CanClose();
+    virtual void InvalidateRect(WONRectangle& ioRect);
+    virtual void Invalidate();                                 // +0x64 (after a visible change; provisional name)
+    virtual void MarkInvalid();
+    virtual void AddedToParent();                              // +0x6c (0x2f5160: when the popup opens?)
+    virtual void ClearGrabBG();
+    virtual void EnabledChanged(bool inFlag);
+    virtual void SetCursor(Cursor* inCursor);
     virtual void HandleComponentEvent(ComponentEvent* inEvent);    // +0x7c (0x2f5550)
-    virtual void Virtual80(ComponentEvent* inEvent);
-    virtual void Virtual84(bool inFlag);
-    virtual bool Virtual88(bool inForward, bool inInit);
-    virtual void Virtual8C(const ControlIdSet& inIds, bool inEnabled);
+    virtual void HandleBroadcastEvent(ComponentEvent* inEvent);
+    virtual void NotifyRootVisibility(bool inFlag);
+    virtual bool TabFocus(bool inForward, bool inInit);
+    virtual void EnableControlsById(const ControlIdSet& inIds, bool inEnabled);
     virtual void SetEnabled(bool inEnabled);                   // +0x90 (0x2f5610: clears/sets flag 0x80 of +0x20)
     virtual void SetVisible(bool inVisible);                   // +0x94 (0x2f55b0)
-    virtual Component* Virtual98();
-    virtual int Virtual9C() { return 0; } //genuine SDK MinWidth INT return, native1ad67e/3
-    virtual int VirtualA0() { return 0; } //genuine SDK MinHeight INT return, native1ad67e/3
-    virtual int VirtualA4() { return 0xffff; }                 // +0xa4 0x2905a2
-    virtual int VirtualA8() { return 0xffff; }                 // +0xa8 (ICF: 0x2905a2)
+    virtual Component* GetMouseChild();
+    virtual int GetMinWidth() { return 0; } // returns 0 (shared body at 0x1ad67e)
+    virtual int GetMinHeight() { return 0; } // returns 0 (shared body at 0x1ad67e)
+    virtual int GetMaxWidth() { return 0xffff; }               // +0xa4 0x2905a2
+    virtual int GetMaxHeight() { return 0xffff; }              // +0xa8 (ICF: 0x2905a2)
 
-    void Fn2F59A0(ColorScheme* inScheme); // 0x2f59a0, owns ComponentExtra+4
-    ColorScheme* GetOwnColorScheme(); //2f5960, borrowed own scheme
-    ColorScheme* GetColorScheme(); //2f5970, borrowed inherited scheme
-    void Fn2F4B70(int inX, int inY);          // 0x2f4b70
-    void Fn2F4B90(int inWidth, int inHeight); // 0x2f4b90
-    void Fn2F4BC0(int inMinWidth, int inMinHeight); // 0x2f4bc0
-    void Fn2F4BF0(int inX, int inY, int inWidth, int inHeight); // 0x2f4bf0
+    void SetColorScheme(ColorScheme* inScheme); // 0x2f59a0, owns ComponentExtra+4
+    ColorScheme* GetOwnColorScheme(); // 0x2f5960, the component's own scheme
+    ColorScheme* GetColorScheme(); // 0x2f5970, own or inherited scheme
+    void SetPos(int inX, int inY);            // 0x2f4b70
+    void SetSize(int inWidth, int inHeight);  // 0x2f4b90
+    void SetSizeAtLeast(int inMinWidth, int inMinHeight); // 0x2f4bc0
+    void SetPosSize(int inX, int inY, int inWidth, int inHeight); // 0x2f4bf0
     void Fn2F4EE0(int inPadding);            // 0x2f4ee0
-    void Fn2F52A0(ComponentEvent* inEvent, bool inFlag); // 0x2f52a0
-    void Fn2F52D0(ComponentEvent* inEvent); // 0x2f52d0, retained downward broadcast
-    void Fn2F53F0(ComponentEvent* inEvent, bool inSendNow); // 0x2f53f0
-    SmartPtr<Font> GetFont(const FontDescriptor&); //2f5a00 actual SDK hiddenSP sret+descriptor/RET8, original external provider
-    Font* Fn2F5A30(Font* inFont, int inStyle, int inOptionalSize); // 0x2f5a30
-    Font* Fn2F5B20();                        // 0x2f5b20
-    Font* GetNamedFont(const std::string&); //2f5b30 actual borrowed manager font lookup
-    Font* Fn2F5B50(int inStyle, int inSize);  // 0x2f5b50
+    void FireBroadcastEvent(ComponentEvent* inEvent, bool inFlag); // 0x2f52a0
+    void BroadcastEventDown(ComponentEvent* inEvent); // 0x2f52d0, broadcasts down to the children
+    void DeliverEvent(ComponentEvent* inEvent, bool inSendNow); // 0x2f53f0
+    SmartPtr<Font> GetFont(const FontDescriptor&); // 0x2f5a00: returns the font through a hidden result pointer (ret 8)
+    Font* GetFontMod(Font* inFont, int inStyle, int inOptionalSize); // 0x2f5a30
+    Font* GetDefaultFont();                  // 0x2f5b20
+    Font* GetNamedFont(const std::string&); // 0x2f5b30: looks the font up in the window manager
+    Font* GetDefaultFontMod(int inStyle, int inSize);  // 0x2f5b50
     void AddListener(ComponentListener* inListener);           // 0x2f4b10
-    void Fn2F4E90(int inA, int inB);        // 0x2f4e90 (on a new popup: 0, 0)
-    void Fn2F5380(int inType, int inParam); // 0x2f5380 legacy provisional int API remains external
-    void FireEvent(int,bool=false); //2f5380 genuine SDK API; preserves legacy external mapping
-    bool Fn2F5600();                        // 0x2f5600, actual bit18 visibility-to-root
-    void Fn2F56D0(int& ioX, int& ioY);      // 0x2f56d0 (to the root's coordinates?)
-    void Fn2F54E0(ComponentEvent* inEvent); // 0x2f54e0, actual event bubbling
-    Component* GetNextSibling(bool,bool=false); //actual2f5230 sibling traversal
-    bool WantFocus(); //actual2f5810 can-take-focus predicate
-    void RootToChild(int&,int&); //actual2f5720
-    void GetMousePos(int&,int&); //actual2f5770
-    int GetKeyMod(); //actual2f57a0
-    bool CheckDoubleClick(int); //actual2f57b0
-    bool Contains(int,int); //2f5080 exact parent-coordinate bounding predicate55
-    bool Intersects(Component*); //2f50c0 actual19B original rectangle intersection API
-    Cursor* Fn2F4B00(); //2f4b00 external borrowed cursor getter14, support0
-    BackgroundGrabber* GetGrabBG(); //2f4af0 borrowed extra+10
-    void AllocateExtraStuff(); //2f4ac0 actual original external43B, no source allocation requested
-    bool CheckGrabBG(); //2f4db0 actual native149B BG allocation policy
-    void EnsureOnTopOf(Component*); //2f4c20 actual external wrapper to parent2f6f60
-    void SetDefaultCursor(Cursor*); //2f4c60 actual own defaultCursor setter, DISTINCT virtual78
-    void SetDesiredHeight(int); //2f4f20 actual62B, external
-    void SetDesiredWidth(int=0); //2f4ee0 actual62B original external
-    void SetTranslucentColor(int,int=4); //2f4fb0 actual51B, external
-    void SetComponentFlags(int,bool); //2f5560 external40
-    void SetWantGrabBG(bool inGrab) { SetComponentFlags(0x100,inGrab); }
-    void Fn2F5360(bool); //2f5360 actual Component::SubscribeToBroadcast, nonvirtual
-    void Fn2F57D0(bool); //2f57d0 external timer request
-    void Fn2F5890();                        // 0x2f5890
+    void SetDesiredSize(int inA, int inB);  // 0x2f4e90 (on a new popup: 0, 0)
+    void Fn2F5380(int inType, int inParam); // 0x2f5380 (provisional int form)
+    void FireEvent(int,bool=false); // 0x2f5380
+    bool IsRootVisible();                   // 0x2f5600: visible all the way up to the root (flag bit 18)
+    void LocalToRoot(int& ioX, int& ioY);   // 0x2f56d0 (to the root's coordinates?)
+    void BubbleEvent(ComponentEvent* inEvent); // 0x2f54e0: passes the event up to the parents
+    Component* GetNextSibling(bool,bool=false); // 0x2f5230: sibling traversal
+    bool WantFocus(); // 0x2f5810: can take the focus
+    void RootToChild(int&,int&); // 0x2f5720
+    void GetMousePos(int&,int&); // 0x2f5770
+    int GetKeyMod(); // 0x2f57a0
+    bool CheckDoubleClick(int); // 0x2f57b0
+    bool Contains(int,int); // 0x2f5080: point-in-bounds test in parent coordinates
+    bool Intersects(Component*); // 0x2f50c0: rectangle intersection test
+    Cursor* GetDefaultCursor(); // 0x2f4b00: default cursor getter
+    BackgroundGrabber* GetGrabBG(); // 0x2f4af0, from the extra data at +0x10
+    void AllocateExtraStuff(); // 0x2f4ac0
+    bool CheckGrabBG(); // 0x2f4db0: decides whether to grab the background
+    void EnsureOnTopOf(Component*); // 0x2f4c20: forwards to the parent (0x2f6f60)
+    void SetDefaultCursor(Cursor*); // 0x2f4c60: sets the component's own default cursor (not the virtual at +0x78)
+    void SetDesiredHeight(int); // 0x2f4f20
+    void SetDesiredWidth(int=0); // 0x2f4ee0
+    void SetTranslucentColor(int,int=4); // 0x2f4fb0
+    void SetComponentFlags(int,bool); // 0x2f5560
+    void SetWantGrabBG(bool inGrab) { this->SetComponentFlags(0x100,inGrab); }
+    void SubscribeToBroadcast(bool); // 0x2f5360 (nonvirtual)
+    void RequestTimer(bool); // 0x2f57d0
+    void RequestFocus();                    // 0x2f5890
     Window* GetRoot();               // 0x2f5920, legacy nominal name; true SDKGetWindow
-    RootContainer* Fn2F58F0(); //2f58f0 actual SDKGetRoot parentwalk+RTDynamicCast, call-only genuine distinct method
-    Window* Fn2F5940();              // 0x2f5940 (root Window or default Window)
-    bool ComponentFlagSet(int flags) { return mComponentBits & flags ? true : false; }
-    bool IsVisible() { return !ComponentFlagSet(1); }
-    bool HasFocus() { return ComponentFlagSet(0x10); }
-    bool IsDisabled() const { return (mComponentBits & 0x80) != 0; }      // (EELobbyColorButton 0x29060b: shr 7; test al, 1)
+    RootContainer* GetRootContainer(); // 0x2f58f0: walks up the parents and dynamic_casts to RootContainer
+    Window* GetRootWindow();         // 0x2f5940 (root Window or default Window)
+    bool ComponentFlagSet(int flags) { return this->mComponentBits & flags ? true : false; }
+    bool IsVisible() { return !this->ComponentFlagSet(1); }
+    bool HasFocus() { return this->ComponentFlagSet(0x10); }
+    bool IsDisabled() const { return (this->mComponentBits & 0x80) != 0; }  // (EELobbyColorButton 0x29060b: shr 7; test al, 1)
 
-    const WONRectangle& GetBounds() { return mBounds; }
-    int Left() { return mBounds.x; }
-    int Top() { return mBounds.y; }
-    int Width() { return mBounds.Width(); }
-    int Height() { return mBounds.Height(); }
-    int Right() { return mBounds.Right(); }
-    int Bottom() { return mBounds.Bottom(); }
-    Container* GetParent() { return mParent; } //genuine SDK borrowed accessor, actual Component+08
+    const WONRectangle& GetBounds() { return this->mBounds; }
+    int Left() { return this->mBounds.x; }
+    int Top() { return this->mBounds.y; }
+    int Width() { return this->mBounds.Width(); }
+    int Height() { return this->mBounds.Height(); }
+    int Right() { return this->mBounds.Right(); }
+    int Bottom() { return this->mBounds.Bottom(); }
+    Container* GetParent() { return this->mParent; } // inline, at +0x08
     Container* mParent;                     // +0x08 (SetEnabled notifies it through its slot +0xbc)
-    std::list<SmartPtr<Component> >::iterator mChildListItr; // +0x0c, actual child-list node iterator
+    std::list<SmartPtr<Component> >::iterator mChildListItr; // +0x0c, child-list node iterator
 protected:
-    WONRectangle mBounds; //10..1f, genuine SDK embedded Rectangle16 owner
+    WONRectangle mBounds; // at +0x10..0x1f, embedded rectangle (16 bytes)
 public:
     int mComponentBits; //20, full DWORD flags (int: the tests compile to shr n; test 1); bit80 disabled
     int mControlId;                         // +0x24 (the component events' id)
     unsigned char mFocusId; //28
     char mInvalidState; //29
     char mTimerFlags; //2a
-    ComponentExtra* mExtraStuff; //2c, original external unique ownership
+    ComponentExtra* mExtraStuff; // at +0x2c, owned (allocated on demand)
 };
 
-// Actual SDK function-template API; surviving LayoutPoint* instantiation3a1da0.
-// Call-only; dynamic cast/typed exception remain native, no local lifetime implementation.
+// SDK function template; the LayoutPoint* instance is at 0x3a1da0.
+// Declared only: the dynamic cast and the typed exception are in the original body.
 template<class T> T SafeConfigGetComponent(Component*,const char*);
-// Actual LayoutPoint30 owner: native389ac5 allocation, RTTI44fd9c, no own tail.
-// Complete43slot geometry matches Component except true implicit basejmp destructor.
+// LayoutPoint (0x30 bytes): allocated at 0x389ac5, RTTI 0x44fd9c, no members of its own
+// Same 43 vtable slots as Component; its implicit destructor jumps to the base one
 class LayoutPoint : public Component {
 public:
-    LayoutPoint(int left=0,int top=0,int width=0,int height=0) { Fn2F4BF0(left,top,width,height); }
-    // Real SDK inline constructor/native389ae6..afe, ordinary306860 JMPComponent2f4a70.
+    LayoutPoint(int left=0,int top=0,int width=0,int height=0) { this->SetPosSize(left,top,width,height); }
+    // Inline constructor (0x389ae6..0x389afe); the destructor 0x306860 jumps to Component's at 0x2f4a70
 };
 
 // a component holding others (0x84 bytes: EELobbyGameOptionsCtrl's members start at +0x84; vtable 0x84d7cc, 51 slots)
-// Complete20-byte manager: both real owning lists. Original lifetime stays external.
+// Two owning lists (0x20 bytes); constructor and destructor out of line.
 class ChildLayoutManager : public RefCount {
 public:
     typedef std::list<SmartPtr<ChildLayoutInstructionBase> > InstructionList;
@@ -424,112 +424,111 @@ class Container : public Component {
 public:
     Container();                            // 0x2f5b70 (WONAPI, /GX)
     virtual ~Container();                   // 0x2f5e80 (WONAPI, /GX)
-    // Real inherited overrides: targets in original vtable 0x44d7cc.
+    // Overrides (vtable 0x44d7cc).
     virtual void Virtual08();               // 0x2f62b0
-    virtual void Virtual0C(int& outWidth, int& outHeight); // 0x2f62d0
-    virtual void Virtual14(Graphics& inGraphics); // 0x2f6340
+    virtual void GetDesiredSize(int& outWidth, int& outHeight); // 0x2f62d0
+    virtual void PrePaint(Graphics& inGraphics);  // 0x2f6340
     virtual void Paint(Graphics& inGraphics); // 0x2f63b0
-    virtual bool Virtual20(int inX, int inY); // 0x2f6520
-    virtual void Virtual24(int inX, int inY); // 0x2f6700
-    virtual void Virtual28();               // 0x2f6730
-    virtual void Virtual2C(int inX, int inY, int inButton); // 0x2f6880
-    virtual void Virtual30(int inX, int inY, int inButton); // 0x2f6840
-    virtual void Virtual34(int inX, int inY); // 0x2f6780
-    virtual void Virtual38(int inX, int inY); // 0x2f6810
-    virtual bool Virtual3C(int inWheel);      // 0x2f67c0
-    virtual void Virtual40(unsigned long inDelta); // 0x2f67f0
-    virtual bool Virtual44(int inDelta); // 0x2f7210
-    virtual void Virtual48();               // 0x2f7400
-    virtual void Virtual4C();               // 0x2f7420
-    virtual bool Virtual50(int inKey);       // 0x2f7710
-    virtual bool Virtual54(int inKey);       // 0x2f7690
-    virtual bool Virtual58(int inChar);      // 0x2f76f0
-    virtual bool Virtual5C();               // 0x2f7730
+    virtual bool HitTest(int inX, int inY);   // 0x2f6520
+    virtual void MouseEnter(int inX, int inY); // 0x2f6700
+    virtual void MouseExit();               // 0x2f6730
+    virtual void MouseDown(int inX, int inY, int inButton); // 0x2f6880
+    virtual void MouseUp(int inX, int inY, int inButton);   // 0x2f6840
+    virtual void MouseMove(int inX, int inY); // 0x2f6780
+    virtual void MouseDrag(int inX, int inY); // 0x2f6810
+    virtual bool MouseWheel(int inWheel);     // 0x2f67c0
+    virtual void MouseHover(unsigned long inDelta); // 0x2f67f0
+    virtual bool TimerEvent(int inDelta); // 0x2f7210
+    virtual void GotFocus();                // 0x2f7400
+    virtual void LostFocus();               // 0x2f7420
+    virtual bool KeyChar(int inKey);         // 0x2f7710
+    virtual bool KeyDown(int inKey);         // 0x2f7690
+    virtual bool KeyUp(int inChar);          // 0x2f76f0
+    virtual bool CanClose();                // 0x2f7730
     virtual void Invalidate();              // 0x2f6980
-    virtual void Virtual68();               // 0x2f6940
-    virtual void Virtual6C();               // 0x2f6990
-    virtual void Virtual70();               // 0x2f69a0
-    virtual void Virtual78(Cursor* inCursor);    // 0x2f7360
-    virtual void Virtual80(ComponentEvent* inEvent); // 0x2f7320
-    virtual void Virtual84(bool inFlag);     // 0x2f64d0
-    virtual bool Virtual88(bool inForward, bool inInit); // 0x2f75a0
-    virtual void Virtual8C(const ControlIdSet& inIds, bool inEnabled); // 0x2f6480
-    virtual Component* Virtual98() { return mMouseChild; } //genuine SDK borrowed GetMouseChild, native1c42ce/4          // 0x1c42ce
+    virtual void MarkInvalid();             // 0x2f6940
+    virtual void AddedToParent();           // 0x2f6990
+    virtual void ClearGrabBG();             // 0x2f69a0
+    virtual void SetCursor(Cursor* inCursor);    // 0x2f7360
+    virtual void HandleBroadcastEvent(ComponentEvent* inEvent); // 0x2f7320
+    virtual void NotifyRootVisibility(bool inFlag);  // 0x2f64d0
+    virtual bool TabFocus(bool inForward, bool inInit);  // 0x2f75a0
+    virtual void EnableControlsById(const ControlIdSet& inIds, bool inEnabled); // 0x2f6480
+    virtual Component* GetMouseChild() { return this->mMouseChild; } // 0x1c42ce (shared 4-byte body)
     // 0x2f6140 (ret 0x20): adds inChild laid out against inRef (EELobbyInterface 0x2972c6: the lobby screen, 3,
-    // the root, 0, 0, 0, 0, 0; r24pre-won PROVISIONAL)
+    // the root, 0, 0, 0, 0, 0; provisional name)
     void Fn2F6140(Component* inChild, int inFlags, Component* inRef, int inA, int inB, int inC, int inD, int inE);
-    void AddChildLayout(ChildLayoutInstructionBase*,int=0); //2f61d0 actual63B retained instruction; id0 executes first, fullint gate/lowBYTE id
-    void Fn2F6120(int inId, bool inEnabled); // 0x2f6120
-    void Fn2F6290();                         // 0x2f6290
-    void EnterModal(); //2f6210 actual external counter/focus policy
-    void LeaveModal(); //2f6260 actual external counter/focus policy
-    void RemoveAllChildren(); //2f6d80 actual external, ManagerEndPopup32e663/67c
-    void Fn2F6650(int,int); //2f6650 mouse-selection transition99
-    void MouseAt(); //2f66c0 actual57B noarg mouse-state refresh, call-only
-    std::list<SmartPtr<Component> >::iterator FindTop(); //2f6a40 forwarding27 support0
+    void AddChildLayout(ChildLayoutInstructionBase*,int=0); // 0x2f61d0: keeps the instruction; group id 0 runs first (the test reads the full int, the id is stored as a byte)
+    void EnableLayoutInstructions(int inId, bool inEnabled); // 0x2f6120
+    void Relayout();                         // 0x2f6290
+    void EnterModal(); // 0x2f6210: counts the modal level and moves the focus
+    void LeaveModal(); // 0x2f6260: counts the modal level and moves the focus
+    void RemoveAllChildren(); // 0x2f6d80 (WindowManager::EndPopup calls it at 0x32e663/0x32e67c)
+    void UpdateMouseChild(int,int); //2f6650 mouse-selection transition99
+    void MouseAt(); // 0x2f66c0: refreshes the mouse state (no arguments)
+    std::list<SmartPtr<Component> >::iterator FindTop(); // 0x2f6a40 (forwarder)
     std::list<SmartPtr<Component> >::iterator FindTop(std::list<SmartPtr<Component> >::iterator); //2f69d0 real suffix ordering99
-    void SetOnlyChildInput(bool v) { mOnlyChildInput=v; } //actual byte7c
-    void SetIsolateTabFocus(bool v) { mIsolateTabFocus=v; } //actual SDK inline/native389f3b byte7a
-    void AddLayoutPoint(LayoutPoint*); //2f6100 actual19B, external retained child owner
-    void AddChildEx(Component*,int); //2f6b50 external266
-    void BringToTop(Component*); //2f6dd0 external390
-    void SetHasUsedDialogKeys(bool v) { mHasUsedDialogKeys=v; } //real inline byte7b
-    unsigned char GetNextFocusId(); //2f6010 actual18B primitiveaccessor support0
-    void SetFocusToLastFocusChild(); //2f6030 actual196B
-    void EnsureOnTopOf(Component*,Component*); //2f6f60 actual352B
-    void Fn2F6A60(Component* inChild);      // 0x2f6a60
-    virtual Component* VirtualAC(int inX, int inY); // 0x2f65b0
-    virtual Component* VirtualB0(int inX, int inY) { return VirtualAC(inX, inY); } // 0x2909c7
-    virtual void VirtualB4(Component* inChild);
-    virtual void VirtualB8(Component* inChild);
-    virtual void VirtualBC(Component* inChild);
-    virtual bool VirtualC0(Component* inChild);
-    virtual void VirtualC4(Component* inChild);
-    virtual Component* VirtualC8(int inControlId);
+    void SetOnlyChildInput(bool v) { this->mOnlyChildInput=v; } // at +0x7c
+    void SetIsolateTabFocus(bool v) { this->mIsolateTabFocus=v; } // inline (used at 0x389f3b), at +0x7a
+    void AddLayoutPoint(LayoutPoint*); // 0x2f6100: keeps the layout point as a child
+    void AddChildEx(Component*,int); // 0x2f6b50
+    void BringToTop(Component*); // 0x2f6dd0
+    void SetHasUsedDialogKeys(bool v) { this->mHasUsedDialogKeys=v; } // inline, at +0x7b
+    unsigned char GetNextFocusId(); // 0x2f6010
+    void SetFocusToLastFocusChild(); // 0x2f6030
+    void EnsureOnTopOf(Component*,Component*); // 0x2f6f60
+    void AddChild(Component* inChild);      // 0x2f6a60
+    virtual Component* FindChildAt(int inX, int inY); // 0x2f65b0
+    virtual Component* FindClickChildAt(int inX, int inY) { return this->FindChildAt(inX, inY); } // 0x2909c7
+    virtual void SetFocusChild(Component* inChild);
+    virtual void AddTimerChild(Component* inChild);
+    virtual void ChildStateChanged(Component* inChild);
+    virtual bool ChildInvalidated(Component* inChild);
+    virtual void RemoveChild(Component* inChild);
+    virtual Component* FindChildById(int inControlId);
 
-    // Actual private prefix: ctor2f5b70, dtor2f5e80, readers2f62d0/2f7770.
-    // Remaining private lifetimes stay in the original external ctor/dtor.
+    // Private members: constructor 0x2f5b70, destructor 0x2f5e80, readers 0x2f62d0/0x2f7770.
+    // The remaining private members are set up by the out-of-line constructor and destructor.
     Component* mMouseChild;                // +0x30, borrowed
     Component* mFocusChild;                // +0x34, borrowed
     std::list<SmartPtr<Component> > mChildList; // +0x38, owning values
     typedef std::set<SmartPtr<Component>,SmartPtr<Component>::Comp> ChildTimerSet;
-    ChildTimerSet mChildTimerSet; //44..4f actual owning SDKChildSet, ctor/dtor/insert/erase proven
-    ChildLayoutManager mChildLayout; //50..6f actual full20 owning manager, original ctor/dtor retained
-    unsigned char mNextFocusId; //70, native2f6010 BYTEincrement/zerowrap; natural71..73padding
+    ChildTimerSet mChildTimerSet; // at +0x44..0x4f, owns the child timers
+    ChildLayoutManager mChildLayout; // at +0x50..0x6f, owns the child layout instructions (0x20 bytes)
+    unsigned char mNextFocusId; // at +0x70; incremented as a byte and wraps to 0 (0x2f6010); +0x71..0x73 padding
     SmartPtr<Cursor> mCurrentCursor; //74, ctor2f5c45/dtor2f5ed2/Root304a51
     bool mChildNeedsTimer; //78
     bool mMouseWheelGoesToFocusChild; //79
-    bool mIsolateTabFocus; //7a, nativeRoot30420f
-    bool mHasUsedDialogKeys; //7b, actual native Tab writes; NOT isolateTabFocus7a
+    bool mIsolateTabFocus; // at +0x7a (set at 0x30420f)
+    bool mHasUsedDialogKeys; // at +0x7b, set by Tab handling (not mIsolateTabFocus at +0x7a)
     bool mOnlyChildInput; //7c
-    bool mRemovingAllChildren; //7d nativeRemoveAllChildren write/RemoveChild read; natural7e/7f padding
-    int mModalCount; //80, actual signed modal-child gate
+    bool mRemovingAllChildren; // at +0x7d, set by RemoveAllChildren, read by RemoveChild; +0x7e/0x7f padding
+    int mModalCount; // at +0x80, signed count; modal children take the input while it is nonzero
 protected:
-    static bool mMouseWheelGoesToFocusChildDef; //original566234 mutable bool, declaration only
+    static bool mMouseWheelGoesToFocusChildDef; // 0x566234 (declaration only)
 };
 
-// Actual ScreenContainer88; external lifetime306a20/306a60, borrowed current screen.
+// ScreenContainer (0x88 bytes); constructor 0x306a20, destructor 0x306a60; points at the current screen.
 class ScreenContainer : public Container {
 public:
     ScreenContainer();
-    // Natural implicit destructor: borrowed84 only; actual306a60 JMPContainer2f5e80.
+    // Implicit destructor (0x306a60) jumps to Container's at 0x2f5e80; the screen at +0x84 is not owned.
     void ShowScreen(Component* inScreen, bool inTakeFocus = true); //306ab0
     void AddScreen(Component*); //306a70
     Component* mCurScreen; //84, borrowed
 };
 
 
-// Actual layout family; six concrete owners have bounded constructor/cleanup proof.
-// Other layout receiver views retain reference-only authority; no blanket allocation grant.
+// Child layout instructions (six concrete classes below)
 class ChildLayoutInstructionBase : public RefCount {
 public:
-    ChildLayoutInstructionBase() : mGroupId(0),mEnabled(true) {} //actual SDK inline/native allsix constructors, support0
-    virtual void Execute(Component*) {} // genuine SDK inline default, native30a800/3
-    virtual bool UsesComponent(Component*) { return false; } // genuine SDK inline default, native3a90d0/5
+    ChildLayoutInstructionBase() : mGroupId(0),mEnabled(true) {} // inline in all six subclass constructors
+    virtual void Execute(Component*) {} // empty inline (shared body at 0x30a800)
+    virtual bool UsesComponent(Component*) { return false; } // returns false (shared body at 0x3a90d0)
     unsigned char mGroupId;                 // +08
     bool mEnabled;                         // +09
 };
-// SOURCE_ONLY_NO_NATIVE_ID: same-snapshot nonpolymorphic value owner, owns nodes and borrows Components.
+// A plain value class (no vtable) that owns its nodes and points at components it does not own
 class ChildLayoutList
 {
 protected:
@@ -555,11 +554,11 @@ public:
 };
 class CenterLayout : public ChildLayoutInstructionBase {
 public:
-    CenterLayout(Component* box,bool horz,bool vert) : mHorz(horz),mVert(vert),mCenterBox(box) {} //actual388f6d..fb3 full20 owner
-    CenterLayout(Component* box,Component* first,bool horz,bool vert) : mHorz(horz),mVert(vert),mCenterBox(box) { Add(first); } //actual SDK/native3624e8..530, cleanup covers first insertion
-    CenterLayout(Component* box,const ChildLayoutList& list,bool horz,bool vert) : mHorz(horz),mVert(vert),mCenterBox(box) { Add(list); }
-    CenterLayout* Add(const ChildLayoutList& list) { list.AddTo(mComponentList); return this; }
-    CenterLayout* Add(Component* component) { mComponentList.push_back(component); return this; }
+    CenterLayout(Component* box,bool horz,bool vert) : mHorz(horz),mVert(vert),mCenterBox(box) {} // inline (0x388f6d..0x388fb3); the class is 0x20 bytes
+    CenterLayout(Component* box,Component* first,bool horz,bool vert) : mHorz(horz),mVert(vert),mCenterBox(box) { this->Add(first); } // inline (0x3624e8..0x362530); its cleanup covers the first insertion
+    CenterLayout(Component* box,const ChildLayoutList& list,bool horz,bool vert) : mHorz(horz),mVert(vert),mCenterBox(box) { this->Add(list); }
+    CenterLayout* Add(const ChildLayoutList& list) { list.AddTo(this->mComponentList); return this; }
+    CenterLayout* Add(Component* component) { this->mComponentList.push_back(component); return this; }
     static void Center(Component* inParent, Component* inChild, bool inHorz, bool inVert); // 337690
     virtual void Execute(Component*);
     bool mHorz;                            // +0c
@@ -573,45 +572,45 @@ public:
 class Dialog : public Container {
 public:
     virtual void Virtual08();               // 0x2f7a60
-    virtual void Virtual28();               // 0x2f7b20
-    virtual void Virtual2C(int inX, int inY, int inButton); // 0x2f7a70
-    virtual void Virtual30(int inX, int inY, int inButton); // 0x2f7af0
-    virtual void Virtual38(int inX, int inY); // 0x2f7b40
-    virtual void Virtual48();               // 0x2f7a20
-    virtual void Virtual4C();               // 0x2f7a40
-    virtual bool Virtual54(int inKey);       // 0x2f7c30
-    virtual bool Virtual5C();               // 0x2f7c90
+    virtual void MouseExit();               // 0x2f7b20
+    virtual void MouseDown(int inX, int inY, int inButton); // 0x2f7a70
+    virtual void MouseUp(int inX, int inY, int inButton);   // 0x2f7af0
+    virtual void MouseDrag(int inX, int inY); // 0x2f7b40
+    virtual void GotFocus();                // 0x2f7a20
+    virtual void LostFocus();               // 0x2f7a40
+    virtual bool KeyDown(int inKey);         // 0x2f7c30
+    virtual bool CanClose();                // 0x2f7c90
     Dialog();                               // 0x2f7910 (WONAPI)
-    void SetEndOnEscape(int); //2f7990 actual20B external
-    void SetDontEndOnEscape(); //2f79b0 actual8B external
-    void SetDefaultButton(Button*); //2f79c0 real retained Button94 owner external
-    bool ActivateDefaultButton(); //2f7ce0 actual51B guarded defaultbutton dispatch, support0
+    void SetEndOnEscape(int); // 0x2f7990
+    void SetDontEndOnEscape(); // 0x2f79b0
+    void SetDefaultButton(Button*); // 0x2f79c0: keeps the button at +0x94
+    bool ActivateDefaultButton(); // 0x2f7ce0: activates the default button when one is set
     virtual void HandleComponentEvent(ComponentEvent* inEvent);    // +0x7c 0x2f7d20 (WONAPI)
 
     int mDragX;                            // +0x84
     int mDragY;                            // +0x88
-    bool mB8C;                             // +0x8c, dragging; original ctor does not initialize
+    bool mDragging;                        // +0x8c, dragging; the constructor does not initialize it
     bool mAllowDrag;                       // +0x8d
     bool mKeepInRoot;                      // +0x8e
     bool mEndOnEscape;                     // +0x8f
     int mEscapeId;                         // +0x90
-    SmartPtr<Button> mC94;                  // +0x94, actual default Button owner
+    SmartPtr<Button> mDefaultButton;        // +0x94, the default button
 };
 
 class Button : public Component {
 public:
-    void Fn2F3440(); //actual enabled/checked click activation, noargs
+    void Fn2F3440(); // click activation (tests the enabled and checked states), no arguments
     Button();                               // 0x2f3070 (WONAPI)
     virtual ~Button();                      // 0x2f3100 (WONAPI)
-    virtual bool VirtualAC();               // +0xac (a click; EELobbyColorButton 0x290669)
-    virtual void VirtualB0(const GUIString&); //actual SetTextHook2f30d0
+    virtual bool HandleActivate();          // +0xac (a click; EELobbyColorButton 0x290669)
+    virtual void SetTextHook(const GUIString&); // 0x2f30d0
     virtual void SetText(const GUIString& inText, bool inFlag);    // +0xb4 (0x2f3180)
     virtual const GUIString& GetText() { return gEmptyGUIString; }   // +0xb8 0x2905a8
     void SetCheck(bool inChecked, bool inNotify = false);      // 0x2f3500
-    void Fn2F3370(unsigned long inFlags, bool inSet);          // 0x2f3370 (EELobbyColorButton: 0x40, true)
+    void SetButtonFlags(unsigned long inFlags, bool inSet);    // 0x2f3370 (EELobbyColorButton: 0x40, true)
 
     union {
-        unsigned long mButtonFlags; //30 actual SDK flags
+        unsigned long mButtonFlags; // at +0x30, flags
         struct {
     unsigned long mButtonFlag0 : 1;         // +0x30 bits (Button::SetCheck 0x2f3500 tests bit 3)
     unsigned long mButtonFlag1 : 1;
@@ -621,7 +620,7 @@ public:
     unsigned long mButtonFlag5 : 1;         // +0x30 bit 5 (EELobbyColorButton 0x29060b draws it pressed)
         };
     };
-    // the flag tests read one bit through an inline bool getter (shr n; test 1: Button::Fn2F3370 0x2f3370)
+    // the flag tests read one bit through an inline bool getter (shr n; test 1: Button::SetButtonFlags 0x2f3370)
     bool IsRepeat() { return (mButtonFlags & 0x02) != 0; }
     bool IsChecked() { return (mButtonFlags & 0x04) ? true : false; }
     bool IsRadio() { return (mButtonFlags & 0x08) != 0; }
@@ -631,10 +630,10 @@ public:
     bool IsDefaultOnFocus() { return (mButtonFlags & 0x400) != 0; }
     bool mKeyDown; //34
     int mDelayAcc; //38
-    SmartPtr<Sound> mClickSound; //3c complete external Sound lifetime
+    SmartPtr<Sound> mClickSound; // at +0x3c
     unsigned char mMouseDownState; //40, 0=up 1=downoutside 2=downover
-    static SmartPtr<Button> mDefaultButton; //native966224
-    static SmartPtr<Button> mDialogDefaultButton; //native966228
+    static SmartPtr<Button> mDefaultButton; // 0x966224
+    static SmartPtr<Button> mDialogDefaultButton; // 0x966228
     static void SetDialogDefaultButton(Button*); //2f31c0
     static void UnSetDialogDefaultButton(Button*); //2f3230
     static void SetDefaultButton(Button*); //2f3280
@@ -647,22 +646,22 @@ public:
     bool IsMouseOver(); //2f3170
     bool IsDefaultButton(); //2f31b0
     void SetClickSound(Sound*); //2f3910
-    virtual void Virtual6C(); //2f33c0 AddedToParent
-    virtual void Virtual24(int,int); //2f35b0 MouseEnter
-    virtual void Virtual28(); //2f3620 MouseExit
-    virtual void Virtual2C(int,int,int); //MouseDown
-    virtual void Virtual30(int,int,int); //MouseUp
-    virtual void Virtual38(int,int); //2f3740 MouseDrag
-    virtual void Virtual48(); //2f37a0 GotFocus
-    virtual void Virtual4C(); //2f37d0 LostFocus
-    virtual bool Virtual58(int); //2f38b0 actual release-key slot58
-    virtual bool Virtual54(int); //KeyDown
-    virtual bool Virtual44(int); //TimerEvent
-    virtual void Virtual40(unsigned long); //2f3900 Hover, forwarding support0
+    virtual void AddedToParent(); //2f33c0 AddedToParent
+    virtual void MouseEnter(int,int); //2f35b0 MouseEnter
+    virtual void MouseExit(); //2f3620 MouseExit
+    virtual void MouseDown(int,int,int); //MouseDown
+    virtual void MouseUp(int,int,int);   //MouseUp
+    virtual void MouseDrag(int,int); //2f3740 MouseDrag
+    virtual void GotFocus();  //2f37a0 GotFocus
+    virtual void LostFocus(); //2f37d0 LostFocus
+    virtual bool KeyUp(int);     // 0x2f38b0, vtable +0x58
+    virtual bool KeyDown(int);   //KeyDown
+    virtual bool TimerEvent(int); //TimerEvent
+    virtual void MouseHover(unsigned long); // 0x2f3900 (forwarder)
 };
 
-// Borrowed native32-slot LineSegment14 prefix; no allocation, construction,
-// sizeof or destructor implementation from these partial rich-text contracts.
+// Only a prefix of LineSegment (0x14 bytes, 32 vtable slots) is declared: nothing here allocates,
+// constructs, copies or destroys these rich-text classes.
 class MultiLineBuilder;
 class ScrollAreaViewport;
 struct ElementSelectionInfo;
@@ -679,12 +678,11 @@ class LineSegment : public RefCount {
 public:
     bool DrawSelection1(Graphics&,int,int,ElementPaintInfo&); //309570
     void DrawSelection2(Graphics&,int,int); //3095e0
-    static SmartPtr<Image> mSelectImageMask; //actual566220 original global owner; no definition here
-    static int mCounter; //actual566240 original retained global; no definition here
-    static Table* mTableContext; //actual56623c retained original context cell; declaration only
-    // Actual SDK natural implicit destructor, inherited RefCount virtual slot0.
-    // No owned base fields; TextPiece311480 -> generic338c70 normal cleanup.
-    // No fabricated ordinary external LineSegment destructor or empty stub.
+    static SmartPtr<Image> mSelectImageMask; // 0x566220 (defined in the original, not here)
+    static int mCounter; // 0x566240 (defined in the original, not here)
+    static Table* mTableContext; // 0x56623c (declaration only)
+    // Implicit destructor (RefCount's virtual slot 0).
+    // No owned members; TextPiece's destructor (0x311480) goes to the generic one at 0x338c70.
     virtual int GetWidth(); //04
     virtual int GetMinWidth(); //08
     virtual int GetMaxWidth(); //0c
@@ -707,7 +705,7 @@ public:
     virtual bool GetSelCharPos(int&,int&,int,int); //50
     virtual void GetSelText(GUIString&,ElementSelectionInfo&); //54
     virtual bool FindStr(ElementFindInfo&); //58
-    virtual void SetSelIndex() { mStartSelIndex=mCounter++; } //5c
+    virtual void SetSelIndex() { this->mStartSelIndex=LineSegment::mCounter++; } //5c
     virtual LineSegment* GetSegmentAt(int&,int&,bool); //60
     virtual bool IsInvalid(); //64
     virtual bool AllowModalInput(); //68
@@ -716,62 +714,61 @@ public:
     virtual void Wrap(MultiLineBuilder*,bool); //74, target excludes later SDK PaintSelection
     virtual void SetMaxWidth(int); //78
     virtual void SetViewport(ScrollAreaViewport*,int,int); //7c
-    int mStartSelIndex,mAbsX,mAbsY; //08,0c,10 borrowedprefix
+    int mStartSelIndex,mAbsX,mAbsY; // at +0x08, +0x0c, +0x10
 };
 class LineElement;
-// Actual floating record10, two virtual dimension queries (no virtual dtor).
-// Native floating vector stride10 at30cbb5/30cd35/30d7c8; retained segment4.
+// Floating record (0x10 bytes) with two virtual size queries (no virtual destructor).
+// Vector stride 0x10 at 0x30cbb5/0x30cd35/0x30d7c8; the segment at +0x04.
 struct FloatingSegment {
     SmartPtr<LineSegment> mSegment; //04, vptr00
     int mx,my; //08,0c
     FloatingSegment(LineSegment* segment=NULL,int x=0,int y=0):mSegment(segment),mx(x),my(y) {}
-    virtual int GetWidth() { return mSegment->GetWidth(); }
-    virtual int GetHeight() { return mSegment->GetHeight(); }
+    virtual int GetWidth() { return this->mSegment->GetWidth(); }
+    virtual int GetHeight() { return this->mSegment->GetHeight(); }
 };
-// Actual complete8 segment-list value, native node payload8/flags0c.
+// Segment list value (8 bytes); list node payload 8, flags at +0x0c.
 struct SegmentInfo {
     SmartPtr<LineSegment> mSegment;
     unsigned short mFlags;
     SegmentInfo(LineSegment* segment=NULL,unsigned short flags=0):mSegment(segment),mFlags(flags) {}
 };
-// Actual complete68 MultiLineElement owner; native original constructor/dtor providers.
-// Allocation via the genuine external constructor is allowed; no new lifetime bodies or copy authority.
+// MultiLineElement (0x68 bytes); constructor and destructor out of line.
 class MultiLineElement : public LineSegment {
 public:
-    MultiLineElement(); //30c7e0 external actual259B complete68 constructor
-    virtual int GetWidth(); //30c8f0 external getter
-    void CalcMinMaxWidths(); //genuine SDK explicit empty hook, contextual native4142a0 from actual30d000/30d020
-    virtual int GetMinWidth(); //30d000 external getter/support0
-    virtual int GetMaxWidth(); //30d020 external getter/support0
-    virtual int GetHeight(); //30c900 external getter
+    MultiLineElement(); // 0x30c7e0
+    virtual int GetWidth(); // 0x30c8f0
+    void CalcMinMaxWidths(); // empty; calls from 0x30d000/0x30d020 reach the shared body at 0x4142a0
+    virtual int GetMinWidth(); // 0x30d000
+    virtual int GetMaxWidth(); // 0x30d020
+    virtual int GetHeight(); // 0x30c900
     virtual LineSegment* GetSegmentAt(int&,int&,bool); //30ca30
     virtual void SetViewport(ScrollAreaViewport*,int,int); //30cb60
     virtual void GetSelText(GUIString&,ElementSelectionInfo&); //30cc50
     virtual bool GetSelCharPos(int&,int&,int,int); //30ccd0
     virtual bool FindStr(ElementFindInfo&); //30cd70
     virtual void SetSelIndex(); //30cbf0
-    virtual int GetEndSelIndex(); //30cc30 external getter/support0
-    bool IsLastLineEmpty(); //genuine SDK segment tail flag query; SOURCE_ONLY_NO_NATIVE_ID
+    virtual int GetEndSelIndex(); // 0x30cc30
+    bool IsLastLineEmpty(); // tests the segment's tail flag (not identified in the original exe)
     virtual void Paint(Graphics&,int,int,ElementPaintInfo&); //30d6e0
-    virtual void SetMaxWidth(int); //30d1d0 orchestration support0; complete80 original builder lifecycle
+    virtual void SetMaxWidth(int); // 0x30d1d0: rebuilds the lines for the new width
     void AddSegment(LineSegment*,unsigned short=0); //30d570
     typedef std::vector<FloatingSegment> FloatingVector;
     typedef std::vector<SmartPtr<LineElement> > LineVector;
     typedef std::list<SegmentInfo> SegmentList;
-    LineVector::iterator FindLineAt(int); //30d040 actual original binary-search provider
-    FloatingSegment* FindFloatingSegmentAt(int,int,bool); //30d0c0 actual original provider
+    LineVector::iterator FindLineAt(int); // 0x30d040: binary search
+    FloatingSegment* FindFloatingSegmentAt(int,int,bool); // 0x30d0c0
     FloatingVector mFloatingItems[2]; //14..33
     LineVector mLineVector; //34..43
     SegmentList mSegmentList; //44..4f
-    SmartPtr<LineElement> mSearchLine; //50 retained original-owned search sentinel
+    SmartPtr<LineElement> mSearchLine; // at +0x50, search sentinel
     int mWidth,mHeight,mMinWidth,mCurLineWidth,mMaxWidth; //54,58,5c,60,64
 };
-// Complete target30 WrappedText owner; preserves earlier public8/c fields.
+// WrappedText (0x30 bytes); the fields at +0x08/+0x0c come first.
 class WrappedText : public RefCount {
 public:
     GUIString mText; //08
     SmartPtr<Font> mFont; //0c
-    SmartPtr<MultiLineElement> mRichText; //10; native external virtual lifetime
+    SmartPtr<MultiLineElement> mRichText; // at +0x10; destroyed through its virtual destructor
 protected:
     struct BreakInfo {
         unsigned short mBreakPos,mNextStartPos,mWidth;
@@ -780,56 +777,56 @@ protected:
     typedef std::list<BreakInfo> BreakList;
     BreakList mBreakList; //14..1f
     int mWidth,mHeight,mMaxWidth; //20,24,28
-    bool mWrap,mIsCentered; //2c,2d complete30
+    bool mWrap,mIsCentered; // at +0x2c, +0x2d; the class is 0x30 bytes
     void Init(); //34a7c0
     void CalcWrap(); //34a9b0
 public:
     WrappedText(); //34a7e0
-    WrappedText(const GUIString&); //genuine SDK explicit text constructor; SOURCE_ONLY_NO_NATIVE_ID
+    WrappedText(const GUIString&); // (not identified in the original exe)
     void SetText(const GUIString&); //34acc0
     void SetWrap(bool); //34ad20
     void SetCentered(bool); //34ad40
     void SetFont(Font*); //34ad50
     void SetMaxWidth(int); //34adb0
     void Paint(Graphics&,int,int); //34adf0
-    int GetWidth() { return mWidth; }
-    const GUIString& GetText() { return mText; } //genuine SDK inline, borrowed reference to owned08
-    int GetHeight(); //actual SDK inline, defined after complete Font
+    int GetWidth() { return this->mWidth; }
+    const GUIString& GetText() { return this->mText; } // inline; returns the text at +0x08
+    int GetHeight(); // inline, defined after Font below
 };
-// Complete actualMSButtonBase5c owner: inheritedButton44, WrappedSP44, scalar48..58/pad59..5b.
-// Separate derived MS controls remain borrowed; no by-value copy implementation.
+// MSButtonBase (0x5c bytes): Button (0x44), the wrapped text at +0x44, scalars +0x48..0x58, padding +0x59..0x5b.
+// The derived MS controls are declared separately below.
 class MSButtonBase : public Button {
 public:
-    MSButtonBase(); //2fe6e0 actualfullconstructor, newWrappedText30
-    virtual ~MSButtonBase(); //normal2fe910, original external lifetime
+    MSButtonBase(); // 0x2fe6e0: allocates the WrappedText (0x30 bytes)
+    virtual ~MSButtonBase(); // 0x2fe910, out of line
     virtual void Virtual08(); //2fea10
-    virtual void Virtual0C(int&,int&); //2fe8c0
-    virtual void VirtualB0(const GUIString&); //2fe880 real SetTextHook
+    virtual void GetDesiredSize(int&,int&); //2fe8c0
+    virtual void SetTextHook(const GUIString&); //2fe880 real SetTextHook
     virtual const GUIString& GetText(); //2fe850 real B8
     void SetTransparent(bool); //2fe8a0
     void SetAdjustHeightToFitText(bool); //2fe9f0
     void AdjustHeightToFitText(); //2fe980
     void DrawButtonText(Graphics&,int,int); //2fea40
-    void SetFont(Font* f) { mText->SetFont(f); }
-    void SetTextColor(int c) { mTextColor=c; }
-    void SetStandardTextColor(StandardColor c) { mStandardTextColor=c;mTextColor=-1; }
-    void SetWrap(bool b) { mText->SetWrap(b); }
-    void SetHorzAlign(HorzAlign h) { mHAlign=(unsigned char)h;mText->SetCentered(mHAlign==HorzAlign_Center); }
-    void SetVertAlign(VertAlign v) { mVAlign=(unsigned char)v; }
+    void SetFont(Font* f) { this->mText->SetFont(f); }
+    void SetTextColor(int c) { this->mTextColor=c; }
+    void SetStandardTextColor(StandardColor c) { this->mStandardTextColor=c;this->mTextColor=-1; }
+    void SetWrap(bool b) { this->mText->SetWrap(b); }
+    void SetHorzAlign(HorzAlign h) { this->mHAlign=(unsigned char)h;this->mText->SetCentered(this->mHAlign==HorzAlign_Center); }
+    void SetVertAlign(VertAlign v) { this->mVAlign=(unsigned char)v; }
     enum FocusStyle { FocusStyle_None,FocusStyle_AroundWindow,FocusStyle_AroundText };
-    void SetFocusStyle(FocusStyle s) { mFocusStyle=(unsigned char)s; }
-    void SetHorzTextPad(int l,int r) { mLeftTextPad=(unsigned char)l;mRightTextPad=(unsigned char)r; }
-    void SetVertTextPad(int t,int b) { mTopTextPad=(unsigned char)t;mBottomTextPad=(unsigned char)b; }
-    void IncrementHorzTextPad(int l,int r) { mLeftTextPad=mLeftTextPad+(unsigned char)l;mRightTextPad=mRightTextPad+(unsigned char)r; }
-    void IncrementVertTextPad(int t,int b) { mTopTextPad=mTopTextPad+(unsigned char)t;mBottomTextPad=mBottomTextPad+(unsigned char)b; }
-    SmartPtr<WrappedText> mText; //44, original external owner lifetime
+    void SetFocusStyle(FocusStyle s) { this->mFocusStyle=(unsigned char)s; }
+    void SetHorzTextPad(int l,int r) { this->mLeftTextPad=(unsigned char)l;this->mRightTextPad=(unsigned char)r; }
+    void SetVertTextPad(int t,int b) { this->mTopTextPad=(unsigned char)t;this->mBottomTextPad=(unsigned char)b; }
+    void IncrementHorzTextPad(int l,int r) { this->mLeftTextPad=this->mLeftTextPad+(unsigned char)l;this->mRightTextPad=this->mRightTextPad+(unsigned char)r; }
+    void IncrementVertTextPad(int t,int b) { this->mTopTextPad=this->mTopTextPad+(unsigned char)t;this->mBottomTextPad=this->mBottomTextPad+(unsigned char)b; }
+    SmartPtr<WrappedText> mText; // at +0x44
     StandardColor mStandardTextColor; //48
     int mTextColor; //4c
     unsigned char mHAlign,mVAlign,mFocusStyle; //50/51/52
     unsigned char mTopTextPad,mBottomTextPad,mLeftTextPad,mRightTextPad; //53..56
     bool mIsTransparent,mAdjustHeightToFitText; //57/58
 };
-// Actual SDK utility class: static call contracts only, no instances/lifetime.
+// SDK utility class: static functions only, never instantiated.
 class MSGraphicsUtil {
 public:
     static void DrawArrow(Graphics&,Direction,int,int,int,int,bool); //2fdfb0
@@ -839,106 +836,105 @@ public:
     static void DrawRadio(Graphics&,int,int,int,int,bool,bool); //2fe3b0
     static void DrawCloseX(Graphics&,int,int,int,int); //2fe5e0
 };
-// Complete actual MSButton60; genuine explicit SDK constructors now declared.
-// Ordinary reviewed setup Source may construct this owner; destructor remains external.
+// MSButton (0x60 bytes)
+// The destructor is out of line.
 class MSButton : public MSButtonBase {
 public:
-    MSButton(); //2fec30 actual complete60 default constructor, original external
-    MSButton(const GUIString&); //2feca0 actual complete60 text constructor, RET4, original external
-    virtual ~MSButton(); //2fed10 original external
+    MSButton(); // 0x2fec30
+    MSButton(const GUIString&); // 0x2feca0 (ret 4)
+    virtual ~MSButton(); // 0x2fed10, out of line
     virtual void Paint(Graphics&); //2fed20
-    void SetUseFrame2(bool useFrame2) { mUseFrame2=useFrame2; } //genuine SDK inline API
+    void SetUseFrame2(bool useFrame2) { this->mUseFrame2=useFrame2; } // inline
 protected:
-    void Init(); //2febf0 genuine SDK explicit setup helper
+    void Init(); // 0x2febf0: setup helper
 public:
-    bool mUseFrame2; //5c, native2fec1e/2fed75; complete size60 externally
+    bool mUseFrame2; // at +0x5c (written at 0x2fec1e/0x2fed75); the class is 0x60 bytes
 };
-// Borrowed actual5c control; original external lifetime, no constructors/allocation/copy/sizeof.
+// MS control (0x5c bytes); constructor and destructor out of line.
 class MSCheckbox : public MSButtonBase {
 public:
-    MSCheckbox(); //2ff3e0 genuine explicit SDK constructor, fieldless5c
+    MSCheckbox(); // 0x2ff3e0; no members beyond the base's 0x5c bytes
 protected:
-    void Init(); //2ff3b0 genuine SDK helper
+    void Init(); // 0x2ff3b0
 public:
-    virtual ~MSCheckbox(); //normal2ff420 originalexternal
-    virtual void Paint(Graphics&); //2ff470 actual18
+    virtual ~MSCheckbox(); // 0x2ff420, out of line
+    virtual void Paint(Graphics&); // 0x2ff470, vtable +0x18
     typedef void (*CheckboxPainterFunc)(Graphics&,MSCheckbox*);
     static CheckboxPainterFunc CheckboxPainter;
     static int mCheckboxWidth,mCheckboxHeight;
-    static void DefaultCheckboxPainterFunc(Graphics&,MSCheckbox*); //2ff430 support0
+    static void DefaultCheckboxPainterFunc(Graphics&,MSCheckbox*); // 0x2ff430
 };
-// Complete actual fieldless5c MSRadioButton owner through original external ctor.
-// No new constructor/destructor/copy source bodies.
+// MSRadioButton (0x5c bytes, no members of its own); constructor out of line
 class MSRadioButton : public MSButtonBase {
 public:
 protected:
-    void Init(); //genuine SDK helper, naturally expanded native2ff530
+    void Init(); // inlined into the constructor at 0x2ff530
 public:
-    MSRadioButton(); //2ff530 actual95B external constructor
-    virtual ~MSRadioButton(); //normal2ff5b0 originalexternal
-    virtual void Paint(Graphics&); //2ff600 actual18
+    MSRadioButton(); // 0x2ff530
+    virtual ~MSRadioButton(); // 0x2ff5b0, out of line
+    virtual void Paint(Graphics&); // 0x2ff600, vtable +0x18
     typedef void (*RadioPainterFunc)(Graphics&,MSRadioButton*);
     static RadioPainterFunc RadioPainter;
     static int mRadioWidth,mRadioHeight;
-    static void DefaultRadioPainterFunc(Graphics&,MSRadioButton*); //2ff5c0 support0
+    static void DefaultRadioPainterFunc(Graphics&,MSRadioButton*); // 0x2ff5c0
 };
 
-// Complete actual MSArrowButton48, full Button44 +Direction44; external lifetime only.
+// MSArrowButton (0x48 bytes): Button (0x44) plus the direction at +0x44; constructor and destructor out of line
 class MSArrowButton : public Button {
 public:
-    MSArrowButton(Direction=Direction_Up); //2ff0c0 actual external86B/RET4
-    virtual ~MSArrowButton(); //original external lifetime
-    virtual void Paint(Graphics&); //actual18
-    void SetDirection(Direction d) { mDirection=d; }
+    MSArrowButton(Direction=Direction_Up); // 0x2ff0c0 (ret 4)
+    virtual ~MSArrowButton(); // out of line
+    virtual void Paint(Graphics&); // vtable +0x18
+    void SetDirection(Direction d) { this->mDirection=d; }
     Direction mDirection; //44
 };
-// Complete fieldless SDK owner48; native ctor3c9590, Paint3c9620,
+// No members of its own (0x48 bytes); constructor 0x3c9590, Paint 0x3c9620,
 // VT4541f4, RTTI MaxSplitterButton>MSArrowButton>Button>Component>RefCount.
-// Destructor is genuinely implicit; native3c9610 tails MSArrowButton2ff140.
+// The destructor is implicit; 0x3c9610 jumps to MSArrowButton's at 0x2ff140.
 class MaxSplitterButton : public MSArrowButton {
 public:
     MaxSplitterButton(Direction=Direction_Up);
     virtual void Paint(Graphics&);
 };
-// Complete actual MSTabButton60, full MSButtonBase5c +intLowerAmount5c; external lifetime only.
+// MSTabButton (0x60 bytes): MSButtonBase (0x5c) plus mLowerAmount at +0x5c; constructor and destructor out of line
 class MSTabButton : public MSButtonBase {
 public:
-    MSTabButton(const GUIString& = "",bool=true,int=3); //genuine SDK defaults; existing2fee20/135 textctorRET12
+    MSTabButton(const GUIString& = "",bool=true,int=3); // 0x2fee20 (ret 12)
 
-    virtual void Paint(Graphics&); //actual18
-    virtual void Virtual0C(int&,int&); //actual0c
-    void SetLowerAmount(int n) { mLowerAmount=n; }
+    virtual void Paint(Graphics&); // vtable +0x18
+    virtual void GetDesiredSize(int&,int&); // vtable +0x0c
+    void SetLowerAmount(int n) { this->mLowerAmount=n; }
     int mLowerAmount; //5c
 };
-// Complete actual MS3DFrame38, Component30 +bool30/int34; external lifetime only.
+// MS3DFrame (0x38 bytes): Component (0x30) plus a bool at +0x30 and an int at +0x34; constructor and destructor out of line
 class MS3DFrame : public Component {
 public:
-    MS3DFrame(int=3,bool=false); //300780 actual original48B/RET8
-    virtual void Paint(Graphics&); //actual18,3007b0
-    void SetIsUp(bool v) { mIsUp=v; }
-    void SetFrameType(int t) { mType=t; }
+    MS3DFrame(int=3,bool=false); // 0x300780 (ret 8)
+    virtual void Paint(Graphics&); // 0x3007b0, vtable +0x18
+    void SetIsUp(bool v) { this->mIsUp=v; }
+    void SetFrameType(int t) { this->mType=t; }
     bool mIsUp; //30
     int mType; //34
 };
 
 class Label : public Component {
 public:
-    Label(); //2f9d80, complete actual68 owner, native new68 at300908
-    virtual ~Label(); //2f9f50, actual Background+WrappedText owner cleanup
+    Label(); // 0x2f9d80; the class is 0x68 bytes (allocated at 0x300908)
+    virtual ~Label(); // 0x2f9f50: releases the background and the wrapped text
     virtual void Virtual08(); //2fa020 SizeChanged
-    virtual void Virtual0C(int&,int&); //2fa140 GetDesiredSize
+    virtual void GetDesiredSize(int&,int&); //2fa140 GetDesiredSize
     virtual void Paint(Graphics&); //2fa1a0
     void SetMaxWidth(); //2f9f20
     void AdjustHeightToFitText(); //2fa090
     void SetText(const GUIString& inText, bool inFlag = true); // 0x2fa060
-    void SetHorzAlign(HorzAlign); //2fa040 native external
-    void SetWrap(bool); //2fa120 native external
-    void SetAdjustHeightToFitText(bool); //2fa100 native external
-    void SetVertPad(int inTop, int inBottom) { mTopPad=inTop; mBottomPad=inBottom; }
-    void SetFont(Font* theFont) { mWrappedText->SetFont(theFont); }
-    void SetTextColor(int theColor) { mColor=theColor; }
-    void SetBackground(const Background& theBackground) { mBackground=theBackground; }
-    void SetVertAlign(VertAlign theAlign) { mAlign3C=theAlign; }
+    void SetHorzAlign(HorzAlign); // 0x2fa040
+    void SetWrap(bool); // 0x2fa120
+    void SetAdjustHeightToFitText(bool); // 0x2fa100
+    void SetVertPad(int inTop, int inBottom) { this->mTopPad=inTop; this->mBottomPad=inBottom; }
+    void SetFont(Font* theFont) { this->mWrappedText->SetFont(theFont); }
+    void SetTextColor(int theColor) { this->mColor=theColor; }
+    void SetBackground(const Background& theBackground) { this->mBackground=theBackground; }
+    void SetVertAlign(VertAlign theAlign) { this->mAlign3C=theAlign; }
     SmartPtr<WrappedText> mWrappedText;      // +30
     int mColor;                            // +34
     int mAlign38;
@@ -947,14 +943,14 @@ public:
     int mRightPad;                         // +44
     int mTopPad;                           // +48
     int mBottomPad;                        // +4c
-    bool mAdjustHeightToFitText; //50, naturalpad51..53
-    Background mBackground; //54..67 borrowed actual tail; no lifetime implementation
+    bool mAdjustHeightToFitText; // at +0x50; +0x51..0x53 padding
+    Background mBackground; // at +0x54..0x67
 };
 
 
 
 
-// Actual SelectionColor0c, native read-only color helpers; no new lifetime bodies.
+// SelectionColor (0x0c bytes) with read-only color helpers.
 enum ForegroundSelectionMode {
     ForegroundSelectionMode_UseOriginalColor,
     ForegroundSelectionMode_InvertOriginalColor,
@@ -972,54 +968,53 @@ public:
     ForegroundSelectionMode mMode;
 };
 
-// Complete actual InputBoxec owner: true Background14 values c4/d8 endec.
-// Original constructor2f7fd0/destructor2f8270 retain lifecycle bodies.
-// Allocation through original ctor is proven; no new copy or lifetime implementation.
+// InputBox (0xec bytes): Background values at +0xc4 and +0xd8
+// Constructor 0x2f7fd0 and destructor 0x2f8270 are out of line.
 class InputBox : public Component {
 public:
-    void SetFont(Font* f) { mFont=f; }
+    void SetFont(Font* f) { this->mFont=f; }
     typedef bool (*InputFilter)(InputBox*,GUIString&);
     static bool NumericFilter(InputBox*,GUIString&); //2f7f70 cdecl
-    InputBox(); //external2f7fd0; no definition in this cohort
-    // Genuine SDK implicit virtual destructor2f8270; automatic real owned members and base cleanup.
-    const GUIString& GetText() const; //2f9960 actual SDK const
+    InputBox(); // 0x2f7fd0
+    // Implicit virtual destructor (0x2f8270)
+    const GUIString& GetText() const; // 0x2f9960
     void SetText(const GUIString&,bool); //2f9990
     void Clear(bool); //2f99c0
-    void Fn2F9140(const GUIString&,bool); //actual AddInputHistory2f9140; preserved existing spelling
+    void AddInputHistory(const GUIString&,bool); // 0x2f9140
     void SetInputHistory(const GUIString&,bool=false); //2f92f0
-    void Fn2F84B0(bool); //actual SetAllowSelection2f84b0, existing spelling
-    void SelectRange(int,int); //actual SetSel2f8aa0, existing spelling
+    void SetAllowSelection(bool); // 0x2f84b0
+    void SelectRange(int,int); // 0x2f8aa0 (SDK name SetSel)
     void AdjustTextRect(); //2f8400
     void SetIcon(Image*); //2f8450
     void SetCharWidth(int); //2f8560
     void CheckSel(int,int,bool); //2f8600
-    void SetBackground(const Background& b) { mBackground=b; }
-    void SetDisabledBackground(const Background& b) { mDisabledBackground=b; }
+    void SetBackground(const Background& b) { this->mBackground=b; }
+    void SetDisabledBackground(const Background& b) { this->mDisabledBackground=b; }
     void SetCursorBlinkRate(int,int=0); //2f87d0
     void AdjustPosition(); //2f8a20
-    void CopySelection(); //external2f8b10 until Clipboard contract
+    void CopySelection(); // 0x2f8b10
     void SetSelText(const GUIString&,bool=true); //2f8e10
     int MoveCursor(bool,bool,const GUIString&,int); //2f90c0
     void SetPasswordChar(char); //2f9970
-    void SetTextPrv(const GUIString&,bool=true); //external2f99e0 until Fill helper
+    void SetTextPrv(const GUIString&,bool=true); // 0x2f99e0
     virtual void Virtual08(); //2f8510
-    virtual void Virtual0C(int&,int&); //2f8530
-    virtual void Virtual48(); //2f8590
-    virtual void Virtual4C(); //2f85d0
-    virtual void Virtual2C(int,int,int); //2f8750
-    virtual void Virtual30(int,int,int); //2f8790
-    virtual void Virtual28(); //2f87a0
-    virtual void Virtual38(int,int); //2f87b0
-    virtual bool Virtual44(int); //2f8800
-    virtual bool Virtual50(int); //external KeyChar2f8c30 until Clipboard contract
-    virtual bool Virtual54(int); //2f93b0
-    virtual void Paint(Graphics&); //external2f9ac0 until Background owner contract
+    virtual void GetDesiredSize(int&,int&); //2f8530
+    virtual void GotFocus();  //2f8590
+    virtual void LostFocus(); //2f85d0
+    virtual void MouseDown(int,int,int); //2f8750
+    virtual void MouseUp(int,int,int);   //2f8790
+    virtual void MouseExit(); //2f87a0
+    virtual void MouseDrag(int,int); //2f87b0
+    virtual bool TimerEvent(int); //2f8800
+    virtual bool KeyChar(int);   // 0x2f8c30
+    virtual bool KeyDown(int);   //2f93b0
+    virtual void Paint(Graphics&); // 0x2f9ac0
     GUIString mText; //30 display
-    GUIString mPasswordText; //34 actual logicaltext when password
-    char mPassword; //38 actual passwordCHAR; previous bool was incomplete
+    GUIString mPasswordText; // at +0x34, the real text when this is a password box
+    char mPassword; // at +0x38, the password character
     SmartPtr<Image> mIcon; //3c
-    InputFilter mInputFilter; //40 actual mutable transform
-    std::deque<GUIString> mInputHistory; //44..57; actual Dinkum23320B allocator/map/mapsize/myoff/mysize
+    InputFilter mInputFilter; // at +0x40, input transform
+    std::deque<GUIString> mInputHistory; // at +0x44..0x57, Dinkum deque (allocator, map, map size, offset, size; 0x14 bytes)
     int mInputHistoryPos; //58
     int mMaxInputHistory; //5c
     bool mHaveTraversedHistory; //60
@@ -1033,106 +1028,104 @@ public:
     bool mCursorOn,mUnderlineCursor,mAllowSelection,mSelectOnFocus,mUseDisabledColors; //90..94
     int mMaxChars; //98
     SmartPtr<Font> mFont; //9c
-    unsigned long mTextColor; //a0 existing gameconsumer
+    unsigned long mTextColor; // at +0xa0
     int mDisabledTextColor; //a4
-    SelectionColor mSelColor; //a8..b3 complete scalarcolor contract
-    WONRectangle mTextRect; //b4..c3 complete real rectangle
-    Background mBackground; //c4..d7 actual external-owned Background20
-    Background mDisabledBackground; //d8..eb actual external-owned Background20
+    SelectionColor mSelColor; // at +0xa8..0xb3
+    WONRectangle mTextRect; // at +0xb4..0xc3
+    Background mBackground; // at +0xc4..0xd7
+    Background mDisabledBackground; // at +0xd8..0xeb
 };
 
 class StretchImage;
-// Actual nonpolymorphic14 record: four border ints then ImageSP10.
-// Complete actual nonpolymorphic14 value: borders0..c and sole retained ImageSP10.
-// Natural destructor releases ImageSP10. Original real constructors; genuine SDK out-of-line deep-copy constructor declared below.
+// Plain record (no vtable, 0x14 bytes): four border ints then the image at +0x10.
+// The implicit destructor releases the image; the copy constructor is out of line (declared below).
 class WONFrame {
 public:
     int mLeft,mTop,mRight,mBottom;
     SmartPtr<Image> mImage;
-    WONFrame(Image* =NULL,int=0); //3175f0 actual uniform-border ret8
-    WONFrame(Image*,int,int,int,int); //317690 actual five-arg ret14
-    WONFrame(StretchImage*); //317550 actual Stretch ret4
-    WONFrame(const WONFrame&); //genuine SDK out-of-line deep-copy constructor; support0 source, no guessed native entry
-    WONFrame& operator=(const WONFrame&); //3177a0 genuine original assignment provider
-    void Copy(const WONFrame&); //3177c0 actual deep image Duplicate, not SP sharing
-    void SetImage(Image*); //genuine SDK assignment; shared349ab0 already mapped
-    void SetImage(Image*,int,int,int,int); //317730 genuine SDK assignment and borders
+    WONFrame(Image* =NULL,int=0); // 0x3175f0 (ret 8): one border width on all sides
+    WONFrame(Image*,int,int,int,int); // 0x317690 (ret 0x14)
+    WONFrame(StretchImage*); // 0x317550 (ret 4)
+    WONFrame(const WONFrame&); // copies the image (not identified in the original exe)
+    WONFrame& operator=(const WONFrame&); // 0x3177a0
+    void Copy(const WONFrame&); // 0x3177c0: duplicates the image instead of sharing it
+    void SetImage(Image*); // shares the body at 0x349ab0
+    void SetImage(Image*,int,int,int,int); // 0x317730: sets the image and the borders
     void Paint(Graphics&,Component*); //3178c0
     void Paint(Graphics&,Component*,int,int,int,int); //317910
 };
-// Full native WONFrameComponent44, actual Component30 plus genuine WONFrame14.
-// F allocation authority is bounded to reviewed WONMSSkin composition using original constructor.
+// WONFrameComponent (0x44 bytes): Component (0x30) plus a WONFrame (0x14)
 class WONFrameComponent : public Component {
 public:
-    WONFrameComponent(Image* =NULL,int=0,int=0,int=0,int=0); //31a5b0 actual RET14, original external
-    WONFrameComponent(const WONFrame&); //31a740 genuine SDK frame-copy constructor RET4
-    const WONFrame& GetFrame(void) { return mFrame; } //genuine SDK inline accessor
-    // Genuine SDK implicit virtual destructor; full Frame/ImageSP40 then Component cleanup.
-    virtual void Paint(Graphics& inGraphics); // actual inherited override
-    virtual void VirtualAC(Image*, int, int, int, int);
-    virtual void VirtualB0(Image*);
-    virtual void VirtualB4(int, int, int, int);
-    virtual void VirtualB8(int);
-    virtual void VirtualBC(int);
-    virtual void VirtualC0(int);
-    virtual void VirtualC4(int);
-    virtual int VirtualC8();
-    virtual int VirtualCC();
-    virtual int VirtualD0();
-    virtual int VirtualD4();
-    WONFrame mFrame; //30..43 real14 aggregate; native31a5d6/31a6ef, retained ImageSP40
+    WONFrameComponent(Image* =NULL,int=0,int=0,int=0,int=0); // 0x31a5b0 (ret 0x14)
+    WONFrameComponent(const WONFrame&); // 0x31a740 (ret 4)
+    const WONFrame& GetFrame(void) { return this->mFrame; } // inline
+    // Implicit virtual destructor: releases the frame's image, then Component's cleanup
+    virtual void Paint(Graphics& inGraphics); // override
+    virtual void SetFrameImageAndBorders(Image*, int, int, int, int);
+    virtual void SetFrameImage(Image*);
+    virtual void SetFrameBorders(int, int, int, int);
+    virtual void SetFrameLeft(int);
+    virtual void SetFrameTop(int);
+    virtual void SetFrameRight(int);
+    virtual void SetFrameBottom(int);
+    virtual int GetFrameLeft();
+    virtual int GetFrameTop();
+    virtual int GetFrameRight();
+    virtual int GetFrameBottom();
+    WONFrame mFrame; // at +0x30..0x43 (written at 0x31a5d6/0x31a6ef); the frame's image at +0x40
 };
-// Actual complete ImageComponent38 owner,45 slots and ImageSP30/tile34/stretch35.
-// Constructor/destructor remain genuine originals; new authority only fully-proven callers.
+// ImageComponent (0x38 bytes, 45 vtable slots): image at +0x30, tile flag +0x34, stretch flag +0x35.
+// Constructor and destructor are out of line.
 class ImageComponent : public Component {
 public:
-    ImageComponent(Image* = NULL,bool = false); //306b10 actual full38 original external constructor
-    // Genuine SDK implicit virtual destructor: owned ImageSP30 then Component base; no authored lifetime body.
-    virtual void Virtual0C(int&, int&);      // 306cf0
+    ImageComponent(Image* = NULL,bool = false); // 0x306b10
+    // Implicit virtual destructor: releases the image at +0x30, then Component's cleanup
+    virtual void GetDesiredSize(int&, int&);  // 306cf0
     virtual void Paint(Graphics&);          // 306d30
-    virtual void VirtualAC(Image*, bool);   // 306c80, ret8
-    virtual void VirtualB0(Image*);          // 306c10, ret4
-    void SetTile(bool doTile) { mTile = doTile; }
-    void SetStretch(bool doStretch) { mStretch = doStretch; }
-    bool GetTile() { return mTile; }
-    bool GetStretch() { return mStretch; }
-    Image* GetImage() { return mImage.get(); }
-    SmartPtr<Image> mImage; //30 real retained owner, borrowed control facade only
-    bool mTile,mStretch; //34,35 actual config394da6/394dd8
+    virtual void SetImageAndTile(Image*, bool);  // 306c80, ret8
+    virtual void SetImage(Image*);           // 306c10, ret4
+    void SetTile(bool doTile) { this->mTile = doTile; }
+    void SetStretch(bool doStretch) { this->mStretch = doStretch; }
+    bool GetTile() { return this->mTile; }
+    bool GetStretch() { return this->mStretch; }
+    Image* GetImage() { return this->mImage.get(); }
+    SmartPtr<Image> mImage; // at +0x30
+    bool mTile,mStretch; // at +0x34, +0x35 (set at 0x394da6/0x394dd8)
 };
 
 // a drop-down list (vtable 0x84d638; its list at +0x90)
-// Scratch complete actual TabBar a0 / TabCtrl d8; GUI owner must review/migrate before use.
+// TabBar (0xa0 bytes) and TabCtrl (0xd8 bytes)
 class TabCtrl;
 class LayoutPoint;
 class TabBar : public Container {
 public:
     TabBar(TabCtrl*);
-    // Natural implicit normal3081f0: no own-vptr store, vector owns Button refs;0quota.
+    // Implicit destructor (0x3081f0): no own vptr store; the vector holds the button references
     virtual void HandleComponentEvent(ComponentEvent*);
     void PositionTab(Button*);
     void AddTab(Button*);
-    void RemoveTab(int); //genuine SDK remove/reindex/reparent algorithm
+    void RemoveTab(int); // removes the tab, renumbers and reparents the rest
     void SetCurTab(int,bool=true);
     void SetCurTabByName(const GUIString&,bool=true);
     void EnableTab(int,bool=true);
     bool Disabled(int);
-    int Fn308280(); // protected canonical call spelling; native borrowed getter18/support0
+    int GetCurTabId(); // getter
     std::vector<SmartPtr<Button> > mTabVector; //84, data88/end8c/cap90
     Button* mCurTab; //94, borrowed
     TabCtrl* mTabCtrl; //98, borrowed
-    int mOverlap; //9c; completea0
+    int mOverlap; // at +0x9c; the class is 0xa0 bytes
 };
 class TabCtrl : public Container {
 public:
-    TabCtrl(); // native308670/718; standalone Container/LayoutPoint new gates, no definition yet
-    // Natural implicit normal301340 (shared physical cleanup),0quota; no own-vptr store.
+    TabCtrl(); // 0x308670
+    // Implicit destructor (0x301340, shared with another class); no own vptr store
     virtual void Virtual08(); // SizeChanged308f50
-    virtual void Virtual0C(int&,int&); // GetDesiredSize3089e0
-    virtual bool Virtual54(int); // KeyDown309240
-    virtual void Virtual6C(); // AddedToParent308cb0
+    virtual void GetDesiredSize(int&,int&); // GetDesiredSize3089e0
+    virtual bool KeyDown(int);   // KeyDown309240
+    virtual void AddedToParent(); // AddedToParent308cb0
     virtual void HandleComponentEvent(ComponentEvent*); //3090e0
-    virtual bool Virtual88(bool,bool); //TakeTabFocus309140
+    virtual bool TabFocus(bool,bool);  //TakeTabFocus309140
     void CopyAttributes(TabCtrl*);
     void SetTabBarOnRight(bool);
     void SetArrowsOnLeft(bool);
@@ -1146,12 +1139,12 @@ public:
     void CalcContainerLayout();
     bool NeedScrollButtons();
     void AdjustTabBarScroll(int=0);
-    void Fn309350(int,bool); // SetCurTab protected canonical24/support0
-    void Fn309370(const GUIString&,bool); // SetCurTabByName protected canonical24/support0
-    int Fn309390(Container*); // GetTabIdForContainer55
-    void Fn3093D0(int,bool); // EnableTab protected canonical24/support0
+    void SetCurTab(int,bool);
+    void SetCurTabByName(const GUIString&,bool);
+    int GetTabIdForContainer(Container*); // GetTabIdForContainer55
+    void EnableTab(int,bool);
     void AddTab(Button*,Container*);
-    void RemoveTab(int); //genuine SDK remove/reselect algorithm
+    void RemoveTab(int); // removes the tab and reselects
     SmartPtr<TabBar> mBottomTabBar; //84
     SmartPtr<Container> mTopTabBar; //88
     SmartPtr<Container> mBottomTabBarContainer; //8c
@@ -1162,35 +1155,34 @@ public:
     int mTabBarHeight,mTabBarOverlap; //b0/b4
     SmartPtr<Button> mTabBarLeft,mTabBarRight; //b8/bc
     bool mArrowsOnLeft,mTabBarOnRight,mTabBarOnBottom,mUserHasInteracted; //c0..c3
-    // Native constructor deliberately leaves mUserHasInteracted uninitialized.
+    // The constructor leaves mUserHasInteracted uninitialized.
     std::vector<Container*> mTabVector; //c4, nonowning values, datac8/endcc/capd0
-    Container* mCurTab; //d4, borrowed; completed8
+    Container* mCurTab; // at +0xd4; the class is 0xd8 bytes
 };
 
-// Complete actual Scrollbarb8 owner; native305e10/305eb0 and pinned SDK full fields.
-// Original external base constructor/destructor only; no own base lifecycle definitions.
+// Scrollbar (0xb8 bytes); constructor 0x305e10, destructor 0x305eb0
 class Scrollbar : public Container {
 public:
-    Scrollbar(bool=true); //305e10 actual external base constructor114B/RET4
-    virtual ~Scrollbar(); //305eb0 external normal lifetime
+    Scrollbar(bool=true); // 0x305e10 (ret 4)
+    virtual ~Scrollbar(); // 0x305eb0
     virtual void Virtual08(); //306380
-    virtual void Virtual2C(int,int,int); //3064c0
-    virtual void Virtual38(int,int); //306510
-    virtual void Virtual6C(); //305fe0
+    virtual void MouseDown(int,int,int); //3064c0
+    virtual void MouseDrag(int,int); //306510
+    virtual void AddedToParent(); //305fe0
     virtual void HandleComponentEvent(ComponentEvent*); //306690
-    virtual void SetEnabled(bool); //3067e0 actual90 override
-    void CopyAttributes(Scrollbar*); //305fa0 support0
+    virtual void SetEnabled(bool); // 0x3067e0, vtable +0x90
+    void CopyAttributes(Scrollbar*); // 0x305fa0
     void AddControls(); //306000
     void LayoutThumb(bool); //3061d0
-    void S_SetPos(Component*,int,int); //306100 support0
-    void S_SetSize(Component*,int,int); //306140 support0
-    void S_SetPosSize(Component*,int,int,int,int); //306180 support0
-    int S_Left(Component* c) { return mVertical?c->Left():c->Top(); }
-    int S_Right(Component* c) { return mVertical?c->Left()+c->Width():c->Top()+c->Height(); }
-    int S_Top(Component* c) { return mVertical?c->Top():c->Left(); }
-    int S_Bottom(Component* c) { return mVertical?c->Top()+c->Height():c->Left()+c->Width(); }
-    int S_Height(Component* c) { return mVertical?c->Height():c->Width(); }
-    int S_Width(Component* c) { return mVertical?c->Width():c->Height(); }
+    void S_SetPos(Component*,int,int); // 0x306100
+    void S_SetSize(Component*,int,int); // 0x306140
+    void S_SetPosSize(Component*,int,int,int,int); // 0x306180
+    int S_Left(Component* c) { return this->mVertical?c->Left():c->Top(); }
+    int S_Right(Component* c) { return this->mVertical?c->Left()+c->Width():c->Top()+c->Height(); }
+    int S_Top(Component* c) { return this->mVertical?c->Top():c->Left(); }
+    int S_Bottom(Component* c) { return this->mVertical?c->Top()+c->Height():c->Left()+c->Width(); }
+    int S_Height(Component* c) { return this->mVertical?c->Height():c->Width(); }
+    int S_Width(Component* c) { return this->mVertical?c->Width():c->Height(); }
     SmartPtr<Button> mUpArrow,mDownArrow,mScrollRect; //84/88/8c
     SmartPtr<Component> mThumb; //90
     bool mResizeThumb,mVertical; //94/95
@@ -1200,44 +1192,44 @@ public:
     int mDragX,mDragY; //b0/b4
 };
 
-// Complete actual Scroller88; sole owner ScrollAreaSP84, original external lifetime.
+// Scroller (0x88 bytes): owns the scroll area at +0x84
 class Scroller : public Container {
 public:
-    Scroller(); //305540 actual external constructor28B
-    // Genuine SDK implicit virtual destructor3001e0; automatic real owned members and base cleanup.
-    virtual void Virtual2C(int,int,int); //305670
-    virtual bool Virtual3C(int); //3056c0
-    virtual void NotifyScrollChange(bool) {} //genuine SDK NotifyScrollChange empty inline default, native30a800/3
-    ScrollArea* GetScrollArea() { return mScrollArea.get(); }
-    void SetScrollArea(ScrollArea*); //305580 actual external owner/backlink method
+    Scroller(); // 0x305540
+    // Implicit virtual destructor (0x3001e0)
+    virtual void MouseDown(int,int,int); //305670
+    virtual bool MouseWheel(int); //3056c0
+    virtual void NotifyScrollChange(bool) {} // empty inline (shared body at 0x30a800)
+    ScrollArea* GetScrollArea() { return this->mScrollArea.get(); }
+    void SetScrollArea(ScrollArea*); // 0x305580: sets the scroll area and its back link
     void SetOffsets(int,int); //3055e0 horizontal thenvertical
     void SetVertOffset(int); //305630
     void SetHorzOffset(int); //305650
-    SmartPtr<ScrollArea> mScrollArea; //84, actual owner; implicit normal3001e0
+    SmartPtr<ScrollArea> mScrollArea; // at +0x84; released by the implicit destructor 0x3001e0
 };
 enum ScrollbarCondition { ScrollbarCondition_Disable=0,ScrollbarCondition_Enable=1,ScrollbarCondition_Conditional=2 };
-// Complete actual ScrollbarScroller9c; external base lifetime, no own lifecycle source.
+// ScrollbarScroller (0x9c bytes)
 class ScrollbarScroller : public Scroller {
 public:
-    ScrollbarScroller(); //305700 actual external constructor55B
-    // Genuine SDK implicit virtual destructor300060; automatic real owned members and base cleanup.
-    virtual void Virtual6C(); //305840 AddedToParent
+    ScrollbarScroller(); // 0x305700
+    // Implicit virtual destructor (0x300060)
+    virtual void AddedToParent(); //305840 AddedToParent
     virtual void HandleComponentEvent(ComponentEvent*); //305a00
-    virtual void NotifyScrollChange(bool); //305a50 actualCC
+    virtual void NotifyScrollChange(bool); // 0x305a50, vtable +0xcc
     void SetScrollbar(Scrollbar*); //305760
     void AddControls(); //305860
-    Scrollbar* GetScrollbar(bool vertical) { return vertical?mVertScrollbar.get():mHorzScrollbar.get(); } //genuine SDK inline; native88/8c
+    Scrollbar* GetScrollbar(bool vertical) { return vertical?this->mVertScrollbar.get():this->mHorzScrollbar.get(); } // inline; +0x88/+0x8c
     bool EnableScrollbar(Scrollbar*,ScrollbarCondition); //3058d0
-    void SetScrollbarConditions(ScrollbarCondition,ScrollbarCondition); //305990 original external
-    SmartPtr<Scrollbar> mHorzScrollbar,mVertScrollbar; //88/8c actual owners, external lifetime
+    void SetScrollbarConditions(ScrollbarCondition,ScrollbarCondition); // 0x305990
+    SmartPtr<Scrollbar> mHorzScrollbar,mVertScrollbar; // at +0x88/+0x8c
     ScrollbarCondition mVertCondition,mHorzCondition; //90/94
-    bool mSettingScrollbarConditions; //98, natural99..9b
+    bool mSettingScrollbarConditions; // at +0x98; +0x99..0x9b padding
 };
 enum ScrollButtonCondition {
     ScrollButtonCondition_Disable=0, ScrollButtonCondition_Enable=1,
     ScrollButtonCondition_Conditional=2, ScrollButtonCondition_PartialConditional=3
 };
-// Genuine same-SDK complete owner; Native identity unresolved, no layout/coverage claim.
+// Not identified in the original exe
 class ButtonScroller : public Scroller {
 protected:
     SmartPtr<Button> mLeftButton,mRightButton,mUpButton,mDownButton;
@@ -1248,33 +1240,33 @@ public:
     virtual void Virtual08();
     virtual void NotifyScrollChange(bool);
     virtual void HandleComponentEvent(ComponentEvent*);
-    virtual void Virtual6C();
+    virtual void AddedToParent();
     ButtonScroller();
     void SetButton(Button*,Direction);
     void AddControls();
     void SetScrollButtonConditions(ScrollButtonCondition,ScrollButtonCondition);
 };
-// Complete actual ComboBox a4 proposal; GUI owner must install after native/peer proof.
+// ComboBox (0xa4 bytes)
 class Scroller;
 class ComboBox : public Container {
 public:
     ComboBox();
     virtual ~ComboBox(); // own-vptr normal2f3a50, real listener-detach body
     virtual void Virtual08(); //2f4010 SizeChanged
-    virtual void Virtual2C(int,int,int); //2f4600 MouseDown
-    virtual bool Virtual3C(int); //2f4650 MouseWheel
-    virtual void Virtual48(); //2f4090 GotFocus
-    virtual void Virtual4C(); //2f40b0 inherited LostFocus forwarding0
-    virtual bool Virtual54(int); //2f4680 KeyDown
-    virtual void Virtual6C(); //2f3ef0 AddedToParent
+    virtual void MouseDown(int,int,int); //2f4600 MouseDown
+    virtual bool MouseWheel(int); //2f4650 MouseWheel
+    virtual void GotFocus();  //2f4090 GotFocus
+    virtual void LostFocus(); //2f40b0 inherited LostFocus forwarding0
+    virtual bool KeyDown(int);   //2f4680 KeyDown
+    virtual void AddedToParent(); //2f3ef0 AddedToParent
     virtual void HandleComponentEvent(ComponentEvent*); //2f44e0
     virtual void SetEnabled(bool); //2f4800
-    ListItem* AddString(const GUIString&,int=-1); //existing protected spelling2f3b70
+    ListItem* AddString(const GUIString&,int=-1); // 0x2f3b70
     void InsertItem(TextListItem*,int=-1);
     void DeleteItem(int);
     void UpdateItem(TextListItem*);
     void Clear(bool=true);
-    int GetSelItem(); //existing index-return spelling2f3d40; getter/support0
+    int GetSelItem(); // 0x2f3d40
     void SetSelItem(int,bool=false);
     void SetListBox(Scroller*);
     void AddControls();
@@ -1293,13 +1285,13 @@ public:
     SmartPtr<ListArea> mListArea; //90
     bool mListBoxVisible; //94
     bool mNoType; //95
-    bool mShowButtonWhenDisabled; //96; natural padding97
+    bool mShowButtonWhenDisabled; // at +0x96; +0x97 padding
     int mListBoxWidth; //98
     int mListBoxHeight; //9c
-    GUIString mUndoStr; //a0; actual complete a4
+    GUIString mUndoStr; // at +0xa0; the class is 0xa4 bytes
 };
 
-// one local network address (a std::list element, 0x14 bytes; struct and member names PROVISIONAL)
+// one local network address (a std::list element, 0x14 bytes; provisional names)
 struct LobbyNetAddress {
 #ifdef EE_DINKUM_SXL233
     LobbyNetAddress() {}
@@ -1308,14 +1300,13 @@ struct LobbyNetAddress {
     std::string mName;                      // +0x00
     long mHandle;                           // +0x10, numeric IPv4 adapter address
 };
-// Actual ConfigObject54 declarations are provided by WONConfigObject.h via Resource.
-// Complete78-byte external-lifetime base. Private24-byte tail remains opaque;
-// no copy/by-value use or own base constructor/destructor implementation.
+// ConfigObject (0x54 bytes) is declared in WONConfigObject.h via Resource.
+// 0x78-byte base, constructor and destructor out of line; the private 0x24-byte tail is opaque.
 class ComponentConfig : public ConfigObject {
 public:
-    static ComponentConfig* CfgFactory(); //39aab0 genuine SDK static API, original external provider only
-    static Component* CompFactory(); //396960 genuine SDK external API; call-only
-    bool ReadConfig_Unsafe(Component*,const char*,ResourceConfigTable*,ConfigParser*); //3828c0 actualRET10
+    static ComponentConfig* CfgFactory(); // 0x39aab0
+    static Component* CompFactory(); // 0x396960
+    bool ReadConfig_Unsafe(Component*,const char*,ResourceConfigTable*,ConfigParser*); // 0x3828c0 (ret 0x10)
     void ReadConfig(Component*,const char*,ResourceConfigTable* = NULL,ConfigParser* = NULL);
     Component* GetChildComponent(const std::string&);
     ComponentConfig* GetChildConfig(const std::string&);
@@ -1323,84 +1314,84 @@ public:
     Direction ReadDirection(); //3856f0
     HorzAlign ReadHorzAlign(); //385950
     VertAlign ReadVertAlign(); //385b10
-    static void SetResourceFolder(const std::string&); //387ca0, native original-owned storage only
-    static std::string mResourceFolder; //566b18, external original owner
-    SmartPtr<Sound> ReadSound(); //3855f0, true owner result
+    static void SetResourceFolder(const std::string&); // 0x387ca0
+    static std::string mResourceFolder; // 0x566b18
+    SmartPtr<Sound> ReadSound(); // 0x3855f0 (the caller owns the result)
     void EnsureComma(); //382e00; SkipComma is382dd0
-    int GetIntValue(); //382f40, actual native until source next cohort
+    int GetIntValue(); // 0x382f40
     int ParseExpression(int); //383560
     int ReadChar(); //383930
     GUIString ReadFlag(bool* = NULL); //383a90
     GUIString ReadRawString(bool); //383b00
-    SmartPtr<Font> ReadFont(); //384480 native external result
-    SmartPtr<Image> ReadImage(bool); //384fa0 actual owned hidden-result API
-    SelectionColor ReadSelectionColor(); //385cd0 native external12B result
-    ComponentConfig* GetComponentConfig(const GUIString&,bool); //386380 native external borrowed result
-    ComponentConfig* ReadComponentConfig(); //3868d0 actual123B lookup reader, support0
-    bool HandleMapComponent(); //386960 actual709B;386950 is separate9B wrapper
-    bool HandleModifyGroup(ConfigParser&); //386d80 actual410B
-    bool HandleResourceGroup(ConfigParser&); //386f20 actual384B, call-only pending realResource prefix gate
-    bool HandleModify(); //3870a0 actual423B
-    bool BaseHandleInstruction(ConfigParser&,const std::string&,StringParser&); //387370 actual27B forwarding support0
-    void SetDesiredSizeIfNecessary(); //3860b0 actual131B, call-only
-    SmartPtr<Cursor> ReadCursor(); //385380 actual owned4B hidden result; RefCount8 prefix proof, no Cursorallocation
+    SmartPtr<Font> ReadFont(); // 0x384480
+    SmartPtr<Image> ReadImage(bool); // 0x384fa0 (hidden result)
+    SelectionColor ReadSelectionColor(); // 0x385cd0
+    ComponentConfig* GetComponentConfig(const GUIString&,bool); // 0x386380
+    ComponentConfig* ReadComponentConfig(); // 0x3868d0: config lookup
+    bool HandleMapComponent(); // 0x386960 (0x386950 is a separate 9-byte wrapper)
+    bool HandleModifyGroup(ConfigParser&); // 0x386d80
+    bool HandleResourceGroup(ConfigParser&); // 0x386f20
+    bool HandleModify(); // 0x3870a0
+    bool BaseHandleInstruction(ConfigParser&,const std::string&,StringParser&); // 0x387370 (forwarder)
+    void SetDesiredSizeIfNecessary(); // 0x3860b0
+    SmartPtr<Cursor> ReadCursor(); // 0x385380 (hidden result)
     int GetIntResource(const std::string&); //384210
-    static SmartPtr<ResourceConfigTable> mResourceConfigTable; //original566b28 actualcollection storage only, no definition
-    SmartPtr<RawImage> ReadRawImage(); //385050 native owned result
+    static SmartPtr<ResourceConfigTable> mResourceConfigTable; // 0x566b28 (declaration only)
+    SmartPtr<RawImage> ReadRawImage(); // 0x385050
     SmartPtr<Image> GetImageFromStr(const std::string&,bool); //384890
-    SmartPtr<RawImage> GetRawImageFromStr(const std::string&); //384f10, cohesive support0
+    SmartPtr<RawImage> GetRawImageFromStr(const std::string&); // 0x384f10
     StandardCursor ReadStandardCursor(); //385120
-    void AddChildToConfigMap(const GUIString&,ComponentConfig*); //386c30 parent retains child
+    void AddChildToConfigMap(const GUIString&,ComponentConfig*); // 0x386c30; the parent keeps the child
     GUIString GetStringResource(const std::string&); //383bd0
     Image* GetImageResource(const std::string&); //383d60 borrowed
     Font* GetFontResource(const std::string&); //383e50 borrowed
     SmartPtr<Sound> GetSoundResource(const std::string&); //383f40 owned result
     DWORD GetColorResource(const std::string&); //384050
     void GetBackgroundResource(const std::string&,Background&); //384140
-    Background ReadBackground(); //385ea0 real20B value
-    int ReadInt(); //3837e0/8, actual no-argument parser call
-    Component* ReadComponent(); //386950/9, actual borrowed result
+    Background ReadBackground(); // 0x385ea0, returns a Background (0x14 bytes) by value
+    int ReadInt(); // 0x3837e0, no arguments
+    Component* ReadComponent(); // 0x386950
     bool EndOfString(); //382db0
     void SkipComma(); //382e00
     static std::string GetResourceFile(const std::string&); //387e50
 
     ComponentConfig();                     // 0x3825b0
     virtual ~ComponentConfig();            // 0x382690, own VT451f54
-    virtual bool Virtual04(ConfigParser*, const std::string&);
-    virtual bool Virtual08(ConfigParser*, const std::string&, StringParser&);
-    virtual bool Virtual0C(ConfigParser*);
-    virtual bool Virtual10(ConfigParser*);
+    virtual bool HandleInstruction(ConfigParser*, const std::string&);
+    virtual bool HandleValueInstruction(ConfigParser*, const std::string&, StringParser&);
+    virtual bool PreParse(ConfigParser*);
+    virtual bool PostParse(ConfigParser*);
     virtual bool Virtual24(const std::string&);
-    virtual bool Virtual28(const std::string&, ComponentConfig*&, Component*&);
-    virtual bool Virtual2C(const std::string&, int&);
-    virtual bool Virtual30(const std::string&, const std::vector<int>&, int&);
-    virtual void Virtual34(Component*);
-    GUIString Fn3842F0(bool);               // ReadString
-    int Fn385510();                        // ReadColor
+    virtual bool GetPredefinedComponent(const std::string&, ComponentConfig*&, Component*&);
+    virtual bool GetNamedValue(const std::string&, int&);
+    virtual bool CallNamedFunction(const std::string&, const std::vector<int>&, int&);
+    virtual void SetComponent(Component*);
+    GUIString ReadString(bool);             // ReadString
+    int ReadColor();                       // ReadColor
     Component* Fn386860(const std::string& inName); // 0x386860, borrowed component lookup
-    bool Fn3837F0();                       // 0x3837f0, native boolean parser
-    SmartPtr<Component> mComponent; //54, native3825dc, external-lifetime base
+    bool ReadBool();                       // 0x3837f0, boolean parser
+    SmartPtr<Component> mComponent; // at +0x54 (set at 0x3825dc)
     ConfigParser* mConfigParser; //58, borrowed
-    StringParser* mStringParser; //5c, native scalar reader access
-    GUIString mConfigError; //60, native3825ff
-    bool mHasSetWidth,mHasSetHeight,mHaveInitedComponents; //64/65/66, naturalpad67
-    std::map<std::string,SmartPtr<ComponentConfig>,StringLessNoCase> mConfigMap; //68..73 actual12B SDK/native ownership
-    SmartPtr<ResourceConfig> mCurResourceConfig; //74 actualConfigObject-derived resource owner, no pointer/layout change
+    StringParser* mStringParser; // at +0x5c
+    GUIString mConfigError; // at +0x60 (set at 0x3825ff)
+    bool mHasSetWidth,mHasSetHeight,mHaveInitedComponents; // at +0x64/+0x65/+0x66; +0x67 padding
+    std::map<std::string,SmartPtr<ComponentConfig>,StringLessNoCase> mConfigMap; // at +0x68..0x73
+    SmartPtr<ResourceConfig> mCurResourceConfig; // at +0x74
 };
 
-// Actual FontConfig declaration follows the complete FontDescriptor below.
+// FontConfig is declared after FontDescriptor below.
 class FontConfig;
 
-// Complete target1c exception, implicit copy/destructor are real original helpers.
+// Exception record (0x1c bytes); the implicit copy and destructor are the original's helpers.
 class ConfigObjectException : public std::exception {
 public:
     ConfigObjectException(const std::string& inText, bool inFlag = true)
-        : mText() { mText = inText; mFlag = inFlag; }
+        : mText() { this->mText = inText; this->mFlag = inFlag; }
     std::string mText;                     // +08
     bool mFlag;                            // +18
 };
 
-// Genuine SDK checked borrowed component cast; natural existing consumers only.
+// Looks up a named component and checks its type
 template<class T>
 T SafeConfigGetComponent(Component *theComponent, const char *theName)
 {
@@ -1438,32 +1429,32 @@ class ButtonConfig : public ComponentConfig {
 public:
     void HandleButtonFlags(); //381880
     void HandleFitText(); //381d00
-    ButtonConfig();                         // 0x381860, actual7c
+    ButtonConfig();                         // 0x381860; the class is 0x7c bytes
     virtual bool Virtual24(const std::string&); //381e80
-    virtual void Virtual34(Component*);     //38f8d0 ICF target
+    virtual void SetComponent(Component*);  //38f8d0 ICF target
     Button* mButton;                        // +78, borrowed
 };
 
 class ContainerConfig : public ComponentConfig {
 public:
-    static Component* LayoutPointFactory(); //39ab10 genuine SDK static API, original external provider only
-    static ComponentConfig* CfgFactory(); //295842 genuine SDK static API, original external provider only
-    static Component* CompFactory(); //365120 genuine SDK static API, original external provider only
-    bool HandleAdd(); //388840 actual43B
-    bool HandleAddLayoutPoint(); //388870 actual57B
-    bool HandleLayout(bool chain=false,bool repeat=false); //3888b0 actual1379B
-    bool HandleSameSizeLayout(bool,bool); //388e20 actual269B, genuine external helper
-    bool HandleCenterLayout(bool,bool); //388f30 actual334B, genuine external helper
-    bool HandleClearRightLayout(); //389080 actual344B, genuine external helper
-    bool HandleSpaceEvenlyLayout(bool); //389280 actual397B, genuine external helper
-    bool HandleNoOverlapLayout(); //3894b0 actual777B, genuine external helper
-    bool HandleSizeAtLeastLayout(); //389860 actual365B, genuine external helper
-    bool HandleNewLayoutPoint(); //389a70 actual523B, genuine external helper
-    ContainerConfig();                      // 0x387f90, actual98
-    // Actual implicit normal38ef70 tail-jumps external ComponentConfig destructor.
-    virtual bool Virtual04(ConfigParser*, const std::string&); //3885d0
+    static Component* LayoutPointFactory(); // 0x39ab10
+    static ComponentConfig* CfgFactory(); // 0x295842
+    static Component* CompFactory(); // 0x365120
+    bool HandleAdd(); // 0x388840
+    bool HandleAddLayoutPoint(); // 0x388870
+    bool HandleLayout(bool chain=false,bool repeat=false); // 0x3888b0
+    bool HandleSameSizeLayout(bool,bool); // 0x388e20
+    bool HandleCenterLayout(bool,bool); // 0x388f30
+    bool HandleClearRightLayout(); // 0x389080
+    bool HandleSpaceEvenlyLayout(bool); // 0x389280
+    bool HandleNoOverlapLayout(); // 0x3894b0
+    bool HandleSizeAtLeastLayout(); // 0x389860
+    bool HandleNewLayoutPoint(); // 0x389a70
+    ContainerConfig();                      // 0x387f90; the class is 0x98 bytes
+    // The implicit destructor (0x38ef70) jumps to ComponentConfig's.
+    virtual bool HandleInstruction(ConfigParser*, const std::string&); //3885d0
     virtual bool Virtual24(const std::string&); //389c80
-    virtual void Virtual34(Component*);     //38f8d0
+    virtual void SetComponent(Component*);  //38f8d0
     Container* mContainer;                  // +78, borrowed
     Component* mLayoutRef;                  // +7c, borrowed
     int mLayoutInstruction;                // +80
@@ -1473,10 +1464,10 @@ public:
 
 class DialogConfig : public ContainerConfig {
 public:
-    static ComponentConfig* CfgFactory(); //29585c genuine SDK static API, original external provider only
-    static Component* CompFactory(); //39ac50 genuine SDK static API, original external provider only
+    static ComponentConfig* CfgFactory(); // 0x29585c
+    static Component* CompFactory(); // 0x39ac50
     virtual bool Virtual24(const std::string&); //389f80
-    virtual void Virtual34(Component*);     //38f960
+    virtual void SetComponent(Component*);  //38f960
     Dialog* mDialog;                        // +98, borrowed
 };
 
@@ -1484,29 +1475,29 @@ class LobbyConfig : public ConfigObject {
 public:
     LobbyConfig();                          // 0x358090
     typedef LobbyConfig* (*ConfigAllocator)();
-    static ConfigAllocator mAllocator; // true SDK class-static, native4d954c; existing storage
-    static LobbyConfig* DefaultAllocator(); //357f30 existing genuine body, renamed only
-    static std::string mDefaultFileName; //566310 existing genuine string storage
-    static void SetAllocator(ConfigAllocator allocator) { mAllocator=allocator; } // genuine SDK inline setter
-    virtual bool Virtual08(ConfigParser* inParser, const std::string& inKey, StringParser& inValue);
-    virtual bool Virtual10(ConfigParser* inParser);
+    static ConfigAllocator mAllocator; // class static at 0x4d954c
+    static LobbyConfig* DefaultAllocator(); // 0x357f30
+    static std::string mDefaultFileName; // 0x566310
+    static void SetAllocator(ConfigAllocator allocator) { LobbyConfig::mAllocator=allocator; } // inline setter
+    virtual bool HandleValueInstruction(ConfigParser* inParser, const std::string& inKey, StringParser& inValue);
+    virtual bool PostParse(ConfigParser* inParser);
 
-    std::list<std::string> mL54;            // +0x54; ConfigListValue RTTI, node size 0x18
-    std::list<std::string> mL60;            // +0x60
-    std::list<std::string> mL6C;            // +0x6c
-    std::string mS78;                       // +0x78
-    const std::string& GetProductName() const { return mS78; }
-    std::wstring mW88;                      // +0x88
-    std::string mS98;                       // +0x98
-    std::string mSA8;                       // +0xa8
-    std::string mSB8;                       // +0xb8
-    std::string mSC8;                       // +0xc8
+    std::list<std::string> mDirServers;     // +0x54; ConfigListValue RTTI, node size 0x18
+    std::list<std::string> mRoomDirServers;  // +0x60
+    std::list<std::string> mAuthServers;    // +0x6c
+    std::string mProductName;               // +0x78
+    const std::string& GetProductName() const { return this->mProductName; }
+    std::wstring mProductDirectory;         // +0x88
+    std::string mVersion;                   // +0x98
+    std::string mLanVersion;                // +0xa8
+    std::string mLanguage;                  // +0xb8
+    std::string mResourceDirectory;         // +0xc8
     bool mCRCCheck;                         // +0xd8
     bool mCDKeyCheck;                       // +0xd9
     bool mPublic;                           // +0xda
     unsigned short mLanBroadcastPort;      // +0xdc
     bool mUseLocalIP;                       // +0xde
-    bool GetNoPingInProgress() const { return mNoPingInProgress; }
+    bool GetNoPingInProgress() const { return this->mNoPingInProgress; }
     bool mNoPingInProgress;                 // +0xdf
     unsigned short mLobbyPort;             // +0xe0
     bool mCheckForInternet;                 // +0xe2
@@ -1514,7 +1505,7 @@ public:
     bool mAllowDuplicateNames;              // +0xe6
     bool mAppendNumberToDefaultLanName;      // +0xe7
     bool mAllowJoinGameWithoutPing;          // +0xe8
-    std::map<std::string, std::string, StringLessNoCase> mMEC;               // +0xec (node value 0x20; pair dtor 0x296a48)
+    std::map<std::string, std::string, StringLessNoCase> mDefines;           // +0xec (node value 0x20; pair dtor 0x296a48)
 };
 
 // 0x358710: the lobby's configuration object (an EELobbyConfig: EELobbyInit.cpp's factory)
@@ -1524,39 +1515,39 @@ LobbyConfig* GetLobbyConfig();
 // bodies are the COMDATs EELobbyConnectDialog.cpp keeps, 0x290bb4..0x290bc4)
 class ListItem : public RefCount {
 protected:
-    virtual ~ListItem() {} //genuine SDK protected inline explicit destructor, inherited RefCount cleanup
+    virtual ~ListItem() {} // protected inline destructor
 public:
     ListItem();                             // 0x2fa280
-    virtual void Virtual04(Graphics&, ListArea*);
-    virtual void Virtual08(ListArea*);
-    virtual void Virtual0C(ListArea*, Container*);
-    virtual int Virtual10(const ListItem*, ListArea*) const;
-    virtual bool Virtual14(ListArea*, int, int) { return mB09; }
-    virtual void Virtual18(int, int inTop) { mTop = inTop; }
-    virtual bool Virtual1C(int, int inY) { return inY >= mTop && inY < mTop + mHeight; }
-    virtual void Virtual20(ListArea*, int, int);
-    virtual void Virtual24(ListArea*);
-    virtual void Virtual28(ListArea*, int, int);
-    virtual void Virtual2C(ListArea*, int, int);
-    virtual void Virtual30(ListArea*, int, int, int);
-    virtual void Virtual34(ListArea*, int, int, int);
-    bool mB08;                              // +08
-    bool mB09;                              // +09
+    virtual void Paint(Graphics&, ListArea*);
+    virtual void CalcDimensions(ListArea*);
+    virtual void SetViewport(ListArea*, Container*);
+    virtual int Compare(const ListItem*, ListArea*) const;
+    virtual bool CanSelect(ListArea*, int, int) { return this->mSelectable; }
+    virtual void SetPos(int, int inTop) { this->mTop = inTop; }
+    virtual bool Contains(int, int inY) { return inY >= this->mTop && inY < this->mTop + this->mHeight; }
+    virtual void MouseEnter(ListArea*, int, int);
+    virtual void MouseExit(ListArea*);
+    virtual void MouseMove(ListArea*, int, int);
+    virtual void MouseDrag(ListArea*, int, int);
+    virtual void MouseDown(ListArea*, int, int, int);
+    virtual void MouseUp(ListArea*, int, int, int);
+    bool mSelected;                         // +08
+    bool mSelectable;                       // +09
     int mTop;                               // +0c
-    int mL10;                               // +10
+    int mWidth;                             // +10
     int mHeight;                            // +14
 };
 
 // the root of the lobby's components (runs the popups and modal dialogs; RTTI WONAPI::RootContainer; its base
-// Container: r24pre-won PROVISIONAL)
-// Complete target C8 RootContainer owner; lifetime remains original external.
-// Borrowed RefCount8 callback interface; nativeRoot3049bd uses slot04(key,type).
+// Container)
+// RootContainer (0xc8 bytes): constructor and destructor out of line.
+// Keyboard callback interface (RefCount, 8 bytes); RootContainer calls vtable +0x04 (key, type) at 0x3049bd.
 class KeyboardListenerBase : public RefCount {
 public:
     virtual void KeyEvent(int,int)=0;
 };
-// Complete native38 record. RootContainer borrows; Common owns producer source.
-// Native33613f/148 stores 64bit order30/34; defaultpack8 padding2c..2f.
+// BackgroundGrabber (0x38 bytes); RootContainer keeps a pointer to it.
+// 0x33613f/0x336148 store the 64-bit order at +0x30/+0x34; +0x2c..0x2f is padding.
 class BackgroundGrabber {
 public:
     SmartPtr<NativeImage> mBGImage; //00
@@ -1565,37 +1556,37 @@ public:
     bool mNeedPutBG,mHaveBG; //1c/1d
     int mTranslucentColor,mTranslucentLevel; //20/24
     SmartPtr<Window> mDebugWindow; //28
-    unsigned __int64 mImageOrder; //30, actual64bit targetcounter
-    static unsigned __int64 mImageOrderCounter; //native5662e0/e4
-    BackgroundGrabber(); //336000, complete producer lifetime
+    unsigned __int64 mImageOrder; // at +0x30, 64-bit counter value
+    static unsigned __int64 mImageOrderCounter; // 0x5662e0/0x5662e4
+    BackgroundGrabber(); // 0x336000
     void PrePaint(Component*,Graphics&); //336070
     void Paint(Component*,Graphics&); //3360f0
     void SetTranslucentColor(int,int); //3360d0
-    void Clear(); //336060 original external, bothflagsfalse
-    void SizeChanged(Component*); //2fa500 actual external empty RET4, support0
-    void Invalidate(Component*); //336680 actual external14B haveBG -> needPutBG
-    bool NeedDrawBG() const { return mHaveBG && mNeedPutBG; }
+    void Clear(); // 0x336060, clears both flags
+    void SizeChanged(Component*); // 0x2fa500 (empty, ret 4)
+    void Invalidate(Component*); // 0x336680: sets need-put-BG when the background is grabbed
+    bool NeedDrawBG() const { return this->mHaveBG && this->mNeedPutBG; }
 };
 class RootContainer : public Container {
 public:
-    RootContainer(Window*); //3040d0; original complete constructor
+    RootContainer(Window*); // 0x3040d0
     virtual void Virtual08(); //304730 SizeChanged
-    virtual void Virtual14(Graphics&); //304760 PrePaint
+    virtual void PrePaint(Graphics&);  //304760 PrePaint
     virtual void Paint(Graphics&); //304900
-    virtual void Virtual24(int,int); //304c40 MouseEnter
-    virtual void Virtual28(); //304c60 MouseExit
-    virtual void Virtual2C(int,int,int); //304bd0 MouseDown
-    virtual void Virtual30(int,int,int); //304c90 MouseUp
-    virtual void Virtual34(int,int); //304a30 MouseMove
-    virtual void Virtual38(int,int); //304ac0 MouseDrag
-    virtual bool Virtual50(int); //304a00 KeyChar
-    virtual bool Virtual54(int); //3049a0 KeyDown
-    virtual bool Virtual58(int); //3049d0 KeyUp
-    virtual void Virtual60(WONRectangle&); //304980 InvalidateRect
-    virtual void Virtual78(Cursor*); //304cf0 SetCursor
-    virtual Component* VirtualAC(int,int); //304710 FindChildAt
-    virtual bool VirtualC0(Component*); //304970 InvalidateUp
-    virtual void VirtualC4(Component*); //304cc0 RemoveChild
+    virtual void MouseEnter(int,int); //304c40 MouseEnter
+    virtual void MouseExit(); //304c60 MouseExit
+    virtual void MouseDown(int,int,int); //304bd0 MouseDown
+    virtual void MouseUp(int,int,int);   //304c90 MouseUp
+    virtual void MouseMove(int,int); //304a30 MouseMove
+    virtual void MouseDrag(int,int); //304ac0 MouseDrag
+    virtual bool KeyChar(int);   //304a00 KeyChar
+    virtual bool KeyDown(int);   //3049a0 KeyDown
+    virtual bool KeyUp(int);     //3049d0 KeyUp
+    virtual void InvalidateRect(WONRectangle&); //304980 InvalidateRect
+    virtual void SetCursor(Cursor*); //304cf0 SetCursor
+    virtual Component* FindChildAt(int,int); //304710 FindChildAt
+    virtual bool ChildInvalidated(Component*); //304970 InvalidateUp
+    virtual void RemoveChild(Component*); //304cc0 RemoveChild
     void AddBG(BackgroundGrabber*); //304510
 
     struct BGStruct {
@@ -1605,7 +1596,7 @@ public:
         BGStruct() : mImageX(0),mImageY(0) {}
         BGStruct(int x,int y,NativeImage* image,const WONRectangle& clip)
           : mImageX(x),mImageY(y),mClipRect(clip),mImage(image) {}
-    }; //1c, native map node30
+    }; // 0x1c bytes; map node 0x30
     WONRectangle mInvalidRect; //84..93
     Component* mModalComponent; //94
     Window* mWindow; //98
@@ -1617,46 +1608,46 @@ public:
     std::map<int,BGStruct> mBGStructMap; //bc..c7
 };
 
-// how a popup is opened (0x2c bytes, on the stack; members PROVISIONAL)
+// how a popup is opened (0x2c bytes, on the stack; provisional names)
 struct PopupParams {
-    PopupParams(Component* inPopup,int inFlags,Component* inOwner,int inX=-1,int inY=-1); //328540 external
+    PopupParams(Component* inPopup,int inFlags,Component* inOwner,int inX=-1,int inY=-1); // 0x328540
     Window* mParent; //00, borrowed
     Component* mPopup; //04, borrowed
     Component* mInputComponent; //08, borrowed
     Component* mOwnerComponent; //0c, borrowed
     int mFlags; //10
     int mx,my; //14/18
-    WONRectangle mAvoidRect; //1c..2b, actual embedded POD; full2c
+    WONRectangle mAvoidRect; // at +0x1c..0x2b; the struct is 0x2c bytes
 };
 // gets a component's events (vtable 0x84d...; 2 slots)
 class ComponentListener : public RefCount {
 public:
-    virtual void Virtual04(ComponentEvent*);
+    virtual void HandleComponentEvent(ComponentEvent*);
 };
 
-// Actual complete0c callback owner, RTTI451ad8 and allocation359089.
-// Existing base virtual spelling retained; original slot4 callback3590d0.
+// Callback object (0x0c bytes): RTTI 0x451ad8, allocated at 0x359089.
+// Its slot 4 callback is 0x3590d0.
 class ComponentListenerFunc : public ComponentListener {
 public:
     typedef void (*Callback)(ComponentEvent*);
     ComponentListenerFunc(Callback callback) : mCallback(callback) {}
-    virtual void Virtual04(ComponentEvent* event) { mCallback(event); }
+    virtual void HandleComponentEvent(ComponentEvent* event) { this->mCallback(event); }
     Callback mCallback; //08; implicit real base/member cleanup
 };
 
-// Actual ComponentExtra1c, RTTI4d5eb8/vtable44d714, sole virtual destructor.
-// Complete native1c owner; native allocator2f4ac0 and SDK prove construction and unique lifetime.
-// Four SmartPtr members retain/release naturally; mGrabBG is uniquely owned. No copy authority.
+// ComponentExtra (0x1c bytes; RTTI 0x4d5eb8, vtable 0x44d714), only a virtual destructor.
+// Allocated by Component::AllocateExtraStuff (0x2f4ac0).
+// The four SmartPtr members release themselves; mGrabBG is owned outright.
 class ComponentExtra {
 public:
-    ComponentExtra(); //2f4890 original external constructor
-    virtual ~ComponentExtra(); //ordinary2f48d0/deleting2f48b0, external native lifetime
+    ComponentExtra(); // 0x2f4890
+    virtual ~ComponentExtra(); // destructor 0x2f48d0, deleting 0x2f48b0
     SmartPtr<ColorScheme> mColorScheme; //04
     SmartPtr<ComponentListener> mListener; //08, AddListener2f4b10 /Deliver2f54e0
     SmartPtr<Cursor> mDefaultCursor; //0c
-    BackgroundGrabber* mGrabBG; //10 unique original-owned pointer, external destructor deletes real38 owner
+    BackgroundGrabber* mGrabBG; // at +0x10, owned; the destructor deletes the grabber (0x38 bytes)
     SmartPtr<Component> mToolTip; //14
-    bool mDontDoTip; //18, natural19..1b alignment
+    bool mDontDoTip; // at +0x18; +0x19..0x1b padding
 };
 
 // a listener that hands the events on to a component (0x0c bytes; vtable 0x84c134: ??_G ICF-folded 0x291f6f,
@@ -1664,15 +1655,15 @@ public:
 class ComponentListenerComp : public ComponentListener {
 public:
     ComponentListenerComp(Component* inComponent) : mComponent(inComponent) {}
-    virtual void Virtual04(ComponentEvent*);               // 0x337bf0 (WONAPI)
+    virtual void HandleComponentEvent(ComponentEvent*);    // 0x337bf0 (WONAPI)
 
     Component* mComponent;                  // +0x08
 };
 
-// WONAPI's drawing context (methods PROVISIONAL)
+// WONAPI's drawing context (provisional method names)
 class Font;
-// Replace existing Graphics reference contract. Native vtable450fe8;
-// field accesses326ad0/326ce0/327140 prove complete target size38.
+// Graphics: vtable 0x450fe8;
+// the field accesses at 0x326ad0/0x326ce0/0x327140 show a 0x38-byte object.
 class Graphics {
 public:
     virtual void ClearClipRectHook() {}
@@ -1696,7 +1687,7 @@ public:
     virtual void Detach();
     virtual bool BlendSupported() { return false; }
     void SetColor(DWORD); //326ce0
-    DWORD Fn326D20(int); // preserve existing caller-facing identity
+    DWORD GetStandardColor(int);
     void SetSysColor(int);
     void SetFont(Font*);
     void Translate(int, int);
@@ -1727,7 +1718,7 @@ public:
     ColorScheme* mColorScheme; //34, borrowed
 };
 
-// 0x2fdcd0 / 0x2fddf0 (cdecl): a 3D frame (inPressed: sunken) and a flat frame (names PROVISIONAL)
+// 0x2fdcd0 / 0x2fddf0 (cdecl): a 3D frame (inPressed: sunken) and a flat frame (provisional names)
 void LobbyDraw3DFrame(Graphics& inGraphics, int inX, int inY, int inWidth, int inHeight, bool inPressed);
 void LobbyDrawFrame(Graphics& inGraphics, int inX, int inY, int inWidth, int inHeight, bool inFlag);
 
@@ -1735,86 +1726,86 @@ void LobbyDrawFrame(Graphics& inGraphics, int inX, int inY, int inWidth, int inH
 // named by offset)
 class LobbyGame : public RefCount {
 public:
-    void Fn3A6C90();
-    bool Fn3A6D00(LobbyGame* inOther);
-    void Fn3A6E00(LobbyGroup* inGroup);
-    bool Fn3A7200(const ByteBuffer* inBuffer);
-    ConstSmartPtr<ByteBuffer> Fn3A72C0();
-    void Fn3A7360(LobbyClient* inClient);
-    bool Fn3A7400();
-    bool Fn3A7490();
-    short Fn3A7570(ReadBuffer& inBuffer, LobbyClient* inClient, WriteBuffer& outBuffer);
-    ConstSmartPtr<ByteBuffer> Fn3A7830(ReadBuffer& inBuffer, LobbyClient* inClient);
-    short Fn3A78E0(ReadBuffer& inBuffer);
-    GUIString Fn3A7A90(short inStatus);
+    void ClearPlayers();
+    bool IsSameGame(LobbyGame* inOther);
+    void ReadGroup(LobbyGroup* inGroup);
+    bool ReadSummaryBuffer(const ByteBuffer* inBuffer);
+    ConstSmartPtr<ByteBuffer> GetJoinRequest();
+    void HandleHostGame(LobbyClient* inClient);
+    bool AreAllReady();
+    bool CanStartGame();
+    short HandleJoinRequest(ReadBuffer& inBuffer, LobbyClient* inClient, WriteBuffer& outBuffer);
+    ConstSmartPtr<ByteBuffer> GetJoinReply(ReadBuffer& inBuffer, LobbyClient* inClient);
+    short HandleJoinReply(ReadBuffer& inBuffer);
+    GUIString GetStatusString(short inStatus);
     LobbyGame();                            // 0x3a6790 (WONAPI)
     virtual ~LobbyGame();                   // 0x3a68f0 (WONAPI)
-    virtual bool Virtual04() { return true; } //genuine SDK inline PreNetJoinGameHook
-    virtual bool Virtual08() { return true; } //genuine SDK inline PostNetJoinGameHook
-    virtual bool Virtual0C() { return true; } //genuine SDK inline PreNetCreateGameHook
-    virtual bool Virtual10() { return true; } //genuine SDK inline PostNetCreateGameHook
-    virtual void Virtual14() {} //genuine SDK inline PreNetLeaveGameHook
-    virtual void Virtual18() {} //genuine SDK inline PostNetLeaveGameHook
-    virtual void Virtual1C() {} //genuine SDK inline NotifyStartGameHook
-    virtual bool Virtual20() { return true; } //genuine SDK inline TryStartGameHook               // (EELobbyGame 0x292719: can the game start)
+    virtual bool PreNetJoinGameHook() { return true; }
+    virtual bool PostNetJoinGameHook() { return true; }
+    virtual bool PreNetCreateGameHook() { return true; }
+    virtual bool PostNetCreateGameHook() { return true; }
+    virtual void PreNetLeaveGameHook() {}
+    virtual void PostNetLeaveGameHook() {}
+    virtual void NotifyStartGameHook() {}
+    virtual bool TryStartGameHook() { return true; } // (EELobbyGame 0x292719: can the game start)
 #ifdef EE_DINKUM_SXL233
-    virtual bool Virtual24() { return true; }
+    virtual bool CanStartGameHook() { return true; }
 #else
-    virtual long Virtual24() { return 1; } // the derived EELobbyGame 0x2926f9 returns through eax (long, as main had it); the SDK default folds to a `mov al, 1` body 0x2f30d0: open
+    virtual long CanStartGameHook() { return 1; } // the derived EELobbyGame 0x2926f9 returns through eax (long, as main had it); the SDK default folds to a `mov al, 1` body 0x2f30d0: open
 #endif
-    virtual bool Virtual28() { return true; } //genuine SDK inline CanReadyHook
-    virtual short Virtual2C();
+    virtual bool CanReadyHook() { return true; }
+    virtual short GetJoinStatusHook();
     // (EELobbyGame's overrides): +0x30 a new game hosted by inClient, +0x34 the game's version
-    virtual void Virtual30(LobbyClient* inClient) {} //genuine SDK inline HandleHostGameHook
-    virtual void Virtual34(WriteBuffer& outBuffer) {} //genuine SDK inline GetJoinGameRequestHook
+    virtual void HandleHostGameHook(LobbyClient* inClient) {}
+    virtual void GetJoinGameRequestHook(WriteBuffer& outBuffer) {}
     // +0x38 a join request's check
-    virtual short Virtual38(ReadBuffer& inBuffer, LobbyClient* inClient) { return 0; } //genuine SDK HandleJoinGameRequestHook default
+    virtual short HandleJoinGameRequestHook(ReadBuffer& inBuffer, LobbyClient* inClient) { return 0; } // returns 0
     // +0x3c the game's state for a joining client
-    virtual void Virtual3C(LobbyClient* inClient, WriteBuffer& outBuffer) {} //genuine SDK inline GetJoinGameReplyHook
-    virtual void Virtual40(LobbyGame* inGame) {} //genuine SDK inline CopyFromHook
-    virtual void Virtual44(ReadBuffer& inBuffer) {} //genuine SDK inline HandleJoinGameReplyHook     // +0x44 a joined game's state read
+    virtual void GetJoinGameReplyHook(LobbyClient* inClient, WriteBuffer& outBuffer) {}
+    virtual void CopyFromHook(LobbyGame* inGame) {}
+    virtual void HandleJoinGameReplyHook(ReadBuffer& inBuffer) {} // inline; +0x44 a joined game's state read
     //: +0x48 a client left (inPlayer: its player), +0x4c a client joined
-    virtual void Virtual48(LobbyClient* inClient, LobbyPlayer* inPlayer) {} //genuine SDK inline HandlePlayerLeftHook
-    virtual void Virtual4C(LobbyClient* inClient) {} //genuine SDK inline HandlePlayerJoinedHook
+    virtual void HandlePlayerLeftHook(LobbyClient* inClient, LobbyPlayer* inPlayer) {}
+    virtual void HandlePlayerJoinedHook(LobbyClient* inClient) {}
     //: +0x50 the summary (three options), +0x54 the details (options and the slots' clients), +0x58 the summary
     // read back, +0x64 a join status' text
-    virtual void Virtual50(WriteBuffer& outBuffer) {} //genuine SDK inline WriteSummaryHook
-    virtual void Virtual54(WriteBuffer& outBuffer) {} //genuine SDK inline WriteDetailsHook
-    virtual bool Virtual58(ReadBuffer& inBuffer) { return true; } //genuine SDK inline ReadSummaryHook
-    virtual bool Virtual5C(ReadBuffer& inBuffer) { return true; } //genuine SDK inline ReadDetailsHook     // +0x5c the details read back
+    virtual void WriteSummaryHook(WriteBuffer& outBuffer) {}
+    virtual void WriteDetailsHook(WriteBuffer& outBuffer) {}
+    virtual bool ReadSummaryHook(ReadBuffer& inBuffer) { return true; }
+    virtual bool ReadDetailsHook(ReadBuffer& inBuffer) { return true; } // inline; +0x5c the details read back
     // +0x60 a game message (inType 0x64..0x6a) from inFrom
-    virtual void Virtual60(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom) {} //genuine SDK inline HandleGameMessageHook
-    virtual GUIString Virtual64(short inStatus) { return gEmptyGUIString; } //genuine SDK GetStatusStringHook default, owned result
+    virtual void HandleGameMessageHook(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom) {}
+    virtual GUIString GetStatusStringHook(short inStatus) { return gEmptyGUIString; } // returns an empty string
     void CopyFrom(LobbyGame* inGame);       // 0x3a69d0
     void SetClients(LobbyClientList* inClients); // 0x3a6c10
-    void SetName(const GUIString& inName) { mName = inName; }
-    void SetPassword(const GUIString& inPassword) { mPassword = inPassword; }
-    void SetAskToJoin(bool inAsk) { mB12 = inAsk; }
-    void SetInviteOnly(bool inInvite) { mB11 = inInvite; }
-    void SetSkill(long inSkill) { mL30 = inSkill; }
-    void SetAddress(const IPAddr& inAddress) { mAddress = inAddress; }
-    void SetIsHost(bool inHost) { mIsHost = inHost; }
-    void SetCaptainId(unsigned short inId) { mL60 = inId; }
-    long GetSkill() const { return mL30; }
-    bool GetAskToJoin() const { return mB12; }
-    bool GetB10() const { return mB10; }
+    void SetName(const GUIString& inName) { this->mName = inName; }
+    void SetPassword(const GUIString& inPassword) { this->mPassword = inPassword; }
+    void SetAskToJoin(bool inAsk) { this->mAskToJoin = inAsk; }
+    void SetInviteOnly(bool inInvite) { this->mInviteOnly = inInvite; }
+    void SetSkill(long inSkill) { this->mSkill = inSkill; }
+    void SetAddress(const IPAddr& inAddress) { this->mAddress = inAddress; }
+    void SetIsHost(bool inHost) { this->mIsHost = inHost; }
+    void SetCaptainId(unsigned short inId) { this->mCaptainId = inId; }
+    long GetSkill() const { return this->mSkill; }
+    bool GetAskToJoin() const { return this->mAskToJoin; }
+    bool GetHasPassword() const { return this->mHasPassword; }
     LobbyClient* FindClient(unsigned short inId); // 0x3a6c70
-    bool Fn3A6D40(long inFlags);
-    bool Fn3A6D70();
-    bool Fn3A6D90();
-    bool Fn3A6DA0();
-    bool Fn3A6DB0();
-    bool Fn3A6DC0();
-    bool Fn3A6DD0();
-    void Fn3A6DE0();
-    void Fn3A6DF0();
-    void Fn3A7240(WriteBuffer& outBuffer);
-    bool Fn3A74B0();
-    bool Fn3A74C0();
-    void Fn3A74D0(LobbyClient* inClient);
-    void Fn3A79E0(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom);
+    bool MatchesRoomSpec(long inFlags);
+    bool IsPinging();
+    bool IsQueryingDetails();
+    bool PreNetJoinGame();
+    bool PostNetJoinGame();
+    bool PreNetCreateGame();
+    bool PostNetCreateGame();
+    void PreNetLeaveGame();
+    void PostNetLeaveGame();
+    void WriteDetails(WriteBuffer& outBuffer);
+    bool CanReady();
+    bool TryStartGame();
+    void HandlePlayerJoined(LobbyClient* inClient);
+    void HandleGameMessage(unsigned char inType, ReadBuffer& inBuffer, LobbyClient* inFrom);
     bool IsFull();
-    bool Fn3A7A20();
+    bool CanJoin();
     short GetJoinStatus();
     void WriteSummary(WriteBuffer& outBuffer);
     bool ReadSummary(ReadBuffer& inBuffer);
@@ -1823,46 +1814,46 @@ public:
 
     GUIString mName;                       // +0x08
     GUIString mPassword;                   // +0x0c
-    bool mB10;
-    bool mB11;
-    bool mB12;
-    bool mB13;
-    bool mB14;
+    bool mHasPassword;
+    bool mInviteOnly;
+    bool mAskToJoin;
+    bool mInProgress;
+    bool mInvited;
     bool mIsHost;
-    bool mB16;
-    bool mB17;
-    bool mB18;
-    long mL1C;                             // +0x1c
-    bool mIsFiltered;                     // +0x20, actual filter writers; natural padding through23
-    long mL24;                             // +0x24
+    bool mShowDetails;
+    bool mHaveDetails;
+    bool mPingReplied;
+    long mLastSeenTime;                    // +0x1c
+    bool mIsFiltered;                     // +0x20, set by the filters; padding to +0x23
+    long mNumPlayers;                      // +0x24
     long mNumOpenSlots;                    // +0x28
-    bool IsInProgress() const { return mB13; }
-    bool GetShowDetails() const { return mB16; }
-    long GetGameType() { return mL2C; }
-    long GetNumPlayers() { return mL24; }
-    long GetMaxPlayers() { return mNumOpenSlots; }
-    long mL2C;                             // +0x2c
-    long mL30;                             // +0x30
+    bool IsInProgress() const { return this->mInProgress; }
+    bool GetShowDetails() const { return this->mShowDetails; }
+    long GetGameType() { return this->mGameType; }
+    long GetNumPlayers() { return this->mNumPlayers; }
+    long GetMaxPlayers() { return this->mNumOpenSlots; }
+    long mGameType;                        // +0x2c
+    long mSkill;                           // +0x30
     SmartPtr<LobbyClientList> mClients;     // +0x34 (owned; constructor/destructor/copy evidence)
     IPAddr mAddress;                       // +0x38
-    unsigned short mL60;
-    unsigned short mL62;
-    unsigned short GetPing() { return mL64; }
-    void SetPing(unsigned short inPing) { mL64=inPing; }
-    unsigned short mL64;                   // base allocation 0x68 at 0x3a6730
+    unsigned short mCaptainId;
+    unsigned short mGroupId;
+    unsigned short GetPing() { return this->mPing; }
+    void SetPing(unsigned short inPing) { this->mPing=inPing; }
+    unsigned short mPing;                  // base allocation 0x68 at 0x3a6730
 protected:
     typedef LobbyGame* (*LobbyGameFactory)();
     static LobbyGameFactory mGameFactory;
     static LobbyGame* DefaultGameFactory() { return new LobbyGame; }
 public:
     static LobbyGame* CreateGame(LobbyGameType inType);
-    static void SetGameFactory(LobbyGameFactory factory) { mGameFactory=factory; }
+    static void SetGameFactory(LobbyGameFactory factory) { LobbyGame::mGameFactory=factory; }
 
 public:
-    unsigned short GetL62() const { return mL62; }
-    bool GetB12() const { return mB12; }
-    bool GetB13() const { return mB13; }
-    bool GetIsFiltered() const { return mIsFiltered; }
+    unsigned short GetGroupId() const { return this->mGroupId; }
+    bool GetAskToJoinFlag() const { return this->mAskToJoin; }
+    bool GetInProgress() const { return this->mInProgress; }
+    bool GetIsFiltered() const { return this->mIsFiltered; }
 };
 
 
@@ -1870,74 +1861,74 @@ public:
 // 0x361350: the game the local player is in (NULL when none)
 LobbyGame* GetMyLobbyGame();
 
-// WONAPI's message buffers (names PROVISIONAL)
+// WONAPI's message buffers (provisional names)
 
 
 class ByteBuffer;
 template <class T> class SmartPtr;
 
 // 0x361b60 / 0x361b80 (cdecl): a game message to the lobby
-void LobbyFn361B60(const ByteBuffer* inMessage);
-void LobbyFn361B80(const ByteBuffer* inMessage);
-void LobbyFn361BA0(LobbyClient* inClient, const ByteBuffer* inMessage);  // 0x361ba0
-void LobbyFn361290();                       // 0x361290
+void LobbySendToCaptain(const ByteBuffer* inMessage);
+void LobbyBroadcastToGame(const ByteBuffer* inMessage);
+void LobbySendToClient(LobbyClient* inClient, const ByteBuffer* inMessage);  // 0x361ba0
+void LobbyResetReadyFlags();                // 0x361290
 
-// a client of the lobby's room (its name at +0x08; class PROVISIONAL)
+// a client of the lobby's room (its name at +0x08; provisional name)
 class LobbyPlayer;
 
 class LobbyClient : public RefCount {
 public:
     LobbyClient();                         // 0x3a51a0; new 0x2c
     virtual ~LobbyClient();                // 0x3a5260
-    void Fn3A52F0(unsigned short inId, bool inMode);
-    bool Fn3A5330();
-    bool IsFriend(); //actual native physicalICF2b31d0, SDK nonconst
-    bool Fn3A5340();
-    void Fn3A5350(RoutingClientInfo* inInfo);
-    void Fn3A5450();
-    bool Fn3A5470();
-    bool Fn3A5480(bool inMode);
-    bool Fn3A54B0();
-    bool Fn3A54C0();
-    bool Fn3A54D0();
-    bool Fn3A54E0(bool inFlag);
-    void Fn3A5500(bool inValue, bool inMode);
-    void Fn3A5520(LobbyPlayer* inPlayer);
-    bool Fn3A5580();
-    bool Fn3A5590();
-    unsigned short Fn3A55A0();
-    bool Fn3A55C0(LobbyClient* inOther);
+    void ClearGroup(unsigned short inId, bool inGame);
+    bool IsInChatGroup();
+    bool IsFriend(); // the linker folds this body into the identical one at 0x2b31d0; nonconst in the SDK
+    bool IsInGameGroup();
+    void ReadRoutingInfo(RoutingClientInfo* inInfo);
+    void UpdateIgnoreStatus();
+    bool IsAnonymous();
+    bool IsMuted(bool inGame);
+    bool IsAway();
+    bool IsAdmin();
+    bool IsModerator();
+    bool IsCaptain(bool inGame);
+    void SetCaptain(bool inCaptain, bool inGame);
+    void SetPlayer(LobbyPlayer* inPlayer);
+    bool HasPlayer();
+    bool IsReady();
+    unsigned short GetPing();
+    bool IsTeammate(LobbyClient* inOther);
 
     GUIString mName;                        // +0x08
-    unsigned short GetClientId() { return mClientId; }
+    unsigned short GetClientId() { return this->mClientId; }
     unsigned short mClientId;              // +0x0c
-    unsigned long mU10;
-    unsigned long mU14;
-    unsigned long mU18;
-    unsigned char mFlags1C;
-    unsigned char mFlags1D;
-    unsigned short mGroupId1E;
-    unsigned short mGroupId20;
-    bool mB22;
-    bool mB23;
-    bool mB24;
-    bool mB25;
-    bool mB26;
-    bool mB27;
+    unsigned long mClientFlags;
+    unsigned long mWONUserId;
+    unsigned long mCDKeyId;
+    unsigned char mChatMemberFlags;
+    unsigned char mGameMemberFlags;
+    unsigned short mChatGroupId;
+    unsigned short mGameGroupId;
+    bool mIgnored;
+    bool mBlocked;
+    bool mIsFriend;
+    bool mIsGameCaptain;
+    bool mIsChatCaptain;
+    bool mInvited;
     SmartPtr<LobbyPlayer> mPlayer;          // +0x28; setter and destructor own the reference
 public:
-    void SetIsFriend(bool inFriend) { mB24 = inFriend; }
-    void SetB27(bool inValue) { mB27 = inValue; }
-    unsigned long GetU14() const { return mU14; }
-    unsigned long GetU18() const { return mU18; }
-    unsigned short GetGroupId1E() const { return mGroupId1E; }
-    unsigned short GetGroupId20() const { return mGroupId20; }
-    void SetGroupId(unsigned short inId, bool inGame) { if (inGame) mGroupId20 = inId; else mGroupId1E = inId; }
-    void SetMemberFlags(unsigned char inFlags, bool inGame) { if (inGame) mFlags1D = inFlags; else mFlags1C = inFlags; }
-    bool GetB22() const { return mB22; }
-    bool GetB23() const { return mB23; }
+    void SetIsFriend(bool inFriend) { this->mIsFriend = inFriend; }
+    void SetInvited(bool inValue) { this->mInvited = inValue; }
+    unsigned long GetWONUserId() const { return this->mWONUserId; }
+    unsigned long GetCDKeyId() const { return this->mCDKeyId; }
+    unsigned short GetChatGroupId() const { return this->mChatGroupId; }
+    unsigned short GetGameGroupId() const { return this->mGameGroupId; }
+    void SetGroupId(unsigned short inId, bool inGame) { if (inGame) this->mGameGroupId = inId; else this->mChatGroupId = inId; }
+    void SetMemberFlags(unsigned char inFlags, bool inGame) { if (inGame) this->mGameMemberFlags = inFlags; else this->mChatMemberFlags = inFlags; }
+    bool IsIgnored() const { return this->mIgnored; }
+    bool IsBlocked() const { return this->mBlocked; }
 public:
-    const GUIString& GetName() const { return mName; }
+    const GUIString& GetName() const { return this->mName; }
 };
 
 
@@ -1947,22 +1938,22 @@ class LobbyPlayer : public RefCount {
 public:
     LobbyPlayer();
     virtual ~LobbyPlayer();
-    virtual bool ReadData(ReadBuffer& inBuffer) { return true; } //genuine SDK ReadDataHook default, native387ff0
-    virtual void WriteData(WriteBuffer& outBuffer) {} //genuine SDK WriteDataHook default, native30a800
+    virtual bool ReadData(ReadBuffer& inBuffer) { return true; } // returns true (shared body at 0x387ff0)
+    virtual void WriteData(WriteBuffer& outBuffer) {} // empty (shared body at 0x30a800)
     virtual bool IsTeammate(LobbyPlayer* inOther);
     bool ReadFromBuffer(ReadBuffer& inBuffer); // 0x3a90f0 (typed exception handler/tail separately audited)
     void WriteToBuffer(WriteBuffer& outBuffer); // 0x3a9170
     bool IsSameTeam(LobbyPlayer* inOther);     // 0x3a91a0
 
-    unsigned short mPlayerId;              // +0x08
-    bool mBA;                              // +0x0a
+    unsigned short mPing;                  // +0x08
+    bool mIsReady;                         // +0x0a
 protected:
     typedef LobbyPlayer* (*LobbyPlayerFactory)();
     static LobbyPlayerFactory mPlayerFactory;
     static LobbyPlayer* DefaultPlayerFactory() { return new LobbyPlayer; }
 public:
     static LobbyPlayer* CreatePlayer();
-    static void SetPlayerFactory(LobbyPlayerFactory factory) { mPlayerFactory=factory; }
+    static void SetPlayerFactory(LobbyPlayerFactory factory) { LobbyPlayer::mPlayerFactory=factory; }
 
 };
 
@@ -1971,40 +1962,40 @@ public:
 // The lobby's core, window manager and window (EELobbyInterface.cpp's globals 0x565898, 0x565894, 0x565890). Class
 // names and bases from RTTI: WONAPICoreEx : WONAPICore; MSWindowManager : WindowManager : RefCount;
 // MSWindow : Window : RefCount; MSNativeIcon : NativeIcon : RefCount; MultiImageDecoder, DisplayContext. Sizes from
-// EELobbyInterface 0x2972c6's `new`s; member and slot names PROVISIONAL.
+// EELobbyInterface 0x2972c6's `new`s (provisional member and slot names).
 class WindowEventBase;
 class InputEvent;
 class MouseEvent;
 class KeyEvent;
 class SizeEvent;
 // a window's drawing context (RTTI: DisplayContext : RefCount)
-// Borrowed target prefix only: native326c70 stores mGraphics at+c.
-// Complete native10B DisplayContext: new10/fieldstores3cfab4..3cfad4; TD4e0ab0.
+// Only the prefix is used: 0x326c70 stores mGraphics at +0x0c.
+// DisplayContext (0x10 bytes): allocated and filled at 0x3cfab4..0x3cfad4; type descriptor 0x4e0ab0.
 class DisplayContext : public RefCount {
 public:
     DisplayContext(HDC dc=NULL) : mDC(dc),mGraphics(NULL) {}
     virtual ~DisplayContext() {}
-    HDC mDC; //08; borrowed; owningimage/window deletesitsDC
+    HDC mDC; // at +0x08, not owned; the owning image or window deletes the DC
     Graphics* mGraphics; //0c borrowed
     SmartPtr<NativeImage> CreateImage(int,int); //3cedd0, nonvirtual
 };
 class SoundDecoder;
 class RawImage;
 
-// Complete logical decoder contracts are in WONLobbyImageDecoder.h.
-// 0x3d2a20 / 0x3d24e0 (cdecl): add the JPG decoder (4 extensions) / the PNG decoder to a multi-decoder (PROVISIONAL)
+// The decoder classes are in WONLobbyImageDecoder.h.
+// 0x3d2a20 / 0x3d24e0 (cdecl): add the JPG decoder (4 extensions) / the PNG decoder to a multi-decoder (provisional names)
 
-// Actual core ownership/API is defined in WONAPICore.h.
+// The core API is in WONAPICore.h.
 
 class WindowManager : public RefCount {
 protected:
-    static WindowManager* mDefaultWindowManager; //native566270, genuine borrowed default manager
-    static DWORD mThreadId; //native566274, genuine GUI owner thread id
-    bool CheckModalValid(); //genuine SDK protected modal-state validation
+    static WindowManager* mDefaultWindowManager; // 0x566270, the default manager
+    static DWORD mThreadId; // 0x566274, the GUI thread's id
+    bool CheckModalValid(); // checks the modal state
 public:
-    static WindowManager* GetDefaultWindowManager() { return mDefaultWindowManager; }
-    static DWORD GetThreadId() { return mThreadId; }
-    WindowManager(); //32b660, complete148
+    static WindowManager* GetDefaultWindowManager() { return WindowManager::mDefaultWindowManager; }
+    static DWORD GetThreadId() { return WindowManager::mThreadId; }
+    WindowManager(); // 0x32b660; the class is 0x148 bytes
     virtual ~WindowManager(); //32bff0
     virtual void GetNextEvent(); //04 32e7c0
     virtual bool SetScreenResolutionHook(int,int); //08 32c380
@@ -2021,7 +2012,7 @@ public:
     void RestoreScreenResolution(); //32c390
     Window* GetPopupWindow(); //32c440
     void SetNamedFont(const std::string&,Font*); //32c470
-    void SetDefaultFont(Font* font); //actual SDK inline definition follows completeFont below
+    void SetDefaultFont(Font* font); // inline, defined after Font below
     Font* GetNamedFont(const std::string&); //32c4d0
     Font* GetDefaultFont(); //32c540
     Font* GetDefaultFontMod(int,int=0); //32c700
@@ -2029,19 +2020,19 @@ public:
     static SmartPtr<Font> GetDefaultFont(const FontDescriptor&);
     static DisplayContext* GetDefaultDisplayContext();
     void RemoveAllTimerEvents();
-    void SetCacheImages(bool); //32c7f0, actual conditional image-cache count and clear operation
+    void SetCacheImages(bool); // 0x32c7f0: changes the image-cache setting and clears the cache when needed
     SmartPtr<NativeImage> DecodeImage(DisplayContext*,const char*); //32c950
     SmartPtr<NativeImage> DecodeImage(const char*); //32ccb0
     SmartPtr<Image> DecodeDelayImage(const char*); //32ccf0
     SmartPtr<RawImage> DecodeImageRaw(const char*); //32d160
     void SetSoundDecoder(SoundDecoder*); //32d490
     SmartPtr<Sound> DecodeSound(const SoundDescriptor&); //32d4f0
-    void Fn32D5B0(); //32d5b0 CloseAllWindows, existing caller identity
+    void CloseAllWindows(); // 0x32d5b0
     void CalcModality(); //32da30
-    bool NotModalWindow(Window*); //32dc30 actual26B member; native MSWindowProc3d1730
-    //32dbe0 is the separate actual static SetModal(Component*,bool) helper, not a member.
+    bool NotModalWindow(Window*); // 0x32dc30 (called from the window procedure at 0x3d1730)
+    // 0x32dbe0 is a separate static SetModal(Component*,bool) helper, not a member.
     int DoDialog(Window*,Component*); //32dc50
-    void Fn32DDB0(int,Window*,Component*); //32ddb0 existing EndDialog identity
+    void EndDialog(int,Window*,Component*); // 0x32ddb0
     void ExitMessageLoop(); //32ddf0
     void AdjustPopupPosition(Window*,Component*,bool,const WONRectangle&); //32de00
     void DoPopup(const PopupParams&); //32e040
@@ -2056,7 +2047,7 @@ public:
     bool CheckPopupClick(MouseEvent*); //32ee40
     void DeliverEvent(WindowEventBase*); //32ef20
     void SubscribeToBroadcast(Component*,bool); //32f3f0
-    void Fn32F680(ComponentEvent*); //32f680 existing BroadcastEvent identity
+    void BroadcastEvent(ComponentEvent*); // 0x32f680
     void ClearSubscriptions(); //32f5d0
     WindowEventBase* PeekNextEvent(); //32f700
     void ProcessEvents(); //32f760
@@ -2072,7 +2063,7 @@ public:
     typedef std::set<SmartPtr<Component> > BroadcastSet;
     CriticalSection mDataCrit; //08..1f
     SmartPtr<ColorScheme> mColorScheme; //20
-    MultiImageDecoder mImageDecoder; //24..57 complete34 from skins C packet
+    MultiImageDecoder mImageDecoder; // at +0x24..0x57 (0x34 bytes)
     SmartPtr<SoundDecoder> mSoundDecoder; //58
     SmartPtr<Font> mDefaultFont; //5c
     SmartPtr<NativeIcon> mDefaultWindowIcon; //60
@@ -2112,9 +2103,9 @@ WindowManager* GetLobbyWindow();
 // (0x14c bytes; vtable 0x85472c)
 class MSWindowManager : public WindowManager {
 public:
-    HINSTANCE GetHinstance() { return mInstance; }
+    HINSTANCE GetHinstance() { return this->mInstance; }
     MSWindowManager(HINSTANCE inInstance);  // 0x3d0900 (NULL: GetModuleHandle(NULL))
-    virtual ~MSWindowManager(); //3d0b60 actualcomplete11B baseforwarding
+    virtual ~MSWindowManager(); // 0x3d0b60, forwards to the base destructor
     virtual void GetNextEvent(); //04 3d0c40
     virtual bool SetScreenResolutionHook(int,int); //08 3d0cf0
     virtual void GetScreenResolutionHook(int&,int&); //0c 3d0d50
@@ -2129,7 +2120,7 @@ public:
 class NativeIcon : public RefCount {
 public:
     NativeIcon(DisplayContext* inContext);  // 0x328990
-    virtual ~NativeIcon(); //328a00 actual normal; SDK protected lifetime, existing public reconstruction access retained
+    virtual ~NativeIcon(); // 0x328a00; protected in the SDK, public here
 
     SmartPtr<DisplayContext> mContext;      // +0x08
 };
@@ -2148,21 +2139,21 @@ struct FontDescriptor {
     std::string mFace;
     int mStyle;
     int mSize;
-    FontDescriptor() : mStyle(0), mSize(0) { } // genuine SDK default; complete18 descriptor
+    FontDescriptor() : mStyle(0), mSize(0) { } // the descriptor is 0x18 bytes
     FontDescriptor(const std::string& theFace, int theStyle, int theSize) : mFace(theFace), mStyle(theStyle), mSize(theSize) { }
-    bool operator<(const FontDescriptor&) const; // immutable primary comparator contract
+    bool operator<(const FontDescriptor&) const; // ordering for font lookups
     bool operator==(const FontDescriptor&) const; //326840
     bool operator!=(const FontDescriptor&) const; //326880
 };
 
-// Complete typed targetB8 storage; only original external constructor/destructor
-// implement this lifetime. No private implementation or implicit copying is proposed.
+// Window (0xb8 bytes): constructor and destructor out of line;
+// nothing here copies one.
 class Window : public RefCount {
 public:
     SmartPtr<Font> GetFont(const FontDescriptor&); //32a230
-    static void SetSkipDecodeImages(bool); //32a640 actualstatic byte switch
-    SmartPtr<RawImage> DecodeImageRaw(const char*); //32a800 owned raw8 fallback/native manager decoder
-    SmartPtr<NativeImage> CreateImage(int,int); //32a8c0, original external wrapper
+    static void SetSkipDecodeImages(bool); // 0x32a640: static byte switch
+    SmartPtr<RawImage> DecodeImageRaw(const char*); // 0x32a800: decodes through the manager's decoder
+    SmartPtr<NativeImage> CreateImage(int,int); // 0x32a8c0, wrapper
     bool CanClose(); //32ab80
     void CheckResize(DWORD); //32ac90
     void SuspendRootResize(bool suspend);
@@ -2170,9 +2161,9 @@ public:
     Graphics& GetGraphics();
     void RemoveComponent(Component*);
     bool IsMouseDown(MouseButton);
-    void ShowNativeCursor(bool); //32afc0, original external wrapper
-    void CheckSetCursor(bool); //32afd0, original external behavior
-    bool CheckDoubleClick(MouseButton); //32b110 genuine SDK, unchecked button index reads38
+    void ShowNativeCursor(bool); // 0x32afc0, wrapper
+    void CheckSetCursor(bool); // 0x32afd0
+    bool CheckDoubleClick(MouseButton); // 0x32b110; the button index is not range-checked (reads at +0x38)
     void HandleMouseExit(); //32b120
     void HandleKeyEvent(KeyEvent*); //32b170
     void HandleMouseDown(MouseEvent*); //32b1c0
@@ -2180,44 +2171,44 @@ public:
     void HandleInputEvent(InputEvent*); //32b390
 
     Window();                              // 0x329c30
-    virtual ~Window();                     // 0x32a020, complete external normal destructor
-    virtual SmartPtr<Font> Virtual04(const FontDescriptor&);
-    virtual bool Virtual08();
-    virtual void Virtual0C(DWORD inElapsed);
-    virtual void Virtual10();
-    virtual void Virtual14();
-    virtual void Virtual18(Cursor*);
-    virtual void Virtual1C(bool);
-    virtual void Virtual20(bool);
-    virtual void Virtual24(bool);
-    virtual void Virtual28(bool);
-    virtual void Virtual2C();
+    virtual ~Window();                     // 0x32a020, out of line
+    virtual SmartPtr<Font> PlatformGetFont(const FontDescriptor&);
+    virtual bool IdleUpdate();
+    virtual void TimerEvent(DWORD inElapsed);
+    virtual void PlatformSetTitle();
+    virtual void PlatformSetIcon();
+    virtual void PlatformSetCursor(Cursor*);
+    virtual void PlatformShowNativeCursor(bool);
+    virtual void PlatformShow(bool);
+    virtual void PlatformMinimize(bool);
+    virtual void PlatformSetTopMost(bool);
+    virtual void PlatformClose();
     virtual void Create(const WONRectangle&);
     virtual void SetPosSize(int, int, int, int);
     virtual void GetRect(WONRectangle&, bool);
-    virtual void Virtual3C();
+    virtual void PlatformSetFocus();
     virtual void Show(bool);
-    void Minimize(bool minimize); //genuine SDK nonvirtual wrapper, native32afb0/13
-    DisplayContext* GetDisplayContext() { return mDisplayContext.get(); } //genuine borrowed getter at28; no standalone native attribution
-    virtual void Virtual44(bool);
-    virtual void Virtual48(WindowEventBase*);
-    virtual bool Virtual4C();
+    void Minimize(bool minimize); // nonvirtual wrapper (0x32afb0)
+    DisplayContext* GetDisplayContext() { return this->mDisplayContext.get(); } // inline, at +0x28
+    virtual void PlatformSetMouseCapture(bool);
+    virtual void QueueEvent(WindowEventBase*);
+    virtual bool PlatformIsVisible();
     static Window* GetDefaultWindow();      // 0x32a220
     SmartPtr<NativeImage> DecodeImage(const char*); // 0x32a650
     int RunDialog(Component*);              // 0x32b080
-    void AddComponent(Component*); //32b040 actual external root add forwarding
-    void SetModal(bool); //32b060 native dispatch to actual ContainerEnter/LeaveModal
-    bool Close();                          // 0x32ac30, actual AL false/true paths
+    void AddComponent(Component*); // 0x32b040: forwards to the root
+    void SetModal(bool); // 0x32b060: calls Container::EnterModal/LeaveModal
+    bool Close();                          // 0x32ac30, returns false or true
     void SetClientSize(int, int);           // 0x32af30
     void Center(bool);                     // 0x32ae80
-    void Fn32B0A0(int, Component*);          // 0x32b0a0
+    void EndDialog(int, Component*);         // 0x32b0a0
     void OpenPopup(PopupParams&);           // 0x32b0c0
     void ClosePopup(Component*);            // 0x32b0e0
-    void Fn32A1E0();                        // 0x32a1e0
-    void SetParent(Window*);                // 0x32a210, borrowed parent80
+    void InvalidateRoot();                  // 0x32a1e0
+    void SetParent(Window*);                // 0x32a210, the parent at +0x80
     void SetTitle(const GUIString&);        // 0x32adc0
     void SetIcon(NativeIcon*);              // 0x32ae20
-    int GetKeyMod() const { return mKeyMod; }
+    int GetKeyMod() const { return this->mKeyMod; }
     enum WindowState { WindowState_Open, WindowState_Closing, WindowState_Closed };
     typedef bool (*AllowCloseFunc)(Window*);
     WindowState mWindowState; // +08
@@ -2251,7 +2242,7 @@ public:
     bool mIsPopup; // +78
     bool mIsOneComponentWindow; // +79
     bool mMinimizeOnResolutionRestore; // +7a
-    WindowManager* GetWindowManager() { return mManager; } //genuine SDK borrowed manager getter
+    WindowManager* GetWindowManager() { return this->mManager; } // inline
     WindowManager* mManager; // +7c
     Window* mParent; // +80
     std::set<Window*> mChildWindowSet; // +84
@@ -2265,66 +2256,66 @@ public:
     SmartPtr<Font> mDefaultFont; // +b4
 };
 
-// Exact target C8-byte derived class; SDK's later extra key-mod field is absent.
+// 0xc8-byte derived class; the later SDK's extra key-modifier field is absent.
 class MSWindow : public Window {
 public:
-    HWND GetHWND() { return mLB8; }
-    void SetMinimizeOnAltTab(bool minimize) { mBC4=minimize; }
-    void SetForwardKeyMsgToParent(bool forward) { mBC5=forward; }
-    MSWindow();                            // 0x3d0d90, calls original Window constructor
-    void CalcCodePage(); //3d0e20; actual private nonvirtual helper
+    HWND GetHWND() { return this->mHWND; }
+    void SetMinimizeOnAltTab(bool minimize) { this->mMinimizeOnAltTab=minimize; }
+    void SetForwardKeyMsgToParent(bool forward) { this->mForwardKeyMsgToParent=forward; }
+    MSWindow();                            // 0x3d0d90, calls the Window constructor
+    void CalcCodePage(); // 0x3d0e20; private helper
     void MyGetKeyState(); //3d15a0; writes targetcurKeyModbc
-    void PostMouseEvent(WindowEventType,int,LPARAM); //3d1600 ret0c, targetactualenum
+    void PostMouseEvent(WindowEventType,int,LPARAM); // 0x3d1600 (ret 0x0c)
     void DoMinimizeOnAltTab(); //3d16a0
-    static LRESULT CALLBACK StaticWindowProc(HWND,UINT,WPARAM,LPARAM); //3d1530 actualstdcall callback
-    LRESULT WindowProc(HWND,UINT,WPARAM,LPARAM); //3d16e0 actualthiscall
-    virtual ~MSWindow();                   // 0x3d0de0, owns native HWND cleanup
-    virtual SmartPtr<Font> Virtual04(const FontDescriptor&);
-    virtual bool Virtual08();
-    virtual void Virtual0C(DWORD);
-    virtual void Virtual10();
-    virtual void Virtual14();
-    virtual void Virtual18(Cursor*);
-    virtual void Virtual1C(bool);
-    virtual void Virtual20(bool);
-    virtual void Virtual24(bool);
-    virtual void Virtual28(bool);
-    virtual void Virtual2C();
+    static LRESULT CALLBACK StaticWindowProc(HWND,UINT,WPARAM,LPARAM); // 0x3d1530, stdcall callback
+    LRESULT WindowProc(HWND,UINT,WPARAM,LPARAM); // 0x3d16e0, thiscall
+    virtual ~MSWindow();                   // 0x3d0de0, destroys the HWND
+    virtual SmartPtr<Font> PlatformGetFont(const FontDescriptor&);
+    virtual bool IdleUpdate();
+    virtual void TimerEvent(DWORD);
+    virtual void PlatformSetTitle();
+    virtual void PlatformSetIcon();
+    virtual void PlatformSetCursor(Cursor*);
+    virtual void PlatformShowNativeCursor(bool);
+    virtual void PlatformShow(bool);
+    virtual void PlatformMinimize(bool);
+    virtual void PlatformSetTopMost(bool);
+    virtual void PlatformClose();
     virtual void Create(const WONRectangle&);
     virtual void SetPosSize(int, int, int, int);
     virtual void GetRect(WONRectangle&, bool);
-    virtual void Virtual3C();
-    virtual void Virtual44(bool);
-    virtual bool Virtual4C();
-    virtual void Virtual50();               // OnPaint3d23f0, no arguments
-    virtual void Virtual54();               // OnCreate3d22c0, no arguments
-    HWND mLB8;                             // +b8, target HWND
-    DWORD mLBC;                            // +bc
+    virtual void PlatformSetFocus();
+    virtual void PlatformSetMouseCapture(bool);
+    virtual bool PlatformIsVisible();
+    virtual void OnPaint();                 // OnPaint3d23f0, no arguments
+    virtual void OnCreate();                // OnCreate3d22c0, no arguments
+    HWND mHWND;                            // +b8, target HWND
+    DWORD mCurKeyMod;                      // +bc
     int mCodePage;                         // +c0, GetLocaleInfoA/atoi producer3d0e20
-    bool mBC4;                             // +c4
-    bool mBC5;                             // +c5
+    bool mMinimizeOnAltTab;                // +c4
+    bool mForwardKeyMsgToParent;           // +c5
 };
-// 0x3d08c0 (cdecl): the parent window of the MS windows created next (PROVISIONAL)
-void LobbyFn3D08C0(HWND inParent);
+// 0x3d08c0 (cdecl): the parent window of the MS windows created next (provisional name)
+void SetMSWindowDefaultOwner(HWND inParent);
 
 // WONAPI lobby state functions the game's lobby glue calls
-int LobbyFn362760();                        // 0x362760 (how the lobby was left: 1, 2 or 3)
-void LobbyFn362830();                       // 0x362830
-void LobbyFn362880();                       // 0x362880
-void LobbyFn362170();                       // 0x362170
-Container* LobbyFn362250();                 // 0x362250
-void LobbyFn362740();                       // 0x362740
+int LobbyRun();                             // 0x362760 (how the lobby was left: 1, 2 or 3)
+void LobbySuspend();                        // 0x362830
+void LobbyResume();                         // 0x362880
+void LobbyShutdown();                       // 0x362170
+Container* LobbyGetContainer();             // 0x362250
+void LobbyStart();                          // 0x362740
 void LobbyGetNetAddresses(std::list<LobbyNetAddress>& outAddresses, bool inFlag);   // 0x2b32b0 (cdecl)
 
 // 0x361390: the local player (NULL when none)
 LobbyPlayer* GetMyLobbyPlayer();
-// 0x34a100 (cdecl): a text with its %s-style argument filled in (name PROVISIONAL)
+// 0x34a100 (cdecl): a text with its %s-style argument filled in (provisional name)
 GUIString LobbyFormatString(const GUIString& inFormat, const GUIString& inArg);
-void LobbyFn3612B0(bool inFlag);            //0x3612b0 genuine SDK SetGameInProgress(bool)
-bool LobbyFn361310(bool inFlag);             // 0x361310
-bool LobbyFn3613C0();                       // 0x3613c0
-void LobbyFn361260();                       // 0x361260
-void LobbyFn3613E0();                       // 0x3613e0
+void LobbySetGameInProgress(bool inFlag);   // 0x3612b0, SDK SetGameInProgress(bool)
+bool LobbyLeaveGame(bool inFlag);            // 0x361310
+bool LobbyIAmCaptain();                     // 0x3613c0
+void LobbyNetAdvertiseGame();               // 0x361260
+void LobbyNotifyStagingChange();            // 0x3613e0
 
 class ServerListCtrl;
 class ServerDetailsItem;
@@ -2333,13 +2324,13 @@ class ServerDetailsItem : public ListItem {
 public:
     ServerDetailsItem();
     virtual ~ServerDetailsItem();
-    virtual void Virtual04(Graphics&,ListArea*);
-    virtual void Virtual08(ListArea*);
-    virtual int Virtual10(const ListItem*,ListArea*) const;
-    virtual bool Virtual14(ListArea*,int,int);
-    virtual void Virtual30(ListArea*,int,int,int);
-    virtual void PaintDetailsHook(Graphics&,MultiListArea*) {} //genuine SDK inline empty details hook, slot38
-    virtual int GetDetailsHeightHook(MultiListArea*) { return 0; } //genuine SDK inline zero-height hook, slot3c
+    virtual void Paint(Graphics&,ListArea*);
+    virtual void CalcDimensions(ListArea*);
+    virtual int Compare(const ListItem*,ListArea*) const;
+    virtual bool CanSelect(ListArea*,int,int);
+    virtual void MouseDown(ListArea*,int,int,int);
+    virtual void PaintDetailsHook(Graphics&,MultiListArea*) {} // empty inline, vtable +0x38
+    virtual int GetDetailsHeightHook(MultiListArea*) { return 0; } // returns 0, vtable +0x3c
     void SetGame(LobbyGame*);
     void CalcIcon();
     static bool IsStartOfNumber(char);
@@ -2370,17 +2361,17 @@ protected:
     static ItemFactoryFunc mItemFactoryFunc;
     static ServerDetailsItem* DefaultItemFactory() { return new ServerDetailsItem; }
 public:
-    static ServerDetailsItem* CreateItem() { return mItemFactoryFunc(); }
-    static void SetItemFactory(ItemFactoryFunc factory) { mItemFactoryFunc=factory; }
+    static ServerDetailsItem* CreateItem() { return ServerDetailsItem::mItemFactoryFunc(); }
+    static void SetItemFactory(ItemFactoryFunc factory) { ServerDetailsItem::mItemFactoryFunc=factory; }
 
 };
 
 class WindowEventBase : public RefCount {
 public:
-    WindowEventBase(long inType = 0) : mL08(inType), mWindow(0) {}
+    WindowEventBase(long inType = 0) : mEventType(inType), mWindow(NULL) {}
     virtual void Deliver() = 0;             // +0x04: original vtable 0x44df64 -> _purecall
 
-    long mL08;                              // +0x08
+    long mEventType;                        // +0x08
     Window* mWindow;                        // +0x0c
 };
 
@@ -2390,15 +2381,15 @@ public:
     typedef void (*Func)(int inParam);
 
     UserEvent(Func inFunc, int inParam) : mFunc(inFunc), mParam(inParam) {}
-    virtual void Deliver() { mFunc(mParam); }   // +0x04 0x295d30
+    virtual void Deliver() { this->mFunc(this->mParam); }  // +0x04 0x295d30
 
     Func mFunc;                             // +0x10
     int mParam;                             // +0x14
 };
 
 // a component's event (slot +0x7c; type at +0x14: WONAPI's own ids, 100000 up for the game's)
-// Actual ComponentEvent: complete size0x20, owning sender reference +0x10.
-// Complete native events: allocation16 at32ac45; borrowedMouse32/Key24/Size32.
+// ComponentEvent: 0x20 bytes, holds a reference to the sender at +0x10.
+// Window events: allocated at 0x32ac45; mouse, key and size events are 0x32/0x24/0x32 bytes.
 class InputEvent : public WindowEventBase {
 public:
     InputEvent(int type) : WindowEventBase(type) {}
@@ -2420,7 +2411,7 @@ public:
 class SizeEvent : public InputEvent {
 public:
     SizeEvent(int x,int y,int width,int height)
-      : InputEvent(1),mx(x),my(y),mWidth(width),mHeight(height) {}
+      : InputEvent(InputEvent_SizeChange),mx(x),my(y),mWidth(width),mHeight(height) {}
     int mx,my,mWidth,mHeight; //10,14,18,1c
 };
 
@@ -2436,15 +2427,15 @@ public:
     Component* mComponent;                  // +0x1c
 };
 
-// Actual ListItemClickedEvent: RTTI0x44dd78, allocation0x34.
+// ListItemClickedEvent: RTTI 0x44dd78, 0x34 bytes.
 class ListItemClickedEvent : public ComponentEvent {
 public:
     ListItemClickedEvent(Component* component,ListItem* item,MouseButton button,bool dbl,bool up,int x,int y)
       :ComponentEvent(component,up?ComponentEvent_ListItemUpClicked:ComponentEvent_ListItemClicked),
        mButton(button),mDoubleClick(dbl),mItem(item),mX(x),mY(y) {}
-    bool IsSelectedItem(); //genuine SDK ListBox.cpp; native2fa550
-    int GetButton() const { return mButton; }
-    bool IsDoubleClick() const { return mDoubleClick; }
+    bool IsSelectedItem(); // SDK ListBox.cpp; 0x2fa550
+    int GetButton() const { return this->mButton; }
+    bool IsDoubleClick() const { return this->mDoubleClick; }
     int mButton;                            // +0x20
     bool mDoubleClick;                      // +0x24
     SmartPtr<ListItem> mItem;               // +0x28
@@ -2452,31 +2443,31 @@ public:
     int mY;                                 // +0x30
 };
 
-// Actual LobbyEvent adds no payload to ComponentEvent (size0x20).
+// LobbyEvent adds no members to ComponentEvent (0x20 bytes).
 // Derived lobby events are declared only in WONLobbyEvents.h, owned by core.
 class LobbyEvent : public ComponentEvent {
 public:
     LobbyEvent(int inType) : ComponentEvent(NULL, inType) {}
 };
 
-// Actual RTTI receiver of GetClient 0x3aa370 is LobbyServer (complete contract in WONLobbyModel.h).
+// RTTI shows that GetClient's (0x3aa370) receiver is LobbyServer (declared in WONLobbyModel.h).
 class LobbyServer;
-LobbyServer* LobbyFn35B6F0();               // 0x35b6f0; NULL outside a server
+LobbyServer* LobbyGetCurrentServer();       // 0x35b6f0; NULL outside a server
 
-// RTTI LobbyClientList : RefCount; original constructor 0x3a55f0, allocation 0x14.
+// RTTI LobbyClientList : RefCount; constructor 0x3a55f0, 0x14 bytes.
 typedef std::map<unsigned short, SmartPtr<LobbyClient> > LobbyClientMap;
 class LobbyClientList : public RefCount {
 public:
     LobbyClientList();
     virtual ~LobbyClientList();
-    void Fn3A5770();
-    void Fn3A5820(const std::map<unsigned short, SmartPtr<RoutingClientInfo> >& inMap);
-    void Fn3A5C50();
-    void Fn3A5CC0(LobbyClient* inClient);
+    void Clear();
+    void SyncClients(const std::map<unsigned short, SmartPtr<RoutingClientInfo> >& inMap);
+    void UpdateIgnoreStatus();
+    void AddClient(LobbyClient* inClient);
     LobbyClient* FindClient(unsigned short inId);
-    SmartPtr<LobbyClient> Fn3A5D90(unsigned short inId);
-    LobbyClient* Fn3A5EA0(unsigned long inId);
-    void Fn3A5F10();
+    SmartPtr<LobbyClient> RemoveClient(unsigned short inId);
+    LobbyClient* FindClientByWONId(unsigned long inId);
+    void ClearInvited();
     LobbyClientMap mClients;               // +0x08
 };
 
@@ -2491,7 +2482,7 @@ public:
     LobbyClientMap::iterator mItr;
 };
 
-// Existing provisional iterator spelling retained. It filters clients with players; size 0x0c.
+// Iterator over the clients that have players (provisional name); 0x0c bytes.
 class LobbyClientSetIterator {
 public:
     LobbyClientSetIterator(LobbyClientList* inList);
@@ -2502,101 +2493,101 @@ public:
     LobbyClientMap::iterator mItr;
     bool mReady;
 };
-bool LobbyFn35D010(const GUIString& inName); // persistent ignore predicates; cdecl
-bool LobbyFn35D090(unsigned long inAddress);
+bool LobbyIsNameIgnored(const GUIString& inName); // persistent ignore predicates; cdecl
+bool LobbyIsCDKeyBlocked(unsigned long inAddress);
 unsigned short GetLobbyProductId();        // 0x35b580 (LobbyGame summary wire product id)
 
 // 0x361370 (cdecl): the local client
-LobbyClient* LobbyFn361370();
+LobbyClient* GetMyLobbyClient();
 // 0x361b20 (cdecl): EELobbyInterface 0x296d1e passes it as the connection request's flag
-bool LobbyFn361B20();
+bool LobbyIsBehindFirewall();
 
 // 0x359120 (cdecl): fires a component event of inType
-void LobbyFn359120(int inType, bool inFlag);
+void LobbyBroadcastLobbyEvent(int inType, bool inFlag);
 // 0x359100 (cdecl): delivers inEvent to the lobby's components
-void LobbyFn359100(ComponentEvent* inEvent, bool inFlag);
+void LobbyBroadcastEvent(ComponentEvent* inEvent, bool inFlag);
 // 0x361bc0
-void LobbyFn361BC0(LobbyClient* inClient, bool inFlag);
+void LobbyKickClient(LobbyClient* inClient, bool inFlag);
 
 // 0x361250: default GUI manager (global 0x566270, assigned by WindowManager constructor).
 
-// Reference contracts: no Font/Image/NativeImage allocation or private implementation.
+// Font, Image and NativeImage are declared for their callers; nothing here allocates them.
 
 class Font : public RefCount {
 public:
     Font(DisplayContext*, const FontDescriptor&); //3268a0
-    const FontDescriptor& GetDescriptor() { return mDescriptor; }
-    int GetSize() { return mDescriptor.mSize; }
-    int GetStyle() { return mDescriptor.mStyle; }
-    const std::string& GetFace() { return mDescriptor.mFace; }
-    virtual ~Font();                        // 0x326a60, complete external descriptor lifetime
-    virtual void Virtual04(DisplayContext*);
-    virtual void Virtual08(DisplayContext*, const GUIString&, unsigned short, unsigned short, int, int);
-    int GetStringWidth(const GUIString& theStr) { return GetStringWidth(theStr,0,(unsigned short)theStr.length()); }
+    const FontDescriptor& GetDescriptor() { return this->mDescriptor; }
+    int GetSize() { return this->mDescriptor.mSize; }
+    int GetStyle() { return this->mDescriptor.mStyle; }
+    const std::string& GetFace() { return this->mDescriptor.mFace; }
+    virtual ~Font();                        // 0x326a60, out of line
+    virtual void PrepareContext(DisplayContext*);
+    virtual void DrawString(DisplayContext*, const GUIString&, unsigned short, unsigned short, int, int);
+    int GetStringWidth(const GUIString& theStr) { return this->GetStringWidth(theStr,0,(unsigned short)theStr.length()); }
     virtual int GetStringWidth(const GUIString&, unsigned short, unsigned short);
-    virtual int Virtual10(int inChar);
+    virtual int GetCharacterWidth(int inChar);
     virtual int GetHeight();
     virtual int GetAscent();
     virtual int GetDescent();
     FontDescriptor mDescriptor;             // +08..1f
 };
-inline void WindowManager::SetDefaultFont(Font* font) {mDefaultFont=font;} //actualSDK0quota, completeFont lookup
+inline void WindowManager::SetDefaultFont(Font* font) {this->mDefaultFont=font;} // inline (needs the complete Font)
 
-// Complete actual FontConfig98: nativefactory38a160 alloc98, ctor38a1c0/implicitdtor38a250.
+// FontConfig (0x98 bytes): the factory 0x38a160 allocates it, constructor 0x38a1c0, implicit destructor 0x38a250.
 class FontConfig : public ComponentConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38a160 genuine SDK static API, original external provider only
-    static Component* CompFactory(); //2c7b10 genuine SDK static API, original external provider only
-    FontConfig(); //38a1c0 original external, completeactual98 lifetime
-    Font* GetFont(); //38a300 borrowed result, original lazy recalculation
+    static ComponentConfig* CfgFactory(); // 0x38a160
+    static Component* CompFactory(); // 0x2c7b10
+    FontConfig(); // 0x38a1c0
+    Font* GetFont(); // 0x38a300; recalculates the font on demand
     void SetFont(Font*); //38a3e0
-    virtual bool Virtual10(ConfigParser*); //PostParse3099f0 true sharedhook/support0
+    virtual bool PostParse(ConfigParser*); // 0x3099f0 (shared hook body)
     virtual bool Virtual24(const std::string&); //38a5f0
-    virtual bool Virtual2C(const std::string&,int&); //38a580
+    virtual bool GetNamedValue(const std::string&,int&); //38a580
     SmartPtr<Font> mFont; //78
     FontDescriptor mDescriptor; //7c..93
-    bool mNeedRecalcFont; //94, natural95..97; full98
-    // Implicit destructor, native38a250 has no own-vptr store.
+    bool mNeedRecalcFont; // at +0x94; +0x95..0x97 padding; the class is 0x98 bytes
+    // Implicit destructor; 0x38a250 has no own vptr store.
 };
-inline int WrappedText::GetHeight() { return mHeight==0 ? mFont->GetHeight() : mHeight; }
+inline int WrappedText::GetHeight() { return this->mHeight==0 ? this->mFont->GetHeight() : this->mHeight; }
 class Image : public RefCount {
 public:
-    void DrawEntire(DisplayContext*,int,int); //3285a0 genuine SDK nonvirtual whole-image draw adapter
+    void DrawEntire(DisplayContext*,int,int); // 0x3285a0: draws the whole image
     virtual ~Image();
     virtual void Draw(DisplayContext*, int, int, int, int, int, int);
     virtual void SetSize(int, int);
     virtual SmartPtr<Image> Duplicate();
     virtual SmartPtr<NativeImage> GetNative(DisplayContext*);
-    unsigned short GetWidth() const { return mWidth; }
-    unsigned short GetHeight() const { return mHeight; }
+    unsigned short GetWidth() const { return this->mWidth; }
+    unsigned short GetHeight() const { return this->mHeight; }
     unsigned short mWidth;                  // +08
     unsigned short mHeight;                 // +0a
 };
-// Complete native mask0c: ctor3288b0 and actual NativeMask RTTI4d6e80.
+// NativeMask (0x0c bytes): constructor 0x3288b0, RTTI 0x4d6e80.
 class NativeMask : public RefCount {
 public:
     NativeMask(DisplayContext*); //3288b0
     virtual ~NativeMask(); //328920
     SmartPtr<DisplayContext> mDisplayContext; //08
 };
-// Complete abstract18B NativeImage owner; native328a70/328b20 fields/lifetimes.
+// NativeImage (abstract, 0x18 bytes); 0x328a70/0x328b20.
 class NativeImage : public Image {
 public:
     NativeImage(DisplayContext*); //328a70
     Graphics& GetGraphics(); //328c20
-    void SetTransparentMask(NativeMask* mask) { mTransparentMask=mask; }
+    void SetTransparentMask(NativeMask* mask) { this->mTransparentMask=mask; }
     virtual ~NativeImage(); //328b20
     virtual void Draw(DisplayContext*,int,int,int,int,int,int) = 0;
     virtual SmartPtr<NativeImage> GetNative(DisplayContext*); //328bf0
-    virtual Graphics* Virtual14() = 0;
+    virtual Graphics* PlatformGetGraphics() = 0;
     virtual SmartPtr<NativeIcon> GetIcon();
     virtual SmartPtr<RawImage32> GetRaw();
-    Graphics* mGraphics; //0c uniqueowner
+    Graphics* mGraphics; // at +0x0c, owned
     SmartPtr<DisplayContext> mDisplayContext; //10
     SmartPtr<NativeMask> mTransparentMask; //14
 };
 
-// Concrete50B native MSGraphics, original854688 vtable and factory3cfce0 new50.
+// MSGraphics (0x50 bytes): vtable 0x854688, created by the factory 0x3cfce0.
 class MSGraphics : public Graphics {
 public:
     MSGraphics(); //3cf0f0
@@ -2626,15 +2617,15 @@ public:
     HBRUSH mHollowBrush; //48
     HPEN mPen; //4c
 };
-// Actual10B bitmap owner; native GetMask3d06b0 alloc10 and initializesbase0c+handle0c.
+// MSNativeMask (0x10 bytes): GetMask (0x3d06b0) allocates it and fills the base (0x0c bytes) and the handle at +0x0c.
 class MSNativeMask : public NativeMask {
 public:
     MSNativeMask(DisplayContext* context,HBITMAP mask) : NativeMask(context),mMask(mask) {}
     virtual ~MSNativeMask(); //3cf9b0
-    HBITMAP GetMask() { return mMask; }
+    HBITMAP GetMask() { return this->mMask; }
     HBITMAP mMask; //0c
 };
-// Target28B native bitmap owner. Later SDK mImageData28/useDibSection are absent.
+// Bitmap holder (0x28 bytes); the later SDK's mImageData and useDibSection are absent.
 class MSNativeImage : public NativeImage {
 public:
     MSNativeImage(DisplayContext*,HBITMAP,MSNativeMask* = NULL); //3cfb70
@@ -2642,28 +2633,27 @@ public:
     virtual ~MSNativeImage(); //3cfc60
     void Init(DisplayContext*,HBITMAP,MSNativeMask*); //3cfa50
     void SelectBitmap(bool); //3cfa10
-    virtual Graphics* Virtual14(); //3cfce0, real PlatformGetGraphics
+    virtual Graphics* PlatformGetGraphics(); //3cfce0, real PlatformGetGraphics
     virtual void Draw(DisplayContext*,int,int,int,int,int,int); //3cfd40
     virtual SmartPtr<RawImage32> GetRaw(); //3cfe50
     virtual SmartPtr<Image> Duplicate(); //3d0130
     virtual SmartPtr<NativeIcon> GetIcon(); //3d0350
-    virtual SmartPtr<Cursor> GetCursor(int,int); //20,3d0230; external fornow
+    virtual SmartPtr<Cursor> GetCursor(int,int); // vtable +0x20, 0x3d0230
     HDC mDC; //18
     HBITMAP mBitmap; //1c
     HBITMAP mOldBitmap; //20
     bool mBitmapIsSelected; //24
 };
 
-// Target concrete MSFont: native3cee60 stores HFONT20,HDC24,TEXTMETRICA28.
-// Add Font(DisplayContext*, const FontDescriptor&) to existing Font.
+// MSFont: 0x3cee60 stores HFONT at +0x20, HDC at +0x24, TEXTMETRICA at +0x28.
 class MSFont : public Font {
 public:
     MSFont(DisplayContext*, const FontDescriptor&); //3cee60
     virtual ~MSFont(); //3cef30
-    virtual void Virtual04(DisplayContext*); //3cef60 PrepareContext
-    virtual void Virtual08(DisplayContext*,const GUIString&,unsigned short,unsigned short,int,int); //3cef80
+    virtual void PrepareContext(DisplayContext*); //3cef60 PrepareContext
+    virtual void DrawString(DisplayContext*,const GUIString&,unsigned short,unsigned short,int,int); //3cef80
     virtual int GetStringWidth(const GUIString&,unsigned short,unsigned short); //3cf040
-    virtual int Virtual10(int); //3cf090 GetCharWidth
+    virtual int GetCharacterWidth(int); //3cf090 GetCharWidth
     virtual int GetHeight(); //3cf0c0
     virtual int GetAscent(); //3cf0d0
     virtual int GetDescent(); //3cf0e0
@@ -2673,19 +2663,19 @@ public:
 };
 
 // Target classes merge platform behavior into the concrete RawImage classes.
-// Six native vtable slots at4510a8/4510c4/4510e0; later SDK platform
+// Six vtable slots (tables at 0x4510a8/0x4510c4/0x4510e0); the later SDK's platform
 // virtuals and GetRawImage32 virtual are absent from this binary.
 class Palette : public RefCount {
 public:
-    Palette(int n) : mNumColors(n) { mColors=new DWORD[n]; } //actual SDK inline constructor, native336828 full10 allocation
-    SmartPtr<Palette> Duplicate(); //349040 actual owned palette duplicate, external native
-    void SetColor(int thePos, unsigned long theVal) { mColors[thePos] = theVal; }
-    unsigned long GetColor(int thePos) { return mColors[thePos]; }
-    int GetNumColors() { return mNumColors; }
-    virtual ~Palette(); //external real lifetime; no local ownership implementation
+    Palette(int n) : mNumColors(n) { this->mColors=new DWORD[n]; } // inline; allocates n colors (used at 0x336828)
+    SmartPtr<Palette> Duplicate(); // 0x349040: copies the palette
+    void SetColor(int thePos, unsigned long theVal) { this->mColors[thePos] = theVal; }
+    unsigned long GetColor(int thePos) { return this->mColors[thePos]; }
+    int GetNumColors() { return this->mNumColors; }
+    virtual ~Palette(); // out of line
     DWORD* mColors; //08
     int mNumColors; //0c
-}; // complete10 owner, SDK/native exact two owned fields; destructor original external
+}; // 0x10 bytes, two owned members; destructor out of line
 class NativeMask;
 class RawImage : public Image {
 public:
@@ -2697,24 +2687,24 @@ public:
 };
 class RawImage32 : public RawImage {
 public:
-    RawImage32(int,int); //328cf0; complete24B owner
+    RawImage32(int,int); // 0x328cf0; 0x24 bytes
     virtual ~RawImage32(); //328da0
     virtual SmartPtr<Image> Duplicate(); //328df0
     virtual SmartPtr<NativeImage> GetNative(DisplayContext*); //328f30
-    virtual bool HasTransparency() { return mDoTransparency; }
-    SmartPtr<NativeImage> Fn3D0410(DisplayContext*); //real native platform method
+    virtual bool HasTransparency() { return this->mDoTransparency; }
+    SmartPtr<NativeImage> CreateNativeImage(DisplayContext*); // creates the platform image
     DWORD GetPixel(int,int); //328ee0
     DWORD* StartRowTraversal(int); //328f00
 
-    void SetDoTransparency(bool value) { mDoTransparency=value; }
-    void SetRowPixel(DWORD value) { *mRowPtr=value; }
-    bool HasMoreRows() { return mRowEnd<=mImageEnd; }
-    bool HasMoreRowPixels() { return mRowPtr<mRowEnd; }
-    DWORD* GetImageData() { return mImageData; }
-    DWORD GetRowPixel() { return *mRowPtr; }
-    void NextRowPixel() { ++mRowPtr; }
-    void NextRowPixel(int theAmount) { mRowPtr+=theAmount; }
-    void NextRow() { mRowPtr=mRowEnd; mRowEnd+=mWidth; }
+    void SetDoTransparency(bool value) { this->mDoTransparency=value; }
+    void SetRowPixel(DWORD value) { *this->mRowPtr=value; }
+    bool HasMoreRows() { return this->mRowEnd<=this->mImageEnd; }
+    bool HasMoreRowPixels() { return this->mRowPtr<this->mRowEnd; }
+    DWORD* GetImageData() { return this->mImageData; }
+    DWORD GetRowPixel() { return *this->mRowPtr; }
+    void NextRowPixel() { ++this->mRowPtr; }
+    void NextRowPixel(int theAmount) { this->mRowPtr+=theAmount; }
+    void NextRow() { this->mRowPtr=this->mRowEnd; this->mRowEnd+=this->mWidth; }
     DWORD* mImageData; //10
     DWORD* mImageEnd; //14
     DWORD* mRowPtr; //18
@@ -2723,19 +2713,19 @@ public:
 };
 class RawImage8 : public RawImage {
 public:
-    RawImage8(int,int,Palette* =NULL); //329170; complete30B owner
+    RawImage8(int,int,Palette* =NULL); // 0x329170; 0x30 bytes
     virtual ~RawImage8(); //329280
     virtual SmartPtr<Image> Duplicate(); //329300
     virtual SmartPtr<NativeImage> GetNative(DisplayContext*); //329460
-    virtual bool HasTransparency() { return mTransparentColor>=0; }
-    void Fn3D04F0(); //real nonvirtual platform row initialization
-    SmartPtr<NativeImage> Fn3D0520(DisplayContext*);
+    virtual bool HasTransparency() { return this->mTransparentColor>=0; }
+    void CalcBytesPerRow(); //real nonvirtual platform row initialization
+    SmartPtr<NativeImage> CreateNativeImage(DisplayContext*);
     unsigned char GetPixel(int,int); //329420
     unsigned char* StartRowTraversal(int); //329440
-    unsigned char GetRowPixel() { return *mRowPtr; }
-    void SetRowPixel(unsigned char value) { *mRowPtr=value; }
-    void NextRowPixel() { ++mRowPtr; }
-    void NextRowPixel(int theAmount) { mRowPtr+=theAmount; }
+    unsigned char GetRowPixel() { return *this->mRowPtr; }
+    void SetRowPixel(unsigned char value) { *this->mRowPtr=value; }
+    void NextRowPixel() { ++this->mRowPtr; }
+    void NextRowPixel(int theAmount) { this->mRowPtr+=theAmount; }
     unsigned char* mImageData; //10
     unsigned char* mImageEnd; //14
     unsigned char* mRowPtr; //18
@@ -2747,19 +2737,19 @@ public:
 };
 class RawImage1 : public RawImage {
 public:
-    RawImage1(int,int); //329690; complete3cB owner
+    RawImage1(int,int); // 0x329690; 0x3c bytes
     virtual ~RawImage1(); //329790
     virtual SmartPtr<NativeImage> GetNative(DisplayContext*); //3d07e0
-    void Fn3D0690(); //real nonvirtual platform row initialization
+    void CalcBytesPerRow(); //real nonvirtual platform row initialization
     SmartPtr<NativeMask> GetMask(DisplayContext*); //3d06b0, nonvirtual
     unsigned char* StartRowTraversal(int); //3297e0
-    void NextRow() { mRowPtr=mRowEnd+mRowPad; mRowEnd+=mBytesPerRow; mRowMask=128; }
-    int GetBytesPerRow() { return mBytesPerRow; }
-    unsigned char* GetImageData() { return mImageData; }
-    void NextRowPixel() { mRowMask>>=1; if(mRowMask==0) { mRowPtr++; mRowMask = 128; } }
-    void NextRowPixel(int theAmount) { for(int i=0; i<theAmount; i++) NextRowPixel(); }
-    void SetRowPixel(bool on) { if(on) *mRowPtr |= mRowMask; else *mRowPtr &= ~mRowMask; }
-    bool GetRowPixel() { return (*mRowPtr)&mRowMask?true:false; }
+    void NextRow() { this->mRowPtr=this->mRowEnd+this->mRowPad; this->mRowEnd+=this->mBytesPerRow; this->mRowMask=128; }
+    int GetBytesPerRow() { return this->mBytesPerRow; }
+    unsigned char* GetImageData() { return this->mImageData; }
+    void NextRowPixel() { this->mRowMask>>=1; if(this->mRowMask==0) { this->mRowPtr++; this->mRowMask = 128; } }
+    void NextRowPixel(int theAmount) { for(int i=0; i<theAmount; i++) this->NextRowPixel(); }
+    void SetRowPixel(bool on) { if(on) *this->mRowPtr |= this->mRowMask; else *this->mRowPtr &= ~mRowMask; }
+    bool GetRowPixel() { return (*this->mRowPtr)&this->mRowMask?true:false; }
     unsigned char* mImageData; //10
     unsigned char* mImageEnd; //14
     unsigned char* mRowPtr; //18
@@ -2775,82 +2765,81 @@ public:
 
 class TextListItem : public ListItem {
 public:
-    TextListItem() : mL1C(-1) {}
-    TextListItem(const GUIString& text) : mText(text),mL1C(-1) {} //genuine SDK inline, nativeMenuCtor2fcd54..7a
-    TextListItem(const GUIString& inText, Image* inImage) : mText(inText), mL1C(-1), mImage(inImage) {}
-    TextListItem(const GUIString& inText, Font* inFont) : mText(inText), mL1C(-1), mFont(inFont) {}
-    virtual ~TextListItem() {}              // original explicit inline lifetime
-    virtual void Virtual04(Graphics&, ListArea*); // 0x2fa380
-    virtual void Virtual08(ListArea*);       // 0x2fa2c0
-    virtual int Virtual10(const ListItem*, ListArea*) const; // 0x2fa360
+    TextListItem() : mColor(-1) {}
+    TextListItem(const GUIString& text) : mText(text),mColor(-1) {} // inline (used by the menu constructor at 0x2fcd54..0x2fcd7a)
+    TextListItem(const GUIString& inText, Image* inImage) : mText(inText), mColor(-1), mImage(inImage) {}
+    TextListItem(const GUIString& inText, Font* inFont) : mText(inText), mColor(-1), mFont(inFont) {}
+    virtual ~TextListItem() {}              // explicit inline destructor
+    virtual void Paint(Graphics&, ListArea*);     // 0x2fa380
+    virtual void CalcDimensions(ListArea*);  // 0x2fa2c0
+    virtual int Compare(const ListItem*, ListArea*) const;   // 0x2fa360
     GUIString mText;                        // +18
-    long mL1C;                              // +1c
+    long mColor;                            // +1c
     SmartPtr<Font> mFont;                   // +20
     SmartPtr<Image> mImage;                 // +24
 };
-// Actual producer2f4133/type27, full28, implicit normal2f41c0 has no own-vptr.
+// Allocated at 0x2f4133 (type 0x27), 0x28 bytes; the implicit destructor 0x2f41c0 has no own vptr store.
 class ComboSelChangedEvent : public ComponentEvent {
 public:
     ComboSelChangedEvent(Component* c,TextListItem* item,bool active)
-        :ComponentEvent(c,27),mItem(item),mActiveSel(active) {}
+        :ComponentEvent(c,ComponentEvent_ComboSelChanged),mItem(item),mActiveSel(active) {}
     SmartPtr<TextListItem> mItem; //20
     bool mActiveSel; //24
 };
 
-// Complete actual MenuItem38, native2fd49c allocation; full TextListItem28 base.
-// Original constructor and implicit ordinary lifetime stay external; no partialowner.
+// MenuItem (0x38 bytes, allocated at 0x2fd49c): TextListItem (0x28) base.
+// Constructor and implicit destructor out of line.
 class PopupMenu;
 class MenuItem : public TextListItem {
 public:
-    // Genuine SDK implicit virtual destructor2fcde0; automatic real owned members and base cleanup.
-    MenuItem(const GUIString&,ComponentListener*); //2fcd30 originalexternal constructor, full38
-    virtual void Virtual04(Graphics&,ListArea*); //2fcf10 actualPaint04slot
-    virtual void Virtual08(ListArea*); //2fcee0 actualCalcDimensions08slot
+    // Implicit virtual destructor (0x2fcde0)
+    MenuItem(const GUIString&,ComponentListener*); // 0x2fcd30
+    virtual void Paint(Graphics&,ListArea*);     // 0x2fcf10, vtable +0x04
+    virtual void CalcDimensions(ListArea*); // 0x2fcee0, vtable +0x08
     SmartPtr<PopupMenu> mSubMenu;            // +28
     int mMenuId;                            // +2c
-    bool mDisabled; //30 proven2fcda4write/2fd018read, naturalpadding31..33
-    SmartPtr<ComponentListener> mListener; //34 nativector/dtor completeownerfield
+    bool mDisabled; // at +0x30 (written at 0x2fcda4, read at 0x2fd018); +0x31..0x33 padding
+    SmartPtr<ComponentListener> mListener; // at +0x34
 };
-// All image globals require independent ResourceConfig producer/lifetime proof.
 
-// Reference-only ScrollArea prefix: original external lifetime, no allocation.
+// Only a prefix of ScrollArea is declared; nothing here allocates it.
 class ScrollArea : public Container {
 public:
-    ScrollArea(); //304df0 actual387B operationalviewport setup
-    // Genuine SDK implicit virtual destructor2fa790; automatic real owned members and base cleanup.
-    virtual void VirtualCC(bool);           // 305030
-    virtual void VirtualD0();               // 4142a0
-    virtual void VirtualD4(Graphics&);       // 2fa500
+    ScrollArea(); // 0x304df0: viewport setup
+    // Implicit virtual destructor (0x2fa790)
+    virtual void AdjustPosition(bool);      // 305030
+    virtual void ScrollSizeChanged();       // 4142a0
+    virtual void ScrollPaint(Graphics&);     // 2fa500
     virtual void Virtual08(); //3051c0 SizeChanged
-    virtual void Virtual0C(int&,int&); //3054a0
-    virtual bool Virtual3C(int); //305410 MouseWheel
-    virtual void Paint(Graphics&); //3052d0 actual inherited18 override
+    virtual void GetDesiredSize(int&,int&); //3054a0
+    virtual bool MouseWheel(int); //305410 MouseWheel
+    virtual void Paint(Graphics&); // 0x3052d0 (override)
     void SetDelegatePos(); //304fd0
     bool OnBottom(); //305190
     void SetBorderPadding(int,int,int,int); //305270
     void ScrollTranslate(int&,int&); //305390
     void ScrollUntranslate(int&,int&); //3053d0
-    virtual void HandleComponentEvent(ComponentEvent*); //305180 actual7c override, originalexternal
+    virtual void HandleComponentEvent(ComponentEvent*); // 0x305180, vtable +0x7c override
     void SetSizeEqualToTotal(int,int); //305450
     bool IsRectVisible(const WONRectangle&); //3054f0
-    ScrollAreaViewport* GetViewport() { return mViewport.get(); }
-    void SetScrollDimension(int,int); //genuine SDK content-dimension update
-    void SetScrollbar(Scrollbar*); //genuine SDK typed scroller selection
-    void SetScrollButton(Button*,Direction); //genuine SDK typed button-scroller selection
-    void SetScroller(Scroller*); //305010, borrowedScroller d4
-    int GetTotalHeight() { return mTotalHeight; }
-    int GetTotalWidth() { return mL0A4; }
-    int GetLeftPad() { return mLeftPad; }
-    int GetRightPad() { return mRightPad; }
+    ScrollAreaViewport* GetViewport() { return this->mViewport.get(); }
+    void SetScrollDimension(int,int); // sets the content dimensions
+    void SetScrollbar(Scrollbar*); // selects a scrollbar scroller
+    void SetScrollButton(Button*,Direction); // selects a button scroller
+    void SetScroller(Scroller*); // 0x305010; the scroller at +0xd4 is not owned
+    int GetTotalHeight() { return this->mTotalHeight; }
+    int GetTotalWidth() { return this->mTotalWidth; }
+    int GetLeftPad() { return this->mLeftPad; }
+    int GetRightPad() { return this->mRightPad; }
     void SetVertOffset(int); //305130
     void SetOffsets(int, int); //305150, horizontal then vertical
-    SmartPtr<ScrollAreaViewport> mViewport; //84 original external lifetime
+    SmartPtr<ScrollAreaViewport> mViewport; // at +0x84
     WONRectangle mInvalidRect; //88..97
-    int GetVertOffset() { return mVertOffset; }
+    int GetVertOffset() { return this->mVertOffset; }
     int mVertOffset; //98
     int mHorzOffset; //9c
     int mTotalHeight; //a0
-    int mL0A4;                              // actual total width
+    int mTotalWidth;                        // total width
     int mAVertOffset,mAHorzOffset,mATotalHeight,mATotalWidth; //a8..b7
     int mOldScrollAreaWidth,mOldScrollAreaHeight; //b8..bf
     int mLeftPad; //c0
@@ -2859,13 +2848,13 @@ public:
     bool mUserHasScrolled; //d0
     Scroller* mScroller; //d4 borrowed
     WONRectangle mScrollArea; //d8, visible height e4
-    Background mBackground; //e8..fb actual external-owned Background20
-    void SetBackground(const Background& theBackground) { mBackground=theBackground; }
+    Background mBackground; // at +0xe8..0xfb
+    void SetBackground(const Background& theBackground) { this->mBackground=theBackground; }
     int mExtraHeight; //fc
     int mUpScrollAmount,mDownScrollAmount,mLeftScrollAmount,mRightScrollAmount; //100..10f
 };
 
-// Genuine same-SDK complete owner; Native identity unresolved, no layout/coverage claim.
+// Not identified in the original exe
 class ComponentScrollArea : public ScrollArea {
 protected:
     SmartPtr<Component> mComponent;
@@ -2876,75 +2865,74 @@ public:
     ComponentScrollArea(Component*);
     void SetComponentSize(int,int);
     void UpdateComponentSize();
-    Component* GetComponent() { return mComponent.get(); }
+    Component* GetComponent() { return this->mComponent.get(); }
 };
 
 enum ListSortType { ListSortType_Ascending, ListSortType_Descending, ListSortType_None };
-// Complete actualListAreaToolTip38: native2fbbb6 new38->2fb7b0 ctor,
-// Component30 base +rawListArea30/owningListItemSP34, actual43 inheritedslots.
+// ListAreaToolTip (0x38 bytes): allocated at 0x2fbbb6, constructor 0x2fb7b0,
+// Component (0x30) plus the ListArea pointer at +0x30 and the owned item at +0x34; 43 vtable slots.
 class ListAreaToolTip : public Component {
 public:
-    ListAreaToolTip(ListArea*); //2fb7b0 actual129B lifecycle0
-    virtual void Paint(Graphics&); //2fb8d0 actual18
+    ListAreaToolTip(ListArea*); // 0x2fb7b0
+    virtual void Paint(Graphics&); // 0x2fb8d0, vtable +0x18
     void DoTip(ListItem*); //2fb9b0
     void EndTip(); //2fbab0
     ListArea* mListArea; //30 borrowed
-    SmartPtr<ListItem> mItem; //34 actualretainedowner
+    SmartPtr<ListItem> mItem; // at +0x34
 };
-// Complete actual ListArea164 owner; allocation through existing actual ctor/dtor permitted.
-// Full ScrollArea110 base/real vector+SP owners already proved; no new lifecycle source.
+// ListArea (0x164 bytes): ScrollArea (0x110) base plus vectors and SmartPtr members.
 class ListArea : public ScrollArea {
 public:
-    ListArea(); //2fa570 actual508B search/font/focus setup
-    virtual ~ListArea(); //2fa860 actual413B EndTip then realowningcleanup,0quota
-    void SetSortType(ListSortType); //2facd0 native external
+    ListArea(); // 0x2fa570: search, font and focus setup
+    virtual ~ListArea(); // 0x2fa860: ends the tooltip, then releases the members
+    void SetSortType(ListSortType); // 0x2facd0
     typedef int (*SortFunc)(ListArea*, const ListItem*, const ListItem*);
-    static int NumberSortFunc(ListArea*,const ListItem*,const ListItem*); //2faaf0 actual external
+    static int NumberSortFunc(ListArea*,const ListItem*,const ListItem*); // 0x2faaf0
     struct LineSortPred {
         ListArea* mListArea; SortFunc mSortFunc; bool mAscending;
         LineSortPred(ListArea* area,SortFunc func,int type):mListArea(area),mSortFunc(func),mAscending(type==0) {}
-        bool operator()(const ListItem* a,const ListItem* b) { if(mAscending) return mSortFunc(mListArea,a,b)<0; else return mSortFunc(mListArea,a,b)>0; }
+        bool operator()(const ListItem* a,const ListItem* b) { if(this->mAscending) return this->mSortFunc(this->mListArea,a,b)<0; else return this->mSortFunc(this->mListArea,a,b)>0; }
     };
-    static int DefaultSortFunc(ListArea* area,const ListItem* a,const ListItem* b) { return a->Virtual10(b,area); }
-    SortFunc GetSortFunc(); //2fab20 support0
+    static int DefaultSortFunc(ListArea* area,const ListItem* a,const ListItem* b) { return a->Compare(b,area); }
+    SortFunc GetSortFunc(); // 0x2fab20
     int FindInsertPos(ListItem*,int); //2fabe0
     void DeleteItemPrv(int); //2fca50
     void CheckMouseSel(ListItem*,int,int,bool=false); //2fb060
     void ItemMouseAt(int&,int&); //2fb6a0
     ListItem* FindSelectableItem(int,bool,bool=true); //2fc0a0
-    virtual void VirtualCC(bool); //2fadf0 AdjustPosition
+    virtual void AdjustPosition(bool); //2fadf0 AdjustPosition
     virtual void Virtual08(); //2faef0 SizeChanged
-    virtual void VirtualD4(Graphics&); //2fafb0 ScrollPaint
-    virtual void Virtual24(int,int); //2fc010 MouseEnter
-    virtual void Virtual28(); //2fc040 MouseExit
-    virtual void Virtual2C(int,int,int); //2fbd00 MouseDown
-    virtual void Virtual30(int,int,int); //2fbef0 MouseUp
-    virtual void Virtual34(int,int); //2fbad0 MouseMove
-    virtual void Virtual38(int,int); //2fbc70 MouseDrag
-    virtual bool Virtual54(int); //2fc160 KeyDown
-    // Actual appended slots D8/DC/E0: ListArea has57, TreeArea overrides D8/E0.
+    virtual void ScrollPaint(Graphics&); //2fafb0 ScrollPaint
+    virtual void MouseEnter(int,int); //2fc010 MouseEnter
+    virtual void MouseExit(); //2fc040 MouseExit
+    virtual void MouseDown(int,int,int); //2fbd00 MouseDown
+    virtual void MouseUp(int,int,int);   //2fbef0 MouseUp
+    virtual void MouseMove(int,int); //2fbad0 MouseMove
+    virtual void MouseDrag(int,int); //2fbc70 MouseDrag
+    virtual bool KeyDown(int);   //2fc160 KeyDown
+    // Added slots +0xd8/+0xdc/+0xe0: ListArea has 57 slots, TreeArea overrides +0xd8 and +0xe0.
     virtual void NotifyMouseItemGone();     // 0x2fcad0, no args
     virtual void ListSelChangedHook();      // 0x4142a0, no args
     virtual bool Sort();                   // 0x2fab50, no args, AL result
-    void Fn2FAA00();                        // 0x2faa00 (before the list is refilled)
-    void Fn2FAA10();                        // 0x2faa10 (after it)
-    void Fn2FAA50(bool inFlag);             // 0x2faa50 (clears it?)
+    void BeginUpdate();                     // 0x2faa00 (before the list is refilled)
+    void EndUpdate();                       // 0x2faa10 (after it)
+    void Clear(bool inFlag);                // 0x2faa50 (clears it?)
     ListItem* GetItem(int inIndex);         // 0x2fc4e0
     ListItem* InsertItem(ListItem* inItem, int inPos = -1);         // 0x2fc510
-    void Fn2FC730(ListItem* inItem);        // 0x2fc730 (an item changed)
+    void RefreshItem(ListItem* inItem);     // 0x2fc730 (an item changed)
     void DeleteItem(int); //2fcae0 index deletion
-    void Fn2FB600(unsigned long,bool); //2fb600 actual listflags mask
+    void SetListFlags(unsigned long,bool); // 0x2fb600: sets or clears list flags
     void RemoveItem(ListItem* inItem);      // 0x2fcb00
     ListItem* InsertString(const GUIString& inText, int inPos = -1);    // 0x2fcc30
-    int GetNumItems() const { return mItems.size(); }         // 0x290d70 (EELobbyConnectDialog.cpp's COMDAT)
+    int GetNumItems() const { return this->mItems.size(); }   // 0x290d70 (EELobbyConnectDialog.cpp's COMDAT)
 
     int GetItemPos(ListItem* inItem);        // 0x2fc450
     void SetSelItem(int inIndex, bool inFireEvent = true); // 0x2fb410, ret8
     void EnsureVisible(ListItem* inItem);    // 0x2faf60, ret4
-    void FindNextSelection(); //2fb4d0 native selected-item iterator scan
-    int ClearSelectionPrv(bool); //2fb560 actual removed-selection count
-    void ClearSelection(bool = true); //2fb5f0 forwarding support0
-    bool SetSelItem(ListItem*,bool,bool); //2fb200 actual selection mutation
+    void FindNextSelection(); // 0x2fb4d0: scans for the next selected item
+    int ClearSelectionPrv(bool); // 0x2fb560: returns the number of items deselected
+    void ClearSelection(bool = true); // 0x2fb5f0 (forwarder)
+    bool SetSelItem(ListItem*,bool,bool); // 0x2fb200
     void SelectRange(int,int); //2fb2e0
     std::vector<SmartPtr<ListItem> >::iterator FindLineAt(int); //2facf0
     ListItem* FindItemAt(int); //2fad80
@@ -2957,17 +2945,17 @@ public:
     ListItem* GetNextSelection();           // 0x2fb530
     int GetTextColor(); //2fb520
     int GetItemPosAtYPos(int); //2fc4b0
-    bool ListFlagSet(int flags) { return mListFlags & flags ? true : false; }
-    ListItem* GetSelItem() { return mSelItem; } //genuine SDK borrowed selected-item getter
-    const SelectionColor& GetSelColor() { return mSelColor; } //actual nominal inline API, quota0
-    void SetFont(Font* theFont) { mFont=theFont; }
+    bool ListFlagSet(int flags) { return this->mListFlags & flags ? true : false; }
+    ListItem* GetSelItem() { return this->mSelItem; } // inline
+    const SelectionColor& GetSelColor() { return this->mSelColor; } // inline
+    void SetFont(Font* theFont) { this->mFont=theFont; }
     std::vector<SmartPtr<ListItem> > mItems;          // +0x110
-    int mTopLineVectorPos; //120 native2fadc0
+    int mTopLineVectorPos; // at +0x120 (0x2fadc0)
     int mListFlags; //124
-    int mDoingMultiChange; //128 native2faa00/2faa10
-    int mL12C;                              // actual layout readback
-    int mSortType; //130 actual ListSortType value; no change to remaining external-owned134
-    SmartPtr<ListAreaToolTip> mItemToolTip; //134 actualownedSP, originalListArea lifetime remains external
+    int mDoingMultiChange; // at +0x128 (0x2faa00/0x2faa10)
+    int mPaintWidth;                        // layout width
+    int mSortType; // at +0x130, a ListSortType value
+    SmartPtr<ListAreaToolTip> mItemToolTip; // at +0x134, owned
     SmartPtr<Font> mFont;                            // +0x138
     int mTextColor; //13c
     SelectionColor mSelColor; //140
@@ -2976,117 +2964,117 @@ public:
     ListItem* mMouseItem; //154, borrowed
     int mSelItemItr; //158
     SmartPtr<ListItem> mSearchLine; //15c
-    SortFunc mSortFunc; //160; actual base extent164
+    SortFunc mSortFunc; // at +0x160; the class is 0x164 bytes
 };
 
 
-// Actual complete TreeItem3c, native3150b2 new3c/3140f0 ctor/314170 lifetime.
-// Constructor/destructor stay original external; TreeArea borrowed174 is never allocated.
+// TreeItem (0x3c bytes): allocated at 0x3150b2, constructor 0x3140f0, destructor 0x314170.
+// Constructor and destructor are out of line; nothing here allocates a TreeArea.
 class TreeArea;
 class TreeItem : public ListItem {
 public:
-    TreeItem(); //3140f0 complete original external constructor
-    // Genuine SDK implicit virtual destructor314170; automatic real owned members and base cleanup.
-    virtual void Virtual04(Graphics&,ListArea*); //314b60
-    virtual void Virtual08(ListArea*); //314df0
-    virtual void Virtual0C(ListArea*,Container*); //314dd0
-    virtual int Virtual10(const ListItem*,ListArea*) const; //314e20
-    virtual bool Virtual14(ListArea*,int,int); //314e40
-    virtual void Virtual18(int,int); //314b40
-    virtual void Virtual20(ListArea*,int,int); //3142c0
-    virtual void Virtual24(ListArea*); //3142e0
-    virtual void Virtual28(ListArea*,int,int); //314310
-    virtual void Virtual2C(ListArea*,int,int); //314340
-    virtual void Virtual30(ListArea*,int,int,int); //3143b0
-    virtual void Virtual34(ListArea*,int,int,int); //314370
-    TreeItem* Fn314440(int); //314440
+    TreeItem(); // 0x3140f0
+    // Implicit virtual destructor (0x314170)
+    virtual void Paint(Graphics&,ListArea*);     //314b60
+    virtual void CalcDimensions(ListArea*); //314df0
+    virtual void SetViewport(ListArea*,Container*); //314dd0
+    virtual int Compare(const ListItem*,ListArea*) const;   //314e20
+    virtual bool CanSelect(ListArea*,int,int); //314e40
+    virtual void SetPos(int,int);    //314b40
+    virtual void MouseEnter(ListArea*,int,int); //3142c0
+    virtual void MouseExit(ListArea*); //3142e0
+    virtual void MouseMove(ListArea*,int,int); //314310
+    virtual void MouseDrag(ListArea*,int,int); //314340
+    virtual void MouseDown(ListArea*,int,int,int); //3143b0
+    virtual void MouseUp(ListArea*,int,int,int);   //314370
+    TreeItem* GetChild(int); //314440
     TreeItem* GetNextNonChild(); //314470
-    int GetNextNonChildPos(TreeArea*); //3144b0 support0
+    int GetNextNonChildPos(TreeArea*); // 0x3144b0
     int GetInsertPos(TreeArea*,TreeItem*,int); //3144d0
     void InsertChild(TreeArea*,TreeItem*,int=-1); //314570
     void RemoveAllChildren(TreeArea*); //314710
     void RemoveChild(TreeArea*,TreeItem*); //314770
     void RemoveFromParent(TreeArea*); //314830
-    void Sort(TreeArea*,bool); //genuine SDK recursive children ordering; SOURCE_ONLY_NO_NATIVE_ID
+    void Sort(TreeArea*,bool); // sorts the children recursively (not identified in the original exe)
     void CloseAll(); //314850
     void InsertChildren(TreeArea*,int); //314880
     void SetOpen(TreeArea*,bool,bool=false,bool=true); //3148e0
-    void ToggleOpen(TreeArea*,bool=false,bool=true); //314af0 support0
+    void ToggleOpen(TreeArea*,bool=false,bool=true); // 0x314af0
     bool IsLastChild(); //314b10
     ListItem* GetMouseItem(ListArea*,int&,int&); //314210
-    bool Fn314E60(int,int); //314e60
-    TreeItem* mParent; //18 borrowed tree parent; actual raw parent
-    bool IsOpen() { return mOpen; } //actual scalar getter,0quota
+    bool ContainsPoint(int,int); //314e60
+    TreeItem* mParent; // at +0x18, the parent item
+    bool IsOpen() { return this->mOpen; } // inline
     int mX,mIndex; //1c/20
     bool mOpen; //24
-    SmartPtr<ListItem> mItem; //28 owns actual wrapped item
-    std::vector<SmartPtr<TreeItem> > mChildren; //2c..3b complete16B Dinkum vector
+    SmartPtr<ListItem> mItem; // at +0x28, the wrapped item
+    std::vector<SmartPtr<TreeItem> > mChildren; // at +0x2c..0x3b, Dinkum vector (16 bytes)
 };
 class TreeItemOpenedEvent : public ComponentEvent {
 public:
     TreeItemOpenedEvent(Component* inComponent,TreeItem* inItem)
-        :ComponentEvent(inComponent,26),mItem(inItem) {}
-    // Implicit normal314a60: no own-vptr write; support only.
-    SmartPtr<TreeItem> mItem; //20, complete event24
+        :ComponentEvent(inComponent,ComponentEvent_TreeItemOpened),mItem(inItem) {}
+    // Implicit destructor (0x314a60): no own vptr write.
+    SmartPtr<TreeItem> mItem; // at +0x20; the event is 0x24 bytes
 };
-// Actual named TreeArea174; newctor314ea0 only. No receiverallocation/sizeof/copy/dtor body authority.
+// TreeArea (0x174 bytes); constructor 0x314ea0.
 class TreeArea : public ListArea {
 public:
-    TreeArea(); //314ea0 actual255B ownedroot/open/listflags setup
-    // Genuine SDK implicit virtual destructor314fc0; automatic real owned members and base cleanup.
-    virtual void Virtual2C(int,int,int); //315260 forwarding support0
+    TreeArea(); // 0x314ea0: sets up the root item, open state and list flags
+    // Implicit virtual destructor (0x314fc0)
+    virtual void MouseDown(int,int,int); // 0x315260 (forwarder)
     virtual void HandleComponentEvent(ComponentEvent*); //315280
     virtual void NotifyMouseItemGone(); //315060
-    virtual bool Sort(); //315050 false support0
+    virtual bool Sort(); // 0x315050 (returns false)
     void SetSortType(ListSortType); //315030
-    void Sort(TreeItem*,bool=false); //genuine SDK visible-subtree sorting; SOURCE_ONLY_NO_NATIVE_ID
+    void Sort(TreeItem*,bool=false); // sorts the visible subtree (not identified in the original exe)
     TreeItem* InsertString(TreeItem*,const GUIString&,Image* =NULL,int=-1);
     void CloseItem(TreeItem*,bool=false,bool=true);
     void SetTreeFlags(int,bool);
-    TreeItem* Fn315080(TreeItem*,ListItem*,int=-1); //315080
-    void Fn315190(TreeItem*); //315190
-    void Fn3151A0(bool=true); //3151a0
-    void Fn3151B0(TreeItem*); //3151b0
-    void Fn315220(TreeItem*,bool=true); //315220
+    TreeItem* InsertTreeItem(TreeItem*,ListItem*,int=-1); //315080
+    void RemoveTreeItem(TreeItem*); //315190
+    void ClearTree(bool=true); //3151a0
+    void RemoveAllItems(TreeItem*); //3151b0
+    void OpenItem(TreeItem*,bool=true); //315220
     void ToggleItem(TreeItem*,bool=false,bool=true); //315240
-    bool TreeFlagSet(int flags) { return (mTreeFlags&flags)!=0; }
+    bool TreeFlagSet(int flags) { return (this->mTreeFlags&flags)!=0; }
     SmartPtr<TreeItem> mRoot; //164
     int mTreeFlags; //168
-    ListItem* mMouseColItem; //16c borrowed current wrappedmouseitem
+    ListItem* mMouseColItem; // at +0x16c, the item under the mouse
     int mTreeSortType; //170
 };
 
-// Complete actual PopupMenu180: fullListArea164 plus two SPs/fourints/bool below.
-// NativeCtor2fd150/full57slots prove real scalar allocation; no by-value copy authority.
-// Existing external implicit destructor2fd340 owns reverseSP cleanup thenListArea.
+// PopupMenu (0x180 bytes): ListArea (0x164) plus two SmartPtrs, four ints and a bool.
+// Constructor 0x2fd150 (57 vtable slots).
+// The implicit destructor (0x2fd340) releases the SmartPtrs in reverse order, then ListArea's members.
 class PopupMenu : public ListArea {
 public:
-    PopupMenu(); //2fd150 actual458B default configuration, support0
-    // Genuine SDK implicit virtual destructor2fd340; automatic real owned members and base cleanup.
-    virtual void Virtual2C(int,int,int); //2fdb70
-    virtual void Virtual30(int,int,int); //2fdc10
-    virtual void Virtual34(int,int); //2fdb10
-    virtual bool Virtual44(int); //2fd820
+    PopupMenu(); // 0x2fd150: default configuration
+    // Implicit virtual destructor (0x2fd340)
+    virtual void MouseDown(int,int,int); //2fdb70
+    virtual void MouseUp(int,int,int);   //2fdc10
+    virtual void MouseMove(int,int); //2fdb10
+    virtual bool TimerEvent(int); //2fd820
     virtual void HandleComponentEvent(ComponentEvent*); //2fd7d0
     virtual void ListSelChangedHook(); //2fd860
     MenuItem* AddItem(const GUIString&,int); //2fd440,ret8
-    MenuItem* AddItem(const GUIString&,ComponentListener*,int); //2fd460 genuine SDK overload,RET0c
+    MenuItem* AddItem(const GUIString&,ComponentListener*,int); // 0x2fd460 (ret 0x0c)
     MenuItem* AddItem(const GUIString&,NativeImage*,ComponentListener*,int); //2fd480,ret10
     void AddSeperator(); //2fd8b0,ret0
-    void EndSubMenu(); //2fd580 actual custom submenu cleanup
-    void CheckSubMenu(); //2fd610 actual custom submenu activation
-    bool TryKeyDown(int); //genuine SDK recursive submenu keyboard policy, not TimerEvent
-    void Reset(); //2fd400 originalexternal, clears submenu then selectedindex
+    void EndSubMenu(); // 0x2fd580: closes the submenu
+    void CheckSubMenu(); // 0x2fd610: opens the submenu
+    bool TryKeyDown(int); // passes keys to the submenu recursively
+    void Reset(); // 0x2fd400: closes the submenu, then clears the selected index
 protected:
-    SmartPtr<PopupMenu> mCurSubMenu; //164, original owns and releases
-    SmartPtr<ListItem> mCurSubMenuItem; //168, original owns and releases
+    SmartPtr<PopupMenu> mCurSubMenu; // at +0x164
+    SmartPtr<ListItem> mCurSubMenuItem; // at +0x168
     int mMouseUpCount; //16c
     int mTimerAcc; //170
     int mLastX,mLastY; //174,178
-    bool mKeyboardMode; //17c; naturalpadding17d..17f, complete180; mLastX/Y ctor intentionally untouched
+    bool mKeyboardMode; // at +0x17c; +0x17d..0x17f padding; the class is 0x180 bytes; the constructor leaves mLastX/Y unset
 };
 
-// Complete genuine same-SDK menu owners. Native identities remain unlocated.
+// Menu bar classes (not identified in the original exe).
 enum MenuBarState { MenuBarState_None,MenuBarState_Up,MenuBarState_Down };
 class MenuBarItem : public Component {
 protected:
@@ -3100,7 +3088,7 @@ public:
     void SetMenuBarState(MenuBarState);
     void SetText(const GUIString&);
     void SetPopup(PopupMenu*);
-    PopupMenu* GetPopup() { return mPopup.get(); }
+    PopupMenu* GetPopup() { return this->mPopup.get(); }
 };
 class MenuItemSelectedEvent : public ComponentEvent {
 public:
@@ -3119,12 +3107,12 @@ protected:
     Background mBackground;
     void CheckItem(Component*);
 public:
-    virtual void Virtual38(int,int);
-    virtual void Virtual34(int,int);
-    virtual void Virtual2C(int,int,int);
-    virtual void Virtual30(int,int,int);
-    virtual void Virtual28();
-    virtual bool Virtual54(int);
+    virtual void MouseDrag(int,int);
+    virtual void MouseMove(int,int);
+    virtual void MouseDown(int,int,int);
+    virtual void MouseUp(int,int,int);
+    virtual void MouseExit();
+    virtual bool KeyDown(int);
     virtual void HandleComponentEvent(ComponentEvent*);
     virtual void Paint(Graphics&);
     MenuBar();
@@ -3134,18 +3122,18 @@ public:
 
 class ScrollAreaViewport : public Container {
 public:
-    ScrollAreaViewport(ScrollArea* area) : mScrollArea(area) {} //actualSDKinline, native304e70..e83
-    void Reset(); //305c70 actual original contents/popup reset, no args
-    void InvalidateIfRectVisible(WONRectangle&); //305c10 genuine SDK nonvirtual nested viewport geometry policy
-    // Genuine SDK implicit virtual destructor306a60; automatic real owned members and base cleanup.
-    ScrollArea* mScrollArea; //84 borrowedbacklink; actualcomplete88 new304e49, no own cleanup
-    virtual void Paint(Graphics&); //18 actual305e00
-    virtual bool Virtual44(int); //44 actual305dd0
-    virtual void Virtual78(Cursor*); //78 actual305de0
-    virtual void VirtualB4(Component*); //b4 actual305db0
-    virtual void VirtualB8(Component*); //b8 actual305dc0
-    virtual void VirtualBC(Component*); //bc actual2fa500
-    virtual bool VirtualC0(Component*); //c0 actual305d70
+    ScrollAreaViewport(ScrollArea* area) : mScrollArea(area) {} // inline (0x304e70..0x304e83)
+    void Reset(); // 0x305c70: resets the contents and the popup
+    void InvalidateIfRectVisible(WONRectangle&); // 0x305c10
+    // Implicit virtual destructor (0x306a60)
+    ScrollArea* mScrollArea; // at +0x84, back link; the class is 0x88 bytes (allocated at 0x304e49)
+    virtual void Paint(Graphics&); // vtable +0x18, 0x305e00
+    virtual bool TimerEvent(int); // vtable +0x44, 0x305dd0
+    virtual void SetCursor(Cursor*); // vtable +0x78, 0x305de0
+    virtual void SetFocusChild(Component*); // vtable +0xb4, 0x305db0
+    virtual void AddTimerChild(Component*); // vtable +0xb8, 0x305dc0
+    virtual void ChildStateChanged(Component*); // vtable +0xbc, 0x2fa500
+    virtual bool ChildInvalidated(Component*); // vtable +0xc0, 0x305d70
 };
 
 class MultiListItem : public ListItem {
@@ -3155,39 +3143,39 @@ protected:
     ListItem* GetMouseItem(ListArea*,int&);
     ListItem* GetMouseItem(ListArea*,int&,int&);
 public:
-    // Genuine SDK implicit default constructor3fa110; ListItem and ItemVector construct automatically.
-    // Genuine SDK implicit virtual destructor303db0; automatic owning ItemVector/ListItem cleanup.
-    void InsertItem(ListItem*); //genuine SDK owning cell append
-    void SetItem(ListItem*,int); //actual302480, native cell setter/resizer support0
-    ListItem* GetItem(int) const; //external actual302500; bounds getter0
-    virtual void Virtual04(Graphics&,ListArea*);
-    virtual void Virtual08(ListArea*);
-    virtual void Virtual0C(ListArea*,Container*);
-    virtual int Virtual10(const ListItem*,ListArea*) const;
-    virtual bool Virtual14(ListArea*,int,int);
-    virtual void Virtual18(int,int);
-    virtual bool Virtual1C(int,int inY) { return inY>=mTop && inY<mTop+mHeight; }
-    virtual void Virtual20(ListArea*,int,int);
-    virtual void Virtual24(ListArea*);
-    virtual void Virtual28(ListArea*,int,int);
-    virtual void Virtual2C(ListArea*,int,int);
-    virtual void Virtual30(ListArea*,int,int,int);
-    virtual void Virtual34(ListArea*,int,int,int);
+    // Implicit default constructor (0x3fa110).
+    // Implicit virtual destructor (0x303db0).
+    void InsertItem(ListItem*); // appends an owned cell
+    void SetItem(ListItem*,int); // 0x302480: sets a cell, growing the row
+    ListItem* GetItem(int) const; // 0x302500
+    virtual void Paint(Graphics&,ListArea*);
+    virtual void CalcDimensions(ListArea*);
+    virtual void SetViewport(ListArea*,Container*);
+    virtual int Compare(const ListItem*,ListArea*) const;
+    virtual bool CanSelect(ListArea*,int,int);
+    virtual void SetPos(int,int);
+    virtual bool Contains(int,int inY) { return inY>=this->mTop && inY<this->mTop+this->mHeight; }
+    virtual void MouseEnter(ListArea*,int,int);
+    virtual void MouseExit(ListArea*);
+    virtual void MouseMove(ListArea*,int,int);
+    virtual void MouseDrag(ListArea*,int,int);
+    virtual void MouseDown(ListArea*,int,int,int);
+    virtual void MouseUp(ListArea*,int,int,int);
 };
 
-// Complete actual MultiListArea1a4 owner. Bounded GetListCtrl allocation calls original constructor; no lifetime source or copy authority.
+// MultiListArea (0x1a4 bytes); constructor and destructor out of line.
 class MultiListHeader;
 class MultiListArea : public ListArea {
 public:
-    MultiListArea(int=1); //3033a0 actual original ctor RET4, complete1a4
-    virtual void NotifyMouseItemGone(); //3035d0 actual d8 override, inherited ListArea hook
+    MultiListArea(int=1); // 0x3033a0 (ret 4)
+    virtual void NotifyMouseItemGone(); // 0x3035d0 (vtable +0xd8)
     void SetNumColumns(int); //303600/393
-    void SetColumnSizeMode(int,unsigned char); //genuine SDK partner-column size policy, SOURCE_ONLY_NO_NATIVE_ID
-    MultiListItem* InsertRow(int=-1); //genuine SDK new blank-row insertion
+    void SetColumnSizeMode(int,unsigned char); // partner-column size mode (not identified in the original exe)
+    MultiListItem* InsertRow(int=-1); // inserts a blank row
     void SetColumnWidth(int,int,bool); //3037e0/382
-    // Genuine SDK implicit virtual destructor303540; automatic ColumnInfo vector/ListArea cleanup.
-    int GetColumnPaintContext() { return mColumnPaintContext; }
-    int GetSortColumn() { return mSortColumn; }
+    // Implicit virtual destructor (0x303540)
+    int GetColumnPaintContext() { return this->mColumnPaintContext; }
+    int GetSortColumn() { return this->mSortColumn; }
     struct ColumnInfo {
         SmartPtr<ScrollAreaViewport> mContainer;
         int mx, mWidth;
@@ -3195,8 +3183,8 @@ public:
         unsigned char mSizeMode;
         int mPartnerColumn;
         unsigned char mHAlign;
-        ColumnInfo() : mx(0),mWidth(0),mSortFunc(NULL),mSizeMode(1),mPartnerColumn(-1),mHAlign(0) {} //actual native303627..303652 default value; support0
-    }; //actual complete1c value including owning SmartPtr; native SetNumColumns resizes this vector
+        ColumnInfo() : mx(0),mWidth(0),mSortFunc(NULL),mSizeMode(1),mPartnerColumn(-1),mHAlign(0) {} // default values (0x303627..0x303652)
+    }; // 0x1c bytes; SetNumColumns resizes this vector
     std::vector<ColumnInfo> mColumnInfoVector; //164..173
     ListArea::SortFunc mSortColFunc; //174
     int mColumnPaintContext; //178
@@ -3208,15 +3196,15 @@ public:
     bool mAutoGrowColumns; //190
     ListItem* mMouseColItem; //194, borrowed
     int mMouseColNum; //198
-    int mMaxTotalColumnWidth; //19c native3038ac, SDK exact field
-    MultiListHeader* mListHeader; //1a0 borrowed, native3035f0/303b24
-    void NotifyListHeader(); //3035f0 original external support0
+    int mMaxTotalColumnWidth; // at +0x19c (0x3038ac)
+    MultiListHeader* mListHeader; // at +0x1a0 (0x3035f0/0x303b24)
+    void NotifyListHeader(); // 0x3035f0
     void SetSortColumn(int,ListSortType); //303ac0
-    void SetSortColumnFunc(int,SortFunc); //303b50 support0
-    void SetColumnHAlign(int,HorzAlign); //303790 actual external
-    virtual void VirtualCC(bool); //303bb0 AdjustPosition support0
+    void SetSortColumnFunc(int,SortFunc); // 0x303b50
+    void SetColumnHAlign(int,HorzAlign); // 0x303790
+    virtual void AdjustPosition(bool); // 0x303bb0
     virtual void Virtual08(); //303be0 SizeChanged
-    virtual void VirtualD4(Graphics&); //303c70 ScrollPaint
+    virtual void ScrollPaint(Graphics&); //303c70 ScrollPaint
     MultiListItem* UpdateItem(MultiListItem*); //303e50
     MultiListItem* SetCell(int,int,ListItem*); //303ee0
     int GetColumnAt(int); //3039c0
@@ -3226,46 +3214,45 @@ public:
     MultiListItem* SetString(int, int, const GUIString&, Image* = NULL); //303f60
 };
 
-// Complete actual ac Container51 descendant; field graph below matches native302a90.
-// Genuine constructor declaration permits automatic base construction; no copy authority.
-// TD4d64a0/COL476030/VT44f170; all51 targets/ten actual overrides independently
-// tabulated in MULTILISTHEADER_OVERRIDE_SURFACE.json (other41 inherit Container).
+// MultiListHeader (0xac bytes, Container's 51 vtable slots); fields as set at 0x302a90.
+// type descriptor 0x4d64a0, COL 0x476030, vtable 0x44f170; ten overrides,
+// the other 41 slots are Container's.
 class MultiListHeader : public Container {
 public:
-    MultiListHeader(MultiListArea* =NULL); //302a90 genuine external ctor RET4, fullac
-    // Genuine SDK implicit virtual destructor302b50; automatic ColumnVector/Container cleanup.
+    MultiListHeader(MultiListArea* =NULL); // 0x302a90 (ret 4)
+    // Implicit virtual destructor (0x302b50)
     virtual void Virtual08(); //08=302fb0,SizeChanged
     virtual void Paint(Graphics&); //18=305e00
-    virtual void Virtual28(); //28=303390,MouseExit
-    virtual void Virtual2C(int,int,int); //2c=303260,MouseUp
-    virtual void Virtual30(int,int,int); //30=303350,MouseDown
-    virtual void Virtual34(int,int); //34=303290,MouseMove
-    virtual void Virtual38(int,int); //38=3032f0,MouseDrag
+    virtual void MouseExit(); //28=303390,MouseExit
+    virtual void MouseDown(int,int,int); //2c=303260,MouseUp
+    virtual void MouseUp(int,int,int);   //30=303350,MouseDown
+    virtual void MouseMove(int,int); //34=303290,MouseMove
+    virtual void MouseDrag(int,int); //38=3032f0,MouseDrag
     virtual void HandleComponentEvent(ComponentEvent*); //7c=302be0
-    virtual Component* VirtualAC(int,int); //ac=304710,FindChildAt
+    virtual Component* FindChildAt(int,int); //ac=304710,FindChildAt
     void SetColumnItem(int,Component*); //302cf0/283,ret8
-    void SetMultiListArea(MultiListArea*); //302bc0 original external, ret4
-    void NotifyColumnChange(); //302e10 actual external
-    void SetSortColumn(int,ListSortType); //302cb0 actual external
-    static ListSortType GetSortTypeForButton(Component*); //303050 actual original provider
+    void SetMultiListArea(MultiListArea*); // 0x302bc0 (ret 4)
+    void NotifyColumnChange(); // 0x302e10
+    void SetSortColumn(int,ListSortType); // 0x302cb0
+    static ListSortType GetSortTypeForButton(Component*); // 0x303050
 protected:
     struct ColumnInfo {
-        Component* mComponent; //borrowed child, Container owns actual child
+        Component* mComponent; // the Container owns the child
         ListSortType mSortType;
-        ColumnInfo(Component* c=NULL) : mComponent(c),mSortType(ListSortType_None) {} //302d1c..302d29 actual resize default
-    }; //complete8 value; no owning pointer
+        ColumnInfo(Component* c=NULL) : mComponent(c),mSortType(ListSortType_None) {} // default used when resizing (0x302d1c..0x302d29)
+    }; // 8-byte value; no owning pointer
     typedef std::vector<ColumnInfo> ColumnVector;
-    ColumnVector mColumnVector; //84 allocator/88first/8cend/90cap, native ctor/dtor and all accessors
-    MultiListArea* mListArea; //94 borrowed,302bc0 setter/backlink
+    ColumnVector mColumnVector; // at +0x84: allocator +0x84, first +0x88, end +0x8c, capacity +0x90
+    MultiListArea* mListArea; // at +0x94, back link (set by 0x302bc0)
     int mDragColumn; //98
     Component* mDragComponent; //9c borrowed
     int mDragX; //a0
     int mCurSortCol; //a4
-    bool mDrawSortArrow; //a8, natural a9..ab alignment gives fullac
-    Component* GetDragComponent(int); //3030b0 actual425B
+    bool mDrawSortArrow; // at +0xa8; +0xa9..0xab padding; the class is 0xac bytes
+    Component* GetDragComponent(int); // 0x3030b0
 public:
-    int GetColumnIndex(Component*); //302fd0 actual55B
-    ListSortType GetSortType(int); //303010 actual64B
+    int GetColumnIndex(Component*); // 0x302fd0
+    ListSortType GetSortType(int); // 0x303010
 };
 
 
@@ -3274,64 +3261,63 @@ struct GUIStringLessNoCase {
     { return inLeft.CompareNoCase(inRight) < 0; }
 };
 
-// Actual borrowed Table140 receiver, native VT4501d0 /54slots; ScrollArea110 base.
-// No construction/new/sizeof/copy or lifetime-source authority. Existing original
-// AnchorMap owner134 permits proven mutation only; all children remain borrowed/retained as below.
+// Table (0x140 bytes, vtable 0x4501d0, 54 slots); ScrollArea (0x110) base.
+// Nothing here constructs, copies or destroys a Table.
 class Table : public ScrollArea {
 public:
-    Table(LineSegment* =NULL); //30f9d0 genuine SDK ctor; complete140, original base/owned members
-    // Genuine SDK implicit destructor: native normal30fbb0/304, scalar30fad0; real owned AnchorMap/contents/base cleanup.
-    virtual void Virtual24(int,int); //3100b0 MouseEnter
-    virtual void Virtual28(); //3100e0 MouseExit
-    virtual void Virtual2C(int,int,int); //310100 MouseDown, preserve canonical existing slot signature
-    virtual void Virtual30(int,int,int); //310250 MouseUp
-    virtual void Virtual34(int,int); //3102b0 MouseMove
-    virtual void Virtual38(int,int); //310300 MouseDrag
-    virtual bool Virtual44(int); //310450 TimerEvent
-    virtual bool Virtual50(int); //30fdc0 KeyChar
-    virtual bool Virtual54(int); //30fe00 KeyDown
-    virtual Component* VirtualB0(int,int); //310040 WMFindChildAt
-    virtual void VirtualD0(); //310660 ScrollSizeChanged
-    virtual void VirtualD4(Graphics&); //310670 ScrollPaint
-    void MouseAt(int&,int&,bool=false); //30ff20 actual RET0c
+    Table(LineSegment* =NULL); // 0x30f9d0
+    // Implicit destructor (0x30fbb0, scalar deleting 0x30fad0).
+    virtual void MouseEnter(int,int); //3100b0 MouseEnter
+    virtual void MouseExit(); //3100e0 MouseExit
+    virtual void MouseDown(int,int,int); // 0x310100
+    virtual void MouseUp(int,int,int);   //310250 MouseUp
+    virtual void MouseMove(int,int); //3102b0 MouseMove
+    virtual void MouseDrag(int,int); //310300 MouseDrag
+    virtual bool TimerEvent(int); //310450 TimerEvent
+    virtual bool KeyChar(int);   //30fdc0 KeyChar
+    virtual bool KeyDown(int);   //30fe00 KeyDown
+    virtual Component* FindClickChildAt(int,int); //310040 WMFindChildAt
+    virtual void ScrollSizeChanged(); //310660 ScrollSizeChanged
+    virtual void ScrollPaint(Graphics&); //310670 ScrollPaint
+    void MouseAt(int&,int&,bool=false); // 0x30ff20 (ret 0x0c)
     void CopySelection(); //30fce0
     void SetContents(LineSegment*); //310500
-    void SetMaxWidth(bool=true); //3105b0 genuine nonvirtual bool argument
+    void SetMaxWidth(bool=true); // 0x3105b0
     void AddAnchor(const GUIString&,int,int); //310700
     bool GotoAnchor(const GUIString&); //310730
-    bool FindStr(const GUIString&,bool=true,bool=false); //3107b0 actual RET0c
-    SmartPtr<LineSegment> mContents; //110 retained original owner
-    LineSegment* mMouseSegment; //114 borrowed current hit
+    bool FindStr(const GUIString&,bool=true,bool=false); // 0x3107b0 (ret 0x0c)
+    SmartPtr<LineSegment> mContents; // at +0x110
+    LineSegment* mMouseSegment; // at +0x114, the segment under the mouse
     int mStartSelSegment,mEndSelSegment; //118,11c
     int mStartSelSegmentPos,mEndSelSegmentPos; //120,124
-    bool mBackwardsSel,mSelecting; //128,129; natural12a..12b alignment
+    bool mBackwardsSel,mSelecting; // at +0x128, +0x129; +0x12a..0x12b padding
     int mMouseSegmentDX,mMouseSegmentDY; //12c,130
     struct AnchorCoordinate {
         int mx,my;
         AnchorCoordinate(int x=0,int y=0) : mx(x),my(y) {}
     };
     typedef std::map<GUIString,AnchorCoordinate,GUIStringLessNoCase> AnchorMap;
-    AnchorMap mAnchorMap; //134 allocator/compare bytes,138 native head,13c size; actual12 map
+    AnchorMap mAnchorMap; // at +0x134: allocator/compare bytes, head +0x138, size +0x13c (0x0c bytes)
 };
 class HTMLTag;
 class TextLinkParam : public RefCount {
 public:
     GUIString mLinkParam; //08
-    std::list<LineSegment*> mLinkList; //0c..17, borrowed line pointers
-    bool mLinkIsDown,mLaunchBrowser; //18,19, complete1c
+    std::list<LineSegment*> mLinkList; // at +0x0c..0x17, line pointers (not owned)
+    bool mLinkIsDown,mLaunchBrowser; // at +0x18, +0x19; the class is 0x1c bytes
     void LinkDown(); //30ab50
     bool LinkUp(); //30ab80
     TextLinkParam(const GUIString& p,bool launch) : mLinkParam(p),mLinkIsDown(false),mLaunchBrowser(launch) {}
 };
-// Complete actual HyperLinkEvent24; native30ac35/30adbd/30ae5f allocate24.
-// Genuine SDK inline constructor retains actual param20 after original ComponentEvent20.
+// HyperLinkEvent (0x24 bytes), allocated at 0x30ac35/0x30adbd/0x30ae5f.
+// Inline constructor; keeps the link parameter at +0x20 after ComponentEvent (0x20 bytes).
 class HyperLinkEvent : public ComponentEvent {
 public:
     HyperLinkEvent(Component* component,int type,TextLinkParam* param)
-        :ComponentEvent(component,type),mLinkParam(param) {} //native30ac51..30ac82; support0
-    SmartPtr<TextLinkParam> mLinkParam; //20 actual retained owner in original event
+        :ComponentEvent(component,type),mLinkParam(param) {} // 0x30ac51..0x30ac82
+    SmartPtr<TextLinkParam> mLinkParam; // at +0x20
 };
-// Genuine pinned Keyboard.h modifiers; target native tests bits1/2.
+// Keyboard.h modifiers; the exe tests bits 1 and 2.
 enum { KEYMOD_SHIFT=0x0001,KEYMOD_ALT=0x0002,KEYMOD_CTRL=0x0004 };
 class ImageMap : public RefCount {
 public:
@@ -3339,10 +3325,10 @@ public:
         SmartPtr<TextLinkParam> mLinkParam;
         WONRectangle mShape;
         ShapeLink(TextLinkParam* p,WONRectangle& r) : mLinkParam(p),mShape(r) {}
-    }; //complete14 value: SP4 + rectangle10
-    std::list<ShapeLink> mShapeList; //08..13, complete14 owner
-    TextLinkParam* GetLink(int,int); //30aed0 borrowed result
-    void AddLink(TextLinkParam* p,WONRectangle& r) { mShapeList.push_back(ShapeLink(p,r)); } //actual SDK/native support0
+    }; // 0x14-byte value: a SmartPtr (4) and a rectangle (0x10)
+    std::list<ShapeLink> mShapeList; // at +0x08..0x13
+    TextLinkParam* GetLink(int,int); // 0x30aed0
+    void AddLink(TextLinkParam* p,WONRectangle& r) { this->mShapeList.push_back(ShapeLink(p,r)); } // inline
 };
 enum HTMLListType
 {
@@ -3363,8 +3349,8 @@ class HTMLImageMapTag;
 class HTMLAreaTag;
 class HTMLListTag;
 class HTMLListItemTag;
-// Complete actual HTMLDocument80 member contract. Original lifetime remains external.
-// Native ctor33c610 and Parser34461e allocation80 prove fields; no new lifetime body here.
+// HTMLDocument (0x80 bytes); constructor and destructor out of line.
+// Constructor 0x33c610; allocated by the parser at 0x34461e.
 class HTMLDocument : public RefCount {
 protected:
     GUIString mBasePath; //08
@@ -3377,8 +3363,8 @@ public:
         SmartPtr<RawImage> mRawImage; //00
         SmartPtr<NativeImage> mImage; //04
         SmartPtr<Animation> mAnimation; //08
-        bool mHaveUsedAnimation; //0c, complete10
-        LoadedImageStruct(NativeImage* =NULL,Animation* =NULL); //external original
+        bool mHaveUsedAnimation; // at +0x0c; the struct is 0x10 bytes
+        LoadedImageStruct(NativeImage* =NULL,Animation* =NULL); // out of line
     };
     typedef std::map<GUIString,LoadedImageStruct,GUIStringLessNoCase> LoadedImageMap;
 protected:
@@ -3394,30 +3380,30 @@ protected:
     ImageTagMap mImageTagMap; //74..7f
     LoadedImageStruct* GetImage(const GUIString&,HTMLTag*); //33d010
     NativeImage* CheckScaleImage(LoadedImageStruct*,const GUIString&,int,int); //33d560
-    void HandleBody(HTMLBodyTag*); //33e410 external original
-    void HandleImage(HTMLImageTag*); //33d9e0 external original
-    void HandleInput(HTMLInputTag*); //33dfa0 external original
-    void HandleImageMap(HTMLImageMapTag*); //33e020 external original
-    void HandleArea(HTMLAreaTag*); //33e270 external original
-    void HandleList(HTMLListTag*); //33e680 external original
-    void HandleListItem(HTMLListItemTag*); //33e7b0 external original
+    void HandleBody(HTMLBodyTag*); // 0x33e410
+    void HandleImage(HTMLImageTag*); // 0x33d9e0
+    void HandleInput(HTMLInputTag*); // 0x33dfa0
+    void HandleImageMap(HTMLImageMapTag*); // 0x33e020
+    void HandleArea(HTMLAreaTag*); // 0x33e270
+    void HandleList(HTMLListTag*); // 0x33e680
+    void HandleListItem(HTMLListItemTag*); // 0x33e7b0
 public:
-    std::list<SmartPtr<HTMLTag> >& GetTagList() { return mTagList; } //genuine SDK/native33c43e actual list14
-    HTMLDocument(const GUIString&); //33c610 external full80 owner constructor
-    void Clear(); //33cbd0 external actual clear
+    std::list<SmartPtr<HTMLTag> >& GetTagList() { return this->mTagList; } // inline (0x33c43e)
+    HTMLDocument(const GUIString&); // 0x33c610
+    void Clear(); // 0x33cbd0
     void DecodeImages(bool); //33edb0
-    bool DoDecodeImage(LoadedImageStruct*,Window*,const std::string&); //33ce10 genuine public SDK API
-    LoadedImageMap& GetLoadedImageMap() {return mLoadedImageMap;}
-    virtual ~HTMLDocument(); //native deleting33c780, actual sole slot, ordinary target external
+    bool DoDecodeImage(LoadedImageStruct*,Window*,const std::string&); // 0x33ce10
+    LoadedImageMap& GetLoadedImageMap() {return this->mLoadedImageMap;}
+    virtual ~HTMLDocument(); // 0x33c780 (scalar deleting)
     void AddTag(HTMLTag*); //33ebd0
     void AddDocument(HTMLDocument*); //33eb80
-    void Rewind(bool=true); //genuine SDK document iterator mode; SOURCE_ONLY_NO_NATIVE_ID
-    HTMLTag* GetNextTag(bool=true); //genuine SDK body/document terminal bounds; SOURCE_ONLY_NO_NATIVE_ID
+    void Rewind(bool=true); // (not identified in the original exe)
+    HTMLTag* GetNextTag(bool=true); // (not identified in the original exe)
     void SetBasePath(const GUIString&); //33ccf0
-    std::list<SmartPtr<HTMLTag> >::iterator GetBodyStart(); //33ef70 helper0
-    std::list<SmartPtr<HTMLTag> >::iterator GetBodyEnd(); //33efa0 helper0
+    std::list<SmartPtr<HTMLTag> >::iterator GetBodyStart(); // 0x33ef70
+    std::list<SmartPtr<HTMLTag> >::iterator GetBodyEnd(); // 0x33efa0
 };
-// Genuine cached SDK enum; native Browser ctor stores Medium=2 at8c.
+// SDK enum; the Browser constructor stores Medium (2) at +0x8c.
 enum HTMLFontSize {
     HTMLFontSize_Smallest,HTMLFontSize_Small,HTMLFontSize_Medium,
     HTMLFontSize_Large,HTMLFontSize_Largest
@@ -3426,10 +3412,10 @@ class HTTPCache;
 class HTTPSession;
 class BrowserComponent : public Container {
 public:
-    BrowserComponent(); //3fad10 explicit original constructor, completee0
-    void SetTransparent(bool); //3fd210 original olderSDK target API
-    virtual ~BrowserComponent(); //native normal3faf30; deleting3faf10, 51slot reference contract
-    virtual void Virtual6C(); //AddedToParent3fb0e0, no args
+    BrowserComponent(); // 0x3fad10; the class is 0xe0 bytes
+    void SetTransparent(bool); // 0x3fd210 (older SDK API)
+    virtual ~BrowserComponent(); // destructor 0x3faf30, deleting 0x3faf10; 51 vtable slots
+    virtual void AddedToParent(); //AddedToParent3fb0e0, no args
     virtual void HandleComponentEvent(ComponentEvent*); //3fd350, ret4
     bool StopButtonEnabled(); //3fb230
     bool BackButtonEnabled(); //3fb250
@@ -3442,76 +3428,75 @@ public:
     void Back(); //3fcf60
     void Forward(); //3fcfc0
     bool FindStr(const GUIString&,bool=true,bool=false); //3fd1f0, ret0c
-    Table* GetHTMLView() { return mHTMLView.get(); }
-    void SetScroller(Scroller*); //3fb1a0 actual original ownership/layout policy
-    const GUIString& GetCurStatus() { return mCurStatus; }
-    void SetFontSize(HTMLFontSize size) { mFontSize=size; }
-    const GUIString& GetCurLocation() { return mCurLocation; }
-    void SetLaunchBrowserOnLink(bool inLaunch) { mLaunchBrowserOnLink=inLaunch; }
-    // Actual external-owned/private Table,Scroller,fontSize,cache,session,document,background region.
-    // No construction or own lifetime implementation; this is not a padding-size claim.
-    SmartPtr<Table> mHTMLView; //84, actual external-owned Table
-    SmartPtr<Scroller> mScroller; //88, native3fb1a9..3fb1e5 actual retained owner
-    HTMLFontSize mFontSize; //8c native32-bit enum, default2=Medium
-    SmartPtr<HTTPCache> mHTTPCache; //90, original retained cache; no local allocation
-    SmartPtr<HTTPSession> mHTTPSession; //94, original retained session; no local allocation
-    SmartPtr<HTMLDocument> mHTMLDocument; //98, original retained document
-    bool mHaveBackground; //9c, native byte; natural9d..9f alignment before a0
+    Table* GetHTMLView() { return this->mHTMLView.get(); }
+    void SetScroller(Scroller*); // 0x3fb1a0: sets the scroller and lays it out
+    const GUIString& GetCurStatus() { return this->mCurStatus; }
+    void SetFontSize(HTMLFontSize size) { this->mFontSize=size; }
+    const GUIString& GetCurLocation() { return this->mCurLocation; }
+    void SetLaunchBrowserOnLink(bool inLaunch) { this->mLaunchBrowserOnLink=inLaunch; }
+    // Table, scroller, font size, cache, session, document and background members follow.
+    SmartPtr<Table> mHTMLView; // at +0x84
+    SmartPtr<Scroller> mScroller; // at +0x88 (0x3fb1a9..0x3fb1e5)
+    HTMLFontSize mFontSize; // at +0x8c, a 32-bit enum, default 2 = Medium
+    SmartPtr<HTTPCache> mHTTPCache; // at +0x90
+    SmartPtr<HTTPSession> mHTTPSession; // at +0x94
+    SmartPtr<HTMLDocument> mHTMLDocument; // at +0x98
+    bool mHaveBackground; // at +0x9c; +0x9d..0x9f padding
     GUIString mCurStatus; //a0, GetEmpty+SmartPtr ctor/dtor and Label consumer closed
     GUIString mCurPath; //a4
     GUIString mCurAnchor; //a8
     std::string mHTMLDocumentPath; //ac
     bool mLaunchBrowserOnLink; //bc, byte ctor/read and consumers write true
-    int mNumPendingOps; //c0, natural bd..bf padding before this field
+    int mNumPendingOps; // at +0xc0; +0xbd..0xbf padding before it
     int mVertOffset; //c4
     struct PageLocation {
-        GUIString mLocation; //00 actual retained GUIString value
-        int mVertOffset; //04, complete8 value
-        PageLocation() :mVertOffset(0) {} //genuine SDK inline, support0
+        GUIString mLocation; // at +0x00
+        int mVertOffset; // at +0x04; the struct is 8 bytes
+        PageLocation() :mVertOffset(0) {} // inline
         PageLocation(const GUIString& location,int offset) :mLocation(location),mVertOffset(offset) {}
     };
     typedef std::vector<PageLocation> PageVector;
-    PageVector mPageVector; //c8, data cc/end d0/cap d4 actual stride8
+    PageVector mPageVector; // at +0xc8; data +0xcc, end +0xd0, capacity +0xd4; 8-byte elements
     int mCurPage; //d8
     GUIString mCurLocation; //dc
 protected:
     void GotoAnchor(); //3fc540
     void RememberVertOffset(); //3fc7c0
     void GetLinkPath(const std::string&,std::string&); //3fd030
-    void SetStatus(const GUIString&); //3fb2c0 support0
+    void SetStatus(const GUIString&); // 0x3fb2c0
     void FinishImages(); //3fb6a0
     struct ImageParam : public RefCount {
-        SmartPtr<BrowserComponent> mBrowser; //08 retained
-        HTMLDocument::LoadedImageStruct* mImageStruct; //0c borrowed, full10
+        SmartPtr<BrowserComponent> mBrowser; // at +0x08
+        HTMLDocument::LoadedImageStruct* mImageStruct; // at +0x0c; the struct is 0x10 bytes
         ImageParam(BrowserComponent* browser,HTMLDocument::LoadedImageStruct* image) :mBrowser(browser),mImageStruct(image) {}
     };
     typedef SmartPtr<ImageParam> ImageParamPtr;
-    static void DownloadImageCompletion(AsyncOpPtr,ImageParamPtr); //3fb930 actual cdecl byvalue owners
-    bool DownloadImages(); //3fbc10 actual bool/RET0 original external provider
-    void ParseDocument(); //3fc0d0 actual void/RET0 original external provider
-    static void DownloadDocumentCompletion(AsyncOpPtr,SmartPtr<RefCount>); //3fb320 actual cdecl two-byvalueSP callback
-    // Borrowed-only e0 prefix, no receiver construction/new/sizeof/copy/lifecycle.
+    static void DownloadImageCompletion(AsyncOpPtr,ImageParamPtr); // 0x3fb930 (cdecl, arguments by value)
+    bool DownloadImages(); // 0x3fbc10
+    void ParseDocument(); // 0x3fc0d0
+    static void DownloadDocumentCompletion(AsyncOpPtr,SmartPtr<RefCount>); // 0x3fb320 (cdecl, two SmartPtrs by value)
+    // Only the 0xe0-byte prefix is declared; nothing here constructs or copies one.
 };
-// Full14 value-lifetime class, no virtual slots. Native ctor33efc0/implicitdtor3c0fb0.
+// Plain value (0x14 bytes, no vtable): constructor 0x33efc0, implicit destructor 0x3c0fb0.
 class HTMLDocumentGen {
 public:
 protected:
     bool AddDocPrv(const GUIString&,int,bool); //33f020
 public:
     HTMLDocumentGen(HTMLDocument* =NULL);
-    void SetDocument(HTMLDocument*); //33f440 genuine SDK owned document replacement
-    bool AddDoc(const GUIString&,int=0); //33f1f0 forwarding20 support0
+    void SetDocument(HTMLDocument*); // 0x33f440: replaces the owned document
+    bool AddDoc(const GUIString&,int=0); // 0x33f1f0 (forwarder)
     bool AddDocParam(const GUIString&,int=0); //33f210 ->AddDocPrv(...,true)
     void printf(const GUIString&); //33f230
-    void AddTag(HTMLTag*); //genuine SDK document delegate; SOURCE_ONLY_NO_NATIVE_ID
-    void AddTagParam(HTMLTag*); //genuine SDK owned parameter document insertion; SOURCE_ONLY_NO_NATIVE_ID
-    HTMLDocument* GetDocument() { return mDocument.get(); }
+    void AddTag(HTMLTag*); // (not identified in the original exe)
+    void AddTagParam(HTMLTag*); // (not identified in the original exe)
+    HTMLDocument* GetDocument() { return this->mDocument.get(); }
     SmartPtr<HTMLDocument> mDocument; //0
     std::vector<SmartPtr<HTMLDocument> > mDocumentVector; //4, allocator4/data8/endc/cap10
-    // Keep natural implicit destructor, matching native full owner graph; no empty external stand-in.
+    // Implicit destructor.
 };
 
-// Original-owned HTMLDisplayGen; actual borrowed prefix/API in WONLobbyHTMLDisplayGen.h.
+// HTMLDisplayGen; its declaration is in WONLobbyHTMLDisplayGen.h.
 class HTMLDisplayGen;
 
 // 0x3c5ff0: the sort/filter handlers of a server-list column

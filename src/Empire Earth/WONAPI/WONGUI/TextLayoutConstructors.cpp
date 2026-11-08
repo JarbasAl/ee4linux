@@ -1,4 +1,4 @@
-// Genuine constructor completion for already accepted text/layout value owners.
+// Constructors of text segments and table elements, and the text line destructor
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -16,29 +16,29 @@
 namespace WONAPI {
 // TextSegmentBase() and TextLine() live in TextAreaInstructions.cpp / TextAreaLines.cpp (the original object
 // defines them before TextArea's `new` sites).
-// SUPPORT-ONLY: EXE 0x00710c40
+// Creates an empty text segment drawn in black (emitted at 0x00710c40)
 TextSegment::TextSegment()
 {
-    mColor=0;
+    this->mColor=0;
 }
 
-// SUPPORT-ONLY: EXE 0x0070d7f0
+// Creates an empty table with 2-pixel cell spacing, 1-pixel padding, no border and no background colour
+// (emitted at 0x0070d7f0)
 TableElement::TableElement()
 {
-    mCurCell=NULL;
-    mCellSpacing=2;
-    mCellPadding=1;
-    mBorder=0;
-    mBGColor=-1;
-    mMinWidth=mMaxWidth=0;
-    mWidthSpec=0;
+    this->mCurCell=NULL;
+    this->mCellSpacing=2;
+    this->mCellPadding=1;
+    this->mBorder=0;
+    this->mBGColor=-1;
+    this->mMinWidth=this->mMaxWidth=0;
+    this->mWidthSpec=0;
 }
 }
 
 namespace WONAPI {
-// Genuine SDK explicit destructor; native own-vptr45038c precedes ownedlist20
-// cleanup, then RefCount cleanup. This is not an authored implicit lifetime.
-// SUPPORT-ONLY: EXE 0x00711730 (130 native bytes)
+// Destroys the text line: an explicit destructor (the original stores TextLine's vtable, then destroys the
+// segment list at +0x20, then the RefCount base; emitted at 0x00711730)
 TextLine::~TextLine() {}
 }
 

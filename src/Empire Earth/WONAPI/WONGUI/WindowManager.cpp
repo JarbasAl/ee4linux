@@ -1,4 +1,4 @@
-// WONGUI WindowManager native behavior; archived SDK corroborates source contract.
+// Window manager: windows, focus, event queue and timers, modal dialogs, popups, fonts and image caches
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,8 +11,10 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyDelayLoadImage.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONComponentFlags.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x0072b660
+// Creates the window manager: registers the BMP and WIM decoders, becomes the default manager, sets standard colours
 WindowManager::WindowManager() {
     // LOST-DEBUG: none: exact only
     EE_LOST_TRACE(0);
@@ -20,118 +22,132 @@ WindowManager::WindowManager() {
     EE_LOST_TRACE(0);
     EE_LOST_TRACE(0);
     EE_LOST_TRACE(0);
-    mThreadId=GetCurrentThreadId();
-    mIsFullScreen=false;
-    mOriginalScreenWidth=mOriginalScreenHeight=0;
-    mLastLoseFocusTick=0;
-    mImageDecoder.AddDecoder(new BMPDecoder,"bmp");
-    mImageDecoder.AddDecoder(new WIMDecoder,"wim");
-    mDefaultWindowManager=this;
-    mLastTimerTick=GetTickCount();
-    mEndPopup=false;
-    mDefaultWindow=NULL;mWindowCount=0;
-    mCurMsgLoopDepth=0;mTargetMsgLoopDepth=0;mDialogResult=0;
-    mLastInputTick=0;
-    mModalWindow=NULL;mModalComponent=NULL;mPopupOwnerWindow=NULL;
-    mFocusWindow=NULL;mMouseDownWindow=NULL;
-    mIsValid=true;mInDoPopup=false;mInEndPopup=false;mPopupFlags=0;
-    mPopupIsUp=false;mBA5=true;
-    mDoMouseCapturePopupSupport=false;mCallingTimers=false;
-    mColorScheme=new ColorScheme;
-    InitColorScheme();
-    // Native leaves cachecount94/fullscreenwidthb0/fullscreenheightb4 untouched.
+    WindowManager::mThreadId=GetCurrentThreadId();
+    this->mIsFullScreen=false;
+    this->mOriginalScreenWidth=this->mOriginalScreenHeight=0;
+    this->mLastLoseFocusTick=0;
+    this->mImageDecoder.AddDecoder(new BMPDecoder,"bmp");
+    this->mImageDecoder.AddDecoder(new WIMDecoder,"wim");
+    WindowManager::mDefaultWindowManager=this;
+    this->mLastTimerTick=GetTickCount();
+    this->mEndPopup=false;
+    this->mDefaultWindow=NULL;this->mWindowCount=0;
+    this->mCurMsgLoopDepth=0;this->mTargetMsgLoopDepth=0;this->mDialogResult=0;
+    this->mLastInputTick=0;
+    this->mModalWindow=NULL;this->mModalComponent=NULL;this->mPopupOwnerWindow=NULL;
+    this->mFocusWindow=NULL;this->mMouseDownWindow=NULL;
+    this->mIsValid=true;this->mInDoPopup=false;this->mInEndPopup=false;this->mPopupFlags=0;
+    this->mPopupIsUp=false;this->mBA5=true;
+    this->mDoMouseCapturePopupSupport=false;this->mCallingTimers=false;
+    this->mColorScheme=new ColorScheme;
+    this->InitColorScheme();
+    // The original leaves the image cache count (+0x94) and the full-screen size (+0xb0, +0xb4) uninitialised
 }
 // FUNCTION: WON 0x0072ba90
+// Deleting destructor of the window manager (compiler-generated)
 // (??_GWindowManager@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x0072bab0
+// Destroys the named-font map tree, freeing every node
 // (??1?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072bb70
+// Destroys the native image cache tree, freeing every node
 // (??1?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072bc30
+// Destroys the raw image cache tree, freeing every node
 // (??1?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072bcf0
+// Destroys the delay-load image cache tree, freeing every node
 // (??1?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072bdb0
+// Destroys the window set tree, freeing every node
 // (??1?$_Tree@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@V12@U_Kfn@?$_Setk@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@std@@@std@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072be70
+// Destroys the timer event set tree, freeing every node
 // (??1?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$_Setk@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072bf30
+// Destroys the broadcast component set tree, freeing every node
 // (??1?$_Tree@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072bff0
+// Destroys the window manager after closing every open window
 WindowManager::~WindowManager()
 {
-	Fn32D5B0();
+	this->CloseAllWindows();
 }
 
 // FUNCTION: WON 0x0072c230
+// Fills the colour scheme with the 17 standard Windows-style colours (face, shadow, highlight, text, links ...)
 void WindowManager::InitColorScheme()
 {
-	mColorScheme->SetStandardColor(0,0x000000);
-	mColorScheme->SetStandardColor(1,0xD0D0D0);
-	mColorScheme->SetStandardColor(2,0xFFFFFF);
-	mColorScheme->SetStandardColor(3,0x848484);
-	mColorScheme->SetStandardColor(4,0xDEDEDE);
+	this->mColorScheme->SetStandardColor(StandardColor_3DDarkShadow,0x000000);
+	this->mColorScheme->SetStandardColor(StandardColor_3DFace,0xD0D0D0);
+	this->mColorScheme->SetStandardColor(StandardColor_3DHilight,0xFFFFFF);
+	this->mColorScheme->SetStandardColor(StandardColor_3DShadow,0x848484);
+	this->mColorScheme->SetStandardColor(StandardColor_Scrollbar,0xDEDEDE);
 
-	mColorScheme->SetStandardColor(5,0x000000);
-	mColorScheme->SetStandardColor(6,0x848484);
-	mColorScheme->SetStandardColor(7,0x08246B);
-	mColorScheme->SetStandardColor(8,0xFFFFFF);
+	this->mColorScheme->SetStandardColor(StandardColor_ButtonText,0x000000);
+	this->mColorScheme->SetStandardColor(StandardColor_GrayText,0x848484);
+	this->mColorScheme->SetStandardColor(StandardColor_Hilight,0x08246B);
+	this->mColorScheme->SetStandardColor(StandardColor_HilightText,0xFFFFFF);
 
-	mColorScheme->SetStandardColor(9,0xFFFFDD);
-	mColorScheme->SetStandardColor(10,0x000000);
+	this->mColorScheme->SetStandardColor(StandardColor_ToolTipBack,0xFFFFDD);
+	this->mColorScheme->SetStandardColor(StandardColor_ToolTipText,0x000000);
 
-	mColorScheme->SetStandardColor(11,0xD0D0D0);
-	mColorScheme->SetStandardColor(12,0);
+	this->mColorScheme->SetStandardColor(StandardColor_MenuBack,0xD0D0D0);
+	this->mColorScheme->SetStandardColor(StandardColor_MenuText,0);
 
-	mColorScheme->SetStandardColor(13,0xFFFFFF);
-	mColorScheme->SetStandardColor(14,0x000000);
+	this->mColorScheme->SetStandardColor(StandardColor_Back,0xFFFFFF);
+	this->mColorScheme->SetStandardColor(StandardColor_Text,0x000000);
 
-	mColorScheme->SetStandardColor(15,0x0000FF);
-	mColorScheme->SetStandardColor(16,0xFF0000);
+	this->mColorScheme->SetStandardColor(StandardColor_Link,0x0000FF);
+	this->mColorScheme->SetStandardColor(StandardColor_LinkDown,0xFF0000);
 }
 
 // FUNCTION: WON 0x0072c2d0
+// Records that no window has focus and when focus was lost (tick 0 is stored as 1)
 void WindowManager::NotifyLostFocus()
 {
-	mFocusWindow = NULL;
-	mLastLoseFocusTick = GetTickCount();
-	if(mLastLoseFocusTick==0)
-		mLastLoseFocusTick = 1;
+	this->mFocusWindow = NULL;
+	this->mLastLoseFocusTick = GetTickCount();
+	if(this->mLastLoseFocusTick==0)
+		this->mLastLoseFocusTick = 1;
 }
 
 // FUNCTION: WON 0x0072c300
+// Records the window that gained focus and clears the lost-focus tick
 void WindowManager::NotifyGotFocus(Window *theWindow)
 {
-	mFocusWindow = theWindow;
-	mLastLoseFocusTick = 0;
+	this->mFocusWindow = theWindow;
+	this->mLastLoseFocusTick = 0;
 }
 
 // FUNCTION: WON 0x0072c320
+// Switches the screen resolution and remembers the previous one; only when both width and height differ
+// from the current mode
 void WindowManager::SetScreenResolution(int theWidth, int theHeight)
 {
 	int aWidth = 0,aHeight = 0;
-	GetScreenResolutionHook(aWidth, aHeight);
-	if(aWidth!=theWidth && aHeight!=theHeight)
-	{
-		SetScreenResolutionHook(theWidth,theHeight);
-		mOriginalScreenWidth = aWidth;
-		mOriginalScreenHeight = aHeight;
-	}
+	this->GetScreenResolutionHook(aWidth, aHeight);
+	if(aWidth==theWidth || aHeight==theHeight)
+		return;
+	this->SetScreenResolutionHook(theWidth,theHeight);
+	this->mOriginalScreenWidth = aWidth;
+	this->mOriginalScreenHeight = aHeight;
 }
 
 // FUNCTION: WON 0x0072c390
+// Minimizes open windows that ask for it and switches back to the remembered screen resolution, if any
 void WindowManager::RestoreScreenResolution()
 {
-	WindowSet::iterator anItr = mWindowSet.begin();
-	while(anItr!=mWindowSet.end())
+	WindowSet::iterator anItr = this->mWindowSet.begin();
+	while(anItr!=this->mWindowSet.end())
 	{
 		Window *aWindow = anItr->get();
 		if(aWindow->mWindowState==Window::WindowState_Open && aWindow->mMinimizeOnResolutionRestore)
@@ -140,51 +156,55 @@ void WindowManager::RestoreScreenResolution()
 		++anItr;
 	}
 
-	if(mOriginalScreenWidth!=0 && mOriginalScreenHeight!=0)
-	{
-		SetScreenResolution(mOriginalScreenWidth, mOriginalScreenHeight);
-		mOriginalScreenWidth = 0;
-		mOriginalScreenHeight = 0;
-	}
+	if(this->mOriginalScreenWidth==0 || this->mOriginalScreenHeight==0)
+		return;
+	this->SetScreenResolution(this->mOriginalScreenWidth, this->mOriginalScreenHeight);
+	this->mOriginalScreenWidth = 0;
+	this->mOriginalScreenHeight = 0;
 }
 
 // FUNCTION: WON 0x0072c440
+// Returns the window of the first open popup, or NULL when no popup is up
 Window* WindowManager::GetPopupWindow()
 {
-	if(mPopupIsUp)
-		return mPopupList.front()->GetRoot();
+	if(this->mPopupIsUp)
+		return this->mPopupList.front()->GetRoot();
 	else
 		return NULL;
 }
 
 // FUNCTION: WON 0x0072c470
+// Stores a font under a name (case-insensitive), replacing any earlier one
 void WindowManager::SetNamedFont(const std::string &theName, Font *theFont)
 {
-	mNamedFontMap[theName] = theFont;
+	this->mNamedFontMap[theName] = theFont;
 }
 
 // FUNCTION: WON 0x0072c4d0
+// Returns the font stored under a name, or the default font when there is none
 Font* WindowManager::GetNamedFont(const std::string &theName)
 {
-	NamedFontMap::iterator anItr = mNamedFontMap.find(theName);
-	if(anItr==mNamedFontMap.end())
+	NamedFontMap::iterator anItr = this->mNamedFontMap.find(theName);
+	if(anItr==this->mNamedFontMap.end())
 		return GetDefaultFont();
 	else
 		return anItr->second.get();
 }
 
 // FUNCTION: WON 0x0072c540
+// Returns the default font, creating Tahoma 8 on the default window the first time
 Font* WindowManager::GetDefaultFont()
 {
-	if(mDefaultFont.get()==NULL)
+	if(this->mDefaultFont.get()==NULL)
 		{
-        mDefaultFont=mDefaultWindow->GetFont(FontDescriptor("Tahoma",0,8));
+        this->mDefaultFont=this->mDefaultWindow->GetFont(FontDescriptor("Tahoma",0,8));
     }
 
-	return mDefaultFont.get();
+	return this->mDefaultFont.get();
 }
 
 // FUNCTION: WON 0x0072c700
+// Returns the default font with another style and, when the size is positive, another size
 Font* WindowManager::GetDefaultFontMod(int theStyle, int theSize)
 {
 	Font *aFont = GetDefaultFont();
@@ -193,68 +213,74 @@ Font* WindowManager::GetDefaultFontMod(int theStyle, int theSize)
 	if(theSize>0)
 		aDesc.mSize = theSize;
 
-	return mDefaultWindow->GetFont(aDesc).get();
+	return this->mDefaultWindow->GetFont(aDesc).get();
 }
 
 // FUNCTION: WON 0x0072c7f0
+// Adds or drops one image-caching request; when the count reaches 0 it empties the native and raw image caches
 void WindowManager::SetCacheImages(bool cache)
 {
 	if(cache)
-		mCacheImageCount++;
+		this->mCacheImageCount++;
 	else
 	{
-		mCacheImageCount--;
-		if(mCacheImageCount<=0)
+		this->mCacheImageCount--;
+		if(this->mCacheImageCount<=0)
 		{
-			mCacheImageCount = 0;
-			mNativeImageMap.clear();
-			mRawImageMap.clear();
+			this->mCacheImageCount = 0;
+			this->mNativeImageMap.clear();
+			this->mRawImageMap.clear();
 		}
 	}
 }
 
 // FUNCTION: WON 0x0072c950
+// Decodes an image file for a display context, cached while caching is on; NULL without a context
 SmartPtr<NativeImage> WindowManager::DecodeImage(DisplayContext *theContext, const char *theFilePath)
 {
 	if(theContext==NULL)
 		return NULL;
 
-	if(mCacheImageCount)
+	if(this->mCacheImageCount)
 	{
-		NativeImageMap::iterator anItr = mNativeImageMap.insert(NativeImageMap::value_type(theFilePath,NULL)).first;
+		NativeImageMap::iterator anItr = this->mNativeImageMap.insert(NativeImageMap::value_type(theFilePath,NULL)).first;
 		if(anItr->second.get()==NULL)
-			anItr->second = mImageDecoder.Decode(theContext,theFilePath);
+			anItr->second = this->mImageDecoder.Decode(theContext,theFilePath);
 
 		return anItr->second;
 	}
 	else
-		return mImageDecoder.Decode(theContext,theFilePath);
+		return this->mImageDecoder.Decode(theContext,theFilePath);
 }
 
 // FUNCTION: WON 0x0072cc20
+// Destroys a native image cache entry (file name and image)
 // (??1?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072ccb0
+// Decodes an image file for the default window's display context; NULL when there is no window
 SmartPtr<NativeImage> WindowManager::DecodeImage(const char *theFilePath)
 {
-	if(mDefaultWindow==NULL)
+	if(this->mDefaultWindow==NULL)
 		return NULL;
 
-	return DecodeImage(mDefaultWindow->mDisplayContext.get(),theFilePath);
+	return this->DecodeImage(this->mDefaultWindow->mDisplayContext.get(),theFilePath);
 }
 
 // FUNCTION: WON 0x0072ccf0
+// Returns an image that loads its file on first use, sized from the file's attributes; cached by path while
+// caching is on; NULL when the attributes cannot be read
 SmartPtr<Image> WindowManager::DecodeDelayImage(const char *theFilePath)
 {
-	if(mCacheImageCount)
+	if(this->mCacheImageCount)
 	{
 		std::pair<DelayImageMap::iterator,bool> aRet;
-		aRet = mDelayImageMap.insert(DelayImageMap::value_type(theFilePath,NULL));
+		aRet = this->mDelayImageMap.insert(DelayImageMap::value_type(theFilePath,NULL));
 
 		if(aRet.second)
 		{
 			ImageAttributes anAttr;
-			if(mImageDecoder.GetImageAttributes(theFilePath,anAttr))
+			if(this->mImageDecoder.GetImageAttributes(theFilePath,anAttr))
 				aRet.first->second = new DelayLoadImage(theFilePath,anAttr.mWidth,anAttr.mHeight);
 		}
 
@@ -263,7 +289,7 @@ SmartPtr<Image> WindowManager::DecodeDelayImage(const char *theFilePath)
 	else
 	{
 		ImageAttributes anAttr;
-		if(mImageDecoder.GetImageAttributes(theFilePath,anAttr))
+		if(this->mImageDecoder.GetImageAttributes(theFilePath,anAttr))
 			return new DelayLoadImage(theFilePath,anAttr.mWidth,anAttr.mHeight);
 		else
 			return NULL;
@@ -271,49 +297,55 @@ SmartPtr<Image> WindowManager::DecodeDelayImage(const char *theFilePath)
 }
 
 // FUNCTION: WON 0x0072d0d0
+// Destroys a delay-load image cache entry (file name and image)
 // (??1?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072d160
+// Decodes an image file into a raw image, through the raw image cache while caching is on
 SmartPtr<RawImage> WindowManager::DecodeImageRaw(const char *theFilePath)
 {
-	if(mCacheImageCount)
+	if(this->mCacheImageCount)
 	{
-		RawImageMap::iterator anItr = mRawImageMap.insert(RawImageMap::value_type(std::string(theFilePath),SmartPtr<RawImage>())).first;
+		RawImageMap::iterator anItr = this->mRawImageMap.insert(RawImageMap::value_type(std::string(theFilePath),SmartPtr<RawImage>())).first;
 
 		if(anItr->second.get()==NULL)
-			anItr->second = mImageDecoder.DecodeRaw(theFilePath);
+			anItr->second = this->mImageDecoder.DecodeRaw(theFilePath);
 
 		return anItr->second;
 	}
 	else
-		return mImageDecoder.DecodeRaw(theFilePath);
+		return this->mImageDecoder.DecodeRaw(theFilePath);
 }
 
 // FUNCTION: WON 0x0072d400
+// Destroys a raw image cache entry (file name and image)
 // (??1?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072d490
+// Sets the decoder used for sounds
 void WindowManager::SetSoundDecoder(SoundDecoder *theDecoder)
 {
-	mSoundDecoder = theDecoder;
+	this->mSoundDecoder = theDecoder;
 }
 
 // FUNCTION: WON 0x0072d4f0
+// Decodes a sound with the sound decoder, or returns a plain sound for the descriptor when there is none
 SmartPtr<Sound> WindowManager::DecodeSound(const SoundDescriptor &theDesc)
 {
-	if(mSoundDecoder.get()==NULL)
+	if(this->mSoundDecoder.get()==NULL)
 		return new Sound(theDesc);
 	else
-		return mSoundDecoder->DecodeDescriptor(theDesc);
+		return this->mSoundDecoder->DecodeDescriptor(theDesc);
 }
 
 // FUNCTION: WON 0x0072d5b0
-void WindowManager::Fn32D5B0()
+// Closes every window, processes the resulting events and restores the screen resolution when full screen
+void WindowManager::CloseAllWindows()
 {
-	bool hadWindows = !mWindowSet.empty();
-	AutoCrit aCrit(mDataCrit);
-	WindowSet::iterator anItr = mWindowSet.begin();
-	while(anItr!=mWindowSet.end())
+	bool hadWindows = !this->mWindowSet.empty();
+	AutoCrit aCrit(this->mDataCrit);
+	WindowSet::iterator anItr = this->mWindowSet.begin();
+	while(anItr!=this->mWindowSet.end())
 	{
 		Window *aWindow = anItr->get();
 		aWindow->Close();
@@ -323,57 +355,60 @@ void WindowManager::Fn32D5B0()
 	aCrit.Leave();
 
 	if(hadWindows)
-		ProcessEvents();
+		this->ProcessEvents();
 
-	if(mIsFullScreen)
-		RestoreScreenResolution();
+	if(this->mIsFullScreen)
+		this->RestoreScreenResolution();
 }
 
 // FUNCTION: WON 0x0072d6a0
+// Adds a window to the managed set (the first one becomes the default window); always returns true
 bool WindowManager::AddWindow(Window *theWindow)
 {
-	AutoCrit aCrit(mDataCrit);
-	if(mWindowSet.empty())
-		mDefaultWindow = theWindow;
+	AutoCrit aCrit(this->mDataCrit);
+	if(this->mWindowSet.empty())
+		this->mDefaultWindow = theWindow;
 
-	if(mWindowSet.insert(theWindow).second)
-		mWindowCount++;
+	if(this->mWindowSet.insert(theWindow).second)
+		this->mWindowCount++;
 
 	return true;
 }
 
 // FUNCTION: WON 0x0072d840
+// Removes a window: drops its queued events, picks a new default window, ends its modal dialog and forgets
+// it as the saved popup window; false when it was not managed
 bool WindowManager::RemoveWindow(Window *theWindow)
 {
-	AutoCrit aCrit(mDataCrit);
+	AutoCrit aCrit(this->mDataCrit);
 		
-	if(mWindowSet.erase(theWindow)>0)
+	if(this->mWindowSet.erase(theWindow)>0)
 	{
-		mWindowCount--;
-		if(mWindowCount<=0)
-			mTargetMsgLoopDepth = 0;
+		this->mWindowCount--;
+		if(this->mWindowCount<=0)
+			this->mTargetMsgLoopDepth = 0;
 
-		if(mWindowSet.empty())
-			mDefaultWindow = NULL;
+		if(this->mWindowSet.empty())
+			this->mDefaultWindow = NULL;
 		else 
-			mDefaultWindow = mWindowSet.begin()->get();
+			this->mDefaultWindow = this->mWindowSet.begin()->get();
 
 		
-		WindowEventList::iterator anItr = mWindowEventList.begin();
-		while(anItr!=mWindowEventList.end())
+		WindowEventList::iterator anItr = this->mWindowEventList.begin();
+		while(anItr!=this->mWindowEventList.end())
 		{
 			WindowEventBase *anEvent = anItr->get();
 			if(anEvent->mWindow==theWindow)
-				mWindowEventList.erase(anItr++);
+				this->mWindowEventList.erase(anItr++);
 			else
 				++anItr;
 		}
 
-		if(theWindow==mModalWindow)
-			Fn32DDB0(-1,NULL,NULL);
+		if(theWindow==this->mModalWindow)
+			this->EndDialog(-1,NULL,NULL);
 
-		if(theWindow==mPopupWindowSave.get())
-			mPopupWindowSave = NULL;
+		if(theWindow==this->mPopupWindowSave.get())
+			this->mPopupWindowSave = NULL;
 
 		return true;
 	}
@@ -382,84 +417,92 @@ bool WindowManager::RemoveWindow(Window *theWindow)
 }
 
 // FUNCTION: WON 0x0072ddf0
+// Makes the innermost message loop return
 void WindowManager::ExitMessageLoop()
 {
-	mTargetMsgLoopDepth--;
+	this->mTargetMsgLoopDepth--;
 }
 
 // FUNCTION: WON 0x0072e7d0
+// Runs a nested message loop until it is exited; returns the dialog result, or -1 when there are no windows
 int WindowManager::MessageLoop()
 {
-	if(mWindowSet.empty())
+	if(this->mWindowSet.empty())
 		return -1;
 
 
-	AddRef();
+	this->AddRef();
 
-	mTargetMsgLoopDepth =  ++mCurMsgLoopDepth;
-	while(mCurMsgLoopDepth<=mTargetMsgLoopDepth)
+	this->mTargetMsgLoopDepth =  ++this->mCurMsgLoopDepth;
+	while(this->mCurMsgLoopDepth<=this->mTargetMsgLoopDepth)
 	{
-		GetNextEvent();
+		this->GetNextEvent();
 
 	}
 
 
-	mCurMsgLoopDepth--;
-	int aDialogResult = mDialogResult;
-	Release();
+	this->mCurMsgLoopDepth--;
+	int aDialogResult = this->mDialogResult;
+	this->Release();
 
 	return aDialogResult;
 }
 
 // FUNCTION: WON 0x0072e850
+// Queues a window event and signals the event loop when asked or when no message loop is running
 void WindowManager::PostEvent(WindowEventBase *theEvent, bool needSignal)
 {
-	WONAPI::AutoCrit aCrit(mDataCrit);
-	mWindowEventList.push_back(theEvent);
-	if(mCurMsgLoopDepth<=0)
+	WONAPI::AutoCrit aCrit(this->mDataCrit);
+	this->mWindowEventList.push_back(theEvent);
+	if(this->mCurMsgLoopDepth<=0)
 		needSignal = true;
 
 	aCrit.Leave();
 
 	if(needSignal)
-		Signal();
+		this->Signal();
 }
 
 // FUNCTION: WON 0x0072e960
+// Adds an event to be delivered on every timer tick
 void WindowManager::AddTimerEvent(WindowEventBase *theEvent)
 {
-	mTimerEvents.insert(theEvent);
+	this->mTimerEvents.insert(theEvent);
 }
 
 // FUNCTION: WON 0x0072ea70
+// Removes a timer event, deferring the removal while timers are being delivered
 void WindowManager::RemoveTimerEvent(WindowEventBase *theEvent)
 {
-	if(mCallingTimers)
-		mRemoveTimerEvents.insert(theEvent);
+	if(this->mCallingTimers)
+		this->mRemoveTimerEvents.insert(theEvent);
 	else
-		mTimerEvents.erase(theEvent);
+		this->mTimerEvents.erase(theEvent);
 }
 
 // FUNCTION: WON 0x0072f3f0
+// Adds a component to or removes it from the set that receives broadcast events
 void WindowManager::SubscribeToBroadcast(Component *theComponent, bool subscribe)
 {
 	if(subscribe)
-		mBroadcastSet.insert(theComponent);
+		this->mBroadcastSet.insert(theComponent);
 	else
-		mBroadcastSet.erase(theComponent);
+		this->mBroadcastSet.erase(theComponent);
 }
 
 // FUNCTION: WON 0x0072f5d0
+// Removes every component from the broadcast set
 void WindowManager::ClearSubscriptions()
 {
-	mBroadcastSet.clear();
+	this->mBroadcastSet.clear();
 }
 
 // FUNCTION: WON 0x0072f680
-void WindowManager::Fn32F680(ComponentEvent *theEvent)
+// Sends a component event to every subscribed component
+void WindowManager::BroadcastEvent(ComponentEvent *theEvent)
 {
-	BroadcastSet::iterator anItr = mBroadcastSet.begin();
-	while(anItr!=mBroadcastSet.end())
+	BroadcastSet::iterator anItr = this->mBroadcastSet.begin();
+	while(anItr!=this->mBroadcastSet.end())
 	{
 		Component *aComponent = anItr->get();
 		aComponent->HandleComponentEvent(theEvent);
@@ -468,96 +511,100 @@ void WindowManager::Fn32F680(ComponentEvent *theEvent)
 }
 
 // FUNCTION: WON 0x0072f700
+// Returns the next queued window event without removing it, or NULL
 WindowEventBase* WindowManager::PeekNextEvent()
 {
-	AutoCrit aCrit(mDataCrit);
-	if(mWindowEventList.empty())
+	AutoCrit aCrit(this->mDataCrit);
+	if(this->mWindowEventList.empty())
 		return NULL;
 	else
-		return mWindowEventList.front().get();
+		return this->mWindowEventList.front().get();
 }
 
 // FUNCTION: WON 0x0072f760
+// Every 50 ms ends or keeps popups by focus, restores the resolution after focus loss and ticks windows and
+// timer events; then delivers queued events and idles every window (deferred timer removals are never cleared)
 void WindowManager::ProcessEvents()
 {
 
 	DWORD aTick = GetTickCount();
-	DWORD anElapsed = aTick - mLastTimerTick;
+	DWORD anElapsed = aTick - this->mLastTimerTick;
 	if(anElapsed >= 50)
 	{
 		if(anElapsed >= 1000)
 			anElapsed = 1000;
 
-		mLastTimerTick = aTick;
+		this->mLastTimerTick = aTick;
 
-		if(mPopupIsUp && mFocusWindow!=mPopupOwnerWindow && ((bool)(((unsigned)mPopupFlags>>6)&1)))
+		if(this->mPopupIsUp && this->mFocusWindow!=this->mPopupOwnerWindow && ((bool)(((unsigned)this->mPopupFlags>>6)&1)))
 		{
-			if(mFocusWindow!=NULL && mFocusWindow->mIsPopup)
+			if(this->mFocusWindow!=NULL && this->mFocusWindow->mIsPopup)
 			{
-				mEndPopup = false;
-				mPopupOwnerWindow->Virtual3C();
+				this->mEndPopup = false;
+				this->mPopupOwnerWindow->PlatformSetFocus();
 			}
-			else if(mEndPopup)
-				EndPopup(NULL);
+			else if(this->mEndPopup)
+				this->EndPopup(NULL);
 			else
-				mEndPopup = true;
+				this->mEndPopup = true;
 		}
 		else
-			mEndPopup = false;
+			this->mEndPopup = false;
 
-		if(mLastLoseFocusTick!=0 && mFocusWindow==NULL && aTick-mLastLoseFocusTick>50)
+		if(this->mLastLoseFocusTick!=0 && this->mFocusWindow==NULL && aTick-this->mLastLoseFocusTick>50)
 		{
-			mLastLoseFocusTick = 0;
-			if(mIsFullScreen)
-				RestoreScreenResolution();
+			this->mLastLoseFocusTick = 0;
+			if(this->mIsFullScreen)
+				this->RestoreScreenResolution();
 		}	
 
-		WindowSet::iterator anItr = mWindowSet.begin();
-		while(anItr!=mWindowSet.end())
+		WindowSet::iterator anItr = this->mWindowSet.begin();
+		while(anItr!=this->mWindowSet.end())
 		{
 			Window *aWindow = anItr->get();
-			aWindow->Virtual0C(anElapsed);
+			aWindow->TimerEvent(anElapsed);
 			++anItr;
 		}
 
-		if(!mTimerEvents.empty())
+		if(!this->mTimerEvents.empty())
 		{
-			mCallingTimers = true;
-			for(WindowEventSet::iterator aTimerItr = mTimerEvents.begin(); aTimerItr != mTimerEvents.end(); ++aTimerItr)
+			this->mCallingTimers = true;
+			for(WindowEventSet::iterator aTimerItr = this->mTimerEvents.begin(); aTimerItr != this->mTimerEvents.end(); ++aTimerItr)
 				(*aTimerItr)->Deliver();
-			mCallingTimers = false;
+			this->mCallingTimers = false;
 		}
 
-		if(!mRemoveTimerEvents.empty()) 
+		if(!this->mRemoveTimerEvents.empty()) 
 		{
-			for(WindowEventSet::iterator aTimerItr = mRemoveTimerEvents.begin(); aTimerItr != mRemoveTimerEvents.end(); ++aTimerItr)
-				mTimerEvents.erase(*aTimerItr);
+			for(WindowEventSet::iterator aTimerItr = this->mRemoveTimerEvents.begin(); aTimerItr != this->mRemoveTimerEvents.end(); ++aTimerItr)
+				this->mTimerEvents.erase(*aTimerItr);
 		}
 	}
 
-	WONAPI::AutoCrit aCrit(mDataCrit, false);
-	while(!mWindowEventList.empty()  && mCurMsgLoopDepth<=mTargetMsgLoopDepth)
+	WONAPI::AutoCrit aCrit(this->mDataCrit, false);
+	while(!this->mWindowEventList.empty()  && this->mCurMsgLoopDepth<=this->mTargetMsgLoopDepth)
 	{
 		aCrit.Enter();
-		SmartPtr<WindowEventBase> anEvent = mWindowEventList.front();
-		mWindowEventList.pop_front();
+		SmartPtr<WindowEventBase> anEvent = this->mWindowEventList.front();
+		this->mWindowEventList.pop_front();
 		aCrit.Leave();
 
-		DeliverEvent(anEvent.get());
+		this->DeliverEvent(anEvent.get());
 	}
 
 
-	WindowSet::iterator anItr = mWindowSet.begin();
-	while(anItr!=mWindowSet.end())
+	WindowSet::iterator anItr = this->mWindowSet.begin();
+	while(anItr!=this->mWindowSet.end())
 	{
 		Window *aWindow = anItr->get();
-		aWindow->Virtual08();
+		aWindow->IdleUpdate();
 		++anItr;
 	}
 }
 
 
 // FUNCTION: WON 0x0072dbe0
+// Sets or clears the modal flag on a component and its ancestors, making each ancestor enter or leave modal mode
 static void SetModal(Component* component,bool modal) {
     component->SetComponentFlags(0x8000,modal);
     Container* parent=component->mParent;
@@ -567,61 +614,63 @@ static void SetModal(Component* component,bool modal) {
         parent=parent->mParent;
     }
 }
-// Actual SDK inline rectangle predicate expanded from real target fields; support0.
+// Point-in-rectangle test used by FindMouseWindow (inline)
 static inline bool PopupRectContains(const WONRectangle& r,int x,int y) {
     return x>=r.x && x<r.x+r.width && y>=r.y && y<r.y+r.height;
 }
 // FUNCTION: WON 0x0072da30
+// Recomputes modal state from the open popups and the modal dialog: flags popups, the popup input component
+// and the dialog, and makes every other window modal
 void WindowManager::CalcModality()
 {
 	
-	if(mPopupInputComponent.get()!=NULL)
-		SetModal(mPopupInputComponent.get(),false);
-	if(mModalComponent!=NULL)
-		SetModal(mModalComponent,false);
+	if(this->mPopupInputComponent.get()!=NULL)
+		SetModal(this->mPopupInputComponent.get(),false);
+	if(this->mModalComponent!=NULL)
+		SetModal(this->mModalComponent,false);
 
 	bool modal = false;
-	mPopupIsUp = false;
-	if(!mPopupList.empty())
+	this->mPopupIsUp = false;
+	if(!this->mPopupList.empty())
 	{
 		
-		mPopupIsUp = true;
-		PopupList::iterator anItr = mPopupList.begin();
-		while(anItr!=mPopupList.end())
+		this->mPopupIsUp = true;
+		PopupList::iterator anItr = this->mPopupList.begin();
+		while(anItr!=this->mPopupList.end())
 		{
 			Component *aPopup = *anItr;
 			aPopup->SetComponentFlags(0x8000 | 0x10000,true);
 			++anItr;
 		}
 
-		if(((mPopupFlags & (PopupFlag_IsModal))?true:false))
+		if(((this->mPopupFlags & (PopupFlag_IsModal))?true:false))
 			modal = true;
 	}
 	
-	if(mModalComponent!=NULL)
+	if(this->mModalComponent!=NULL)
 	{
 		if(!modal) 
-			SetModal(mModalComponent,true);
+			SetModal(this->mModalComponent,true);
 
 		modal = true;
 	}
 
-	if(!mPopupIsUp && mPopupOwnerComponent.get()!=NULL)
-		mPopupOwnerComponent = NULL;
+	if(!this->mPopupIsUp && this->mPopupOwnerComponent.get()!=NULL)
+		this->mPopupOwnerComponent = NULL;
 
-	if(mPopupInputComponent.get()!=NULL)
+	if(this->mPopupInputComponent.get()!=NULL)
 	{ 
-		if(mPopupIsUp)
-			SetModal(mPopupInputComponent.get(),true);
+		if(this->mPopupIsUp)
+			SetModal(this->mPopupInputComponent.get(),true);
 		else
-			mPopupInputComponent = NULL;
+			this->mPopupInputComponent = NULL;
 	}
 
-	WindowSet::iterator anItr = mWindowSet.begin();
-	while(anItr!=mWindowSet.end())
+	WindowSet::iterator anItr = this->mWindowSet.begin();
+	while(anItr!=this->mWindowSet.end())
 	{
 		Window *aWindow = anItr->get();
-		if(aWindow==mModalWindow && !mPopupIsUp && mModalComponent==aWindow->mRoot.get())
+		if(aWindow==this->mModalWindow && !this->mPopupIsUp && this->mModalComponent==aWindow->mRoot.get())
 			aWindow->SetModal(false);
 		else
 			(*anItr)->SetModal(modal);
@@ -631,20 +680,22 @@ void WindowManager::CalcModality()
 }
 
 // FUNCTION: WON 0x0072dc30
+// Returns true when a modal window exists and the given window is not it
 bool WindowManager::NotModalWindow(Window *theWindow)
 {
-	if(mModalWindow!=NULL && theWindow!=mModalWindow)
+	if(this->mModalWindow!=NULL && theWindow!=this->mModalWindow)
 		return true;
 	else
 		return false;
 }
 
 // FUNCTION: WON 0x0072dc50
+// Shows a component (default: the window's root) as a modal dialog until it ends; returns its result
 int WindowManager::DoDialog(Window *theWindow, Component *theComponent)
 {
-	SmartPtr<Component> anOldDialog = mModalComponent;
-	SmartPtr<Window> anOldModalWindow = mModalWindow;
-	mDialogResult = 0;
+	SmartPtr<Component> anOldDialog = this->mModalComponent;
+	SmartPtr<Window> anOldModalWindow = this->mModalWindow;
+	this->mDialogResult = 0;
 
 	if(anOldDialog.get()!=NULL)
 		anOldDialog->SetComponentFlags(0x8000,false);
@@ -652,50 +703,52 @@ int WindowManager::DoDialog(Window *theWindow, Component *theComponent)
 	if(theComponent==NULL)
 		theComponent = theWindow->mRoot.get();
 
-	if(mModalComponent!=NULL)
-		SetModal(mModalComponent,false);
+	if(this->mModalComponent!=NULL)
+		SetModal(this->mModalComponent,false);
 
-	mModalWindow = theWindow;
-	mModalComponent = theComponent;
-	CalcModality();
-	mModalWindow->Virtual3C();
-	theComponent->Fn2F5890();
-
-
-		MessageLoop();
-
-	SetModal(mModalComponent,false);
-	mModalWindow = anOldModalWindow.get();
-	mModalComponent = anOldDialog.get();
-	CalcModality();
+	this->mModalWindow = theWindow;
+	this->mModalComponent = theComponent;
+	this->CalcModality();
+	this->mModalWindow->PlatformSetFocus();
+	theComponent->RequestFocus();
 
 
+		this->MessageLoop();
+
+	SetModal(this->mModalComponent,false);
+	this->mModalWindow = anOldModalWindow.get();
+	this->mModalComponent = anOldDialog.get();
+	this->CalcModality();
 
 
-	return mDialogResult;
+
+
+	return this->mDialogResult;
 }
 
 // FUNCTION: WON 0x0072ddb0
-void WindowManager::Fn32DDB0(int theResult, Window *theWindow, Component *theDialog)
+// Ends the current modal dialog with a result, unless another window or dialog is named
+void WindowManager::EndDialog(int theResult, Window *theWindow, Component *theDialog)
 {
-	if(theWindow!=NULL && theWindow!=mModalWindow)
+	if(theWindow!=NULL && theWindow!=this->mModalWindow)
 		return;
 
-	if(theDialog!=NULL && theDialog!=mModalComponent)
+	if(theDialog!=NULL && theDialog!=this->mModalComponent)
 		return;
 
-	mDialogResult = theResult;
-	mTargetMsgLoopDepth--;
+	this->mDialogResult = theResult;
+	this->mTargetMsgLoopDepth--;
 }
 
 // FUNCTION: WON 0x0072de00
+// Moves a popup back inside the screen or the parent's root, flipping it to the other side of the avoid rectangle
 void WindowManager::AdjustPopupPosition(Window *theParent, Component *theComponent, bool inOwnWindow, const WONRectangle &theAvoidRect)
 {
 	WONRectangle aBoundingRect;
 	WONRectangle anAvoidRect = theAvoidRect;
 	if(inOwnWindow)
 	{
-		GetScreenRect(aBoundingRect);
+		this->GetScreenRect(aBoundingRect);
 
 		WONRectangle aWindowRect;
 		theParent->GetRect(aWindowRect, true);
@@ -721,56 +774,58 @@ void WindowManager::AdjustPopupPosition(Window *theParent, Component *theCompone
 	if(theComponent->Right() > aBoundingRect.Right())
 	{
 		dx = aBoundingRect.Right() - theComponent->Right();
-		theComponent->Fn2F4B70(theComponent->Left() + dx, theComponent->Top());
+		theComponent->SetPos(theComponent->Left() + dx, theComponent->Top());
 		if(anAvoidRect.Width()>0 && theComponent->Left()<=theAvoidRect.Right() && theComponent->Right()>=theAvoidRect.x)
-			theComponent->Fn2F4B70(anAvoidRect.Left()-theComponent->Width(),theComponent->Top());
+			theComponent->SetPos(anAvoidRect.Left()-theComponent->Width(),theComponent->Top());
 	}
 	else if(theComponent->Left() < aBoundingRect.x)
 	{
 		dx = aBoundingRect.Left() - theComponent->Left();
-		theComponent->Fn2F4B70(theComponent->Left() + dx,theComponent->Top());
+		theComponent->SetPos(theComponent->Left() + dx,theComponent->Top());
 		if(anAvoidRect.Width()>0 && theComponent->Left()<=theAvoidRect.Right() && theComponent->Right()>=theAvoidRect.x)
-			theComponent->Fn2F4B70(anAvoidRect.Right(),theComponent->Top());
+			theComponent->SetPos(anAvoidRect.Right(),theComponent->Top());
 	}
 
 	if(theComponent->Bottom() > aBoundingRect.Bottom())
 	{
 		dy = aBoundingRect.Bottom() - theComponent->Bottom();
-		theComponent->Fn2F4B70(theComponent->Left(), theComponent->Top() + dy);
+		theComponent->SetPos(theComponent->Left(), theComponent->Top() + dy);
 		if(anAvoidRect.Height()>0 && theComponent->Top()<=theAvoidRect.Bottom() && theComponent->Bottom()>=theAvoidRect.y)
-			theComponent->Fn2F4B70(theComponent->Left(), anAvoidRect.Top()-theComponent->Height());
+			theComponent->SetPos(theComponent->Left(), anAvoidRect.Top()-theComponent->Height());
 	}
 	else if(theComponent->Top() < aBoundingRect.y)
 	{
 		dy = aBoundingRect.Top() - theComponent->Top();
-		theComponent->Fn2F4B70(theComponent->Left(), theComponent->Top() + dy);
+		theComponent->SetPos(theComponent->Left(), theComponent->Top() + dy);
 		if(anAvoidRect.Height()>0 && theComponent->Top()<=theAvoidRect.Bottom() && theComponent->Bottom()>=theAvoidRect.y)
-			theComponent->Fn2F4B70(theComponent->Left(), anAvoidRect.Bottom());
+			theComponent->SetPos(theComponent->Left(), anAvoidRect.Bottom());
 	}
 }
 
 // FUNCTION: WON 0x0072e040
+// Opens a popup at the given or mouse position, in its own popup window or inside the parent window, per
+// the popup flags; ignored while another popup opens or closes, or when the parent lacks focus
 void WindowManager::DoPopup(const PopupParams &theParams)
 {
 	
 	SmartPtr<Window> aParent = theParams.mParent;
 	SmartPtr<Component> aPopup = theParams.mPopup;
 
-	if(mInDoPopup || mInEndPopup)
+	if(this->mInDoPopup || this->mInEndPopup)
 		return;
 
-	bool additional = (theParams.mFlags&PopupFlag_Additional) && !mPopupList.empty();
+	bool additional = (theParams.mFlags&PopupFlag_Additional) && !this->mPopupList.empty();
 	Window *aFocusCheckWindow = aParent.get();
 	if(additional)
-		aFocusCheckWindow = mPopupOwnerWindow;
+		aFocusCheckWindow = this->mPopupOwnerWindow;
 
 
-	if(mFocusWindow!=aFocusCheckWindow)
+	if(this->mFocusWindow!=aFocusCheckWindow)
 		return;
 
-	mInDoPopup = true;
-	if(mPopupIsUp && !additional)
-		EndPopup(NULL);
+	this->mInDoPopup = true;
+	if(this->mPopupIsUp && !additional)
+		this->EndPopup(NULL);
 
 	int x = theParams.mx;
 	int y = theParams.my;
@@ -779,26 +834,26 @@ void WindowManager::DoPopup(const PopupParams &theParams)
 	if(y==-1)
 		y = aParent->mMouseY;
 
-	aPopup->Fn2F4B70(x,y);
+	aPopup->SetPos(x,y);
 
-	mEndPopup = false;
+	this->mEndPopup = false;
 
 	if(!additional)
 	{
-		mPopupFlags = theParams.mFlags;
-		mPopupOwnerWindow = aParent.get();
-		mPopupInputComponent = theParams.mInputComponent;
+		this->mPopupFlags = theParams.mFlags;
+		this->mPopupOwnerWindow = aParent.get();
+		this->mPopupInputComponent = theParams.mInputComponent;
 	}
 
-	mPopupList.push_back(aPopup.get());
-	bool inOwnWindow = mBA5;
-	if(((mPopupFlags & (PopupFlag_InOwnWindow))?true:false))
+	this->mPopupList.push_back(aPopup.get());
+	bool inOwnWindow = this->mBA5;
+	if(((this->mPopupFlags & (PopupFlag_InOwnWindow))?true:false))
 		inOwnWindow = true;
-	else if(((mPopupFlags & (PopupFlag_NotInOwnWindow))?true:false))
+	else if(((this->mPopupFlags & (PopupFlag_NotInOwnWindow))?true:false))
 		inOwnWindow = false;
 
-	if(((mPopupFlags & (PopupFlag_AdjustPosition))?true:false))
-		AdjustPopupPosition(aParent.get(),aPopup.get(),inOwnWindow,theParams.mAvoidRect);
+	if(((this->mPopupFlags & (PopupFlag_AdjustPosition))?true:false))
+		this->AdjustPopupPosition(aParent.get(),aPopup.get(),inOwnWindow,theParams.mAvoidRect);
 
 	SmartPtr<Window> aPopupWindow;
 	if(inOwnWindow)
@@ -810,18 +865,18 @@ void WindowManager::DoPopup(const PopupParams &theParams)
 		aRect.width = aPopup->Width();
 		aRect.height = aPopup->Height();
 
-		if(mPopupWindowSave.get()!=NULL)
+		if(this->mPopupWindowSave.get()!=NULL)
 		{
-			if(mPopupWindowSave->mParent!=aParent.get())
-				mPopupWindowSave->Close();
+			if(this->mPopupWindowSave->mParent!=aParent.get())
+				this->mPopupWindowSave->Close();
 			else
 			{
-				mPopupWindowSave->SetPosSize(aRect.x, aRect.y, aRect.width, aRect.height);
-				mPopupWindowSave->mIsPopup = true;
-				mPopupWindowSave->Show(true);
-				aPopupWindow = mPopupWindowSave;
+				this->mPopupWindowSave->SetPosSize(aRect.x, aRect.y, aRect.width, aRect.height);
+				this->mPopupWindowSave->mIsPopup = true;
+				this->mPopupWindowSave->Show(true);
+				aPopupWindow = this->mPopupWindowSave;
 			}
-			mPopupWindowSave = NULL;
+			this->mPopupWindowSave = NULL;
 		}
 				
 		if(aPopupWindow.get()==NULL)
@@ -838,125 +893,128 @@ void WindowManager::DoPopup(const PopupParams &theParams)
 		}
 		aPopupWindow->mIsPopup = true;
 
-		if(((mPopupFlags & (PopupFlag_WantInput))?true:false))
+		if(((this->mPopupFlags & (PopupFlag_WantInput))?true:false))
 		{
-			mPopupOwnerWindow->Virtual3C();	
-			mPopupOwnerWindow->mRoot->Virtual4C();
+			this->mPopupOwnerWindow->PlatformSetFocus();	
+			this->mPopupOwnerWindow->mRoot->LostFocus();
 		}
 
-		aPopup->Fn2F4B70(0,0);
+		aPopup->SetPos(0,0);
 	}
 	else
 	{
 		aPopupWindow = aParent;
-		aPopup->SetComponentFlags(0x100,true);
-		if(((mPopupFlags & (PopupFlag_DontWantMouse))?true:false))
-			aPopup->SetComponentFlags(0x800,true);
+		aPopup->SetComponentFlags(ComponentFlag_GrabBG,true);
+		if(((this->mPopupFlags & (PopupFlag_DontWantMouse))?true:false))
+			aPopup->SetComponentFlags(ComponentFlag_NoInput,true);
 	}
 
-	mPopupOwnerComponent = theParams.mOwnerComponent;
+	this->mPopupOwnerComponent = theParams.mOwnerComponent;
 	if(theParams.mOwnerComponent!=NULL && aPopup->GetOwnColorScheme()==NULL)
-		aPopup->Fn2F59A0(theParams.mOwnerComponent->GetColorScheme());
+		aPopup->SetColorScheme(theParams.mOwnerComponent->GetColorScheme());
 
-	aPopup->SetComponentFlags(0x1000,true);
+	aPopup->SetComponentFlags(ComponentFlag_AlwaysOnTop,true);
 	aPopupWindow->AddComponent(aPopup.get());
-	if(((mPopupFlags & (PopupFlag_WantInput))?true:false))
-		aPopup->Fn2F5890();
+	if(((this->mPopupFlags & (PopupFlag_WantInput))?true:false))
+		aPopup->RequestFocus();
 
-	if(mDoMouseCapturePopupSupport)
-		mPopupOwnerWindow->Virtual44(true);
+	if(this->mDoMouseCapturePopupSupport)
+		this->mPopupOwnerWindow->PlatformSetMouseCapture(true);
 
-	mInDoPopup = false;
-	CalcModality();
+	this->mInDoPopup = false;
+	this->CalcModality();
 }
 
 // FUNCTION: WON 0x0072e4d0
+// Closes the given popup and every popup opened after it (NULL: all), firing the end-popup event and
+// keeping the last popup window for reuse
 void WindowManager::EndPopup(Component *thePopup)
 {
-	if(mPopupList.empty())
+	if(this->mPopupList.empty())
 		return;
 
 	if(thePopup!=NULL && !thePopup->ComponentFlagSet(0x10000))
 		return;
 
-	bool inEndPopup = mInEndPopup;
-	mInEndPopup = true; 
-	while(!mPopupList.empty() && mPopupList.back()!=thePopup)
-		EndPopup(mPopupList.back());
+	bool inEndPopup = this->mInEndPopup;
+	this->mInEndPopup = true; 
+	while(!this->mPopupList.empty() && this->mPopupList.back()!=thePopup)
+		this->EndPopup(this->mPopupList.back());
 
-	if(mPopupList.empty())
+	if(this->mPopupList.empty())
 	{
-		mInEndPopup = inEndPopup;
+		this->mInEndPopup = inEndPopup;
 		return;
 	}
 
-	mEndPopup = false;
+	this->mEndPopup = false;
 
-	if(mPopupIsUp)
+	if(this->mPopupIsUp)
 	{
-		SmartPtr<Component> aPopupComponent = mPopupList.back();
+		SmartPtr<Component> aPopupComponent = this->mPopupList.back();
 		SmartPtr<Window> aPopupWindow = aPopupComponent->GetRoot();
-		SmartPtr<Window> aPopupOwnerWindow = mPopupOwnerWindow;
-		mPopupList.pop_back();
+		SmartPtr<Window> aPopupOwnerWindow = this->mPopupOwnerWindow;
+		this->mPopupList.pop_back();
 
-		if(mPopupFlags&PopupFlag_FireEventOnEnd)
-			aPopupComponent->Fn2F5380(30,0);
+		if(this->mPopupFlags&PopupFlag_FireEventOnEnd)
+			aPopupComponent->Fn2F5380(ComponentEvent_EndPopup,0);
 
-		if(mPopupList.empty())
+		if(this->mPopupList.empty())
 		{
-			if(mDoMouseCapturePopupSupport)
-				mPopupOwnerWindow->Virtual44(false);
+			if(this->mDoMouseCapturePopupSupport)
+				this->mPopupOwnerWindow->PlatformSetMouseCapture(false);
 
-			mPopupOwnerWindow = NULL;
-			mMouseDownWindow = NULL;
+			this->mPopupOwnerWindow = NULL;
+			this->mMouseDownWindow = NULL;
 		}
 
 		if(aPopupWindow.get()!=aPopupOwnerWindow.get())
 		{
 			aPopupWindow->mIsPopup = false; 
-			if(mPopupList.empty())
-				mPopupWindowSave = aPopupWindow;
+			if(this->mPopupList.empty())
+				this->mPopupWindowSave = aPopupWindow;
 
 			aPopupWindow->mRoot->RemoveAllChildren();
-			if(mPopupWindowSave.get()!=NULL)
+			if(this->mPopupWindowSave.get()!=NULL)
 			{
 				aPopupWindow->mRoot->RemoveAllChildren();
-				if(!mInDoPopup)
+				if(!this->mInDoPopup)
 					aPopupWindow->Show(false);
 			}
 			else
 				aPopupWindow->Close();
 			
-			if(mPopupList.empty() && ((mPopupFlags & (PopupFlag_WantInput))?true:false))
+			if(this->mPopupList.empty() && ((this->mPopupFlags & (PopupFlag_WantInput))?true:false))
 			{
-				if(mFocusWindow==aPopupOwnerWindow.get())
-					aPopupOwnerWindow->mRoot->Virtual48();
+				if(this->mFocusWindow==aPopupOwnerWindow.get())
+					aPopupOwnerWindow->mRoot->GotFocus();
 			}
 		}
 		else
 		{
 			aPopupComponent->SetComponentFlags(0x8000 | 0x10000,false);
-			aPopupWindow->mRoot->VirtualC4(aPopupComponent.get());
+			aPopupWindow->mRoot->RemoveChild(aPopupComponent.get());
 		}
 
-		CalcModality();
+		this->CalcModality();
 	}
 
-	mInEndPopup = inEndPopup;
+	this->mInEndPopup = inEndPopup;
 }
 
 // FUNCTION: WON 0x0072e790
+// Closes the popups when the popup's owner component lies inside the given component
 void WindowManager::CheckEndPopup(Component *theAncestor)
 {
-	if(!mPopupIsUp || mPopupOwnerComponent.get()==NULL)
+	if(!this->mPopupIsUp || this->mPopupOwnerComponent.get()==NULL)
 		return;
 
-	Component *aComponent = mPopupOwnerComponent.get();
+	Component *aComponent = this->mPopupOwnerComponent.get();
 	while(aComponent!=NULL)
 	{
 		if(aComponent==theAncestor)
 		{
-			EndPopup(NULL);
+			this->EndPopup(NULL);
 			return;
 		}
 		aComponent = aComponent->mParent;
@@ -964,46 +1022,47 @@ void WindowManager::CheckEndPopup(Component *theAncestor)
 }
 
 // FUNCTION: WON 0x0072ec60
+// Redirects a mouse event to the popup owner, the mouse-down window or the topmost popup window under the mouse
 void WindowManager::FindMouseWindow(MouseEvent *theEvent)
 {
-	if(!mPopupIsUp)
+	if(!this->mPopupIsUp)
 		return;
 
-	if(((mPopupFlags & (PopupFlag_DontWantMouse))?true:false) && theEvent->mWindow->mIsPopup)
+	if(((this->mPopupFlags & (PopupFlag_DontWantMouse))?true:false) && theEvent->mWindow->mIsPopup)
 	{
 		WONRectangle aPopupRect, anOwnerRect;
 		theEvent->mWindow->GetRect(aPopupRect,true);
-		mPopupOwnerWindow->GetRect(anOwnerRect,true);
+		this->mPopupOwnerWindow->GetRect(anOwnerRect,true);
 		anOwnerRect.x -= aPopupRect.x;
 		anOwnerRect.y -= aPopupRect.y;
 		if(PopupRectContains(anOwnerRect,theEvent->mx,theEvent->my))
 		{
-			theEvent->mWindow = mPopupOwnerWindow;
+			theEvent->mWindow = this->mPopupOwnerWindow;
 			theEvent->mx -= anOwnerRect.x;
 			theEvent->my -= anOwnerRect.y;
 			return;
 		}
 	}
 
-	if(!mDoMouseCapturePopupSupport)
+	if(!this->mDoMouseCapturePopupSupport)
 		return;
 
 	WONRectangle anOwnerRect;
 	theEvent->mWindow->GetRect(anOwnerRect,true);
-	if(mMouseDownWindow!=NULL && mMouseDownWindow->mMouseIsDown[0])
+	if(this->mMouseDownWindow!=NULL && this->mMouseDownWindow->mMouseIsDown[0])
 	{
 		WONRectangle aRect;
-		mMouseDownWindow->GetRect(aRect,true);
+		this->mMouseDownWindow->GetRect(aRect,true);
 		aRect.x -= anOwnerRect.x;
 		aRect.y -= anOwnerRect.y;
 
-		theEvent->mWindow = mMouseDownWindow;
+		theEvent->mWindow = this->mMouseDownWindow;
 		theEvent->mx -= aRect.x;
 		theEvent->my -= aRect.y;
 		return;
 	}
 
-	PopupList::iterator anItr  = mPopupList.end();
+	PopupList::iterator anItr  = this->mPopupList.end();
 	do
 	{
 		WONRectangle aRect;
@@ -1021,17 +1080,19 @@ void WindowManager::FindMouseWindow(MouseEvent *theEvent)
 			theEvent->my -= aRect.y;
 			return;
 		}
-	} while(anItr!=mPopupList.begin());
+	} while(anItr!=this->mPopupList.begin());
 }
 
 // FUNCTION: WON 0x0072ee40
+// Handles a mouse click while a popup is up: closes the popup on an outside click; returns true when that
+// click is to be swallowed
 bool WindowManager::CheckPopupClick(MouseEvent *theEvent)
 {
-	FindMouseWindow(theEvent);
+	this->FindMouseWindow(theEvent);
 	if(theEvent->mButtonOrAmount==0)
-		mMouseDownWindow = theEvent->mWindow;
+		this->mMouseDownWindow = theEvent->mWindow;
 
-	if(((mPopupFlags & (1<<theEvent->mButtonOrAmount))?true:false)) 
+	if(((this->mPopupFlags & (1<<theEvent->mButtonOrAmount))?true:false)) 
 	{
 		int x = theEvent->mx, y = theEvent->my;
 		Container *aContainer = theEvent->mWindow->mRoot.get();
@@ -1041,15 +1102,15 @@ bool WindowManager::CheckPopupClick(MouseEvent *theEvent)
 			x-=aContainer->Left();
 			y-=aContainer->Top();
 
-			Component *aClickChild = aContainer->VirtualB0(x, y);
+			Component *aClickChild = aContainer->FindClickChildAt(x, y);
 			if(aClickChild!=NULL)
 			{ 
-				if(aClickChild==mPopupInputComponent.get() || ((aClickChild->mComponentBits & 0x10000)?true:false))
+				if(aClickChild==this->mPopupInputComponent.get() || ((aClickChild->mComponentBits & 0x10000)?true:false))
 				{
 					endPopup = false;
 					break;
 				}
-				else if(mPopupInputComponent.get()==NULL)
+				else if(this->mPopupInputComponent.get()==NULL)
 					break;
 				else
 				{
@@ -1064,82 +1125,84 @@ bool WindowManager::CheckPopupClick(MouseEvent *theEvent)
 
 		if(endPopup)
 		{
-			bool eat = ((mPopupFlags & (PopupFlag_EatMouseDownOnEnd))?true:false);
-			EndPopup(NULL);
+			bool eat = ((this->mPopupFlags & (PopupFlag_EatMouseDownOnEnd))?true:false);
+			this->EndPopup(NULL);
 			if(eat)
 				return true;
 		}
 	}
 
 	if(theEvent->mWindow->mIsPopup)
-		mPopupOwnerWindow->Virtual3C();	
+		this->mPopupOwnerWindow->PlatformSetFocus();	
 
 	return false;
 }
 
 // FUNCTION: WON 0x0072ef20
+// Dispatches one window event: mouse, key, focus, resize, close and other events, applying popup, modal
+// and full-screen rules; merges repeated mouse moves and size changes
 void WindowManager::DeliverEvent(WindowEventBase *theEvent)
 {
-	switch(theEvent->mL08)
+	switch(theEvent->mEventType)
 	{
 		case InputEvent_MouseDoubleClick:
 		case InputEvent_MouseDownCheckDoubleClick:
 		case InputEvent_MouseDown:
 		{
-			MouseEvent *anEvent = (MouseEvent*)theEvent;
-			if(mPopupIsUp)
+			MouseEvent *anEvent = static_cast<MouseEvent*>(theEvent);
+			if(this->mPopupIsUp)
 			{
-				if(CheckPopupClick(anEvent))
+				if(this->CheckPopupClick(anEvent))
 					break;
 			}
-			if(mFocusWindow!=anEvent->mWindow && !anEvent->mWindow->mIsPopup && !NotModalWindow(anEvent->mWindow))
-				anEvent->mWindow->Virtual3C();
+			if(this->mFocusWindow!=anEvent->mWindow && !anEvent->mWindow->mIsPopup && !this->NotModalWindow(anEvent->mWindow))
+				anEvent->mWindow->PlatformSetFocus();
 
-			if(anEvent->mButtonOrAmount==0 && (!mPopupIsUp || !mDoMouseCapturePopupSupport))
-				anEvent->mWindow->Virtual44(true);
+			if(anEvent->mButtonOrAmount==0 && (!this->mPopupIsUp || !this->mDoMouseCapturePopupSupport))
+				anEvent->mWindow->PlatformSetMouseCapture(true);
 		}
 
 		if(theEvent->mWindow->mMouseIsInClientArea) 
-			theEvent->mWindow->HandleMouseEvent((MouseEvent*)theEvent);
+			theEvent->mWindow->HandleMouseEvent(static_cast<MouseEvent*>(theEvent));
 		break;
 
 		case InputEvent_MouseMove:
 		{
-			WindowEventBase *nextEvent = PeekNextEvent();
-			if(nextEvent!=NULL && nextEvent->mL08==InputEvent_MouseMove && nextEvent->mWindow==theEvent->mWindow)
+			WindowEventBase *nextEvent = this->PeekNextEvent();
+			if(nextEvent!=NULL && nextEvent->mEventType==InputEvent_MouseMove && nextEvent->mWindow==theEvent->mWindow)
 				return; 
 
-			FindMouseWindow((MouseEvent*)theEvent);
-			if(mPopupIsUp && theEvent->mL08==InputEvent_MouseMove && ((mPopupFlags & (PopupFlag_EndOnMouseMove))?true:false))
-				EndPopup(NULL);
+			this->FindMouseWindow(static_cast<MouseEvent*>(theEvent));
+			if(this->mPopupIsUp && theEvent->mEventType==InputEvent_MouseMove && ((this->mPopupFlags & (PopupFlag_EndOnMouseMove))?true:false))
+				this->EndPopup(NULL);
 
-			theEvent->mWindow->HandleMouseEvent((MouseEvent*)theEvent);
+			theEvent->mWindow->HandleMouseEvent(static_cast<MouseEvent*>(theEvent));
 			break;
 		}
 
 		case InputEvent_MouseUp:
 		{
-			MouseEvent *anEvent = (MouseEvent*)theEvent;
-			FindMouseWindow(anEvent);
+			MouseEvent *anEvent = static_cast<MouseEvent*>(theEvent);
+			this->FindMouseWindow(anEvent);
 			if(anEvent->mButtonOrAmount==0)
-				mMouseDownWindow = NULL;
+				this->mMouseDownWindow = NULL;
 
-			if(anEvent->mButtonOrAmount==0 && (!mPopupIsUp || !mDoMouseCapturePopupSupport))
-				theEvent->mWindow->Virtual44(false);
+			if(anEvent->mButtonOrAmount==0 && (!this->mPopupIsUp || !this->mDoMouseCapturePopupSupport))
+				theEvent->mWindow->PlatformSetMouseCapture(false);
 
-			theEvent->mWindow->HandleMouseEvent((MouseEvent*)theEvent);
+			theEvent->mWindow->HandleMouseEvent(static_cast<MouseEvent*>(theEvent));
 			break;
 		}
 
 		case InputEvent_MouseWheel:
 		{
-			MouseEvent *anEvent = (MouseEvent*)theEvent;
-			FindMouseWindow(anEvent);
-			if(mPopupIsUp && !((mPopupFlags & (PopupFlag_DontWantMouse))?true:false))
+			MouseEvent *anEvent = static_cast<MouseEvent*>(theEvent);
+			this->FindMouseWindow(anEvent);
+			if(this->mPopupIsUp && !((this->mPopupFlags & (PopupFlag_DontWantMouse))?true:false))
 			{
 				
-				Component *aPopupComponent = mPopupList.back();
-				aPopupComponent->Virtual3C(anEvent->mButtonOrAmount);
+				Component *aPopupComponent = this->mPopupList.back();
+				aPopupComponent->MouseWheel(anEvent->mButtonOrAmount);
 				return;
 
 
@@ -1151,53 +1214,53 @@ void WindowManager::DeliverEvent(WindowEventBase *theEvent)
 		case InputEvent_KeyDown:
 		case InputEvent_KeyUp:
 		case InputEvent_KeyChar:
-			if(mPopupIsUp)
+			if(this->mPopupIsUp)
 			{
-				int aKey = ((KeyEvent*)theEvent)->mKey;
-				if(theEvent->mL08==InputEvent_KeyDown)
+				int aKey = static_cast<KeyEvent*>(theEvent)->mKey;
+				if(theEvent->mEventType==InputEvent_KeyDown)
 				{	
-					if(((mPopupFlags & (PopupFlag_EndOnKeyDown))?true:false) || ((mPopupFlags & (PopupFlag_EndOnEscape))?true:false) && aKey==VK_ESCAPE)
+					if(((this->mPopupFlags & (PopupFlag_EndOnKeyDown))?true:false) || ((this->mPopupFlags & (PopupFlag_EndOnEscape))?true:false) && aKey==VK_ESCAPE)
 					{
-						EndPopup(NULL);
+						this->EndPopup(NULL);
 						break;
 					}
 				}
 				
-				if(((mPopupFlags & (PopupFlag_WantInput))?true:false))
+				if(((this->mPopupFlags & (PopupFlag_WantInput))?true:false))
 				{
-					Window *aPopupWindow = mPopupList.back()->GetRoot();
+					Window *aPopupWindow = this->mPopupList.back()->GetRoot();
 					if(aPopupWindow!=theEvent->mWindow)
 						theEvent->mWindow = aPopupWindow;
 				}
 			}
-			theEvent->mWindow->HandleKeyEvent((KeyEvent*)theEvent);
+			theEvent->mWindow->HandleKeyEvent(static_cast<KeyEvent*>(theEvent));
 			break;
 
 		case InputEvent_GotFocus:
-			if(mIsFullScreen)
-				SetScreenResolution(mFullScreenWidth,mFullScreenHeight);
+			if(this->mIsFullScreen)
+				this->SetScreenResolution(this->mFullScreenWidth,this->mFullScreenHeight);
 
-			NotifyGotFocus(theEvent->mWindow);
-			theEvent->mWindow->HandleInputEvent((InputEvent*)theEvent);
-			if(NotModalWindow(theEvent->mWindow))
-				mModalWindow->Virtual3C();
+			this->NotifyGotFocus(theEvent->mWindow);
+			theEvent->mWindow->HandleInputEvent(static_cast<InputEvent*>(theEvent));
+			if(this->NotModalWindow(theEvent->mWindow))
+				this->mModalWindow->PlatformSetFocus();
 			return;
 
 		case InputEvent_LostFocus:
-			NotifyLostFocus();
-			theEvent->mWindow->HandleInputEvent((InputEvent*)theEvent);
+			this->NotifyLostFocus();
+			theEvent->mWindow->HandleInputEvent(static_cast<InputEvent*>(theEvent));
 			return;
 
 		case InputEvent_SizeChange:
-			if(theEvent->mWindow==mPopupOwnerWindow)
-				EndPopup(NULL);			
+			if(theEvent->mWindow==this->mPopupOwnerWindow)
+				this->EndPopup(NULL);			
 			else
 			{
-				WindowEventBase *nextEvent = PeekNextEvent();
-				if(nextEvent!=NULL && nextEvent->mL08==InputEvent_SizeChange && nextEvent->mWindow==theEvent->mWindow)
+				WindowEventBase *nextEvent = this->PeekNextEvent();
+				if(nextEvent!=NULL && nextEvent->mEventType==InputEvent_SizeChange && nextEvent->mWindow==theEvent->mWindow)
 				{
-					SizeEvent *s1 = (SizeEvent*)theEvent;
-					SizeEvent *s2 = (SizeEvent*)nextEvent;
+					SizeEvent *s1 = static_cast<SizeEvent*>(theEvent);
+					SizeEvent *s2 = static_cast<SizeEvent*>(nextEvent);
 					if(s2->mx==-1)
 						s2->mx = s1->mx;
 					if(s2->my==-1)
@@ -1210,30 +1273,30 @@ void WindowManager::DeliverEvent(WindowEventBase *theEvent)
 				}
 			}
 
-			theEvent->mWindow->HandleInputEvent((InputEvent*)theEvent);
+			theEvent->mWindow->HandleInputEvent(static_cast<InputEvent*>(theEvent));
 			return;
 
 
 		case InputEvent_MouseExit:
-			theEvent->mWindow->HandleInputEvent((InputEvent*)theEvent);
+			theEvent->mWindow->HandleInputEvent(static_cast<InputEvent*>(theEvent));
 			return;
 
 		case InputEvent_WindowClose:
 		{
-			if(mPopupIsUp)
-				if(theEvent->mWindow==mPopupOwnerWindow || theEvent->mWindow->mIsPopup)
-					EndPopup(NULL);
+			if(this->mPopupIsUp)
+				if(theEvent->mWindow==this->mPopupOwnerWindow || theEvent->mWindow->mIsPopup)
+					this->EndPopup(NULL);
 
 
 
 
-			if(mFocusWindow==theEvent->mWindow)
-				NotifyLostFocus();
+			if(this->mFocusWindow==theEvent->mWindow)
+				this->NotifyLostFocus();
 
-			if(mMouseDownWindow==theEvent->mWindow)
-				mMouseDownWindow = NULL;
+			if(this->mMouseDownWindow==theEvent->mWindow)
+				this->mMouseDownWindow = NULL;
 
-			theEvent->mWindow->Virtual2C();
+			theEvent->mWindow->PlatformClose();
 			SmartPtr<WindowEventBase> aCloseEvent = theEvent->mWindow->mCloseEvent;
 			if(aCloseEvent.get()!=NULL)
 			{
@@ -1241,7 +1304,7 @@ void WindowManager::DeliverEvent(WindowEventBase *theEvent)
 				aCloseEvent->Deliver();
 			}
 
-			RemoveWindow(theEvent->mWindow);
+			this->RemoveWindow(theEvent->mWindow);
 		}
 		return;
 
@@ -1251,23 +1314,25 @@ void WindowManager::DeliverEvent(WindowEventBase *theEvent)
 			return;
 	}
 
-	mLastInputTick = GetTickCount();
+	this->mLastInputTick = GetTickCount();
 }
 
-// Genuine SDK WindowManager.cpp primitive class static definitions; no dynamic initializer.
+// Class statics: the default window manager and the GUI thread id (constant-initialised)
 WindowManager* WindowManager::mDefaultWindowManager = NULL;
 DWORD WindowManager::mThreadId = 0;
 
-// Genuine same-library SDK bodies; no new Native identity is asserted.
+// Not identified in the original exe: GetNamedFontMod (a named font with another style/size), GetDefaultFont
+// for a descriptor, GetDefaultDisplayContext, CheckModalValid (the modal window is open and visible and the
+// dialog is shown in it) and RemoveAllTimerEvents
 Font* WindowManager::GetNamedFontMod(const std::string& theName, int theStyle, int theSize)
 {
-    Font* aFont = GetNamedFont(theName);
+    Font* aFont = this->GetNamedFont(theName);
     FontDescriptor aDesc = aFont->GetDescriptor();
     aDesc.mStyle = theStyle;
     if(theSize > 0)
         aDesc.mSize = theSize;
 
-    return mDefaultWindow->GetFont(aDesc).get();
+    return this->mDefaultWindow->GetFont(aDesc).get();
 }
 
 SmartPtr<Font> WindowManager::GetDefaultFont(const FontDescriptor& theDescriptor)
@@ -1290,22 +1355,21 @@ DisplayContext* WindowManager::GetDefaultDisplayContext()
 
 bool WindowManager::CheckModalValid()
 {
-    if(mModalWindow != NULL)
+    if(this->mModalWindow == NULL)
+        return true;
+    if(this->mModalWindow->mWindowState != Window::WindowState_Open)
+        return false;
+
+    if(!this->mModalWindow->PlatformIsVisible())
+        return false;
+
+    if(this->mModalComponent != NULL)
     {
-        if(mModalWindow->mWindowState != Window::WindowState_Open)
+        if(!this->mModalComponent->IsVisible())
             return false;
 
-        if(!mModalWindow->Virtual4C())
+        if(this->mModalComponent->GetRootContainer() != this->mModalWindow->mRoot.get())
             return false;
-
-        if(mModalComponent != NULL)
-        {
-            if(!mModalComponent->IsVisible())
-                return false;
-
-            if(mModalComponent->Fn2F58F0() != mModalWindow->mRoot.get())
-                return false;
-        }
     }
 
     return true;
@@ -1313,124 +1377,160 @@ bool WindowManager::CheckModalValid()
 
 void WindowManager::RemoveAllTimerEvents()
 {
-    if(mCallingTimers)
-        mRemoveTimerEvents = mTimerEvents;
+    if(this->mCallingTimers)
+        this->mRemoveTimerEvents = this->mTimerEvents;
     else
-        mTimerEvents.clear();
+        this->mTimerEvents.clear();
 }
 
-// Genuine SDK event-pump dispatcher; Native attribution remains separate.
+// Runs one pass of the event loop (not identified in the original exe)
 void WindowManager::PumpOnce()
 {
-	GetNextEvent();
+	this->GetNextEvent();
 }
 
 // FUNCTION: WON 0x0072fc40
+// Destroys a named-font map entry (name and font)
 // (??1?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@QAE@XZ)
 
 // FUNCTION: WON 0x0072fcd0
+// Links a new node into the native image cache tree and rebalances it
 // (?_Insert@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@IAE?AViterator@12@_NPAU_Node@12@ABU?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@2@@Z)
 
 // FUNCTION: WON 0x0072ffd0
+// Links a new node into the raw image cache tree and rebalances it
 // (?_Insert@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@IAE?AViterator@12@_NPAU_Node@12@ABU?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@2@@Z)
 
 // FUNCTION: WON 0x007302d0
+// Links a new node into the delay-load image cache tree and rebalances it
 // (?_Insert@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@IAE?AViterator@12@_NPAU_Node@12@ABU?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@2@@Z)
 
 // FUNCTION: WON 0x007305d0
+// Erases a range of entries from the window set (the whole tree at once when the range is everything)
 // (?erase@?$_Tree@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@V12@U_Kfn@?$_Setk@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@std@@@std@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AViterator@12@V312@0@Z)
 
 // FUNCTION: WON 0x00730680
+// Returns the range of timer events equal to the given event
 // (?equal_range@?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AU?$pair@Viterator@?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@V123@@2@ABV?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@Z)
 
 // FUNCTION: WON 0x007306e0
+// Links a new node into the window set tree and rebalances it
 // (?_Insert@?$_Tree@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@std@@@std@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@5@$0A@@std@@IAE?AViterator@12@_NPAU_Node@12@ABV?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@Z)
 
 // FUNCTION: WON 0x007309e0
+// Advances a broadcast component set iterator to the next entry
 // (?_Inc@const_iterator@?$_Tree@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@$0A@@std@@QAEXXZ)
 
 // FUNCTION: WON 0x00730a30
+// Erases a range of entries from the timer event set (the whole tree at once when the range is everything)
 // (?erase@?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AViterator@12@V312@0@Z)
 
 // FUNCTION: WON 0x00730ae0
+// Links a new node into the timer event set tree and rebalances it
 // (?_Insert@?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@IAE?AViterator@12@_NPAU_Node@12@ABV?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@Z)
 
 // FUNCTION: WON 0x00730de0
+// Erases a range of entries from the broadcast component set (the whole tree at once when the range is everything)
 // (?erase@?$_Tree@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AViterator@12@V312@0@Z)
 
 // FUNCTION: WON 0x00730e90
+// Links a new node into the broadcast component set tree and rebalances it
 // (?_Insert@?$_Tree@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@$0A@@std@@IAE?AViterator@12@_NPAU_Node@12@ABV?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@Z)
 
 // FUNCTION: WON 0x007318f0
+// Builds the (position, inserted) result of a native image cache insert
 // (??0?$pair@Viterator@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$_Mapk@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@_N@std@@QAE@ABViterator@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$_Mapk@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@1@AB_N@Z)
 
 // FUNCTION: WON 0x00731a60
+// Erases one entry from the named-font map and rebalances the tree; returns the next entry
 // (?erase@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAE?AViterator@12@V312@@Z)
 
 // FUNCTION: WON 0x00731f80
+// Frees a subtree of the named-font map recursively, without rebalancing
 // (?_Erase@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@IAEXPAU_Node@12@@Z)
 
 // FUNCTION: WON 0x00731fc0
+// Links a new node into the named-font map tree and rebalances it
 // (?_Insert@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@IAE?AViterator@12@_NPAU_Node@12@ABU?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@2@@Z)
 
 // FUNCTION: WON 0x007322e0
+// Erases one entry from the native image cache and rebalances the tree; returns the next entry
 // (?erase@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAE?AViterator@12@V312@@Z)
 
 // FUNCTION: WON 0x00732800
+// Frees a subtree of the native image cache recursively, without rebalancing
 // (?_Erase@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@IAEXPAU_Node@12@@Z)
 
 // FUNCTION: WON 0x00732840
+// Erases one entry from the raw image cache and rebalances the tree; returns the next entry
 // (?erase@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAE?AViterator@12@V312@@Z)
 
 // FUNCTION: WON 0x00732d60
+// Frees a subtree of the raw image cache recursively, without rebalancing
 // (?_Erase@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@IAEXPAU_Node@12@@Z)
 
 // FUNCTION: WON 0x00732da0
+// Erases one entry from the delay-load image cache and rebalances the tree; returns the next entry
 // (?erase@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAE?AViterator@12@V312@@Z)
 
 // FUNCTION: WON 0x007332c0
+// Frees a subtree of the delay-load image cache recursively, without rebalancing
 // (?_Erase@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@IAEXPAU_Node@12@@Z)
 
 // FUNCTION: WON 0x00733300
+// Erases one entry from the window set and rebalances the tree; returns the next entry
 // (?erase@?$_Tree@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@std@@@std@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AViterator@12@V312@@Z)
 
 // FUNCTION: WON 0x007337f0
+// Frees a subtree of the window set recursively, without rebalancing
 // (?_Erase@?$_Tree@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@V12@U_Kfn@?$_Setk@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@std@@@std@@UComp@12@V?$allocator@V?$SmartPtr@VWindow@WONAPI@@@WONAPI@@@5@$0A@@std@@IAEXPAU_Node@12@@Z)
 
 // FUNCTION: WON 0x00733830
+// Grows the window event list's element count, throwing length_error when it would overflow
 // (?_Incsize@?$list@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@@std@@IAEXI@Z)
 
 // FUNCTION: WON 0x00733980
+// Erases one entry from the timer event set and rebalances the tree; returns the next entry
 // (?erase@?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AViterator@12@V312@@Z)
 
 // FUNCTION: WON 0x00733e70
+// Frees a subtree of the timer event set recursively, without rebalancing
 // (?_Erase@?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$_Setk@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@IAEXPAU_Node@12@@Z)
 
 // FUNCTION: WON 0x00733eb0
+// Erases one entry from the broadcast component set and rebalances the tree; returns the next entry
 // (?erase@?$_Tree@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@V12@U_Kfn@?$set@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AViterator@12@V312@@Z)
 
 // FUNCTION: WON 0x007343a0
+// Returns the first timer event not ordered before the given one
 // (?lower_bound@?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$_Setk@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AViterator@12@ABV?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@Z)
 
 // FUNCTION: WON 0x007343e0
+// Returns the first timer event ordered after the given one
 // (?upper_bound@?$_Tree@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@V12@U_Kfn@?$_Setk@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@5@$0A@@std@@QAE?AViterator@12@ABV?$SmartPtr@VWindowEventBase@WONAPI@@@WONAPI@@@Z)
 
 // FUNCTION: WON 0x00734420
+// Frees a subtree of the broadcast component set recursively, without rebalancing
 // (?_Erase@?$_Tree@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@V12@U_Kfn@?$_Setk@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@std@@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@4@@std@@U?$less@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@V?$allocator@V?$SmartPtr@VComponent@WONAPI@@@WONAPI@@@5@$0A@@std@@IAEXPAU_Node@12@@Z)
 
 // FUNCTION: WON 0x00734f70
+// Advances a named-font map iterator to the next entry
 // (?_Inc@const_iterator@?$_Tree@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@2@U_Kfn@?$map@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@UStringLessNoCase@4@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@@2@UStringLessNoCase@WONAPI@@V?$allocator@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@@2@$0A@@std@@QAEXXZ)
 
 // FUNCTION: WON 0x007352a0
+// Deleting destructor of a named-font map entry
 // (??_G?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VFont@WONAPI@@@WONAPI@@@std@@QAEPAXI@Z)
 
 // FUNCTION: WON 0x007352c0
+// Deleting destructor of a native image cache entry
 // (??_G?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VNativeImage@WONAPI@@@WONAPI@@@std@@QAEPAXI@Z)
 
 // FUNCTION: WON 0x007352e0
+// Deleting destructor of a raw image cache entry
 // (??_G?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VRawImage@WONAPI@@@WONAPI@@@std@@QAEPAXI@Z)
 
 // FUNCTION: WON 0x00735300
+// Deleting destructor of a delay-load image cache entry
 // (??_G?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$SmartPtr@VImage@WONAPI@@@WONAPI@@@std@@QAEPAXI@Z)
 
 // Compiler-generated and header-inline functions this unit emits:

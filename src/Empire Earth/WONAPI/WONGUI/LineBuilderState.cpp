@@ -1,4 +1,4 @@
-// Genuine line builder retained-receiver state setup/finalization, support only.
+// Start and finish of building one line of an HTML text layout (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,16 +13,18 @@
 #include "ee/wonapi/WONLobbyLineLayout.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0070b560
+// Starts building a line into the given element with zero width and heights
 void LineBuilder::StartBuild(LineElement* element)
 {
-    mLine=element;
-    mMaxAscent=mMaxDescent=mTopAlignHeight=mWidth=0;
+    this->mLine=element;
+    this->mMaxAscent=this->mMaxDescent=this->mTopAlignHeight=this->mWidth=0;
 }
 // FUNCTION: WON 0x0070b790
+// Stores the built line's width, height and baseline in its element
 void LineBuilder::FinishBuild()
 {
-    mLine->mWidth=mWidth;
-    mLine->mHeight=GetHeight();
-    mLine->mBaseline=mMaxAscent;
+    this->mLine->mWidth=this->mWidth;
+    this->mLine->mHeight=this->GetHeight();
+    this->mLine->mBaseline=this->mMaxAscent;
 }
 }

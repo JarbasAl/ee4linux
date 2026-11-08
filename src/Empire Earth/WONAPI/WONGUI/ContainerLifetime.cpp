@@ -1,4 +1,4 @@
-// Complete original-backed Component source completion; all selected methods support0.
+// Container destructor (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -11,12 +11,13 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
-// ChildLayoutManager SDKimplicit destructor source is deferred; current proven native2f5da0 remains call-only.
+// The ChildLayoutManager destructor (0x006f5da0) is implicit
 // FUNCTION: WON 0x006f5e80
+// Destroys the container, detaching every child from it first
 Container::~Container()
 {
-    for(std::list<SmartPtr<Component> >::iterator child=mChildList.begin();
-        child!=mChildList.end();++child)
+    for(std::list<SmartPtr<Component> >::iterator child=this->mChildList.begin();
+        child!=this->mChildList.end();++child)
         (*child)->mParent=NULL;
 }
 }

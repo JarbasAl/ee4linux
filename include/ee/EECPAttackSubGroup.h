@@ -154,7 +154,7 @@ public:
     // +0x74 0x5d41d: the units by continent id (GetContinentID; new vectors; EECPASGLand::TakeRequestedUnits deletes
     // the values; the element type inferred)
     virtual long GroupUnitsByContinent(std::map<unsigned short, std::vector<EECPAttackSubGroupUnit*>*>& outUnits, bool inSkipCarried);
-    // +0x78 0x5d5a2: Virtual74's body keyed by the unit's GetFootprintContinent(inArg2)
+    // +0x78 0x5d5a2: EnabledChanged's body keyed by the unit's GetFootprintContinent(inArg2)
     virtual long GroupUnitsByWaterArea(std::map<unsigned short, std::vector<EECPAttackSubGroupUnit*>*>& outUnits, long inKind,
                            bool inSkipCarried);
     virtual void RequestSplit(bool inResetState);  // +0x7c 0x5d725
@@ -325,7 +325,7 @@ public:
     // EEAutoPathRequest > UReferenceCounter, sizeof 0x50)
     EEAutoPathRequest* mPathRequest;
     long mScanRange;                        // +0x19c (= 0xd; saved)
-    // inline: Virtual54 0x45cc2d / Virtual14 0x45b4d7 copy it through fld/fstp (a float accessor value)
+    // inline: WriteDetailsHook 0x45cc2d / Virtual14 0x45b4d7 copy it through fld/fstp (a float accessor value)
     float GetAggression() const { return this->mAggression; }
     void SetAggression(float inValue) { this->mAggression = inValue; }
     float mAggression;                      // +0x1a0 (= 0.5f; saved)

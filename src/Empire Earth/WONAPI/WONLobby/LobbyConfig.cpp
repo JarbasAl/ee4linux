@@ -1,7 +1,7 @@
-// C:\EEX\Empire Earth\WONAPI\WONLobby\LobbyConfig.cpp (RECONSTRUCTION).
-// Original filename and exact TU boundary remain PROVISIONAL: family357f30..358de2
-// is supported by the factory, static initializer chain, ctor, RTTI/vtable and EH.
-// Completion family357d70..357f24 is excluded. No source-path assertion was found.
+// C:\EEX\Empire Earth\WONAPI\WONLobby\LobbyConfig.cpp (file name inferred: no __FILE__)
+// LobbyConfig: the lobby's WONLobby.cfg settings (servers, product, versions, ports, checks). The unit spans
+// 0x757f30..0x758de2 (factory, static initializers, constructor, RTTI/vtable, EH); the code at
+// 0x757d70..0x757f24 belongs to another unit (inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -16,44 +16,47 @@
 #include "ee/wonapi/WONLobbyConfig.h"
 using namespace WONAPI;
 
-// Data4d954c contains originalVA0x757f30 (genuine SDK class-static factory default).
+// The class-static allocator at 0x8d954c holds DefaultAllocator (0x757f30), the SDK's default factory
 LobbyConfig::ConfigAllocator LobbyConfig::mAllocator = LobbyConfig::DefaultAllocator;
 
 std::string LobbyConfig::mDefaultFileName("WONLobby.cfg");
 
 namespace WONAPI {
-bool gLobbyUseLocalIP56634D;
+bool gLobbyUseLocalIP;
 }
 
 // FUNCTION: WON 0x757f30
+// Creates a default lobby configuration object
 LobbyConfig* LobbyConfig::DefaultAllocator()
 {
     return new LobbyConfig;
 }
 
 // FUNCTION: WON 0x758090
+// Creates the lobby configuration and registers every WONLobby.cfg key with its default; UseLocalIP comes
+// from the HKLM\SOFTWARE\Sierra\WONLobby registry value
 LobbyConfig::LobbyConfig()
 {
-    KeyAdd("DirServer", mL54, NULL, true);
-    KeyAdd("RoomDirServer", mL60, NULL, true);
-    KeyAdd("AuthServers", mL6C, NULL, true);
-    KeyAdd("ProductName", mS78, NULL);
-    KeyAdd("ProductDirectory", mW88, NULL);
-    KeyAdd("ResourceDirectory", mSC8, NULL);
-    KeyAdd("Version", mS98, NULL);
-    KeyAdd("LanVersion", mSA8, NULL);
-    KeyAdd("Language", mSB8, "");
-    KeyAdd("CRCCheck", mCRCCheck, true);
-    KeyAdd("CDKeyCheck", mCDKeyCheck, true);
-    KeyAdd("Public", mPublic, false);
-    KeyAdd("LanBroadcastPort", mLanBroadcastPort, 8585);
-    KeyAdd("NoPingInProgress", mNoPingInProgress, true);
-    KeyAdd("LobbyPort", mLobbyPort, 8888);
-    KeyAdd("CheckForInternet", mCheckForInternet, true);
-    KeyAdd("PingCeiling", mPingCeiling, 1000);
-    KeyAdd("AllowDuplicateNames", mAllowDuplicateNames, true);
-    KeyAdd("AppendNumberToDefaultLanName", mAppendNumberToDefaultLanName, true);
-    KeyAdd("AllowJoinGameWithoutPing", mAllowJoinGameWithoutPing, true);
+    this->KeyAdd("DirServer", this->mDirServers, NULL, true);
+    this->KeyAdd("RoomDirServer", this->mRoomDirServers, NULL, true);
+    this->KeyAdd("AuthServers", this->mAuthServers, NULL, true);
+    this->KeyAdd("ProductName", this->mProductName, NULL);
+    this->KeyAdd("ProductDirectory", this->mProductDirectory, NULL);
+    this->KeyAdd("ResourceDirectory", this->mResourceDirectory, NULL);
+    this->KeyAdd("Version", this->mVersion, NULL);
+    this->KeyAdd("LanVersion", this->mLanVersion, NULL);
+    this->KeyAdd("Language", this->mLanguage, "");
+    this->KeyAdd("CRCCheck", this->mCRCCheck, true);
+    this->KeyAdd("CDKeyCheck", this->mCDKeyCheck, true);
+    this->KeyAdd("Public", this->mPublic, false);
+    this->KeyAdd("LanBroadcastPort", this->mLanBroadcastPort, 8585);
+    this->KeyAdd("NoPingInProgress", this->mNoPingInProgress, true);
+    this->KeyAdd("LobbyPort", this->mLobbyPort, 8888);
+    this->KeyAdd("CheckForInternet", this->mCheckForInternet, true);
+    this->KeyAdd("PingCeiling", this->mPingCeiling, 1000);
+    this->KeyAdd("AllowDuplicateNames", this->mAllowDuplicateNames, true);
+    this->KeyAdd("AppendNumberToDefaultLanName", this->mAppendNumberToDefaultLanName, true);
+    this->KeyAdd("AllowJoinGameWithoutPing", this->mAllowJoinGameWithoutPing, true);
 
     bool useLocalIP = false;
     const char* regKey = "SOFTWARE\\Sierra\\WONLobby";
@@ -63,17 +66,18 @@ LobbyConfig::LobbyConfig()
     DWORD value = 0;
     if (registry.QueryDWORD(valueName, value) == 0)
         useLocalIP = value != 0;
-    mUseLocalIP = useLocalIP;
-    // Original target56634d lies in an existing configuration data field.
-    // The canonical external bool is distinct from the member registry default.
-    KeyAdd(valueName, gLobbyUseLocalIP56634D, useLocalIP);
+    this->mUseLocalIP = useLocalIP;
+    // The config key writes the global gLobbyUseLocalIP (0x96634d), which nothing reads, not mUseLocalIP:
+    // a UseLocalIP line in WONLobby.cfg has no effect, only the registry value counts
+    this->KeyAdd(valueName, gLobbyUseLocalIP, useLocalIP);
 }
 
-// Destructor is implicit, shared original294e04; scalar-delete358570 is generated.
-// Container destruction helpers358590/358650 are natural template output.
+// The destructor is implicit (the shared one at 0x694e04); the scalar deleting destructor 0x758570 and the
+// map destructors 0x758590/0x758650 are compiler-generated
 
 // FUNCTION: WON 0x758720
-bool LobbyConfig::Virtual08(ConfigParser* parser, const std::string& key,
+// Handles a LOBBYDEFINE name value line by storing the define; passes every other key to the base class
+bool LobbyConfig::HandleValueInstruction(ConfigParser* parser, const std::string& key,
                            StringParser& values)
 {
     if (key == "LOBBYDEFINE") {
@@ -82,42 +86,45 @@ bool LobbyConfig::Virtual08(ConfigParser* parser, const std::string& key,
         values.ReadString(name, true);
         values.ReadString(value, false);
         if (!name.empty())
-            mMEC[name] = value;
+            this->mDefines[name] = value;
         return true;
     }
-    return ConfigObject::Virtual08(parser, key, values);
+    return ConfigObject::HandleValueInstruction(parser, key, values);
 }
 
 // FUNCTION: WON 0x758900
-bool LobbyConfig::Virtual10(ConfigParser* parser)
+// Checks that the config names directory servers, product, version and language (setting a parser error
+// otherwise) and fills in the LAN version, resource and product directories and the Product define
+bool LobbyConfig::PostParse(ConfigParser* parser)
 {
-    if (mL54.empty()) {
+    if (this->mDirServers.empty()) {
         parser->SetError("No Directory Servers specified.", false);
         return false;
     }
-    if (mS78.empty()) {
+    if (this->mProductName.empty()) {
         parser->SetError("No product name specified.", false);
         return false;
     }
-    if (mS98.empty()) {
+    if (this->mVersion.empty()) {
         parser->SetError("No version specified.", false);
         return false;
     }
-    if (mSB8.empty()) {
+    if (this->mLanguage.empty()) {
         parser->SetError("No language specified.", false);
         return false;
     }
-    if (mSA8.empty())
-        mSA8 = mS98;
-    if (mSC8.empty())
-        mSC8 = ".\\" + mS78;
-    if (mW88.empty())
-        mW88 = std::wstring(L"/") + StringToWString(mS78);
-    mMEC["Product"] = GetProductName();
+    if (this->mLanVersion.empty())
+        this->mLanVersion = this->mVersion;
+    if (this->mResourceDirectory.empty())
+        this->mResourceDirectory = ".\\" + this->mProductName;
+    if (this->mProductDirectory.empty())
+        this->mProductDirectory = std::wstring(L"/") + StringToWString(this->mProductName);
+    this->mDefines["Product"] = this->GetProductName();
     return true;
 }
 
 // FUNCTION: WON 0x758710
+// Returns the lobby's configuration, or NULL while the lobby is not running
 LobbyConfig* WONAPI::GetLobbyConfig()
 {
     if (gLobbyData.mPtr != NULL)

@@ -1,4 +1,4 @@
-// Native MS scrollbar and scroll-container construction/composition policy.
+// Windows-style scrollbar and scroll container construction
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,61 +13,65 @@
 #include "ee/wonapi/WONLobbyMSExtraConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006ff820
+// Creates an opaque scrollbar with arrow buttons from the factory (up/down or left/right, at least
+// 15 x 15 when sizeless), a thumb from the thumb factory and a scroll area button
 MSScrollbar::MSScrollbar(bool vertical) : Scrollbar(vertical)
 {
-    mIsTransparent=false;
+    this->mIsTransparent=false;
     if(vertical) {
-        mUpArrow=ArrowButtonFactory(Direction_Up);
-        mDownArrow=ArrowButtonFactory(Direction_Down);
+        this->mUpArrow=MSScrollbar::ArrowButtonFactory(Direction_Up);
+        this->mDownArrow=MSScrollbar::ArrowButtonFactory(Direction_Down);
     } else {
-        mUpArrow=ArrowButtonFactory(Direction_Left);
-        mDownArrow=ArrowButtonFactory(Direction_Right);
+        this->mUpArrow=MSScrollbar::ArrowButtonFactory(Direction_Left);
+        this->mDownArrow=MSScrollbar::ArrowButtonFactory(Direction_Right);
     }
-    if(mUpArrow->Width()==0 || mUpArrow->Height()==0)
-        mUpArrow->Fn2F4BC0(15,15);
-    if(mDownArrow->Width()==0 || mDownArrow->Height()==0)
-        mDownArrow->Fn2F4BC0(15,15);
-    mThumb=ThumbFactory(ThumbType(mVertical));
-    mScrollRect=new Button;
-    Fn2F4B90(mUpArrow->Width(),mUpArrow->Height());
+    if(this->mUpArrow->Width()==0 || this->mUpArrow->Height()==0)
+        this->mUpArrow->SetSizeAtLeast(15,15);
+    if(this->mDownArrow->Width()==0 || this->mDownArrow->Height()==0)
+        this->mDownArrow->SetSizeAtLeast(15,15);
+    this->mThumb=MSScrollbar::ThumbFactory(ThumbType(this->mVertical));
+    this->mScrollRect=new Button;
+    this->SetSize(this->mUpArrow->Width(),this->mUpArrow->Height());
 }
 // FUNCTION: WON 0x006ffeb0
+// Creates a scroll container around the scroll area with Windows-style scrollbars, no header and both
+// frames on
 MSScrollContainer::MSScrollContainer(ScrollArea* scrollArea)
 {
-    mVertScrollbar=new MSScrollbar(true);
-    mHorzScrollbar=new MSScrollbar(false);
-    mScrollArea=scrollArea;
-    mHeaderHeight=0;
-    mDraw3DFrame=true;
-    mDrawFrame=true;
-    mTransparent=false;
+    this->mVertScrollbar=new MSScrollbar(true);
+    this->mHorzScrollbar=new MSScrollbar(false);
+    this->mScrollArea=scrollArea;
+    this->mHeaderHeight=0;
+    this->mDraw3DFrame=true;
+    this->mDrawFrame=true;
+    this->mTransparent=false;
 }
-// Original2ffa60/13, primitive setter support0.
 // FUNCTION: WON 0x006ffa60
+// Sets whether the scrollbar paints its background
 void MSScrollbar::SetTransparent(bool transparent)
 {
-    mIsTransparent=transparent;
+    this->mIsTransparent=transparent;
 }
-// Original300250/28, guarded setter/callback support0.
 // FUNCTION: WON 0x00700250
+// Turns the 3D frame on or off and refreshes the container when it changes
 void MSScrollContainer::SetDraw3DFrame(bool on)
 {
-    if(mDraw3DFrame==on) return;
-    mDraw3DFrame=on;
-    Virtual08();
+    if(this->mDraw3DFrame==on) return;
+    this->mDraw3DFrame=on;
+    this->Virtual08();
 }
-// Original300270/28, guarded setter/callback support0.
 // FUNCTION: WON 0x00700270
+// Turns the frame on or off and refreshes the container when it changes
 void MSScrollContainer::SetDrawFrame(bool on)
 {
-    if(mDrawFrame==on) return;
-    mDrawFrame=on;
-    Virtual08();
+    if(this->mDrawFrame==on) return;
+    this->mDrawFrame=on;
+    this->Virtual08();
 }
 }
 
 namespace WONAPI {
-// SUPPORT: EXE 0x006fdc40; genuine SDK default arrow allocation policy, native131B.
+// Default arrow button factory: returns a new Windows-style arrow button (body at 0x006fdc40)
 SmartPtr<Button> DefaultMSArrowButtonFactory(Direction direction)
 {
     return new MSArrowButton(direction);

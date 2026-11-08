@@ -1,4 +1,4 @@
-// Native adapter selection: preserve persistent state only after successful host switch.
+// Network adapter selection for the lobby; the saved adapter changes only after a successful switch
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,14 +15,15 @@
 #include "ee/wonapi/WONLobbyPersistence.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0075b9c0
-void LobbyFn35B9C0(long address)
+// Switches the local address to an adapter, saves the choice if new and rebinds the UDP port after a switch
+void LobbySetNetworkAdapter(long address)
 {
     bool changed=false;
     if(WONAPI::IPAddr::GetLocalHost()!=address) {
         changed=true;
         if(!IPAddr::SetLocalHost(address,true)) return;
     }
-    if(WONAPI::IPAddr::GetLocalHost()!=LobbyFn35E3E0()) LobbyFn35E620();
-    if(changed) LobbyFn35BA00();
+    if(WONAPI::IPAddr::GetLocalHost()!=LobbyGetNetworkAdapter()) LobbySaveNetworkAdapter();
+    if(changed) LobbyBindUDPPort();
 }
 }

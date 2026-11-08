@@ -1,4 +1,4 @@
-// Native Table hover, child hit-testing and mouse selection transition policy.
+// Table mouse handling: hover over text segments, child hit tests and drag selection (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,183 +13,193 @@
 #include "ee/wonapi/WONLobbyHTMLImageSegments.h"
 namespace WONAPI {
 // FUNCTION: WON 0x0070ff20
+// Finds the text segment under the mouse (ignoring it while a modal popup is up unless it allows modal input),
+// moves the hover from the old segment to it and records the segment-relative offset
 void Table::MouseAt(int &x, int &y, bool mouseDown)
 {
 	LineSegment::mTableContext = this;
-	if(mContents.get()!=NULL)
+	if(this->mContents.get()!=NULL)
 	{
 		int oldx = x;
 		int oldy = y;
-		ScrollTranslate(x,y);
-		LineSegment *aSeg = mContents->GetSegmentAt(x,y,mouseDown);
-		if(mModalCount && aSeg!=NULL && !aSeg->AllowModalInput()) // fix for when combo box popup is up
+		this->ScrollTranslate(x,y);
+		LineSegment *aSeg = this->mContents->GetSegmentAt(x,y,mouseDown);
+		if(this->mModalCount && aSeg!=NULL && !aSeg->AllowModalInput()) // fix for when combo box popup is up
 			aSeg = NULL;
 
-		if(aSeg!=mMouseSegment)
+		if(aSeg!=this->mMouseSegment)
 		{
-			if(mMouseSegment!=NULL)
+			if(this->mMouseSegment!=NULL)
 			{
-				mMouseSegment->MouseExit();
-				Virtual78(Fn2F4B00());
+				this->mMouseSegment->MouseExit();
+				this->SetCursor(this->GetDefaultCursor());
 			}
 
-			mMouseSegment = aSeg;
-			if(mMouseSegment!=NULL)
+			this->mMouseSegment = aSeg;
+			if(this->mMouseSegment!=NULL)
 			{
-				if(mouseDown && (x<0 || y<0 || x>mMouseSegment->GetWidth() || y>mMouseSegment->GetHeight()))
+				if(mouseDown && (x<0 || y<0 || x>this->mMouseSegment->GetWidth() || y>this->mMouseSegment->GetHeight()))
 					return;
 
-				mMouseSegment->MouseEnter(x,y);
+				this->mMouseSegment->MouseEnter(x,y);
 			}
 		}
 		
-		mMouseSegmentDX = x-oldx;
-		mMouseSegmentDY = y-oldy;
+		this->mMouseSegmentDX = x-oldx;
+		this->mMouseSegmentDY = y-oldy;
 	}
 	else
-		mMouseSegment = NULL;
+		this->mMouseSegment = NULL;
 }
 
 // FUNCTION: WON 0x00710040
-Component* Table::VirtualB0(int x, int y) 
+// Returns the component embedded in the contents at a point, or NULL
+Component* Table::FindClickChildAt(int x, int y) 
 { 
-	if(mContents.get()!=NULL)
-	{
-		LineSegment::mTableContext = this;
-		ScrollTranslate(x,y);
-		ComponentLineSegment *aSeg = dynamic_cast<ComponentLineSegment*>(mContents->GetSegmentAt(x,y,false));
-		if(aSeg!=NULL)
-			return aSeg->mComponent.get();
-	}
+	if(this->mContents.get()==NULL)
+		return NULL;
+	LineSegment::mTableContext = this;
+	this->ScrollTranslate(x,y);
+	ComponentLineSegment *aSeg = dynamic_cast<ComponentLineSegment*>(this->mContents->GetSegmentAt(x,y,false));
+	if(aSeg!=NULL)
+		return aSeg->mComponent.get();
 
 	return NULL;
 }
 
 // FUNCTION: WON 0x007100b0
-void Table::Virtual24(int x, int y)
+// Handles the mouse entering the table and updates the hovered segment
+void Table::MouseEnter(int x, int y)
 {
-	Container::Virtual24(x,y);
-	MouseAt(x,y);
+	Container::MouseEnter(x,y);
+	this->MouseAt(x,y);
 }
 
 // FUNCTION: WON 0x007100e0
-void Table::Virtual28()
+// Handles the mouse leaving the table: stops selecting and tells the hovered segment (which stays recorded)
+void Table::MouseExit()
 {
-	Container::Virtual28();
-	mSelecting = false;
-	if(mMouseSegment!=NULL)
+	Container::MouseExit();
+	this->mSelecting = false;
+	if(this->mMouseSegment!=NULL)
 	{
-		mMouseSegment->MouseExit();
+		this->mMouseSegment->MouseExit();
 	}
 }
 
 // FUNCTION: WON 0x00710100
-void Table::Virtual2C(int x, int y, int theButton)
+// Starts a text selection on a left click over selectable text (dropping child focus and starting the
+// autoscroll timer); otherwise passes the click to the segment and clears any selection
+void Table::MouseDown(int x, int y, int theButton)
 {
-	Container::Virtual2C(x,y,theButton);
-	MouseAt(x,y,true);
-	if(mMouseSegment!=NULL)
+	Container::MouseDown(x,y,theButton);
+	this->MouseAt(x,y,true);
+	if(this->mMouseSegment!=NULL)
 	{	
 		if(theButton==MouseButton_Left)
 		{
-			bool canStartSelection = mMouseSegment->CanStartSelection();
+			bool canStartSelection = this->mMouseSegment->CanStartSelection();
 			if(!canStartSelection)
 			{
-				if(x<0 || y<0 || x>mMouseSegment->GetWidth() || y>mMouseSegment->GetHeight())
+				if(x<0 || y<0 || x>this->mMouseSegment->GetWidth() || y>this->mMouseSegment->GetHeight())
 					canStartSelection = true;
 			}
 
-			if(canStartSelection && mMouseSegment->mStartSelIndex>=0)
+			if(canStartSelection && this->mMouseSegment->mStartSelIndex>=0)
 			{
-				if(mFocusChild!=NULL)
+				if(this->mFocusChild!=NULL)
 				{
-					mFocusChild->Virtual4C();
-					mFocusChild = NULL;
+					this->mFocusChild->LostFocus();
+					this->mFocusChild = NULL;
 				}
 
-				mStartSelSegment = mEndSelSegment = mMouseSegment->mStartSelIndex;
-				mStartSelSegmentPos = mEndSelSegmentPos = mMouseSegment->GetSelChar(x,y);
-				mBackwardsSel = false;
-				mMouseSegment->MouseExit();
-				mMouseSegment = NULL;
-				mSelecting = true;
-				Fn2F57D0(true);
-				Invalidate();
+				this->mStartSelSegment = this->mEndSelSegment = this->mMouseSegment->mStartSelIndex;
+				this->mStartSelSegmentPos = this->mEndSelSegmentPos = this->mMouseSegment->GetSelChar(x,y);
+				this->mBackwardsSel = false;
+				this->mMouseSegment->MouseExit();
+				this->mMouseSegment = NULL;
+				this->mSelecting = true;
+				this->RequestTimer(true);
+				this->Invalidate();
 				return;
 			}
 		}
 
-		mMouseSegment->MouseDown(x,y,static_cast<MouseButton>(theButton));
+		this->mMouseSegment->MouseDown(x,y,static_cast<MouseButton>(theButton));
 	}
 	
-	if(mStartSelSegment>=0)
+	if(this->mStartSelSegment>=0)
 	{
-		mStartSelSegment = mEndSelSegment = -1;
-		Invalidate();
+		this->mStartSelSegment = this->mEndSelSegment = -1;
+		this->Invalidate();
 	}
 }
 
 // FUNCTION: WON 0x00710250
-void Table::Virtual30(int x, int y, int theButton)
+// Ends a left-button selection and passes the release to the segment under the mouse
+void Table::MouseUp(int x, int y, int theButton)
 {
-	Container::Virtual30(x,y,theButton);
+	Container::MouseUp(x,y,theButton);
 
 	if(theButton==MouseButton_Left)
-		mSelecting = false;
+		this->mSelecting = false;
 
-	MouseAt(x,y);
-	if(mMouseSegment!=NULL)
+	this->MouseAt(x,y);
+	if(this->mMouseSegment!=NULL)
 	{
-		mMouseSegment->MouseUp(x,y,static_cast<MouseButton>(theButton));
+		this->mMouseSegment->MouseUp(x,y,static_cast<MouseButton>(theButton));
 	}
 }
 
 // FUNCTION: WON 0x007102b0
-void Table::Virtual34(int x, int y)
+// Updates the hovered segment and passes the move to it
+void Table::MouseMove(int x, int y)
 {
-	Container::Virtual34(x,y);
-	MouseAt(x,y);
-	if(mMouseSegment!=NULL)
+	Container::MouseMove(x,y);
+	this->MouseAt(x,y);
+	if(this->mMouseSegment!=NULL)
 	{
-		mMouseSegment->MouseMove(x,y);
+		this->mMouseSegment->MouseMove(x,y);
 	}
 }
 
 // FUNCTION: WON 0x00710300
-void Table::Virtual38(int x, int y)
+// Passes the drag to the hovered segment, or while selecting moves the selection's free end to the text
+// under the mouse, swapping ends when it crosses the anchor
+void Table::MouseDrag(int x, int y)
 {
-	Container::Virtual38(x,y);
-	if(mMouseSegment!=NULL)
+	Container::MouseDrag(x,y);
+	if(this->mMouseSegment!=NULL)
 	{
 		LineSegment::mTableContext = this;
-		x+=mMouseSegmentDX;
-		y+=mMouseSegmentDY;
-		mMouseSegment->MouseDrag(x,y);
+		x+=this->mMouseSegmentDX;
+		y+=this->mMouseSegmentDY;
+		this->mMouseSegment->MouseDrag(x,y);
 	}
-	else if(mStartSelSegment>=0)
+	else if(this->mStartSelSegment>=0)
 	{
-		ScrollTranslate(x,y);
-		LineSegment *aSeg = mContents->GetSegmentAt(x,y,true);
+		this->ScrollTranslate(x,y);
+		LineSegment *aSeg = this->mContents->GetSegmentAt(x,y,true);
 		if(aSeg!=NULL && aSeg->mStartSelIndex>=0)
 		{
-			if(mBackwardsSel)
+			if(this->mBackwardsSel)
 			{
-				mStartSelSegment = aSeg->mStartSelIndex;
-				mStartSelSegmentPos = aSeg->GetSelChar(x,y);
+				this->mStartSelSegment = aSeg->mStartSelIndex;
+				this->mStartSelSegmentPos = aSeg->GetSelChar(x,y);
 			}
 			else
 			{
-				mEndSelSegment = aSeg->mStartSelIndex;
-				mEndSelSegmentPos = aSeg->GetSelChar(x,y);
+				this->mEndSelSegment = aSeg->mStartSelIndex;
+				this->mEndSelSegmentPos = aSeg->GetSelChar(x,y);
 			}
 
-			if(mEndSelSegment<mStartSelSegment || (mEndSelSegment==mStartSelSegment && mEndSelSegmentPos<mStartSelSegmentPos))
+			if(this->mEndSelSegment<this->mStartSelSegment || (this->mEndSelSegment==this->mStartSelSegment && this->mEndSelSegmentPos<this->mStartSelSegmentPos))
 			{
-				int temp = mStartSelSegment; mStartSelSegment = mEndSelSegment; mEndSelSegment = temp;
-				temp = mStartSelSegmentPos; mStartSelSegmentPos = mEndSelSegmentPos; mEndSelSegmentPos = temp;
-				mBackwardsSel = !mBackwardsSel;
+				int temp = this->mStartSelSegment; this->mStartSelSegment = this->mEndSelSegment; this->mEndSelSegment = temp;
+				temp = this->mStartSelSegmentPos; this->mStartSelSegmentPos = this->mEndSelSegmentPos; this->mEndSelSegmentPos = temp;
+				this->mBackwardsSel = !this->mBackwardsSel;
 			}
-			Invalidate();
+			this->Invalidate();
 		}
 	}
 }

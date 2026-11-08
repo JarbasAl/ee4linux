@@ -1,11 +1,8 @@
 // Original filename: C:\EEX\Empire Earth\WONAPI\WONLobby\AccountLogic.cpp.
-// Provisional source-family subset: eight authored bodies,640 nominal original bytes.
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// All eight primary ranges bind100 in the ordinary scoped-profile TU. This is
-// source reconstruction only: the inactive constructor EH action has a receiver
-// frame-offset difference, and generated SafeGet helpers retain string growth/guard
-// differences. Preserve original-carved support; no whole-TU runtime authority.
-// No partial asynchronous or private-core type is allocated by these active bodies.
+// AccountLogic: login, account creation and update, lost password/user name, credits and terms of use.
+// Known differences from the original: the constructor's cleanup action addresses the object at another frame
+// offset, and the SafeGetComponent helpers differ in string growth and guards.
 #include <windows.h>
 #include <string>
 #include <list>
@@ -16,153 +13,131 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyAccountLogic.h"
+#include "ee/wonapi/WONStatus.h"
+#include "ee/wonapi/WONLobbyEventTypes.h"
 using namespace WONAPI;
 namespace WONAPI {
 // FUNCTION: WON 0x7db2a0
+// Looks up the credits and terms-of-use dialogs from the lobby layout
 void AccountLogic::InitComponent(ComponentConfig* inConfig)
 {
-    SafeGetComponent(inConfig, mCreditsDialog, "CreditsDialog", __FILE__, 43);
-    SafeGetComponent(inConfig, mTOUDialog, "TOUDialog", __FILE__, 44);
+    SafeGetComponent(inConfig, this->mCreditsDialog, "CreditsDialog", __FILE__, 43);
+    SafeGetComponent(inConfig, this->mTOUDialog, "TOUDialog", __FILE__, 44);
 }
 // FUNCTION: WON 0x7db150
-AccountLogic::AccountLogic() { mNeedTOU = false; }
+// Creates the account logic with no terms-of-use prompt pending
+AccountLogic::AccountLogic() { this->mNeedTOU = false; }
 // FUNCTION: WON 0x7db1d0
+// Destroys the account logic (members only)
 AccountLogic::~AccountLogic() {}
 // FUNCTION: WON 0x7db2e0
+// Shows the scrolling credits dialog
 void AccountLogic::ShowCredits()
 {
-    mCreditsDialog->ResetScrolling();
-    mCreditsDialog->StartScrolling();
-    LobbyDoDialog(mCreditsDialog.get());
-    mCreditsDialog->StopScrolling();
+    this->mCreditsDialog->ResetScrolling();
+    this->mCreditsDialog->StartScrolling();
+    LobbyDoDialog(this->mCreditsDialog.get());
+    this->mCreditsDialog->StopScrolling();
 }
 // FUNCTION: WON 0x7db310
+// Shows the terms-of-use dialog; true if the player accepts
 bool AccountLogic::ShowTOU()
 {
-    mTOUDialog->Reset();
-    return LobbyDoDialog(mTOUDialog.get()) == 1;
+    this->mTOUDialog->Reset();
+    return LobbyDoDialog(this->mTOUDialog.get()) == 1;
 }
 // FUNCTION: WON 0x7db330
+// Returns false when this game version is out of date, after offering to quit and update it
 bool AccountLogic::CheckLoginStatus()
 {
-    if (LobbyFn35B520() == -2814) {
-        if (LobbyFn358EF0(::LobbyContainer_VersionOutOfDataTitle_String, ::LobbyContainer_VersionOutOfDataDetails_String, true) == 100001)
-            LobbyFn3627F0(3);
+    if (LobbyGetVersionStatus() == WS_DBProxyServ_OutOfDate) {
+        if (LobbyDoYesNoDialog(::LobbyContainer_VersionOutOfDataTitle_String, ::LobbyContainer_VersionOutOfDataDetails_String, true) == 100001)
+            LobbyExit(3);
         return false;
     }
     return true;
 }
 // FUNCTION: WON 0x7dc2e0
+// Opens the create-account (terms of use to follow), lost-password or lost-user-name screen if the version is usable
 void AccountLogic::HandleControlEvent(int inControlId)
 {
     switch (inControlId) {
-    case 200001:
-        if (CheckLoginStatus()) {
-            LobbyFn3610D0();
-            mNeedTOU = true;
+    case ID_ShowCreateAccount:
+        if (this->CheckLoginStatus()) {
+            LobbyShowCreateAccount();
+            this->mNeedTOU = true;
         }
         break;
-    case 200002:
-        if (CheckLoginStatus()) LobbyFn3610F0();
+    case ID_ShowLostPassword:
+        if (this->CheckLoginStatus()) LobbyShowLostPassword();
         break;
-    case 200003:
-        if (CheckLoginStatus()) LobbyFn361110();
+    case ID_ShowLostUserName:
+        if (this->CheckLoginStatus()) LobbyShowLostUsername();
         break;
     }
 }
 // FUNCTION: WON 0x7dc340
+// Routes create-account, lost password/user name, login, account query and update events to the handlers
 void AccountLogic::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch (inEvent->mType) {
-    case 100010: HandleCreateAccount(inEvent); break;
-    case 100018: HandleLostPassword(inEvent); break;
-    case 100019: HandleLostUsername(inEvent); break;
-    case 100035: HandleLogin(inEvent); break;
-    case 100040: QueryAccount(); break;
-    case 100060: HandleUpdateAccount(inEvent); break;
+    case LobbyEvent_CreateAccount: this->HandleCreateAccount(inEvent); break;
+    case LobbyEvent_GetLostPassword: this->HandleLostPassword(inEvent); break;
+    case LobbyEvent_GetLostUserName: this->HandleLostUsername(inEvent); break;
+    case LobbyEvent_Login: this->HandleLogin(inEvent); break;
+    case 100040: this->QueryAccount(); break;
+    case LobbyEvent_UpdateAccount: this->HandleUpdateAccount(inEvent); break;
     }
 }
 }
 
-/*
-Rejected/deferred source evidence below has ZERO implementation credit.
-These two complete drafts remain inactive until the actual ServerOp94,
-ServerRequestOpf4, DBProxyOp12c and request-operation144B layouts, virtual slots
-and all owned lifetimes are admitted, together with canonical event/resource APIs.
-No opaque buffers, size-only constructors, aliases or substitute allocations are
-authorized. Other unreconstructed Account bodies remain original-carved: Create
-3db370 (CreateAccountOp1398/ElGamal), Login3dba10 (GetCertOp11fc), Query3dbee0
-and Update3dc160 (GetAccountOp118/UpdateAccountOp128).
 
-// Complete deferred Account bodies. Scratch only; zero credit until full actual
-// ServerOp/ServerRequestOp/DBProxyOp and request-operation144B contracts close.
-// Original borrowed ServerContext is never retained as a separate local.
-// 3db830,232B. Event identity/layout from controls producer3c0520/VT453a38.
-void AccountLogic::HandleLostPassword(ComponentEvent* inEvent)
-{
-    ServerContext* account = LobbyFn35B1F0();
-    if (account == NULL || !CheckLoginStatus())
-        return;
-    SmartPtr<RequestPasswordEmailOp> op = new RequestPasswordEmailOp(account);
-    op->mUserName = static_cast<GetLostPasswordEvent*>(inEvent)->mUserName;
-    LobbyFn358E70(op.get(), ::LobbyContainer_RetrievePasswordTitle_String, ::LobbyContainer_RetrievePasswordDetails_String, 0, false);
-}
-// 3db920,232B. Event identity/layout from controls producer3c0930/VT453b14.
-void AccountLogic::HandleLostUsername(ComponentEvent* inEvent)
-{
-    ServerContext* account = LobbyFn35B1F0();
-    if (account == NULL || !CheckLoginStatus())
-        return;
-    SmartPtr<RequestAccountInfoEmailOp> op = new RequestAccountInfoEmailOp(account);
-    op->mEmail = static_cast<GetLostUserNameEvent*>(inEvent)->mEmail;
-    LobbyFn358E70(op.get(), ::LobbyContainer_RetrieveUsernameTitle_String, ::LobbyContainer_RetrieveUsernameDetails_String, 0, false);
-}
-
-*/
-
-// small-operation cohort; canonical admitted8 prefix preserved exactly.
 #include "ee/wonapi/WONLobbyEvents.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007db830
+// Asks the account server to e-mail the password of the given user name, behind a status box
 void AccountLogic::HandleLostPassword(ComponentEvent* inEvent)
 {
-    ServerContext* account = LobbyFn35B1F0();
-    if (account == NULL || !CheckLoginStatus())
+    ServerContext* account = LobbyGetAccountServers();
+    if (account == NULL || !this->CheckLoginStatus())
         return;
     SmartPtr<RequestPasswordEmailOp> op = new RequestPasswordEmailOp(account);
     op->SetUserName(static_cast<GetLostPasswordEvent*>(inEvent)->mUserName);
-    LobbyFn358E70(op.get(), ::LobbyContainer_RetrievePasswordTitle_String, ::LobbyContainer_RetrievePasswordDetails_String, 0, 0);
+    LobbyRunOpWithStatus(op.get(), ::LobbyContainer_RetrievePasswordTitle_String, ::LobbyContainer_RetrievePasswordDetails_String, 0, 0);
 }
 // FUNCTION: WON 0x007db920
+// Asks the account server to e-mail the user names registered to the given address, behind a status box
 void AccountLogic::HandleLostUsername(ComponentEvent* inEvent)
 {
-    ServerContext* account = LobbyFn35B1F0();
-    if (account == NULL || !CheckLoginStatus())
+    ServerContext* account = LobbyGetAccountServers();
+    if (account == NULL || !this->CheckLoginStatus())
         return;
     SmartPtr<RequestAccountInfoEmailOp> op = new RequestAccountInfoEmailOp(account);
     op->SetEmail(static_cast<GetLostUserNameEvent*>(inEvent)->mEmail);
-    LobbyFn358E70(op.get(), ::LobbyContainer_RetrieveUsernameTitle_String, ::LobbyContainer_RetrieveUsernameDetails_String, 0, 0);
+    LobbyRunOpWithStatus(op.get(), ::LobbyContainer_RetrieveUsernameTitle_String, ::LobbyContainer_RetrieveUsernameDetails_String, 0, 0);
 }
 // FUNCTION: WON 0x007dbee0
+// Fetches our account's e-mail address and newsletter setting and broadcasts them
 void AccountLogic::QueryAccount()
 {
-    ServerContext* account = LobbyFn35B1F0();
+    ServerContext* account = LobbyGetAccountServers();
     AuthContext* auth = GetLobbyAuthContext();
     if (account == NULL || auth == NULL)
         return;
     SmartPtr<GetAccountOp> op = new GetAccountOp(account,auth);
     ProfileData* profile = op->mProfileData.get();
     profile->AddNewsletterSub(1,false);
-    LobbyFn358E70(op.get(),::LobbyContainer_QueryAccountTitle_String,::LobbyContainer_QueryAccountDetails_String,1,0);
-    if (op->GetStatus() == 0)
-        LobbyFn359100(new QueryAccountResultEvent(op->mEmail,
+    LobbyRunOpWithStatus(op.get(),::LobbyContainer_QueryAccountTitle_String,::LobbyContainer_QueryAccountDetails_String,1,0);
+    if (op->GetStatus() == WS_Success)
+        LobbyBroadcastEvent(new QueryAccountResultEvent(op->mEmail,
                                                   profile->GetNewsletterSub(1)),true);
 }
 
 // FUNCTION: WON 0x007dc160
+// Sends our account's new e-mail address, password and newsletter setting, behind a status box
 void AccountLogic::HandleUpdateAccount(ComponentEvent* inEvent)
 {
-    ServerContext* account = LobbyFn35B1F0();
+    ServerContext* account = LobbyGetAccountServers();
     AuthContext* auth = GetLobbyAuthContext();
     if (account == NULL || auth == NULL)
         return;
@@ -171,24 +146,24 @@ void AccountLogic::HandleUpdateAccount(ComponentEvent* inEvent)
     op->SetEmail(event->mEmail);
     op->SetNewPassword(event->mNewPassword);
     op->mProfileData->AddNewsletterSub(1,event->mNewsletter);
-    LobbyFn358E70(op.get(),::LobbyContainer_UpdateAccountTitle_String,::LobbyContainer_UpdateAccountDetails_String,0,0);
+    LobbyRunOpWithStatus(op.get(),::LobbyContainer_UpdateAccountTitle_String,::LobbyContainer_UpdateAccountDetails_String,0,0);
 }
 
 } //WONAPI
 
-// complete actual CreateAccountOp1398 consumer; other deferred bodies remain original-owned.
 #include "ee/wonapi/WONLobbyPersistence.h"
-#include "ee/wonapi/EELobbyGameCode.h" //genuine LobbyMessageBox call declaration
+#include "ee/wonapi/EELobbyGameCode.h" // declares LobbyMessageBox
 namespace WONAPI {
 // FUNCTION: WON 0x007db370
+// Creates an account (after the terms of use when needed); on success saves the user and fills in the login fields
 void AccountLogic::HandleCreateAccount(ComponentEvent* inBaseEvent)
 {
-    if(!CheckLoginStatus()) return;
-    if(mNeedTOU) {
-        if(!ShowTOU()) return;
-        mNeedTOU=false;
+    if(!this->CheckLoginStatus()) return;
+    if(this->mNeedTOU) {
+        if(!this->ShowTOU()) return;
+        this->mNeedTOU=false;
     }
-    ServerContext* servers=LobbyFn35B1F0();
+    ServerContext* servers=LobbyGetAccountServers();
     if(!servers) return;
     SmartPtr<CreateAccountOp> op=new CreateAccountOp(servers);
     CreateAccountEvent* event=static_cast<CreateAccountEvent*>(inBaseEvent);
@@ -199,66 +174,67 @@ void AccountLogic::HandleCreateAccount(ComponentEvent* inBaseEvent)
     profile->AddNewsletterSub(1,event->mNewsletter);
     profile->SetBirthDate(event->mMonth,event->mDay,event->mYear);
     op->SetProfileData(profile.get());
-    LobbyFn358E70(op.get(),::LobbyContainer_CreateAccountTitle_String,::LobbyContainer_CreateAccountDetails_String,0,0);
-    if(op->GetStatus()==0) {
-        LobbyUserInfo* user=LobbyFn35C910(event->mUserName,"",false);
-        if(user) LobbyFn35B600(user->mValue04,user->mValue08);
-        LobbyFn35E660(true);
-        LobbyFn359120(100052,true);
-        LobbyFn359100(new SetLoginFieldsEvent(GUIString(event->mUserName),
+    LobbyRunOpWithStatus(op.get(),::LobbyContainer_CreateAccountTitle_String,::LobbyContainer_CreateAccountDetails_String,0,0);
+    if(op->GetStatus()==WS_Success) {
+        LobbyUserInfo* user=LobbyAddUser(event->mUserName,"",false);
+        if(user) LobbyGetTOUTimes(user->mValue04,user->mValue08);
+        LobbySaveGlobalPrefs(true);
+        LobbyBroadcastLobbyEvent(100052,true);
+        LobbyBroadcastEvent(new SetLoginFieldsEvent(GUIString(event->mUserName),
             GUIString(event->mPassword),false),true);
     }
 }
 }
 
-// complete login workflow using actual external-owned GetCertOp11fc.
 namespace WONAPI {
 // FUNCTION: WON 0x007dba10
+// Logs in: three modifier keys show the credits, an '@' prefix asks for admin, new users get the terms of use;
+// checks the CD key, then saves the user (password if asked) and enters the Internet screen
 void AccountLogic::HandleLogin(ComponentEvent* inBaseEvent)
 {
     AuthContext* auth=GetLobbyAuthContext();
-    Window* window=LobbyFn361230();
+    Window* window=LobbyGetRootWindow();
     if(!auth || !window) return;
     int keyMod=window->GetKeyMod();
-    if((keyMod&7)==7) { ShowCredits();return; }
+    if((keyMod&7)==7) { this->ShowCredits();return; }
     LoginEvent* event=static_cast<LoginEvent*>(inBaseEvent);
-    if(event->mUserName.empty() || !CheckLoginStatus()) return;
+    if(event->mUserName.empty() || !this->CheckLoginStatus()) return;
     bool admin=false;
     if(event->mUserName.at(0)==L'@') {
         admin=true;
         event->mUserName=event->mUserName.substr(1);
     }
-    if(WStringCompareNoCase(event->mUserName,mLastUserName)!=0) {
+    if(WStringCompareNoCase(event->mUserName,this->mLastUserName)!=0) {
         LobbyUserInfo* user;
         {
             GUIString name(new GUIStringData(event->mUserName));
-            user=LobbyFn35CF20(name);
+            user=LobbyFindUser(name);
         }
-        if((!user || LobbyFn35B670(user->mValue04,user->mValue08)) && !ShowTOU()) return;
-        mLastUserName=event->mUserName;
+        if((!user || LobbyIsTOUNewer(user->mValue04,user->mValue08)) && !this->ShowTOU()) return;
+        this->mLastUserName=event->mUserName;
     }
     auth->SetUserName(event->mUserName);
     auth->SetPassword(event->mPassword);
-    if(LobbyFn35B540() && !LobbyFn35B560()) {
+    if(LobbyDoCDKeyCheck() && !LobbyIsCDKeyValid()) {
         LobbyMessageBox(::AccountLogic_InvalidCDKeyTitle_String,::AccountLogic_InvalidCDKeyDetails_String);
         return;
     }
     if(admin) auth->AddCommunity(std::wstring(L"Admin"));
     else auth->RemoveCommunity(std::wstring(L"Admin"));
     SmartPtr<GetCertOp> op=new GetCertOp(auth);
-    LobbyFn358E70(op.get(),::LobbyContainer_LoginTitle_String,::LobbyContainer_LoginDetails_String,1,0);
-    if(op->GetStatus()!=0) return;
-    auth->Fn2DEB30(true);
+    LobbyRunOpWithStatus(op.get(),::LobbyContainer_LoginTitle_String,::LobbyContainer_LoginDetails_String,1,0);
+    if(op->GetStatus()!=WS_Success) return;
+    auth->SetDoAutoRefresh(true);
     GUIString password(GetEmptyGUIStringData());
     if(event->mRemember) password=event->mPassword;
-    LobbyUserInfo* user=LobbyFn35C910(event->mUserName,password,false);
+    LobbyUserInfo* user=LobbyAddUser(event->mUserName,password,false);
     if(user) {
-        LobbyFn35B600(user->mValue04,user->mValue08);
-        LobbyFn35E660(true);
-        LobbyFn35CF90(user);
+        LobbyGetTOUTimes(user->mValue04,user->mValue08);
+        LobbySaveGlobalPrefs(true);
+        LobbySetCurrentUser(user);
     }
-    LobbyFn359120(100052,true);
-    LobbyFn361ED0((keyMod&4)==0);
+    LobbyBroadcastLobbyEvent(100052,true);
+    LobbyEnterInternetScreen((keyMod&4)==0);
 }
 }
 

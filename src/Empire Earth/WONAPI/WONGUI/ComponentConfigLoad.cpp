@@ -1,4 +1,4 @@
-// Original configuration loading and recursive component initialization.
+// Configuration file loading and recursive component initialisation
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <cstdio>
@@ -15,39 +15,40 @@
 #include "ee/wonapi/WONPerfTimer.h"
 #include "ee/wonapi/WONMSMessageBoxAPI.h"
 
-// Actual original file-static data shared with ComponentConfigInstructions.cpp;
-// no duplicate state is allocated by this split translation unit.
+// Parse statistics shared with the configuration instruction code (defined there)
 extern bool gShowParseTime;
 extern int gLinesParsed;
 
 namespace WONAPI {
 // FUNCTION: WON 0x007828c0
+// Parses the configuration file, glues its resources and initialises every configured component; on failure
+// returns false with the error text, leaving the resource table, parse-time flag and image caching as set
 bool ComponentConfig::ReadConfig_Unsafe(Component* component,const char* fileName,
                                       ResourceConfigTable* table,ConfigParser* parser)
 {
-    Virtual34(component);
+    this->SetComponent(component);
     WONAPI::WindowManager::GetDefaultWindowManager()->SetCacheImages(true);
-    SmartPtr<ResourceConfigTable> oldTable=mResourceConfigTable;
-    if(table!=NULL) mResourceConfigTable=table;
-    else mResourceConfigTable=new ResourceConfigTable;
+    SmartPtr<ResourceConfigTable> oldTable=ComponentConfig::mResourceConfigTable;
+    if(table!=NULL) ComponentConfig::mResourceConfigTable=table;
+    else ComponentConfig::mResourceConfigTable=new ResourceConfigTable;
 
     bool oldShowParseTime=gShowParseTime;
     gShowParseTime=false;
-    std::string path=GetResourceFile(fileName);
+    std::string path=ComponentConfig::GetResourceFile(fileName);
     ConfigParser localParser;
     ConfigParser& activeParser=parser?*parser:localParser;
     activeParser.mWarningsAsErrors=true;
-    if(!ParseTopLevel(activeParser,path.c_str())) {
+    if(!this->ParseTopLevel(activeParser,path.c_str())) {
         activeParser.CloseFile();
-        mConfigError=activeParser.GetAbortReason();
+        this->mConfigError=activeParser.GetAbortReason();
         return false;
     }
 
     try {
-        mResourceConfigTable->SafeGlueResources();
-        InitComponents();
+        ComponentConfig::mResourceConfigTable->SafeGlueResources();
+        this->InitComponents();
     } catch(ConfigObjectException& error) {
-        mConfigError=GUIString(error.mText);
+        this->mConfigError=GUIString(error.mText);
         return false;
     }
 
@@ -61,18 +62,19 @@ bool ComponentConfig::ReadConfig_Unsafe(Component* component,const char* fileNam
     }
     gShowParseTime=oldShowParseTime;
     WONAPI::WindowManager::GetDefaultWindowManager()->SetCacheImages(false);
-    mResourceConfigTable=oldTable;
+    ComponentConfig::mResourceConfigTable=oldTable;
     return true;
 }
 
 // FUNCTION: WON 0x00782cc0
+// Initialises the component from this configuration once, then every child configuration in name order
 void ComponentConfig::InitComponents()
 {
-    if(mHaveInitedComponents) return;
-    mHaveInitedComponents=true;
-    mComponent->InitComponent(ComponentConfigInit(this));
-    std::map<std::string,SmartPtr<ComponentConfig>,StringLessNoCase>::iterator it=mConfigMap.begin();
-    while(it!=mConfigMap.end()) {
+    if(this->mHaveInitedComponents) return;
+    this->mHaveInitedComponents=true;
+    this->mComponent->InitComponent(ComponentConfigInit(this));
+    std::map<std::string,SmartPtr<ComponentConfig>,StringLessNoCase>::iterator it=this->mConfigMap.begin();
+    while(it!=this->mConfigMap.end()) {
         it->second->InitComponents();
         ++it;
     }
@@ -81,27 +83,27 @@ void ComponentConfig::InitComponents()
 
 #include <stdlib.h>
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK failure policy ported to existing target API spellings.
+// Reads the configuration file; on failure shows the error in a message box, closes every window and
+// exits the program (not identified in the original exe)
 void ComponentConfig::ReadConfig(Component* theComponent,const char* theFileName,ResourceConfigTable* theTable,ConfigParser* theParser)
 {
-    if(!ReadConfig_Unsafe(theComponent,theFileName,theTable,theParser))
-    {
-        // SDK InitSystemColorScheme inline wrapper: target virtual binds its own retained scheme.
-        WindowManager::GetDefaultWindowManager()->GetSystemColorScheme();
-        MSMessageBox::Msg(Window::GetDefaultWindow(),GUIString("Config Error"),mConfigError,
-                          GUIString("Ok"),gEmptyGUIString,gEmptyGUIString);
-        WindowManager::GetDefaultWindowManager()->Fn32D5B0();
-        exit(0);
-    }
+    if(this->ReadConfig_Unsafe(theComponent,theFileName,theTable,theParser))
+        return;
+    // Inline InitSystemColorScheme: makes sure the system colour scheme exists
+    WindowManager::GetDefaultWindowManager()->GetSystemColorScheme();
+    MSMessageBox::Msg(Window::GetDefaultWindow(),GUIString("Config Error"),this->mConfigError,
+                      GUIString("Ok"),gEmptyGUIString,gEmptyGUIString);
+    WindowManager::GetDefaultWindowManager()->CloseAllWindows();
+    exit(0);
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK explicit initialization, adapted to current plain ComponentInit base.
+// Creates the init record (type 2) that hands the configuration to InitComponent (emitted at 0x0078aa40)
 ComponentConfigInit::ComponentConfigInit(ComponentConfig* theConfig)
 {
-    mType = 2;
-    mConfig = theConfig;
+    this->mType = 2;
+    this->mConfig = theConfig;
 }
 }
 

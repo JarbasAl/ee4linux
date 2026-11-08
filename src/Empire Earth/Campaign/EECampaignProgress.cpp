@@ -118,7 +118,7 @@ void EECampaignProgress::GetCompletedScenarios(std::vector<UWideString>& outScen
 }
 
 // The pooled empty byte string (referenced at 0x68f763)
-extern char gU4E5B98[];
+extern char gEmptyString[];
 // Original cdecl scenario-civilization loader (EEAResetAllPlayerInfo, 0x2806e7).
 long Fn2806E7(UString& inName, EEPlayer* inPlayer);
 
@@ -159,7 +159,7 @@ long EECampaignProgress::RestoreCivilization(const UWideString& inUser, const UW
             theResult = theArchive->Open();
             if (theResult == kErrorOK) {
                 theAvailable = 0;
-                thePreviousScenario = gU4E5B98;
+                thePreviousScenario = gEmptyString;
                 this->GetCompletedScenarios(theCompleted);
                 theFound = std::find(theCompleted.begin(), theCompleted.end(), inScenario);
                 if (theFound == theCompleted.end())

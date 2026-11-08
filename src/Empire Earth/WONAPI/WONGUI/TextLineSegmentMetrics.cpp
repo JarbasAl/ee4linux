@@ -1,4 +1,4 @@
-// Genuine borrowed-font metrics and current table cursor forwarding, support only.
+// Text line segment font metrics and hover cursor
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,12 +15,15 @@ namespace WONAPI {
 int LineSegment::mCounter;
 Table* LineSegment::mTableContext;
 // FUNCTION: WON 0x00739720
-int TextLineSegment::GetHeight() { return mFont->GetHeight(); }
+// Returns the height of the segment's font
+int TextLineSegment::GetHeight() { return this->mFont->GetHeight(); }
 // FUNCTION: WON 0x00739730
-int TextLineSegment::GetAscent() { return mFont->GetAscent(); }
+// Returns the ascent of the segment's font
+int TextLineSegment::GetAscent() { return this->mFont->GetAscent(); }
 // FUNCTION: WON 0x0070b310
+// Shows the text (I-beam) cursor over the table holding the segment
 void TextLineSegment::MouseEnter(int,int)
 {
-    mTableContext->Virtual78(Cursor::GetStandardCursor(StandardCursor_IBeam));
+    LineSegment::mTableContext->SetCursor(Cursor::GetStandardCursor(StandardCursor_IBeam));
 }
 }

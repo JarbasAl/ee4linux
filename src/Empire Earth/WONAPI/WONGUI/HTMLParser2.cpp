@@ -1,5 +1,5 @@
-// Complete genuine SDK HTMLParser2 lexical and TextArea rendering unit.
-// SOURCE_ONLY_NO_NATIVE_ID; zero Native/primary/physical credit.
+// Simpler HTML parser that reads tags and renders text, fonts, alignment and images straight into a text area
+// (not identified in the original exe)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -24,39 +24,39 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////////////////
 HTMLParser2::HTMLParser2(TextArea *theDisplay)
 {
-	mDisplay = theDisplay;
-	mFile = NULL;
-	mLineNum = 1;
+	this->mDisplay = theDisplay;
+	this->mFile = NULL;
+	this->mLineNum = 1;
 
-	mTagNameMap["A"] = TagType_Anchor;
-	mTagNameMap["P"] = TagType_Paragraph;
-	mTagNameMap["BR"] = TagType_LineBreak;
-	mTagNameMap["B"] = TagType_Bold;
-	mTagNameMap["STRONG"] = TagType_Bold;
-	mTagNameMap["I"] = TagType_Italic;
-	mTagNameMap["EM"] = TagType_Italic;
-	mTagNameMap["U"] = TagType_Underline;
-	mTagNameMap["H1"] = TagType_H1;
-	mTagNameMap["H2"] = TagType_H2;
-	mTagNameMap["H3"] = TagType_H3;
-	mTagNameMap["H4"] = TagType_H4;
-	mTagNameMap["H5"] = TagType_H5;
-	mTagNameMap["H6"] = TagType_H6;
-	mTagNameMap["CODE"] = TagType_Code;
-	mTagNameMap["LI"] = TagType_ListItem;
-	mTagNameMap["IMG"] = TagType_Image;
-	mTagNameMap["PRE"] = TagType_Pre;
-	mTagNameMap["BODY"] = TagType_Body;
+	this->mTagNameMap["A"] = TagType_Anchor;
+	this->mTagNameMap["P"] = TagType_Paragraph;
+	this->mTagNameMap["BR"] = TagType_LineBreak;
+	this->mTagNameMap["B"] = TagType_Bold;
+	this->mTagNameMap["STRONG"] = TagType_Bold;
+	this->mTagNameMap["I"] = TagType_Italic;
+	this->mTagNameMap["EM"] = TagType_Italic;
+	this->mTagNameMap["U"] = TagType_Underline;
+	this->mTagNameMap["H1"] = TagType_H1;
+	this->mTagNameMap["H2"] = TagType_H2;
+	this->mTagNameMap["H3"] = TagType_H3;
+	this->mTagNameMap["H4"] = TagType_H4;
+	this->mTagNameMap["H5"] = TagType_H5;
+	this->mTagNameMap["H6"] = TagType_H6;
+	this->mTagNameMap["CODE"] = TagType_Code;
+	this->mTagNameMap["LI"] = TagType_ListItem;
+	this->mTagNameMap["IMG"] = TagType_Image;
+	this->mTagNameMap["PRE"] = TagType_Pre;
+	this->mTagNameMap["BODY"] = TagType_Body;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void HTMLParser2::CloseFile()
 {
-	if(mFile!=NULL)
+	if(this->mFile!=NULL)
 	{
-		fclose(mFile);
-		mFile = NULL;
+		fclose(this->mFile);
+		this->mFile = NULL;
 	}
 }
 
@@ -64,10 +64,10 @@ void HTMLParser2::CloseFile()
 ///////////////////////////////////////////////////////////////////////////////
 bool HTMLParser2::EndOfFile()
 {	
-	if(!feof(mFile)) 
+	if(!feof(this->mFile)) 
 		return false; 
 	else return 
-		mBackStr.empty(); 
+		this->mBackStr.empty(); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,16 +75,16 @@ bool HTMLParser2::EndOfFile()
 int HTMLParser2::GetChar()
 {
 	int aChar = 0;
-	if(mBackStr.empty())
-		aChar = fgetc(mFile);
+	if(this->mBackStr.empty())
+		aChar = fgetc(this->mFile);
 	else
 	{
-		aChar = mBackStr[mBackStr.length()-1];
-		mBackStr.resize(mBackStr.length()-1);
+		aChar = this->mBackStr[this->mBackStr.length()-1];
+		this->mBackStr.resize(this->mBackStr.length()-1);
 	}
 
 	if(aChar=='\n')
-		mLineNum++;
+		this->mLineNum++;
 
 	return aChar;
 }
@@ -93,10 +93,10 @@ int HTMLParser2::GetChar()
 ///////////////////////////////////////////////////////////////////////////////
 int HTMLParser2::PeekChar()
 {
-	if(mFile && !EndOfFile())
+	if(this->mFile && !this->EndOfFile())
 	{
-		int aChar = GetChar();
-		UngetChar(aChar);
+		int aChar = this->GetChar();
+		this->UngetChar(aChar);
 		return aChar;
 	}
 	else
@@ -111,9 +111,9 @@ void HTMLParser2::UngetChar(int theChar)
 		return;
 
 	if(theChar=='\n')
-		mLineNum--;
+		this->mLineNum--;
 
-	mBackStr+=theChar;
+	this->mBackStr+=theChar;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,7 +122,7 @@ void HTMLParser2::UngetString(const std::string &theStr)
 {
 	for(int i=theStr.length()-1; i>=0; i--)
 	{
-		UngetChar(theStr[i]);
+		this->UngetChar(theStr[i]);
 	}
 }
 
@@ -131,12 +131,12 @@ void HTMLParser2::UngetString(const std::string &theStr)
 bool HTMLParser2::SkipWhitespace()
 {
 	bool hadSpace = false;
-	while(!EndOfFile())
+	while(!this->EndOfFile())
 	{
-		int aChar = GetChar();
+		int aChar = this->GetChar();
 		if(!isspace(aChar))
 		{
-			UngetChar(aChar);
+			this->UngetChar(aChar);
 			break;
 		}
 		else
@@ -152,9 +152,9 @@ int HTMLParser2::ReadEntity()
 {
 	string anEntity;
 	int i;
-	for(i=0; i<20 && !EndOfFile(); i++)
+	for(i=0; i<20 && !this->EndOfFile(); i++)
 	{
-		int aChar = GetChar();
+		int aChar = this->GetChar();
 		anEntity+=aChar;
 		if(aChar==';')
 			break;
@@ -162,7 +162,7 @@ int HTMLParser2::ReadEntity()
 
 	if(i==20)
 	{
-		UngetString(anEntity);
+		this->UngetString(anEntity);
 		return -1;
 	}
 
@@ -188,7 +188,7 @@ int HTMLParser2::ReadEntity()
 		return '\xa0';
 
 		
-	UngetString(anEntity);
+	this->UngetString(anEntity);
 	return -1;
 }
 
@@ -201,20 +201,20 @@ bool HTMLParser2::ReadWord(std::string &theWord,  const char *theStopChars, bool
 		theWord.erase();
 
 	if(stopAtSpace)
-		SkipWhitespace();
+		this->SkipWhitespace();
 
-	while(!EndOfFile())
+	while(!this->EndOfFile())
 	{
-		int aChar = GetChar();
+		int aChar = this->GetChar();
 		if((stopAtSpace && isspace(aChar))  || (theStopChars!=NULL && strchr(theStopChars,aChar)))
 		{
-			UngetChar(aChar);
+			this->UngetChar(aChar);
 			break;
 		}
 
 		if(aChar=='&')
 		{
-			aChar = ReadEntity();
+			aChar = this->ReadEntity();
 			if(!skip)
 			{
 				if(aChar!=-1)
@@ -237,30 +237,30 @@ bool HTMLParser2::ReadWord(std::string &theWord,  const char *theStopChars, bool
 ///////////////////////////////////////////////////////////////////////////////
 bool HTMLParser2::GetTextTag()
 {
-	mCurTagName = "_TEXT";
-	mCurTagType = TagType_Text;
-	mIsEndTag = false;
-	mCurText.erase();
+	this->mCurTagName = "_TEXT";
+	this->mCurTagType = TagType_Text;
+	this->mIsEndTag = false;
+	this->mCurText.erase();
 
 	bool needSpace = false;
 	std::string aWord;
-	if(mHadTextSpace && !mHadLineBreak)
+	if(this->mHadTextSpace && !this->mHadLineBreak)
 		needSpace = true;
 
-	mHadTextSpace = false;
-	mHadLineBreak = false;
+	this->mHadTextSpace = false;
+	this->mHadLineBreak = false;
 
-	if(mInPre)
+	if(this->mInPre)
 	{
 		bool erase = true;
 		bool done = false;
-		while(!EndOfFile() && !done)
+		while(!this->EndOfFile() && !done)
 		{
-			ReadWord(aWord,"<\n\t",false,false,erase);
-			char aChar = GetChar();
+			this->ReadWord(aWord,"<\n\t",false,false,erase);
+			char aChar = this->GetChar();
 			if(aChar=='<')
 			{
-				UngetChar(aChar);
+				this->UngetChar(aChar);
 				done = true;
 			}
 			else if(aChar=='\t')
@@ -276,26 +276,26 @@ bool HTMLParser2::GetTextTag()
 				erase = true;
 			}
 			
-			if(mInAnchor)
-				mDisplay->AddLink(aWord.c_str(),mCurLinkParam.c_str(),!done);
+			if(this->mInAnchor)
+				this->mDisplay->AddLink(aWord.c_str(),this->mCurLinkParam.c_str(),!done);
 			else
-				mDisplay->AddSegment(aWord.c_str(),!done);
+				this->mDisplay->AddSegment(aWord.c_str(),!done);
 		}
 		return true;
 	}
 
-	while(ReadWord(aWord,"<"))
+	while(this->ReadWord(aWord,"<"))
 	{
 		if(needSpace)
-			mCurText += ' ';
+			this->mCurText += ' ';
 		
-		mCurText += aWord;
-		mHadTextSpace = isspace(PeekChar())?true:false;
+		this->mCurText += aWord;
+		this->mHadTextSpace = isspace(this->PeekChar())?true:false;
 		needSpace = true;
 	}
 
-	if(mCurText.length()==1 && mCurText[0]==' ')
-		mCurText.erase();
+	if(this->mCurText.length()==1 && this->mCurText[0]==' ')
+		this->mCurText.erase();
 
 	return true;
 }
@@ -304,55 +304,55 @@ bool HTMLParser2::GetTextTag()
 ///////////////////////////////////////////////////////////////////////////////
 bool HTMLParser2::GetActualTag()
 {
-	mCurTagAttributes.clear();
-	mIsEndTag = false;
+	this->mCurTagAttributes.clear();
+	this->mIsEndTag = false;
 
-	if(PeekChar()=='/')
+	if(this->PeekChar()=='/')
 	{
-		GetChar(); // skip '/'
-		mIsEndTag = true;
+		this->GetChar(); // skip '/'
+		this->mIsEndTag = true;
 	}
 
-	ReadWord(mCurTagName,">");
+	this->ReadWord(this->mCurTagName,">");
 
-	TagNameMap::iterator anItr = mTagNameMap.find(mCurTagName);
-	if(anItr==mTagNameMap.end()) // unrecognized tag... just skip it
+	TagNameMap::iterator anItr = this->mTagNameMap.find(this->mCurTagName);
+	if(anItr==this->mTagNameMap.end()) // unrecognized tag... just skip it
 	{
-		mCurTagType = TagType_None;
+		this->mCurTagType = TagType_None;
 		std::string aSkip;
-		ReadWord(aSkip,">",false,true);
-		GetChar(); // skip '>'
+		this->ReadWord(aSkip,">",false,true);
+		this->GetChar(); // skip '>'
 		return true;
 	}
 	else
-		mCurTagType = anItr->second;
+		this->mCurTagType = anItr->second;
 
-	while(!EndOfFile())
+	while(!this->EndOfFile())
 	{
-		if(PeekChar()=='>')
+		if(this->PeekChar()=='>')
 		{
-			GetChar(); // skip '>'
+			this->GetChar(); // skip '>'
 			return true;
 		}
 
 		std::string anAttribute;
 		std::string aValue;
 
-		ReadWord(anAttribute,">=");
-		if(PeekChar()=='=') // read attribute value
+		this->ReadWord(anAttribute,">=");
+		if(this->PeekChar()=='=') // read attribute value
 		{
-			GetChar(); // skip '=' sign
-			SkipWhitespace();
-			if(PeekChar()=='"')
+			this->GetChar(); // skip '=' sign
+			this->SkipWhitespace();
+			if(this->PeekChar()=='"')
 			{
-				GetChar(); // Skip '"' sign
-				ReadWord(aValue,"\"",false);
-				GetChar(); // Skip '"' sign
+				this->GetChar(); // Skip '"' sign
+				this->ReadWord(aValue,"\"",false);
+				this->GetChar(); // Skip '"' sign
 			}
 			else
-				ReadWord(aValue,">");
+				this->ReadWord(aValue,">");
 
-			mCurTagAttributes[anAttribute] = aValue;
+			this->mCurTagAttributes[anAttribute] = aValue;
 		}
 
 	}
@@ -365,15 +365,15 @@ bool HTMLParser2::GetActualTag()
 ///////////////////////////////////////////////////////////////////////////////
 bool HTMLParser2::GetNextTag()
 {
-	bool hadSpace = mInPre?false:SkipWhitespace();
-	int aChar = GetChar();
+	bool hadSpace = this->mInPre?false:this->SkipWhitespace();
+	int aChar = this->GetChar();
 	if(aChar=='<')
-		return GetActualTag();
+		return this->GetActualTag();
 	else
 	{
-		mHadTextSpace = mHadTextSpace || hadSpace;
-		UngetChar(aChar);
-		return GetTextTag();
+		this->mHadTextSpace = this->mHadTextSpace || hadSpace;
+		this->UngetChar(aChar);
+		return this->GetTextTag();
 	}
 }
 
@@ -381,42 +381,42 @@ bool HTMLParser2::GetNextTag()
 ///////////////////////////////////////////////////////////////////////////////
 void HTMLParser2::CalcFont()
 {
-	FontDescriptor aDescriptor = mCurFont->GetDescriptor();
-	if(mBoldCount<=0 && mHeaderCount<=0)
+	FontDescriptor aDescriptor = this->mCurFont->GetDescriptor();
+	if(this->mBoldCount<=0 && this->mHeaderCount<=0)
 	{
-		mBoldCount = 0;
-		mHeaderCount = 0;
+		this->mBoldCount = 0;
+		this->mHeaderCount = 0;
 		aDescriptor.mStyle &= ~FontStyle_Bold;
 	}
 	else
 		aDescriptor.mStyle |= FontStyle_Bold;
 
-	if(mItalicCount<=0)
+	if(this->mItalicCount<=0)
 	{
-		mItalicCount = 0;
+		this->mItalicCount = 0;
 		aDescriptor.mStyle &= ~FontStyle_Italic;
 	}
 	else
 		aDescriptor.mStyle |= FontStyle_Italic;
 
-	if(mUnderlineCount<=0)
+	if(this->mUnderlineCount<=0)
 	{
-		mItalicCount = 0;
+		this->mItalicCount = 0;
 		aDescriptor.mStyle &= ~FontStyle_Underline;
 	}
 	else
 		aDescriptor.mStyle |= FontStyle_Underline;
 
-	mCurFont = mDisplay->GetFont(aDescriptor);
-	mDisplay->SetFont(mCurFont);
+	this->mCurFont = this->mDisplay->GetFont(aDescriptor);
+	this->mDisplay->SetFont(this->mCurFont);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 std::string* HTMLParser2::GetParam(const char *theName)
 {
-	TagAttributes::iterator anItr = mCurTagAttributes.find(theName);
-	if(anItr==mCurTagAttributes.end())
+	TagAttributes::iterator anItr = this->mCurTagAttributes.find(theName);
+	if(anItr==this->mCurTagAttributes.end())
 		return NULL;
 
 	return &anItr->second;
@@ -426,24 +426,24 @@ std::string* HTMLParser2::GetParam(const char *theName)
 ///////////////////////////////////////////////////////////////////////////////
 void HTMLParser2::CheckAlignment()
 {
-	std::string *anAlignStr = GetParam("ALIGN");
+	std::string *anAlignStr = this->GetParam("ALIGN");
 	if(anAlignStr==NULL)
 		return;
 
 	if(StringCompareNoCase(*anAlignStr,"CENTER")==0)
-		mDisplay->SetLineAlignment(HorzAlign_Center);
+		this->mDisplay->SetLineAlignment(HorzAlign_Center);
 	else if(StringCompareNoCase(*anAlignStr,"RIGHT")==0)
-		mDisplay->SetLineAlignment(HorzAlign_Right);
+		this->mDisplay->SetLineAlignment(HorzAlign_Right);
 	else
-		mDisplay->SetLineAlignment(HorzAlign_Left);
+		this->mDisplay->SetLineAlignment(HorzAlign_Left);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void HTMLParser2::DoLineBreak()
 {
-	mHadLineBreak = true;
-	mDisplay->LineBreak(10); 
+	this->mHadLineBreak = true;
+	this->mDisplay->LineBreak(10); 
 }
 
 
@@ -451,11 +451,11 @@ void HTMLParser2::DoLineBreak()
 ///////////////////////////////////////////////////////////////////////////////
 bool HTMLParser2::HandleImage()
 {
-	string *anImagePath = GetParam("SRC");
+	string *anImagePath = this->GetParam("SRC");
 	if(anImagePath==NULL)
 		return false;
 
-	string aPath = mPath + *anImagePath;
+	string aPath = this->mPath + *anImagePath;
 
 //	std::string aTrick = "puke.jpg";
 //	anImagePath = &aTrick;
@@ -468,7 +468,7 @@ bool HTMLParser2::HandleImage()
 
 	anExt++;
 	SmartPtr<NativeImage> anImage;
-	DisplayContext *aContext = mDisplay->GetRoot()->GetDisplayContext();
+	DisplayContext *aContext = this->mDisplay->GetRoot()->GetDisplayContext();
 	if(stricmp(anExt,"jpg")==0 || stricmp(anExt,"jpeg")==0)
 	{
 		JPGDecoder aDecoder;
@@ -488,7 +488,7 @@ bool HTMLParser2::HandleImage()
 	if(anImage.get()==NULL)
 		return false;
 
-	mDisplay->AddImage(anImage,"");
+	this->mDisplay->AddImage(anImage,"");
 	return true;
 }
 
@@ -496,48 +496,48 @@ bool HTMLParser2::HandleImage()
 ///////////////////////////////////////////////////////////////////////////////
 void HTMLParser2::HandleStartTag()
 {
-	switch(mCurTagType)
+	switch(this->mCurTagType)
 	{
-		case TagType_Body: mInBody = true; break;
+		case TagType_Body: this->mInBody = true; break;
 		case TagType_Anchor: 
 		{
-			std::string *aStr = GetParam("HREF");
+			std::string *aStr = this->GetParam("HREF");
 			if(aStr!=NULL)
 			{
-				mInAnchor = true;
-				mCurLinkParam = *aStr;
+				this->mInAnchor = true;
+				this->mCurLinkParam = *aStr;
 			}
 			else
 			{
-				aStr = GetParam("NAME");
+				aStr = this->GetParam("NAME");
 				if(aStr!=NULL)
-					mDisplay->AddSegment(new TextAnchorInstruction(*aStr));
+					this->mDisplay->AddSegment(new TextAnchorInstruction(*aStr));
 			}
 			break; 
 		}
 		case TagType_Text: 
-			if(!mCurText.empty() && mInBody) 
+			if(!this->mCurText.empty() && this->mInBody) 
 			{
-				if(mInAnchor)
+				if(this->mInAnchor)
 				{
-					if(isspace(mCurText[0]))
+					if(isspace(this->mCurText[0]))
 					{
-						mDisplay->AddSegment(" ");
-						mDisplay->AddLink(mCurText.c_str()+1,mCurLinkParam.c_str());
+						this->mDisplay->AddSegment(" ");
+						this->mDisplay->AddLink(this->mCurText.c_str()+1,this->mCurLinkParam.c_str());
 					}
 					else
-						mDisplay->AddLink(mCurText.c_str(),mCurLinkParam.c_str());
+						this->mDisplay->AddLink(this->mCurText.c_str(),this->mCurLinkParam.c_str());
 				}
 				else
-					mDisplay->AddSegment(mCurText.c_str()); 
+					this->mDisplay->AddSegment(this->mCurText.c_str()); 
 			}
 			break;
 
-		case TagType_LineBreak: DoLineBreak(); break;
-		case TagType_Paragraph: DoLineBreak(); DoLineBreak(); break;
-		case TagType_Bold:		mBoldCount++; CalcFont(); break;
-		case TagType_Italic:	mItalicCount++; CalcFont(); break;
-		case TagType_Underline: mUnderlineCount++; CalcFont(); break;
+		case TagType_LineBreak: this->DoLineBreak(); break;
+		case TagType_Paragraph: this->DoLineBreak(); this->DoLineBreak(); break;
+		case TagType_Bold:		this->mBoldCount++; this->CalcFont(); break;
+		case TagType_Italic:	this->mItalicCount++; this->CalcFont(); break;
+		case TagType_Underline: this->mUnderlineCount++; this->CalcFont(); break;
 		case TagType_H1:
 		case TagType_H2:
 		case TagType_H3:
@@ -545,45 +545,45 @@ void HTMLParser2::HandleStartTag()
 		case TagType_H5:
 		case TagType_H6:
 		{
-			mHeaderCount++;
-			DoLineBreak(); DoLineBreak();
-			CheckAlignment();
-			FontDescriptor aDescriptor("TimesRoman",FontStyle_Bold,6 + (TagType_H6 - mCurTagType)*3);
-			mCurFont = mDisplay->GetFont(aDescriptor);
-			mFontStack.push_back(mCurFont);
-			CalcFont();
+			this->mHeaderCount++;
+			this->DoLineBreak(); this->DoLineBreak();
+			this->CheckAlignment();
+			FontDescriptor aDescriptor("TimesRoman",FontStyle_Bold,6 + (TagType_H6 - this->mCurTagType)*3);
+			this->mCurFont = this->mDisplay->GetFont(aDescriptor);
+			this->mFontStack.push_back(this->mCurFont);
+			this->CalcFont();
 			break;
 		}
 		case TagType_Code:
 		{
-			FontDescriptor aDescriptor = mCurFont->GetDescriptor();
+			FontDescriptor aDescriptor = this->mCurFont->GetDescriptor();
 			aDescriptor.mFace = "Courier";
-			mCurFont = mDisplay->GetFont(aDescriptor);
-			mFontStack.push_back(mCurFont);
-			CalcFont();
+			this->mCurFont = this->mDisplay->GetFont(aDescriptor);
+			this->mFontStack.push_back(this->mCurFont);
+			this->CalcFont();
 			break;
 		}
 		case TagType_ListItem:
-			DoLineBreak();
-			mDisplay->AddSegment(new TextWidthInstruction(50));
+			this->DoLineBreak();
+			this->mDisplay->AddSegment(new TextWidthInstruction(50));
 			break;
 
 		case TagType_Pre:
 		{
-			if(!mHadLineBreak)
-				DoLineBreak(); 
+			if(!this->mHadLineBreak)
+				this->DoLineBreak(); 
 
-			mInPre = true;
-			FontDescriptor aDescriptor = mCurFont->GetDescriptor();
+			this->mInPre = true;
+			FontDescriptor aDescriptor = this->mCurFont->GetDescriptor();
 			aDescriptor.mFace = "Courier";
-			mCurFont = mDisplay->GetFont(aDescriptor);
-			mFontStack.push_back(mCurFont);
-			CalcFont();
+			this->mCurFont = this->mDisplay->GetFont(aDescriptor);
+			this->mFontStack.push_back(this->mCurFont);
+			this->CalcFont();
 			break;
 		}
 
 		case TagType_Image:
-			HandleImage();
+			this->HandleImage();
 			break;
 	}
 }
@@ -592,13 +592,13 @@ void HTMLParser2::HandleStartTag()
 ///////////////////////////////////////////////////////////////////////////////
 void HTMLParser2::HandleEndTag()
 {
-	switch(mCurTagType)
+	switch(this->mCurTagType)
 	{
-		case TagType_Body: mInBody = false; break;
-		case TagType_Anchor:	mInAnchor = false; break; 
-		case TagType_Bold:		mBoldCount--; CalcFont(); break;
-		case TagType_Italic:	mItalicCount--; CalcFont(); break;
-		case TagType_Underline: mUnderlineCount--; CalcFont(); break;
+		case TagType_Body: this->mInBody = false; break;
+		case TagType_Anchor:	this->mInAnchor = false; break; 
+		case TagType_Bold:		this->mBoldCount--; this->CalcFont(); break;
+		case TagType_Italic:	this->mItalicCount--; this->CalcFont(); break;
+		case TagType_Underline: this->mUnderlineCount--; this->CalcFont(); break;
 		case TagType_H1:
 		case TagType_H2:
 		case TagType_H3:
@@ -606,36 +606,36 @@ void HTMLParser2::HandleEndTag()
 		case TagType_H5:
 		case TagType_H6:
 		{
-			mHeaderCount--;
-			if(!mFontStack.empty())
+			this->mHeaderCount--;
+			if(!this->mFontStack.empty())
 			{
-				mFontStack.pop_back();
-				mCurFont = mFontStack.back();
-				CalcFont();
-				DoLineBreak(); DoLineBreak();
-				mDisplay->SetLineAlignment(HorzAlign_Left);
+				this->mFontStack.pop_back();
+				this->mCurFont = this->mFontStack.back();
+				this->CalcFont();
+				this->DoLineBreak(); this->DoLineBreak();
+				this->mDisplay->SetLineAlignment(HorzAlign_Left);
 			}
 			break;
 		}
 		case TagType_Code:
 		{
-			if(!mFontStack.empty())
+			if(!this->mFontStack.empty())
 			{
-				mFontStack.pop_back();
-				mCurFont = mFontStack.back();
-				CalcFont();
+				this->mFontStack.pop_back();
+				this->mCurFont = this->mFontStack.back();
+				this->CalcFont();
 			}
 			break;
 		}
 		case TagType_Pre:
 		{
-			if(!mFontStack.empty())
+			if(!this->mFontStack.empty())
 			{
-				mFontStack.pop_back();
-				mCurFont = mFontStack.back();
-				CalcFont();
+				this->mFontStack.pop_back();
+				this->mCurFont = this->mFontStack.back();
+				this->CalcFont();
 			}
-			mInPre = false;
+			this->mInPre = false;
 			break;
 		}
 	}
@@ -646,50 +646,50 @@ void HTMLParser2::HandleEndTag()
 bool HTMLParser2::Parse(const char *theFilePath, TextArea *theDisplay)
 {
 	if(theDisplay!=NULL)
-		mDisplay = theDisplay;
+		this->mDisplay = theDisplay;
 
-	if(mDisplay==NULL)
+	if(this->mDisplay==NULL)
 		return false;
 
-	CloseFile();
-	mFile = fopen(theFilePath,"r");
-	if(mFile==NULL)
+	this->CloseFile();
+	this->mFile = fopen(theFilePath,"r");
+	if(this->mFile==NULL)
 		return false;
 
-	mPath = theFilePath;
-	int aPos = mPath.find_last_of("\\");
+	this->mPath = theFilePath;
+	int aPos = this->mPath.find_last_of("\\");
 	if(aPos==string::npos)
-		aPos = mPath.find_last_of("/");
+		aPos = this->mPath.find_last_of("/");
 
 	if(aPos!=string::npos)
-		mPath.resize(aPos+1);
+		this->mPath.resize(aPos+1);
 	else
-		mPath.erase();
+		this->mPath.erase();
 
-	mDisplay->Clear();
-	mDisplay->SetLineAlignment(HorzAlign_Left);
-	mDisplay->SetWrapIndentSize(0);
-	mCurFont = mDisplay->GetFont(FontDescriptor("TimesRoman",FontStyle_Plain,10));
-	mFontStack.push_back(mCurFont);
+	this->mDisplay->Clear();
+	this->mDisplay->SetLineAlignment(HorzAlign_Left);
+	this->mDisplay->SetWrapIndentSize(0);
+	this->mCurFont = this->mDisplay->GetFont(FontDescriptor("TimesRoman",FontStyle_Plain,10));
+	this->mFontStack.push_back(this->mCurFont);
 
-	mLineNum = 1;
-	mBoldCount = mItalicCount = mUnderlineCount = mHeaderCount = 0;
-	mHadLineBreak = mHadTextSpace = false;
-	mInAnchor = false;
-	mInBody = false;
-	mInPre = false;
+	this->mLineNum = 1;
+	this->mBoldCount = this->mItalicCount = this->mUnderlineCount = this->mHeaderCount = 0;
+	this->mHadLineBreak = this->mHadTextSpace = false;
+	this->mInAnchor = false;
+	this->mInBody = false;
+	this->mInPre = false;
 
-	while(!EndOfFile())
+	while(!this->EndOfFile())
 	{
-		if(!GetNextTag())
+		if(!this->GetNextTag())
 			break;
 
-		if(mIsEndTag)
-			HandleEndTag();
+		if(this->mIsEndTag)
+			this->HandleEndTag();
 		else
-			HandleStartTag();
+			this->HandleStartTag();
 	}
 
-	CloseFile();
+	this->CloseFile();
 	return true;
 }

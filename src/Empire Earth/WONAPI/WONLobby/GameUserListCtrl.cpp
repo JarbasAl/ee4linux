@@ -1,4 +1,4 @@
-// New R3 GameUser whole source family; actual ordinary-object review pending.
+// GameUserListCtrl: the player list of a game room (status icon, ready mark, name, ping) with its Kick/Ban button
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -16,225 +16,227 @@
 #include "ee/wonapi/WONLobbyScreens.h"
 #include "LostDebug.h"
 namespace WONAPI {
-// Original3bcad0..3bcb0f,63B. Native new24 proved in both event/refresh loops.
 // FUNCTION: WON 0x007bcad0
+// Creates a game player list entry for a client
 GameUserListItem::GameUserListItem(LobbyClient* inClient) : mClient(inClient) {}
-// Original3bcbe0..3bcdaa,458B. Preserve predicate order and member reloads.
+// The original tests in this order and reads mClient again for each test
 // FUNCTION: WON 0x007bcbe0
+// Picks the client's status icon, first match wins: ignored, blocked, muted, away, admin, moderator, captain, normal
 void GameUserListItem::UpdateIcon()
 {
-    if(mClient->GetB22()) { mImage=::UserListCtrl_Ignored_Image; return; }
-    if(mClient->GetB23()) { mImage=::UserListCtrl_Blocked_Image; return; }
-    if(mClient->Fn3A5480(true)) { mImage=::UserListCtrl_Muted_Image; return; }
-    if(mClient->Fn3A54B0()) { mImage=::UserListCtrl_Away_Image; return; }
-    if(mClient->Fn3A54C0()) { mImage=::UserListCtrl_Admin_Image; return; }
-    if(mClient->Fn3A54D0()) { mImage=::UserListCtrl_Moderator_Image; return; }
-    if(mClient->Fn3A54E0(1)) { mImage=::UserListCtrl_Captain_Image; return; }
-    mImage=::UserListCtrl_Normal_Image;
+    if(this->mClient->IsIgnored()) { this->mImage=::UserListCtrl_Ignored_Image; return; }
+    if(this->mClient->IsBlocked()) { this->mImage=::UserListCtrl_Blocked_Image; return; }
+    if(this->mClient->IsMuted(true)) { this->mImage=::UserListCtrl_Muted_Image; return; }
+    if(this->mClient->IsAway()) { this->mImage=::UserListCtrl_Away_Image; return; }
+    if(this->mClient->IsAdmin()) { this->mImage=::UserListCtrl_Admin_Image; return; }
+    if(this->mClient->IsModerator()) { this->mImage=::UserListCtrl_Moderator_Image; return; }
+    if(this->mClient->IsCaptain(1)) { this->mImage=::UserListCtrl_Captain_Image; return; }
+    this->mImage=::UserListCtrl_Normal_Image;
 }
-// Original3bcdb0..3bce07,87B. Font ownership changes before metric reads.
 // FUNCTION: WON 0x007bcdb0
-void GameUserListItem::Virtual08(ListArea* inArea)
+// Sizes the entry to the list font's height, or the icon's if taller
+void GameUserListItem::CalcDimensions(ListArea* inArea)
 {
-    mFont=inArea->mFont;
+    this->mFont=inArea->mFont;
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(2);
-    mHeight=mFont->GetHeight();
-    if(mImage.get()!=NULL && mImage->mHeight>mHeight) mHeight=mImage->mHeight;
+    this->mHeight=this->mFont->GetHeight();
+    if(this->mImage.get()!=NULL && this->mImage->mHeight>this->mHeight) this->mHeight=this->mImage->mHeight;
 }
-// Original3bce10..3bce5f,79B. Full bool-normalization then reversed rank.
 // FUNCTION: WON 0x007bce10
-int GameUserListItem::Virtual10(const ListItem* inOther,ListArea*) const
+// Orders the game captain first, then players by name ignoring case
+int GameUserListItem::Compare(const ListItem* inOther,ListArea*) const
 {
     const GameUserListItem* other=static_cast<const GameUserListItem*>(inOther);
-    int mine=mClient->Fn3A54E0(1)?1:0;
-    int theirs=other->mClient->Fn3A54E0(1)?1:0;
+    int mine=this->mClient->IsCaptain(1)?1:0;
+    int theirs=other->mClient->IsCaptain(1)?1:0;
     if(mine!=theirs) return theirs-mine;
-    return mClient->mName.CompareNoCase(other->mClient->mName);
+    return this->mClient->mName.CompareNoCase(other->mClient->mName);
 }
-// Original3bce60..3bcfac,332B. Owned5-entry jump table20B excluded.
-// Canonical GUI D field/API spellings; all getters read proved original offsets.
+// The ready mark is centered by the status icon's height, not its own (as in the original)
 // FUNCTION: WON 0x007bce60
-void GameUserListItem::Virtual04(Graphics& inGraphics,ListArea* inArea)
+// Draws one column of the entry: selection background, status icon, ready mark, name or ping bars
+void GameUserListItem::Paint(Graphics& inGraphics,ListArea* inArea)
 {
     MultiListArea* area=static_cast<MultiListArea*>(inArea);
     int column=area->GetColumnPaintContext();
-    unsigned long color=inGraphics.Fn326D20(14);
-    if(mB08) color=area->GetSelColor().GetForegroundColor(inGraphics,color);
+    unsigned long color=inGraphics.GetStandardColor(StandardColor_Text);
+    if(this->mSelected) color=area->GetSelColor().GetForegroundColor(inGraphics,color);
     inGraphics.SetColor(color);
-    inGraphics.SetFont(mFont.get());
+    inGraphics.SetFont(this->mFont.get());
     switch(column) {
     case -1:
-        if(mB08) {
+        if(this->mSelected) {
             inGraphics.SetColor(area->GetSelColor().GetBackgroundColor(inGraphics));
-            inGraphics.FillRect(0,0,area->mL12C,mHeight);
+            inGraphics.FillRect(0,0,area->mPaintWidth,this->mHeight);
         }
         return;
     case 0:
-        inGraphics.DrawImage(mImage.get(),0,(mHeight-mImage->mHeight)/2);
+        inGraphics.DrawImage(this->mImage.get(),0,(this->mHeight-this->mImage->mHeight)/2);
         return;
     case 1:
-        if(mClient->Fn3A5590())
-            inGraphics.DrawImage(::GameUserListCtrl_Ready_Image.get(),0,(mHeight-mImage->mHeight)/2);
+        if(this->mClient->IsReady())
+            inGraphics.DrawImage(::GameUserListCtrl_Ready_Image.get(),0,(this->mHeight-this->mImage->mHeight)/2);
         return;
     case 2:
-        inGraphics.SetFont(mFont.get());
-        inGraphics.DrawString(mClient->mName,0,(mHeight-mFont->GetHeight())/2);
+        inGraphics.SetFont(this->mFont.get());
+        inGraphics.DrawString(this->mClient->mName,0,(this->mHeight-this->mFont->GetHeight())/2);
         return;
     case 3:
-        DrawLobbyPing(&inGraphics,mClient->Fn3A55A0(),mHeight-2,0,0);
+        DrawLobbyPing(&inGraphics,this->mClient->GetPing(),this->mHeight-2,0,0);
         return;
     }
 }
 
 // FUNCTION: WON 0x007bcfc0
-GameUserListCtrl::GameUserListCtrl() : mInGame(false) { mRoomSpecFlags = 2; }
-// Original3bd2e0..3bd2f5,21B.
+// Creates the game player list for game rooms, not yet in a game
+GameUserListCtrl::GameUserListCtrl() : mInGame(false) { this->mRoomSpecFlags = 2; }
 // FUNCTION: WON 0x007bd2e0
+// Returns the client of the selected entry, or NULL
 LobbyClient* GameUserListCtrl::GetSelectedClient()
 {
-    GameUserListItem* item=static_cast<GameUserListItem*>(mUserList->mSelItem);
+    GameUserListItem* item=static_cast<GameUserListItem*>(this->mUserList->mSelItem);
     return item==NULL?NULL:item->mClient.get();
 }
-// Original3bd300..3bd350,80B. Compare client IDs; current list each iteration.
 // FUNCTION: WON 0x007bd300
+// Returns the entry of the client with the same client id, or NULL
 GameUserListItem* GameUserListCtrl::GetListItem(LobbyClient* inClient)
 {
-    for(int i=0;i<int(mUserList->mItems.size());++i) {
-        GameUserListItem* item=static_cast<GameUserListItem*>(mUserList->GetItem(i));
+    for(int i=0;i<int(this->mUserList->mItems.size());++i) {
+        GameUserListItem* item=static_cast<GameUserListItem*>(this->mUserList->GetItem(i));
         LobbyClient* client=item->mClient.get();
         if(client!=NULL && client->mClientId==inClient->mClientId) return item;
     }
     return NULL;
 }
-// Original3bd350..3bd36a,26B.
 // FUNCTION: WON 0x007bd350
+// Kicks (or bans) the selected client
 void GameUserListCtrl::HandleKickPlayer(bool inBan)
 {
-    LobbyClient* client=GetSelectedClient();
-    if(client!=NULL) LobbyFn361BC0(client,inBan);
+    LobbyClient* client=this->GetSelectedClient();
+    if(client!=NULL) LobbyKickClient(client,inBan);
 }
-// Original3bd370..3bd3e8,120B. No host/selection ownership pin in original.
 // FUNCTION: WON 0x007bd370
+// Enables Kick only for the game's host, with a player other than the captain selected
 void GameUserListCtrl::UpdateKickButton()
 {
-    if(!mInGame || mKickButton.get()==NULL) return;
+    if(!this->mInGame || this->mKickButton.get()==NULL) return;
     LobbyGame* game=GetMyLobbyGame();
     if(game==NULL) return;
     if(game->mIsHost) {
-        LobbyClient* client=GetSelectedClient();
-        if(client!=NULL && client->mClientId!=game->mL60) mKickButton->SetEnabled(true);
-        else mKickButton->SetEnabled(false);
-    } else mKickButton->SetEnabled(false);
+        LobbyClient* client=this->GetSelectedClient();
+        if(client!=NULL && client->mClientId!=game->mCaptainId) this->mKickButton->SetEnabled(true);
+        else this->mKickButton->SetEnabled(false);
+    } else this->mKickButton->SetEnabled(false);
 }
-// Original3bd3f0..3bd44c,92B.
 // FUNCTION: WON 0x007bd3f0
+// Refreshes a changed client's icon and the Kick button while in a game
 void GameUserListCtrl::HandleClientChanged(ClientChangedEvent* inEvent)
 {
-    if(!mInGame) return;
-    if((mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
-    if(!inEvent->Fn359470()) return;
-    GameUserListItem* item=GetListItem(inEvent->mClient.get());
+    if(!this->mInGame) return;
+    if((this->mRoomSpecFlags&inEvent->mRoomSpec)!=inEvent->mRoomSpec) return;
+    if(!inEvent->IsModify()) return;
+    GameUserListItem* item=this->GetListItem(inEvent->mClient.get());
     if(item==NULL) return;
     item->UpdateIcon();
-    mUserList->Fn2FC730(item);
-    UpdateKickButton();
+    this->mUserList->RefreshItem(item);
+    this->UpdateKickButton();
 }
-// Original3bd450..3bd587,311B. New item construction reads event after rawnew.
 // FUNCTION: WON 0x007bd450
+// Adds, removes or refreshes a player's entry while in a game
 void GameUserListCtrl::HandlePlayerChanged(PlayerChangedEvent* inEvent)
 {
-    if(!mInGame) return;
+    if(!this->mInGame) return;
     if(inEvent->IsAdd()) {
         SmartPtr<GameUserListItem> item=new GameUserListItem(inEvent->mClient.get());
         item->UpdateIcon();
-        mUserList->ListArea::InsertItem(item.get(),-1);
+        this->mUserList->ListArea::InsertItem(item.get(),-1);
     } else if(inEvent->IsDelete()) {
-        GameUserListItem* item=GetListItem(inEvent->mClient.get());
+        GameUserListItem* item=this->GetListItem(inEvent->mClient.get());
         if(item==NULL) return;
-        mUserList->RemoveItem(item);
+        this->mUserList->RemoveItem(item);
     } else {
-        GameUserListItem* item=GetListItem(inEvent->mClient.get());
+        GameUserListItem* item=this->GetListItem(inEvent->mClient.get());
         if(item==NULL) return;
         item->UpdateIcon();
-        mUserList->Fn2FC730(item);
+        this->mUserList->RefreshItem(item);
     }
 }
-// Original3bd710..3bd72f,31B.
 // FUNCTION: WON 0x007bd710
+// Empties the list when we leave the game
 void GameUserListCtrl::HandleLeftGame()
 {
-    if(mInGame) {
-        mInGame=false;
-        mUserList->Fn2FAA50(true);
+    if(this->mInGame) {
+        this->mInGame=false;
+        this->mUserList->Clear(true);
     }
 }
-// Original3bd0b0..3bd2de,558B. Optional KickButton, type2 configuration only.
 // FUNCTION: WON 0x007bd0b0
+// Looks up the user list and the optional Kick button (disabled), and listens to broadcasts
 void GameUserListCtrl::InitComponent(ComponentInit& inInit)
 {
-    if(inInit.mType==2) {
-        ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SafeGetComponent(config,mUserList,"UserList",__FILE__,159);
-        mKickButton=dynamic_cast<Button*>(config->Fn386860("KickButton"));
-        if(mKickButton.get()!=NULL) mKickButton->SetEnabled(false);
-        Fn2F5360(1);
-    }
+    if(inInit.mType!=2)
+        return;
+    ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SafeGetComponent(config,this->mUserList,"UserList",__FILE__,159);
+    this->mKickButton=dynamic_cast<Button*>(config->Fn386860("KickButton"));
+    if(this->mKickButton.get()!=NULL) this->mKickButton->SetEnabled(false);
+    this->SubscribeToBroadcast(1);
 }
-// Original3bd590..3bd706,374B. Borrow client map after room/game tests.
 // FUNCTION: WON 0x007bd590
+// On joining a game, lists its players, labels the button Kick or Ban (by room kind) and updates it
 void GameUserListCtrl::HandleJoinedGame()
 {
     LobbyGame* game=GetMyLobbyGame();
-    if(game==NULL || !game->Fn3A6D40(mRoomSpecFlags)) return;
+    if(game==NULL || !game->MatchesRoomSpec(this->mRoomSpecFlags)) return;
     LobbyClientList* clients=game->mClients.get();
     if(clients==NULL) return;
-    if(mKickButton.get()!=NULL) {
-        if(mRoomSpecFlags&4) mKickButton->SetText(::GameUserListCtrl_Ban_String,true);
-        else mKickButton->SetText(::GameUserListCtrl_Kick_String,true);
+    if(this->mKickButton.get()!=NULL) {
+        if(this->mRoomSpecFlags&4) this->mKickButton->SetText(::GameUserListCtrl_Ban_String,true);
+        else this->mKickButton->SetText(::GameUserListCtrl_Kick_String,true);
     }
-    mUserList->Fn2FAA00();
-    mUserList->Fn2FAA50(true);
+    this->mUserList->BeginUpdate();
+    this->mUserList->Clear(true);
     for(LobbyClientMap::iterator i=clients->mClients.begin();i!=clients->mClients.end();++i) {
         LobbyClient* client=i->second.get();
-        if(client->Fn3A5580()) {
-            SmartPtr<GameUserListItem> item=new GameUserListItem(client);
-            item->UpdateIcon();
-            mUserList->ListArea::InsertItem(item.get(),-1);
-        }
+        if(!client->HasPlayer())
+            continue;
+        SmartPtr<GameUserListItem> item=new GameUserListItem(client);
+        item->UpdateIcon();
+        this->mUserList->ListArea::InsertItem(item.get(),-1);
     }
-    mUserList->Fn2FAA10();
-    mInGame=true;
-    UpdateKickButton();
+    this->mUserList->EndUpdate();
+    this->mInGame=true;
+    this->UpdateKickButton();
 }
-// Original3bd730..3bd9ba,650B. No jump table; rawnew event guards separate.
 // FUNCTION: WON 0x007bd730
+// Handles selection, Kick/Ban, the right-click client menu, double-click whisper and game/player events
 void GameUserListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType) {
-    case 22: UpdateKickButton(); return;
-    case 15:
-        if(inEvent->mComponent==mKickButton.get()) {
-            HandleKickPlayer((mRoomSpecFlags&4)!=0);
+    case ComponentEvent_ListSelChanged: this->UpdateKickButton(); return;
+    case ComponentEvent_ButtonPressed:
+        if(inEvent->mComponent==this->mKickButton.get()) {
+            this->HandleKickPlayer((this->mRoomSpecFlags&4)!=0);
             return;
         }
         break;
-    case 23: {
-        LobbyClient* client=GetSelectedClient();
+    case ComponentEvent_ListItemClicked: {
+        LobbyClient* client=this->GetSelectedClient();
         if(client==NULL) return;
         ListItemClickedEvent* clicked=static_cast<ListItemClickedEvent*>(inEvent);
         if(!clicked->IsSelectedItem()) return;
         if(clicked->mButton==2)
-            Fn2F53F0(new ClientActionEvent(18,GetRoomSpecFlags(),client),false);
+            this->DeliverEvent(new ClientActionEvent(18,this->GetRoomSpecFlags(),client),false);
         else if(clicked->mButton==0 && clicked->mDoubleClick)
-            LobbyFn359100(new SetChatInputEvent(2,client->mName,mRoomSpecFlags,false),true);
+            LobbyBroadcastEvent(new SetChatInputEvent(2,client->mName,this->mRoomSpecFlags,false),true);
         return;
     }
-    case 100006: HandleClientChanged(static_cast<ClientChangedEvent*>(inEvent)); return;
-    case 100029: HandleJoinedGame(); return;
-    case 100032: HandleLeftGame(); return;
-    case 100038: HandlePlayerChanged(static_cast<PlayerChangedEvent*>(inEvent)); return;
-    case 100054: mRoomSpecFlags|=static_cast<SetRoomSpecFlagsEvent*>(inEvent)->mFlags; return;
+    case LobbyEvent_ClientChanged: this->HandleClientChanged(static_cast<ClientChangedEvent*>(inEvent)); return;
+    case 100029: this->HandleJoinedGame(); return;
+    case 100032: this->HandleLeftGame(); return;
+    case LobbyEvent_PlayerChanged: this->HandlePlayerChanged(static_cast<PlayerChangedEvent*>(inEvent)); return;
+    case LobbyEvent_SetRoomSpecFlags: this->mRoomSpecFlags|=static_cast<SetRoomSpecFlagsEvent*>(inEvent)->mFlags; return;
     }
     Component::HandleComponentEvent(inEvent);
 }
@@ -242,6 +244,7 @@ void GameUserListCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 
 namespace WONAPI {
 // FUNCTION: WON 0x007654c0
+// Creates the layout reader for a game player list
 ComponentConfig* GameUserListCtrlConfig::CfgFactory()
 {
     return new GameUserListCtrlConfig;
@@ -250,6 +253,7 @@ ComponentConfig* GameUserListCtrlConfig::CfgFactory()
 
 namespace WONAPI {
 // FUNCTION: WON 0x007bda70
+// Accepts (and ignores) the CTRLLINKID layout key; passes other keys to the container's reader
 bool GameUserListCtrlConfig::Virtual24(const std::string& instruction)
 {
     if(instruction=="CTRLLINKID") { }

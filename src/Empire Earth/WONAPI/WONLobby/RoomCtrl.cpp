@@ -16,255 +16,271 @@
 #include "ee/wonapi/WONLobbyRoomServer.h"
 #include "LostDebug.h"
 using namespace WONAPI;
-// Scratch RoomCtrl's private global list-item family. External base construction/lifetime actual.
+// RoomListItem: an entry of the room tree (a server or one of its chat rooms), private to this file
 // FUNCTION: WON 0x007c19a0
+// Creates a room tree entry for a server, or its 'querying server' placeholder when loading
 RoomListItem::RoomListItem(WONAPI::LobbyServer* inServer,bool inLoading)
     :mColor(-1),mLoading(inLoading),mAddress(inServer->mAddress),mGroupId(0xffff)
 {
-    Fn3C1D40(inServer,NULL);
+    this->UpdateText(inServer,NULL);
 }
 // FUNCTION: WON 0x007c1c50
+// Creates a room tree entry for a chat room on a server
 RoomListItem::RoomListItem(WONAPI::LobbyGroup* inGroup,WONAPI::LobbyServer* inServer)
     :mColor(-1),mLoading(false),mAddress(inServer->mAddress),mGroupId(inGroup->GetId())
 {
-    Fn3C1D40(inServer,inGroup);
+    this->UpdateText(inServer,inGroup);
 }
 // FUNCTION: WON 0x007c20a0
-int RoomListItem::Virtual10(const WONAPI::ListItem* inOther,WONAPI::ListArea*) const
+// Orders room tree entries by their text, ignoring case
+int RoomListItem::Compare(const WONAPI::ListItem* inOther,WONAPI::ListArea*) const
 {
-    return mText.CompareNoCase(static_cast<const RoomListItem*>(inOther)->mText);
+    return this->mText.CompareNoCase(static_cast<const RoomListItem*>(inOther)->mText);
 }
-// Scratch full RoomListItem update, no member ownership shortcuts.
 // FUNCTION: WON 0x007c1d40
-void RoomListItem::Fn3C1D40(WONAPI::LobbyServer* inServer,WONAPI::LobbyGroup* inGroup)
+// Sets the entry's text ('querying server', or the room or server name with its player count) and lock icon
+void RoomListItem::UpdateText(WONAPI::LobbyServer* inServer,WONAPI::LobbyGroup* inGroup)
 {
     char aCount[50];
-    if(mLoading) mText=::RoomCtrl_QueryingServer_String;
+    if(this->mLoading) this->mText=::RoomCtrl_QueryingServer_String;
     else if(inGroup!=NULL)
     {
         sprintf(aCount," (%d)",inGroup->mNumClients);
-        mText=inGroup->mName;
+        this->mText=inGroup->mName;
         if(static_cast<int>(inGroup->mNumClients)>0)
-            mText.append(aCount);
+            this->mText.append(aCount);
     }
     else if(inServer!=NULL)
     {
-        sprintf(aCount," (%d)",inServer->Fn3AA410());
-        mText=inServer->mName;
-        if(inServer->Fn3AA410()!=0)
-            mText.append(aCount);
+        sprintf(aCount," (%d)",inServer->GetNumClients());
+        this->mText=inServer->mName;
+        if(inServer->GetNumClients()!=0)
+            this->mText.append(aCount);
     }
-    else mText.erase();
-    if(inGroup!=NULL && inGroup->Fn3A9020()) mImage=::RoomCtrl_Password_Image;
-    else mImage=NULL;
+    else this->mText.erase();
+    if(inGroup!=NULL && inGroup->IsPasswordProtected()) this->mImage=::RoomCtrl_Password_Image;
+    else this->mImage=NULL;
 }
 // FUNCTION: WON 0x007c1fd0
-void RoomListItem::Virtual08(WONAPI::ListArea* inList)
+// Measures the entry: server entries use a bold font, and the lock icon adds width and height
+void RoomListItem::CalcDimensions(WONAPI::ListArea* inList)
 {
-    if(mFont.get()==NULL)
+    if(this->mFont.get()==NULL)
     {
-        if(mGroupId==0xffff && !mLoading)
-            mFont=inList->Fn2F5A30(inList->mFont.get(),1,0);
-        else mFont=inList->mFont;
+        if(this->mGroupId==0xffff && !this->mLoading)
+            this->mFont=inList->GetFontMod(inList->mFont.get(),1,0);
+        else this->mFont=inList->mFont;
     }
-    if(mColor<0) mColor=inList->GetTextColor();
-    mL10=mFont->GetStringWidth(mText,0,mText.length())+2;
-    mHeight=mFont->GetHeight();
-    if(mImage.get()!=NULL)
+    if(this->mColor<0) this->mColor=inList->GetTextColor();
+    this->mWidth=this->mFont->GetStringWidth(this->mText,0,this->mText.length())+2;
+    this->mHeight=this->mFont->GetHeight();
+    if(this->mImage.get()!=NULL)
     {
-        mL10+=mImage->mWidth+2;
-        if(mImage->GetHeight()>mHeight) mHeight=mImage->GetHeight();
+        this->mWidth+=this->mImage->mWidth+2;
+        if(this->mImage->GetHeight()>this->mHeight) this->mHeight=this->mImage->GetHeight();
     }
 }
-// Requires GUI-owned typed SelectionColor atListArea140/listFlags124.
+// Uses the list's selection color (ListArea at 0x140) and its full-row selection flag (list flags at 0x124)
 // FUNCTION: WON 0x007c20c0
-void RoomListItem::Virtual04(WONAPI::Graphics& g,WONAPI::ListArea* inList)
+// Draws the entry with its selection highlight, lock icon and text
+void RoomListItem::Paint(WONAPI::Graphics& g,WONAPI::ListArea* inList)
 {
-    int aColor=mColor;
-    if(mB08)
+    int aColor=this->mColor;
+    if(this->mSelected)
     {
         g.SetColor(inList->GetSelColor().GetBackgroundColor(g));
-        int aWidth=inList->mL12C;
-        if(!inList->ListFlagSet(0x10)) aWidth=mL10;
-        g.FillRect(0,0,aWidth,mHeight);
-        aColor=inList->GetSelColor().GetForegroundColor(g,mColor);
+        int aWidth=inList->mPaintWidth;
+        if(!inList->ListFlagSet(0x10)) aWidth=this->mWidth;
+        g.FillRect(0,0,aWidth,this->mHeight);
+        aColor=inList->GetSelColor().GetForegroundColor(g,this->mColor);
     }
     int x=2;
-    if(mImage.get()!=NULL)
+    if(this->mImage.get()!=NULL)
     {
-        g.DrawImage(mImage.get(),x,(mHeight-mImage->mHeight)/2);
-        x=mImage->mWidth+4;
+        g.DrawImage(this->mImage.get(),x,(this->mHeight-this->mImage->mHeight)/2);
+        x=this->mImage->mWidth+4;
     }
     g.SetColor(aColor);
-    g.SetFont(mFont.get());
-    g.DrawString(mText,x,(mHeight-mFont->GetHeight())/2);
+    g.SetFont(this->mFont.get());
+    g.DrawString(this->mText,x,(this->mHeight-this->mFont->GetHeight())/2);
 }
 
 
 namespace WONAPI {
-// Scratch whole RoomCtrl source-intent. No new partial widget or fake payload allocation.
 RoomCtrl::RoomCtrl() {}
 // FUNCTION: WON 0x007c22a0
+// Looks up the room tree and the Join and Create buttons, listens to broadcasts and updates Join
 void RoomCtrl::InitComponent(ComponentInit& inInit)
 {
     if(inInit.mType!=2) return;
     ComponentConfig* aConfig=static_cast<ComponentConfigInit&>(inInit).mConfig;
-    SafeGetComponent(aConfig,mRoomList,"RoomList",__FILE__,168);
-    SafeGetComponent(aConfig,mJoinButton,"JoinButton",__FILE__,169);
-    SafeGetComponent(aConfig,mCreateButton,"CreateButton",__FILE__,170);
-    Fn2F5360(1);
-    EnableControls();
+    SafeGetComponent(aConfig,this->mRoomList,"RoomList",__FILE__,168);
+    SafeGetComponent(aConfig,this->mJoinButton,"JoinButton",__FILE__,169);
+    SafeGetComponent(aConfig,this->mCreateButton,"CreateButton",__FILE__,170);
+    this->SubscribeToBroadcast(1);
+    this->EnableControls();
 }
 // FUNCTION: WON 0x007c2320
+// Enables Join only while a room tree entry is selected
 void RoomCtrl::EnableControls()
 {
-    mJoinButton->SetEnabled(mRoomList->mSelItem!=NULL);
+    this->mJoinButton->SetEnabled(this->mRoomList->mSelItem!=NULL);
 }
 // FUNCTION: WON 0x007c2350
+// Adds a chat room entry under a server entry
 void RoomCtrl::AddGroup(TreeItem* inParent,LobbyServer* inServer,LobbyGroup* inGroup)
 {
     RoomListItem* aItem=new RoomListItem(inGroup,inServer);
-    mRoomList->Fn315080(inParent,aItem,-1);
+    this->mRoomList->InsertTreeItem(inParent,aItem,-1);
 }
 // FUNCTION: WON 0x007c23d0
+// Adds a server entry with its chat rooms (or a 'querying' placeholder while unconnected), optionally opened
 void RoomCtrl::AddServer(LobbyServer* inServer,bool inOpen,int inPos)
 {
-    mRoomList->Fn2FAA00();
+    this->mRoomList->BeginUpdate();
     RoomListItem* aItem=new RoomListItem(inServer,false);
-    TreeItem* aServer=mRoomList->Fn315080(NULL,aItem,inPos);
+    TreeItem* aServer=this->mRoomList->InsertTreeItem(NULL,aItem,inPos);
     LobbyGroupMap::iterator it=inServer->mGroups.begin();
     while(it!=inServer->mGroups.end())
     {
         LobbyGroup* aGroup=it->second.get();
-        if(aGroup->Fn3A9050()) AddGroup(aServer,inServer,aGroup);
+        if(aGroup->IsChatGroup()) this->AddGroup(aServer,inServer,aGroup);
         ++it;
     }
-    if(!inServer->Fn3AA430() && inServer->mGroups.empty())
+    if(!inServer->IsConnected() && inServer->mGroups.empty())
     {
-        mRoomList->Fn3151B0(aServer);
+        this->mRoomList->RemoveAllItems(aServer);
         RoomListItem* aLoading=new RoomListItem(inServer,true);
-        TreeItem* aLoadingTree=mRoomList->Fn315080(aServer,aLoading,0);
-        aLoadingTree->mB09=false;
+        TreeItem* aLoadingTree=this->mRoomList->InsertTreeItem(aServer,aLoading,0);
+        aLoadingTree->mSelectable=false;
     }
-    if(inOpen) mRoomList->Fn315220(aServer,true);
-    mRoomList->Fn2FAA10();
-    EnableControls();
+    if(inOpen) this->mRoomList->OpenItem(aServer,true);
+    this->mRoomList->EndUpdate();
+    this->EnableControls();
 }
 // FUNCTION: WON 0x007c2b10
+// Returns the server entry with the given address, or NULL
 TreeItem* RoomCtrl::GetServerItem(const IPAddr& inAddress)
 {
-    for(int i=0;i<mRoomList->GetNumItems();++i)
+    for(int i=0;i<this->mRoomList->GetNumItems();++i)
     {
-        TreeItem* aTree=static_cast<TreeItem*>(mRoomList->GetItem(i));
+        TreeItem* aTree=static_cast<TreeItem*>(this->mRoomList->GetItem(i));
         RoomListItem* aItem=static_cast<RoomListItem*>(aTree->mItem.get());
         if(aItem->mAddress==inAddress) return aTree;
     }
     return NULL;
 }
 // FUNCTION: WON 0x007c2b70
+// Returns the entry of the room with the given id under the server at the given address, or NULL
 TreeItem* RoomCtrl::GetGroupItem(const IPAddr& inAddress,int inGroupId)
 {
-    TreeItem* aServer=GetServerItem(inAddress);
-    if(aServer!=NULL)
+    TreeItem* aServer=this->GetServerItem(inAddress);
+    if(aServer==NULL)
+        return NULL;
+    for(int i=0;i<static_cast<int>(aServer->mChildren.size());++i)
     {
-        for(int i=0;i<static_cast<int>(aServer->mChildren.size());++i)
-        {
-            TreeItem* aChild=aServer->Fn314440(i);
-            if(static_cast<RoomListItem*>(aChild->mItem.get())->mGroupId==static_cast<unsigned long>(inGroupId)) return aChild;
-        }
+        TreeItem* aChild=aServer->GetChild(i);
+        if(static_cast<RoomListItem*>(aChild->mItem.get())->mGroupId==static_cast<unsigned long>(inGroupId)) return aChild;
     }
     return NULL;
 }
 // FUNCTION: WON 0x007c2bc0
+// Returns a server's entry, or NULL
 TreeItem* RoomCtrl::GetServerItem(LobbyServer* inServer)
 {
-    if(inServer!=NULL) return GetServerItem(inServer->mAddress);
+    if(inServer!=NULL) return this->GetServerItem(inServer->mAddress);
     return NULL;
 }
 // FUNCTION: WON 0x007c2be0
+// Returns a chat room's entry on a server, or NULL
 TreeItem* RoomCtrl::GetGroupItem(LobbyServer* inServer,LobbyGroup* inGroup)
 {
-    if(inServer!=NULL && inGroup!=NULL) return GetGroupItem(inServer->mAddress,inGroup->GetId());
+    if(inServer!=NULL && inGroup!=NULL) return this->GetGroupItem(inServer->mAddress,inGroup->GetId());
     return NULL;
 }
 
 // FUNCTION: WON 0x007c2630
+// Asks the lobby to join the selected room (or server)
 void RoomCtrl::DoJoinRoom()
 {
-    TreeItem* aSelected=static_cast<TreeItem*>(mRoomList->mSelItem);
+    TreeItem* aSelected=static_cast<TreeItem*>(this->mRoomList->mSelItem);
     if(aSelected!=NULL)
     {
         RoomListItem* aItem=static_cast<RoomListItem*>(aSelected->mItem.get());
-        Fn2F53F0(new JoinRoomEvent(aItem->mAddress,aItem->mGroupId),false);
+        this->DeliverEvent(new JoinRoomEvent(aItem->mAddress,aItem->mGroupId),false);
     }
 }
 // FUNCTION: WON 0x007c28f0
+// Asks the lobby to create a room on the selected server (no address when nothing is selected)
 void RoomCtrl::DoCreateRoom()
 {
     IPAddr aAddress;
-    TreeItem* aSelected=static_cast<TreeItem*>(mRoomList->mSelItem);
+    TreeItem* aSelected=static_cast<TreeItem*>(this->mRoomList->mSelItem);
     if(aSelected!=NULL) aAddress=static_cast<RoomListItem*>(aSelected->mItem.get())->mAddress;
-    Fn2F53F0(new CreateRoomEvent(aAddress),false);
+    this->DeliverEvent(new CreateRoomEvent(aAddress),false);
 }
 // FUNCTION: WON 0x007c2550
+// Rebuilds the room tree from the server list and selects our current chat room (or its server)
 void RoomCtrl::HandleSetRoomList()
 {
-    LobbyServerList* aServers=LobbyFn35B6B0();
+    LobbyServerList* aServers=LobbyGetServerList();
     if(aServers==NULL) return;
-    mRoomList->Fn2FAA00();
-    mRoomList->Fn3151A0(true);
+    this->mRoomList->BeginUpdate();
+    this->mRoomList->ClearTree(true);
     for(LobbyServerMap::iterator it=aServers->mServers.begin();it!=aServers->mServers.end();++it)
-        AddServer(it->second.get(),false,-1);
-    mRoomList->Fn2FAA10();
-    LobbyGroup* aGroup=LobbyFn35B6D0();
-    LobbyServer* aServer=LobbyFn35B6F0();
+        this->AddServer(it->second.get(),false,-1);
+    this->mRoomList->EndUpdate();
+    LobbyGroup* aGroup=LobbyGetChatGroup();
+    LobbyServer* aServer=LobbyGetCurrentServer();
     if(aServer!=NULL)
     {
-        TreeItem* aItem=GetServerItem(aServer);
+        TreeItem* aItem=this->GetServerItem(aServer);
         if(aItem!=NULL)
         {
-            mRoomList->Fn315220(aItem,false);
-            if(aGroup==NULL || (aItem=GetGroupItem(aServer,aGroup))!=NULL)
+            this->mRoomList->OpenItem(aItem,false);
+            if(aGroup==NULL || (aItem=this->GetGroupItem(aServer,aGroup))!=NULL)
             {
-            ListArea* aList=mRoomList.get();
+            ListArea* aList=this->mRoomList.get();
             aList->SetSelItem(aList->GetItemPos(aItem),true);
-            mRoomList->EnsureVisible(aItem);
+            this->mRoomList->EnsureVisible(aItem);
             }
         }
     }
-    EnableControls();
+    this->EnableControls();
 }
 // FUNCTION: WON 0x007c2e20
+// Adds, removes or refreshes a chat room's entry, refreshing its server's player count too
 void RoomCtrl::HandleGroupChanged(GroupChangedEvent* inEvent)
 {
     LobbyGroup* aGroup=inEvent->mGroup.get();
     LobbyServer* aServer=inEvent->mServer.get();
-    if(aGroup==NULL || aServer==NULL || !aGroup->Fn3A9050()) return;
+    if(aGroup==NULL || aServer==NULL || !aGroup->IsChatGroup()) return;
     if(inEvent->IsAdd())
     {
-        TreeItem* aServerItem=GetServerItem(aServer);
-        if(aServerItem!=NULL) AddGroup(aServerItem,aServer,aGroup);
-        EnableControls();
+        TreeItem* aServerItem=this->GetServerItem(aServer);
+        if(aServerItem!=NULL) this->AddGroup(aServerItem,aServer,aGroup);
+        this->EnableControls();
         return;
     }
     if(inEvent->IsDelete())
     {
-        TreeItem* aGroupItem=GetGroupItem(aServer,aGroup);
-        mRoomList->Fn315190(aGroupItem);
-        EnableControls();
+        TreeItem* aGroupItem=this->GetGroupItem(aServer,aGroup);
+        this->mRoomList->RemoveTreeItem(aGroupItem);
+        this->EnableControls();
         return;
     }
-    TreeItem* aGroupItem=GetGroupItem(aServer,aGroup);
+    TreeItem* aGroupItem=this->GetGroupItem(aServer,aGroup);
     if(aGroupItem!=NULL)
     {
-        static_cast<RoomListItem*>(aGroupItem->mItem.get())->Fn3C1D40(aServer,aGroup);
-        static_cast<RoomListItem*>(aGroupItem->mParent->mItem.get())->Fn3C1D40(aServer,NULL);
-        mRoomList->Fn2FC730(aGroupItem->mParent);
-        mRoomList->Fn2FC730(aGroupItem);
+        static_cast<RoomListItem*>(aGroupItem->mItem.get())->UpdateText(aServer,aGroup);
+        static_cast<RoomListItem*>(aGroupItem->mParent->mItem.get())->UpdateText(aServer,NULL);
+        this->mRoomList->RefreshItem(aGroupItem->mParent);
+        this->mRoomList->RefreshItem(aGroupItem);
     }
-    EnableControls();
+    this->EnableControls();
 }
 // FUNCTION: WON 0x007c2f00
+// Asks the lobby to query a server's rooms when its entry is opened
 void RoomCtrl::HandleItemOpened(TreeItemOpenedEvent* inEvent)
 {
     // LOST-DEBUG: none: exact only
@@ -273,28 +289,29 @@ void RoomCtrl::HandleItemOpened(TreeItemOpenedEvent* inEvent)
     if(aTree->mOpen)
     {
         RoomListItem* aItem=static_cast<RoomListItem*>(aTree->mItem.get());
-        Fn2F53F0(new QueryServerGroupsEvent(aItem->mAddress),false);
+        this->DeliverEvent(new QueryServerGroupsEvent(aItem->mAddress),false);
     }
 }
 // FUNCTION: WON 0x007c2c10
+// Adds, removes or rebuilds a server's entry, keeping it open, its selected room and the scroll position
 void RoomCtrl::HandleServerChanged(ServerChangedEvent* inEvent)
 {
     if(inEvent->IsAdd())
     {
-        AddServer(inEvent->mServer.get(),false,-1);
+        this->AddServer(inEvent->mServer.get(),false,-1);
         return;
     }
     if(inEvent->IsDelete())
     {
-        TreeItem* aServerItem=GetServerItem(inEvent->mServer.get());
-        if(aServerItem!=NULL) mRoomList->Fn315190(aServerItem);
-        EnableControls();
+        TreeItem* aServerItem=this->GetServerItem(inEvent->mServer.get());
+        if(aServerItem!=NULL) this->mRoomList->RemoveTreeItem(aServerItem);
+        this->EnableControls();
         return;
     }
-    TreeItem* aServerItem=GetServerItem(inEvent->mServer.get());
+    TreeItem* aServerItem=this->GetServerItem(inEvent->mServer.get());
     if(aServerItem==NULL) return;
     bool aOpen=aServerItem->mOpen;
-    TreeItem* aSelected=static_cast<TreeItem*>(mRoomList->mSelItem);
+    TreeItem* aSelected=static_cast<TreeItem*>(this->mRoomList->mSelItem);
     unsigned long aGroupId=0xffff;
     IPAddr aAddress;
     if(aSelected!=NULL && aSelected->mParent==aServerItem)
@@ -304,52 +321,53 @@ void RoomCtrl::HandleServerChanged(ServerChangedEvent* inEvent)
         aAddress=aItem->mAddress;
     }
     int aPosition=aServerItem->mIndex;
-    int aVertOffset=mRoomList->mVertOffset;
-    mRoomList->Fn2FAA00();
-    mRoomList->Fn315190(aServerItem);
-    AddServer(inEvent->mServer.get(),aOpen,aPosition);
+    int aVertOffset=this->mRoomList->mVertOffset;
+    this->mRoomList->BeginUpdate();
+    this->mRoomList->RemoveTreeItem(aServerItem);
+    this->AddServer(inEvent->mServer.get(),aOpen,aPosition);
     if(aGroupId!=0xffff && aAddress.IsValid())
     {
-        TreeItem* aItem=GetGroupItem(aAddress,aGroupId);
+        TreeItem* aItem=this->GetGroupItem(aAddress,aGroupId);
         if(aItem!=NULL)
         {
-            ListArea* aList=mRoomList.get();
+            ListArea* aList=this->mRoomList.get();
             aList->SetSelItem(aList->GetItemPos(aItem),true);
         }
     }
-    mRoomList->Fn2FAA10();
-    mRoomList->SetVertOffset(aVertOffset);
-    EnableControls();
+    this->mRoomList->EndUpdate();
+    this->mRoomList->SetVertOffset(aVertOffset);
+    this->EnableControls();
 }
 // FUNCTION: WON 0x007c31b0
+// Routes double clicks, Join and Create, tree opening and room/server changes to the handlers
 void RoomCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType)
     {
-    case 26:
-        HandleItemOpened(static_cast<TreeItemOpenedEvent*>(inEvent));
+    case ComponentEvent_TreeItemOpened:
+        this->HandleItemOpened(static_cast<TreeItemOpenedEvent*>(inEvent));
         return;
-    case 23:
+    case ComponentEvent_ListItemClicked:
         {
-            EnableControls();
+            this->EnableControls();
             ListItemClickedEvent* aEvent=static_cast<ListItemClickedEvent*>(inEvent);
-            if(!aEvent->mDoubleClick || aEvent->mComponent!=mRoomList.get() || !aEvent->IsSelectedItem()) return;
+            if(!aEvent->mDoubleClick || aEvent->mComponent!=this->mRoomList.get() || !aEvent->IsSelectedItem()) return;
             TreeItem* aItem=static_cast<TreeItem*>(aEvent->mItem.get());
-            if(aItem->Fn314E60(aEvent->mX,aEvent->mY)) DoJoinRoom();
+            if(aItem->ContainsPoint(aEvent->mX,aEvent->mY)) this->DoJoinRoom();
         }
         return;
-    case 15:
-        if(inEvent->mComponent==mJoinButton.get()) { DoJoinRoom(); return; }
-        if(inEvent->mComponent==mCreateButton.get()) { DoCreateRoom(); return; }
+    case ComponentEvent_ButtonPressed:
+        if(inEvent->mComponent==this->mJoinButton.get()) { this->DoJoinRoom(); return; }
+        if(inEvent->mComponent==this->mCreateButton.get()) { this->DoCreateRoom(); return; }
         break;
-    case 100021:
-        HandleGroupChanged(static_cast<GroupChangedEvent*>(inEvent));
+    case LobbyEvent_GroupChanged:
+        this->HandleGroupChanged(static_cast<GroupChangedEvent*>(inEvent));
         return;
-    case 100047:
-        HandleServerChanged(static_cast<ServerChangedEvent*>(inEvent));
+    case LobbyEvent_ServerChanged:
+        this->HandleServerChanged(static_cast<ServerChangedEvent*>(inEvent));
         return;
     case 100053:
-        HandleSetRoomList();
+        this->HandleSetRoomList();
         return;
     }
     Component::HandleComponentEvent(inEvent);

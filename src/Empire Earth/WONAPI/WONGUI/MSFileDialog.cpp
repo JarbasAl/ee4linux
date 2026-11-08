@@ -1,5 +1,5 @@
-// Genuine same-library SDK MSFileDialog implementation; SOURCE_ONLY_NO_NATIVE_ID.
-// Missing unit proposed profile: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
+// MSFileDialog: the Windows open/save file dialog (WON SDK source; not found in the original exe)
+// Not part of any unit; it would build with -O2 -MD -GR -GX -DEE_DINKUM_SXL233 like the other WONGUI units
 #include <windows.h>
 #include <commdlg.h>
 #include <string>
@@ -17,13 +17,13 @@ using namespace std;
 namespace WONAPI {
 MSFileDialog::MSFileDialog(bool isSave)
 {
-	mIsSave = isSave;
-	mAllowMultiple = false;
-	mWarnIfExists = false;
-	mGetDir = false;
-	mNoChangeDir = false;
+	this->mIsSave = isSave;
+	this->mAllowMultiple = false;
+	this->mWarnIfExists = false;
+	this->mGetDir = false;
+	this->mNoChangeDir = false;
 
-	mFileMustExist = !isSave;
+	this->mFileMustExist = !isSave;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,102 +78,116 @@ static UINT CALLBACK MyOFNHookProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Makes the dialog pick a folder instead of a file (the filter list becomes a dummy Directories entry)
 void MSFileDialog::SetGetDir(bool getDir)
 {
-	mGetDir = getDir;
+	this->mGetDir = getDir;
 #if defined(_WIN32)
-	mFilterList.clear();
-	AddFilter("*.zzz","Directories");
+	this->mFilterList.clear();
+	this->AddFilter("*.zzz","Directories");
 #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Sets the dialog's title
 void MSFileDialog::SetTitle(const GUIString &theTitle)
 {
-	mTitle = theTitle;
+	this->mTitle = theTitle;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Sets the text of the OK button
 void MSFileDialog::SetOkTitle(const GUIString &theOkTitle)
 {
-	mOkTitle = theOkTitle;
+	this->mOkTitle = theOkTitle;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Sets the file name the dialog starts with
 void MSFileDialog::SetInitialFileName(const GUIString &theFileName)
 {
-	mInitialFileName = theFileName;
+	this->mInitialFileName = theFileName;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Sets the folder the dialog starts in
 void MSFileDialog::SetInitialDir(const GUIString &theDir)
 {
-	mInitialDir = theDir;
+	this->mInitialDir = theDir;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Allows picking several files (open dialogs only)
 void MSFileDialog::SetAllowMultiple(bool allowMultiple)
 {
-	if(!mIsSave)
-		mAllowMultiple = allowMultiple;
+	if(!this->mIsSave)
+		this->mAllowMultiple = allowMultiple;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Sets whether the picked file must already exist
 void MSFileDialog::SetFileMustExist(bool mustExist)
 {
-	mFileMustExist = mustExist;
+	this->mFileMustExist = mustExist;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Sets whether to confirm overwriting an existing file (save dialogs only)
 void MSFileDialog::SetWarnIfExists(bool warnIfExists)
 {
-	if(mIsSave)
-		mWarnIfExists = warnIfExists;
+	if(this->mIsSave)
+		this->mWarnIfExists = warnIfExists;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Sets whether the dialog leaves the current directory unchanged
 void MSFileDialog::SetNoChangeDir(bool noChange)
 {
-	mNoChangeDir = noChange;
+	this->mNoChangeDir = noChange;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Adds a file type filter with its description
 void MSFileDialog::AddFilter(const GUIString &theFilter, const GUIString &theDescription)
 {
-	mFilterList.push_back(FilterPair(theFilter,theDescription));
+	this->mFilterList.push_back(FilterPair(theFilter,theDescription));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Returns the picked files
 const MSFileDialog::FileList& MSFileDialog::GetFileList()
 {
-	return mFileList;
+	return this->mFileList;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Returns the first picked file, or an empty string
 GUIString MSFileDialog::GetFile()
 {
-	if(mFileList.empty())
+	if(this->mFileList.empty())
 		return "";
 	else
-		return mFileList.front();
+		return this->mFileList.front();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+// Shows the open or save dialog; returns false when cancelled, else fills the file list (a folder in folder mode;
+// each picked file joined to the folder with '/' when several are allowed)
 bool MSFileDialog::DoDialog(Window *theParent)
 {
-	mFileList.clear();
+	this->mFileList.clear();
 #if defined(_WIN32) && !defined(_XBOX)
 	const int MAX_FILE_NAME = 8192;
 	char aFileName[MAX_FILE_NAME];
@@ -181,9 +195,9 @@ bool MSFileDialog::DoDialog(Window *theParent)
 	OPENFILENAMEA aStruct;
 	memset(&aStruct,0,sizeof(aStruct));
 	aStruct.lStructSize = sizeof(aStruct);
-	aStruct.hwndOwner = ((MSWindow*)theParent)->GetHWND();
+	aStruct.hwndOwner = static_cast<MSWindow*>(theParent)->GetHWND();
 
-	std::string aTitle = mTitle;
+	std::string aTitle = this->mTitle;
 	aStruct.lpstrTitle = aTitle.c_str();
 	aStruct.lpfnHook = MyOFNHookProc;
 	gFileDialog = this;
@@ -191,7 +205,7 @@ bool MSFileDialog::DoDialog(Window *theParent)
 	gLastPath.erase();
 
 	std::string aFilterStr;
-	for(FilterList::iterator anItr = mFilterList.begin(); anItr!=mFilterList.end(); ++anItr)
+	for(FilterList::iterator anItr = this->mFilterList.begin(); anItr!=this->mFilterList.end(); ++anItr)
 	{
 		const FilterPair &aPair = *anItr;
 		aFilterStr.append(aPair.mDesc);
@@ -203,32 +217,32 @@ bool MSFileDialog::DoDialog(Window *theParent)
 	aStruct.lpstrFilter = aFilterStr.c_str();
 
 	aFileName[0] = '\0';
-	std::string strFileName = mInitialFileName;
+	std::string strFileName = this->mInitialFileName;
 	strcpy(aFileName, strFileName.c_str());
 	aStruct.lpstrFile = aFileName;
 	aStruct.nMaxFile = MAX_FILE_NAME-1;
 
-	if(mInitialDir.length())
+	if(this->mInitialDir.length())
 	{
-		std::string strInitialDir = mInitialDir;
+		std::string strInitialDir = this->mInitialDir;
 		strcpy(aInitialDir, strInitialDir.c_str());
 		aStruct.lpstrInitialDir = aInitialDir;
 	}
 
 	aStruct.Flags = OFN_EXPLORER;
-	if(mAllowMultiple)
+	if(this->mAllowMultiple)
 		aStruct.Flags |= OFN_ALLOWMULTISELECT;
-	if(mWarnIfExists)
+	if(this->mWarnIfExists)
 		aStruct.Flags |= OFN_OVERWRITEPROMPT;
-	if(mFileMustExist)
+	if(this->mFileMustExist)
 		aStruct.Flags |= OFN_FILEMUSTEXIST;
-	if(mNoChangeDir)
+	if(this->mNoChangeDir)
 		aStruct.Flags |= OFN_NOCHANGEDIR;
-	if(mGetDir || mOkTitle.length()!=0)
+	if(this->mGetDir || this->mOkTitle.length()!=0)
 		aStruct.Flags |= OFN_ENABLEHOOK;
 
 	BOOL aResult = FALSE;
-	if(mIsSave)
+	if(this->mIsSave)
 		aResult = GetSaveFileNameA(&aStruct);
 	else
 		aResult = GetOpenFileNameA(&aStruct);
@@ -238,14 +252,14 @@ bool MSFileDialog::DoDialog(Window *theParent)
 		strcpy(aFileName,gLastPath.c_str());
 	else if(!aResult)
 		return false;
-	else if(mGetDir) // strip filename off the folder
+	else if(this->mGetDir) // strip filename off the folder
 	{
 		WONFile aFile(aFileName);
 		string aFileNameStr = aFile.GetFileDirectory();
 		strcpy(aFileName,aFileNameStr.c_str());
 	}
 
-	if(mAllowMultiple)
+	if(this->mAllowMultiple)
 	{
 		const char *aPtr = aFileName;
 		GUIString aDirectory = aPtr;
@@ -255,8 +269,8 @@ bool MSFileDialog::DoDialog(Window *theParent)
 			GUIString aStr = aPtr;
 			if(aStr.length()==0)
 			{
-				if(mFileList.empty()) // only one file
-					mFileList.push_back(aDirectory);
+				if(this->mFileList.empty()) // only one file
+					this->mFileList.push_back(aDirectory);
 			
 				break;
 			}
@@ -265,14 +279,14 @@ bool MSFileDialog::DoDialog(Window *theParent)
 				GUIString aFullPath = aDirectory;
 				aFullPath.append('/');
 				aFullPath.append(aStr);
-				mFileList.push_back(aFullPath);
+				this->mFileList.push_back(aFullPath);
 			}
 
 			aPtr += aStr.length() + 1;
 		}
 	}
 	else
-		mFileList.push_back(aFileName);
+		this->mFileList.push_back(aFileName);
 
 	return true;
 #else

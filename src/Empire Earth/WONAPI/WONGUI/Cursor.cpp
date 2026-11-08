@@ -11,18 +11,23 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyWONSkinConfig.h"
 using namespace WONAPI;
-// Exact native7-slot array566250..56626b; storage/cleanup helpers0.
+// The standard cursors, one slot per StandardCursor value (initialised and cleaned up by the $E functions
+// listed at the end)
 static SmartPtr<CursorRef> gStandardCursors[StandardCursor_Max+1];
 // FUNCTION: WON 0x00726540
+// Creates a cursor (base class, no state)
 Cursor::Cursor() {}
-// Native328590 shared empty original destructor support0.
+// Destroys the cursor (empty; emitted at 0x00728590)
 Cursor::~Cursor() {}
-// Native2c7b10 /326b50 actual empty defaults, helper0.
+// Default hooks: no Windows cursor and no attached component (the linker folds these bodies into the
+// identical ones at 0x006c7b10 and 0x00726b50)
 Cursor* Cursor::GetNative() { return NULL; }
 Component* Cursor::GetComponent(int&,int&) { return NULL; }
 // FUNCTION: WON 0x00726550
+// Returns the cursor currently set for a standard cursor type (NULL if none)
 Cursor* Cursor::GetStandardCursor(StandardCursor type) { return gStandardCursors[type].get(); }
 // FUNCTION: WON 0x00726560
+// Sets the cursor for a standard cursor type, creating its shared reference on first use
 void Cursor::SetStandardCursor(StandardCursor type,Cursor* cursor) {
     if(gStandardCursors[type].get()==NULL)
         gStandardCursors[type]=new CursorRef(cursor);
@@ -33,24 +38,28 @@ void Cursor::SetStandardCursor(StandardCursor type,Cursor* cursor) {
 // destructor call in ~ComponentCursor, 0x726770).
 namespace WONAPI {
 // FUNCTION: WON 0x00726710
+// Creates a cursor drawn by a component, with the mouse hot spot inside it
 ComponentCursor::ComponentCursor(Component* component,int mouseX,int mouseY)
     : mComponent(component)
 {
-    mMouseX=mouseX;
-    mMouseY=mouseY;
+    this->mMouseX=mouseX;
+    this->mMouseY=mouseY;
 }
 // FUNCTION: WON 0x007267d0
+// Returns the cursor's component and its mouse hot spot
 Component* ComponentCursor::GetComponent(int& mouseX,int& mouseY)
 {
-    mouseX=mMouseX;
-    mouseY=mMouseY;
-    return mComponent.get();
+    mouseX=this->mMouseX;
+    mouseY=this->mMouseY;
+    return this->mComponent.get();
 }
-// Genuine SDK inline false provider; shared native30a7b0, zero new-native/primary credit.
+// A component cursor is not a Windows cursor (the linker folds this body into the identical one at
+// 0x0070a7b0)
 bool ComponentCursor::IsNative() { return false; }
 }
 // FUNCTION: WON 0x007d0320
-MSCursor::~MSCursor() { if(mDoDestroy) DestroyCursor(mNativeCursor); }
+// Destroys the Windows cursor, freeing the cursor handle if it owns it
+MSCursor::~MSCursor() { if(this->mDoDestroy) DestroyCursor(this->mNativeCursor); }
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x00726690

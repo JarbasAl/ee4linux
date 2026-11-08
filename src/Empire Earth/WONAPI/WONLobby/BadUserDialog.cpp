@@ -1,4 +1,4 @@
-// BadUserDialog source-intent, no canonical/compile authority.
+// The moderators' bad user dialog: lists banned or muted players with expiry, moderator and comment
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <stdio.h>
@@ -13,27 +13,28 @@
 #include "ee/wonapi/WONLobbyDialogs.h"
 #include "LostDebug.h"
 using namespace WONAPI;
-// Actual global RTTI BadUserItem, complete50 own tail; constructor remains original external3f5290.
+// One row of the bad user list (global namespace, 0x50 bytes)
 class BadUserItem : public ListItem {
 public:
     BadUserItem(const RoutingBadUser& inUser,bool inSimple);
-    virtual void Virtual04(Graphics& inGraphics,ListArea* inList);
-    virtual void Virtual08(ListArea* inList);
-    virtual int Virtual10(const ListItem* inOther,ListArea* inList) const;
-    SmartPtr<Font> mFont; //18
-    GUIString mStrings[6]; //1c..30
-    unsigned long mValues[6]; //34..48; onlyindices1/2/4 initialized and read numerically
-    bool mIsSimple; //4c; natural padding to50
+    virtual void Paint(Graphics& inGraphics,ListArea* inList);
+    virtual void CalcDimensions(ListArea* inList);
+    virtual int Compare(const ListItem* inOther,ListArea* inList) const;
+    SmartPtr<Font> mFont; // 0x18
+    GUIString mStrings[6]; // 0x1c..0x30: name, WON id, expiry, moderator, moderator's WON id, comment
+    unsigned long mValues[6]; // 0x34..0x48: sort keys; only the WON id (1), expiry (2) and moderator id (4) are set
+    bool mIsSimple; // 0x4c (padded to 0x50)
 };
 // FUNCTION: WON 0x7f5290
+// Creates a row from a bad user entry, writing the expiry as days, hours, minutes, seconds or infinite
 BadUserItem::BadUserItem(const RoutingBadUser& inUser, bool inSimple)
 {
-    mIsSimple = inSimple;
-    mStrings[0] = GUIString(new GUIStringData(inUser.mName));
+    this->mIsSimple = inSimple;
+    this->mStrings[0] = GUIString(new GUIStringData(inUser.mName));
     char aBuffer[100];
     sprintf(aBuffer, "%d", inUser.mWONId);
-    mStrings[1] = aBuffer;
-    mValues[1] = inUser.mWONId;
+    this->mStrings[1] = aBuffer;
+    this->mValues[1] = inUser.mWONId;
 
     unsigned long aDuration = inUser.mExpirationDiff;
     GUIString aText;
@@ -53,45 +54,48 @@ BadUserItem::BadUserItem(const RoutingBadUser& inUser, bool inSimple)
         aUnit = ::BadUserDialog_Infinite_String;
     }
     sprintf(aBuffer, "%d", aDuration);
-    mValues[2] = inUser.mExpirationDiff;
-    mStrings[2] = LobbyFormatString(aUnit, GUIString(aBuffer));
-    mStrings[3] = GUIString(inUser.mModeratorName);
+    this->mValues[2] = inUser.mExpirationDiff;
+    this->mStrings[2] = LobbyFormatString(aUnit, GUIString(aBuffer));
+    this->mStrings[3] = GUIString(inUser.mModeratorName);
     sprintf(aBuffer, "%d", inUser.mModeratorWONId);
-    mStrings[4] = GUIString(aBuffer);
-    mValues[4] = inUser.mModeratorWONId;
-    mStrings[5] = GUIString(inUser.mModeratorComment);
+    this->mStrings[4] = GUIString(aBuffer);
+    this->mValues[4] = inUser.mModeratorWONId;
+    this->mStrings[5] = GUIString(inUser.mModeratorComment);
 }
 
 // FUNCTION: WON 0x7f5790
-void BadUserItem::Virtual08(ListArea* inList)
+// Takes the list's font and makes the row one text line high
+void BadUserItem::CalcDimensions(ListArea* inList)
 {
-    mFont=inList->mFont;
-    mHeight=mFont->GetHeight();
+    this->mFont=inList->mFont;
+    this->mHeight=this->mFont->GetHeight();
 }
 // FUNCTION: WON 0x7f5800
-void BadUserItem::Virtual04(Graphics& inGraphics,ListArea* inList)
+// Draws the selection background and the text of the column being painted (the name in the simple list)
+void BadUserItem::Paint(Graphics& inGraphics,ListArea* inList)
 {
     DWORD aColor=inList->GetTextColor();
-    if(mB08) aColor=inList->GetSelColor().GetForegroundColor(inGraphics,aColor);
+    if(this->mSelected) aColor=inList->GetSelColor().GetForegroundColor(inGraphics,aColor);
     int aColumn=0;
-    bool aSelected=mB08;
-    bool aSimple=mIsSimple;
+    bool aSelected=this->mSelected;
+    bool aSimple=this->mIsSimple;
     if(!aSimple) aColumn=static_cast<MultiListArea*>(inList)->GetColumnPaintContext();
     if((aSimple || aColumn==-1) && aSelected) {
         inGraphics.SetColor(inList->GetSelColor().GetBackgroundColor(inGraphics));
-        int aWidth=inList->mL12C;
-        int aHeight=mFont->GetHeight();
+        int aWidth=inList->mPaintWidth;
+        int aHeight=this->mFont->GetHeight();
         inGraphics.FillRect(0,0,aWidth,aHeight);
-        if(!mIsSimple) return;
+        if(!this->mIsSimple) return;
     }
-    if(aColumn>=0 && aColumn<=5) {
-        inGraphics.SetColor(aColor);
-        inGraphics.SetFont(mFont.get());
-        inGraphics.DrawString(mStrings[aColumn],0,0);
-    }
+    if(aColumn<0 || aColumn>5)
+        return;
+    inGraphics.SetColor(aColor);
+    inGraphics.SetFont(this->mFont.get());
+    inGraphics.DrawString(this->mStrings[aColumn],0,0);
 }
 // FUNCTION: WON 0x7f58c0
-int BadUserItem::Virtual10(const ListItem* inOther,ListArea* inList) const
+// Orders two rows by the sort column: numerically for the ids and expiry, else by text
+int BadUserItem::Compare(const ListItem* inOther,ListArea* inList) const
 {
     int aColumn=static_cast<MultiListArea*>(inList)->GetSortColumn();
     if(aColumn<0 || aColumn>5) return this<inOther;
@@ -100,48 +104,51 @@ int BadUserItem::Virtual10(const ListItem* inOther,ListArea* inList) const
     case 1:
     case 2:
     case 4:
-        return mValues[aColumn]-anOther->mValues[aColumn];
+        return this->mValues[aColumn]-anOther->mValues[aColumn];
     default:
-        return mStrings[aColumn].mData->Compare(anOther->mStrings[aColumn].mData.get());
+        return this->mStrings[aColumn].mData->Compare(anOther->mStrings[aColumn].mData.get());
     }
 }
 namespace WONAPI {
 
 BadUserDialog::BadUserDialog() : mIsSimple(false) {}
-// Ordinary destructor implicit: zero credit, preserve original no own-vptr store.
+// The destructor is implicit; the original stores no vtable of its own in it
 // FUNCTION: WON 0x7f5a90
+// Finds the full and the simple user lists and their boxes in the layout
 void BadUserDialog::InitComponent(ComponentInit& inInit)
 {
     if(inInit.mType!=2) return;
     ComponentConfig* aConfig=static_cast<ComponentConfigInit&>(inInit).mConfig;
-    SafeGetComponent(aConfig,mUserList,"UserList",__FILE__,157);
-    SafeGetComponent(aConfig,mSimpleUserList,"SimpleUserList",__FILE__,158);
-    SafeGetComponent(aConfig,mUserListBox,"UserListBox",__FILE__,159);
-    SafeGetComponent(aConfig,mSimpleUserListBox,"SimpleUserListBox",__FILE__,160);
+    SafeGetComponent(aConfig,this->mUserList,"UserList",__FILE__,157);
+    SafeGetComponent(aConfig,this->mSimpleUserList,"SimpleUserList",__FILE__,158);
+    SafeGetComponent(aConfig,this->mUserListBox,"UserListBox",__FILE__,159);
+    SafeGetComponent(aConfig,this->mSimpleUserListBox,"SimpleUserListBox",__FILE__,160);
 }
 // FUNCTION: WON 0x7f5b20
+// Fills the full or the simple list with the given bad users and shows only that list
 void BadUserDialog::SetUserList(const RoutingBadUserList& inList,bool inSimple)
 {
-    mIsSimple=inSimple;
-    mUserListBox->SetVisible(!inSimple);
-    mSimpleUserListBox->SetVisible(inSimple);
-    ListArea* aList=mIsSimple ? mSimpleUserList.get() : mUserList.get();
+    this->mIsSimple=inSimple;
+    this->mUserListBox->SetVisible(!inSimple);
+    this->mSimpleUserListBox->SetVisible(inSimple);
+    ListArea* aList=this->mIsSimple ? this->mSimpleUserList.get() : this->mUserList.get();
     aList->SetVisible(true);
-    aList->Fn2FAA00();
-    aList->Fn2FAA50(true);
+    aList->BeginUpdate();
+    aList->Clear(true);
     for(RoutingBadUserList::const_iterator anItr=inList.begin();anItr!=inList.end();++anItr)
         aList->InsertItem(new BadUserItem(*anItr,inSimple),-1);
-    aList->Fn2FAA10();
+    aList->EndUpdate();
 }
 // FUNCTION: WON 0x7f5c20
+// Returns the WON ids of the selected users
 void BadUserDialog::GetIds(IdList& outIds)
 {
-    ListArea* aList=mIsSimple ? mSimpleUserList.get() : mUserList.get();
+    ListArea* aList=this->mIsSimple ? this->mSimpleUserList.get() : this->mUserList.get();
     outIds.clear();
     aList->RewindSelections();
     while(aList->HasMoreSelections()) {
         BadUserItem* anItem=static_cast<BadUserItem*>(aList->GetNextSelection());
-        unsigned long anId=anItem->mValues[1]; //actual scalar snapshot3f5ca5 before list-node allocation
+        unsigned long anId=anItem->mValues[1]; // the original reads the id (0x7f5ca5) before allocating the list node
         outIds.push_back(anId);
     }
 }

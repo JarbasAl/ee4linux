@@ -1,4 +1,4 @@
-// Native lobby modal loop, suspension and end-state control.
+// Running the lobby: start, modal message loop, exit status, suspend and resume
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,17 +14,18 @@
 #include "ee/wonapi/WONLobbyCore.h"
 #include "ee/wonapi/WONLobbyPersistence.h"
 namespace WONAPI {
-extern SmartPtr<Dialog> gLobbyFailureDialog5662F4; //existing original-owned data
-extern bool gLobbyInitFailed56633C; //existing original-owned data
-void LobbyFn361D90(); //actual noarg NetLogic Virtual44 dispatch provider
-void LobbyFn361DB0(); //actual noarg NetLogic Virtual48 dispatch provider
+extern SmartPtr<Dialog> gLobbyFailureDialog;
+extern bool gLobbyInitFailed;
+void LobbyNetSuspend(); // calls the network logic's virtual at +0x44
+void LobbyNetResume(); // calls the network logic's virtual at +0x48
 // FUNCTION: WON 0x00762760
-int LobbyFn362760()
+// Runs the lobby until it exits and returns its exit status; after a failed start only shows the failure dialog
+int LobbyRun()
 {
-    if(gLobbyInitFailed56633C && gLobbyFailureDialog5662F4.get()!=NULL) {
-        Window* window=gLobbyFailureDialog5662F4->Fn2F5940();
-        if(window!=NULL && window->Virtual4C())
-            window->RunDialog(gLobbyFailureDialog5662F4.get());
+    if(gLobbyInitFailed && gLobbyFailureDialog.get()!=NULL) {
+        Window* window=gLobbyFailureDialog->GetRootWindow();
+        if(window!=NULL && window->PlatformIsVisible())
+            window->RunDialog(gLobbyFailureDialog.get());
         return 0;
     }
     if(gLobbyData.get()==NULL) return 0;
@@ -38,46 +39,50 @@ int LobbyFn362760()
     return gLobbyData->mLobbyStatus;
 }
 // FUNCTION: WON 0x007627f0
-void LobbyFn3627F0(int status)
+// Sets the lobby's exit status, tells all controls the lobby is closing and ends the loop if it is running
+void LobbyExit(int status)
 {
     if(gLobbyData.get()==NULL) return;
     gLobbyData->mLobbyStatus=static_cast<LobbyStatus>(status);
     LobbyRunMode mode=gLobbyData->mRunMode;
-    LobbyFn359120(100013,true);
+    LobbyBroadcastLobbyEvent(100013,true);
     if(mode!=0) {
         WindowManager* manager=GetLobbyWindow();
         if(manager!=NULL) manager->ExitMessageLoop();
     }
 }
 // FUNCTION: WON 0x00762830
-void LobbyFn362830()
+// Suspends the lobby: stops its music and logon sound, cancels pending pings and suspends networking
+void LobbySuspend()
 {
     if(gLobbyData.get()==NULL) return;
     gLobbyData->mSuspended=true;
     ::LobbyGlobal_LobbyMusic_Sound->Stop();
     ::LobbyGlobal_SierraLogon_Sound->Stop();
-    if(LobbyFn35B940()>0) {
-        LobbyFn35B960(1);
-        LobbyFn359120(100059,true);
+    if(LobbyGetNumPingsToDo()>0) {
+        LobbyKillPings(1);
+        LobbyBroadcastLobbyEvent(100059,true);
     }
-    LobbyFn361D90();
+    LobbyNetSuspend();
 }
 // FUNCTION: WON 0x00762880
-void LobbyFn362880()
+// Resumes the lobby: restarts the music if enabled and resumes networking
+void LobbyResume()
 {
     if(gLobbyData.get()==NULL) return;
     gLobbyData->mSuspended=false;
-    if(LobbyFn35E350()) ::LobbyGlobal_LobbyMusic_Sound->Resume();
-    LobbyFn361DB0();
+    if(LobbyGetLobbyMusic()) ::LobbyGlobal_LobbyMusic_Sound->Resume();
+    LobbyNetResume();
 }
 }
 
 #include "ee/wonapi/WONLobbyAccountLogic.h"
 
 namespace WONAPI {
-// Genuine missing SDK namespace entry points; retained canonical ABI spellings.
+// WON SDK lobby entry point
 // FUNCTION: WON 0x00762740
-void LobbyFn362740()
+// Starts the lobby's start-up sequence (connect and log in)
+void LobbyStart()
 {
     if(gLobbyData.get()==NULL) return;
     gLobbyData->mSuspended=false;

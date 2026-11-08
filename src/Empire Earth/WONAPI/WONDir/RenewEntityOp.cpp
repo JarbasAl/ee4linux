@@ -1,6 +1,5 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine SDK directory executable implementation.
-// Missing-unit proposed family profile: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// No FUNCTION/Native address or primary/physical byte credit is claimed.
+// No original address identified: WON SDK directory server renew-entity request
+// Expected flags: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <winsock2.h>
 #include <windows.h>
 #include <string>
@@ -11,6 +10,7 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONDirExtended.h"
+#include "ee/wonapi/WONStatus.h"
 using namespace std;
 using namespace WONAPI;
 
@@ -18,59 +18,59 @@ using namespace WONAPI;
 ///////////////////////////////////////////////////////////////////////////////
 void RenewEntityOp::Init()
 {
-	mLengthFieldSize = 4;
-	mLifespan = 0;
+	this->mLengthFieldSize = 4;
+	this->mLifespan = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 RenewEntityOp::RenewEntityOp(ServerContext *theDirContext, bool isService) : ServerRequestOp(theDirContext)
 {
-	mIsService = isService;
-	Init();
+	this->mIsService = isService;
+	this->Init();
 }
    
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 RenewEntityOp::RenewEntityOp(const IPAddr &theAddr, bool isService) : ServerRequestOp(theAddr)
 {
-	mIsService = isService;
-	Init();
+	this->mIsService = isService;
+	this->Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus RenewEntityOp::Virtual10()
+WONStatus RenewEntityOp::GetNextRequest()
 {
-	WriteBuffer aMsg(mLengthFieldSize,true);
+	WriteBuffer aMsg(this->mLengthFieldSize,true);
 	aMsg.AppendByte(5);						// Small message
 	aMsg.AppendShort(2);					// Directory Server
-	aMsg.AppendShort(mIsService?205:204);	// RenewService : RenewDir
-	aMsg.AppendWString(mPath,2);				// Directory path
+	aMsg.AppendShort(this->mIsService?205:204);	// RenewService : RenewDir
+	aMsg.AppendWString(this->mPath,2);				// Directory path
 
-	if(mIsService)
+	if(this->mIsService)
 	{
-		aMsg.AppendWString(mName,2);				// Entity name
-		aMsg.AppendBuffer(mNetAddr,1);
+		aMsg.AppendWString(this->mName,2);				// Entity name
+		aMsg.AppendBuffer(this->mNetAddr,1);
 	}
 
-	aMsg.AppendLong(mLifespan);
+	aMsg.AppendLong(this->mLifespan);
 
-	mRequest = aMsg.ToByteBuffer(true);
-	return (WONStatus)100059;
+	this->mRequest = aMsg.ToByteBuffer(true);
+	return (WONStatus)WS_ServerReq_Recv;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus RenewEntityOp::Virtual14()
+WONStatus RenewEntityOp::CheckResponse()
 {
-	ReadBuffer aMsg(mResponse->data(),mResponse->length());
+	ReadBuffer aMsg(this->mResponse->data(),this->mResponse->length());
 	unsigned char aHeaderType = aMsg.ReadByte();
 	unsigned short aServiceType = aMsg.ReadShort();
 	unsigned short aMessageType = aMsg.ReadShort();
 
 	if(aHeaderType!=5 || aServiceType!=2 || aMessageType!=1)
-		return InvalidReplyHeader();
+		return this->InvalidReplyHeader();
 
 
 	short aStatus = aMsg.ReadShort();

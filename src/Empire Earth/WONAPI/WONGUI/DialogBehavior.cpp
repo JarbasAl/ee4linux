@@ -1,4 +1,4 @@
-// Dialog dragging, focus and input behavior on complete original-owned Dialog98 receivers.
+// Dialog behaviour: dragging, focus, Escape/Enter keys and the default button
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -10,136 +10,147 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
-// Original2f7990/20, direct state setter support0.
 // FUNCTION: WON 0x006f7990
+// Makes Escape end the dialog with the given result id
 void Dialog::SetEndOnEscape(int id)
 {
-    mEndOnEscape=true;
-    mEscapeId=id;
+    this->mEndOnEscape=true;
+    this->mEscapeId=id;
 }
-// Original2f79b0/8, direct field setter support0.
 // FUNCTION: WON 0x006f79b0
+// Stops Escape from ending the dialog
 void Dialog::SetDontEndOnEscape()
 {
-    mEndOnEscape=false;
+    this->mEndOnEscape=false;
 }
-// Original2f79c0/91, owned assignment helper support0.
 // FUNCTION: WON 0x006f79c0
+// Sets the button that Enter activates (held by reference)
 void Dialog::SetDefaultButton(Button* button)
 {
-    mC94=button;
+    this->mDefaultButton=button;
 }
-// Original2f7a20/27, default-focus/base forwarding support0.
 // FUNCTION: WON 0x006f7a20
-void Dialog::Virtual48()
+// Registers the dialog's default button as the active default, then runs the container's focus gain
+void Dialog::GotFocus()
 {
-    Button::SetDialogDefaultButton(mC94.get());
-    Container::Virtual48();
+    Button::SetDialogDefaultButton(this->mDefaultButton.get());
+    Container::GotFocus();
 }
-// Original2f7a40/27, default-focus/base forwarding support0.
 // FUNCTION: WON 0x006f7a40
-void Dialog::Virtual4C()
+// Unregisters the dialog's default button as the active default, then runs the container's focus loss
+void Dialog::LostFocus()
 {
-    Button::UnSetDialogDefaultButton(mC94.get());
-    Container::Virtual4C();
+    Button::UnSetDialogDefaultButton(this->mDefaultButton.get());
+    Container::LostFocus();
 }
-// Original2f7a60, state reset/base forwarding support0.
 // FUNCTION: WON 0x006f7a60
+// Cancels any drag in progress, then runs the container's handler for this slot
 void Dialog::Virtual08()
 {
-    mB8C=false;
+    this->mDragging=false;
     Container::Virtual08();
 }
 // FUNCTION: WON 0x006f7a70
-void Dialog::Virtual2C(int x,int y,int button)
+// Passes the press to the children; a left press takes the focus and, when dragging is allowed and the
+// child under the mouse is a drag handle (flag 0x20), brings the dialog to the top and starts a drag
+void Dialog::MouseDown(int x,int y,int button)
 {
-    Container::Virtual2C(x,y,button);
+    Container::MouseDown(x,y,button);
     if(button!=0) return;
-    Fn2F5890();
-    if(mAllowDrag && mMouseChild!=NULL && mMouseChild->ComponentFlagSet(0x20)) {
-        if(GetNextSibling(true,false)!=NULL) mParent->BringToTop(this);
-        mB8C=true;
-        mDragX=x;
-        mDragY=y;
-    }
+    this->RequestFocus();
+    if(!this->mAllowDrag || this->mMouseChild==NULL || !this->mMouseChild->ComponentFlagSet(ComponentFlag_ParentDrag))
+        return;
+    if(this->GetNextSibling(true,false)!=NULL) this->mParent->BringToTop(this);
+    this->mDragging=true;
+    this->mDragX=x;
+    this->mDragY=y;
 }
-// Original2f7af0/42, base forwarding and direct reset support0.
 // FUNCTION: WON 0x006f7af0
-void Dialog::Virtual30(int x,int y,int button)
+// Passes the release to the children; a left release ends any drag
+void Dialog::MouseUp(int x,int y,int button)
 {
-    Container::Virtual30(x,y,button);
-    if(button==0) mB8C=false;
+    Container::MouseUp(x,y,button);
+    if(button==0) this->mDragging=false;
 }
-// Original2f7b20/17, base forwarding and direct reset support0.
 // FUNCTION: WON 0x006f7b20
-void Dialog::Virtual28()
+// Passes the mouse exit to the children and ends any drag
+void Dialog::MouseExit()
 {
-    Container::Virtual28();
-    mB8C=false;
+    Container::MouseExit();
+    this->mDragging=false;
 }
 // FUNCTION: WON 0x006f7b40
-void Dialog::Virtual38(int x,int y)
+// Moves a dragged dialog by the mouse offset, optionally kept inside the root container, and repaints
+// the old and new areas; without a drag passes the move to the children
+void Dialog::MouseDrag(int x,int y)
 {
-    if(!mB8C) {
-        Container::Virtual38(x,y);
+    if(!this->mDragging) {
+        Container::MouseDrag(x,y);
         return;
     }
-    // Native target queries the actual RootContainer, unlike the newer SDK's GetParent spelling.
-    Container* root=Fn2F58F0();
-    int newX=Left()+(x-mDragX);
-    int newY=Top()+(y-mDragY);
-    if(mKeepInRoot) {
-        if(newX+Width()>root->Width()) newX=root->Width()-Width();
+    // The original clamps against GetRootContainer(), where the newer SDK uses GetParent()
+    Container* root=this->GetRootContainer();
+    int newX=this->Left()+(x-this->mDragX);
+    int newY=this->Top()+(y-this->mDragY);
+    if(this->mKeepInRoot) {
+        if(newX+this->Width()>root->Width()) newX=root->Width()-this->Width();
         if(newX<0) newX=0;
-        if(newY+Height()>root->Height()) newY=root->Height()-Height();
+        if(newY+this->Height()>root->Height()) newY=root->Height()-this->Height();
         if(newY<0) newY=0;
     }
-    if(newX==Left() && newY==Top()) return;
-    WONRectangle r(0,0,Width(),Height());
-    mParent->VirtualC0(this);
-    Virtual60(r);
-    Fn2F4B70(newX,newY);
-    Virtual60(r);
-    Invalidate();
+    if(newX==this->Left() && newY==this->Top()) return;
+    WONRectangle r(0,0,this->Width(),this->Height());
+    this->mParent->ChildInvalidated(this);
+    this->InvalidateRect(r);
+    this->SetPos(newX,newY);
+    this->InvalidateRect(r);
+    this->Invalidate();
 }
 // FUNCTION: WON 0x006f7c30
-bool Dialog::Virtual54(int key)
+// Gives the key to the children first; otherwise Escape ends the dialog (if enabled) and Enter
+// activates the default button; returns whether the key was used
+bool Dialog::KeyDown(int key)
 {
-    if(Container::Virtual54(key)) return true;
-    if(key==27 && mEndOnEscape) {
-        GetRoot()->Fn32B0A0(mEscapeId,this);
+    if(Container::KeyDown(key)) return true;
+    if(key==27 && this->mEndOnEscape) {
+        this->GetRoot()->EndDialog(this->mEscapeId,this);
         return true;
-    } else if(key==13) return ActivateDefaultButton();
+    } else if(key==13) return this->ActivateDefaultButton();
     return false;
 }
 // FUNCTION: WON 0x006f7c90
-bool Dialog::Virtual5C()
+// Returns whether the dialog may close; a modal dialog closes only if Escape ends it, which ends
+// it with the escape result
+bool Dialog::CanClose()
 {
-    Window* window=GetRoot();
-    if(!Container::Virtual5C()) return false;
+    Window* window=this->GetRoot();
+    if(!Container::CanClose()) return false;
     if(window->mManager->mModalComponent==this) {
-        if(mEndOnEscape) window->Fn32B0A0(mEscapeId,NULL);
+        if(this->mEndOnEscape) window->EndDialog(this->mEscapeId,NULL);
         else return false;
     }
     return true;
 }
-// Original2f7ce0/51, guarded defaultbutton forwarding support0.
 // FUNCTION: WON 0x006f7ce0
+// Clicks the default button if it is set, enabled and still the default; returns whether it did
 bool Dialog::ActivateDefaultButton()
 {
-    if(mC94.get()!=NULL && !mC94->IsDisabled() && mC94->IsDefaultButton()) {
-        mC94->Fn2F3440();
+    if(this->mDefaultButton.get()!=NULL && !this->mDefaultButton->IsDisabled() && this->mDefaultButton->IsDefaultButton()) {
+        this->mDefaultButton->Fn2F3440();
         return true;
     }
     return false;
 }
 // FUNCTION: WON 0x006f7d20
+// Activates the default button on event 20, ends the dialog with the button's control id when a
+// button with flag 0x100 is clicked (event 15), and passes other events on
 void Dialog::HandleComponentEvent(ComponentEvent* event)
 {
-    if(event->mType==20) { ActivateDefaultButton(); return; }
-    if(event->mType==15 && ((static_cast<Button*>(event->mComponent)->mButtonFlags&0x100)?true:false)) {
-        GetRoot()->Fn32B0A0(event->mComponent->mControlId,NULL);
+    if(event->mType==ComponentEvent_InputReturn) { this->ActivateDefaultButton(); return; }
+    if(event->mType==ComponentEvent_ButtonPressed && ((static_cast<Button*>(event->mComponent)->mButtonFlags&0x100)?true:false)) {
+        this->GetRoot()->EndDialog(event->mComponent->mControlId,NULL);
         return;
     }
     Container::HandleComponentEvent(event);

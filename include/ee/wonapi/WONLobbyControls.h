@@ -1,4 +1,4 @@
-// Original WONLobby control contracts: actual Container base84 and owned fields.
+// WONLobby controls: a Container base (0x84 bytes) plus their own fields.
 
 #ifndef EE_WONAPI_WONLOBBYCONTROLS_H
 #define EE_WONAPI_WONLOBBYCONTROLS_H
@@ -8,7 +8,7 @@ class LoginInitStatusEvent;
 class LoginStatusCtrl : public Container {
 public:
     LoginStatusCtrl();
-    // Implicit inherited virtual destructor; original no own-vptr store, zero primary credit.
+    // Implicit inherited virtual destructor (the original stores no own vptr).
     virtual void InitComponent(ComponentInit& inInit);
     virtual void HandleComponentEvent(ComponentEvent* inEvent);
     SmartPtr<Label> mStatusLabel; // +84, allocation88
@@ -16,7 +16,7 @@ public:
 class InitFailedCtrl : public Container {
 public:
     InitFailedCtrl();
-    // Implicit inherited virtual destructor; original no own-vptr store, zero primary credit.
+    // Implicit inherited virtual destructor (the original stores no own vptr).
     virtual void InitComponent(ComponentInit& inInit);
     virtual void HandleComponentEvent(ComponentEvent* inEvent);
     void HandleLoginInitStatus(LoginInitStatusEvent* inEvent);
@@ -27,7 +27,7 @@ public:
 class GameStagingCtrl : public Container {
 public:
     GameStagingCtrl();
-    // Implicit inherited virtual destructor; original no own-vptr store, zero primary credit.
+    // Implicit inherited virtual destructor (the original stores no own vptr).
     virtual void InitComponent(ComponentInit& inInit);
     virtual void HandleComponentEvent(ComponentEvent* inEvent);
     void UpdateStartButton();
@@ -37,7 +37,7 @@ public:
     SmartPtr<Button> mStartGameButton; //88
     long mRoomSpecFlags; //8c
     bool mInGame; //90
-    bool mLastReady; //91; allocation94 with nativealignment
+    bool mLastReady; // offset 0x91; class size 0x94 with alignment
 };
 }
 
@@ -46,14 +46,13 @@ public:
 #include "ee/wonapi/WONLobbyRichText.h"
 namespace WONAPI {
 class ChatCommandParser;
-// Truthful pointer-only forwards; canonical payload definitions remain Core-owned.
+// Forward declarations (pointers only).
 class LeftRoomEvent;
 class SetChatInputEvent;
 class ChatCommandErrorEvent;
 }
 
-// Proposed complete family: LoginCtrl.h.draft
-// SCRATCH additional family declarations. Canonical shared event/widget contracts pending.
+// LoginCtrl and related declarations.
 namespace WONAPI {
 class InputBox;
 class LoginEvent;
@@ -62,7 +61,7 @@ class SetLoginFieldsEvent;
 class LoginCtrl : public Dialog {
 public:
     LoginCtrl();
-    // Implicit inherited virtual destructor; original no own-vptr store, zero primary credit.
+    // Implicit inherited virtual destructor (the original stores no own vptr).
     virtual void InitComponent(ComponentInit& inInit);
     virtual void HandleComponentEvent(ComponentEvent* inEvent);
     void UpdateLoginButton();
@@ -75,19 +74,18 @@ public:
     SmartPtr<InputBox> mPasswordInput; //9c
     SmartPtr<Button> mRememberPasswordCheck; //a0
     SmartPtr<Button> mLoginButton; //a4
-    bool mCanLogin; //a8; allocationac, native compiler alignment
+    bool mCanLogin; // offset 0xa8; class size 0xac with alignment
 };
 }
 
 
-// Proposed complete family: LobbyOptionsCtrl.h.draft
-// SCRATCH class proposal, no shadow bases and no allocated partial widgets.
+// LobbyOptionsCtrl.
 namespace WONAPI {
 class ImageComponent;
 class LobbyOptionsCtrl : public Container {
 public:
     LobbyOptionsCtrl(bool inIsLan);
-    virtual ~LobbyOptionsCtrl(); //actualownVTstore3be08f; emptybodycandidatezeroquota
+    virtual ~LobbyOptionsCtrl(); // empty; stores its own vptr (0x007be08f)
     virtual void InitComponent(ComponentInit& inInit);
     virtual void HandleComponentEvent(ComponentEvent* inEvent);
     bool HandleButton(Component* inComponent);
@@ -109,7 +107,7 @@ public:
     SmartPtr<Button> mAutoPingGamesCheck; //b0
     SmartPtr<Label> mLocalAddressDetailLabel; //b4
     SmartPtr<Label> mPublicAddressDetailLabel; //b8
-    SmartPtr<ImageComponent> mFirewalledIcon; //bc, actual RTTI4d66c0
+    SmartPtr<ImageComponent> mFirewalledIcon; // offset 0xbc (RTTI 0x008d66c0)
     SmartPtr<ComboBox> mUserNameCombo; //c0
     SmartPtr<Label> mLANBroadcastDetailLabel; //c4
     SmartPtr<Button> mFilterDirtyWordsCheck; //c8
@@ -118,26 +116,25 @@ public:
 }
 
 
-// Proposed complete family: FriendsListCtrl.h.draft
-// SCRATCH full family contract, canonical TextListItem fields/slots pending.
+// FriendsListCtrl.
 namespace WONAPI {
 class FriendsListItem : public TextListItem {
 public:
     FriendsListItem();
-    // Implicit inherited virtual destructor; original no own-vptr store, zero primary credit.
-    virtual void Virtual04(Graphics& inGraphics,ListArea* inList);
-    virtual void Virtual08(ListArea* inList);
-    virtual int Virtual10(const ListItem* inOther,ListArea* inList) const;
+    // Implicit inherited virtual destructor (the original stores no own vptr).
+    virtual void Paint(Graphics& inGraphics,ListArea* inList);
+    virtual void CalcDimensions(ListArea* inList);
+    virtual int Compare(const ListItem* inOther,ListArea* inList) const;
     SmartPtr<LobbyFriend> mFriend; //28
     bool mSeparator; //2c
     signed char mSortGroup; //2d;allocation30
 };
 class FriendsListCtrl : public Container {
 public:
-    static ComponentConfig* CfgFactory(); //365320 true SDK external factory
-    static Component* CompFactory(); //3652c0 true SDK external factory
+    static ComponentConfig* CfgFactory(); // at 0x00765320
+    static Component* CompFactory(); // at 0x007652c0
     FriendsListCtrl();
-    // Implicit inherited virtual destructor; original no own-vptr store, zero primary credit.
+    // Implicit inherited virtual destructor (the original stores no own vptr).
     virtual void InitComponent(ComponentInit& inInit);
     virtual void HandleComponentEvent(ComponentEvent* inEvent);
     void UpdateSeparator();
@@ -156,13 +153,12 @@ public:
 }
 
 
-// Proposed complete family: LostControls.h.draft
-// SCRATCH whole narrow LostPasswordCtrl/LostUserNameCtrl families.
+// LostPasswordCtrl and LostUserNameCtrl.
 namespace WONAPI {
 class LostPasswordCtrl : public Container {
 public:
-    LostPasswordCtrl(); //3c0320; empty source-kind candidate, zero primary credit until COFF
-    // Implicit inherited virtual destructor; original no own-vptr store, zero primary credit.
+    LostPasswordCtrl(); // empty, at 0x007c0320
+    // Implicit inherited virtual destructor (the original stores no own vptr).
     virtual void InitComponent(ComponentInit& inInit); //3c0400
     virtual void HandleComponentEvent(ComponentEvent* inEvent); //3c0520
     void UpdateRetrieveButton(); //3c0460
@@ -172,8 +168,8 @@ public:
 };
 class LostUserNameCtrl : public Container {
 public:
-    LostUserNameCtrl(); //3c0750; empty source-kind candidate, zero primary credit until COFF
-    // Implicit inherited virtual destructor; original no own-vptr store, zero primary credit.
+    LostUserNameCtrl(); // empty, at 0x007c0750
+    // Implicit inherited virtual destructor (the original stores no own vptr).
     virtual void InitComponent(ComponentInit& inInit); //3c0830
     virtual void HandleComponentEvent(ComponentEvent* inEvent); //3c0930
     void UpdateRetrieveButton(); //3c0890
@@ -183,19 +179,18 @@ public:
 }
 
 
-// Proposed complete family: CreateAccountCtrl.h.draft
-// Scratch complete derived fields; no allocation/production/compile authority.
-// Actual RTTI CreateAccountCtrl>Container>Component>RefCount, VT452e3c, sizebc.
+// CreateAccountCtrl (0xbc bytes): RTTI CreateAccountCtrl > Container > Component > RefCount,
+// vtable 0x00852e3c.
 namespace WONAPI {
 class CreateAccountCtrl : public Container {
 public:
-    CreateAccountCtrl(); //3ba290, empty14ownedPtr constructor candidate, zeroquota
-    // Implicit virtual normal destructor3ba320,455B, no own-vptr; zeroquota.
-    virtual void InitComponent(ComponentInit& inInit); //3ba4f0,394B
-    virtual void HandleComponentEvent(ComponentEvent* inEvent); //3ba990,639B
-    bool Fn3BA680(bool inVisible, Label* inLabel); //24B, this unused; pinnednominalSetDesc
-    bool Fn3BA790(InputBox* inMonth,InputBox* inDay,InputBox* inYear); //112B,this unused
-    void UpdateCreateButton(); //3ba800,393B
+    CreateAccountCtrl(); // at 0x007ba290
+    // Implicit virtual destructor (0x007ba320; stores no own vptr).
+    virtual void InitComponent(ComponentInit& inInit); // at 0x007ba4f0
+    virtual void HandleComponentEvent(ComponentEvent* inEvent); // at 0x007ba990
+    bool ShowErrorLabel(bool inVisible, Label* inLabel); // does not use this
+    bool IsValidBirthDate(InputBox* inMonth,InputBox* inDay,InputBox* inYear); // does not use this
+    void UpdateCreateButton(); // at 0x007ba800
     SmartPtr<InputBox> mUserNameInput; //84
     SmartPtr<InputBox> mPasswordInput; //88
     SmartPtr<InputBox> mConfirmPasswordInput; //8c
@@ -214,40 +209,39 @@ public:
 }
 
 
-// Proposed complete family: ChatCtrl.h.draft
-// SCRATCH full controller fields; global ChatLink is private to its actual CPP.
+// ChatCtrl fields; the global ChatLink is private to its .cpp.
 class ChatLink;
 namespace WONAPI {
 class ChatCtrl : public Container {
 public:
     ChatCtrl(); //3b6b80
-    virtual ~ChatCtrl(); //actualownVTstore3b6cbf; emptybodycandidatezeroquota
+    virtual ~ChatCtrl(); // empty; stores its own vptr (0x007b6cbf)
     virtual void InitComponent(ComponentInit& inInit); //3b6dd0
     virtual void HandleComponentEvent(ComponentEvent* inEvent); //3b9c80
-    void Fn3B72E0(AnnounceClientLocationEvent* inEvent);
-    void Fn3B7660(AnnounceFriendEvent* inEvent);
-    void Fn3B7C60(GroupInvitationEvent* inEvent);
-    void Fn3B7EC0(GroupJoinAttemptEvent* inEvent);
-    void Fn3B81F0(PlayerTeamChangedEvent* inEvent);
-    void Fn3B82F0(SetChatInputEvent* inEvent);
-    void Fn3B85B0(RecvChatEvent* inEvent);
-    void Fn3B9680(AlertEvent* inEvent);
-    void Fn3B88F0(JoinedRoomEvent* inEvent);
-    void Fn3B89A0(LeftRoomEvent* inEvent);
-    void Fn3B8A20(ChatCommandParser* inParser);
-    void Fn3B8BF0();
-    void Fn3B8BD0(ChatCommandErrorEvent* inEvent);
-    void Fn3B9240(ClientModeratedEvent* inEvent);
-    bool Fn3B6F00();
-    void Fn3B6F10(const GUIString& inFormat,const GUIString*const* inStrings,int inNumStrings,
+    void HandleAnnounceClientLocation(AnnounceClientLocationEvent* inEvent);
+    void HandleAnnounceFriend(AnnounceFriendEvent* inEvent);
+    void HandleGroupInvitation(GroupInvitationEvent* inEvent);
+    void HandleGroupJoinAttempt(GroupJoinAttemptEvent* inEvent);
+    void HandlePlayerTeamChanged(PlayerTeamChangedEvent* inEvent);
+    void HandleSetChatInput(SetChatInputEvent* inEvent);
+    void HandleRecvChat(RecvChatEvent* inEvent);
+    void HandleAlert(AlertEvent* inEvent);
+    void HandleJoinedRoom(JoinedRoomEvent* inEvent);
+    void HandleLeftRoom(LeftRoomEvent* inEvent);
+    void ShowParserError(ChatCommandParser* inParser);
+    void SendInput();
+    void HandleChatCommandError(ChatCommandErrorEvent* inEvent);
+    void HandleClientModerated(ClientModeratedEvent* inEvent);
+    bool IsTeamRoom();
+    void AddFormattedText(const GUIString& inFormat,const GUIString*const* inStrings,int inNumStrings,
         TextSegmentBase*const* inSegments,int inNumSegments,bool inLineBreak);
-    void Fn3B6FD0(const GUIString& inFormat,const GUIString& inText,bool inLineBreak);
-    void Fn3B7000(const GUIString& inFormat,TextSegmentBase* inSegment,bool inLineBreak);
-    SmartPtr<ChatLink> Fn3B7030(LobbyClient* inClient);
-    void Fn3B9910(TextLinkActivatedEvent* inEvent);
-    void Fn3B98A0(ChatLink* inLink,int inColor,int inLinkedColor);
-    SmartPtr<Font> mFont84;
-    SmartPtr<Font> mFont88;
+    void AddTextLine(const GUIString& inFormat,const GUIString& inText,bool inLineBreak);
+    void AddLinkLine(const GUIString& inFormat,TextSegmentBase* inSegment,bool inLineBreak);
+    SmartPtr<ChatLink> MakeClientLink(LobbyClient* inClient);
+    void HandleTextLinkActivated(TextLinkActivatedEvent* inEvent);
+    void DisableLinkChain(ChatLink* inLink,int inColor,int inLinkedColor);
+    SmartPtr<Font> mBoldFont;
+    SmartPtr<Font> mItalicFont;
     int mDefaultColor; int mUserColor; int mWhisperColor; int mEmoteColor; int mWarningColor;
     int mErrorColor; int mHelpColor; int mGroupColor; int mMessageColor; int mAcceptColor; int mRejectColor;
     SmartPtr<InputBox> mChatInput; //b8

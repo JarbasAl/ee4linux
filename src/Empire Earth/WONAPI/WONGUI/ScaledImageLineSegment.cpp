@@ -1,4 +1,4 @@
-// Genuine SDK clipped image-tiling segment, SOURCE_ONLY_NO_NATIVE_ID.
+// HTML image line segment: Paint tiles the image across the segment, clipped to it (not identified in the original exe)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,11 +14,11 @@
 namespace WONAPI {
 void ScaledImageLineSegment::Paint(Graphics &g, int x, int y, ElementPaintInfo &theInfo)
 {
-	g.PushClipRect(x,y,mWidth,mHeight);
-	x+=mHSpace; y+=mVSpace;
-	for(int w=0; w<mWidth; w+=mImage->mWidth)
-		for(int h=0; h<mHeight; h+=mImage->mHeight)
-			g.DrawImage(mImage.get(),x+w,y+h);
+	g.PushClipRect(x,y,this->mWidth,this->mHeight);
+	x+=this->mHSpace; y+=this->mVSpace;
+	for(int w=0; w<this->mWidth; w+=this->mImage->mWidth)
+		for(int h=0; h<this->mHeight; h+=this->mImage->mHeight)
+			g.DrawImage(this->mImage.get(),x+w,y+h);
 
 	g.PopClipRect();
 }

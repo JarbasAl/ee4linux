@@ -1,5 +1,5 @@
-// Complete genuine same-snapshot Title/Community configuration algorithms.
-// SOURCE_ONLY_NO_NATIVE_ID: no Native/primary/physical identity assigned.
+// WON SDK title/community configuration
+// No original address identified
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -22,64 +22,64 @@ using namespace std;
 TitleConfig::TitleConfig(bool alreadyInTitle /* = false */) :
 	mAlreadyInTitle(alreadyInTitle)
 {
-	KeyAdd("ForceCDKey",mForceCDKey,false);
-	KeyAdd("RequireCRC",mRequireCrc,false);
-	KeyAdd("AllowBetaKey",mAllowBetaKey,false);
-	KeyAdd("RequireCDKey",mRequireCDKey,false);
-	KeyAdd("FailToGuestLogin",mFailToGuest,true);
-	KeyAdd("AllowGuestLogin",mAllowGuest,false);
-	KeyAdd("ConcurrentUserLogin",mConcurrentUserLogin,true);
-	KeyAdd("ConcurrentCDKeyLogin",mConcurrentCDKeyLogin,false);
-	KeyAdd("GetUserData",mGetUserData,false);
-	KeyAdd("GetForgeableUserData",mGetForgeableUserData,false);
-	KeyAdd("CDKeyForInvite",mCDKeyForInvite,false);
-	KeyAdd("SaveSessionKey",mSaveSessionKey,false);
-	KeyAdd("GetKeyID",mGetKeyID,false);
-	KeyAdd("ASCIIAccountNames",mASCIIAccountNames,false);
+	this->KeyAdd("ForceCDKey",this->mForceCDKey,false);
+	this->KeyAdd("RequireCRC",this->mRequireCrc,false);
+	this->KeyAdd("AllowBetaKey",this->mAllowBetaKey,false);
+	this->KeyAdd("RequireCDKey",this->mRequireCDKey,false);
+	this->KeyAdd("FailToGuestLogin",this->mFailToGuest,true);
+	this->KeyAdd("AllowGuestLogin",this->mAllowGuest,false);
+	this->KeyAdd("ConcurrentUserLogin",this->mConcurrentUserLogin,true);
+	this->KeyAdd("ConcurrentCDKeyLogin",this->mConcurrentCDKeyLogin,false);
+	this->KeyAdd("GetUserData",this->mGetUserData,false);
+	this->KeyAdd("GetForgeableUserData",this->mGetForgeableUserData,false);
+	this->KeyAdd("CDKeyForInvite",this->mCDKeyForInvite,false);
+	this->KeyAdd("SaveSessionKey",this->mSaveSessionKey,false);
+	this->KeyAdd("GetKeyID",this->mGetKeyID,false);
+	this->KeyAdd("ASCIIAccountNames",this->mASCIIAccountNames,false);
 
-	KeyAdd("NetPort",mNetPort,15111);
+	this->KeyAdd("NetPort",this->mNetPort,15111);
 
-	KeyAdd("Network",mNetwork,NULL);
-	KeyAdd("ImagePath",mImagePath,NULL);
-	KeyAdd("HashString",mHashString,NULL);
-	KeyAdd("KeyPrefix",mKeyPrefix,NULL);
+	this->KeyAdd("Network",this->mNetwork,NULL);
+	this->KeyAdd("ImagePath",this->mImagePath,NULL);
+	this->KeyAdd("HashString",this->mHashString,NULL);
+	this->KeyAdd("KeyPrefix",this->mKeyPrefix,NULL);
 
-	KeyAdd("AdminCommunityName",mAdminCommunityName,L"");
+	this->KeyAdd("AdminCommunityName",this->mAdminCommunityName,L"");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool TitleConfig::Virtual0C(ConfigParser* theParser)
+bool TitleConfig::PreParse(ConfigParser* theParser)
 {
-	TitleConfig *aParent = dynamic_cast<TitleConfig*>(mL38);
+	TitleConfig *aParent = dynamic_cast<TitleConfig*>(this->mParent);
 	if(aParent!=NULL)
-		CopyKeyValsFrom(aParent);
+		this->CopyKeyValsFrom(aParent);
 
 	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool TitleConfig::Virtual04(ConfigParser* theParser, const std::string& theTitleType)
+bool TitleConfig::HandleInstruction(ConfigParser* theParser, const std::string& theTitleType)
 {
-	if(ConfigObject::Virtual04(theParser, theTitleType))
+	if(ConfigObject::HandleInstruction(theParser, theTitleType))
 		return true;
 
 	if(theTitleType=="TITLEDEF")
 	{
-		if(mAlreadyInTitle)
+		if(this->mAlreadyInTitle)
 		{
 			theParser->SetError("You can't nest Title definitions!",false);
 			return false;
 		}
 
 		TitleConfigPtr aTitleP = new TitleConfig(true);
-		return ParseChild(*theParser,aTitleP.get());
+		return this->ParseChild(*theParser,aTitleP.get());
 	}
 	else if(theTitleType=="COMMUNITY")
 	{
 		CommunityConfigPtr aCommunityConfigP = new CommunityConfig;
-		return ParseChild(*theParser,aCommunityConfigP.get());
+		return this->ParseChild(*theParser,aCommunityConfigP.get());
 	}
 	else
 		return false;
@@ -87,7 +87,7 @@ bool TitleConfig::Virtual04(ConfigParser* theParser, const std::string& theTitle
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool TitleConfig::Virtual10(ConfigParser* theParser)
+bool TitleConfig::PostParse(ConfigParser* theParser)
 {
 	return true;
 }
@@ -98,35 +98,35 @@ string TitleConfig::ToString(bool includeName) const
 {
 	string aStr;
 	if(includeName)
-		aStr += mS18 +"\r\n";
+		aStr += this->mName +"\r\n";
 
-	aStr += string("\tNetwork: ") + (mNetwork.empty() ? string("EMPTY") : mNetwork) + "\r\n";
+	aStr += string("\tNetwork: ") + (this->mNetwork.empty() ? string("EMPTY") : this->mNetwork) + "\r\n";
 	char aBuffer[20];
-	sprintf(aBuffer, "%d", mNetPort);
+	sprintf(aBuffer, "%d", this->mNetPort);
 	aStr += string("\tNetPort: ") + string(aBuffer) + "\r\n";
-	aStr += string("\tForceCDKey: ") + string((mForceCDKey) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tForceCDKey: ") + string((this->mForceCDKey) ? "TRUE" : "FALSE") + "\r\n";
 
-	aStr += string("\tImagePath: ") + (mImagePath.empty() ? string("EMPTY") : mImagePath) + "\r\n";
-	aStr += string("\tHashString: ") + (mHashString.empty() ? string("EMPTY") : mHashString) + "\r\n";
-	aStr += string("\tKeyPrefix: ") + (mKeyPrefix.empty() ? string("EMPTY") : mKeyPrefix) + "\r\n";
+	aStr += string("\tImagePath: ") + (this->mImagePath.empty() ? string("EMPTY") : this->mImagePath) + "\r\n";
+	aStr += string("\tHashString: ") + (this->mHashString.empty() ? string("EMPTY") : this->mHashString) + "\r\n";
+	aStr += string("\tKeyPrefix: ") + (this->mKeyPrefix.empty() ? string("EMPTY") : this->mKeyPrefix) + "\r\n";
 
-	aStr += string("\tRequireCrc: ") + string((mRequireCrc) ? "TRUE" : "FALSE") + "\r\n";
-	aStr += string("\tAllowBetaKey: ") + string((mAllowBetaKey) ? "TRUE" : "FALSE") + "\r\n";
-	aStr += string("\tRequireCDKey: ") + string((mRequireCDKey) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tRequireCrc: ") + string((this->mRequireCrc) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tAllowBetaKey: ") + string((this->mAllowBetaKey) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tRequireCDKey: ") + string((this->mRequireCDKey) ? "TRUE" : "FALSE") + "\r\n";
 
-	aStr += string("\tFailToGuest: ") + string((mFailToGuest) ? "TRUE" : "FALSE") + "\r\n";
-	aStr += string("\tAllowGuest: ") + string((mAllowGuest) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tFailToGuest: ") + string((this->mFailToGuest) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tAllowGuest: ") + string((this->mAllowGuest) ? "TRUE" : "FALSE") + "\r\n";
 	
-	aStr += string("\tConcurrentUserLogin: ") + string((mConcurrentUserLogin) ? "TRUE" : "FALSE") + "\r\n";
-	aStr += string("\tConcurrentCDKeyLogin: ") + string((mConcurrentCDKeyLogin) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tConcurrentUserLogin: ") + string((this->mConcurrentUserLogin) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tConcurrentCDKeyLogin: ") + string((this->mConcurrentCDKeyLogin) ? "TRUE" : "FALSE") + "\r\n";
 	
-	aStr += string("\tGetUserData: ") + string((mGetUserData) ? "TRUE" : "FALSE") + "\r\n";
-	aStr += string("\tGetForgeableUserData: ") + string((mGetForgeableUserData) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tGetUserData: ") + string((this->mGetUserData) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tGetForgeableUserData: ") + string((this->mGetForgeableUserData) ? "TRUE" : "FALSE") + "\r\n";
 	
-	aStr += string("\tCDKeyForInvite: ") + string((mCDKeyForInvite) ? "TRUE" : "FALSE") + "\r\n";
-	aStr += string("\tSaveSessionKey: ") + string((mSaveSessionKey) ? "TRUE" : "FALSE") + "\r\n";
-	aStr += string("\tGetKeyID: ") + string((mGetKeyID) ? "TRUE" : "FALSE") +"\r\n";
-	aStr += string("\tASCIIAccountNames: ") + string((mASCIIAccountNames) ? "TRUE" : "FALSE") +"\r\n";
+	aStr += string("\tCDKeyForInvite: ") + string((this->mCDKeyForInvite) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tSaveSessionKey: ") + string((this->mSaveSessionKey) ? "TRUE" : "FALSE") + "\r\n";
+	aStr += string("\tGetKeyID: ") + string((this->mGetKeyID) ? "TRUE" : "FALSE") +"\r\n";
+	aStr += string("\tASCIIAccountNames: ") + string((this->mASCIIAccountNames) ? "TRUE" : "FALSE") +"\r\n";
 
 	return aStr;
 }
@@ -138,37 +138,37 @@ CommunityConfig::CommunityConfig(bool alreadyInCommunity /* = false */) :
 	TitleConfig(),
 	mAlreadyInCommunity(alreadyInCommunity)
 {
-	RegisterIntValue("CommunityID",mCommunityID,0);
-	RegisterIntListListValue("CertificateLifeSpan",mCertificateLifeSpanList,NULL,true);
-	KeyAdd("NameLogin",mNameLoginStr,"Required");
+	this->RegisterIntValue("CommunityID",this->mCommunityID,0);
+	this->RegisterIntListListValue("CertificateLifeSpan",this->mCertificateLifeSpanList,NULL,true);
+	this->KeyAdd("NameLogin",this->mNameLoginStr,"Required");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 CommunityConfig::CommunityConfig(const wstring& theCommunityName, unsigned long theCommunityID)
 {
-	Virtual18(true);
-	mCommunityName = theCommunityName;
-	mCommunityID = theCommunityID;
-	mFailToGuest = false;
+	this->Reset(true);
+	this->mCommunityName = theCommunityName;
+	this->mCommunityID = theCommunityID;
+	this->mFailToGuest = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool CommunityConfig::Virtual0C(ConfigParser* theParser)
+bool CommunityConfig::PreParse(ConfigParser* theParser)
 {
-	TitleConfig *aParent = dynamic_cast<TitleConfig*>(mL38);
+	TitleConfig *aParent = dynamic_cast<TitleConfig*>(this->mParent);
 	if(aParent!=NULL)
-		CopyKeyValsFrom(aParent);
+		this->CopyKeyValsFrom(aParent);
 
 	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool CommunityConfig::Virtual04(ConfigParser* theParser, const std::string& theCommunityType)
+bool CommunityConfig::HandleInstruction(ConfigParser* theParser, const std::string& theCommunityType)
 {
-	if(ConfigObject::Virtual04(theParser, theCommunityType))
+	if(ConfigObject::HandleInstruction(theParser, theCommunityType))
 		return true;
 
 	if(theCommunityType=="TITLEDEF")
@@ -178,14 +178,14 @@ bool CommunityConfig::Virtual04(ConfigParser* theParser, const std::string& theC
 	}
 	else if(theCommunityType=="COMMUNITY")
 	{
-		if(mAlreadyInCommunity)
+		if(this->mAlreadyInCommunity)
 		{
 			theParser->SetError("You can't nest communities!",false);
 			return false;
 		}
 
 		CommunityConfigPtr aCommutiyP = new CommunityConfig(true);
-		return ParseChild(*theParser,aCommutiyP.get());
+		return this->ParseChild(*theParser,aCommutiyP.get());
 	}
 	else
 		return false;
@@ -193,57 +193,56 @@ bool CommunityConfig::Virtual04(ConfigParser* theParser, const std::string& theC
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool CommunityConfig::Virtual10(ConfigParser* theParser)
+bool CommunityConfig::PostParse(ConfigParser* theParser)
 {
-	string aNameLoginStr = StringToUpperCase(mNameLoginStr);
+	string aNameLoginStr = StringToUpperCase(this->mNameLoginStr);
 	if(aNameLoginStr == "REQUIRED")
-		mNameLogin = NameLogin_Required;
+		this->mNameLogin = NameLogin_Required;
 	else if(aNameLoginStr == "OPTIONAL")
-		mNameLogin = NameLogin_Optional;
+		this->mNameLogin = NameLogin_Optional;
 	else if(aNameLoginStr == "NONE")
-		mNameLogin = NameLogin_None;
+		this->mNameLogin = NameLogin_None;
 	else
-		mNameLogin = NameLogin_Unknown;
+		this->mNameLogin = NameLogin_Unknown;
 	
-	if(mImagePath.empty())
+	if(this->mImagePath.empty())
 	{
-		mImagePath = "./";
+		this->mImagePath = "./";
 
-		TitleConfig* anObjectP = dynamic_cast<TitleConfig*>(mL38);
+		TitleConfig* anObjectP = dynamic_cast<TitleConfig*>(this->mParent);
 		if(anObjectP)
-			mImagePath += anObjectP->mS18;
+			this->mImagePath += anObjectP->mName;
 		else
-			mImagePath += mS18;
+			this->mImagePath += this->mName;
 	}
 
-	if(mHashString.empty())
+	if(this->mHashString.empty())
 	{
-		TitleConfig* anObjectP = dynamic_cast<TitleConfig*>(mL38);
+		TitleConfig* anObjectP = dynamic_cast<TitleConfig*>(this->mParent);
 		if(anObjectP)
-			mHashString = anObjectP->mS18;
+			this->mHashString = anObjectP->mName;
 		else
-			mHashString = mS18;
+			this->mHashString = this->mName;
 	}
 
 	long aTrustLevel, aDuration;
-	mTrustLevelLifespanMap.clear();
-	for(std::list<std::list<int> >::const_iterator anItr = mCertificateLifeSpanList.begin(); anItr != mCertificateLifeSpanList.end(); ++anItr)
+	this->mTrustLevelLifespanMap.clear();
+	for(std::list<std::list<int> >::const_iterator anItr = this->mCertificateLifeSpanList.begin(); anItr != this->mCertificateLifeSpanList.end(); ++anItr)
 	{
 		std::list<int>::const_iterator anItr2 = anItr->begin();
+		if(anItr2 == anItr->end())
+			continue;
+		aTrustLevel = *anItr2;
+		++anItr2;
 		if(anItr2 != anItr->end())
 		{
-			aTrustLevel = *anItr2;
-			++anItr2;
-			if(anItr2 != anItr->end())
-			{
-				aDuration = *anItr2;
-				mTrustLevelLifespanMap[aTrustLevel] = aDuration;
-			}
+			aDuration = *anItr2;
+			this->mTrustLevelLifespanMap[aTrustLevel] = aDuration;
 		}
 	}
 
-	if (mCommunityName.empty())
-		mCommunityName = StringToWString(mS18);
+	if (this->mCommunityName.empty())
+		this->mCommunityName = StringToWString(this->mName);
 
 	return true;
 }
@@ -252,21 +251,21 @@ bool CommunityConfig::Virtual10(ConfigParser* theParser)
 ///////////////////////////////////////////////////////////////////////////////
 string CommunityConfig::ToString(void) const
 {
-	string aStr = ((mCommunityName.empty()) ? mS18 : WStringToString(mCommunityName)) + "\r\n";
+	string aStr = ((this->mCommunityName.empty()) ? this->mName : WStringToString(this->mCommunityName)) + "\r\n";
 
 	char aBuffer[25];
-	sprintf(aBuffer, "%d", mCommunityID);
+	sprintf(aBuffer, "%d", this->mCommunityID);
 	aStr += string("CommunityID: ") + string(aBuffer) + "\r\n";
 	aStr += TitleConfig::ToString(false);
 
 	// Trust level lifespan map
-	aStr += string("\tNameLogin: ") + mNameLoginStr + "\r\n";
+	aStr += string("\tNameLogin: ") + this->mNameLoginStr + "\r\n";
 	aStr += "\tTrust Level Lifespans: [";
-	if(mTrustLevelLifespanMap.empty())
+	if(this->mTrustLevelLifespanMap.empty())
 		aStr += "EMPTY";
 	else{
 		bool isFirst = true;
-		for(TRUST_LEVEL_LIFESPAN_MAP_CITR anItr = mTrustLevelLifespanMap.begin(); anItr != mTrustLevelLifespanMap.end(); ++anItr)
+		for(TRUST_LEVEL_LIFESPAN_MAP_CITR anItr = this->mTrustLevelLifespanMap.begin(); anItr != this->mTrustLevelLifespanMap.end(); ++anItr)
 		{
 			if(isFirst)
 				isFirst = false;

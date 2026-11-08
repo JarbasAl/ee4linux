@@ -1,4 +1,4 @@
-// Complete bounded BigInteger storage and byte codec; mathematical operations stay external.
+// BigInteger: storage, growth and big-endian byte conversion (arithmetic lives in the other BigInteger files)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,6 +12,7 @@
 #include "ee/wonapi/WONBigInteger.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007d2ff0
+// Returns the number of significant bits in the value
 int BigInteger::st_bitLength(const BigInteger& value)
 {
     int length=value.len;
@@ -22,27 +23,28 @@ int BigInteger::st_bitLength(const BigInteger& value)
     return result;
 }
 // FUNCTION: WON 0x007d3230
+// Replaces the word buffer (inline for up to 4 words), copying old words when given and freeing the old heap buffer
 void BigInteger::NewBuffer(int size,const word* oldBuffer,int oldSize) const
 {
-    word* oldN=n;
-    if(size>4) n=new word[size];
-    else n=stackN;
-    if(oldBuffer!=n) memset(n,0,size*sizeof(word));
-    nlen=size;
-    len=oldSize;
-    if(oldBuffer!=NULL && oldBuffer!=n) memcpy(n,oldBuffer,sizeof(word)*oldSize);
-    if(oldN!=stackN) delete[] oldN;
+    word* oldN=this->n;
+    if(size>4) this->n=new word[size];
+    else this->n=this->stackN;
+    if(oldBuffer!=this->n) memset(this->n,0,size*sizeof(word));
+    this->nlen=size;
+    this->len=oldSize;
+    if(oldBuffer!=NULL && oldBuffer!=this->n) memcpy(this->n,oldBuffer,sizeof(word)*oldSize);
+    if(oldN!=this->stackN) delete[] oldN;
 }
 // FUNCTION: WON 0x007d32b0
-// Cohesive initialization forwarding support0.
+// Initialises the value to zero with the inline buffer
 void BigInteger::Init()
 {
-    n=NULL;
-    NewBuffer(4);
-    negative=false;
+    this->n=NULL;
+    this->NewBuffer(4);
+    this->negative=false;
 }
 // FUNCTION: WON 0x007d3310
-// Cohesive deep-copy forwarding support0, native self-copy guard and sign update retained.
+// Copies the value and sign of one big integer into another (no-op on self-copy)
 void BigInteger::st_copy(BigInteger& target,const BigInteger& source)
 {
     if(&target==&source) return;
@@ -50,6 +52,7 @@ void BigInteger::st_copy(BigInteger& target,const BigInteger& source)
     target.negative=source.negative;
 }
 // FUNCTION: WON 0x007d3340
+// Enlarges the buffer to hold at least the given words (plus 16 spare), optionally keeping the value
 void BigInteger::st_grow(const BigInteger& value,int size,bool copyOld)
 {
     if(size<=value.nlen) return;
@@ -58,54 +61,55 @@ void BigInteger::st_grow(const BigInteger& value,int size,bool copyOld)
     else value.NewBuffer(size);
 }
 // FUNCTION: WON 0x007d3380
+// Writes the magnitude as big-endian bytes (with a 0 sign byte when needed); returns the byte count
 int BigInteger::toBinary(RawBuffer& buffer) const
 {
-    int byteCount=(st_bitLength(*this)+7)/8;
+    int byteCount=(BigInteger::st_bitLength(*this)+7)/8;
     buffer.erase();
     buffer.reserve(byteCount+1);
     int pos=0,bitPos=0;
     if(byteCount==0) buffer+=(unsigned char)0;
     for(int i=0;i<byteCount;++i) {
-        int value=((unsigned int)n[pos]>>bitPos)&0xffL;
+        int value=((unsigned int)this->n[pos]>>bitPos)&0xffL;
         bitPos+=8;
         if(bitPos>=32) {
             bitPos-=32;
             ++pos;
-            if(bitPos>0) value|=(n[pos]<<(8-bitPos))&0xffL;
+            if(bitPos>0) value|=(this->n[pos]<<(8-bitPos))&0xffL;
         }
         buffer+=(unsigned char)value;
     }
-    if(!negative && (char)buffer[buffer.length()-1]<0) buffer+=(unsigned char)0;
+    if(!this->negative && (char)buffer[buffer.length()-1]<0) buffer+=(unsigned char)0;
     std::reverse(buffer.begin(),buffer.end());
     return byteCount;
 }
 // FUNCTION: WON 0x007d3530
+// Sets the value from big-endian unsigned bytes
 void BigInteger::fromBinary(const RawBuffer& buffer)
 {
-    negative=false;
+    this->negative=false;
     int count=(buffer.length()*8+31)/32;
-    st_grow(*this,count,false);
-    len=count;
+    BigInteger::st_grow(*this,count,false);
+    this->len=count;
     int pos=0;
-    n[pos]=0;
+    this->n[pos]=0;
     int bitPos=0;
     for(int i=buffer.length()-1;i>=0;--i) {
         word value=buffer[i]&0xff;
-        n[pos]|=value<<bitPos;
+        this->n[pos]|=value<<bitPos;
         bitPos+=8;
-        if(bitPos>=32 && i>0) {
-            ++pos;
-            n[pos]=0;
-            bitPos-=32;
-            if(bitPos>0) n[pos]=value>>(8-bitPos);
-        }
+        if(bitPos<32 || i<=0)
+            continue;
+        ++pos;
+        this->n[pos]=0;
+        bitPos-=32;
+        if(bitPos>0) this->n[pos]=value>>(8-bitPos);
     }
-    while(len>0 && n[len-1]==0) --len;
+    while(this->len>0 && this->n[this->len-1]==0) --this->len;
 }
 }
 
-// Round9 private genuine SDK static object definitions. Their CRT/cleanup code is
-// compiler generated and must be observed naturally, never authored or forced.
+// WON SDK class constants; their dynamic initializers and atexit cleanups are compiler generated
 namespace WONAPI {
 const BigInteger BigInteger::ZERO = BigInteger(0);
 const BigInteger BigInteger::ONE = BigInteger(1);

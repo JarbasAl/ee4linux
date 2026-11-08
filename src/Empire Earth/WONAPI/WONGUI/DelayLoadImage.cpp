@@ -1,4 +1,4 @@
-// Source-only reconstructed WONGUI Animation; no runtime substitution authority.
+// Image that decodes its file only when it is first drawn (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,36 +13,41 @@
 
 namespace WONAPI {
 // FUNCTION: WON 0x00737c00
+// Creates an image of a given size that decodes the file at a path when first needed
 DelayLoadImage::DelayLoadImage(const std::string& path,int width,int height) : mImagePath(path)
 {
-    mHaveLoaded=false;
-    mWidth=(unsigned short)width;
-    mHeight=(unsigned short)height;
+    this->mHaveLoaded=false;
+    this->mWidth=(unsigned short)width;
+    this->mHeight=(unsigned short)height;
 }
 // FUNCTION: WON 0x00737c90
+// Deletes the delay-load image (scalar deleting destructor, compiler-generated)
 // (??_GDelayLoadImage@WONAPI@@UAEPAXI@Z)
 
 // FUNCTION: WON 0x00737cb0
+// Destroys the delay-load image, releasing the decoded image and the path (compiler-generated)
 // (??1DelayLoadImage@WONAPI@@UAE@XZ)
 
 // FUNCTION: WON 0x00737d50
+// Decodes the image on the first call, then draws it if decoding succeeded
 void DelayLoadImage::Draw(DisplayContext* context,int x,int y,int left,int top,int width,int height)
 {
-    if(!mHaveLoaded)
+    if(!this->mHaveLoaded)
     {
-        mHaveLoaded=true;
-        mImage=WONAPI::WindowManager::GetDefaultWindowManager()->DecodeImage(mImagePath.c_str());
+        this->mHaveLoaded=true;
+        this->mImage=WONAPI::WindowManager::GetDefaultWindowManager()->DecodeImage(this->mImagePath.c_str());
     }
-    if(mImage.get()!=NULL) mImage->Draw(context,x,y,left,top,width,height);
+    if(this->mImage.get()!=NULL) this->mImage->Draw(context,x,y,left,top,width,height);
 }
 // FUNCTION: WON 0x00737e50
+// Decodes the image on the first call and returns it (NULL if decoding failed)
 SmartPtr<NativeImage> DelayLoadImage::GetNative(DisplayContext*)
 {
-    if(!mHaveLoaded)
+    if(!this->mHaveLoaded)
     {
-        mHaveLoaded=true;
-        mImage=WONAPI::WindowManager::GetDefaultWindowManager()->DecodeImage(mImagePath.c_str());
+        this->mHaveLoaded=true;
+        this->mImage=WONAPI::WindowManager::GetDefaultWindowManager()->DecodeImage(this->mImagePath.c_str());
     }
-    return mImage;
+    return this->mImage;
 }
 }

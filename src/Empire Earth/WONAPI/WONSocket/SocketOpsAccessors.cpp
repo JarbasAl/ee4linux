@@ -1,5 +1,4 @@
-// Genuine original API definitions whose ICF native bodies are already represented.
-// Source completeness only: zero incremental unique native functions/bytes/primary.
+// RecvBytesOp accessor whose body the original shares with another function
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -9,6 +8,6 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 namespace WONAPI {
-// SOURCE-ONLY original ICF 0x2b1df0; no new native credit.
-ByteBufferPtr RecvBytesOp::GetBytes() const { return mReceivedData; }
+// Same body as 0x2b1df0 in the original (folded by the linker)
+ByteBufferPtr RecvBytesOp::GetBytes() const { return this->mReceivedData; }
 }

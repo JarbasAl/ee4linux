@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// Frame and frame component constructors and frame assignment (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,45 +13,45 @@
 #include "ee/wonapi/WONLobbyMSExtraConfig.h"
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
-// SUPPORT-ONLY: EXE 0x007175f0 (145B real uniform frame owner constructor)
+// Creates a frame with the same border width on all four sides (the original's body at 0x007175f0)
 WONFrame::WONFrame(Image* image,int size)
 {
-    mImage=image;
-    mLeft=mTop=mRight=mBottom=size;
+    this->mImage=image;
+    this->mLeft=this->mTop=this->mRight=this->mBottom=size;
 }
-// SUPPORT-ONLY: EXE 0x00717690 (157B real frame owner constructor)
+// Creates a frame with the given image and four border widths (the original's body at 0x00717690)
 WONFrame::WONFrame(Image* image,int left,int top,int right,int bottom)
 {
-    mImage=image;
-    mLeft=left;
-    mTop=top;
-    mRight=right;
-    mBottom=bottom;
+    this->mImage=image;
+    this->mLeft=left;
+    this->mTop=top;
+    this->mRight=right;
+    this->mBottom=bottom;
 }
-// SUPPORT-ONLY: EXE 0x007177a0 (19B genuine SDK deep-copy assignment forwarding)
+// Makes this frame a deep copy of another one (the original's body at 0x007177a0)
 WONFrame& WONFrame::operator=(const WONFrame& frame)
 {
-    Copy(frame);
+    this->Copy(frame);
     return *this;
 }
-// SUPPORT-ONLY: EXE 0x0071a5b0 (117B complete44 component/frame owner construction)
+// Creates a frame component with the given frame image and borders (the original's body at 0x0071a5b0)
 WONFrameComponent::WONFrameComponent(Image* image,int left,int top,int right,int bottom)
 {
-    VirtualAC(image,left,top,right,bottom);
+    this->SetFrameImageAndBorders(image,left,top,right,bottom);
 }
-// Actual SDK destructor is implicit; preserve natural compiler member/base cleanup.
+// The frame component's destructor is implicit (compiler-generated member and base cleanup)
 }
 
 #include "ee/wonapi/WONLobbyStretchImage.h"
 namespace WONAPI {
-// SUPPORT: EXE 0x00717550; genuine SDK retained StretchImage frame composition,155B.
+// Creates a frame from a stretch image, taking the image's four borders (the original's body at 0x00717550)
 WONFrame::WONFrame(StretchImage* image)
 {
-    mImage=image;
-    mLeft=image->GetLeft();
-    mTop=image->GetTop();
-    mRight=image->GetRight();
-    mBottom=image->GetBottom();
+    this->mImage=image;
+    this->mLeft=image->GetLeft();
+    this->mTop=image->GetTop();
+    this->mRight=image->GetRight();
+    this->mBottom=image->GetBottom();
 }
 }
 

@@ -1,4 +1,4 @@
-// Reviewed original-backed controls; source-only, near code/support remain carved.
+// The lobby options tab: sounds, music, confirmations, connection speed, filters and network address details
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 
 #include <windows.h>
@@ -17,8 +17,8 @@
 #include "ee/wonapi/WONLobbyPersistence.h"
 #include "ee/wonapi/WONLobbyControls.h"
 namespace WONAPI {
-//3be930,56B plus separate20B jump table; source-level free helper.
 // FUNCTION: WON 0x007be930
+// Returns the connection speed value (5, 15, 25, 35, 45 or 55) for a speed combo box entry
 static int GetConnectionSpeed(int inSelection)
 {
     if (inSelection<0) return 5;
@@ -31,8 +31,8 @@ static int GetConnectionSpeed(int inSelection)
     default:return 55;
     }
 }
-//3bef30,36B.
 // FUNCTION: WON 0x007bef30
+// Returns the speed combo box entry for a saved connection speed value
 static int GetConnectionSpeedIndex(int inSpeed)
 {
     int i;
@@ -40,123 +40,124 @@ static int GetConnectionSpeedIndex(int inSpeed)
         if (GetConnectionSpeed(i)>inSpeed) break;
     return i-1;
 }
-//3bdfc0,140B; real18 owning pointer defaults, bool is ctor arg.
 // FUNCTION: WON 0x007bdfc0
-LobbyOptionsCtrl::LobbyOptionsCtrl(bool inIsLan) { mIsLan = inIsLan; }
-//3be070,490B; reverse18 pointers, then Container;18EHstates required.
-LobbyOptionsCtrl::~LobbyOptionsCtrl() {} //ownVTstore3be08f; zeroquota,normalCOFFpending
-//3be260,1490B,11states. Local button owns Reset/Restore/Remove in turn.
+// Creates the options tab for the Internet or the LAN lobby
+LobbyOptionsCtrl::LobbyOptionsCtrl(bool inIsLan) { this->mIsLan = inIsLan; }
+// The destructor (0x7be070) releases the 18 control pointers in reverse order, then the container base
+LobbyOptionsCtrl::~LobbyOptionsCtrl() {} // the original stores its own vtable at 0x7be08f
+// One local button pointer holds the reset, restore and remove buttons in turn
 // FUNCTION: WON 0x007be260
+// Finds the option controls in the layout (LAN or Internet ones) and shows the local address
 void LobbyOptionsCtrl::InitComponent(ComponentInit& inInit)
 {
-    if (inInit.mType==2) {
-        ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
-        SmartPtr<Button> button;
-        SafeGetComponent(config,mChatSoundEffectsCheck,"ChatSoundEffectsCheck",2,__FILE__,95);
-        SafeGetComponent(config,mConnectionSpeedCombo,"ConnectionSpeedCombo",__FILE__,96);
-        SafeGetComponent(config,mCrossPromotionCheck,"CrossPromotionCheck",3,__FILE__,97);
-        SafeGetComponent(config,mFirewalledIcon,"FirewalledIcon",__FILE__,98);
-        SafeGetComponent(config,mLobbyMusicCheck,"LobbyMusicCheck",5,__FILE__,99);
-        SafeGetComponent(config,mLobbySoundEffectsCheck,"LobbySoundEffectsCheck",6,__FILE__,100);
-        SafeGetComponent(config,mLocalAddressDetailLabel,"LocalAddressDetailLabel",__FILE__,101);
-        SafeGetComponent(config,mPublicAddressDetailLabel,"PublicAddressDetailLabel",__FILE__,102);
-        SafeGetComponent(config,button,"ResetFiltersButton",8,__FILE__,103);
-        SafeGetComponent(config,button,"RestoreDefaultsButton",9,__FILE__,104);
-        SafeGetComponent(config,mShowConfirmationsCheck,"ShowConfirmationsCheck",10,__FILE__,105);
-        SafeGetComponent(config,mShowGamesInProgressCheck,"ShowGamesInProgressCheck",11,__FILE__,106);
-        SafeGetComponent(config,mStagingSoundEffectsCheck,"StagingSoundEffectsCheck",12,__FILE__,107);
-        SafeGetComponent(config,mTabSelectCombo,"TabSelectCombo",__FILE__,108);
-        if (mIsLan) {
-            SafeGetComponent(config,mLANBroadcastDetailLabel,"LANBroadcastDetailLabel",__FILE__,112);
-            SafeGetComponent(config,button,"RemoveLanNameButton",7,__FILE__,113);
-            SafeGetComponent(config,mUserNameCombo,"UserNameCombo",__FILE__,114);
-        } else {
-            SafeGetComponent(config,mAnonymousToFriendsCheck,"AnonymousToFriendsCheck",0x30d56,__FILE__,118);
-            SafeGetComponent(config,mAutoPingGamesCheck,"AutoPingGamesCheck",1,__FILE__,119);
-            SafeGetComponent(config,mDoAutoAFKCheck,"DoAutoAFKCheck",4,__FILE__,120);
-            SafeGetComponent(config,mFilterDirtyWordsCheck,"FilterDirtyWordsCheck",0x30d55,__FILE__,121);
-        }
-        mLocalAddressDetailLabel->SetText(IPAddr::GetLocalAddr().GetHostString(true),true);
-        Fn2F5360(1);
+    if (inInit.mType!=2)
+        return;
+    ComponentConfig* config=static_cast<ComponentConfigInit&>(inInit).mConfig;
+    SmartPtr<Button> button;
+    SafeGetComponent(config,this->mChatSoundEffectsCheck,"ChatSoundEffectsCheck",2,__FILE__,95);
+    SafeGetComponent(config,this->mConnectionSpeedCombo,"ConnectionSpeedCombo",__FILE__,96);
+    SafeGetComponent(config,this->mCrossPromotionCheck,"CrossPromotionCheck",3,__FILE__,97);
+    SafeGetComponent(config,this->mFirewalledIcon,"FirewalledIcon",__FILE__,98);
+    SafeGetComponent(config,this->mLobbyMusicCheck,"LobbyMusicCheck",5,__FILE__,99);
+    SafeGetComponent(config,this->mLobbySoundEffectsCheck,"LobbySoundEffectsCheck",6,__FILE__,100);
+    SafeGetComponent(config,this->mLocalAddressDetailLabel,"LocalAddressDetailLabel",__FILE__,101);
+    SafeGetComponent(config,this->mPublicAddressDetailLabel,"PublicAddressDetailLabel",__FILE__,102);
+    SafeGetComponent(config,button,"ResetFiltersButton",8,__FILE__,103);
+    SafeGetComponent(config,button,"RestoreDefaultsButton",9,__FILE__,104);
+    SafeGetComponent(config,this->mShowConfirmationsCheck,"ShowConfirmationsCheck",10,__FILE__,105);
+    SafeGetComponent(config,this->mShowGamesInProgressCheck,"ShowGamesInProgressCheck",11,__FILE__,106);
+    SafeGetComponent(config,this->mStagingSoundEffectsCheck,"StagingSoundEffectsCheck",12,__FILE__,107);
+    SafeGetComponent(config,this->mTabSelectCombo,"TabSelectCombo",__FILE__,108);
+    if (this->mIsLan) {
+        SafeGetComponent(config,this->mLANBroadcastDetailLabel,"LANBroadcastDetailLabel",__FILE__,112);
+        SafeGetComponent(config,button,"RemoveLanNameButton",7,__FILE__,113);
+        SafeGetComponent(config,this->mUserNameCombo,"UserNameCombo",__FILE__,114);
+    } else {
+        SafeGetComponent(config,this->mAnonymousToFriendsCheck,"AnonymousToFriendsCheck",0x30d56,__FILE__,118);
+        SafeGetComponent(config,this->mAutoPingGamesCheck,"AutoPingGamesCheck",1,__FILE__,119);
+        SafeGetComponent(config,this->mDoAutoAFKCheck,"DoAutoAFKCheck",4,__FILE__,120);
+        SafeGetComponent(config,this->mFilterDirtyWordsCheck,"FilterDirtyWordsCheck",0x30d55,__FILE__,121);
     }
+    this->mLocalAddressDetailLabel->SetText(IPAddr::GetLocalAddr().GetHostString(true),true);
+    this->SubscribeToBroadcast(1);
 }
-//3be840,239B.
 // FUNCTION: WON 0x007be840
+// Saves tab, speed and LAN name choices, handles option buttons and refreshes on lobby events
 void LobbyOptionsCtrl::HandleComponentEvent(ComponentEvent* inEvent)
 {
     switch(inEvent->mType) {
-    case 27:
-        if (inEvent->mComponent==mTabSelectCombo.get()) {
-            LobbyFn35E470(mTabSelectCombo->mEdit->GetText());return;
-        } else if(inEvent->mComponent==mConnectionSpeedCombo.get()) {
-            LobbyFn35E600(GetConnectionSpeed(mConnectionSpeedCombo->GetSelItem()));return;
-        } else if(inEvent->mComponent==mUserNameCombo.get()) {
-            LobbyFn35D6C0(mUserNameCombo->mEdit->GetText());return;
+    case ComponentEvent_ComboSelChanged:
+        if (inEvent->mComponent==this->mTabSelectCombo.get()) {
+            LobbySetTabSelect(this->mTabSelectCombo->mEdit->GetText());return;
+        } else if(inEvent->mComponent==this->mConnectionSpeedCombo.get()) {
+            LobbySetConnectionSpeed(GetConnectionSpeed(this->mConnectionSpeedCombo->GetSelItem()));return;
+        } else if(inEvent->mComponent==this->mUserNameCombo.get()) {
+            LobbySetLanName(this->mUserNameCombo->mEdit->GetText());return;
         }
         break;
-    case 15:
-        if(HandleButton(inEvent->mComponent)) return;
+    case ComponentEvent_ButtonPressed:
+        if(this->HandleButton(inEvent->mComponent)) return;
         break;
-    case 100014: SyncOptions();return;
-    case 100050: RefreshLanOptions();return;
-    case 100055: RefreshPublicAddress();return;
+    case 100014: this->SyncOptions();return;
+    case 100050: this->RefreshLanOptions();return;
+    case 100055: this->RefreshPublicAddress();return;
     }
     Component::HandleComponentEvent(inEvent);
 }
-//3bec80,368B. Actual map<GUIString,long,NoCase> type from core owner; canonical gate pending.
+// The saved LAN names are a case-insensitive map<GUIString,long>
 // FUNCTION: WON 0x007bec80
+// Refills the LAN name combo box from the saved names and shows the LAN name and broadcast port
 void LobbyOptionsCtrl::RefreshLanOptions() {
-    if(mIsLan) {
-        mUserNameCombo->Clear(true);
-        const LobbyLanNameInfoMap& names=LobbyFn35D660();
-        LobbyLanNameInfoMap::const_iterator i=names.begin();
-        while(i!=names.end()) {
-            mUserNameCombo->AddString(i->first,-1);
-            ++i;
-        }
-        ComboBox* combo=mUserNameCombo.get(); //original ESI snapshot3bed24 before getter
-        combo->SetTextAndSel(LobbyFn35D640(),true);
-        char port[20]; //original20-byte local extent
-        sprintf(port,"%d",LobbyFn35E3C0());
-        mLANBroadcastDetailLabel->SetText(port,true);
+    if(!this->mIsLan)
+        return;
+    this->mUserNameCombo->Clear(true);
+    const LobbyLanNameInfoMap& names=LobbyFn35D660();
+    LobbyLanNameInfoMap::const_iterator i=names.begin();
+    while(i!=names.end()) {
+        this->mUserNameCombo->AddString(i->first,-1);
+        ++i;
     }
+    ComboBox* combo=this->mUserNameCombo.get(); // the original keeps the combo box in esi (0x7bed24) before calling the getter
+    combo->SetTextAndSel(LobbyGetLanName(),true);
+    char port[20]; // a 20-byte buffer, as in the original
+    sprintf(port,"%d",LobbyGetLanBroadcastPort());
+    this->mLANBroadcastDetailLabel->SetText(port,true);
 }
-//3bedf0,311B. Notification booleans are original-specific, do not normalize.
+// The notify flag differs per control as in the original (dirty-word and auto-AFK checks don't notify)
 // FUNCTION: WON 0x007bedf0
+// Sets every option control from the saved user preferences
 void LobbyOptionsCtrl::RefreshOptions()
 {
-    if(mIsLan) RefreshLanOptions();
+    if(this->mIsLan) this->RefreshLanOptions();
     else {
-        mFilterDirtyWordsCheck->SetCheck(LobbyFn35E2F0(),false);
-        mDoAutoAFKCheck->SetCheck(LobbyFn35E300(),false);
-        mAnonymousToFriendsCheck->SetCheck(LobbyFn35E390(),true);
-        mAutoPingGamesCheck->SetCheck(LobbyFn35E370(),true);
+        this->mFilterDirtyWordsCheck->SetCheck(LobbyGetFilterDirtyWords(),false);
+        this->mDoAutoAFKCheck->SetCheck(LobbyGetDoAutoAFK(),false);
+        this->mAnonymousToFriendsCheck->SetCheck(LobbyGetAnonymousToFriends(),true);
+        this->mAutoPingGamesCheck->SetCheck(LobbyGetAutoPingGames(),true);
     }
-    mChatSoundEffectsCheck->SetCheck(LobbyFn35E330(),true);
-    mConnectionSpeedCombo->SetSelItem(GetConnectionSpeedIndex(LobbyFn35E3A0()),false);
-    mTabSelectCombo->SetTextAndSel(LobbyFn35E2D0(),false);
-    mLobbyMusicCheck->SetCheck(LobbyFn35E350(),true);
-    mLobbySoundEffectsCheck->SetCheck(LobbyFn35E320(),true);
-    mShowConfirmationsCheck->SetCheck(LobbyFn35E360(),true);
-    mCrossPromotionCheck->SetCheck(LobbyFn35E310(),true);
-    mShowGamesInProgressCheck->SetCheck(LobbyFn35E380(),true);
-    mStagingSoundEffectsCheck->SetCheck(LobbyFn35E340(),true);
+    this->mChatSoundEffectsCheck->SetCheck(LobbyGetChatSoundEffects(),true);
+    this->mConnectionSpeedCombo->SetSelItem(GetConnectionSpeedIndex(LobbyGetConnectionSpeed()),false);
+    this->mTabSelectCombo->SetTextAndSel(LobbyGetTabSelect(),false);
+    this->mLobbyMusicCheck->SetCheck(LobbyGetLobbyMusic(),true);
+    this->mLobbySoundEffectsCheck->SetCheck(LobbyGetLobbySoundEffects(),true);
+    this->mShowConfirmationsCheck->SetCheck(LobbyGetShowConfirmations(),true);
+    this->mCrossPromotionCheck->SetCheck(LobbyGetCrossPromotion(),true);
+    this->mShowGamesInProgressCheck->SetCheck(LobbyGetShowGamesInProgress(),true);
+    this->mStagingSoundEffectsCheck->SetCheck(LobbyGetStagingSoundEffects(),true);
 }
 //3bef60,34B.
 // FUNCTION: WON 0x007bef60
+// Refreshes the options when this tab's screen (Internet or LAN) is showing and not the login screen
 void LobbyOptionsCtrl::SyncOptions()
 {
-    if(!LobbyFn361170() && LobbyFn361150()==mIsLan) RefreshOptions();
+    if(!LobbyOnLoginScreen() && LobbyOnLanScreen()==this->mIsLan) this->RefreshOptions();
 }
-//3be980 HandleButton and3bef90 RefreshPublicAddress pending actual Sound/Image
 
 }
-// DEFERRED COMPLETE BODY 3be980,715B +48B table, zero admitted credit.
-// Root G closes Sound globals/Image/widget types and Component::Fn2F52D0;
-// root has approved Sound wrapper declarations. Remaining blockers: canonical
-// PData LANmap/reset calls, own source gate and normal fullTU COFF capture.
 namespace WONAPI {
 // FUNCTION: WON 0x007be980
+// Saves a toggled option and applies it (music, sounds, reset filters, restore defaults, remove LAN name);
+// returns false for cross promotion, dirty-word filter and anonymous-to-friends, so the base sees them too
 bool LobbyOptionsCtrl::HandleButton(Component* inComponent)
 {
     if(inComponent==NULL) return false;
@@ -164,80 +165,70 @@ bool LobbyOptionsCtrl::HandleButton(Component* inComponent)
     if(button==NULL) return false;
     bool checked=button->mChecked!=0;
     switch(inComponent->mControlId) {
-    case 3:LobbyFn35E450(checked);break;
-    case 4:LobbyFn35E430(checked);return true;
-    case 1:LobbyFn35E5A0(checked);return true;
+    case 3:LobbySetCrossPromotion(checked);break;
+    case 4:LobbySetDoAutoAFK(checked);return true;
+    case 1:LobbySetAutoPingGames(checked);return true;
     case 11:
-        LobbyFn35E5C0(checked);
-        LobbyFn359120(100059,true);
+        LobbySetShowGamesInProgress(checked);
+        LobbyBroadcastLobbyEvent(100059,true);
         return true;
     case 9:
-        LobbyFn35E6A0();
-        LobbyFn35B9C0(LobbyFn35E3E0());
-        RefreshOptions();
+        LobbyRestoreDefaults();
+        LobbySetNetworkAdapter(LobbyGetNetworkAdapter());
+        this->RefreshOptions();
         return true;
     case 8: {
-        LobbyFn35DF00();
-        Component* screen=LobbyFn360EA0();
-        if(screen!=NULL) screen->Fn2F52D0(new LobbyEvent(100034));
+        LobbyResetFilters();
+        Component* screen=LobbyGetCurrentScreen();
+        if(screen!=NULL) screen->BroadcastEventDown(new LobbyEvent(100034));
         return true;
     }
     case 5:
-        LobbyFn35E550(checked);
-        if(checked) ::LobbyGlobal_LobbyMusic_Sound->Resume(); // actual Resume wrapper
-        else ::LobbyGlobal_LobbyMusic_Sound->Stop(); // actual Stop wrapper
+        LobbySetLobbyMusic(checked);
+        if(checked) ::LobbyGlobal_LobbyMusic_Sound->Resume();
+        else ::LobbyGlobal_LobbyMusic_Sound->Stop();
         return true;
     case 6:
-        LobbyFn35E4E0(checked);
-        ::LobbyGlobal_ButtonClick_Sound->Fn329BF0(!checked); // actual SetMuted, not looping
+        LobbySetLobbySoundEffects(checked);
+        ::LobbyGlobal_ButtonClick_Sound->SetMuted(!checked);
         if(!checked) ::LobbyGlobal_SierraLogon_Sound->Stop();
         return true;
-    case 2:LobbyFn35E510(checked);return true;
-    case 12:LobbyFn35E530(checked);return true;
-    case 10:LobbyFn35E580(checked);return true;
-    case 7:LobbyFn35D770();RefreshLanOptions();return true;
-    case 0x30d55:LobbyFn35E410(checked);break;
-    case 0x30d56:LobbyFn35E5E0(checked);break;
+    case 2:LobbySetChatSoundEffects(checked);return true;
+    case 12:LobbySetStagingSoundEffects(checked);return true;
+    case 10:LobbySetShowConfirmations(checked);return true;
+    case 7:LobbyRemoveLanName();this->RefreshLanOptions();return true;
+    case 0x30d55:LobbySetFilterDirtyWords(checked);break;
+    case 0x30d56:LobbySetAnonymousToFriends(checked);break;
     }
     return false;
 }
 
-// DEFERRED COMPLETE BODY 3bef90..3bf18d,509B, zero admitted credit.
-// Root G closes actual ImageComponent::VirtualB0(Image*) and both Image globals.
-// Remaining blockers: own source gate and full normal allocation/EH/data review.
 // FUNCTION: WON 0x007bef90
+// Shows the firewall icon (searching, firewalled or hidden) and the public address or its status text
 void LobbyOptionsCtrl::RefreshPublicAddress()
 {
-    if(LobbyFn361B40()) {
-        if(LobbyFn361B20()) {
-            mFirewalledIcon->VirtualB0(::LobbyGlobal_Firewall_Image.get());
-            mFirewalledIcon->Invalidate();
-            mFirewalledIcon->SetVisible(true);
-        } else mFirewalledIcon->SetVisible(false);
+    if(LobbyIsFirewallTestDone()) {
+        if(LobbyIsBehindFirewall()) {
+            this->mFirewalledIcon->SetImage(::LobbyGlobal_Firewall_Image.get());
+            this->mFirewalledIcon->Invalidate();
+            this->mFirewalledIcon->SetVisible(true);
+        } else this->mFirewalledIcon->SetVisible(false);
     } else {
-        mFirewalledIcon->VirtualB0(::LobbyGlobal_Searching_Image.get());
-        mFirewalledIcon->Invalidate();
-        mFirewalledIcon->SetVisible(true);
+        this->mFirewalledIcon->SetImage(::LobbyGlobal_Searching_Image.get());
+        this->mFirewalledIcon->Invalidate();
+        this->mFirewalledIcon->SetVisible(true);
     }
-    IPAddr address=LobbyFn361990();
+    IPAddr address=LobbyGetPublicAddress();
     if(!address.IsValid()) {
-        if(!LobbyFn361B40())
-            mPublicAddressDetailLabel->SetText(::LobbyOptions_CheckingAddress_String,true);
-        else mPublicAddressDetailLabel->SetText(::LobbyOptions_AddressUnavailable_String,true);
+        if(!LobbyIsFirewallTestDone())
+            this->mPublicAddressDetailLabel->SetText(::LobbyOptions_CheckingAddress_String,true);
+        else this->mPublicAddressDetailLabel->SetText(::LobbyOptions_AddressUnavailable_String,true);
     } else {
-        mPublicAddressDetailLabel->SetText(address.GetHostString(true),true);
+        this->mPublicAddressDetailLabel->SetText(address.GetHostString(true),true);
     }
 }
 } //namespace WONAPI
-// Allocation guard in valid branch protects new GUIStringData before construction;
-// outline GUIString(std::string) cannot silently own missing caller cleanup.
 
-/* Rejected earlier implicit-source inference; zero handwritten credit.
-The blanket removal of an explicit declaration was wrong for this family.
-Actual original3be08f stores45354c before reverse18-member cleanup. The explicit
-empty body above is the corrected natural candidate. Full normal COFF must
-confirm all actual actions/hot writes; no destructor marker or quota is added.
-*/
 
 // Compiler-generated and header-inline functions this unit emits:
 // TEMPLATE: WON 0x007ce1a0

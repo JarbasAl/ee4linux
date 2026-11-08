@@ -1,4 +1,4 @@
-// Complete genuine SDK GIFDecoder owner. Optional Source-only family; no native identity claimed.
+// GIFDecoder (optional; not identified in the original exe).
 #ifndef EE_WONAPI_WONLOBBYGIFDECODER_H
 #define EE_WONAPI_WONLOBBYGIFDECODER_H
 #include "ee/EEWonNet.h"
@@ -48,10 +48,10 @@ private:
 
 		void Init(LZWNode *thePrev, unsigned char theData)
 		{
-			mData = theData;
-			mPrev = thePrev;
-			mLen = thePrev->mLen+1;
-			mRootData = thePrev->mRootData;
+			this->mData = theData;
+			this->mPrev = thePrev;
+			this->mLen = thePrev->mLen+1;
+			this->mRootData = thePrev->mRootData;
 		}
 	};
 
@@ -78,8 +78,8 @@ public:
 	GIFDecoder();
 	static void Add(MultiImageDecoder *theDecoder);
 
-	NativeImage* GetImage() { return mImage; }
-	virtual SmartPtr<Animation> GetAnimation() { return mAnimation; }
+	NativeImage* GetImage() { return this->mImage; }
+	virtual SmartPtr<Animation> GetAnimation() { return this->mAnimation; }
 
 	virtual ImageDecoder* Duplicate() { return new GIFDecoder; }
 

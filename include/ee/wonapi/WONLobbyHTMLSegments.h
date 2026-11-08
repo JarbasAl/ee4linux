@@ -7,28 +7,28 @@ enum LineSegmentFlags {
     LineSegmentFlag_PreLineBreak=4,LineSegmentFlag_PostLineBreak=8,
     LineSegmentFlag_BreakClearLeft=16,LineSegmentFlag_BreakClearRight=32
 };
-// Actual complete18 owners. Native allocations construct RefCount4=0 and
-// these scalar members only; inherited LineSegment8/0c/10 stay uninitialized.
-// Actual implicit cleanup311480->338c70 only destroys the non-owning base.
+// 0x18-byte segments. The original's allocations set RefCount +4 to 0 and these members only;
+// the inherited LineSegment +0x08/+0x0c/+0x10 stay uninitialized. The implicit destructor
+// (0x00711480, which calls 0x00738c70) only destroys the base.
 class LineBreakSegment : public LineSegment {
 public:
     int mHeight; //14
     LineBreakSegment(int height):mHeight(height) {}
-    virtual int GetHeight() { return mHeight; } //actual3385b0 four bytes
-    virtual void GetSelText(GUIString&,ElementSelectionInfo&); //actual309a40
+    virtual int GetHeight() { return this->mHeight; } // body at 0x007385b0
+    virtual void GetSelText(GUIString&,ElementSelectionInfo&); // at 0x00709a40
 };
 class AlignLineSegment : public LineSegment {
 public:
     HorzAlign mAlign; //14
     AlignLineSegment(HorzAlign align):mAlign(align) {}
-    virtual bool PerformInstructions(MultiLineBuilder*); //actual3099c0 RET4
+    virtual bool PerformInstructions(MultiLineBuilder*); // at 0x007099c0
 };
-// Actual complete1c owner, same natural non-owning base cleanup.
+// 0x1c bytes; same base-only implicit destructor.
 class MarginLineSegment : public LineSegment {
 public:
-    int mLeftMargin,mNextLeftMargin; //14,18 actual SDK member names
+    int mLeftMargin,mNextLeftMargin; // offsets 0x14, 0x18
     MarginLineSegment(int left,int next):mLeftMargin(left),mNextLeftMargin(next) {}
-    virtual bool PerformInstructions(MultiLineBuilder*); //actual3099d0 RET4
+    virtual bool PerformInstructions(MultiLineBuilder*); // at 0x007099d0
 };
 }
 #endif

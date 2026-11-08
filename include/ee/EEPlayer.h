@@ -49,7 +49,7 @@ template <class T> class UReferenceContainer;
 class EEButtonObject;
 class EEMap;
 class UIHotKey;
-template <class T> class U2DPoint;           // AddEvent / Virtual98 take a U2DPoint<long>
+template <class T> class U2DPoint;           // AddEvent / GetMouseChild take a U2DPoint<long>
 
 // A player's event list (RTTI EEPPlayerEventList, vtable 0x442b54; ctor 0x16e5b9; sizeof 0x3c; provisional names)
 class EEPPlayerEventList {
@@ -803,7 +803,7 @@ public:
     virtual void FlareReceived(EEPlayer* inFrom, const U2DPoint<long>& inTile);  // +0x98 (EEMSendFlare; provisional name)
     virtual void UnitsSwapped(std::vector<EEPUnitSwap>& ioSwaps);  // +0x9c 0x167f70 (ret 4; EEPhysics 0x1534d1 passes &mSound2Index7)
     virtual long FinishUnitsLoad(long inMajorVersion, long inMinorVersion);  // +0xa0 0x1690a5 (each unit's slot +0x6c; returns 0)
-    virtual void EpochReached(long inEpoch);  // +0xa4 0x1695e7 (ret 4; 0..14 when Virtual74(); the tech tree passes it)
+    virtual void EpochReached(long inEpoch);  // +0xa4 0x1695e7 (ret 4; 0..14 when EnabledChanged(); the tech tree passes it)
     virtual void SetCombatState(unsigned long inCombatState) { this->mCombatState = inCombatState; }  // +0xa8 0xa54a7
     virtual void UnitStranded(EEComplexUnit* inUnit);  // +0xac (ret 4: EEComputerPlayer 0x3ed48 references the unit)
     virtual void PayImprovement(EEUnitClass* inClass, long inImprovement);  // +0xb0 0x16b3f7 (ret 8; QueueImprovement passes the class)
@@ -951,7 +951,7 @@ public:
     void AddSightSharer(EEPlayer* inPlayer);  // 0x1627b9 (pushes inPlayer into mSightSharers between two walks of the units)
     void RemoveSightSharer(EEPlayer* inPlayer);  // 0x1684ab (the mirror: inPlayer out of mSightSharers; RemoveWonderPower, 0x16ab41)
     void RemoveTownID(long inID);           // 0x163605 (erases mTownsByID's entry inID)
-    bool CanProduceUnitType(long inUnitType, long inArg, UWideString* outReason);  // 0x1639e8 (Virtual54 for the class's technology)
+    bool CanProduceUnitType(long inUnitType, long inArg, UWideString* outReason);  // 0x1639e8 (WriteDetailsHook for the class's technology)
     void AddUnitToRepatrol(EEComplexUnit* inUnit);  // 0x162b35 (one of its own units into mUnitsToRepatrol, referenced)
     void ClearUnitsToRepatrol();            // 0x163fbb (mUnitsToRepatrol dereferenced and cleared)
     void AddOffMapUnit(RTSUnit* inUnit);    // 0x162dab (a new EEWUnitsOffMapInfo for inUnit into mUnitsOffMap)
@@ -969,7 +969,7 @@ public:
     void RemoveOffMapUnit(RTSUnit* inUnit);  // 0x168e30 (its EEWUnitsOffMapInfo out of mUnitsOffMap, deleted)
     void ResetTechTree();                   // 0x1697b4 (the player's tech tree from gTechTree)
     void SetAllResources(long inValue);     // 0x16ab1b (mResourceCaps[2..6] = inValue)
-    void ClearFootprint(EEComplexUnit* inUnit);  // 0x16a70a (thiscall: `ret 4`, Virtual68 passes ecx = this; this unused)
+    void ClearFootprint(EEComplexUnit* inUnit);  // 0x16a70a (thiscall: `ret 4`, MarkInvalid passes ecx = this; this unused)
     void SetDiplomaticStance(EEPlayer* inOther, long inStance, EEMap* inMap);  // 0x16ab41 (the diplomatic stance towards inOther; EEWorld::SetDiplomaticStance; provisional name)
     void RefreshTerrainVisibility();        // 0x16aec0 (EEWorld::RestartUnits on player 0; provisional name)
     void DumpMedia(FSFileSpec& inFile);     // 0x16436a (EEWorld::DumpMedia; provisional name)
@@ -988,7 +988,7 @@ public:
     EEGroup* GetActiveGroupOf(EEComplexUnit* inUnit);  // 0x164b4f (the group of mRunningGroups, else mPendingGroups, holding inUnit)
     long GetCitizenPassability();           // 0x1650a3 (flags 1/2/4/8 from unit class 0x20's upgrade +0x160)
     EEAIArea* GetNearestArea(const EETileCoordinate& inTile, bool inSameContinent);  // 0x164781 (ret 8; EECPResourceManager::FindResourceTarget takes its slot +0x18) (provisional name)
-    long GetTotalPopulation(bool inFirst, bool inSecond);  // 0x1651e0 (mPopulationCount plus the units' Virtual6C: mPendingUnits, then those in a 0x1d container)
+    long GetTotalPopulation(bool inFirst, bool inSecond);  // 0x1651e0 (mPopulationCount plus the units' AddedToParent: mPendingUnits, then those in a 0x1d container)
     void RemoveWonderPower(EEComplexUnit* inUnit);  // 0x16890e (the last unit of its type left; RemoveWonder)
     bool CanAffordTechnology(long inTechnology, float inScale, UWideString* outReason);  // 0x163d1f (CanAffordScaled for the technology; string 0x273a when not)
     bool CanAffordScaled(EETechTreeNode* inNode, long inUnitClass, float inScale, long inCount);  // 0x16542e (ret 0x10; arg 4 an `imul` count)

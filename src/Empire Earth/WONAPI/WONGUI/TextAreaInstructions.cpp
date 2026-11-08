@@ -12,40 +12,43 @@
 #include "ee/wonapi/WONLobbyTextAreaConfig.h"
 using namespace WONAPI;
 
-// Actual TextArea instruction append operations; complete finite owners only.
+// Text area instruction segments (line break, line alignment)
 // Defined before LineBreak in the original object: VC6 then knows the ctor cannot throw and omits the
 // delete-on-throw guard around `new TextSegmentBase` (0x712690, 0x712730).
 // FUNCTION: WON 0x00710a30
+// Creates an empty text segment with no line, zero size and position, and no line break
 TextSegmentBase::TextSegmentBase()
 {
-    mLine=NULL;
-    mAbsStartChar=mAbsEndChar=0;
-    mWidth=mHeight=mAscent=0;
-    mx=my=0;
-    mLineBreak=false;
+    this->mLine=NULL;
+    this->mAbsStartChar=this->mAbsEndChar=0;
+    this->mWidth=this->mHeight=this->mAscent=0;
+    this->mx=this->my=0;
+    this->mLineBreak=false;
 }
 // FUNCTION: WON 0x00712690
+// Appends an empty line-break segment of the given height to the text area
 void TextArea::LineBreak(int height) {
     SmartPtr<TextSegmentBase> segment = new TextSegmentBase;
     segment->mHeight = segment->mAscent = height;
     segment->mLineBreak = true;
-    AddSegment(segment.get());
+    this->AddSegment(segment.get());
 }
 
 // FUNCTION: WON 0x00712730
+// Appends an alignment instruction for the following lines unless the alignment is already current
 void TextArea::SetLineAlignment(HorzAlign alignment) {
-    if(alignment != mLineAlign) {
-        SmartPtr<TextAlignInstruction> instruction = new TextAlignInstruction;
-        instruction->mAlign = alignment;
-        AddSegment(instruction.get());
-    }
+    if(alignment == this->mLineAlign)
+        return;
+    SmartPtr<TextAlignInstruction> instruction = new TextAlignInstruction;
+    instruction->mAlign = alignment;
+    this->AddSegment(instruction.get());
 }
 
 namespace WONAPI {
-// Genuine SDK explicit instruction callback; current complete30 instruction owner.
 // FUNCTION: WON 0x00711680
+// Sets the text area's current line alignment when the layout reaches this instruction
 void TextAlignInstruction::PerformInstructions(TextArea* area)
 {
-    area->mLineAlign=mAlign;
+    area->mLineAlign=this->mAlign;
 }
 }

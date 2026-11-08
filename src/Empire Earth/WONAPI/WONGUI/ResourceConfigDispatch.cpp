@@ -1,4 +1,4 @@
-// Native ResourceConfig resource-key dispatch on the genuine borrowed ConfigObject prefix.
+// Resource config value instruction dispatch (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,15 +12,17 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00793350
-bool ResourceConfig::Virtual08(ConfigParser* parser,const std::string& key,StringParser& value)
+// Routes a STRING/IMAGE/SOUND/FONT/COLOR/BACKGROUND resource line to its handler, ignores CONTROLID,
+// and passes other keys to the config object
+bool ResourceConfig::HandleValueInstruction(ConfigParser* parser,const std::string& key,StringParser& value)
 {
-    if(key=="STRING" || key=="CODESTRING") return HandleString(value);
-    else if(key=="IMAGE" || key=="CODEIMAGE") return HandleImage(value);
-    else if(key=="SOUND" || key=="CODESOUND") return HandleSound(value);
-    else if(key=="FONT") return HandleFont(value);
-    else if(key=="COLOR") return HandleColor(value);
-    else if(key=="BACKGROUND") return HandleBackground(value);
+    if(key=="STRING" || key=="CODESTRING") return this->HandleString(value);
+    else if(key=="IMAGE" || key=="CODEIMAGE") return this->HandleImage(value);
+    else if(key=="SOUND" || key=="CODESOUND") return this->HandleSound(value);
+    else if(key=="FONT") return this->HandleFont(value);
+    else if(key=="COLOR") return this->HandleColor(value);
+    else if(key=="BACKGROUND") return this->HandleBackground(value);
     else if(key=="CONTROLID") return true;
-    else return ConfigObject::Virtual08(parser,key,value);
+    else return ConfigObject::HandleValueInstruction(parser,key,value);
 }
 }

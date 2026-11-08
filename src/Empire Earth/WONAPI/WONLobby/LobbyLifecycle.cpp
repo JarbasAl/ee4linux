@@ -1,4 +1,4 @@
-// Native namespace lobby initialization. All globals retain their original providers.
+// Lobby start-up: creates the lobby singleton and records why its initialization failed
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -15,34 +15,35 @@
 namespace WONAPI {
 // The lobby singleton and its initialization failure state.
 SmartPtr<WONLobbyPrv> gLobbyData;
-GUIString gLobbyInitError5662FC;
-SmartPtr<Dialog> gLobbyFailureDialog5662F4;
-bool gLobbyInitFailed56633C;
-void LobbyFn358F70(); //original cdecl initialization provider; no new body
+GUIString gLobbyInitError;
+SmartPtr<Dialog> gLobbyFailureDialog;
+bool gLobbyInitFailed;
+void LobbyInstallEventHooks(); // defined in another unit
 
-// Actual target return is bool; legacy public void declaration requires Root correction.
 // FUNCTION: WON 0x00761fb0
+// Creates and initializes the lobby; on failure keeps its error text, drops it and returns false
 bool LobbyAddComponentLoader(ResourceConfigTable* table,void (*initFunc)(ComponentConfig*))
 {
-    gLobbyInitError5662FC=GetEmptyGUIStringData();
-    gLobbyInitFailed56633C=false;
-    gLobbyFailureDialog5662F4=NULL;
+    gLobbyInitError=GetEmptyGUIStringData();
+    gLobbyInitFailed=false;
+    gLobbyFailureDialog=NULL;
     gLobbyData=new WONLobbyPrv;
     if(!gLobbyData->Init(table,initFunc)) {
         if(WONAPI::WindowManager::GetDefaultWindowManager()!=NULL)
             WONAPI::WindowManager::GetDefaultWindowManager()->ClearSubscriptions();
-        gLobbyInitError5662FC=gLobbyData->mInitError;
-        gLobbyInitFailed56633C=true;
+        gLobbyInitError=gLobbyData->mInitError;
+        gLobbyInitFailed=true;
         gLobbyData=NULL;
         return false;
     }
-    LobbyFn358F70();
+    LobbyInstallEventHooks();
     return true;
 }
 }
 
 namespace WONAPI {
-// Genuine SDK WONLobby::InitAuth; original26B. Legacy spelling retained, real string/pointer API restored.
+// The SDK's WONLobby::InitAuth (26 bytes): passes the login community and the hash file list to the lobby
+// when it is running
 void LobbySetProductName(const std::wstring& inLoginCommunity,const char* inHashFileListStr)
 {
     if(gLobbyData.get()!=NULL) gLobbyData->InitAuth(inLoginCommunity,inHashFileListStr);

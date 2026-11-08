@@ -1,4 +1,4 @@
-// Source-only BMP raw reader; no runtime substitution authority.
+// BMP reader: attributes and raw 4-, 8- and 24-bit images
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,6 +14,7 @@
 #include "LostDebug.h"
 using namespace WONAPI;
 // FUNCTION: WON 0x007366e0
+// Reads the BMP file header; returns whether it starts with "BM"
 static bool BMPReadFileHeader(FileReader &theReader)
 {
 	unsigned short bfType = theReader.ReadShort();
@@ -31,16 +32,17 @@ static bool BMPReadFileHeader(FileReader &theReader)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00736690
+// Reads the image width and height from a BMP header; false when the file is not a BMP
 bool BMPDecoder::DoGetAttrib(ImageAttributes &theAttrib)
 {
-	if(!BMPReadFileHeader(*mFileReader))
+	if(!BMPReadFileHeader(*this->mFileReader))
 		return false;
 
-	int aPos = mFileReader->pos();
+	int aPos = this->mFileReader->pos();
 
-	DWORD  biSize = mFileReader->ReadLong(); 
-	long biWidth = mFileReader->ReadLong(); 
-	long biHeight = mFileReader->ReadLong(); 
+	DWORD  biSize = this->mFileReader->ReadLong(); 
+	long biWidth = this->mFileReader->ReadLong(); 
+	long biHeight = this->mFileReader->ReadLong(); 
 	theAttrib.mWidth = biWidth;
 	theAttrib.mHeight = biHeight;
 	return true;
@@ -49,28 +51,29 @@ bool BMPDecoder::DoGetAttrib(ImageAttributes &theAttrib)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x00736720
+// Decodes a 4-, 8- or 24-bit BMP into a raw image (palette for 8 bits or less); NULL for other depths or read errors
 SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 {
 	try
 	{
-		if(!BMPReadFileHeader(*mFileReader))
+		if(!BMPReadFileHeader(*this->mFileReader))
 			return NULL;
 
-		int aPos = mFileReader->pos();
+		int aPos = this->mFileReader->pos();
 
-		DWORD  biSize = mFileReader->ReadLong(); 
-		long biWidth = mFileReader->ReadLong(); 
-		long biHeight = mFileReader->ReadLong(); 
-		short biPlanes = mFileReader->ReadShort(); 
-		short biBitCount = mFileReader->ReadShort();
-		DWORD  biCompression = mFileReader->ReadLong(); 
-		DWORD  biSizeImage = mFileReader->ReadLong(); 
-		long biXPelsPerMeter = mFileReader->ReadLong(); 
-		long biYPelsPerMeter = mFileReader->ReadLong(); 
-		DWORD  biClrUsed = mFileReader->ReadLong(); 
-		DWORD  biClrImportant = mFileReader->ReadLong(); 
+		DWORD  biSize = this->mFileReader->ReadLong(); 
+		long biWidth = this->mFileReader->ReadLong(); 
+		long biHeight = this->mFileReader->ReadLong(); 
+		short biPlanes = this->mFileReader->ReadShort(); 
+		short biBitCount = this->mFileReader->ReadShort();
+		DWORD  biCompression = this->mFileReader->ReadLong(); 
+		DWORD  biSizeImage = this->mFileReader->ReadLong(); 
+		long biXPelsPerMeter = this->mFileReader->ReadLong(); 
+		long biYPelsPerMeter = this->mFileReader->ReadLong(); 
+		DWORD  biClrUsed = this->mFileReader->ReadLong(); 
+		DWORD  biClrImportant = this->mFileReader->ReadLong(); 
 
-		mFileReader->SkipBytes(biSize - (mFileReader->pos() - aPos));
+		this->mFileReader->SkipBytes(biSize - (this->mFileReader->pos() - aPos));
 
 		int aNumColors = biClrUsed?biClrUsed:(1<<biBitCount);
 		int aTransparentIndex = -1;
@@ -81,10 +84,10 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 			for(int i=0; i<aNumColors; i++)
 			{
 				unsigned char r,g,b,a;
-				b = mFileReader->ReadByte();
-				g = mFileReader->ReadByte();
-				r = mFileReader->ReadByte();
-				a = mFileReader->ReadByte();
+				b = this->mFileReader->ReadByte();
+				g = this->mFileReader->ReadByte();
+				r = this->mFileReader->ReadByte();
+				a = this->mFileReader->ReadByte();
 
 				DWORD aColor = (r<<16) | (g<<8) | b;
 //				if(aColor==mTransparentColor)
@@ -111,7 +114,8 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 
 		if(biBitCount==4)
 		{
-			// Older target pads from truncated whole-byte width, including odd-width quirks.
+			// The original pads 4-bit rows from the truncated byte count biWidth/2, so odd widths read the wrong
+			// number of padding bytes
             int anExtra=(biWidth/2)%4;
             if(anExtra!=0) anExtra=4-anExtra;
 
@@ -124,7 +128,7 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 				anImage->StartRowTraversal(yact);
 				for(x=0; x<biWidth; x++)
 				{
-					unsigned char aByte = mFileReader->ReadByte();
+					unsigned char aByte = this->mFileReader->ReadByte();
 					*anImage->mRowPtr=(aByte>>4)&0x0f;
 					x++;
 					if(x<biWidth)
@@ -136,7 +140,7 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 				}
 
 				for(x=0; x<anExtra; x++)
-					mFileReader->ReadByte();
+					this->mFileReader->ReadByte();
 			}
 
 			return anImage.get();
@@ -158,12 +162,12 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 				anImage->StartRowTraversal(yact);
 				for(x=0; x<biWidth; x++)
 				{
-					*anImage->mRowPtr=mFileReader->ReadByte();
+					*anImage->mRowPtr=this->mFileReader->ReadByte();
 					++anImage->mRowPtr;
 				}
 
 				for(x=0; x<anExtra; x++)
-					mFileReader->ReadByte();
+					this->mFileReader->ReadByte();
 			}
 
 			return anImage.get();
@@ -183,9 +187,9 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 				anImage->StartRowTraversal(yact);
 				for(x=0; x<biWidth; x++)
 				{
-					unsigned char b=mFileReader->ReadByte();
-                    unsigned char g=mFileReader->ReadByte();
-                    unsigned char r=mFileReader->ReadByte();
+					unsigned char b=this->mFileReader->ReadByte();
+                    unsigned char g=this->mFileReader->ReadByte();
+                    unsigned char r=this->mFileReader->ReadByte();
                     int aPixel=b | (g<<8) | (r<<16);
 //					if(aPixel!=mTransparentColor)
 //						aPixel |= 0xff000000;
@@ -195,7 +199,7 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 				}
 
 				for(x=0; x<anExtra; x++)
-					mFileReader->ReadByte();
+					this->mFileReader->ReadByte();
 			}
 
 			return anImage.get();
@@ -210,4 +214,5 @@ SmartPtr<RawImage> BMPDecoder::DoDecodeRaw()
 
 
 // FUNCTION: WON 0x0072b9f0
-ImageDecoder* BMPDecoder::Duplicate() { return new BMPDecoder; } //support allocator0
+// Returns a new BMP decoder
+ImageDecoder* BMPDecoder::Duplicate() { return new BMPDecoder; }

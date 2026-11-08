@@ -1,4 +1,4 @@
-// Native predefined child configuration dispatch; no runtime authority.
+// Scrollbar config constructor
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,5 +14,6 @@
 #include "ee/wonapi/WONLobbyWONListConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00794900
+// Creates a scrollbar config (base container config only)
 ScrollbarConfig::ScrollbarConfig() {}
 }

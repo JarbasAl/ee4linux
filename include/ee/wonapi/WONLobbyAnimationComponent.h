@@ -10,8 +10,8 @@ public:
     AnimationComponent(Animation* = NULL,bool = false); //306e10
     virtual void Virtual08(); //306ff0 SizeChanged
     virtual void Paint(Graphics&); //307000
-    virtual bool Virtual44(int); //307020 TimerEvent
-    virtual void Virtual6C(); //306fd0 AddedToParent
+    virtual bool TimerEvent(int); //307020 TimerEvent
+    virtual void AddedToParent(); //306fd0 AddedToParent
     void SetAnimation(Animation*); //306f40
     void Start(bool = true); //306fa0
     int mDelayAcc; //30

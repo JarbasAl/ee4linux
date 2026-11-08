@@ -1,4 +1,5 @@
-// Native full typed container layout instruction builders.
+// Container config builders for the same-size, center, clear-right, space-evenly, no-overlap and
+// size-at-least layouts (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,89 +15,95 @@
 #include "ee/wonapi/WONLobbyLayout.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00788e20
+// Reads a component list into a layout that gives them the same width and/or height
 bool ContainerConfig::HandleSameSizeLayout(bool sameWidth, bool sameHeight)
 {	
 	SmartPtr<SameSizeLayout> aLayout = new SameSizeLayout(sameWidth, sameHeight);
 
 	while(true)
 	{	
-		Component *aComp = ReadComponent();
+		Component *aComp = this->ReadComponent();
 		aLayout->Add(aComp);
-		if(EndOfString())
+		if(this->EndOfString())
 			break;
 		else
-			EnsureComma();
+			this->EnsureComma();
 	}
 
-	mContainer->AddChildLayout(aLayout.get(),mCurLayoutId);
+	this->mContainer->AddChildLayout(aLayout.get(),this->mCurLayoutId);
 	return true;
 }
 // FUNCTION: WON 0x00788f30
+// Reads a reference component and a component list into a layout that centres them on it
 bool ContainerConfig::HandleCenterLayout(bool horz, bool vert)
 {
-	Component *aComp = ReadComponent();
+	Component *aComp = this->ReadComponent();
 	SmartPtr<CenterLayout> aLayout = new CenterLayout(aComp,horz,vert);
-	while(!EndOfString())
+	while(!this->EndOfString())
 	{	
-		EnsureComma();
-		aComp = ReadComponent();
+		this->EnsureComma();
+		aComp = this->ReadComponent();
 		aLayout->Add(aComp);
 	}
 
-	mContainer->AddChildLayout(aLayout.get(),mCurLayoutId);
+	this->mContainer->AddChildLayout(aLayout.get(),this->mCurLayoutId);
 	return true;
 }
 // FUNCTION: WON 0x00789080
+// Reads a component, a padding and a component list into a clear-right layout
 bool ContainerConfig::HandleClearRightLayout()
 {
-	Component *aComp = ReadComponent(); EnsureComma();
-	int aPad = ReadInt(); EnsureComma();
+	Component *aComp = this->ReadComponent(); this->EnsureComma();
+	int aPad = this->ReadInt(); this->EnsureComma();
 
 	SmartPtr<ClearRightLayout> aLayout = new ClearRightLayout(aComp,aPad);
 	while(true)
 	{
-		aComp = ReadComponent();
+		aComp = this->ReadComponent();
 		aLayout->Add(aComp);
-		if(EndOfString())
+		if(this->EndOfString())
 			break;
 
-		EnsureComma();
+		this->EnsureComma();
 	}
 
-	mContainer->AddChildLayout(aLayout.get(),mCurLayoutId);
+	this->mContainer->AddChildLayout(aLayout.get(),this->mCurLayoutId);
 	return true;
 }
 // FUNCTION: WON 0x00789280
+// Reads a bounding component, two paddings and a component list into a layout that spaces them evenly
 bool ContainerConfig::HandleSpaceEvenlyLayout(bool horz)
 {
-	Component *aSpaceBox = ReadComponent(); EnsureComma();
-	int aLeftPad = ReadInt(); EnsureComma();
-	int aRightPad = ReadInt(); EnsureComma();
+	Component *aSpaceBox = this->ReadComponent(); this->EnsureComma();
+	int aLeftPad = this->ReadInt(); this->EnsureComma();
+	int aRightPad = this->ReadInt(); this->EnsureComma();
 
 	SmartPtr<SpaceEvenlyLayout> aLayout = new SpaceEvenlyLayout(aSpaceBox,aLeftPad,aRightPad,horz);
-	while(!EndOfString())
+	while(!this->EndOfString())
 	{
-		Component *aComponent = ReadComponent();
+		Component *aComponent = this->ReadComponent();
 		aLayout->Add(aComponent);
-		if(EndOfString())
+		if(this->EndOfString())
 			break;
 
-		EnsureComma();
+		this->EnsureComma();
 	}
 
-	mContainer->AddChildLayout(aLayout.get(),mCurLayoutId);
+	this->mContainer->AddChildLayout(aLayout.get(),this->mCurLayoutId);
 	return true;
 }
 // FUNCTION: WON 0x007894b0
+// Reads a no-overlap layout (target, sides, reference, paddings, more components); it is added
+// under the default layout id, not the current one
 bool ContainerConfig::HandleNoOverlapLayout()
 {
-	Component *target = ReadComponent();
-	EnsureComma();
+	Component *target = this->ReadComponent();
+	this->EnsureComma();
 
 	int instructions = 0;
 	while(true)
 	{
-		GUIString aStr = Fn3842F0(true);
+		GUIString aStr = this->ReadString(true);
 		if(aStr.length()==0)
 			break;
 
@@ -108,38 +115,39 @@ bool ContainerConfig::HandleNoOverlapLayout()
 			throw ConfigObjectException("Unknown no overlap instruction: " + (std::string)aStr);
 	}
 
-	EnsureComma();
-	Component *ref = ReadComponent(); EnsureComma();
+	this->EnsureComma();
+	Component *ref = this->ReadComponent(); this->EnsureComma();
 	int horzPad, vertPad;
-	horzPad = ReadInt(); EnsureComma();
-	vertPad = ReadInt(); 
+	horzPad = this->ReadInt(); this->EnsureComma();
+	vertPad = this->ReadInt(); 
 
 	SmartPtr<NoOverlapLayout> aLayout = new NoOverlapLayout(target,instructions,ref,horzPad,vertPad);
-	while(!EndOfString())
+	while(!this->EndOfString())
 	{
-		EnsureComma();
-		Component *aComponent = ReadComponent();
+		this->EnsureComma();
+		Component *aComponent = this->ReadComponent();
 		aLayout->Add(aComponent);
 	}
 
-	mContainer->AddChildLayout(aLayout.get());
+	this->mContainer->AddChildLayout(aLayout.get());
 
 	return true;
 }
 // FUNCTION: WON 0x00789860
+// Reads a size-at-least layout (target, paddings, components); it is added under the default layout id
 bool ContainerConfig::HandleSizeAtLeastLayout()
 {
-	Component *target = ReadComponent(); EnsureComma();
-	int aHorzPad = ReadInt(); EnsureComma();
-	int aVertPad = ReadInt(); 
+	Component *target = this->ReadComponent(); this->EnsureComma();
+	int aHorzPad = this->ReadInt(); this->EnsureComma();
+	int aVertPad = this->ReadInt(); 
 
 	SmartPtr<SizeAtLeastLayout> aLayout = new SizeAtLeastLayout(target,aHorzPad, aVertPad);
-	while(!EndOfString())
+	while(!this->EndOfString())
 	{
-		EnsureComma();
-		aLayout->Add(ReadComponent());		
+		this->EnsureComma();
+		aLayout->Add(this->ReadComponent());		
 	}
-	mContainer->AddChildLayout(aLayout.get());
+	this->mContainer->AddChildLayout(aLayout.get());
 	return true;
 }
 }

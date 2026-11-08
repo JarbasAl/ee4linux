@@ -1,4 +1,4 @@
-// Complete original-backed GUI values; source-only, no runtime substitution.
+// Image::DrawEntire (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,8 +12,9 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 namespace WONAPI {
 // FUNCTION: WON 0x007285a0
+// Draws the whole image with its top-left corner at (x, y)
 void Image::DrawEntire(DisplayContext* context,int x,int y)
 {
-    Draw(context,x,y,0,0,mWidth,mHeight);
+    this->Draw(context,x,y,0,0,this->mWidth,this->mHeight);
 }
 }

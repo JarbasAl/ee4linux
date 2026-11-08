@@ -1,7 +1,7 @@
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK complete key-server request/response algorithms.
+// No original address identified: WON SDK key-server requests and replies
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
-// Missing-unit proposed DBProxy-family profile; no Native/primary/physical attribution.
 #include "ee/wonapi/WONKeySubscribeOp.h"
+#include "ee/wonapi/WONStatus.h"
 
 
 using namespace WONAPI;
@@ -20,10 +20,10 @@ BaseKeySubscribeOp::BaseKeySubscribeOp(ServerContext* theContext)
 void BaseKeySubscribeOp::Pack(WriteBuffer& theBufferR)
 {
 	// Stores the message data
-	theBufferR.AppendString(mProductName);
-	theBufferR.AppendWString(mCommunityName,2);
-	theBufferR.AppendShort(mKeyList.size());
-	for(std::list<std::string>::iterator anItr = mKeyList.begin(); anItr != mKeyList.end(); ++anItr)
+	theBufferR.AppendString(this->mProductName);
+	theBufferR.AppendWString(this->mCommunityName,2);
+	theBufferR.AppendShort(this->mKeyList.size());
+	for(std::list<std::string>::iterator anItr = this->mKeyList.begin(); anItr != this->mKeyList.end(); ++anItr)
 		theBufferR.AppendString(*anItr, 1);
 }
 
@@ -33,18 +33,18 @@ WONStatus BaseKeySubscribeOp::Unpack(ReadBuffer& theBufferR)
 {
 	try
 	{
-		mStatusList.clear();
+		this->mStatusList.clear();
 		unsigned short aListSize = theBufferR.ReadShort();
 		for(unsigned short i = 0; i < aListSize; i++)
-			mStatusList.push_back(theBufferR.ReadShort());
+			this->mStatusList.push_back(theBufferR.ReadShort());
 	}
 	catch (ReadBufferException&)
 	{
-		return (WONStatus)100006;
+		return (WONStatus)WS_InvalidMessage;
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,41 +60,41 @@ InsertKeySubscribeOp::InsertKeySubscribeOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void InsertKeySubscribeOp::Virtual04()
+void InsertKeySubscribeOp::RunHook()
 {
-	mMessageType = 1006;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1006;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
 	BaseKeySubscribeOp::Pack(requestData);
 
-	requestData.AppendLong(mAllocateDate);
-	requestData.AppendLong(mAllocateDuration);
-	requestData.AppendLong(mActivateTime);
-	requestData.AppendLong(mActivateDuration);
+	requestData.AppendLong(this->mAllocateDate);
+	requestData.AppendLong(this->mAllocateDuration);
+	requestData.AppendLong(this->mActivateTime);
+	requestData.AppendLong(this->mActivateDuration);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus InsertKeySubscribeOp::Virtual14()
+WONStatus InsertKeySubscribeOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 	return BaseKeySubscribeOp::Unpack(theData);
 }
 
@@ -113,43 +113,43 @@ UpdateKeySubscribeOp::UpdateKeySubscribeOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void UpdateKeySubscribeOp::Virtual04()
+void UpdateKeySubscribeOp::RunHook()
 {
-	mMessageType = 1006;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1006;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
 	BaseKeySubscribeOp::Pack(requestData);
 
-	requestData.AppendShort(mUpdateFields);
-	requestData.AppendLong(mAllocateDate);
-	requestData.AppendLong(mAllocateDuration);
-	requestData.AppendLong(mActivateTime);
-	requestData.AppendLong(mActivateDuration);
-	requestData.AppendLong(mActivateUserSeq);
+	requestData.AppendShort(this->mUpdateFields);
+	requestData.AppendLong(this->mAllocateDate);
+	requestData.AppendLong(this->mAllocateDuration);
+	requestData.AppendLong(this->mActivateTime);
+	requestData.AppendLong(this->mActivateDuration);
+	requestData.AppendLong(this->mActivateUserSeq);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus UpdateKeySubscribeOp::Virtual14()
+WONStatus UpdateKeySubscribeOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 	return BaseKeySubscribeOp::Unpack(theData);
 }
 
@@ -162,36 +162,36 @@ RemoveKeySubscribeOp::RemoveKeySubscribeOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void RemoveKeySubscribeOp::Virtual04()
+void RemoveKeySubscribeOp::RunHook()
 {
-	mMessageType = 1006;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1006;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
 	BaseKeySubscribeOp::Pack(requestData);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus RemoveKeySubscribeOp::Virtual14()
+WONStatus RemoveKeySubscribeOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 	return BaseKeySubscribeOp::Unpack(theData);
 }
 
@@ -204,44 +204,44 @@ QueryKeySubscribeOp::QueryKeySubscribeOp(ServerContext* theContext)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void QueryKeySubscribeOp::Virtual04()
+void QueryKeySubscribeOp::RunHook()
 {
-	mMessageType = 1006;
-	mSubMessageType = MSGTYPE;
+	this->mMessageType = 1006;
+	this->mSubMessageType = MSGTYPE;
 
 	// Stores the message data
 	WriteBuffer requestData(0,true);
-	requestData.AppendString(mProductName);
-	requestData.AppendWString(mCommunityName,2);
-	requestData.AppendShort(mKeyList.size());
-	for(std::list<std::string>::iterator anItr = mKeyList.begin(); anItr != mKeyList.end(); ++anItr)
+	requestData.AppendString(this->mProductName);
+	requestData.AppendWString(this->mCommunityName,2);
+	requestData.AppendShort(this->mKeyList.size());
+	for(std::list<std::string>::iterator anItr = this->mKeyList.begin(); anItr != this->mKeyList.end(); ++anItr)
 		requestData.AppendString(*anItr, 1);
 
 	// Copy buffer into the class
-	mRequestData = requestData.ToByteBuffer(true);
+	this->mRequestData = requestData.ToByteBuffer(true);
 
-	DBProxyOp::Virtual04();
+	DBProxyOp::RunHook();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-WONStatus QueryKeySubscribeOp::Virtual14()
+WONStatus QueryKeySubscribeOp::CheckResponse()
 {
 	// Call the base class implementation
-	WONStatus result = DBProxyOp::Virtual14();
-	if (result != (WONStatus)0)
+	WONStatus result = DBProxyOp::CheckResponse();
+	if (result != (WONStatus)WS_Success)
 		return result;
 	
 	// Make sure this is the expected reply type
-	if (mSubMessageReplyType != mSubMessageType+1)
-		return InvalidReplyHeader();
+	if (this->mSubMessageReplyType != this->mSubMessageType+1)
+		return this->InvalidReplyHeader();
 
 	// Extended unpack
-	ReadBuffer theData(mReplyData->data(), mReplyData->length());
+	ReadBuffer theData(this->mReplyData->data(), this->mReplyData->length());
 	try
 	{
 		KEY_DATA aKey;
-		mKeyDataList.clear();
+		this->mKeyDataList.clear();
 		short aListSize = theData.ReadShort();
 		for(short i = 0; i < aListSize; i++)
 		{
@@ -251,14 +251,14 @@ WONStatus QueryKeySubscribeOp::Virtual14()
 			aKey.mActivateTime = theData.ReadLong();
 			aKey.mActivateDuration = theData.ReadLong();
 			aKey.mActivateUserSeq = theData.ReadLong();
-			mKeyDataList.push_back(aKey);
+			this->mKeyDataList.push_back(aKey);
 		}
 	}
 	catch (ReadBufferException&)
 	{
-		return (WONStatus)100006;
+		return (WONStatus)WS_InvalidMessage;
 	}
 
 	// Everything checked out
-	return (WONStatus)0;
+	return (WONStatus)WS_Success;
 }

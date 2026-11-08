@@ -3,9 +3,8 @@
 #include "ee/wonapi/WONLobbyStretchImage.h"
 namespace WONAPI {
 
-// Complete actual primitive filter owners. SDK fields corroborated by native
-// config allocations1c/14/18/14 and writes, both real virtual slots0/4.
-// Genuine SDK ImageFilter.cpp family, full source owner; no claimed native identity.
+// Image filters; the fields agree with the original's config allocations (0x1c/0x14/0x18/0x14
+// bytes) and their writes; virtual slots 0 and 4.
 class MultiImageFilter : public ImageFilter {
 protected:
     typedef std::list<SmartPtr<ImageFilter> > FilterList;
@@ -21,30 +20,30 @@ public:
     int mWidth,mHeight; //08/0c
     int mPercentWidth,mPercentHeight; //10/14
     bool mIsPercent; //18 naturalpad, total1c
-    ScaleImageFilter(int percent=100) { SetPercentSize(percent,percent); }
-    ScaleImageFilter(int w,int h) { SetAbsSize(w,h); }
+    ScaleImageFilter(int percent=100) { this->SetPercentSize(percent,percent); }
+    ScaleImageFilter(int w,int h) { this->SetAbsSize(w,h); }
     void SetAbsSize(int,int); //348b80
     void SetPercentSize(int,int); //348b60
-    bool CheckSize(Image*); //348ba0 actual SDK nonvirtual helper
-    virtual SmartPtr<RawImage> Filter(RawImage*); //348c30 native external
+    bool CheckSize(Image*); // at 0x00748ba0
+    virtual SmartPtr<RawImage> Filter(RawImage*); // at 0x00748c30
 };
 class TintImageFilter : public ImageFilter {
 public:
     int mRed,mGreen,mBlue; //08/0c/10 total14
     TintImageFilter(int r,int g,int b) : mRed(r),mGreen(g),mBlue(b) {}
-    virtual SmartPtr<RawImage> Filter(RawImage*); //348dd0 native external
+    virtual SmartPtr<RawImage> Filter(RawImage*); // at 0x00748dd0
 };
 class CropImageFilter : public ImageFilter {
 public:
     int mx,my,mWidth,mHeight; //08/0c/10/14 total18
     CropImageFilter(int x=0,int y=0,int w=0,int h=0) : mx(x),my(y),mWidth(w),mHeight(h) {}
-    void SetPos(int x,int y) { mx=x;my=y; }
-    void SetSize(int w,int h) { mWidth=w;mHeight=h; }
-    int GetX() { return mx; }
-    int GetY() { return my; }
-    int GetWidth() { return mWidth; }
-    int GetHeight() { return mHeight; }
-    virtual SmartPtr<RawImage> Filter(RawImage*); //348a60 native external
+    void SetPos(int x,int y) { this->mx=x;this->my=y; }
+    void SetSize(int w,int h) { this->mWidth=w;this->mHeight=h; }
+    int GetX() { return this->mx; }
+    int GetY() { return this->my; }
+    int GetWidth() { return this->mWidth; }
+    int GetHeight() { return this->mHeight; }
+    virtual SmartPtr<RawImage> Filter(RawImage*); // at 0x00748a60
 };
 class TrimImageFilter : public CropImageFilter {
 public:
@@ -58,54 +57,53 @@ public:
     DWORD mTransparentColor; //08
     PixelSample mPixelSample; //0c
     bool mUseSample; //10 naturalpad,total14
-    TransparentImageFilter(DWORD color) { mUseSample=false;mTransparentColor=color; }
-    TransparentImageFilter(PixelSample sample) { mUseSample=true;mPixelSample=sample; }
-    void SetPixelSample(PixelSample theSample) { mUseSample = true; mPixelSample = theSample; }
-    void SetTransparentColor(DWORD theColor) { mUseSample = false; mTransparentColor = theColor; }
-    virtual SmartPtr<RawImage> Filter(RawImage*); //349110 native external
+    TransparentImageFilter(DWORD color) { this->mUseSample=false;this->mTransparentColor=color; }
+    TransparentImageFilter(PixelSample sample) { this->mUseSample=true;this->mPixelSample=sample; }
+    void SetPixelSample(PixelSample theSample) { this->mUseSample = true; this->mPixelSample = theSample; }
+    void SetTransparentColor(DWORD theColor) { this->mUseSample = false; this->mTransparentColor = theColor; }
+    virtual SmartPtr<RawImage> Filter(RawImage*); // at 0x00749110
 };
 
-// Complete actual external-lifetime configuration owners. New ImageFilterConfig
-// allocation calls nativeconstructor38c260 and actualnormaldestruction38c2b0;
-// completebaseImageConfig7c +RawSP7c/bool80 =>84 bytes, no opaque owner stand-in.
+// Image configuration classes. ImageFilterConfig is constructed at 0x0078c260 and destroyed at
+// 0x0078c2b0: ImageConfig (0x7c) + raw image pointer at +0x7c + bool at +0x80 = 0x84 bytes.
 class ImageConfig : public ComponentConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38b130 genuine SDK static API, original external provider only
-    static Component* CompFactory(); //2c7b10 genuine SDK static API, original external provider only
-    ImageConfig(); //38b2b0 native external
-    // Genuine SDK implicit virtual destructor: automatic owned members and base cleanup.
-    virtual bool Virtual10(ConfigParser*); //3099f0 true leaf; native external only
+    static ComponentConfig* CfgFactory(); // at 0x0078b130
+    static Component* CompFactory(); // at 0x006c7b10
+    ImageConfig(); // at 0x0078b2b0
+    // Implicit virtual destructor: releases the owned members, then the base.
+    virtual bool PostParse(ConfigParser*); // at 0x007099f0
     virtual bool Virtual24(const std::string&); //38b3e0
-    virtual bool Virtual2C(const std::string&,int&); //38b370
-    virtual Image* GetImage() { return mImage.get(); } //38b2d0 slot38, support0
-    virtual RawImage* GetRawImage() { return NULL; } //2c7b10 slot3c, genuinebase behavior/support0
+    virtual bool GetNamedValue(const std::string&,int&); //38b370
+    virtual Image* GetImage() { return this->mImage.get(); } // slot 0x38, at 0x0078b2d0
+    virtual RawImage* GetRawImage() { return NULL; } // slot 0x3c (base behaviour), at 0x006c7b10
     SmartPtr<Image> mImage; //78, total7c
 };
-// Complete actual80 external-base owners; raw convenience7c aliases inherited ImageSP78.
+// 0x80-byte configs; the raw pointer at +0x7c aliases the inherited image pointer at +0x78.
 class StretchImageConfig : public ImageConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38b190 genuine SDK static API, original external provider only
+    static ComponentConfig* CfgFactory(); // at 0x0078b190
     StretchImageConfig(); //38b4e0
-    // Genuine SDK implicit virtual destructor: automatic owned members and base cleanup.
+    // Implicit virtual destructor: releases the owned members, then the base.
     virtual bool Virtual24(const std::string&); //38b630
-    StretchImage* mStretchImage; //7c, raw alias, full80
+    StretchImage* mStretchImage; // offset 0x7c, raw alias; class size 0x80
 };
 class StretchCenterImageConfig : public ImageConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38b1f0 genuine SDK static API, original external provider only
+    static ComponentConfig* CfgFactory(); // at 0x0078b1f0
     StretchCenterImageConfig(); //38bf90
-    // Genuine SDK implicit virtual destructor: automatic owned members and base cleanup.
+    // Implicit virtual destructor: releases the owned members, then the base.
     virtual bool Virtual24(const std::string&); //38c0e0
-    StretchCenterImage* mStretchCenterImage; //7c raw alias, full80
+    StretchCenterImage* mStretchCenterImage; // offset 0x7c, raw alias; class size 0x80
 };
 class ImageFilterConfig : public ImageConfig {
 public:
-    static ComponentConfig* CfgFactory(); //38b250 genuine SDK static API, original external provider only
-    ImageFilterConfig(); //38c260 native external
-    // Genuine SDK implicit virtual destructor: automatic owned members and base cleanup.
+    static ComponentConfig* CfgFactory(); // at 0x0078b250
+    ImageFilterConfig(); // at 0x0078c260
+    // Implicit virtual destructor: releases the owned members, then the base.
     virtual bool Virtual24(const std::string&); //38c780
     virtual Image* GetImage(); //38cc80 slot38
-    virtual RawImage* GetRawImage() { return mRawImage.get(); } //38c280 slot3c, support0
+    virtual RawImage* GetRawImage() { return this->mRawImage.get(); } // slot 0x3c, at 0x0078c280
     SmartPtr<RawImage> HandleFilter(); //38c340
     void SetRawImage(RawImage*); //38c6e0
     SmartPtr<RawImage> mRawImage; //7c

@@ -1,6 +1,4 @@
-// PROVISIONAL advanced original child-layout algorithms; historical filename/grouping unproved.
-// SOURCE ONLY; no runtime-substitution authority.
-// Shared exact typed layout contracts; existing algorithm bodies unchanged by owner promotion.
+// Percentage, flow, same-size, spacing and overlap child layouts (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,255 +11,269 @@
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "ee/wonapi/WONLobbyLayout.h"
 namespace WONAPI {
-// Original337370..3373ec: normalize missing edges using matching axis, then last supplied anchor.
 // FUNCTION: WON 0x00737370
+// Sets the four anchor components; a missing edge takes the opposite edge on the same axis, then the last
+// anchor supplied
 void PercentLayoutParam::SetBorders(Component* inLeft, Component* inTop, Component* inRight, Component* inBottom)
 {
-    left=inLeft; top=inTop; right=inRight; bottom=inBottom;
+    this->left=inLeft; this->top=inTop; this->right=inRight; this->bottom=inBottom;
     Component* last=NULL;
-    if(inLeft==NULL) left=inRight; else last=inLeft;
-    if(inRight==NULL) right=left; else last=inRight;
-    if(inTop==NULL) top=inBottom; else last=inTop;
-    if(inBottom==NULL) bottom=top; else last=inBottom;
-    if(left==NULL) left=last;
-    if(right==NULL) right=last;
-    if(top==NULL) top=last;
-    if(bottom==NULL) bottom=last;
+    if(inLeft==NULL) this->left=inRight; else last=inLeft;
+    if(inRight==NULL) this->right=this->left; else last=inRight;
+    if(inTop==NULL) this->top=inBottom; else last=inTop;
+    if(inBottom==NULL) this->bottom=this->top; else last=inBottom;
+    if(this->left==NULL) this->left=last;
+    if(this->right==NULL) this->right=last;
+    if(this->top==NULL) this->top=last;
+    if(this->bottom==NULL) this->bottom=last;
 }
-// Original337430..33757d: percentage position and size use independently selected padded anchor edges.
 // FUNCTION: WON 0x00737430
+// Positions and sizes the target as percentages of the span between its padded anchor edges; a negative
+// percentage leaves that coordinate unchanged (the padding is added even when it is the default -1)
 void PercentLayoutParam::DoCalc(Component* target, Component* parent)
 {
     int x=target->Left(), y=target->Top(), width=target->Width(), height=target->Height();
-    if(px>=0 || pw>=0)
+    if(this->px>=0 || this->pw>=0)
     {
-        int leftEdge=left==parent?0:left->Left();
-        int rightEdge=right==parent?parent->Width():right->Left()+right->Width();
-        leftEdge+=lp;
-        rightEdge-=rp;
-        if(px>=0) x=leftEdge+(rightEdge-leftEdge)*px/100;
-        if(pw>=0) width=(rightEdge-leftEdge)*pw/100;
+        int leftEdge=this->left==parent?0:this->left->Left();
+        int rightEdge=this->right==parent?parent->Width():this->right->Left()+this->right->Width();
+        leftEdge+=this->lp;
+        rightEdge-=this->rp;
+        if(this->px>=0) x=leftEdge+(rightEdge-leftEdge)*this->px/100;
+        if(this->pw>=0) width=(rightEdge-leftEdge)*this->pw/100;
     }
-    if(py>=0 || ph>=0)
+    if(this->py>=0 || this->ph>=0)
     {
-        int topEdge=top==parent?0:top->Top();
-        int bottomEdge=bottom==parent?parent->Height():bottom->Top()+bottom->Height();
-        topEdge+=tp;
-        bottomEdge-=bp;
-        if(py>=0) y=topEdge+(bottomEdge-topEdge)*py/100;
-        if(ph>=0) height=(bottomEdge-topEdge)*ph/100;
+        int topEdge=this->top==parent?0:this->top->Top();
+        int bottomEdge=this->bottom==parent?parent->Height():this->bottom->Top()+this->bottom->Height();
+        topEdge+=this->tp;
+        bottomEdge-=this->bp;
+        if(this->py>=0) y=topEdge+(bottomEdge-topEdge)*this->py/100;
+        if(this->ph>=0) height=(bottomEdge-topEdge)*this->ph/100;
     }
-    target->Fn2F4BF0(x,y,width,height);
+    target->SetPosSize(x,y,width,height);
 }
-// Original337800..3378c1: first measure requested maxima, then apply current axis flags to every child.
 // FUNCTION: WON 0x00737800
+// Gives every listed component the largest width and/or height among them, per the horizontal and
+// vertical flags
 void SameSizeLayout::Execute(Component*)
 {
     int width=0,height=0;
     std::list<Component*>::iterator i;
-    for(i=mComponentList.begin();i!=mComponentList.end();++i)
+    for(i=this->mComponentList.begin();i!=this->mComponentList.end();++i)
     {
         Component* child=*i;
-        if(mHorz && child->Width()>width) width=child->Width();
-        if(mVert && child->Height()>height) height=child->Height();
+        if(this->mHorz && child->Width()>width) width=child->Width();
+        if(this->mVert && child->Height()>height) height=child->Height();
     }
-    for(i=mComponentList.begin();i!=mComponentList.end();++i)
+    for(i=this->mComponentList.begin();i!=this->mComponentList.end();++i)
     {
         Component* child=*i;
-        if(mHorz && mVert) child->Fn2F4B90(width,height);
-        else if(mHorz) child->Fn2F4B90(width,child->Height());
-        else if(mVert) child->Fn2F4B90(child->Width(),height);
+        if(this->mHorz && this->mVert) child->SetSize(width,height);
+        else if(this->mHorz) child->SetSize(width,child->Height());
+        else if(this->mVert) child->SetSize(child->Width(),height);
     }
 }
-// Original3378d0..33791e.
 // FUNCTION: WON 0x007378d0
+// Moves the component to the right of the rightmost listed component, plus the padding
 void ClearRightLayout::Execute(Component*)
 {
     int right=0;
-    for(std::list<Component*>::iterator i=mComponentList.begin();i!=mComponentList.end();++i)
+    for(std::list<Component*>::iterator i=this->mComponentList.begin();i!=this->mComponentList.end();++i)
     {
         Component* child=*i;
         int r=child->Right();
         if(r>right) right=r;
 
     }
-    mComponent->Fn2F4B70(right+mPad,mComponent->Top());
+    this->mComponent->SetPos(right+this->mPad,this->mComponent->Top());
 }
-// Original337920..337a37: clamp leftover space, distribute quotient and the first remainder pixels.
 // FUNCTION: WON 0x00737920
+// Spreads the listed components evenly across the space box (horizontally or vertically), handing the
+// leftover pixels one each to the first gaps
 void SpaceEvenlyLayout::Execute(Component* parent)
 {
-    if(mComponentList.empty()) return;
+    if(this->mComponentList.empty()) return;
     int total=0;
     std::list<Component*>::iterator i;
-    for(i=mComponentList.begin();i!=mComponentList.end();++i)
-        total+=mIsHorz?(*i)->Width():(*i)->Height();
-    Component* box=mSpaceBox;
-    int available=(mIsHorz?box->Width():box->Height())-mRightPad-mLeftPad-total;
+    for(i=this->mComponentList.begin();i!=this->mComponentList.end();++i)
+        total+=this->mIsHorz?(*i)->Width():(*i)->Height();
+    Component* box=this->mSpaceBox;
+    int available=(this->mIsHorz?box->Width():box->Height())-this->mRightPad-this->mLeftPad-total;
     if(available<0) available=0;
     int spacing=0,remainder=0;
-    if(mComponentList.size()>1)
+    if(this->mComponentList.size()>1)
     {
-        spacing=available/(mComponentList.size()-1);
-        remainder=available%(mComponentList.size()-1);
+        spacing=available/(this->mComponentList.size()-1);
+        remainder=available%(this->mComponentList.size()-1);
     }
-    int position=mIsHorz?box->Left():box->Top();
+    int position=this->mIsHorz?box->Left():box->Top();
     if(box==parent) position=0;
-    position+=mLeftPad;
-    for(i=mComponentList.begin();i!=mComponentList.end();++i)
+    position+=this->mLeftPad;
+    for(i=this->mComponentList.begin();i!=this->mComponentList.end();++i)
     {
         Component* child=*i;
-        if(mIsHorz) child->Fn2F4B70(position,child->Top());
-        else child->Fn2F4B70(child->Left(),position);
-        if(mIsHorz) position+=child->Width()+spacing;
+        if(this->mIsHorz) child->SetPos(position,child->Top());
+        else child->SetPos(child->Left(),position);
+        if(this->mIsHorz) position+=child->Width()+spacing;
         else position+=child->Height()+spacing;
         if(remainder>0) { ++position; --remainder; }
     }
 }
-// Original337a40..337b8b: directional displacement is clamped differently for parent and sibling anchors.
+// The shift is clamped one way for the parent and the other way for a sibling reference
 // FUNCTION: WON 0x00737a40
+// Pushes the target (and the components that move with it) clear of the reference component, or back
+// inside the parent when the reference is the parent, along the requested sides
 void NoOverlapLayout::Execute(Component* parent)
 {
     int dx=0,dy=0;
-    if(mRef==parent)
+    if(this->mRef==parent)
     {
-        if(mType&0x800) { dx=mHorzPad-mTarget->Left(); if(dx<0) dx=0; }
-        else if(mType&0x400) { const WONRectangle& b=mTarget->GetBounds(); dx=mRef->Width()-b.width+mHorzPad-b.x; if(dx>0) dx=0; }
-        if(mType&0x100) { dy=mVertPad-mTarget->Top(); if(dy<0) dy=0; }
-        else if(mType&0x200) { const WONRectangle& b=mTarget->GetBounds(); dy=mRef->Height()-b.height-b.y+mVertPad; if(dy>0) dy=0; }
+        if(this->mType&0x800) { dx=this->mHorzPad-this->mTarget->Left(); if(dx<0) dx=0; }
+        else if(this->mType&0x400) { const WONRectangle& b=this->mTarget->GetBounds(); dx=this->mRef->Width()-b.width+this->mHorzPad-b.x; if(dx>0) dx=0; }
+        if(this->mType&0x100) { dy=this->mVertPad-this->mTarget->Top(); if(dy<0) dy=0; }
+        else if(this->mType&0x200) { const WONRectangle& b=this->mTarget->GetBounds(); dy=this->mRef->Height()-b.height-b.y+this->mVertPad; if(dy>0) dy=0; }
     }
     else
     {
-        if(mType&0x800) { const WONRectangle& b=mTarget->GetBounds(); dx=mRef->Left()-b.width+mHorzPad-b.x; if(dx>0) dx=0; }
-        else if(mType&0x400) { dx=mRef->Right()-mTarget->Left()+mHorzPad; if(dx<0) dx=0; }
-        if(mType&0x100) { const WONRectangle& b=mTarget->GetBounds(); dy=mRef->Top()-b.height-b.y+mVertPad; if(dy>0) dy=0; }
-        else if(mType&0x200) { dy=mRef->Height()-mTarget->Top()+mRef->Top()+mVertPad; if(dy<0) dy=0; }
+        if(this->mType&0x800) { const WONRectangle& b=this->mTarget->GetBounds(); dx=this->mRef->Left()-b.width+this->mHorzPad-b.x; if(dx>0) dx=0; }
+        else if(this->mType&0x400) { dx=this->mRef->Right()-this->mTarget->Left()+this->mHorzPad; if(dx<0) dx=0; }
+        if(this->mType&0x100) { const WONRectangle& b=this->mTarget->GetBounds(); dy=this->mRef->Top()-b.height-b.y+this->mVertPad; if(dy>0) dy=0; }
+        else if(this->mType&0x200) { dy=this->mRef->Height()-this->mTarget->Top()+this->mRef->Top()+this->mVertPad; if(dy<0) dy=0; }
     }
     if(dx==0 && dy==0) return;
-    mTarget->Fn2F4B70(mTarget->Left()+dx,mTarget->Top()+dy);
-    for(std::list<Component*>::iterator i=mComponentList.begin();i!=mComponentList.end();++i)
+    this->mTarget->SetPos(this->mTarget->Left()+dx,this->mTarget->Top()+dy);
+    for(std::list<Component*>::iterator i=this->mComponentList.begin();i!=this->mComponentList.end();++i)
     {
         Component* child=*i;
-        child->Fn2F4B70(child->Left()+dx,child->Top()+dy);
+        child->SetPos(child->Left()+dx,child->Top()+dy);
     }
 }
-// Original337b90..337be2: grow target to at least maximum requested child dimensions plus padding.
 // FUNCTION: WON 0x00737b90
+// Grows the target to at least the largest listed component's width and height plus the padding
 void SizeAtLeastLayout::Execute(Component*)
 {
     int width=0,height=0;
-    for(std::list<Component*>::iterator i=mComponentList.begin();i!=mComponentList.end();++i)
+    for(std::list<Component*>::iterator i=this->mComponentList.begin();i!=this->mComponentList.end();++i)
     {
         Component* child=*i;
         if(child->Width()>width) width=child->Width();
         if(child->Height()>height) height=child->Height();
     }
-    mTarget->Fn2F4BC0(width+mHorzPad,height+mVertPad);
+    this->mTarget->SetSizeAtLeast(width+this->mHorzPad,height+this->mVertPad);
 }
 }
 #include "ee/wonapi/WONPercentLayout.h"
 
 namespace WONAPI {
 // FUNCTION: WON 0x007372c0
+// Sets the anchors, percentages and padding of a percentage layout
 void PercentLayoutParam::Init(Component *left,Component *top,Component *right,Component *bottom,int px,int py,int pw,int ph,int lp,int tp,int rp,int bp)
 {
-    SetBorders(left,top,right,bottom);
-    SetPercentages(px,py,pw,ph);
-    SetPadding(lp,tp,rp,bp);
+    this->SetBorders(left,top,right,bottom);
+    this->SetPercentages(px,py,pw,ph);
+    this->SetPadding(lp,tp,rp,bp);
 }
 // FUNCTION: WON 0x007373f0
+// Sets the position and size percentages (negative = leave that coordinate alone)
 void PercentLayoutParam::SetPercentages(int thePercentX,int thePercentY,int thePercentWidth,int thePercentHeight)
 {
-    px=thePercentX;
-    py=thePercentY;
-    pw=thePercentWidth;
-    ph=thePercentHeight;
+    this->px=thePercentX;
+    this->py=thePercentY;
+    this->pw=thePercentWidth;
+    this->ph=thePercentHeight;
 }
 // FUNCTION: WON 0x00737410
+// Sets the padding applied inside each anchor edge
 void PercentLayoutParam::SetPadding(int theLeftPad,int theTopPad,int theRightPad,int theBottomPad)
 {
-    lp=theLeftPad;
-    tp=theTopPad;
-    rp=theRightPad;
-    bp=theBottomPad;
+    this->lp=theLeftPad;
+    this->tp=theTopPad;
+    this->rp=theRightPad;
+    this->bp=theBottomPad;
 }
 // FUNCTION: WON 0x00737580
+// Positions and sizes the target from its percentage parameters
 void PercentLayout::Execute(Component* theParent)
 {
-    mParam.DoCalc(mTarget,theParent);
+    this->mParam.DoCalc(this->mTarget,theParent);
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x007377a0
+// Adds a component to the same-size group; returns the layout for chaining
 SameSizeLayout* SameSizeLayout::Add(Component* theComp)
 {
-    mComponentList.push_back(theComp);
+    this->mComponentList.push_back(theComp);
     return this;
 }
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x00737320
+// Creates percentage layout parameters from four anchors, percentages and padding
 PercentLayoutParam::PercentLayoutParam(Component *left, Component *top, Component *right, Component *bottom, int px, int py, int pw, int ph, int lp, int tp, int rp, int bp)
 {
-	Init(left,top,right,bottom,px,py,pw,ph,lp,tp,rp,bp);
+	this->Init(left,top,right,bottom,px,py,pw,ph,lp,tp,rp,bp);
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: same-snapshot original ChildLayouts.cpp, no Native/primary/span credit.
+// Vertical flow layout: stacks components below the top component with per-item padding (not identified
+// in the original exe)
 VerticalFlowLayout::VerticalFlowLayout(Component* theTop)
 {
-    mTopComp = theTop;
+    this->mTopComp = theTop;
 }
 VerticalFlowLayout* VerticalFlowLayout::Add(Component* theChild, int theTopPad, int theLeftPad)
 {
-    mComponentList.push_back(ItemInfo(theChild,theTopPad,theLeftPad));
+    this->mComponentList.push_back(ItemInfo(theChild,theTopPad,theLeftPad));
     return this;
 }
 void VerticalFlowLayout::Execute(Component* theParent)
 {
-    if(mComponentList.empty())
+    if(this->mComponentList.empty())
         return;
-    ComponentList::iterator anItr = mComponentList.begin();
+    ComponentList::iterator anItr = this->mComponentList.begin();
     int aTop, aLeft;
-    if(anItr->mComponent->GetParent()==mTopComp)
+    if(anItr->mComponent->GetParent()==this->mTopComp)
     {
         aTop = 0;
         aLeft = 0;
     }
     else
     {
-        aTop = mTopComp->Top()+mTopComp->Height();
-        aLeft = mTopComp->Left();
+        aTop = this->mTopComp->Top()+this->mTopComp->Height();
+        aLeft = this->mTopComp->Left();
     }
-    for(; anItr!=mComponentList.end(); ++anItr)
+    for(; anItr!=this->mComponentList.end(); ++anItr)
     {
         aTop += anItr->mTopPad;
         Component* aComp = anItr->mComponent;
         int aLeftPad = anItr->mLeftPad;
         if(aLeftPad>=0)
-            aComp->Fn2F4B70(aLeft+aLeftPad,aTop);
+            aComp->SetPos(aLeft+aLeftPad,aTop);
         else
-            aComp->Fn2F4B70(aComp->Left(),aTop);
+            aComp->SetPos(aComp->Left(),aTop);
         aTop += aComp->Height();
     }
 }
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: same-snapshot SDK ordered borrowed-component lists.
+// Child layout list: an ordered list of up to eight components with a cursor (not identified in the
+// original exe)
 ChildLayoutList::ChildLayoutList(Component *c1)
 {
-	mChildList.push_back(c1);
+	this->mChildList.push_back(c1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ChildLayoutList::ChildLayoutList(Component *c1, Component *c2)
 {
-	mChildList.push_back(c1); mChildList.push_back(c2);
+	this->mChildList.push_back(c1); this->mChildList.push_back(c2);
 
 }
 
@@ -269,79 +281,79 @@ ChildLayoutList::ChildLayoutList(Component *c1, Component *c2)
 ///////////////////////////////////////////////////////////////////////////////
 ChildLayoutList::ChildLayoutList(Component *c1, Component *c2, Component *c3)
 {
-	mChildList.push_back(c1); mChildList.push_back(c2); mChildList.push_back(c3);
+	this->mChildList.push_back(c1); this->mChildList.push_back(c2); this->mChildList.push_back(c3);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ChildLayoutList::ChildLayoutList(Component *c1, Component *c2, Component *c3, Component *c4)
 {
-	mChildList.push_back(c1); mChildList.push_back(c2); mChildList.push_back(c3); mChildList.push_back(c4);
+	this->mChildList.push_back(c1); this->mChildList.push_back(c2); this->mChildList.push_back(c3); this->mChildList.push_back(c4);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ChildLayoutList::ChildLayoutList(Component *c1, Component *c2, Component *c3, Component *c4, Component *c5)
 {
-	mChildList.push_back(c1); mChildList.push_back(c2); mChildList.push_back(c3); mChildList.push_back(c4); 
-	mChildList.push_back(c5);
+	this->mChildList.push_back(c1); this->mChildList.push_back(c2); this->mChildList.push_back(c3); this->mChildList.push_back(c4); 
+	this->mChildList.push_back(c5);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ChildLayoutList::ChildLayoutList(Component *c1, Component *c2, Component *c3, Component *c4, Component *c5, Component *c6)
 {
-	mChildList.push_back(c1); mChildList.push_back(c2); mChildList.push_back(c3); mChildList.push_back(c4); 
-	mChildList.push_back(c5); mChildList.push_back(c6);
+	this->mChildList.push_back(c1); this->mChildList.push_back(c2); this->mChildList.push_back(c3); this->mChildList.push_back(c4); 
+	this->mChildList.push_back(c5); this->mChildList.push_back(c6);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ChildLayoutList::ChildLayoutList(Component *c1, Component *c2, Component *c3, Component *c4, Component *c5, Component *c6, Component *c7)
 {
-	mChildList.push_back(c1); mChildList.push_back(c2); mChildList.push_back(c3); mChildList.push_back(c4); 
-	mChildList.push_back(c5); mChildList.push_back(c6); mChildList.push_back(c7);
+	this->mChildList.push_back(c1); this->mChildList.push_back(c2); this->mChildList.push_back(c3); this->mChildList.push_back(c4); 
+	this->mChildList.push_back(c5); this->mChildList.push_back(c6); this->mChildList.push_back(c7);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ChildLayoutList::ChildLayoutList(Component *c1, Component *c2, Component *c3, Component *c4, Component *c5, Component *c6, Component *c7, Component *c8)
 {
-	mChildList.push_back(c1); mChildList.push_back(c2); mChildList.push_back(c3); mChildList.push_back(c4); 
-	mChildList.push_back(c5); mChildList.push_back(c6); mChildList.push_back(c7); mChildList.push_back(c8);
+	this->mChildList.push_back(c1); this->mChildList.push_back(c2); this->mChildList.push_back(c3); this->mChildList.push_back(c4); 
+	this->mChildList.push_back(c5); this->mChildList.push_back(c6); this->mChildList.push_back(c7); this->mChildList.push_back(c8);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ChildLayoutList::Rewind() const
 {
-	mItr = mChildList.begin();
+	this->mItr = this->mChildList.begin();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool ChildLayoutList::HasMore() const
 {	
-	return mItr!=mChildList.end();
+	return this->mItr!=this->mChildList.end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 Component* ChildLayoutList::GetNext() const
 {
-	if(mItr==mChildList.end())
+	if(this->mItr==this->mChildList.end())
 		return NULL;
 	else
-		return *mItr++;
+		return *this->mItr++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ChildLayoutList::AddTo(ChildList &theList) const
 {
-	Rewind();
-	while(HasMore())
-		theList.push_back(GetNext());
+	this->Rewind();
+	while(this->HasMore())
+		theList.push_back(this->GetNext());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -349,32 +361,32 @@ void ChildLayoutList::AddTo(ChildList &theList) const
 }
 
 namespace WONAPI {
-// SOURCE_ONLY_NO_NATIVE_ID: remaining genuine SDK Percent parameter/layout constructor overloads.
+// The other percentage parameter and layout constructors (not identified in the original exe)
 PercentLayoutParam::PercentLayoutParam(Component *ref, int px, int py, int pw, int ph, int lp, int tp, int rp, int bp)
 {
-	Init(ref,ref,ref,ref,px,py,pw,ph,lp,tp,rp,bp);
+	this->Init(ref,ref,ref,ref,px,py,pw,ph,lp,tp,rp,bp);
 }
 
 PercentLayoutParam::PercentLayoutParam(Component *ref1, Component *ref2, int px, int py, int pw, int ph, int lp, int tp, int rp, int bp)
 {
-	Init(ref1,ref2,ref1,ref2,px,py,pw,ph,lp,tp,rp,bp);
+	this->Init(ref1,ref2,ref1,ref2,px,py,pw,ph,lp,tp,rp,bp);
 }
 
 PercentLayout::PercentLayout(Component *target, Component *ref, int px, int py, int pw, int ph, int lp, int tp, int rp, int bp)
 : mParam(ref,px,py,pw,ph,lp,tp,rp,bp) 
 {
-	mTarget = target;
+	this->mTarget = target;
 }
 
 PercentLayout::PercentLayout(Component *target, Component *ref1, Component *ref2, int px, int py, int pw, int ph, int lp, int tp, int rp, int bp)
 : mParam(ref1,ref2,px,py,pw,ph,lp,tp,rp,bp) 
 {
-	mTarget = target;
+	this->mTarget = target;
 }
 
 PercentLayout::PercentLayout(Component *target, Component *left, Component *top, Component *right, Component *bottom, int px, int py, int pw, int ph, int lp, int tp, int rp, int bp)
 : mParam(left,top,right,bottom,px,py,pw,ph,lp,tp,rp,bp) 
 {
-	mTarget = target;
+	this->mTarget = target;
 }
 }

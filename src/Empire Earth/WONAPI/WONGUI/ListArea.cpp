@@ -10,506 +10,548 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyGUI.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONComponentFlags.h"
 namespace WONAPI {
 // ListItem's out-of-line members precede ListArea in the original object: VC6 sees the ctor's body before
 // `new ListItem` in ListArea::ListArea and drops the delete-on-throw guard (0x6fa570).
 // FUNCTION: WON 0x006fa280
+// Creates an unselected, selectable list item with zero position and size
 ListItem::ListItem()
 {
-    mTop=mL10=mHeight=0;
-    mB08=false;
-    mB09=true;
+    this->mTop=this->mWidth=this->mHeight=0;
+    this->mSelected=false;
+    this->mSelectable=true;
 }
 // FUNCTION: WON 0x006fa2a0
-void ListItem::Virtual04(Graphics&,ListArea*) {}
+// Draws nothing
+void ListItem::Paint(Graphics&,ListArea*) {}
 // FUNCTION: WON 0x006fa2b0
-int ListItem::Virtual10(const ListItem* other,ListArea*) const { return this<other; }
+// Orders two items by their addresses (true when this one comes first in memory)
+int ListItem::Compare(const ListItem* other,ListArea*) const { return this<other; }
 // FUNCTION: WON 0x006faa00
-void ListArea::Fn2FAA00() { ++mDoingMultiChange; }
+// Starts a batch of changes: layout and sorting wait until the matching EndUpdate
+void ListArea::BeginUpdate() { ++this->mDoingMultiChange; }
 // FUNCTION: WON 0x006faa10
-void ListArea::Fn2FAA10()
+// Ends a batch of changes; after the outermost one sorts the list, or just re-lays it out when unsorted
+void ListArea::EndUpdate()
 {
-    if(--mDoingMultiChange<=0) {
-        mDoingMultiChange=0;
-        if(!Sort()) EnforceInvariants();
+    if(--this->mDoingMultiChange<=0) {
+        this->mDoingMultiChange=0;
+        if(!this->Sort()) this->EnforceInvariants();
     }
 }
 struct ListItemTopLess {
     bool operator()(const SmartPtr<ListItem>& a,const SmartPtr<ListItem>& b) const { return a->mTop<b->mTop; }
 };
 // FUNCTION: WON 0x006facf0
+// Returns the item whose line covers a vertical position (the one before when it falls between items)
 std::vector<SmartPtr<ListItem> >::iterator ListArea::FindLineAt(int y)
 {
-    mSearchLine->mTop=y;
-    std::vector<SmartPtr<ListItem> >::iterator first=std::lower_bound(mItems.begin(),mItems.end(),mSearchLine,ListItemTopLess());
-    if(first==mItems.end() || (*first)->mTop>y)
+    this->mSearchLine->mTop=y;
+    std::vector<SmartPtr<ListItem> >::iterator first=std::lower_bound(this->mItems.begin(),this->mItems.end(),this->mSearchLine,ListItemTopLess());
+    if(first==this->mItems.end() || (*first)->mTop>y)
     {
-        if(first!=mItems.begin()) --first;
+        if(first!=this->mItems.begin()) --first;
     }
     return first;
 }
 // FUNCTION: WON 0x006fad80
+// Returns the item at a vertical position, or NULL when the position is below every item
 ListItem* ListArea::FindItemAt(int y)
 {
-    std::vector<SmartPtr<ListItem> >::iterator i=FindLineAt(y);
-    if(i==mItems.end()) return NULL;
+    std::vector<SmartPtr<ListItem> >::iterator i=this->FindLineAt(y);
+    if(i==this->mItems.end()) return NULL;
     ListItem* item=i->get();
     return item->mTop+item->mHeight<y ? NULL : item;
 }
 // FUNCTION: WON 0x006fadc0
+// Records the index of the item at the top of the visible area
 void ListArea::FindTopLine()
 {
-    std::vector<SmartPtr<ListItem> >::iterator i=FindLineAt(mVertOffset);
-    mTopLineVectorPos=i-mItems.begin();
+    std::vector<SmartPtr<ListItem> >::iterator i=this->FindLineAt(this->mVertOffset);
+    this->mTopLineVectorPos=i-this->mItems.begin();
 }
 // FUNCTION: WON 0x006faf10
+// Returns whether the item is in view (only its top needs to be when partial lines are shown)
 bool ListArea::IsItemVisible(ListItem* item)
 {
-    if(item->mTop+item->mHeight<mVertOffset) return false;
+    if(item->mTop+item->mHeight<this->mVertOffset) return false;
     int last=item->mTop;
-    if(!ListFlagSet(0x80)) last+=item->mHeight;
-    return last<=mVertOffset+mScrollArea.height;
+    if(!this->ListFlagSet(0x80)) last+=item->mHeight;
+    return last<=this->mVertOffset+this->mScrollArea.height;
 }
 // FUNCTION: WON 0x006faf60
+// Scrolls the list just enough to bring the item fully into view
 void ListArea::EnsureVisible(ListItem* item)
 {
-    int offset=mVertOffset;
-    if(item->mTop+item->mHeight>mVertOffset+mScrollArea.height)
-        offset=item->mTop-mScrollArea.height+item->mHeight;
+    int offset=this->mVertOffset;
+    if(item->mTop+item->mHeight>this->mVertOffset+this->mScrollArea.height)
+        offset=item->mTop-this->mScrollArea.height+item->mHeight;
     if(offset>item->mTop) offset=item->mTop;
-    if(offset!=mVertOffset) SetVertOffset(offset);
+    if(offset!=this->mVertOffset) this->SetVertOffset(offset);
 }
 // FUNCTION: WON 0x006fb200
+// Makes the item the current selection (adding to it in multi-select when asked); on a change drops
+// the focused child, fires the selection-changed event if asked and calls the hook; true when it changed
 bool ListArea::SetSelItem(ListItem* item,bool add,bool fire)
 {
-    if(item==NULL) return ClearSelectionPrv(fire)>0;
-    ListItem* old=mSelItem;
-    if(item!=mSelItem) {
-        if(mSelItem!=NULL && (!ListFlagSet(0x400) || !add)) {
-            bool selected=item->mB08;
-            ClearSelectionPrv(false);
-            item->mB08=selected;
+    if(item==NULL) return this->ClearSelectionPrv(fire)>0;
+    ListItem* old=this->mSelItem;
+    if(item!=this->mSelItem) {
+        if(this->mSelItem!=NULL && (!this->ListFlagSet(0x400) || !add)) {
+            bool selected=item->mSelected;
+            this->ClearSelectionPrv(false);
+            item->mSelected=selected;
         }
-        mSelItem=item;
+        this->mSelItem=item;
     }
-    if(mSelItem!=NULL && !mSelItem->mB08) mSelItem=NULL;
-    if(item!=old) Invalidate();
-    if(mSelItem!=old) {
-        Invalidate();
-        if(mFocusChild!=NULL) { mFocusChild->Virtual4C(); mFocusChild=NULL; }
-        if(fire) Fn2F5380(22,0);
-        ListSelChangedHook();
+    if(this->mSelItem!=NULL && !this->mSelItem->mSelected) this->mSelItem=NULL;
+    if(item!=old) this->Invalidate();
+    if(this->mSelItem!=old) {
+        this->Invalidate();
+        if(this->mFocusChild!=NULL) { this->mFocusChild->LostFocus(); this->mFocusChild=NULL; }
+        if(fire) this->Fn2F5380(ComponentEvent_ListSelChanged,0);
+        this->ListSelChangedHook();
         return true;
     }
     return false;
 }
 // FUNCTION: WON 0x006fb2e0
+// Selects every item between two indices (clamped to the list), making the first one current
 void ListArea::SelectRange(int start,int end)
 {
-    ClearSelectionPrv(false);
-    if(start>=(int)mItems.size()) start=mItems.size()-1;
-    if(end>=(int)mItems.size()) end=mItems.size()-1;
+    this->ClearSelectionPrv(false);
+    if(start>=(int)this->mItems.size()) start=this->mItems.size()-1;
+    if(end>=(int)this->mItems.size()) end=this->mItems.size()-1;
     if(start<0) start=0;
     if(end<0) end=0;
-    if(start>=(int)mItems.size() || end>=(int)mItems.size()) return;
+    if(start>=(int)this->mItems.size() || end>=(int)this->mItems.size()) return;
     int step=start<=end ? 1 : -1;
-    for(int i=start;i!=end+step;i+=step) GetItem(i)->mB08=true;
-    SetSelItem(GetItem(start),false,true);
+    for(int i=start;i!=end+step;i+=step) this->GetItem(i)->mSelected=true;
+    this->SetSelItem(this->GetItem(start),false,true);
 }
 // FUNCTION: WON 0x006fb410
+// Selects the item at an index and makes it the keyboard item; an index out of range clears the selection
 void ListArea::SetSelItem(int index,bool fire)
 {
-    if(index>=0 && index<(int)mItems.size()) {
-        ListItem* item=mItems[index].get();
-        item->mB08=true;
-        mKeyItem=item;
-        SetSelItem(item,false,fire);
+    if(index>=0 && index<(int)this->mItems.size()) {
+        ListItem* item=this->mItems[index].get();
+        item->mSelected=true;
+        this->mKeyItem=item;
+        this->SetSelItem(item,false,fire);
     } else {
-        SetSelItem((ListItem*)NULL,false,fire);
-        mKeyItem=NULL;
+        this->SetSelItem((ListItem*)NULL,false,fire);
+        this->mKeyItem=NULL;
     }
 }
-// Native 15B selected-iterator reset; support only.
 // FUNCTION: WON 0x006fb480
-void ListArea::RewindSelections() { mSelItemItr=-1; FindNextSelection(); }
-// Native49B iterator availability; support only.
+// Restarts the walk over the selected items at the first one
+void ListArea::RewindSelections() { this->mSelItemItr=-1; this->FindNextSelection(); }
 // FUNCTION: WON 0x006fb490
-bool ListArea::HasMoreSelections() { return (unsigned int)mSelItemItr<mItems.size(); }
+// Returns whether the walk over the selected items has an item left
+bool ListArea::HasMoreSelections() { return (unsigned int)this->mSelItemItr<this->mItems.size(); }
 // FUNCTION: WON 0x006fb4d0
+// Advances the walk over the selected items to the next selected one
 void ListArea::FindNextSelection()
 {
-    ++mSelItemItr;
-    while((unsigned int)mSelItemItr<mItems.size() && !mItems[mSelItemItr]->mB08) ++mSelItemItr;
+    ++this->mSelItemItr;
+    while((unsigned int)this->mSelItemItr<this->mItems.size() && !this->mItems[this->mSelItemItr]->mSelected) ++this->mSelItemItr;
 }
 // FUNCTION: WON 0x006fb530
+// Returns the next selected item of the walk and advances it, or NULL at the end
 ListItem* ListArea::GetNextSelection()
 {
-    if(HasMoreSelections()) {
-        ListItem* item=mItems[mSelItemItr].get();
-        FindNextSelection();
+    if(this->HasMoreSelections()) {
+        ListItem* item=this->mItems[this->mSelItemItr].get();
+        this->FindNextSelection();
         return item;
     }
     return NULL;
 }
 // FUNCTION: WON 0x006fb560
+// Deselects every item (or the current one in single-select), firing the change if asked; returns how
+// many were deselected
 int ListArea::ClearSelectionPrv(bool fire)
 {
-    if(mSelItem==NULL) return 0;
+    if(this->mSelItem==NULL) return 0;
     int count=0;
-    if(ListFlagSet(0x400)) {
-        for(std::vector<SmartPtr<ListItem> >::iterator i=mItems.begin();i!=mItems.end();++i)
-            if((*i)->mB08) { (*i)->mB08=false; ++count; }
-    } else { count=1; mSelItem->mB08=false; }
-    mSelItem=NULL;
-    Invalidate();
-    if(fire) { Fn2F5380(22,0); ListSelChangedHook(); }
+    if(this->ListFlagSet(0x400)) {
+        for(std::vector<SmartPtr<ListItem> >::iterator i=this->mItems.begin();i!=this->mItems.end();++i)
+            if((*i)->mSelected) { (*i)->mSelected=false; ++count; }
+    } else { count=1; this->mSelItem->mSelected=false; }
+    this->mSelItem=NULL;
+    this->Invalidate();
+    if(fire) { this->Fn2F5380(ComponentEvent_ListSelChanged,0); this->ListSelChangedHook(); }
     return count;
 }
-// Native13B forwarding support.
 // FUNCTION: WON 0x006fb5f0
-void ListArea::ClearSelection(bool fire) { ClearSelectionPrv(fire); }
+// Deselects every item, firing the selection-changed event if asked
+void ListArea::ClearSelection(bool fire) { this->ClearSelectionPrv(fire); }
 // FUNCTION: WON 0x006fc450
+// Returns the index of the item in the list, or -1 when it is not there
 int ListArea::GetItemPos(ListItem* item)
 {
     if(item==NULL) return -1;
-    std::vector<SmartPtr<ListItem> >::iterator i=FindLineAt(item->mTop);
-    while(i!=mItems.end()) {
-        if(i->get()==item) return i-mItems.begin();
+    std::vector<SmartPtr<ListItem> >::iterator i=this->FindLineAt(item->mTop);
+    while(i!=this->mItems.end()) {
+        if(i->get()==item) return i-this->mItems.begin();
         if((*i)->mTop>item->mTop) break;
         ++i;
     }
     return -1;
 }
-// Native37B position conversion support.
 // FUNCTION: WON 0x006fc4b0
+// Returns the index of the item at a vertical position
 int ListArea::GetItemPosAtYPos(int y)
 {
-    std::vector<SmartPtr<ListItem> >::iterator itr=FindLineAt(y);
-    return itr-mItems.begin();
+    std::vector<SmartPtr<ListItem> >::iterator itr=this->FindLineAt(y);
+    return itr-this->mItems.begin();
 }
-// Native46B bounds getter support.
 // FUNCTION: WON 0x006fc4e0
+// Returns the item at an index, or NULL when the index is out of range
 ListItem* ListArea::GetItem(int index)
 {
-    if(index<0 || (unsigned int)index>=mItems.size()) return NULL;
-    return mItems[index].get();
+    if(index<0 || (unsigned int)index>=this->mItems.size()) return NULL;
+    return this->mItems[index].get();
 }
 // FUNCTION: WON 0x006faa50
-void ListArea::Fn2FAA50(bool fire)
+// Removes every item, clears the selection (firing the change if asked) and scrolls back to the top
+void ListArea::Clear(bool fire)
 {
-    mTotalHeight=0;
-    mL0A4=0;
-    mHorzOffset=0;
-    mVertOffset=0;
-    ClearSelection(fire);
-    mSelItem=NULL;
-    mKeyItem=NULL;
-    if(mMouseItem!=NULL) NotifyMouseItemGone();
-    mItems.clear();
-    VirtualCC(false);
+    this->mTotalHeight=0;
+    this->mTotalWidth=0;
+    this->mHorzOffset=0;
+    this->mVertOffset=0;
+    this->ClearSelection(fire);
+    this->mSelItem=NULL;
+    this->mKeyItem=NULL;
+    if(this->mMouseItem!=NULL) this->NotifyMouseItemGone();
+    this->mItems.clear();
+    this->AdjustPosition(false);
 }
 // FUNCTION: WON 0x006fc3c0
+// Stacks the items top to bottom and recomputes the list's total size (skipped during a batch)
 void ListArea::EnforceInvariants()
 {
-    if(mDoingMultiChange) return;
-    std::vector<SmartPtr<ListItem> >::iterator i=mItems.begin();
-    mTotalHeight=mL0A4=0;
-    for(;i!=mItems.end();++i) {
+    if(this->mDoingMultiChange) return;
+    std::vector<SmartPtr<ListItem> >::iterator i=this->mItems.begin();
+    this->mTotalHeight=this->mTotalWidth=0;
+    for(;i!=this->mItems.end();++i) {
         ListItem* item=i->get();
-        item->Virtual18(0,mTotalHeight);
-        mTotalHeight+=item->mHeight;
-        if(item->mL10>mL0A4) mL0A4=item->mL10;
+        item->SetPos(0,this->mTotalHeight);
+        this->mTotalHeight+=item->mHeight;
+        if(item->mWidth>this->mTotalWidth) this->mTotalWidth=item->mWidth;
     }
-    VirtualCC(false);
+    this->AdjustPosition(false);
 }
-// Actual 11B default mouse-item reset; support0.
 // FUNCTION: WON 0x006fcad0
-void ListArea::NotifyMouseItemGone() { mMouseItem=NULL; }
-// Native16B sort callback selector; support0.
+// Forgets the item under the mouse
+void ListArea::NotifyMouseItemGone() { this->mMouseItem=NULL; }
 // FUNCTION: WON 0x006fab20
-ListArea::SortFunc ListArea::GetSortFunc() { return mSortFunc==NULL ? DefaultSortFunc : mSortFunc; }
+// Returns the list's compare function, or the default one when none is set
+ListArea::SortFunc ListArea::GetSortFunc() { return this->mSortFunc==NULL ? ListArea::DefaultSortFunc : this->mSortFunc; }
 // FUNCTION: WON 0x006fab50
+// Sorts the items by the sort type and re-lays them out; returns false for an unsorted list
 bool ListArea::Sort()
 {
-    if(mSortType==2) return false;
-    std::sort(mItems.begin(),mItems.end(),LineSortPred(this,GetSortFunc(),mSortType));
-    EnforceInvariants();
+    if(this->mSortType==ListSortType_None) return false;
+    std::sort(this->mItems.begin(),this->mItems.end(),LineSortPred(this,this->GetSortFunc(),this->mSortType));
+    this->EnforceInvariants();
     return true;
 }
 // FUNCTION: WON 0x006fabe0
+// Returns where an item goes: its sorted place in a sorted list outside a batch, else the given
+// position (the end when out of range)
 int ListArea::FindInsertPos(ListItem* item,int position)
 {
-    if(!mDoingMultiChange && mSortType!=2)
+    if(!this->mDoingMultiChange && this->mSortType!=ListSortType_None)
     {
-        std::vector<SmartPtr<ListItem> >::iterator itr=std::lower_bound(mItems.begin(),mItems.end(),item,LineSortPred(this,GetSortFunc(),mSortType));
-        return itr-mItems.begin();
+        std::vector<SmartPtr<ListItem> >::iterator itr=std::lower_bound(this->mItems.begin(),this->mItems.end(),item,LineSortPred(this,this->GetSortFunc(),this->mSortType));
+        return itr-this->mItems.begin();
     }
-    if(position<0 || (unsigned int)position>mItems.size()) position=mItems.size();
+    if(position<0 || (unsigned int)position>this->mItems.size()) position=this->mItems.size();
     return position;
 }
 // FUNCTION: WON 0x006fadf0
-void ListArea::VirtualCC(bool scrollbar)
+// Updates the scroll range; with full-line scrolling pads the end so the last page starts on an item
+// and snaps the scroll position and steps to whole items
+void ListArea::AdjustPosition(bool scrollbar)
 {
-    mExtraHeight=0;
-    if(ListFlagSet(0x40) && mTotalHeight>mScrollArea.height) {
-        std::vector<SmartPtr<ListItem> >::iterator i=FindLineAt(mTotalHeight-mScrollArea.height+1);
-        if(i!=mItems.end()) {
+    this->mExtraHeight=0;
+    if(this->ListFlagSet(0x40) && this->mTotalHeight>this->mScrollArea.height) {
+        std::vector<SmartPtr<ListItem> >::iterator i=this->FindLineAt(this->mTotalHeight-this->mScrollArea.height+1);
+        if(i!=this->mItems.end()) {
             ListItem* item=i->get();
-            mExtraHeight=item->mTop+item->mHeight+mScrollArea.height-mTotalHeight;
-            if(mExtraHeight<0) mExtraHeight=0;
+            this->mExtraHeight=item->mTop+item->mHeight+this->mScrollArea.height-this->mTotalHeight;
+            if(this->mExtraHeight<0) this->mExtraHeight=0;
         }
     }
-    ScrollArea::VirtualCC(scrollbar);
-    FindTopLine();
-    if(ListFlagSet(0x40) && (unsigned int)mTopLineVectorPos<mItems.size()) {
-        ListItem* item=mItems[mTopLineVectorPos].get();
-        mVertOffset=item->mTop;
-        mDownScrollAmount=item->mHeight;
-        if(mTopLineVectorPos>0) mUpScrollAmount=mItems[mTopLineVectorPos-1]->mHeight;
-        ScrollArea::VirtualCC(true);
-    }
+    ScrollArea::AdjustPosition(scrollbar);
+    this->FindTopLine();
+    if(!this->ListFlagSet(0x40) || (unsigned int)this->mTopLineVectorPos>=this->mItems.size())
+        return;
+    ListItem* item=this->mItems[this->mTopLineVectorPos].get();
+    this->mVertOffset=item->mTop;
+    this->mDownScrollAmount=item->mHeight;
+    if(this->mTopLineVectorPos>0) this->mUpScrollAmount=this->mItems[this->mTopLineVectorPos-1]->mHeight;
+    ScrollArea::AdjustPosition(true);
 }
-// Native22B size-change forwarding support0.
 // FUNCTION: WON 0x006faef0
-void ListArea::Virtual08() { ScrollArea::Virtual08();VirtualCC(false); }
+// Handles a size change of the list box and updates its scroll range
+void ListArea::Virtual08() { ScrollArea::Virtual08();this->AdjustPosition(false); }
 // FUNCTION: WON 0x006fafb0
-void ListArea::VirtualD4(Graphics& g)
+// Draws the visible items from the top line down, at least as wide as the view
+void ListArea::ScrollPaint(Graphics& g)
 {
-    std::vector<SmartPtr<ListItem> >::iterator i=mItems.begin()+mTopLineVectorPos;
-    int width=mL0A4;
-    if(mScrollArea.width>width) width=mScrollArea.width;
-    if(mL12C==-1) mL12C=width;
-    while(i!=mItems.end()) {
+    std::vector<SmartPtr<ListItem> >::iterator i=this->mItems.begin()+this->mTopLineVectorPos;
+    int width=this->mTotalWidth;
+    if(this->mScrollArea.width>width) width=this->mScrollArea.width;
+    if(this->mPaintWidth==-1) this->mPaintWidth=width;
+    while(i!=this->mItems.end()) {
         ListItem* item=i->get();
-        if(!IsItemVisible(item)) break;
+        if(!this->IsItemVisible(item)) break;
         g.Translate(0,item->mTop);
-        item->Virtual04(g,this);
+        item->Paint(g,this);
         g.Translate(0,-item->mTop);
         ++i;
     }
-    mL12C=-1;
+    this->mPaintWidth=-1;
 }
 // FUNCTION: WON 0x006fb060
+// Selects the item under the mouse: Ctrl toggles and Shift selects a range in multi-select, toggle
+// lists flip the item; no item or an unselectable one clears the selection when selecting only on hover
 void ListArea::CheckMouseSel(ListItem* item,int x,int y,bool down)
 {
-    if(item==NULL) { if(ListFlagSet(4)) ClearSelection(true);return; }
-    if(!IsItemVisible(item)) return;
-    if(!item->Virtual14(this,x,y-item->mTop)) { if(ListFlagSet(4)) ClearSelection(true);return; }
-    mKeyItem=item;
+    if(item==NULL) { if(this->ListFlagSet(4)) this->ClearSelection(true);return; }
+    if(!this->IsItemVisible(item)) return;
+    if(!item->CanSelect(this,x,y-item->mTop)) { if(this->ListFlagSet(4)) this->ClearSelection(true);return; }
+    this->mKeyItem=item;
     bool add=false;
-    if(down && ListFlagSet(0x400)) {
-        int modifiers=GetRoot()->GetKeyMod();
+    if(down && this->ListFlagSet(0x400)) {
+        int modifiers=this->GetRoot()->GetKeyMod();
         if(modifiers&4) {
-            add=true;item->mB08=!item->mB08;Invalidate();
-        } else if((modifiers&1) && mSelItem!=NULL) {
-            SelectRange(GetItemPos(mSelItem),GetItemPos(item));
+            add=true;item->mSelected=!item->mSelected;this->Invalidate();
+        } else if((modifiers&1) && this->mSelItem!=NULL) {
+            this->SelectRange(this->GetItemPos(this->mSelItem),this->GetItemPos(item));
             return;
         } else {
-            bool noChange=mSelItem==item && ClearSelectionPrv(false)==1;
-            item->mB08=true;
-            if(noChange) mSelItem=item;
+            bool noChange=this->mSelItem==item && this->ClearSelectionPrv(false)==1;
+            item->mSelected=true;
+            if(noChange) this->mSelItem=item;
         }
-    } else if(ListFlagSet(2) || !ListFlagSet(8)) item->mB08=true;
-    else item->mB08=!item->mB08;
-    SetSelItem(item,add,true);
+    } else if(this->ListFlagSet(2) || !this->ListFlagSet(8)) item->mSelected=true;
+    else item->mSelected=!item->mSelected;
+    this->SetSelItem(item,add,true);
 }
 // FUNCTION: WON 0x006fc0a0
+// Finds the first selectable item from an index up or down, wrapping round or turning back when asked;
+// NULL when there is none
 ListItem* ListArea::FindSelectableItem(int start,bool up,bool opposite)
 {
     int step=up ? -1 : 1;
     int i=start;
-    ListItem* item=GetItem(start);
-    for(;item!=NULL;item=GetItem(i)) {
-        if(item->mB09) return item;
+    ListItem* item=this->GetItem(start);
+    for(;item!=NULL;item=this->GetItem(i)) {
+        if(item->mSelectable) return item;
         i+=step;
     }
-    if(ListFlagSet(0x800)) {
-        if(up) return FindSelectableItem(mItems.size()-1,false,false);
-        else return FindSelectableItem(0,true,false);
+    if(this->ListFlagSet(0x800)) {
+        if(up) return this->FindSelectableItem(this->mItems.size()-1,false,false);
+        else return this->FindSelectableItem(0,true,false);
     }
-    if(opposite) return FindSelectableItem(start,!up,false);
+    if(opposite) return this->FindSelectableItem(start,!up,false);
     return NULL;
 }
 // FUNCTION: WON 0x006fc510
+// Inserts an item at its place (sorted or given), sizes it and lays the list out, keeping the view on
+// the bottom or on the same items; returns the item
 ListItem* ListArea::InsertItem(ListItem* item,int position)
 {
-    position=FindInsertPos(item,position);
-    item->Virtual0C(this,GetViewport());
-    item->Virtual08(this);
+    position=this->FindInsertPos(item,position);
+    item->SetViewport(this,this->GetViewport());
+    item->CalcDimensions(this);
     if(item->mHeight<=0) item->mHeight=1;
-    item->mB08=false;
-    bool end=(unsigned int)position==mItems.size();
-    mItems.insert(mItems.begin()+position,SmartPtr<ListItem>(item));
-    if(mSelItemItr>=position) ++mSelItemItr;
+    item->mSelected=false;
+    bool end=(unsigned int)position==this->mItems.size();
+    this->mItems.insert(this->mItems.begin()+position,SmartPtr<ListItem>(item));
+    if(this->mSelItemItr>=position) ++this->mSelItemItr;
     if(end) {
-        item->Virtual18(0,mTotalHeight);
-        mTotalHeight+=item->mHeight;
-        if(item->mL10>mL0A4) mL0A4=item->mL10;
-        if(!ListFlagSet(0x1000) && OnBottom()) mVertOffset+=item->mHeight;
-        VirtualCC(false);
+        item->SetPos(0,this->mTotalHeight);
+        this->mTotalHeight+=item->mHeight;
+        if(item->mWidth>this->mTotalWidth) this->mTotalWidth=item->mWidth;
+        if(!this->ListFlagSet(0x1000) && this->OnBottom()) this->mVertOffset+=item->mHeight;
+        this->AdjustPosition(false);
     } else {
-        if(!ListFlagSet(0x1000) && (mTopLineVectorPos>=position || OnBottom()) && mTotalHeight>mScrollArea.height)
-            mVertOffset+=item->mHeight;
-        if(mDoingMultiChange) {
-            int prev=position==0 ? 0 : mItems[position-1]->mTop;
-            int next=mItems[position+1]->mTop;
+        if(!this->ListFlagSet(0x1000) && (this->mTopLineVectorPos>=position || this->OnBottom()) && this->mTotalHeight>this->mScrollArea.height)
+            this->mVertOffset+=item->mHeight;
+        if(this->mDoingMultiChange) {
+            int prev=position==0 ? 0 : this->mItems[position-1]->mTop;
+            int next=this->mItems[position+1]->mTop;
             int y=prev+1;
             if(y>next) y=next;
             item->mTop=y;
-        } else EnforceInvariants();
+        } else this->EnforceInvariants();
     }
     return item;
 }
 // FUNCTION: WON 0x006fcc30
+// Inserts a text item with the given text; returns it
 ListItem* ListArea::InsertString(const GUIString& text,int position)
 {
-    return InsertItem(new TextListItem(text),position);
+    return this->InsertItem(new TextListItem(text),position);
 }
 // FUNCTION: WON 0x006fc730
-void ListArea::Fn2FC730(ListItem* item)
+// Re-measures an item after a change, moves it to its new sorted place when needed and re-lays the
+// list out, keeping the view steady
+void ListArea::RefreshItem(ListItem* item)
 {
     int oldHeight=item->mHeight;
-    item->Virtual0C(this,GetViewport());
-    item->Virtual08(this);
+    item->SetViewport(this,this->GetViewport());
+    item->CalcDimensions(this);
     if(item->mHeight<=0) item->mHeight=1;
-    if(!mDoingMultiChange) {
-        int position=GetItemPos(item);
-        if(position>=0 && mSortType!=2) {
-            LineSortPred less(this,GetSortFunc(),mSortType);
-            ListItem* prev=GetItem(position-1);
-            ListItem* next=GetItem(position+1);
-            bool sort=false;
-            if(prev!=NULL && less(item,prev)) sort=true;
-            else if(next!=NULL && less(next,item)) sort=true;
-            if(sort) {
-                SmartPtr<ListItem> hold=item;
-                if(prev!=NULL) mItems[position]=prev;
-                else mItems[position]=next;
-                int insert=FindInsertPos(item,0);
-                if(position<insert) --insert;
-                if(insert>=mItems.size()) insert=mItems.size()-1;
-                if(insert<0) insert=0;
-                if(position>insert) {
-                    for(int i=position;i>insert;--i) { mItems[i]=mItems[i-1]; }
-                } else if(position<insert) {
-                    for(int i=position;i<insert;++i) { mItems[i]=mItems[i+1]; }
-                }
-                mItems[insert]=item;
+    if(this->mDoingMultiChange)
+        return;
+    int position=this->GetItemPos(item);
+    if(position>=0 && this->mSortType!=ListSortType_None) {
+        LineSortPred less(this,this->GetSortFunc(),this->mSortType);
+        ListItem* prev=this->GetItem(position-1);
+        ListItem* next=this->GetItem(position+1);
+        bool sort=false;
+        if(prev!=NULL && less(item,prev)) sort=true;
+        else if(next!=NULL && less(next,item)) sort=true;
+        if(sort) {
+            SmartPtr<ListItem> hold=item;
+            if(prev!=NULL) this->mItems[position]=prev;
+            else this->mItems[position]=next;
+            int insert=this->FindInsertPos(item,0);
+            if(position<insert) --insert;
+            if(insert>=this->mItems.size()) insert=this->mItems.size()-1;
+            if(insert<0) insert=0;
+            if(position>insert) {
+                for(int i=position;i>insert;--i) { this->mItems[i]=this->mItems[i-1]; }
+            } else if(position<insert) {
+                for(int i=position;i<insert;++i) { this->mItems[i]=this->mItems[i+1]; }
             }
-        }
-        if(position>=0) {
-            if(!ListFlagSet(0x1000) && (mVertOffset>=item->mTop || OnBottom()) && mTotalHeight>mScrollArea.Height())
-                mVertOffset+=item->mHeight-oldHeight;
-            EnforceInvariants();
+            this->mItems[insert]=item;
         }
     }
+    if(position<0)
+        return;
+    if(!this->ListFlagSet(0x1000) && (this->mVertOffset>=item->mTop || this->OnBottom()) && this->mTotalHeight>this->mScrollArea.Height())
+        this->mVertOffset+=item->mHeight-oldHeight;
+    this->EnforceInvariants();
 }
 // FUNCTION: WON 0x006fca50
+// Detaches the item at an index before removal: scrolls up past it and drops it as selection,
+// keyboard item and mouse item
 void ListArea::DeleteItemPrv(int position)
 {
-    ListItem* item=mItems[position].get();
-    item->Virtual0C(this,NULL);
-    if(!ListFlagSet(0x1000) && mVertOffset>=item->mTop) mVertOffset-=item->mHeight;
-    if(item==mSelItem) { item->mB08=false;SetSelItem(-1,true); }
-    if(item==mKeyItem) mKeyItem=NULL;
-    if(item==mMouseItem) NotifyMouseItemGone();
+    ListItem* item=this->mItems[position].get();
+    item->SetViewport(this,NULL);
+    if(!this->ListFlagSet(0x1000) && this->mVertOffset>=item->mTop) this->mVertOffset-=item->mHeight;
+    if(item==this->mSelItem) { item->mSelected=false;this->SetSelItem(-1,true); }
+    if(item==this->mKeyItem) this->mKeyItem=NULL;
+    if(item==this->mMouseItem) this->NotifyMouseItemGone();
 }
-// Native17B range forwarding support0.
 // FUNCTION: WON 0x006fcae0
-void ListArea::DeleteItem(int position) { DeleteRange(position,position+1); }
-// Native29B lookup/delete support0.
+// Removes the item at an index
+void ListArea::DeleteItem(int position) { this->DeleteRange(position,position+1); }
 // FUNCTION: WON 0x006fcb00
+// Removes the item from the list if it is there
 void ListArea::RemoveItem(ListItem* item)
 {
-    int position=GetItemPos(item);
-    if(position>=0) DeleteItem(position);
+    int position=this->GetItemPos(item);
+    if(position>=0) this->DeleteItem(position);
 }
 // FUNCTION: WON 0x006fcb20
+// Removes the items from start up to end (clamped to the list) and re-lays the list out
 void ListArea::DeleteRange(int start,int end)
 {
-    if(end<0 || (unsigned int)end>mItems.size()) end=mItems.size();
+    if(end<0 || (unsigned int)end>this->mItems.size()) end=this->mItems.size();
     if(start<0 || end<=start) return;
     int amount=end-start;
-    if((unsigned int)(start+amount)>mItems.size()) amount=mItems.size()-start;
-    for(int i=0;i<amount;++i) DeleteItemPrv(start+i);
-    if(mSelItemItr>=start) mSelItemItr-=amount;
-    std::vector<SmartPtr<ListItem> >::iterator first=mItems.begin()+start;
-    mItems.erase(first,first+amount);
-    EnforceInvariants();
+    if((unsigned int)(start+amount)>this->mItems.size()) amount=this->mItems.size()-start;
+    for(int i=0;i<amount;++i) this->DeleteItemPrv(start+i);
+    if(this->mSelItemItr>=start) this->mSelItemItr-=amount;
+    std::vector<SmartPtr<ListItem> >::iterator first=this->mItems.begin()+start;
+    this->mItems.erase(first,first+amount);
+    this->EnforceInvariants();
 }
 }
 
-// Build-only ListArea mouse hit/drag/key behavior; borrowed pointers, no allocation.
 namespace WONAPI {
 static bool ListMouseContains(ListItem* item,int x,int y,bool widthCheck) {
-    if(!item->Virtual1C(x,y)) return false;
-    if(widthCheck && x>item->mL10) return false;
+    if(!item->Contains(x,y)) return false;
+    if(widthCheck && x>item->mWidth) return false;
     return true;
-} //actual CheckContains2fb770, support0
+} // True when the point is on the item (and inside its width when asked); emitted at 0x006fb770
 // FUNCTION: WON 0x006fb6a0
+// Converts the point to list coordinates and updates the item under the mouse, telling the old one it
+// left and the new one it was entered
 void ListArea::ItemMouseAt(int &x, int &y)
 {
-	ScrollTranslate(x,y);
-	bool itemWidthCheckOnSel = ListFlagSet(0x200);
-	if(mMouseItem!=NULL && !ListMouseContains(mMouseItem,x,y,itemWidthCheckOnSel))
+	this->ScrollTranslate(x,y);
+	bool itemWidthCheckOnSel = this->ListFlagSet(0x200);
+	if(this->mMouseItem!=NULL && !ListMouseContains(this->mMouseItem,x,y,itemWidthCheckOnSel))
 	{
-		mMouseItem->Virtual24(this);
-		Virtual78(Fn2F4B00());
-		NotifyMouseItemGone();
+		this->mMouseItem->MouseExit(this);
+		this->SetCursor(this->GetDefaultCursor());
+		this->NotifyMouseItemGone();
 	}
 
-	if(mMouseItem==NULL)
-	{
-		mMouseItem = FindItemAt(y);
-		if(mMouseItem!=NULL)
-		{
-			if(ListMouseContains(mMouseItem,x,y,itemWidthCheckOnSel))
-				mMouseItem->Virtual20(this,x,y-mMouseItem->mTop);
-			else
-				mMouseItem = NULL;
-		}
-	}
+	if(this->mMouseItem!=NULL)
+		return;
+	this->mMouseItem = this->FindItemAt(y);
+	if(this->mMouseItem==NULL)
+		return;
+	if(ListMouseContains(this->mMouseItem,x,y,itemWidthCheckOnSel))
+		this->mMouseItem->MouseEnter(this,x,y-this->mMouseItem->mTop);
+	else
+		this->mMouseItem = NULL;
 }
 
 // FUNCTION: WON 0x006fbc70
-void ListArea::Virtual38(int x, int y)
+// Handles a drag: selects the item under the mouse when selecting on hover and passes the drag to it
+void ListArea::MouseDrag(int x, int y)
 {
-	ScrollArea::Virtual38(x,y);
+	ScrollArea::MouseDrag(x,y);
 
 
-	if(ListFlagSet(2))
+	if(this->ListFlagSet(2))
 	{
-		ItemMouseAt(x,y);
-		CheckMouseSel(mMouseItem,x,y);
+		this->ItemMouseAt(x,y);
+		this->CheckMouseSel(this->mMouseItem,x,y);
 	}
 	else
-		ScrollTranslate(x,y);
+		this->ScrollTranslate(x,y);
 
-	if(mMouseItem!=NULL)
-		mMouseItem->Virtual2C(this,x,y-mMouseItem->mTop);
+	if(this->mMouseItem!=NULL)
+		this->mMouseItem->MouseDrag(this,x,y-this->mMouseItem->mTop);
 }
 
 // FUNCTION: WON 0x006fc160
-bool ListArea::Virtual54(int theKey)
+// Moves the keyboard selection with the arrow and page keys (Shift extends it in multi-select,
+// wrapping round when set) and scrolls it into view; left and right scroll sideways
+bool ListArea::KeyDown(int theKey)
 {
-	if(ScrollArea::Virtual54(theKey))
+	if(ScrollArea::KeyDown(theKey))
 		return true;
 
-	if(mKeyItem==NULL)
+	if(this->mKeyItem==NULL)
 	{
 		if(theKey==VK_DOWN || theKey==VK_UP || theKey==VK_NEXT || theKey==VK_PRIOR)
 		{
-			ListItem *anItem = FindItemAt(mVertOffset);
+			ListItem *anItem = this->FindItemAt(this->mVertOffset);
 			if(anItem==NULL)
 				return false;
 
-			int aPos = GetItemPos(anItem);
-			anItem = FindSelectableItem(aPos,theKey==VK_UP || theKey==VK_PRIOR);
+			int aPos = this->GetItemPos(anItem);
+			anItem = this->FindSelectableItem(aPos,theKey==VK_UP || theKey==VK_PRIOR);
 			if(anItem!=NULL)
 			{
-				mKeyItem = anItem;
-				anItem->mB08 = true;
-				SetSelItem(anItem,false,true);
+				this->mKeyItem = anItem;
+				anItem->mSelected = true;
+				this->SetSelItem(anItem,false,true);
 			}
 
 			return true;
@@ -518,30 +560,30 @@ bool ListArea::Virtual54(int theKey)
 	}
 
 
-	int y = mKeyItem->mTop;
-	int height = mKeyItem->mHeight+1;
+	int y = this->mKeyItem->mTop;
+	int height = this->mKeyItem->mHeight+1;
 	int anItemPos = -1;
 
 	switch(theKey)
 	{
-		case VK_RIGHT: mHorzOffset+=10; break;
-		case VK_LEFT: mHorzOffset-=10; break;
+		case VK_RIGHT: this->mHorzOffset+=10; break;
+		case VK_LEFT: this->mHorzOffset-=10; break;
 		case VK_DOWN: anItemPos = y+height; break;
 		case VK_UP: anItemPos = y-1; break;
-		case VK_NEXT: anItemPos = y+mScrollArea.height; break;
-		case VK_PRIOR: anItemPos = y+height-mScrollArea.height; break;
+		case VK_NEXT: anItemPos = y+this->mScrollArea.height; break;
+		case VK_PRIOR: anItemPos = y+height-this->mScrollArea.height; break;
 		default: return false;
 	}
 
 	bool up = anItemPos<y;
-	if(ListFlagSet(0x800))
+	if(this->ListFlagSet(0x800))
 	{
 		if(anItemPos<0)
 		{
-			anItemPos = mTotalHeight;
+			anItemPos = this->mTotalHeight;
 			up = true;
 		}
-		else if(anItemPos>=mTotalHeight)
+		else if(anItemPos>=this->mTotalHeight)
 		{
 			anItemPos = 0;
 			up = false;
@@ -550,35 +592,35 @@ bool ListArea::Virtual54(int theKey)
 
 	if(anItemPos!=-1)
 	{
-		std::vector<SmartPtr<ListItem> >::iterator anItr = FindLineAt(anItemPos);
-		if(anItr==mItems.end())
+		std::vector<SmartPtr<ListItem> >::iterator anItr = this->FindLineAt(anItemPos);
+		if(anItr==this->mItems.end())
 			return false;
 
 		ListItem *anItem = anItr->get();
-		int aPos = GetItemPos(anItem);
-		anItem = FindSelectableItem(aPos,up);
+		int aPos = this->GetItemPos(anItem);
+		anItem = this->FindSelectableItem(aPos,up);
 
 		if(anItem!=NULL)
 		{
-			if(mSelItem!=NULL && ListFlagSet(0x400) && GetRoot()->GetKeyMod()&1)
+			if(this->mSelItem!=NULL && this->ListFlagSet(0x400) && this->GetRoot()->GetKeyMod()&1)
 			{
-				SelectRange(GetItemPos(mSelItem),GetItemPos(anItem));
+				this->SelectRange(this->GetItemPos(this->mSelItem),this->GetItemPos(anItem));
 			}
 			else
 			{
-				anItem->mB08 = true;
-				SetSelItem(anItem,false,true);
+				anItem->mSelected = true;
+				this->SetSelItem(anItem,false,true);
 			}
 
-			mKeyItem = anItem;
-			if(anItem->mTop+anItem->mHeight > mVertOffset+mScrollArea.height)
-				mVertOffset = anItem->mTop+anItem->mHeight-mScrollArea.height + mExtraHeight;
-			if(anItem->mTop < mVertOffset)
-				mVertOffset = anItem->mTop;
+			this->mKeyItem = anItem;
+			if(anItem->mTop+anItem->mHeight > this->mVertOffset+this->mScrollArea.height)
+				this->mVertOffset = anItem->mTop+anItem->mHeight-this->mScrollArea.height + this->mExtraHeight;
+			if(anItem->mTop < this->mVertOffset)
+				this->mVertOffset = anItem->mTop;
 		}
 	}
 
-	VirtualCC(false);
+	this->AdjustPosition(false);
 	return true;
 }
 
@@ -586,112 +628,123 @@ bool ListArea::Virtual54(int theKey)
 
 namespace WONAPI {
 // FUNCTION: WON 0x006fb600
-void ListArea::Fn2FB600(unsigned long flags,bool on) {
-    bool over=ListFlagSet(4);
-    if(on) mListFlags|=flags;else mListFlags&=~flags;
-    if(!over && ListFlagSet(4)) {
-        Window* window=GetRoot();
-        if(window==NULL) return;
-        int x=window->mMouseX,y=window->mMouseY;
-        Container* parent=mParent;
-        if(parent!=NULL) {
-            parent->RootToChild(x,y);
-            if(!Contains(x,y)) ClearSelection();
-        }
+// Sets or clears list flags; turning on select-only-on-hover clears the selection when the mouse is
+// outside the list
+void ListArea::SetListFlags(unsigned long flags,bool on) {
+    bool over=this->ListFlagSet(4);
+    if(on) this->mListFlags|=flags;else this->mListFlags&=~flags;
+    if(over || !this->ListFlagSet(4))
+        return;
+    Window* window=this->GetRoot();
+    if(window==NULL) return;
+    int x=window->mMouseX,y=window->mMouseY;
+    Container* parent=this->mParent;
+    if(parent!=NULL) {
+        parent->RootToChild(x,y);
+        if(!this->Contains(x,y)) this->ClearSelection();
     }
 }
 // FUNCTION: WON 0x006fbad0
-void ListArea::Virtual34(int x,int y) {
-    ScrollArea::Virtual34(x,y);
-    ItemMouseAt(x,y);
-    if(ListFlagSet(2)) CheckMouseSel(mMouseItem,x,y);
-    if(mMouseItem!=NULL) mMouseItem->Virtual28(this,x,y-mMouseItem->mTop);
-    if(ListFlagSet(0x2000)) {
-        bool show=false;
-        if(mMouseItem!=NULL && mMouseItem->mL10>mScrollArea.width) {
-            int half=mMouseItem->mHeight>>1;
-            if(mMouseItem->mTop+half>mVertOffset && mMouseItem->mTop+half<mVertOffset+mScrollArea.height) show=true;
-        }
-        if(show) {
-            if(mItemToolTip.get()==NULL) mItemToolTip=new ListAreaToolTip(this);
-            mItemToolTip->DoTip(mMouseItem);
-        } else if(mItemToolTip.get()!=NULL) mItemToolTip->DoTip(NULL);
+// Tracks the item under the mouse (selecting it on hover when set) and shows a tooltip for an item
+// wider than the list when item tooltips are on
+void ListArea::MouseMove(int x,int y) {
+    ScrollArea::MouseMove(x,y);
+    this->ItemMouseAt(x,y);
+    if(this->ListFlagSet(2)) this->CheckMouseSel(this->mMouseItem,x,y);
+    if(this->mMouseItem!=NULL) this->mMouseItem->MouseMove(this,x,y-this->mMouseItem->mTop);
+    if(!this->ListFlagSet(0x2000))
+        return;
+    bool show=false;
+    if(this->mMouseItem!=NULL && this->mMouseItem->mWidth>this->mScrollArea.width) {
+        int half=this->mMouseItem->mHeight>>1;
+        if(this->mMouseItem->mTop+half>this->mVertOffset && this->mMouseItem->mTop+half<this->mVertOffset+this->mScrollArea.height) show=true;
     }
+    if(show) {
+        if(this->mItemToolTip.get()==NULL) this->mItemToolTip=new ListAreaToolTip(this);
+        this->mItemToolTip->DoTip(this->mMouseItem);
+    } else if(this->mItemToolTip.get()!=NULL) this->mItemToolTip->DoTip(NULL);
 }
 // FUNCTION: WON 0x006fbd00
-void ListArea::Virtual2C(int x,int y,int button) {
-    ScrollArea::Virtual2C(x,y,button);
-    ItemMouseAt(x,y);
+// Takes focus and selects the clicked item (except for button 1), then passes the press to the item and
+// sends an item-clicked event
+void ListArea::MouseDown(int x,int y,int button) {
+    ScrollArea::MouseDown(x,y,button);
+    this->ItemMouseAt(x,y);
     if(button!=1) {
-        Fn2F5890();
-        CheckMouseSel(mMouseItem,x,y,true);
+        this->RequestFocus();
+        this->CheckMouseSel(this->mMouseItem,x,y,true);
     }
-    if(mMouseItem!=NULL) {
-        mMouseItem->Virtual30(this,x,y-mMouseItem->mTop,button);
-        Fn2F53F0(new ListItemClickedEvent(this,mMouseItem,static_cast<MouseButton>(button),CheckDoubleClick(button),false,x,y-mMouseItem->mTop),false);
+    if(this->mMouseItem!=NULL) {
+        this->mMouseItem->MouseDown(this,x,y-this->mMouseItem->mTop,button);
+        this->DeliverEvent(new ListItemClickedEvent(this,this->mMouseItem,static_cast<MouseButton>(button),this->CheckDoubleClick(button),false,x,y-this->mMouseItem->mTop),false);
     }
 }
 // FUNCTION: WON 0x006fbef0
-void ListArea::Virtual30(int x,int y,int button) {
-    ScrollArea::Virtual30(x,y,button);
-    ItemMouseAt(x,y);
-    if(mMouseItem!=NULL) {
-        mMouseItem->Virtual34(this,x,y-mMouseItem->mTop,button);
-        Fn2F53F0(new ListItemClickedEvent(this,mMouseItem,static_cast<MouseButton>(button),CheckDoubleClick(button),true,x,y-mMouseItem->mTop),false);
+// Passes a button release to the item under the mouse and sends an item-released event
+void ListArea::MouseUp(int x,int y,int button) {
+    ScrollArea::MouseUp(x,y,button);
+    this->ItemMouseAt(x,y);
+    if(this->mMouseItem!=NULL) {
+        this->mMouseItem->MouseUp(this,x,y-this->mMouseItem->mTop,button);
+        this->DeliverEvent(new ListItemClickedEvent(this,this->mMouseItem,static_cast<MouseButton>(button),this->CheckDoubleClick(button),true,x,y-this->mMouseItem->mTop),false);
     }
 }
 // FUNCTION: WON 0x006fc010
-void ListArea::Virtual24(int x,int y) {
-    ScrollArea::Virtual24(x,y);
-    ItemMouseAt(x,y);
+// Handles the mouse entering the list box and finds the item under it
+void ListArea::MouseEnter(int x,int y) {
+    ScrollArea::MouseEnter(x,y);
+    this->ItemMouseAt(x,y);
 }
 // FUNCTION: WON 0x006fc040
-void ListArea::Virtual28() {
-    ScrollArea::Virtual28();
-    if(mMouseItem!=NULL) {
-        mMouseItem->Virtual24(this);
-        NotifyMouseItemGone();
+// Handles the mouse leaving: tells the item under it, clears a hover-only selection and hides the
+// item tooltip
+void ListArea::MouseExit() {
+    ScrollArea::MouseExit();
+    if(this->mMouseItem!=NULL) {
+        this->mMouseItem->MouseExit(this);
+        this->NotifyMouseItemGone();
     }
-    if(ListFlagSet(4)) ClearSelection();
-    if(ListFlagSet(0x2000) && mItemToolTip.get()!=NULL) mItemToolTip->DoTip(NULL);
+    if(this->ListFlagSet(4)) this->ClearSelection();
+    if(this->ListFlagSet(0x2000) && this->mItemToolTip.get()!=NULL) this->mItemToolTip->DoTip(NULL);
 }
 }
 
 namespace WONAPI {
-// Native2fa570..2fa76c508B: search-item/font creation and list focus/layout setup.
 // FUNCTION: WON 0x006fa570
+// Creates an empty, unsorted list box with the ListArea font, 2-pixel padding and default flags
+// (highlighted icons, full-row select, partial lines shown) that takes focus
 ListArea::ListArea()
 {
     // LOST-DEBUG: none: exact only
     EE_LOST_DEBUG(1);
-    mSearchLine=new ListItem;
-    mTopLineVectorPos=0;
-    mListFlags=0xb0;
-    mSortType=ListSortType_None;
-    mTextColor=(int)0x8000000e;
-    mFont=GetNamedFont("ListArea");
-    mSelItem=NULL;
-    mKeyItem=NULL;
-    mMouseItem=NULL;
-    SetComponentFlags(8,true);
-    mTopPad=mLeftPad=mRightPad=mBottomPad=2;
-    mL12C=-1;
-    mDoingMultiChange=0;
-    mSortFunc=NULL;
+    this->mSearchLine=new ListItem;
+    this->mTopLineVectorPos=0;
+    this->mListFlags=0xb0;
+    this->mSortType=ListSortType_None;
+    this->mTextColor=(int)0x8000000e;
+    this->mFont=this->GetNamedFont("ListArea");
+    this->mSelItem=NULL;
+    this->mKeyItem=NULL;
+    this->mMouseItem=NULL;
+    this->SetComponentFlags(ComponentFlag_WantFocus,true);
+    this->mTopPad=this->mLeftPad=this->mRightPad=this->mBottomPad=2;
+    this->mPaintWidth=-1;
+    this->mDoingMultiChange=0;
+    this->mSortFunc=NULL;
 }
-// Native2fa860..2fa9fd413B: end live tooltip before natural owning-member cleanup,0quota.
 // FUNCTION: WON 0x006fa860
+// Destroys the list box, closing an open item tooltip first
 ListArea::~ListArea()
 {
-    if(mItemToolTip.get()!=NULL) mItemToolTip->EndTip();
+    if(this->mItemToolTip.get()!=NULL) this->mItemToolTip->EndTip();
 }
 }
 
-// Genuine SDK ListBox.cpp explicit selected-item query; no ownership changes.
 // FUNCTION: WON 0x006fa550
+// Returns whether the clicked item is the list box's current selection
 bool WONAPI::ListItemClickedEvent::IsSelectedItem()
 {
-    return mItem.get()==((ListArea*)mComponent)->GetSelItem();
+    return this->mItem.get()==static_cast<ListArea*>(this->mComponent)->GetSelItem();
 }
 
 namespace WONAPI {
@@ -785,10 +838,11 @@ void ListArea::ListSelChangedHook()
 #include "ee/wonapi/WONLobbyMSConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006fd8b0
+// Adds a separator line to the popup menu and resizes the menu to fit (at least 100 pixels wide)
 void PopupMenu::AddSeperator()
 {
-    InsertItem(new ComponentListItem(new MSSeperator(6),true,false));
-    SetSizeEqualToTotal(100,-1);
+    this->InsertItem(new ComponentListItem(new MSSeperator(6),true,false));
+    this->SetSizeEqualToTotal(100,-1);
 }
 }
 // TEMPLATE: WON 0x006fda80

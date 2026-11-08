@@ -1,5 +1,4 @@
-// New HTTPGet cleanup source; complete15c operation, cache remains reference-only.
-// SCRATCH only, no canonical publication/capture.
+// HTTPGetOp (0x15c bytes): an HTTP/1.1 GET with proxy, redirects, chunked replies, range resume and caching
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -54,6 +53,7 @@ static const unsigned long DEC_Value = ('D' * 0x00010000) + ('E' * 0x00000100) +
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // FUNCTION: WON 0x006d5b60
+// Formats a time as an RFC 1123 HTTP date ("Sun, 06 Nov 1994 08:49:37 GMT")
 static string MakeInternetDateTime(time_t theTime)
 {
 	struct tm aTime = *gmtime(&theTime);
@@ -119,9 +119,8 @@ static string MakeInternetDateTime(time_t theTime)
 //      Sunday, 06-Nov-94 08:49:37 GMT   ; RFC 850, obsoleted by RFC 1036
 //      Sun Nov  6 08:49:37 1994         ; ANSI C's asctime() format
 
-// returns 0 on failure
-// ignores time zone for now
 // FUNCTION: WON 0x006d4c60
+// Parses an HTTP date in RFC 1123, RFC 850 or asctime form; returns 0 on failure (time zone ignored)
 static time_t ParseInternetDateTime(const char* str)
 {
 	const char* tmpStr = str;
@@ -396,6 +395,7 @@ static CriticalSection& GetStaticCrit()
 }
 namespace WONAPI {
 // FUNCTION: WON 0x006d3830
+// Reads the web proxy host from the proxy file (once unless forced)
 void HTTPGetOp::ReadProxyHostFile(bool force)
 {
 	static bool checked = false;
@@ -418,105 +418,114 @@ void HTTPGetOp::ReadProxyHostFile(bool force)
 	if(aPtr!=NULL)
 		*aPtr = '\0';
 
-	mStaticProxyHost = aProxyBuf;
+	HTTPGetOp::mStaticProxyHost = aProxyBuf;
 }
 inline void HTTPGetOp::Init()
 {
-    mBinaryFile=true;
-    mCloseConnection=true;
-    mDoRangeResume=true;
-    mAutoRedirect=true;
-    mOnlyRecv=false;
-    mOnlySend=false;
+    this->mBinaryFile=true;
+    this->mCloseConnection=true;
+    this->mDoRangeResume=true;
+    this->mAutoRedirect=true;
+    this->mOnlyRecv=false;
+    this->mOnlySend=false;
 }
 // FUNCTION: WON 0x006d3b10
+// Creates a GET for a host and path, prefixing the proxy file name with the WON directory and reading it
 HTTPGetOp::HTTPGetOp(const std::string& inHost,const std::string& inRemotePath)
     : mHost(inHost),mRemotePath(inRemotePath),mContentAccumulator(0,true),
       mNumRedirects(0)
 {
-    Init();
+    this->Init();
     GetProxyHostFileName()=WONAPICore::GetDefaultFileDirectory()+GetProxyHostFileName();
-    ReadProxyHostFile(false);
+    HTTPGetOp::ReadProxyHostFile(false);
 }
 // FUNCTION: WON 0x006d3f90
+// Creates a GET for a URL, splitting it into host and path ("/" when none)
 HTTPGetOp::HTTPGetOp(const std::string& inURL)
     : mContentAccumulator(0,true),mNumRedirects(0)
 {
-    Init();
+    this->Init();
     GetProxyHostFileName()=WONAPICore::GetDefaultFileDirectory()+GetProxyHostFileName();
-    ReadProxyHostFile(false);
+    HTTPGetOp::ReadProxyHostFile(false);
     // LOST-DEBUG: none: exact only
-    EE_LOST_TRACE(mHost.length());
-    EE_LOST_TRACE(mHost.length());
+    EE_LOST_TRACE(this->mHost.length());
+    EE_LOST_TRACE(this->mHost.length());
     std::string aURL(inURL);
     std::string::size_type aScheme=aURL.find("://");
     if (aScheme!=std::string::npos)
         aURL=aURL.substr(aScheme+3);
     std::string::size_type aSlash=aURL.find('/');
-    mHost=aURL.substr(0,aSlash);
+    this->mHost=aURL.substr(0,aSlash);
     if (aSlash!=std::string::npos)
-        mRemotePath=aURL.substr(aSlash);
+        this->mRemotePath=aURL.substr(aSlash);
     else
-        mRemotePath="/";
+        this->mRemotePath="/";
 }
 // FUNCTION: WON 0x006d4370
+// Finishes with success, or with the HTTP error status above 304
 void HTTPGetOp::DoFinish()
 {
-    if (mHTTPStatus>304) Fn29F220(100093);
-    else Fn29F220(0);
+    if (this->mHTTPStatus>304) this->Finish(100093);
+    else this->Finish(0);
 }
 // FUNCTION: WON 0x006d4390
+// Sets the proxy as host:port
 void HTTPGetOp::SetProxy(const std::string& hostAndPort)
 {
-    mProxyHost=hostAndPort;
+    this->mProxyHost=hostAndPort;
 }
 // FUNCTION: WON 0x006d44e0
+// Sets the progress completion called every given number of received bytes
 void HTTPGetOp::SetRecvChunkCompletion(CompletionBase<AsyncOpPtr>* completion,DWORD chunkSize)
 {
-    mRecvChunkCompletion=completion;
-    mRecvChunkSize=chunkSize;
+    this->mRecvChunkCompletion=completion;
+    this->mRecvChunkSize=chunkSize;
 }
 // FUNCTION: WON 0x006d4550
+// Returns true for success, otherwise finishes the op with the status
 bool HTTPGetOp::CheckStatus(WONStatus inStatus)
 {
     if (inStatus==0) return true;
-    Fn29F220(inStatus);
+    this->Finish(inStatus);
     return false;
 }
 // FUNCTION: WON 0x006d4570
+// Parses the HTTP status line; finishes with an error when malformed, or for an error status on a closing connection
 bool HTTPGetOp::ExtractStatus(const char* inStatusLine)
 {
-    char protocol[50]; //native local52-byte aligned region; nominal buffer size reconstructed.
-    if (sscanf(inStatusLine,"%s%d",protocol,&mHTTPStatus)!=2) {
-        Fn29F220(100092);
+    char protocol[50]; //the original reserves 52 bytes here; the size 50 is inferred
+    if (sscanf(inStatusLine,"%s%d",protocol,&this->mHTTPStatus)!=2) {
+        this->Finish(100092);
         return false;
     }
-    if (mHTTPStatus>304 && mCloseConnection) {
-        Fn29F220(100093);
+    if (this->mHTTPStatus>304 && this->mCloseConnection) {
+        this->Finish(100093);
         return false;
     }
     return true;
 }
 // FUNCTION: WON 0x006d45f0
+// Splits a Location URL into the redirect host and path; finishes with an error when it has no scheme
 bool HTTPGetOp::ExtractRedirect(const char* inLocation)
 {
     const char* host=strstr(inLocation,"://");
     if (host==NULL) {
-        Fn29F220(100094);
+        this->Finish(100094);
         return false;
     }
     host+=3;
     const char* path=strchr(host,'/');
     if (path==NULL) {
-        mRedirectHost=host;
-        mRedirectPath='/';
+        this->mRedirectHost=host;
+        this->mRedirectPath='/';
     } else {
-        mRedirectHost.assign(host,path-host);
-        mRedirectPath=path;
+        this->mRedirectHost.assign(host,path-host);
+        this->mRedirectPath=path;
     }
     return true;
 }
 // FUNCTION: WON 0x006d47e0
+// Records a known reply header (length, type, dates, location, chunked, close, ETag); unknown ones are ignored
 bool HTTPGetOp::ExtractHeaderLine(const char *theHeaderLine)
 {
 	const char *aColon = strchr(theHeaderLine,':');
@@ -565,18 +574,18 @@ bool HTTPGetOp::ExtractHeaderLine(const char *theHeaderLine)
 
 	switch(i)
 	{
-		case 0: mContentLength = atoi(aVal); break;
-		case 1: mContentType.assign(aVal); break;
-		case 2: mLastModified = ParseInternetDateTime(aVal); break;
-		case 3: return ExtractRedirect(aVal); 
+		case 0: this->mContentLength = atoi(aVal); break;
+		case 1: this->mContentType.assign(aVal); break;
+		case 2: this->mLastModified = ParseInternetDateTime(aVal); break;
+		case 3: return this->ExtractRedirect(aVal); 
 		case 4: 
 		{
 			string aStr = aVal;
 			StringToUpperCaseInPlace(aStr);
 			if(aStr.find("CHUNKED")==0)
 			{
-				mContentIsChunked = true;
-				mIsFirstChunk = true;
+				this->mContentIsChunked = true;
+				this->mIsFirstChunk = true;
 			}
 			break;
 		}
@@ -585,21 +594,21 @@ bool HTTPGetOp::ExtractHeaderLine(const char *theHeaderLine)
 			string aStr = aVal;
 			StringToUpperCaseInPlace(aStr);
 			if(aStr.find("CLOSE")==0)
-				mDoClose = true;
+				this->mDoClose = true;
 
 			break;
 		}
-		case 6: mServerTime = ParseInternetDateTime(aVal); break;
-		case 7: mExpireTime = ParseInternetDateTime(aVal); break;
+		case 6: this->mServerTime = ParseInternetDateTime(aVal); break;
+		case 7: this->mExpireTime = ParseInternetDateTime(aVal); break;
 
 		case 8:
 		{
-			mEntityTag = aVal;
-			int anEndQuotePos = mEntityTag.find('"',1);
+			this->mEntityTag = aVal;
+			int anEndQuotePos = this->mEntityTag.find('"',1);
 			if(anEndQuotePos==string::npos)
-				mEntityTag.erase();
+				this->mEntityTag.erase();
 			else
-				mEntityTag.resize(anEndQuotePos+1);
+				this->mEntityTag.resize(anEndQuotePos+1);
 		}
 		break;
 	}
@@ -607,260 +616,268 @@ bool HTTPGetOp::ExtractHeaderLine(const char *theHeaderLine)
 	return true;
 }
 // FUNCTION: WON 0x006d5090
+// Connects the socket to the proxy or host on port 80 unless connected; returns true when the request can be sent
 bool HTTPGetOp::DoConnect()
 {
-    if (mSocket->Fn2B08D0())
+    if (this->mSocket->IsConnected())
         return true;
     IPAddr anAddress;
-    if (!mProxyHost.empty())
-        anAddress.SetWithDefaultPort(mProxyHost,80);
+    if (!this->mProxyHost.empty())
+        anAddress.SetWithDefaultPort(this->mProxyHost,80);
     else
-        anAddress.SetWithDefaultPort(mHost,80);
-    if (mRunMode==1) {
-        mSocket->Fn2B4740(static_cast<SocketOp*>(Track(
+        anAddress.SetWithDefaultPort(this->mHost,80);
+    if (this->mRunMode==1) {
+        this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(
             new ConnectOp(anAddress),HTTP_Track_Connect)),-1);
         return false;
     }
     else
-        return CheckStatus(mSocket->Connect(anAddress,TimeLeft()));
+        return this->CheckStatus(this->mSocket->Connect(anAddress,this->TimeLeft()));
 }
 // FUNCTION: WON 0x006d5270
+// Builds and sends the GET with Host, Connection and resume or cache-validation headers
 bool HTTPGetOp::SendRequest()
 {
     WriteBuffer aRequest(0,true);
-    EE_LOST_TRACE(mHost.length());
-    EE_LOST_TRACE(mHost.length());
+    EE_LOST_TRACE(this->mHost.length());
+    EE_LOST_TRACE(this->mHost.length());
     char aRangeOffset[20];
     aRequest.AppendString("GET ",0);
-    if (mProxyHost.length()!=0)
-        aRequest.AppendString("http://"+mHost,0);
-    aRequest.AppendString(mRemotePath+" HTTP/1.1\r\n",0);
-    aRequest.AppendString("Host: "+mHost+"\r\n",0);
-    if (mCloseConnection)
+    if (this->mProxyHost.length()!=0)
+        aRequest.AppendString("http://"+this->mHost,0);
+    aRequest.AppendString(this->mRemotePath+" HTTP/1.1\r\n",0);
+    aRequest.AppendString("Host: "+this->mHost+"\r\n",0);
+    if (this->mCloseConnection)
         aRequest.AppendString("Connection: close\r\n",0);
     else
         aRequest.AppendString("Connection: Keep-Alive\r\n",0);
-    if (!mLocalPath.empty()) {
+    if (!this->mLocalPath.empty()) {
         struct _stat aStat;
-        if (_stat(mLocalPath.c_str(),&aStat)==0) {
-            mLocalFileSize=aStat.st_size;
-            mLocalFileModifyTime=aStat.st_mtime;
-            if (mLocalFileSize>0) {
-                if (mDoRangeResume) {
-                    if (!mEntityTag.empty())
-                        aRequest.AppendString("If-Range: "+mEntityTag+"\r\n",0);
+        if (_stat(this->mLocalPath.c_str(),&aStat)==0) {
+            this->mLocalFileSize=aStat.st_size;
+            this->mLocalFileModifyTime=aStat.st_mtime;
+            if (this->mLocalFileSize>0) {
+                if (this->mDoRangeResume) {
+                    if (!this->mEntityTag.empty())
+                        aRequest.AppendString("If-Range: "+this->mEntityTag+"\r\n",0);
                     else
-                        aRequest.AppendString("If-Range: "+MakeInternetDateTime(mLocalFileModifyTime)+"\r\n",0);
+                        aRequest.AppendString("If-Range: "+MakeInternetDateTime(this->mLocalFileModifyTime)+"\r\n",0);
                     aRequest.AppendString("Range: bytes=",0);
-                    _snprintf(aRangeOffset,10,"%d",mLocalFileSize);
+                    _snprintf(aRangeOffset,10,"%d",this->mLocalFileSize);
                     aRequest.AppendString(aRangeOffset,0);
                     aRequest.AppendString("-\r\n",0);
                 }
-                else if (mHTTPCacheEntry.get()==NULL || mHTTPCacheEntry->IsValid()) {
-                    if (!mEntityTag.empty())
-                        aRequest.AppendString("If-None-Match: "+mEntityTag+"\r\n",0);
-                    aRequest.AppendString("If-Modified-Since: "+MakeInternetDateTime(mLocalFileModifyTime)+"\r\n",0);
+                else if (this->mHTTPCacheEntry.get()==NULL || this->mHTTPCacheEntry->IsValid()) {
+                    if (!this->mEntityTag.empty())
+                        aRequest.AppendString("If-None-Match: "+this->mEntityTag+"\r\n",0);
+                    aRequest.AppendString("If-Modified-Since: "+MakeInternetDateTime(this->mLocalFileModifyTime)+"\r\n",0);
                 }
             }
         }
     }
     aRequest.AppendString("\r\n",0);
     // LOST-DEBUG: none: exact only
-    EE_LOST_TRACE(mHost.length());
-    if (IsAsync()) {
+    EE_LOST_TRACE(this->mHost.length());
+    if (this->IsAsync()) {
 
-        mSocket->Fn2B4740(static_cast<SocketOp*>(Track(
+        this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(
             new SendBytesOp(aRequest.ToByteBuffer(true).get()),HTTP_Track_SendRequest)),-1);
-        if (!GetOnlySend())
-            AsyncRecvCRMsg(HTTP_Track_RecvStatus);
+        if (!this->GetOnlySend())
+            this->AsyncRecvCRMsg(HTTP_Track_RecvStatus);
         return false;
     }
     else {
-        mSocket->SendBytes(aRequest.ToByteBuffer(true).get(),TimeLeft());
+        this->mSocket->SendBytes(aRequest.ToByteBuffer(true).get(),this->TimeLeft());
     }
     return true;
 }
 // FUNCTION: WON 0x006d6170
+// Queues the receive of the next reply line, tracked as the given step
 void HTTPGetOp::AsyncRecvCRMsg(TrackType inType)
 {
-    mSocket->Fn2B4740(static_cast<SocketOp*>(Track(new RecvCRMsgOp,inType)),-1);
+    this->mSocket->QueueOp(static_cast<SocketOp*>(this->Track(new RecvCRMsgOp,inType)),-1);
 }
 // FUNCTION: WON 0x006d6240
+// Parses a hex chunk length; on the last chunk stores the content and reads the footer; true to read the chunk
 bool HTTPGetOp::ExtractChunkLength(const char* inLine)
 {
-    if (sscanf(inLine,"%x",&mChunkLength)==1) {
-        mContentLength+=mChunkLength;
-        if (mChunkLength==0) {
-            if (mHTTPCacheEntry.get()!=NULL)
-                mHTTPCacheEntry->SetValid(true);
-            if (mLocalPath.empty())
-                mContent=mContentAccumulator.ToByteBuffer(true);
-            if (mRunMode==1) {
-                AsyncRecvCRMsg(HTTP_Track_RecvFooter);
+    if (sscanf(inLine,"%x",&this->mChunkLength)==1) {
+        this->mContentLength+=this->mChunkLength;
+        if (this->mChunkLength==0) {
+            if (this->mHTTPCacheEntry.get()!=NULL)
+                this->mHTTPCacheEntry->SetValid(true);
+            if (this->mLocalPath.empty())
+                this->mContent=this->mContentAccumulator.ToByteBuffer(true);
+            if (this->mRunMode==1) {
+                this->AsyncRecvCRMsg(HTTP_Track_RecvFooter);
                 return false;
             }
             while (true) {
                 ByteBufferPtr aFooter;
-                if (!CheckStatus(mSocket->RecvCRMsg(aFooter,TimeLeft())))
+                if (!this->CheckStatus(this->mSocket->RecvCRMsg(aFooter,this->TimeLeft())))
                     return false;
                 if (aFooter.get()!=NULL && aFooter->length()==1)
                     break;
             }
-            DoFinish();
+            this->DoFinish();
             return false;
         }
         return true;
     }
-    Fn29F220(100092);
+    this->Finish(100092);
     return false;
 }
 // FUNCTION: WON 0x006d6430
+// Reads the CRLF after a chunk and the next chunk length line
 bool HTTPGetOp::RecvChunkLength()
 {
-    if (mIsFirstChunk)
-        mContentLength=0;
-    if (mRunMode==1) {
-        if (!mIsFirstChunk)
-            AsyncRecvCRMsg(HTTP_Track_RecvChunkCRLF);
-        AsyncRecvCRMsg(HTTP_Track_RecvChunkLength);
+    if (this->mIsFirstChunk)
+        this->mContentLength=0;
+    if (this->mRunMode==1) {
+        if (!this->mIsFirstChunk)
+            this->AsyncRecvCRMsg(HTTP_Track_RecvChunkCRLF);
+        this->AsyncRecvCRMsg(HTTP_Track_RecvChunkLength);
         return false;
     }
     ByteBufferPtr aLine;
-    if (!mIsFirstChunk) {
-        if (!CheckStatus(mSocket->RecvCRMsg(aLine,TimeLeft())))
+    if (!this->mIsFirstChunk) {
+        if (!this->CheckStatus(this->mSocket->RecvCRMsg(aLine,this->TimeLeft())))
             return false;
     }
-    if (!CheckStatus(mSocket->RecvCRMsg(aLine,TimeLeft())))
+    if (!this->CheckStatus(this->mSocket->RecvCRMsg(aLine,this->TimeLeft())))
         return false;
-    return ExtractChunkLength(aLine->data());
+    return this->ExtractChunkLength(aLine->data());
 }
 // FUNCTION: WON 0x006d65c0
+// Stores received content (or a chunk), then reads the next chunk or finishes; true to keep receiving
 bool HTTPGetOp::DoneRecvContent(RecvBytesOp* inOp)
 {
-    mIsFirstChunk=false;
-    if (mLocalPath.empty() && inOp->GetStatus()==0) {
-        if (mContentIsChunked)
-            mContentAccumulator.AppendBuffer(inOp->GetBytes().get(),0);
+    this->mIsFirstChunk=false;
+    if (this->mLocalPath.empty() && inOp->GetStatus()==0) {
+        if (this->mContentIsChunked)
+            this->mContentAccumulator.AppendBuffer(inOp->GetBytes().get(),0);
         else
-            mContent=inOp->GetBytes();
+            this->mContent=inOp->GetBytes();
     }
     if (inOp->GetStatus()!=0) {
-        Fn29F220(inOp->GetStatus());
+        this->Finish(inOp->GetStatus());
         return false;
     }
-    if (mContentIsChunked)
-        return RecvChunkLength();
-    if (mHTTPCacheEntry.get()!=NULL)
-        mHTTPCacheEntry->SetValid(true);
-    DoFinish();
+    if (this->mContentIsChunked)
+        return this->RecvChunkLength();
+    if (this->mHTTPCacheEntry.get()!=NULL)
+        this->mHTTPCacheEntry->SetValid(true);
+    this->DoFinish();
     return false;
 }
 // FUNCTION: WON 0x006d6730
+// Receives the body to memory or the local file (appending for resumes), skipping error bodies; 304 is not new
 void HTTPGetOp::RecvContent()
 {
-    if (mHTTPStatus==304) {
-        mContentIsNew=false;
-        DoFinish();
+    if (this->mHTTPStatus==304) {
+        this->mContentIsNew=false;
+        this->DoFinish();
         return;
     }
     bool skip;
-    if (mHTTPStatus>=200 && mHTTPStatus<300) skip=false;
+    if (this->mHTTPStatus>=200 && this->mHTTPStatus<300) skip=false;
     else {
         skip=true;
-        if (mDoClose) {
-            Fn29F220(100093);
+        if (this->mDoClose) {
+            this->Finish(100093);
             return;
         }
     }
     for (;;) {
-        unsigned long length=mContentLength;
-        if (mContentIsChunked) length=mChunkLength;
-        SmartPtr<RecvBytesOp> recv=new RecvBytesOp(length,mSocket.get());
+        unsigned long length=this->mContentLength;
+        if (this->mContentIsChunked) length=this->mChunkLength;
+        SmartPtr<RecvBytesOp> recv=new RecvBytesOp(length,this->mSocket.get());
         if (skip) recv->SetSkipBytes(true);
         else {
-            if (mRecvChunkCompletion.get()!=NULL)
-                recv->Fn2B4F90(mRecvChunkCompletion.get(),mRecvChunkSize);
-            if (mHTTPCacheEntry.get()!=NULL) mHTTPCacheEntry->SetValid(false);
-            if (!mLocalPath.empty()) {
-                bool append=mHTTPStatus==206 || (mContentIsChunked && !mIsFirstChunk);
-                if (!append && mLocalFileSize>0 && mLocalFileSize==mContentLength &&
-                    abs(mLocalFileModifyTime-mLastModified)<=1 && mDoClose) {
-                    DoFinish();
-                    mContentIsNew=false;
+            if (this->mRecvChunkCompletion.get()!=NULL)
+                recv->SetProgressCompletion(this->mRecvChunkCompletion.get(),this->mRecvChunkSize);
+            if (this->mHTTPCacheEntry.get()!=NULL) this->mHTTPCacheEntry->SetValid(false);
+            if (!this->mLocalPath.empty()) {
+                bool append=this->mHTTPStatus==206 || (this->mContentIsChunked && !this->mIsFirstChunk);
+                if (!append && this->mLocalFileSize>0 && this->mLocalFileSize==this->mContentLength &&
+                    abs(this->mLocalFileModifyTime-this->mLastModified)<=1 && this->mDoClose) {
+                    this->DoFinish();
+                    this->mContentIsNew=false;
                     return;
                 }
-                recv->SetBinaryFile(mBinaryFile);
-                recv->SetFilePath(mLocalPath);
+                recv->SetBinaryFile(this->mBinaryFile);
+                recv->SetFilePath(this->mLocalPath);
                 recv->SetAppendFile(append);
-                recv->SetFileModifyTime(mLastModified);
+                recv->SetFileModifyTime(this->mLastModified);
             }
         }
-        if (mRunMode==1) {
-            Track(recv.get(),HTTP_Track_RecvContent);
-            recv->Run(-1);
+        if (this->mRunMode==1) {
+            this->Track(recv.get(),HTTP_Track_RecvContent);
+            recv->RunAsync(-1);
             return;
         }
-        if (recv->RunBlock(TimeLeft())) {
-            if (!DoneRecvContent(recv.get())) return;
+        if (recv->RunBlock(this->TimeLeft())) {
+            if (!this->DoneRecvContent(recv.get())) return;
         } else {
-            Fn29F220(recv->GetStatus());
+            this->Finish(recv->GetStatus());
             return;
         }
     }
 }
 // FUNCTION: WON 0x006d6a50
+// Advances the async request state machine as each connect, send or receive step finishes
 bool HTTPGetOp::CallbackHook(AsyncOp* inOp,int inParam)
 {
-    if (inOp->mB39) {
-        Kill(true);
+    if (inOp->mKilled) {
+        this->Kill(true);
         return true;
     }
     if (inOp->mStatus!=0) {
-        Fn29F220(inOp->mStatus);
+        this->Finish(inOp->mStatus);
         return true;
     }
     switch (inParam) {
     case HTTP_Track_Connect:
-        SendRequest();
+        this->SendRequest();
         break;
     case HTTP_Track_SendRequest:
-        if (mOnlySend) Fn29F220(100097);
+        if (this->mOnlySend) this->Finish(100097);
         break;
     case HTTP_Track_RecvStatus: {
         RecvCRMsgOp* op=static_cast<RecvCRMsgOp*>(inOp);
         ByteBufferPtr line=op->GetMsg();
-        if (!ExtractStatus(line->data())) break;
-        AsyncRecvCRMsg(HTTP_Track_RecvHeader);
+        if (!this->ExtractStatus(line->data())) break;
+        this->AsyncRecvCRMsg(HTTP_Track_RecvHeader);
         break;
     }
     case HTTP_Track_RecvHeader: {
         RecvCRMsgOp* op=static_cast<RecvCRMsgOp*>(inOp);
         ByteBufferPtr line=op->GetMsg();
         if (line->length()==1) {
-            DoneRecvHeader();
+            this->DoneRecvHeader();
             break;
         }
-        if (!ExtractHeaderLine(line->data())) break;
-        AsyncRecvCRMsg(HTTP_Track_RecvHeader);
+        if (!this->ExtractHeaderLine(line->data())) break;
+        this->AsyncRecvCRMsg(HTTP_Track_RecvHeader);
         break;
     }
     case HTTP_Track_RecvFooter: {
         RecvCRMsgOp* op=static_cast<RecvCRMsgOp*>(inOp);
         ByteBufferPtr line=op->GetMsg();
-        if (line->length()==1) DoFinish();
-        else AsyncRecvCRMsg(HTTP_Track_RecvFooter);
+        if (line->length()==1) this->DoFinish();
+        else this->AsyncRecvCRMsg(HTTP_Track_RecvFooter);
         break;
     }
     case HTTP_Track_RecvContent:
-        DoneRecvContent(static_cast<RecvBytesOp*>(inOp));
+        this->DoneRecvContent(static_cast<RecvBytesOp*>(inOp));
         break;
     case HTTP_Track_Redirect:
-        FinishRedirect(static_cast<HTTPGetOp*>(inOp));
+        this->FinishRedirect(static_cast<HTTPGetOp*>(inOp));
         break;
     case HTTP_Track_RecvChunkLength: {
         RecvCRMsgOp* op=static_cast<RecvCRMsgOp*>(inOp);
         ByteBufferPtr line=op->GetMsg();
-        if (ExtractChunkLength(line->data())) RecvContent();
+        if (this->ExtractChunkLength(line->data())) this->RecvContent();
         break;
     }
     default:
@@ -869,179 +886,187 @@ bool HTTPGetOp::CallbackHook(AsyncOp* inOp,int inParam)
     return true;
 }
 // FUNCTION: WON 0x006d6d90
+// Takes over the results of the redirected request and finishes with its status
 void HTTPGetOp::FinishRedirect(HTTPGetOp* inOp)
 {
-    mLastModified=inOp->mLastModified;
-    mContentType=inOp->mContentType;
-    mContentLength=inOp->mContentLength;
-    mContent=inOp->mContent;
-    mLocalPath=inOp->mLocalPath;
+    this->mLastModified=inOp->mLastModified;
+    this->mContentType=inOp->mContentType;
+    this->mContentLength=inOp->mContentLength;
+    this->mContent=inOp->mContent;
+    this->mLocalPath=inOp->mLocalPath;
     if (!inOp->mRedirectHost.empty()) {
-        mRedirectHost=inOp->mRedirectHost;
-        mRedirectPath=inOp->mRedirectPath;
+        this->mRedirectHost=inOp->mRedirectHost;
+        this->mRedirectPath=inOp->mRedirectPath;
     }
-    mHTTPStatus=inOp->mHTTPStatus;
-    mContentIsNew=inOp->mContentIsNew;
-    mNumRedirects=inOp->mNumRedirects;
-    Fn29F220(inOp->GetStatus());
+    this->mHTTPStatus=inOp->mHTTPStatus;
+    this->mContentIsNew=inOp->mContentIsNew;
+    this->mNumRedirects=inOp->mNumRedirects;
+    this->Finish(inOp->GetStatus());
 }
 // FUNCTION: WON 0x006d6f80
+// Drops the connection and repeats the request at the redirect target (at most 5 times)
 void HTTPGetOp::FollowRedirect()
 {
-    mTracker.KillAll();
-    if (mSocket.get()!=NULL) {
-        mSocket->Close();
-        mSocket=NULL;
+    this->mTracker.KillAll();
+    if (this->mSocket.get()!=NULL) {
+        this->mSocket->Kill();
+        this->mSocket=NULL;
     }
-    if (mNumRedirects>5) {
-        Fn29F220(100095);
+    if (this->mNumRedirects>5) {
+        this->Finish(100095);
         return;
     }
-    if (!mAutoRedirect) {
-        Fn29F220(100096);
+    if (!this->mAutoRedirect) {
+        this->Finish(100096);
         return;
     }
-    SmartPtr<HTTPGetOp> anOp=new HTTPGetOp(mRedirectHost,mRedirectPath);
-    anOp->SetBinaryFile(mBinaryFile);
-    anOp->SetLocalPath(mLocalPath);
-    anOp->SetHTTPCache(mHTTPCache);
-    anOp->mNumRedirects=mNumRedirects+1;
-    if (mRecvChunkCompletion.get()!=NULL)
-        anOp->SetRecvChunkCompletion(mRecvChunkCompletion.get(),mRecvChunkSize);
-    if (mRunMode==1) {
-        Track(anOp.get(),HTTP_Track_Redirect);
-        anOp->Run(-1);
+    SmartPtr<HTTPGetOp> anOp=new HTTPGetOp(this->mRedirectHost,this->mRedirectPath);
+    anOp->SetBinaryFile(this->mBinaryFile);
+    anOp->SetLocalPath(this->mLocalPath);
+    anOp->SetHTTPCache(this->mHTTPCache);
+    anOp->mNumRedirects=this->mNumRedirects+1;
+    if (this->mRecvChunkCompletion.get()!=NULL)
+        anOp->SetRecvChunkCompletion(this->mRecvChunkCompletion.get(),this->mRecvChunkSize);
+    if (this->mRunMode==1) {
+        this->Track(anOp.get(),HTTP_Track_Redirect);
+        anOp->RunAsync(-1);
         return;
     }
-    anOp->RunBlock(TimeLeft());
-    FinishRedirect(anOp.get());
+    anOp->RunBlock(this->TimeLeft());
+    this->FinishRedirect(anOp.get());
 }
 // FUNCTION: WON 0x006d7140
+// After the headers: follows a 301/302, updates the cache entry's expiry and ETag, then reads the body
 void HTTPGetOp::DoneRecvHeader()
 {
-    if (mHTTPStatus==301 || mHTTPStatus==302) {
-        FollowRedirect();
+    if (this->mHTTPStatus==301 || this->mHTTPStatus==302) {
+        this->FollowRedirect();
         return;
     }
-    HTTPCacheEntry* anEntry=mHTTPCacheEntry.get();
+    HTTPCacheEntry* anEntry=this->mHTTPCacheEntry.get();
     if (anEntry!=NULL) {
-        if (mServerTime>0 && mExpireTime>0 && mExpireTime>mServerTime)
-            anEntry->SetExpirationTime(time(NULL)+mExpireTime-mServerTime);
-        if (!mEntityTag.empty())
-            mHTTPCacheEntry->SetEntityTag(mEntityTag);
+        if (this->mServerTime>0 && this->mExpireTime>0 && this->mExpireTime>this->mServerTime)
+            anEntry->SetExpirationTime(time(NULL)+this->mExpireTime-this->mServerTime);
+        if (!this->mEntityTag.empty())
+            this->mHTTPCacheEntry->SetEntityTag(this->mEntityTag);
     }
-    if (mContentIsChunked && !RecvChunkLength())
+    if (this->mContentIsChunked && !this->RecvChunkLength())
         return;
-    RecvContent();
+    this->RecvContent();
 }
 // FUNCTION: WON 0x006d7330
-void HTTPGetOp::Virtual04()
+// Starts the request: resets the results, answers from a fresh cache entry, else connects, sends and reads the reply
+void HTTPGetOp::RunHook()
 {
-    if (!mOnlyRecv) {
-        if (!mStaticProxyHost.empty())
-            SetProxy(mStaticProxyHost);
-        mLastModified=0;
-        mServerTime=0;
-        mExpireTime=0;
-        mContentType.erase();
-        mContentLength=0;
-        mContent=NULL;
-        mDoClose=mCloseConnection;
-        mHTTPStatus=0;
-        mLocalFileModifyTime=0;
-        mLocalFileSize=0;
-        mNumRedirects=0;
-        mContentIsNew=true;
-        mChunkLength=0;
-        mContentIsChunked=false;
-        mIsFirstChunk=false;
-        mHTTPCacheEntry=NULL;
-        mContentAccumulator.Reset();
-        if (mSocket.get()==NULL)
-            mSocket=new BlockingSocket(0);
-        mRedirectHost="";
-        mRedirectPath="";
-        if (mHTTPCache.get()!=NULL) {
-            mHTTPCacheEntry=mHTTPCache->GetEntry(mHost+mRemotePath);
-            if (mHTTPCacheEntry.get()!=NULL) {
-                mLocalPath=mHTTPCacheEntry->GetLocalPath();
-                mEntityTag=mHTTPCacheEntry->GetEntityTag();
-                if (mHTTPCacheEntry->IsValid() &&
-                    mHTTPCacheEntry->GetExpirationTime()>time(NULL)) {
-                    mContentIsNew=false;
-                    Fn29F220(0);
+    if (!this->mOnlyRecv) {
+        if (!HTTPGetOp::mStaticProxyHost.empty())
+            this->SetProxy(HTTPGetOp::mStaticProxyHost);
+        this->mLastModified=0;
+        this->mServerTime=0;
+        this->mExpireTime=0;
+        this->mContentType.erase();
+        this->mContentLength=0;
+        this->mContent=NULL;
+        this->mDoClose=this->mCloseConnection;
+        this->mHTTPStatus=0;
+        this->mLocalFileModifyTime=0;
+        this->mLocalFileSize=0;
+        this->mNumRedirects=0;
+        this->mContentIsNew=true;
+        this->mChunkLength=0;
+        this->mContentIsChunked=false;
+        this->mIsFirstChunk=false;
+        this->mHTTPCacheEntry=NULL;
+        this->mContentAccumulator.Reset();
+        if (this->mSocket.get()==NULL)
+            this->mSocket=new BlockingSocket(0);
+        this->mRedirectHost="";
+        this->mRedirectPath="";
+        if (this->mHTTPCache.get()!=NULL) {
+            this->mHTTPCacheEntry=this->mHTTPCache->GetEntry(this->mHost+this->mRemotePath);
+            if (this->mHTTPCacheEntry.get()!=NULL) {
+                this->mLocalPath=this->mHTTPCacheEntry->GetLocalPath();
+                this->mEntityTag=this->mHTTPCacheEntry->GetEntityTag();
+                if (this->mHTTPCacheEntry->IsValid() &&
+                    this->mHTTPCacheEntry->GetExpirationTime()>time(NULL)) {
+                    this->mContentIsNew=false;
+                    this->Finish(0);
                     return;
                 }
             }
         }
-        if (!DoConnect())
+        if (!this->DoConnect())
             return;
-        if (!SendRequest())
+        if (!this->SendRequest())
             return;
     }
-    if (mOnlySend) {
-        Fn29F220(100097);
+    if (this->mOnlySend) {
+        this->Finish(100097);
         return;
     }
-    if (mOnlyRecv && mRunMode==1) {
-        AsyncRecvCRMsg(HTTP_Track_RecvStatus);
+    if (this->mOnlyRecv && this->mRunMode==1) {
+        this->AsyncRecvCRMsg(HTTP_Track_RecvStatus);
         return;
     }
     ByteBufferPtr aLine;
-    if (!CheckStatus(mSocket->RecvCRMsg(aLine,TimeLeft())))
+    if (!this->CheckStatus(this->mSocket->RecvCRMsg(aLine,this->TimeLeft())))
         return;
-    if (!ExtractStatus(aLine->data()))
+    if (!this->ExtractStatus(aLine->data()))
         return;
     while (true) {
-        if (!CheckStatus(mSocket->RecvCRMsg(aLine,TimeLeft())))
+        if (!this->CheckStatus(this->mSocket->RecvCRMsg(aLine,this->TimeLeft())))
             return;
         if (aLine->length()==1)
             break;
-        if (!ExtractHeaderLine(aLine->data()))
+        if (!this->ExtractHeaderLine(aLine->data()))
             return;
     }
-    DoneRecvHeader();
+    this->DoneRecvHeader();
 }
 // FUNCTION: WON 0x006d7770
-void HTTPGetOp::Virtual08()
+// Closes the socket unless it stays open for keep-alive and updates the cache entry
+void HTTPGetOp::CleanupHook()
 {
-    AsyncOpWithTracker::Virtual08();
-    if (mSocket.get()!=NULL) {
-        if ((mDoClose && !mOnlySend) || mSocket->mStatus!=100004) {
-            mSocket->Fn2B1AD0();
-            mSocket=NULL;
+    AsyncOpWithTracker::CleanupHook();
+    if (this->mSocket.get()!=NULL) {
+        if ((this->mDoClose && !this->mOnlySend) || this->mSocket->mStatus!=100004) {
+            this->mSocket->Close();
+            this->mSocket=NULL;
         }
     }
-    if (!mOnlySend && mHTTPCache.get()!=NULL && mHTTPCacheEntry.get()!=NULL)
-        mHTTPCache->UpdateEntry(mHTTPCacheEntry.get());
+    if (!this->mOnlySend && this->mHTTPCache.get()!=NULL && this->mHTTPCacheEntry.get()!=NULL)
+        this->mHTTPCache->UpdateEntry(this->mHTTPCacheEntry.get());
 }
 // FUNCTION: WON 0x006d77f0
-void HTTPGetOp::SetSocket(BlockingSocket* socket) { mSocket=socket; }
+// Sets the socket to reuse for the request
+void HTTPGetOp::SetSocket(BlockingSocket* socket) { this->mSocket=socket; }
 // FUNCTION: WON 0x006d7850
+// Returns the socket when it is still connected, else NULL
 BlockingSocket* HTTPGetOp::GetSocket()
 {
-    if(mSocket.get()==NULL) return NULL;
-    if(!mSocket->Fn2B08D0()) return NULL;
-    return mSocket.get();
+    if(this->mSocket.get()==NULL) return NULL;
+    if(!this->mSocket->IsConnected()) return NULL;
+    return this->mSocket.get();
 }
 // FUNCTION: WON 0x006d7870
+// Returns the content's last-modified time, falling back to the local file's time
  time_t HTTPGetOp::GetLastModifiedTime()
 {
-    if (mLastModified==0) {
-        if (mLocalPath.empty()) return 0;
-        WONFile file(mLocalPath);
-        return mLastModified=file.GetModifyTime();
-    }
-    return mLastModified;
+    if (this->mLastModified!=0)
+        return this->mLastModified;
+    if (this->mLocalPath.empty()) return 0;
+    WONFile file(this->mLocalPath);
+    return this->mLastModified=file.GetModifyTime();
+    return this->mLastModified;
 }
 }
 
-// SOURCE_ONLY_NO_NATIVE_ID: genuine same-SDK missing executable methods.
+// No original address identified: WON SDK proxy settings
 namespace WONAPI {
 bool HTTPGetOp::WriteProxyHostFile(const std::string &theHostAndPort)
 {
 	AutoCrit aCrit(GetStaticCrit());
-	mStaticProxyHost = theHostAndPort;
+	HTTPGetOp::mStaticProxyHost = theHostAndPort;
 
 	if(theHostAndPort.empty())
 		return remove(GetProxyHostFileName().c_str())==0;
@@ -1057,8 +1082,8 @@ bool HTTPGetOp::WriteProxyHostFile(const std::string &theHostAndPort)
 
 const std::string& HTTPGetOp::GetStaticProxyHost()
 {
-	ReadProxyHostFile(false);
-	return mStaticProxyHost;
+	HTTPGetOp::ReadProxyHostFile(false);
+	return HTTPGetOp::mStaticProxyHost;
 }
 
 void HTTPGetOp::SetProxyHostFileName(std::string &theFileName) // set file name and path for proxy info file
@@ -1071,7 +1096,7 @@ void HTTPGetOp::SetProxy(const std::string &theHost, unsigned short thePort)
 {
 	char aBuf[50];
 	sprintf(aBuf,":%d",thePort);
-	mProxyHost = theHost + aBuf;
+	this->mProxyHost = theHost + aBuf;
 }
 }
 

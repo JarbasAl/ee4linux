@@ -1,4 +1,4 @@
-// Actual derived routing payload holder and optional unsolicited-op factory.
+// Routing op holding a derived server's message payload, and the unsolicited derived-op factory
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -8,18 +8,21 @@
 #include "lle/LowLevelEngine.h"
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRoutingDerivedServerOp.h"
+#include "ee/wonapi/WONStatus.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006c5260
-WONStatus RoutingDerivedServerOp::Virtual10(unsigned char messageType,ReadBuffer& message)
+// Keeps the message type and the rest of the message as the op's payload; always succeeds
+WONStatus RoutingDerivedServerOp::HandleReply(unsigned char messageType,ReadBuffer& message)
 {
-    mMsgType=messageType;
-    mRecvMsg=new ByteBuffer(message.data()+message.pos(),message.Available(),false);
-    return 0;
+    this->mMsgType=messageType;
+    this->mRecvMsg=new ByteBuffer(message.data()+message.pos(),message.Available(),false);
+    return WS_Success;
 }
 // FUNCTION: WON 0x006bc6c0
-SmartPtr<RoutingOp> RoutingConnection::Virtual28(unsigned char)
+// Returns a new derived-server op for an unsolicited message when all derived ops count as unsolicited, else NULL
+SmartPtr<RoutingOp> RoutingConnection::GetUnsolicitedDerivedOp(unsigned char)
 {
-    if(mAllDerivedOpsAreUnsolicited)
+    if(this->mAllDerivedOpsAreUnsolicited)
         return new RoutingDerivedServerOp(this);
     return NULL;
 }

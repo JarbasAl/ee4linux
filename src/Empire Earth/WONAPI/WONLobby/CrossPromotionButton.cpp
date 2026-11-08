@@ -12,119 +12,108 @@
 #include "ee/wonapi/WONLobbyImageButton.h"
 #include "ee/wonapi/WONLobbyEvents.h"
 #include "LostDebug.h"
+#include "ee/wonapi/WONComponentFlags.h"
 using namespace WONAPI;
 namespace WONAPI {
-// Actual native RTTI hierarchy; complete real owner fields68/70/80.
-/* HISTORICAL_CLASS_DECLARATIONS_MOVED_TO_WONLobbyCrossPromotion_H
-class ImageTextButton : public ImageButton {
-public:
-    ImageTextButton(const GUIString&);
-    virtual void Paint(Graphics&);
-    virtual bool VirtualAC();
-    SmartPtr<Font> mFont; //5c
-    GUIString mText; //60
-    GUIString mBrowse; //64
-};
-// ImageTextButtonConfig declaration hoisted to WONLobbyControlConfig.h; existing bodies unchanged.
-class CrossPromotionButton : public ImageTextButton {
-public:
-    CrossPromotionButton(); //3c96a0 actual complete70 owner
-    void Fn3C98B0(SetCrossPromotionEvent*);
-    void Fn3C9A30(Image*);
-    virtual void HandleComponentEvent(ComponentEvent*);
-    SmartPtr<Image> mDefaultImage; //68
-    GUIString mDefaultBrowse; //6c
-};
-*/
-// CrossPromotionButtonConfig declaration hoisted to WONLobbyControlConfig.h; existing bodies unchanged.
 // FUNCTION: WON 0x007c9080
+// Creates an image button with a text caption in the default font
 ImageTextButton::ImageTextButton(const GUIString& text) {
-    SetComponentFlags(0x100,true);
-    mFont=Fn2F5B20();
-    mText=text;
+    this->SetComponentFlags(ComponentFlag_GrabBG,true);
+    this->mFont=this->GetDefaultFont();
+    this->mText=text;
 }
 // FUNCTION: WON 0x007c9280
+// Draws the button image, then its caption in black, shifted one pixel while the button is held down
 void ImageTextButton::Paint(Graphics& g) {
     ImageButton::Paint(g);
     int down=(mButtonFlags>>5)&1;
-    g.SetFont(mFont.get());
+    g.SetFont(this->mFont.get());
     g.SetColor(0);
-    g.DrawString(mText,30+down,(Height()-mFont->GetHeight()-4)/2+down);
+    g.DrawString(this->mText,30+down,(this->Height()-this->mFont->GetHeight()-4)/2+down);
 }
 // FUNCTION: WON 0x007c92e0
-bool ImageTextButton::VirtualAC() {
-    if(mBrowse.empty()) return true;
-    Browse(mBrowse);
+// Opens the button's web link in the browser when it has one; otherwise lets the click go on as usual
+bool ImageTextButton::HandleActivate() {
+    if(this->mBrowse.empty()) return true;
+    Browse(this->mBrowse);
     return false;
 }
 // FUNCTION: WON 0x007c98b0
-void CrossPromotionButton::Fn3C98B0(SetCrossPromotionEvent* event) {
+// Shows the cross-promotion image and link from the event, or the default image and link when it has none
+void CrossPromotionButton::HandleSetCrossPromotion(SetCrossPromotionEvent* event) {
     if(event->mImage) {
-        mImages[ImageButtonType_Normal]=event->mImage;
+        this->mImages[ImageButtonType_Normal]=event->mImage;
         // LOST-DEBUG: none: exact only
         EE_LOST_DEBUG(1);
-        mBrowse=GUIString(event->mLink);
+        this->mBrowse=GUIString(event->mLink);
     } else {
-        mImages[ImageButtonType_Normal]=mDefaultImage;
-        mBrowse=mDefaultBrowse;
+        this->mImages[ImageButtonType_Normal]=this->mDefaultImage;
+        this->mBrowse=this->mDefaultBrowse;
     }
-    Invalidate();
+    this->Invalidate();
 }
 // FUNCTION: WON 0x007c9a30
-void CrossPromotionButton::Fn3C9A30(Image* image) {
-    mDefaultImage=image;
-    if(!mImages[ImageButtonType_Normal].get())
-        mImages[ImageButtonType_Normal]=mDefaultImage;
+// Sets the default promotion image and shows it if the button has no image yet
+void CrossPromotionButton::SetDefaultImage(Image* image) {
+    this->mDefaultImage=image;
+    if(!this->mImages[ImageButtonType_Normal].get())
+        this->mImages[ImageButtonType_Normal]=this->mDefaultImage;
 }
 // FUNCTION: WON 0x007c9ad0
+// Handles set-cross-promotion broadcasts; passes every other event to the base component
 void CrossPromotionButton::HandleComponentEvent(ComponentEvent* event) {
-    if(event->mType==100049) Fn3C98B0(static_cast<SetCrossPromotionEvent*>(event));
+    if(event->mType==LobbyEvent_SetCrossPromotion) this->HandleSetCrossPromotion(static_cast<SetCrossPromotionEvent*>(event));
     else Component::HandleComponentEvent(event);
 }
 // FUNCTION: WON 0x007c9af0
+// Reads the DEFAULTIMAGE and DEFAULTBROWSE layout keys; passes other keys to the image button config
 bool CrossPromotionButtonConfig::Virtual24(const std::string& key) {
     if(key=="DEFAULTIMAGE")
-        mCrossPromotionButton->Fn3C9A30(ReadImage(false));
+        this->mCrossPromotionButton->SetDefaultImage(this->ReadImage(false));
     else if(key=="DEFAULTBROWSE")
-        mCrossPromotionButton->SetDefaultBrowse(Fn3842F0(false));
+        this->mCrossPromotionButton->SetDefaultBrowse(this->ReadString(false));
     else
         return ImageButtonConfig::Virtual24(key);
     return true;
 }
 // FUNCTION: WON 0x00765980
-void CrossPromotionButtonConfig::Virtual34(Component* component) {
-    ImageButtonConfig::Virtual34(component);
-    mCrossPromotionButton=static_cast<CrossPromotionButton*>(component);
+// Attaches the config to the cross-promotion button it configures
+void CrossPromotionButtonConfig::SetComponent(Component* component) {
+    ImageButtonConfig::SetComponent(component);
+    this->mCrossPromotionButton=static_cast<CrossPromotionButton*>(component);
 }
 
 // FUNCTION: WON 0x007c9380
+// Reads the FONT, TEXT and BROWSELOCATION layout keys; passes other keys to the image button config
 bool ImageTextButtonConfig::Virtual24(const std::string& key) {
     if(key=="FONT")
-        mImageTextButton->mFont=ReadFont();
+        this->mImageTextButton->mFont=this->ReadFont();
     else if(key=="TEXT")
-        mImageTextButton->mText=Fn3842F0(false);
+        this->mImageTextButton->mText=this->ReadString(false);
     else if(key=="BROWSELOCATION")
-        mImageTextButton->mBrowse=Fn3842F0(false);
+        this->mImageTextButton->mBrowse=this->ReadString(false);
     else
         return ImageButtonConfig::Virtual24(key);
     return true;
 }
 
-void ImageTextButtonConfig::Virtual34(Component* component) {
-    ImageButtonConfig::Virtual34(component);
-    mImageTextButton=static_cast<ImageTextButton*>(component);
+void ImageTextButtonConfig::SetComponent(Component* component) {
+    ImageButtonConfig::SetComponent(component);
+    this->mImageTextButton=static_cast<ImageTextButton*>(component);
 }
 // FUNCTION: WON 0x007c96a0
+// Creates the cross-promotion button with an empty caption, listening to lobby broadcasts
 CrossPromotionButton::CrossPromotionButton()
     : ImageTextButton(GUIString(new GUIStringData("")))
 {
-    Fn2F5360(true);
+    this->SubscribeToBroadcast(true);
 }
 
 }
 
 namespace WONAPI {
 // FUNCTION: WON 0x00765700
+// Creates a config for an image text button in the layout file
 ComponentConfig* ImageTextButtonConfig::CfgFactory()
 {
     return new ImageTextButtonConfig;
@@ -133,6 +122,7 @@ ComponentConfig* ImageTextButtonConfig::CfgFactory()
 
 namespace WONAPI {
 // FUNCTION: WON 0x00765840
+// Creates a config for a maximize-splitter button in the layout file
 ComponentConfig* MaxSplitterButtonConfig::CfgFactory()
 {
     return new MaxSplitterButtonConfig;
@@ -141,6 +131,7 @@ ComponentConfig* MaxSplitterButtonConfig::CfgFactory()
 
 namespace WONAPI {
 // FUNCTION: WON 0x00765920
+// Creates a config for a cross-promotion button in the layout file
 ComponentConfig* CrossPromotionButtonConfig::CfgFactory()
 {
     return new CrossPromotionButtonConfig;
@@ -150,28 +141,31 @@ ComponentConfig* CrossPromotionButtonConfig::CfgFactory()
 
 namespace WONAPI {
 // FUNCTION: WON 0x007c9590
+// Creates a 15x15 arrow button that maximizes a splitter pane in the given direction
 MaxSplitterButton::MaxSplitterButton(Direction direction) : MSArrowButton(direction)
 {
-    Fn2F4B90(15,15);
-    Fn2F3370(2,false);
+    this->SetSize(15,15);
+    this->SetButtonFlags(2,false);
 }
 
 // FUNCTION: WON 0x007c9620
+// Draws the arrow button and, while it is checked, a small bar in the button text colour
 void MaxSplitterButton::Paint(Graphics& g)
 {
     MSArrowButton::Paint(g);
-    if(IsChecked()) {
-        int x=Width()/2-3,y=Height()/2-2;
-        if(IsPressed()) {
-            ++x;
-            ++y;
-        }
-        g.SetSysColor(5);
-        g.FillRect(x,y,7,4);
+    if(!this->IsChecked())
+        return;
+    int x=this->Width()/2-3,y=this->Height()/2-2;
+    if(this->IsPressed()) {
+        ++x;
+        ++y;
     }
+    g.SetSysColor(StandardColor_ButtonText);
+    g.FillRect(x,y,7,4);
 }
 
 // FUNCTION: WON 0x007c9680
+// Passes every layout key to the arrow button config
 bool MaxSplitterButtonConfig::Virtual24(const std::string& instruction)
 {
     if(MSArrowButtonConfig::Virtual24(instruction))
@@ -180,13 +174,15 @@ bool MaxSplitterButtonConfig::Virtual24(const std::string& instruction)
 }
 
 // FUNCTION: WON 0x007658a0
-void MaxSplitterButtonConfig::Virtual34(Component* component)
+// Attaches the config to the maximize-splitter button it configures
+void MaxSplitterButtonConfig::SetComponent(Component* component)
 {
-    MSArrowButtonConfig::Virtual34(component);
-    mButton=static_cast<MaxSplitterButton*>(component);
+    MSArrowButtonConfig::SetComponent(component);
+    this->mButton=static_cast<MaxSplitterButton*>(component);
 }
 
 // FUNCTION: WON 0x007658c0
+// Creates a maximize-splitter button for the layout file
 Component* MaxSplitterButtonConfig::CompFactory()
 {
     return new MaxSplitterButton;

@@ -1,4 +1,4 @@
-// SOURCE_ONLY_NO_NATIVE_ID: complete genuine SDK WinSkin owner; no existing owner change.
+// WinSkin (not identified in the original exe).
 #ifndef EE_WONAPI_WONLOBBYWINSKIN_H
 #define EE_WONAPI_WONLOBBYWINSKIN_H
 
@@ -54,7 +54,7 @@ public:
 	WinSkin();
 	WONSkin* Load(const char *theFilePath);
 
-	WONSkin* GetSkin() { return mSkin; }
+	WONSkin* GetSkin() { return this->mSkin; }
 };
 typedef SmartPtr<WinSkin> WinSkinPtr;
 

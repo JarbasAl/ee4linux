@@ -1,4 +1,4 @@
-// WONGUI Scrollbar configuration, no control allocation.
+// Scrollbar resource config parser
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -12,39 +12,41 @@
 #include "ee/wonapi/WONLobbyResourceConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x00794920
+// Handles VERTICAL, RESIZETHUMB and MINTHUMBSIZE for a scrollbar; else defers to the container parser
 bool ScrollbarConfig::Virtual24(const std::string& instruction)
 {
-    if(instruction=="VERTICAL") mScrollbar->mVertical=Fn3837F0();
-    else if(instruction=="RESIZETHUMB") mScrollbar->mResizeThumb=Fn3837F0();
-    else if(instruction=="MINTHUMBSIZE") mScrollbar->mMinThumbSize=(unsigned char)ReadInt();
+    if(instruction=="VERTICAL") this->mScrollbar->mVertical=this->ReadBool();
+    else if(instruction=="RESIZETHUMB") this->mScrollbar->mResizeThumb=this->ReadBool();
+    else if(instruction=="MINTHUMBSIZE") this->mScrollbar->mMinThumbSize=(unsigned char)this->ReadInt();
     else return ContainerConfig::Virtual24(instruction);
     return true;
 }
 
 // FUNCTION: WON 0x007949c0
-bool ScrollbarConfig::Virtual28(const std::string& name,ComponentConfig*& config,Component*& component)
+// Returns the scrollbar's THUMB, UPARROW, DOWNARROW or SCROLLRECT control with a new config for it; else defers
+bool ScrollbarConfig::GetPredefinedComponent(const std::string& name,ComponentConfig*& config,Component*& component)
 {
     if(name=="THUMB")
     {
         config=new ComponentConfig;
-        component=mScrollbar->mThumb.get();
+        component=this->mScrollbar->mThumb.get();
     }
     else if(name=="UPARROW")
     {
         config=new ButtonConfig;
-        component=mScrollbar->mUpArrow.get();
+        component=this->mScrollbar->mUpArrow.get();
     }
     else if(name=="DOWNARROW")
     {
         config=new ButtonConfig;
-        component=mScrollbar->mDownArrow.get();
+        component=this->mScrollbar->mDownArrow.get();
     }
     else if(name=="SCROLLRECT")
     {
         config=new ButtonConfig;
-        component=mScrollbar->mScrollRect.get();
+        component=this->mScrollbar->mScrollRect.get();
     }
-    else return ContainerConfig::Virtual28(name,config,component);
+    else return ContainerConfig::GetPredefinedComponent(name,config,component);
     return true;
 }
 }

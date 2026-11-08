@@ -1,4 +1,4 @@
-// Actual WON simple/rich button state parsing and configuration dispatch.
+// Resource configuration of simple (image-only) and skinned buttons
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -14,10 +14,11 @@
 namespace WONAPI {
 
 // FUNCTION: WON 0x007971c0
+// Reads a BUTTONSTATE line (Normal, Pressed, Disabled or Over, and an image) and sets that image; throws on a bad state
 void WONSimpleButtonConfig::HandleButtonState()
 {
-	GUIString aStateStr = Fn3842F0(false);
-	EnsureComma();
+	GUIString aStateStr = this->ReadString(false);
+	this->EnsureComma();
 
 	int aState = 0;
 	if(aStateStr.CompareNoCase("Normal")==0) aState = 0;
@@ -27,40 +28,43 @@ void WONSimpleButtonConfig::HandleButtonState()
 	else
 		throw ConfigObjectException("Invalid button state: " + (std::string)aStateStr);
 
-	SmartPtr<Image> anImage = ReadImage(false);
-	mButton->SetImage(aState,anImage.get());
+	SmartPtr<Image> anImage = this->ReadImage(false);
+	this->mButton->SetImage(aState,anImage.get());
 }
 
 // FUNCTION: WON 0x007973f0
+// Reads up to four comma-separated images into the normal, pressed, disabled and over states
 void WONSimpleButtonConfig::HandleButtonStates()
 {	
 	for(int i=0; i<4; i++)
 	{
-		mButton->SetImage(i,ReadImage(false).get()); 
-		if(EndOfString())
+		this->mButton->SetImage(i,this->ReadImage(false).get()); 
+		if(this->EndOfString())
 			return;
 
-		EnsureComma();
+		this->EnsureComma();
 	}
 }
 
 // FUNCTION: WON 0x007974e0
+// Handles the simple button keys SCALEIMAGE, TYPE (copy a skin type; throws if unknown), BUTTONSTATE(S)
+// and CHECKMOUSEBUTTONDOWN; other keys go to the button config
 bool WONSimpleButtonConfig::Virtual24(const std::string &theInstruction)
 {
 	if(theInstruction=="SCALEIMAGE")
-		mButton->SetScaleImage(Fn3837F0());
+		this->mButton->SetScaleImage(this->ReadBool());
 	else if(theInstruction=="TYPE")
 	{
-		GUIString aType = Fn3842F0(false);
-		if(!gSkin->CopySimpleButtonType(aType,mButton))
+		GUIString aType = this->ReadString(false);
+		if(!gSkin->CopySimpleButtonType(aType,this->mButton))
 			throw ConfigObjectException("Type not found: " + std::string(aType));
 	}
 	else if(theInstruction=="BUTTONSTATE")
-		HandleButtonState();
+		this->HandleButtonState();
 	else if(theInstruction=="BUTTONSTATES")
-		HandleButtonStates();
+		this->HandleButtonStates();
 	else if(theInstruction=="CHECKMOUSEBUTTONDOWN")
-		mButton->SetCheckMouseButtonDown(Fn3837F0());
+		this->mButton->SetCheckMouseButtonDown(this->ReadBool());
 	else
 		return ButtonConfig::Virtual24(theInstruction);
 
@@ -68,10 +72,12 @@ bool WONSimpleButtonConfig::Virtual24(const std::string &theInstruction)
 }
 
 // FUNCTION: WON 0x00797740
+// Reads a BUTTONSTATE line: a (Checked)Normal/Pressed/Disabled/Over/Default state, an image and an optional
+// colour and font; throws on an unknown state
 void WONButtonConfig::HandleSetButtonState()
 {
-	GUIString aStateStr = Fn3842F0(false);
-	EnsureComma();
+	GUIString aStateStr = this->ReadString(false);
+	this->EnsureComma();
 
 	int aState = 0;
 	bool checked = false;
@@ -88,76 +94,78 @@ void WONButtonConfig::HandleSetButtonState()
 	else
 		throw ConfigObjectException("Invalid button state: " + (std::string)aStateStr);
 
-	SmartPtr<Image> anImage = ReadImage(false);
+	SmartPtr<Image> anImage = this->ReadImage(false);
 	int aColor = -1;
 	SmartPtr<Font> aFont;
-	if(!EndOfString())
+	if(!this->EndOfString())
 	{
-		EnsureComma();
-		aColor = Fn385510();
-		if(!EndOfString())
+		this->EnsureComma();
+		aColor = this->ReadColor();
+		if(!this->EndOfString())
 		{
-			EnsureComma();
-			aFont = ReadFont();
+			this->EnsureComma();
+			aFont = this->ReadFont();
 		}
 	}
 
-	mButton->SetButtonState(aState,anImage.get(),aColor,aFont.get(),checked);
+	this->mButton->SetButtonState(aState,anImage.get(),aColor,aFont.get(),checked);
 }
 
 // FUNCTION: WON 0x00797aa0
+// Handles the skinned button keys (font, type, colours, alignment, transparency, wrap, padding, button
+// states, focus rectangle); the INCREMENT...TEXTPAD keys are accepted and ignored
 bool WONButtonConfig::Virtual24(const std::string& theInstruction)
 {
 	if(theInstruction=="FONT")
-		mButton->SetFont(ReadFont().get());
+		this->mButton->SetFont(this->ReadFont().get());
 	else if(theInstruction=="TYPE")
 	{
-		GUIString aType = Fn3842F0(false);
-		if(!gSkin->CopyButtonType(aType,mButton))
+		GUIString aType = this->ReadString(false);
+		if(!gSkin->CopyButtonType(aType,this->mButton))
 			throw ConfigObjectException("Type not found: " + std::string(aType));
 	}
 	else if(theInstruction=="TEXTCOLOR")
-		mButton->SetTextColor(Fn385510());
+		this->mButton->SetTextColor(this->ReadColor());
 	else if(theInstruction=="DEFAULTTEXTCOLOR")
-		mButton->SetDefaultTextColor(Fn385510());
+		this->mButton->SetDefaultTextColor(this->ReadColor());
 	else if(theInstruction=="VERTALIGN")
-		mButton->SetVertAlign(ReadVertAlign());
+		this->mButton->SetVertAlign(this->ReadVertAlign());
 	else if(theInstruction=="HORZALIGN")
-		mButton->SetHorzAlign(ReadHorzAlign());
+		this->mButton->SetHorzAlign(this->ReadHorzAlign());
 	else if(theInstruction=="TRANSPARENT")
-		mButton->SetTransparent(Fn3837F0());
+		this->mButton->SetTransparent(this->ReadBool());
 	else if(theInstruction=="ADJUSTHEIGHTTOFITTEXT")
-		mButton->SetAdjustHeightToFitText(Fn3837F0());
+		this->mButton->SetAdjustHeightToFitText(this->ReadBool());
 	else if(theInstruction=="WRAP")
-		mButton->SetWrapText(Fn3837F0());
+		this->mButton->SetWrapText(this->ReadBool());
 	else if(theInstruction=="DRAWGRAYTEXT")
-		mButton->SetDrawGrayText(Fn3837F0());
+		this->mButton->SetDrawGrayText(this->ReadBool());
 	else if(theInstruction=="TEXTPADDING")
 	{
-		int left = ReadInt(); EnsureComma();
-		int top = ReadInt(); EnsureComma();
-		int right = ReadInt(); EnsureComma();
-		int bottom = ReadInt();
-		mButton->SetTextPadding(left,top,right,bottom);
+		int left = this->ReadInt(); this->EnsureComma();
+		int top = this->ReadInt(); this->EnsureComma();
+		int right = this->ReadInt(); this->EnsureComma();
+		int bottom = this->ReadInt();
+		this->mButton->SetTextPadding(left,top,right,bottom);
 	}
 	else if(theInstruction=="FOCUSPADDING")
 	{
-		int left = ReadInt(); EnsureComma();
-		int top = ReadInt(); EnsureComma();
-		int right = ReadInt(); EnsureComma();
-		int bottom = ReadInt();
-		mButton->SetFocusPadding(left,top,right,bottom);
+		int left = this->ReadInt(); this->EnsureComma();
+		int top = this->ReadInt(); this->EnsureComma();
+		int right = this->ReadInt(); this->EnsureComma();
+		int bottom = this->ReadInt();
+		this->mButton->SetFocusPadding(left,top,right,bottom);
 	}
 	else if(theInstruction=="HORZTEXTPAD")
 	{
-		int left = ReadInt(); 
-		int right = mButton->GetRightTextPad();
-		if(!EndOfString())
+		int left = this->ReadInt(); 
+		int right = this->mButton->GetRightTextPad();
+		if(!this->EndOfString())
 		{
-			EnsureComma(); 
-			right = ReadInt();
+			this->EnsureComma(); 
+			right = this->ReadInt();
 		}
-		mButton->SetHorzTextPad(left,right);
+		this->mButton->SetHorzTextPad(left,right);
 	}
 	else if(theInstruction=="INCREMENTHORZTEXTPAD")
 	{
@@ -172,11 +180,11 @@ bool WONButtonConfig::Virtual24(const std::string& theInstruction)
 		mButton->IncrementVertTextPad(top,bottom);
 */	}
 	else if(theInstruction=="BUTTONSTATE")
-		HandleSetButtonState();
+		this->HandleSetButtonState();
 	else if(theInstruction=="SCALEIMAGE")
-		mButton->SetScaleImage(Fn3837F0());
+		this->mButton->SetScaleImage(this->ReadBool());
 	else if(theInstruction=="DRAWFOCUSRECT")
-		mButton->SetFocusStyle(Fn3837F0()?1:0);
+		this->mButton->SetFocusStyle(this->ReadBool()?1:0);
 	else
 		return ButtonConfig::Virtual24(theInstruction);
 
@@ -186,7 +194,9 @@ bool WONButtonConfig::Virtual24(const std::string& theInstruction)
 
 namespace WONAPI {
 // FUNCTION: WON 0x00796a20
-void WONSimpleButtonConfig::Virtual34(Component* component) { mButton=static_cast<WONSimpleButton*>(component); ButtonConfig::Virtual34(component); }
-// (0x00796a20: ICF-folded with WONSimpleButtonConfig::Virtual34 above)
-void WONButtonConfig::Virtual34(Component* component) { mButton=static_cast<WONButton*>(component); ButtonConfig::Virtual34(component); }
+// Binds the simple button config to its button
+void WONSimpleButtonConfig::SetComponent(Component* component) { this->mButton=static_cast<WONSimpleButton*>(component); ButtonConfig::SetComponent(component); }
+// Binds the skinned button config to its button (the linker folds this body into the identical one at
+// 0x00796a20)
+void WONButtonConfig::SetComponent(Component* component) { this->mButton=static_cast<WONButton*>(component); ButtonConfig::SetComponent(component); }
 }

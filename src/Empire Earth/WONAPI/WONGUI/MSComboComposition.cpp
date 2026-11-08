@@ -1,4 +1,4 @@
-// Actual MSComboBox child composition and input/list policy; native2ffb20.
+// MSComboBox construction: its arrow button, edit box and drop-down list (file name inferred)
 // UNIT-FLAGS: -O2 -MD -GR -GX -DEE_DINKUM_SXL233
 #include <windows.h>
 #include <string>
@@ -13,21 +13,23 @@
 #include "ee/wonapi/WONLobbyMSExtraConfig.h"
 namespace WONAPI {
 // FUNCTION: WON 0x006ffb20
+// Creates a framed combo box: a 16-pixel non-repeating down-arrow button, an edit box and a scrolling list,
+// both in the MSButton font, with a vertical scrollbar only when needed
 MSComboBox::MSComboBox()
 {
-    mDrawFrame=true;
-    mButton=ArrowButtonFactory(Direction_Down);
-    if(mButton->Width()==0) mButton->Fn2F4B90(16,mButton->Height());
-    mEdit=new InputBox;
-    mListArea=new ListArea;
-    mListArea->SetFont(GetNamedFont("MSButton"));
-    mListArea->Fn2FB600(2,true);
-    mEdit->SetFont(GetNamedFont("MSButton"));
-    SmartPtr<MSScrollContainer> listBox=new MSScrollContainer(mListArea.get());
+    this->mDrawFrame=true;
+    this->mButton=MSComboBox::ArrowButtonFactory(Direction_Down);
+    if(this->mButton->Width()==0) this->mButton->SetSize(16,this->mButton->Height());
+    this->mEdit=new InputBox;
+    this->mListArea=new ListArea;
+    this->mListArea->SetFont(this->GetNamedFont("MSButton"));
+    this->mListArea->SetListFlags(2,true);
+    this->mEdit->SetFont(this->GetNamedFont("MSButton"));
+    SmartPtr<MSScrollContainer> listBox=new MSScrollContainer(this->mListArea.get());
     listBox->SetScrollbarConditions(ScrollbarCondition_Disable,ScrollbarCondition_Conditional);
     listBox->SetDraw3DFrame(false);
-    mListBox=listBox.get();
-    mButton->Fn2F3370(2,false);
+    this->mListBox=listBox.get();
+    this->mButton->SetButtonFlags(2,false);
 }
 }
 

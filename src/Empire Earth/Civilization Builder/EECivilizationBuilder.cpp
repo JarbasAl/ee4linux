@@ -79,7 +79,7 @@
 #include "ee/EECivilizationBuilder.h"
 #include "ee/EEStringIDs.h"
 #include "ee/EEScenarioEditorIDs.h"
-extern char gU4E5B98[];                     // 0x4e5b98 (pooled "")
+extern char gEmptyString[];                 // 0x4e5b98 (pooled "")
 
 // chain at 0x67efca (wrapper)
 //   object 0x9654a8  ctor __imp_??0UString@@QAE@XZ  dtor __imp_??1UString@@UAE@XZ
@@ -104,7 +104,7 @@ long Fn27EFF6()
     if (theEdit == NULL)
         return theResult;
     theText = theEdit->GetText(0);
-    if (!(theText == gU4E5B98)) {
+    if (!(theText == gEmptyString)) {
         theResult = Fn27F43F(theText);
         if (theResult == 0)
             theResult = Fn27F340();
@@ -400,7 +400,7 @@ long Fn27F824()
     long theResult = Fn27F7C0(0x10, 0x1a4);
     if (theResult != 0)
         return theResult;
-    if (gLastCivilizationFile != gU4E5B98)
+    if (gLastCivilizationFile != gEmptyString)
         theText = (const char*)gLastCivilizationFile;
     else
         theResult = Fn27F134(theText);

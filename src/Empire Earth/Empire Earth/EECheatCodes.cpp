@@ -76,7 +76,7 @@
 #include "ee/EECheatCodes.h"
 #include "ee/EEStringIDs.h"
 #include "LostDebug.h"
-extern char gU4E5B98[];                     // 0x4e5b98 (pooled "")
+extern char gEmptyString[];                 // 0x4e5b98 (pooled "")
 
 // FUNCTION: EXE 0x52a54a
 // Creates the cheat code table from the string resources
@@ -160,14 +160,14 @@ void EECheatCodes::ListCheatCodes()
     gResource->GetString(IDS_MY_NAME_IS_METHOS, theB);
     gResource->GetString(IDS_QUOTABLE_PATELLA, theC);
     gResource->GetString(IDS_DISPLAY_CHEATS, theD);
-    theE = gU4E5B98;
+    theE = gEmptyString;
     theLine = theA + "     " + theB + "     " + theC + "     " + theD + "     " + theE;
     gUserInterface->AddChatLogEntry(theTitle + theLine, 0);
     gResource->GetString(IDS_I_HAVE_POWER, theA);
     gResource->GetString(IDS_COFFEE_TRAIN, theB);
     gResource->GetString(IDS_AHHHCOOL, theC);
     gResource->GetString(IDS_FRIENDLY_SKIES, theD);
-    theE = gU4E5B98;
+    theE = gEmptyString;
     theLine = theA + "     " + theB + "     " + theC + "     " + theD + "     " + theE;
     gUserInterface->AddChatLogEntry(theTitle + theLine, 0);
 }
@@ -433,7 +433,7 @@ void EECheatCodes::ParseCheatCode(const UWideString& inText, long& outCode, long
             if (outParameter != 0 || _mbscmp(theLast, reinterpret_cast<const unsigned char*>((const char*)UWideString(" 0"))) == 0) {
                 if ((unsigned long)outParameter > 9 && (const char*)theText != reinterpret_cast<const char*>(theLast))
                     theLast = _mbsdec(reinterpret_cast<const unsigned char*>((const char*)theText), theLast);
-                strcpy(reinterpret_cast<char*>(theLast), gU4E5B98);
+                strcpy(reinterpret_cast<char*>(theLast), gEmptyString);
             }
         }
         _mbslwr((unsigned char*)(const char*)theText);
