@@ -50,6 +50,7 @@ LIBS = {
     "vc98lib/rtm/WS2_32.LIB": "dbe9de991aea6662d8857da13e572729b5379377be8e13bdd86e57a51354988e",
     "vc98lib/rtm/SHELL32.LIB": "53150052405bbce4f264226a7bd86d3496bafe8c4bc2252835415826d996bd53",
     "vc98lib/rtm/WSOCK32.LIB": "3ac0ae32d0c9ea77813db7f4d2ea8eba23ae420b40a24845cbe36f6702fca4ba",
+    "vc98lib/rtm/OLDNAMES.LIB": "348a220e94f90bd9f530514ae59ff9b044b76e2056f52b45df406c12d2156afb",
     "dx81sdk/lib/ddraw.lib": "6e9e94271645a16f5dee111cf380eaea1dd03bafcfab676d4198cfd7900de036",
     "dx81sdk/lib/dinput.lib": "6cefbeaf8688ea42259a055f84feec0410a666be6ddfdcc745c2661edeb123da",
     "dx81sdk/lib/dxguid.lib": "73a147b9ff6e4527e543e9a436cb244adcdae4ad89b89df51a0634f9a8c13682",
