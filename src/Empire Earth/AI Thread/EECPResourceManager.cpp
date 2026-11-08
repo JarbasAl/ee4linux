@@ -1309,7 +1309,7 @@ long EECPResourceManager::Save(unsigned long inMajorVersion, unsigned long inMin
 // NEAR: the 0x92230 assign shape is a guess from the decompiler outline; the original returns true on every
 // path (0x49195e)
 // FUNCTION: EXE 0x4916e6
-// Loads as many gatherers as fit on a transport and ships them to a resource to gather it; returns true even
+// Loads as many gatherers as fit on a transport and ships them to a resource to gather it; returns false
 // when the transport cannot unload there
 bool EECPResourceManager::FerryGatherers(std::vector<EEComplexUnit*>& inUnits, EEComplexUnit* inTransport, EEUnit* inResource)
 {
@@ -1340,8 +1340,10 @@ bool EECPResourceManager::FerryGatherers(std::vector<EEComplexUnit*>& inUnits, E
             }
             if (theGather != NULL)
                 delete theGather;
-        } else
+        } else {
             delete theUnload;
+            return false;   // cannot unload there: RequestFerry's failure branch runs (was true)
+        }
     }
     return true;
 }
