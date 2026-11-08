@@ -1107,7 +1107,7 @@ bool EECPBuildManager::FindTowerSite(long inUnitClass, long inSize, EETileCoordi
                     EEGetTilesInRadius((*theGate)->GetTileX(), (*theGate)->GetTileY(), 5, true, theRadiusTiles);
                     std::vector<EETileCoordinate>::iterator theIt;
                     for (theIt = theRadiusTiles.begin(); theIt != theRadiusTiles.end();) {
-                        if (this->HasGateNear(theIt->GetX(), theIt->GetY(), 2.0f) || this->HasWallNear(theIt->GetX(), theIt->GetY(), 2.0f)
+                        if (this->HasGateNear(theIt->GetX(), theIt->GetY(), 2.0f) || this->HasWallNear(theIt->GetX(), theIt->GetY(), 4.0f)   // 2 tiles squared, like the gate test (was 2: 1.4 tiles)
                             || (inUnitClass == 0x2f0 ? this->HasUnitNear(0x2f0, theIt->GetX(), theIt->GetY(), theRange)
                                 : this->HasTowerNear(theIt->GetX(), theIt->GetY(), theRange)))
                             theIt = theRadiusTiles.erase(theIt);
