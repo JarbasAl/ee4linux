@@ -32,7 +32,7 @@ TARGETS = {
     "mingw": {
         "cc": TOOLCHAIN / "llvm-mingw" / "bin" / "i686-w64-mingw32-clang",
         "cxx": TOOLCHAIN / "llvm-mingw" / "bin" / "i686-w64-mingw32-clang++",
-        "flags": ["-O1", "-march=i686", "-mfpmath=387", "-fasm-blocks", "-fms-extensions",
+        "flags": ["-O1", "-march=i686", "-mfpmath=387", "-fasm-blocks", "-fms-extensions", "-fdelayed-template-parsing",
                   "-fno-strict-aliasing", "-w"],
         "cxxflags": ["-std=gnu++14"],
     },
