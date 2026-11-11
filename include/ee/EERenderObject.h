@@ -54,7 +54,7 @@ public:
     void FillGhostRecords();                // 0x10c952 (FillRenderLists: the ghost units)
     void FillRenderLists();                 // 0x10eabe (EEROGroundShadows::FrameStarting; provisional name)
     void Fn10E8D1();                        // 0x10e8d1 (EEROTerrain::FrameStarting; provisional name)
-#if defined(_SET_) || defined(_LIBCPP_SET)  // the include guard of <set> (Dinkum, libc++)
+#if defined(_SET_) || defined(_LIBCPP_SET) || defined(_GLIBCXX_SET)  // <set>'s guard (Dinkum, libc++, libstdc++)
     // FillRenderLists's per-unit helpers (thiscall, `this` unused; provisional names; types inferred)
     bool IsUnitDrawn(EEUnit* inUnit, EETile* inTile, std::set<EEUnit*>& ioDrawn);  // 0x10b3b3: the unit is drawn this frame
 #endif

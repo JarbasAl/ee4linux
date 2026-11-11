@@ -33,13 +33,15 @@ import verify
 from ee import (EEX_INCLUDE_DIRS, LIB_UNITS, LINK_DIR, MODULE_FILES, MODULE_FLAGS, MODULE_SRC, ROOT, TARGET_MODULES,
                 TOOLCHAIN, module_sources)
 
-MODULES = list(MODULE_SRC)
 # Library members still built from source: the DCL in the engine, Miles' atexit helper in the mixer. Dinkum's
 # operator new[]/delete[] are libc++'s in the port.
 PORT_LIB_UNITS = {"lle": ["implode", "explode"], "mixer": ["mssauto"]}
 # Units of the port build alone: the names that the VC6 link takes from the original image
 # (src/Port/EEPortLinks.cpp and EEPortWonLinks.cpp)
 PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp"]}
+# Modules of the port build alone, each a folder of src: the native build's Win32 layer
+PORT_MODULES = {"win32": "Port/Linux"}
+MODULES = list(MODULE_SRC) + list(PORT_MODULES)
 TARGETS = {
     "mingw": {
         "cc": TOOLCHAIN / "llvm-mingw" / "bin" / "i686-w64-mingw32-clang",
@@ -54,6 +56,25 @@ TARGETS = {
         "dlltool": TOOLCHAIN / "llvm-mingw" / "bin" / "i686-w64-mingw32-dlltool",
         "runtime_dir": TOOLCHAIN / "llvm-mingw" / "i686-w64-mingw32" / "bin",
         "runtime": ["libc++.dll", "libunwind.dll"],
+    },
+    # Native i386 Linux. Wine's headers declare the Win32 and DirectX types and functions for a Unix compiler;
+    # include/port/linux comes before them and implements what the game calls. Every unit is position-independent,
+    # because the engine and the plug-ins are shared objects.
+    "linux": {
+        "cc": pathlib.Path("/usr/bin/clang"),
+        "cxx": pathlib.Path("/usr/bin/clang++"),
+        # -fdeclspec, not -fms-extensions: that makes the MSVC intrinsics built-ins, which Wine's headers define
+        "flags": ["-m32", "-fPIC", "-O1", "-march=i686", "-mfpmath=387", "-fasm-blocks", "-fdeclspec",
+                  "-fdelayed-template-parsing", "-fno-strict-aliasing", "-w", "-ferror-limit=0",
+                  "-Wno-address-of-temporary", "-DEE_PORT_LINUX",
+                  # the game creates DirectInput 7 (Input System.cpp); Wine's dinput.h defaults to 8
+                  "-DDIRECTINPUT_VERSION=0x0700",
+                  # VC6 narrows in braced initializers ({ ..., gTexturePixelDepth, ... })
+                  "-Wno-c++11-narrowing"],
+        "cxxflags": ["-std=gnu++14"],
+        "includes": [ROOT / "include" / "port" / "linux"],
+        "system_includes": [pathlib.Path("/usr/include/wine/windows")],
+        "modules": ["win32", "lle", "jpeg", "tcp", "default", "mixer", "dx7hrtnl", "exe", "exeimg", "won"],
     },
 }
 # include/port/case holds the Windows SDK headers that the game names in a case the toolchain's headers do not have
@@ -72,11 +93,15 @@ ARCHIVED = {"won", "exeimg"}    # the DirectX and COM GUIDs that the original co
 
 
 def unit_defines(src, mod):
-    tokens = shlex.split(verify.DEFINES) + shlex.split(verify.unit_flags(src, MODULE_FLAGS[mod]))
+    tokens = shlex.split(verify.DEFINES)
+    if mod not in PORT_MODULES:
+        tokens += shlex.split(verify.unit_flags(src, MODULE_FLAGS[mod]))
     return [t for t in tokens if DEFINE.match(t)] + ["-DEE_PORT"]
 
 
 def module_jobs(mod):
+    if mod in PORT_MODULES:
+        return [(mod, p) for p in sorted((ROOT / "src" / PORT_MODULES[mod]).glob("*.cpp"))]
     paths = module_sources(mod) + [ROOT / "src" / LIB_UNITS[n] for n in PORT_LIB_UNITS.get(mod, [])]
     paths += [ROOT / "src" / rel for rel in PORT_UNITS.get(mod, [])]
     return [(mod, p) for p in paths]
@@ -110,7 +135,8 @@ def compile_unit(target, out, mod, src):
     cfg = TARGETS[target]
     is_c = src.suffix == ".c"
     cmd = [str(cfg["cc"] if is_c else cfg["cxx"]), *cfg["flags"], *([] if is_c else cfg["cxxflags"]),
-           *unit_defines(src, mod), "-include", str(COMPAT), *(f"-I{d}" for d in INCLUDES),
+           *unit_defines(src, mod), "-include", str(COMPAT), *(f"-I{d}" for d in cfg.get("includes", [])),
+           *(f"-I{d}" for d in INCLUDES), *(f"-isystem{d}" for d in cfg.get("system_includes", [])),
            "-MMD", "-MF", str(obj.with_suffix(".d")), "-c", str(src), "-o", str(obj)]
     run = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
     if run.returncode:
@@ -223,12 +249,13 @@ def link_all(target, out):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("modules", nargs="*", default=MODULES, help=f"modules to compile (default: all of {MODULES})")
+    ap.add_argument("modules", nargs="*", help=f"modules to compile (default: all of the target's, from {MODULES})")
     ap.add_argument("-j", type=int, default=2, help="parallel compiles")
     ap.add_argument("--target", default="mingw", choices=sorted(TARGETS))
     ap.add_argument("--out", type=pathlib.Path, help="output folder (default build/port-<target>)")
     ap.add_argument("--link", action="store_true", help="link the images after compiling every module")
     args = ap.parse_args()
+    args.modules = args.modules or TARGETS[args.target].get("modules", list(MODULE_SRC))
     unknown = set(args.modules) - set(MODULES)
     if unknown:
         sys.exit(f"unknown module(s) {', '.join(sorted(unknown))}; known: {', '.join(MODULES)}")
@@ -265,7 +292,9 @@ def main():
     if total_in != total_out:
         return 1
     if args.link:
-        if set(args.modules) != set(MODULES):
+        if args.target != "mingw":
+            sys.exit("--link supports only the mingw target")
+        if set(args.modules) != set(MODULE_SRC):
             sys.exit("--link needs every module compiled: give no module names")
         return 1 if link_all(args.target, out) else 0
     return 0

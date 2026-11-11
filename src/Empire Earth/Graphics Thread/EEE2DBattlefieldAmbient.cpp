@@ -62,6 +62,9 @@ const UString EEE2DBattlefieldAmbient::sData("EEE2DBattlefieldAmbient-Data");
 
 static EEGraphicEffect* AmbientPickVariant(EEGraphicEffect* inEffect);
 static bool AmbientRollChance(EEGraphicEffect* inEffect);
+#ifdef EE_PORT
+static    // VC6 lets the static definition below follow a declaration without it
+#endif
 EEE2DBattlefieldAmbient* AmbientFindNear(unsigned long inType, GE3DPoint& inLocation);
 static bool AmbientScatter(EEGraphicEffect* inEffect, GE3DPoint& ioLocation);
 

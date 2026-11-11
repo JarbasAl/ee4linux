@@ -42,6 +42,13 @@ struct GETGAHeader {
 };
 #include <poppack.h>
 
+#ifdef EE_PORT_LINUX
+// MSVC's fpos_t is the stream's byte offset; glibc's is a structure. These units use it as the offset alone.
+#define fpos_t long
+#define fsetpos(stream, position) fseek((stream), *(position), SEEK_SET)
+#define fgetpos(stream, position) (*(position) = ftell(stream), 0)
+#endif
+
 // FUNCTION: LLE 0x1002534b
 // Always fails: loading BMP files is not supported
 long GESurface::LoadBMP(FSFileSpec& inFile)

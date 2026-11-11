@@ -237,7 +237,7 @@
  * the X config stuff didn't define _BSD_SOURCE we wouldn't need this.
  */
 
-#  ifdef __linux__
+#  if defined(__linux__) && !defined(EE_PORT)   /* the port includes glibc's setjmp.h before libpng */
 #    ifdef _BSD_SOURCE
 #      define PNG_SAVE_BSD_SOURCE
 #      undef _BSD_SOURCE

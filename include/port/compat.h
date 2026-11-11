@@ -3,12 +3,22 @@
 #ifndef EE_PORT_COMPAT_H
 #define EE_PORT_COMPAT_H
 
+#ifdef EE_PORT_LINUX
+#include "port_msvcrt.h"
+#endif
+
 #define NOMINMAX        /* windows.h's min and max macros break the C++ library; the templates below replace them */
 
-/* Clang has no structured exception handling for 32-bit mingw. The two WON handlers (the thread entry's crash dump
-   and the symbol lookup's fault guard) run their guarded block alone. */
+/* Clang has no structured exception handling for 32-bit mingw or Linux. The two WON handlers (the thread entry's
+   crash dump and the symbol lookup's fault guard) run their guarded block alone, or, with libstdc++, which defines
+   __try as try itself, catch C++ exceptions only. */
+#ifdef EE_PORT_LINUX
+#define __try try
+#define __except(filter) catch (...)
+#else
 #define __try if (1)
 #define __except(filter) else
+#endif
 
 #ifdef __cplusplus
 #include <typeinfo>     /* VC6 allows typeid without it */
@@ -53,8 +63,14 @@ struct EEPortAliases {
     static void BindGame();     // Empire Earth.cpp
     static void BindRender();   // EERenderObject.cpp
 };
+#ifdef _WIN32
+#define EE_PORT_SYMBOL(name) "_" #name      /* C names carry an underscore in 32-bit Windows objects, not in ELF */
+#else
+#define EE_PORT_SYMBOL(name) #name
+#endif
 #define EE_PORT_ALIAS(name, object, member) \
-    __asm__(".globl _" #name "\n\t.set _" #name ", _" #object " + %c0" : : "i"(__builtin_offsetof(decltype(object), member)))
+    __asm__(".globl " EE_PORT_SYMBOL(name) "\n\t.set " EE_PORT_SYMBOL(name) ", " EE_PORT_SYMBOL(object) " + %c0" \
+            : : "i"(__builtin_offsetof(decltype(object), member)))
 
 /* windows.h's macros exactly: (((a) < (b)) ? (a) : (b)) and (((a) > (b)) ? (a) : (b)), with the usual arithmetic
    conversions of both arguments. Equal values and NaN give the same operand as the macros, which keeps the simulation

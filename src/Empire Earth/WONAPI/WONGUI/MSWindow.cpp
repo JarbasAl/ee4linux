@@ -373,7 +373,11 @@ static void SendMsgToParent(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam) {
 void MSWindow::CalcCodePage()
 {
 	char aBuf[32];
+#ifdef EE_PORT
+	unsigned short aLangId = ((WORD)(ULONG_PTR)GetKeyboardLayout(0))&0xffff;
+#else
 	unsigned short aLangId = ((WORD)GetKeyboardLayout(0))&0xffff;
+#endif
 	GetLocaleInfo(MAKELCID(aLangId,SORT_DEFAULT),LOCALE_IDEFAULTANSICODEPAGE,aBuf,32);
 	this->mCodePage = atoi(aBuf);
 	if(this->mCodePage==0)
