@@ -61,3 +61,26 @@ def module_units(mod):
             lo, hi, name = line.split(None, 2)
             units.append((int(lo, 16), int(hi, 16), module_src(mod) / name.strip()))
     return units
+
+
+TARGET_MODULES = {"lle": ["lle", "jpeg"], "exe": ["exe", "exeimg", "won"], "language": []}
+PART_OF = {m: t for t, ms in TARGET_MODULES.items() for m in ms if m != t}
+SHARED_UNITS = {m: ["Low-Level Engine/Utilities/UFtol.cpp"] for m in ("tcp", "default", "dx7hr", "dx7hrtnl")}
+LIB_UNITS = {"newaop": "ThirdParty/Dinkum/newaop.cpp", "delaop": "ThirdParty/Dinkum/delaop.cpp",
+             "mssauto": "ThirdParty/mss/mssauto.c",
+             "implode": "ThirdParty/pkdcl/implode.c", "explode": "ThirdParty/pkdcl/explode.c"}
+
+
+def won_extra_units():
+    have = {p.resolve() for mod in ("won", "exe") for _, _, p in module_units(mod)}
+    return [(0, 0, p) for p in sorted((ROOT / "src" / "Empire Earth" / "WONAPI").rglob("*.cpp"))
+            if p.resolve() not in have]
+
+
+def module_sources(mod):
+    """Every source compiled for a module: its listed units, the shared units and, for won, the unlisted WON units."""
+    paths = [p for _, _, p in module_units(mod)]
+    paths += [ROOT / "src" / rel for rel in SHARED_UNITS.get(mod, [])]
+    if mod == "won":
+        paths += [p for _, _, p in won_extra_units()]
+    return paths

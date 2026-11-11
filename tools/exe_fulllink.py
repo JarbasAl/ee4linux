@@ -12,7 +12,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import exe_roundtrip
 import exe_units
 import verify
-from ee import LINK_DIR, COMPILER, ROOT, module_units
+from ee import LINK_DIR, COMPILER, ROOT, module_units, won_extra_units
 from undname import undname
 EXE_RC = ROOT / "src" / "Empire Earth" / "EE-AOC.rc"
 GAME = (0x1000, 0x29d080)
@@ -864,9 +864,3 @@ def won_comdat_patch(out, objs, dup_pre, game):
         print(f"won: {len(done)} game COMDAT(s) set to SELECT_ANY in object copies: " +
               ", ".join(sorted({n for n, _, _ in done})), flush=True)
     return done
-
-
-def won_extra_units():
-    have = {p.resolve() for mod in ("won", "exe") for _, _, p in module_units(mod)}
-    return [(0, 0, p) for p in sorted((ROOT / "src" / "Empire Earth" / "WONAPI").rglob("*.cpp"))
-            if p.resolve() not in have]

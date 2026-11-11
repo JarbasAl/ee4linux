@@ -10,7 +10,7 @@ import tempfile
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import implib
 import verify
-from ee import COMPILER, MODULE_FLAGS, ROOT, module_filename, module_src, module_units
+from ee import COMPILER, LIB_UNITS, MODULE_FLAGS, ROOT, SHARED_UNITS, module_filename, module_src, module_units
 LINK_FLAGS = {
     "tcp": "/DLL /DEBUG /INCREMENTAL:NO /OPT:REF /OPT:ICF /MACHINE:I386 /SUBSYSTEM:WINDOWS /NODEFAULTLIB "
            "/BASE:0x10000000",
@@ -33,7 +33,6 @@ CARVED = {
     "dx7hrtnl": {"sxlrt233": ["delaop", "newaop"]},
     "lle": {"sxlrt233": ["newaop", "delaop"]},
 }
-SHARED_UNITS = {m: ["Low-Level Engine/Utilities/UFtol.cpp"] for m in ("tcp", "default", "dx7hr", "dx7hrtnl")}
 REAL_LIB_DIR = verify.TOOLCHAIN
 _RTM = {n: f"vc98lib/rtm/{n}.LIB" for n in ("MSVCRT", "KERNEL32", "USER32", "GDI32", "ADVAPI32", "OLE32", "WINMM", "IMM32",
                                     "WS2_32")}
@@ -46,9 +45,6 @@ REAL_LIBS = {
     "lle": {**{n: _RTM[n] for n in ("MSVCRT", "KERNEL32", "USER32", "GDI32", "ADVAPI32", "OLE32", "WINMM", "IMM32")},
             "DINPUT": "dx81sdk/lib/dinput.lib"},
 }
-LIB_UNITS = {"newaop": "ThirdParty/Dinkum/newaop.cpp", "delaop": "ThirdParty/Dinkum/delaop.cpp",
-             "mssauto": "ThirdParty/mss/mssauto.c",
-             "implode": "ThirdParty/pkdcl/implode.c", "explode": "ThirdParty/pkdcl/explode.c"}
 UNIT_COMPILER = re.compile(r"^// UNIT-COMPILER: (\S+)", re.M)
 
 

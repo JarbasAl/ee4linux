@@ -46,16 +46,14 @@ os.environ["EE_NO_ORIGINALS"] = "1"
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import relink
 import verify
-from ee import LINK_DIR, COMPILER, MODULE_FLAGS, ORIG_SRC_ROOT, ROOT, TOOLCHAIN, module_units
+from ee import (LINK_DIR, COMPILER, LIB_UNITS, MODULE_FLAGS, ORIG_SRC_ROOT, PART_OF, ROOT, TARGET_MODULES, TOOLCHAIN,
+                module_sources, module_units, won_extra_units)
 
 MODULES = ["tcp", "mixer", "default", "lle", "jpeg", "dx7hr", "dx7hrtnl", "exeimg", "won", "exe"]
 TARGETS = ["tcp", "mixer", "default", "lle", "dx7hr", "dx7hrtnl", "language", "exe"]
-TARGET_MODULES = {"lle": ["lle", "jpeg"], "exe": ["exe", "exeimg", "won"], "language": []}
-PART_OF = {"jpeg": "lle", "exeimg": "exe", "won": "exe"}
 LANGUAGE_RC = pathlib.PurePosixPath("Empire Earth/Language/Language.rc")
 EXE_MEMBERS = LINK_DIR / "exe" / "fulllink_members.tsv"
 MODULE_COMPILER = {"jpeg": "msvc6.4"}
-EXTRA_UNITS = {m: ["Low-Level Engine/Utilities/UFtol.cpp"] for m in ("tcp", "default", "dx7hr", "dx7hrtnl")}
 LIB_MEMBERS = {m: [n for g in relink.CARVED[m].values() for n in g]
                + [n for _, _, ms in relink.STATIC_LIBS.get(m, []) if isinstance(ms, list) for n in ms]
                for m in relink.CARVED}
@@ -79,13 +77,8 @@ def unit_compiler(path, default):
 
 def jobs_for(mod):
     flags = MODULE_FLAGS[mod]
-    paths = [p for _, _, p in module_units(mod)]
-    paths += [ROOT / "src" / rel for rel in EXTRA_UNITS.get(mod, [])]
-    if mod == "won":
-        import exe_fulllink
-        paths += [p for _, _, p in exe_fulllink.won_extra_units()]
     out = []
-    for p in paths:
+    for p in module_sources(mod):
         if not p.exists():
             sys.exit(f"{mod}: unit {p} does not exist")
         out.append((mod, p, flags, unit_compiler(p, MODULE_COMPILER.get(mod, COMPILER))))
@@ -96,7 +89,7 @@ def lib_jobs(mods):
     out, seen = [], set()
     for m in mods:
         for n in LIB_MEMBERS.get(m, []):
-            p = ROOT / "src" / relink.LIB_UNITS[n]
+            p = ROOT / "src" / LIB_UNITS[n]
             flags = EXE_LIB_FLAGS if m == "exe" else MODULE_FLAGS[m]
             job = ("lib", p, flags, unit_compiler(p, COMPILER))
             key = cache_key(p, flags, job[3])
@@ -291,7 +284,7 @@ def link_exe(out, objs):
     dst.mkdir(parents=True, exist_ok=True)
     items, missing = [], []
     for mod in ("exe", "exeimg", "won"):
-        for lo, hi, p in module_units(mod) + (exe_fulllink.won_extra_units() if mod == "won" else []):
+        for lo, hi, p in module_units(mod) + (won_extra_units() if mod == "won" else []):
             if not p.exists():
                 missing.append(p)
                 continue
@@ -302,7 +295,7 @@ def link_exe(out, objs):
         sys.exit(f"exe: {len(missing)} registered units have no source: {missing[:3]}")
     libobj = {}
     for n in ("newaop", "delaop"):
-        p = ROOT / "src" / relink.LIB_UNITS[n]
+        p = ROOT / "src" / LIB_UNITS[n]
         libobj[n] = objs[cache_key(p, EXE_LIB_FLAGS, unit_compiler(p, COMPILER))]
     rep, _ = exe_fulllink.link_exe(dst, items, {}, libobj, members=EXE_MEMBERS)
     p2 = rep.get("pass2", {})
