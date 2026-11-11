@@ -82,6 +82,11 @@ def coff_parse(data):
             return data[start:data.index(b"\0", start)].decode("latin-1")
         return raw[:8].rstrip(b"\0").decode("latin-1")
 
+    def symbol_name(raw):
+        # VC6 names an anonymous namespace after the source file and the compile time: drop the time
+        # and a named local label ($name$12345) takes a number from the label counter: drop the number
+        return NAMED_LABEL.sub(r"\1", ANONYMOUS.sub(r"\1", text(raw)))
+
     sections = []
     for i in range(count):
         off = 20 + opt + i * 40
@@ -91,24 +96,37 @@ def coff_parse(data):
             name = data[start:data.index(b"\0", start)].decode("latin-1")
         size, ptr, relptr, _ln, nrel, _nln, chars = struct.unpack_from("<IIIIHHI", data, off + 16)
         relocs = [struct.unpack_from("<IIH", data, relptr + r * 10) for r in range(nrel)]
-        sections.append((name, chars, data[ptr:ptr + size] if ptr else b"", relocs))
+        raw = ANONYMOUS_BYTES.sub(rb"\1", data[ptr:ptr + size]) if ptr else b""   # RTTI names hold it too
+        sections.append((name, chars, raw, relocs))
     symbols, i = {}, 0
     while i < nsyms:
         entry = data[symptr + i * 18:symptr + i * 18 + 18]
         value, section, kind, storage, naux = struct.unpack_from("<IhHBB", entry, 8)
-        symbols[i] = (text(entry), value, section, kind, storage, data[symptr + (i + 1) * 18:symptr + (i + 1 + naux) * 18])
+        symbols[i] = (symbol_name(entry), value, section, kind, storage, data[symptr + (i + 1) * 18:symptr + (i + 1 + naux) * 18])
         i += 1 + naux
     return sections, symbols
+
+
+NUMBERED = re.compile(r"^\$[LT]\d+$")
+ANONYMOUS = re.compile(r"(\?%[^@]*?\.cp?p?)\d+")
+NAMED_LABEL = re.compile(r"^(\$\w+\$)\d+$")
+ANONYMOUS_BYTES = re.compile(rb"(\?%[^@\0]*?\.cp?p?)\d+")
+
+
+def numbered(name):
+    return bool(NUMBERED.match(name))
 
 
 def coff_sections(data):
     """The object's code and data, independent of the order VC6 emits sections in: each section is keyed by the
     COMDAT symbol it defines (or by its name and rank), and each relocation names its target instead of its index.
-    Local labels ($L...) are compared by position only: their numbers come from a counter that any edit can shift."""
+    Local labels ($L...) and compiler temporaries ($T..., the exception-handling tables) are compared by position
+    only: their numbers come from counters that any edit can shift."""
     sections, symbols = coff_parse(data)
     owner = {}
     for name, value, section, kind, storage, _aux in symbols.values():
-        if section > 0 and storage in (2, 3) and not name.startswith((".", "$L")) and section not in owner:
+        if section > 0 and storage in (2, 3) and not numbered(name) and not name.startswith(".") \
+                and section not in owner:
             owner[section] = name
     rank, keys = {}, {}
     for number, (name, *_rest) in enumerate(sections, 1):
@@ -120,8 +138,8 @@ def coff_sections(data):
 
     def target(index):
         name, value, section, _kind, storage, _aux = symbols[index]
-        if storage == 6 and name.startswith("$L"):
-            return ("label", keys.get(section), value)
+        if numbered(name):
+            return ("numbered", name[:2], keys.get(section), value)
         if storage == 3 and name.startswith(".") and section > 0:
             return ("section", keys[section], value)
         return ("symbol", name)
@@ -133,7 +151,7 @@ def coff_sections(data):
         content[keys[number]] = (chars, raw, sorted((vaddr, target(index), kind) for vaddr, index, kind in relocs))
     externals = sorted((name, str(keys.get(section, section)), value, kind, storage)
                        for name, value, section, kind, storage, _aux in symbols.values()
-                       if storage == 2 and not name.startswith("$L"))
+                       if storage == 2 and not numbered(name))
     return content, externals
 
 
@@ -195,6 +213,7 @@ def main():
     ap.add_argument("--base", default="upstream/fixes", help="revision to compare against (default upstream/fixes)")
     ap.add_argument("-j", type=int, default=2)
     ap.add_argument("--only", help="check only units whose path contains this text")
+    ap.add_argument("--recompare", action="store_true", help="compare the objects of the last run again, no compiles")
     args = ap.parse_args()
     changed = changed_files(args.base)
     cache, units, skipped = {}, [], []
@@ -213,6 +232,29 @@ def main():
     if not units:
         return 0
 
+    if args.recompare:
+        objects = {}
+        for label in ("base", "head"):
+            objects[label] = {}
+            for mod, src in units:
+                out = WORK / "obj" / label / mod / src.resolve().relative_to(ROOT).with_suffix(".obj")
+                objects[label][(mod, src.resolve().relative_to(ROOT))] = (out.read_bytes() if out.exists() else None, "")
+        base, head = objects["base"], objects["head"]
+    else:
+        base, head = run_compiles(args, units)
+    failures = 0
+    for key in base:
+        problem = compare(base[key][0], head[key][0])
+        if problem:
+            failures += 1
+            mod, rel = key
+            log = (base[key][1] if base[key][0] is None else head[key][1]).strip()
+            print(f"DIFFERENT {mod} {rel}: {problem}" + (f"\n{log}" if problem == "does not compile" else ""))
+    print(f"{len(units)} units checked, {len(units) - failures} identical, {failures} different")
+    return 1 if failures else 0
+
+
+def run_compiles(args, units):
     base_tree = WORK / "base-tree"
     rev = subprocess.run(["git", "rev-parse", args.base], cwd=ROOT, capture_output=True, text=True,
                          check=True).stdout.strip()
@@ -225,16 +267,7 @@ def main():
     base = compile_all("base", units, args.j)
     stage(ROOT)
     head = compile_all("head", units, args.j)
-    failures = 0
-    for key in base:
-        problem = compare(base[key][0], head[key][0])
-        if problem:
-            failures += 1
-            mod, rel = key
-            log = (base[key][1] if base[key][0] is None else head[key][1]).strip()
-            print(f"DIFFERENT {mod} {rel}: {problem}" + (f"\n{log}" if problem == "does not compile" else ""))
-    print(f"{len(units)} units checked, {len(units) - failures} identical, {failures} different")
-    return 1 if failures else 0
+    return base, head
 
 
 if __name__ == "__main__":
