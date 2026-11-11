@@ -740,7 +740,7 @@ public:
     virtual void Compute(bool inIsSorted)
     {
         U2DGrahamsAlgorithm<T> theAlgorithm;
-        std::vector<U2DPoint<T> >::iterator theEnd;
+        typename std::vector<U2DPoint<T> >::iterator theEnd;
         TMGetTime();
 #if defined(EE_LOSTDEBUG_H) && (defined(LOWLEVELENGINE_EXPORTS) || defined(LLE_EXE_HEADERS))   // NOT original source (docs/LOST_DEBUG.md)
         // include-order dependent: active only where LostDebug.h is included BEFORE this header (GETerrainMesh.cpp,

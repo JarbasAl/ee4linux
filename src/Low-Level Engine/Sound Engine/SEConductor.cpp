@@ -852,7 +852,11 @@ long SEConductor::UnloadScore(long inID)
         else if (inID == this->GetCurrentlyPlayingScore())
             theResult = kErrorBusy;
         else {
+#ifdef EE_PORT   // Dinkum's vector iterator is a pointer; a modern library's is not built from one
+            std::vector<SEConductorScore>::iterator theEntry = this->mScores.begin() + i;
+#else
             std::vector<SEConductorScore>::iterator theEntry(&this->mScores[i]);
+#endif
             if (theEntry->mLoadCount == 1) {
                 this->mScores.erase(theEntry);
                 if (theScore)

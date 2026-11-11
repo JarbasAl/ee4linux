@@ -24,6 +24,9 @@ public:
     long Suspend();
     long Terminate();
     void SetName(UString& inName);
+#ifdef EE_PORT   // VC6 binds temporaries to non-const references; these forward them
+    void SetName(const UString& inName) { this->SetName(const_cast<UString&>(inName)); }
+#endif
     static void SetThreadName(unsigned long inThreadID, const char* inName);
     // proven inline: exported COMDATs kept in NELagLossSimulator.cpp's range (0x3d78b..0x3d7ba, declaration
     // order), i.e. the first unit in link order that includes this header after the Network Engine headers.

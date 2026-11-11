@@ -1,0 +1,4 @@
+# VC6 differences checked by hand and found equivalent: unit, section key, base hash, head hash, then the reason.
+# tools/vc6_equiv.py accepts exactly these byte pairs; any other change to the same function still fails.
+# The VC6 optimizer can pick a different but equivalent encoding after an unrelated edit, even an empty #ifdef.
+src/Empire Earth/AI Thread/EEAIFunctionObjects.cpp	.text:?_Dec@const_iterator@?$_Tree@KKU_Kfn@?$_Setk@KU?$less@K@std@@V?$allocator@K@2@@std@@U?$less@K@3@V?$allocator@K@3@$0A@@std@@QAEXXZ	2fac39117855d486	db90ca613fb23f12	Dinkum set iterator _Dec: at +0x2c base 'jne 0x3f' (pop ebx; ret), head 'jne 0x3b', which is 'jne 0x3f' with the flags of the same cmp at +0x29 (no flag change between): same target on every path. Appears after the EE_PORT block in TSThread.h, also when the block is empty.

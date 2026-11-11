@@ -24,6 +24,12 @@ public:
         this->mText = new GEText(inFont);
         this->mCopiedText = new GEText(inFont);
     }
+#ifdef EE_PORT   // VC6 binds temporaries to non-const references; this forwards them
+    UILBString(unsigned long inId, const std::vector<UWideString>& inData, GEFont* inFont, bool inAutoSelect,
+               const GERectangle& inRectangle, UIForm* inForm, unsigned long inIndex, unsigned long inBorderThickness)
+        : UILBString(inId, const_cast<std::vector<UWideString>&>(inData), inFont, inAutoSelect, inRectangle, inForm,
+                     inIndex, inBorderThickness) {}
+#endif
     virtual ~UILBString()
     {
         delete this->mText;

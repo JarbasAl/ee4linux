@@ -13,6 +13,7 @@ DirectX 7 SDK headers are listed as skipped when toolchain/dx7sdk is missing.
 """
 import argparse
 import concurrent.futures
+import hashlib
 import os
 import pathlib
 import re
@@ -195,13 +196,39 @@ def compile_all(label, units, jobs):
         return dict(pool.map(one, units))
 
 
-def compare(base, head):
+REVIEWED_FILE = ROOT / "tools" / "vc6_equiv_reviewed.txt"
+
+
+def content_hash(item):
+    return hashlib.sha256(repr(item).encode("latin-1", "backslashreplace")).hexdigest()[:16]
+
+
+def reviewed():
+    """Differences checked by hand and found equivalent: (unit, section key, base hash, head hash) per line."""
+    pairs = set()
+    if REVIEWED_FILE.exists():
+        for line in REVIEWED_FILE.read_text().splitlines():
+            if line.strip() and not line.startswith("#"):
+                unit, key, base_hash, head_hash = line.split("\t")[:4]
+                pairs.add((unit, key, base_hash, head_hash))
+    return pairs
+
+
+def compare(base, head, unit=""):
     if base is None or head is None:
         return "does not compile"
     a, b = coff_sections(base), coff_sections(head)
     if a == b:
         return None
-    diff = sorted(set(a[0]) ^ set(b[0])) + [n for n in a[0] if n in b[0] and a[0][n] != b[0][n]]
+    accepted = reviewed()
+    diff = sorted(set(a[0]) ^ set(b[0])) + [
+        n for n in a[0] if n in b[0] and a[0][n] != b[0][n]
+        and (unit, n, content_hash(a[0][n]), content_hash(b[0][n])) not in accepted]
+    if not diff and a[1] == b[1]:
+        return None
+    for n in diff:
+        if n in a[0] and n in b[0]:
+            print(f"  to accept after review: {unit}\t{n}\t{content_hash(a[0][n])}\t{content_hash(b[0][n])}")
     if a[1] != b[1]:
         diff.append("external symbols")
     return "code differs: " + ", ".join(diff[:8]) + (f" (+{len(diff) - 8} more)" if len(diff) > 8 else "")
@@ -244,7 +271,7 @@ def main():
         base, head = run_compiles(args, units)
     failures = 0
     for key in base:
-        problem = compare(base[key][0], head[key][0])
+        problem = compare(base[key][0], head[key][0], str(key[1]))
         if problem:
             failures += 1
             mod, rel = key

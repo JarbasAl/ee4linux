@@ -66,9 +66,15 @@ public:
         UILBNoSort<T> theSort;
         this->InsertLine(inLine, inIndex, theSort);
     }
+#ifdef EE_PORT   // VC6 binds temporaries to non-const references; these forward them
+    template <class P> void InsertLine(const T& inLine, unsigned long inIndex, const P& inSort)
+    {
+        this->InsertLine(inLine, inIndex, const_cast<P&>(inSort));
+    }
+#endif
     template <class P> void InsertLine(const T& inLine, unsigned long inIndex, P& inSort)
     {
-        std::vector<T>::iterator theWhere = this->mData.begin() + inIndex;
+        typename std::vector<T>::iterator theWhere = this->mData.begin() + inIndex;
         theWhere = std::lower_bound(theWhere, this->mData.end(), inLine, inSort);
         if (theWhere != this->mData.end())
             this->mData.insert(theWhere, inLine);

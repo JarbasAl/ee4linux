@@ -28,7 +28,7 @@ struct UIDbDataHotKeys {
 template <class T> unsigned long UIDeleteAll(std::vector<T>& ioVector)
 {
     unsigned long theCount = 0;
-    for (std::vector<T>::iterator i = ioVector.begin(); i != ioVector.end(); i++) {
+    for (typename std::vector<T>::iterator i = ioVector.begin(); i != ioVector.end(); i++) {
         if (*i)
             delete *i;
         theCount++;

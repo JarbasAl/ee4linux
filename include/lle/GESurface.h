@@ -37,6 +37,13 @@ public:
     // overloaded virtuals take vtable slots in reverse declaration order (0x08 rectangle form, 0x0c whole surface)
     virtual long Clear(GEColor& inColor, float inZ) = 0;
     virtual long Clear(GERectangle& inRectangle, GEColor& inColor, float inZ) = 0;
+#ifdef EE_PORT   // VC6 binds temporaries to non-const references; these forward them
+    long Clear(const GEColor& inColor, float inZ) { return this->Clear(const_cast<GEColor&>(inColor), inZ); }
+    long Clear(const GERectangle& inRectangle, const GEColor& inColor, float inZ)
+    {
+        return this->Clear(const_cast<GERectangle&>(inRectangle), const_cast<GEColor&>(inColor), inZ);
+    }
+#endif
     virtual long CopyTo(GESurface* inTarget, GERectangle& inSource, GERectangle& inDestination, bool inTransparent) = 0;
     virtual long CopyWithFilter(GESurface* inTarget, GERectangle& inSource, GERectangle& inDestination) = 0;
     virtual long DetachSurface(unsigned long inIndex) = 0;

@@ -204,6 +204,14 @@ private:
     unsigned long AddToVisibleForms(UIForm* inForm);
     void CreateBitmap(GEBitmap* inBitmap, GETextureCoordinate& inTopLeft, GETextureCoordinate& inTopRight,
                       GETextureCoordinate& inBottomRight, GETextureCoordinate& inBottomLeft);
+#ifdef EE_PORT   // VC6 binds temporaries to non-const references; these forward them
+    void CreateBitmap(GEBitmap* inBitmap, const GETextureCoordinate& inTopLeft, const GETextureCoordinate& inTopRight,
+                      const GETextureCoordinate& inBottomRight, const GETextureCoordinate& inBottomLeft)
+    {
+        this->CreateBitmap(inBitmap, const_cast<GETextureCoordinate&>(inTopLeft), const_cast<GETextureCoordinate&>(inTopRight),
+                           const_cast<GETextureCoordinate&>(inBottomRight), const_cast<GETextureCoordinate&>(inBottomLeft));
+    }
+#endif
     void LoadTexture(const UString& inName, GETexture*& outTexture);
     void RemoveClippedForms(unsigned long inIndex);
     void ResetClippedForms();

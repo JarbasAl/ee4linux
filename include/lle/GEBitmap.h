@@ -58,6 +58,14 @@ public:
     void SetTexture(GETexture* inTexture, unsigned long inScreen);
     void SetTextureCoordinates(GETextureCoordinate& inTopLeft, GETextureCoordinate& inTopRight,
                                GETextureCoordinate& inBottomRight, GETextureCoordinate& inBottomLeft);
+#ifdef EE_PORT   // VC6 binds temporaries to non-const references; these forward them
+    void SetTextureCoordinates(const GETextureCoordinate& inTopLeft, const GETextureCoordinate& inTopRight,
+                               const GETextureCoordinate& inBottomRight, const GETextureCoordinate& inBottomLeft)
+    {
+        this->SetTextureCoordinates(const_cast<GETextureCoordinate&>(inTopLeft), const_cast<GETextureCoordinate&>(inTopRight),
+                                    const_cast<GETextureCoordinate&>(inBottomRight), const_cast<GETextureCoordinate&>(inBottomLeft));
+    }
+#endif
     void SetXYScale(float inXScale, float inYScale) { this->mXScale = inXScale; this->mYScale = inYScale; this->ComputeRotation(); }  // 0xf771; the UI expands it
     void SetZ(float inZ);
     void SetZPerVertex(float inTopLeft, float inTopRight, float inBottomRight, float inBottomLeft);
