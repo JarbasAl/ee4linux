@@ -1068,7 +1068,11 @@ void LanLogic::Logout()
 }
 
 #include "ee/wonapi/EELobbyGameCode.h" // LobbyMessageBox
+#ifdef EE_PORT
+extern wchar_t gEmptyWideString[];
+#else
 extern unsigned short gEmptyWideString[]; // 0x8e60bc, an empty wide string (zero .bss; defined in EEWonNet.cpp)
+#endif
 namespace WONAPI {
 // FUNCTION: WON 0x007e1600
 // Host: accepts a peer-authenticated socket whose certificate has the lobby's community, else closes it

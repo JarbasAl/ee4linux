@@ -18,7 +18,11 @@
 #include "ee/wonapi/WONLobbyParser.h"
 #include "LostDebug.h"
 #include "ee/wonapi/WONLobbyChatCommands.h"
+#ifdef EE_PORT
+extern wchar_t gEmptyWideString[];
+#else
 extern unsigned short gEmptyWideString[]; // 0x8e60bc, an empty wide string (zero .bss)
+#endif
 using namespace WONAPI;
 namespace WONAPI {
 }

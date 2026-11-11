@@ -28,12 +28,24 @@ public:
     }
 };
 
+#ifdef EE_PORT
+// Clang imports every instantiation of an imported class template; the engine exports only UIListBox<UWideString>
+// (lle/UILBString.h), and each module instantiates the others itself
+template <class T> class UIListBox : public UIControl {
+#else
 template <class T> class LLE_API UIListBox : public UIControl {
+#endif
     friend class UIComboBox;                // OpenListBox reads mLineHeight
 public:
     UIListBox(unsigned long inId, std::vector<T>& inData, unsigned long inLineHeight, bool inAutoSelect,
               const GERectangle& inRectangle, UIForm* inForm, unsigned long inIndex,
               unsigned long inBorderThickness);
+#ifdef EE_PORT
+    UIListBox(unsigned long inId, const std::vector<T>& inData, unsigned long inLineHeight, bool inAutoSelect, const GERectangle& inRectangle, UIForm* inForm, unsigned long inIndex, unsigned long inBorderThickness)
+        : UIListBox(inId, const_cast<std::vector<T>&>(inData), inLineHeight, inAutoSelect, inRectangle, inForm, inIndex, inBorderThickness)
+    {
+    }
+#endif
     virtual ~UIListBox();
     virtual void AppendLine(const T& inLine);
     virtual void AppendStringArray(std::vector<T>& inLines);

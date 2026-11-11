@@ -877,7 +877,8 @@ void LobbySetPlayerEvents(UIForm* inForm, long inSlot)
 void LobbySetHostEvents(UIForm* inForm)
 {
     UIEvent* theEvent = new EEUIELEChangePlayerType;
-    for (long i = 31; i < 46; i++)
+    long i;
+    for (i = 31; i < 46; i++)
         inForm->GetControl(i)->SetTriggerEvent(kControlTriggerSelectionChanged, theEvent);
     theEvent->Dereference();
     theEvent = new EEUIELEChangeCitizenBonus;

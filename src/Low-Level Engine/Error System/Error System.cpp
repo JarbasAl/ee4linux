@@ -33,7 +33,12 @@
 
 namespace std {
 // Dinkum 2.33 (sxlrt233.dll export ?gPointerToAssertFunction@std@@3P6AXPBDK0@ZA)
+#ifdef EE_PORT
+// the port links no Dinkum runtime: the engine owns the hook it clears
+void (*gPointerToAssertFunction)(const char*, unsigned long, const char*);
+#else
 extern __declspec(dllimport) void (*gPointerToAssertFunction)(const char*, unsigned long, const char*);
+#endif
 }
 
 // Globals in definition order (= initializer order 0x1000144b..: the filters, the recording file, the lock holder).

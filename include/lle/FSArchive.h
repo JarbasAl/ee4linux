@@ -32,7 +32,7 @@ public:
     long Create(const FSFileSpec& inRoot, std::vector<UString>& inFiles, unsigned long inCompression);   // 0x5618
     long ExtractAll(const FSFileSpec& inDestination);                           // 0x5801
     long FindFile(const UString& inName, FSMemoryFile*& outFile);               // 0x5a79
-#ifdef LLE_EXE_HEADERS
+#if defined(LLE_EXE_HEADERS) && !defined(EE_PORT)  /* mingw exports no inline member: the port's exe expands it */
     long FindFile(const UWideString& inName, FSMemoryFile*& outFile);           // imported by the exe (0x68c803, 0x68e45a)
 #else
     long FindFile(const UWideString& inName, FSMemoryFile*& outFile)            // 0x4095 (inline)

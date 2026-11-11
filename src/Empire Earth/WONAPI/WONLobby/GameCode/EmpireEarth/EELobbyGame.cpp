@@ -88,7 +88,11 @@ void EELobbyGame::SetGameFile(const GUIString& inName, unsigned long inSize, uns
 
 // FUNCTION: EXE 0x692419
 // Appends a range of another GUI string's characters, growing the buffer as needed
+#ifdef EE_PORT
+__attribute__((used)) inline void GUIStringData::append(const GUIStringData* inText, unsigned short inStart, unsigned short inLength)
+#else
 inline void GUIStringData::append(const GUIStringData* inText, unsigned short inStart, unsigned short inLength)
+#endif
 {
     int theLength = this->mLength;
     int theNewLength = theLength + inLength;

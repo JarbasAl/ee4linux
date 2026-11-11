@@ -1611,7 +1611,12 @@ void EEWorld::RebuildActiveUnits()
 {
     EEUnit* theUnit = (EEUnit*)gWorld.mUnits.mFirst;
 
+#ifdef EE_PORT
+    std::deque<EEComplexUnit*>::iterator it;
+    for (it = this->mActivateQueue.begin(); it != this->mActivateQueue.end(); ++it)
+#else
     for (std::deque<EEComplexUnit*>::iterator it = this->mActivateQueue.begin(); it != this->mActivateQueue.end(); ++it)
+#endif
         (*it)->Dereference();
     for (it = this->mDeactivateQueue.begin(); it != this->mDeactivateQueue.end(); ++it)
         (*it)->Dereference();

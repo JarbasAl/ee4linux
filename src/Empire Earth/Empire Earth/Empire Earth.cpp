@@ -2708,3 +2708,79 @@ void EEDeleteDatabase(bool inShutdown)
 // TEMPLATE: EXE 0x547d8a
 // TODO 0x547da5, 0x547dcd,
 // 0x547dd9, 0x547de5, 0x547df1: COMDATs not emitted/named yet
+
+#ifdef EE_PORT
+__attribute__((used)) void EEPortAliases::BindGame()
+{
+    EE_PORT_ALIAS(gNumPlayers, gWorld, mNumPlayers);
+    EE_PORT_ALIAS(gGameResources, gWorld, mGameOptions.mResources);
+    EE_PORT_ALIAS(gAllowCustomCivs, gWorld, mGameOptions.mAllowCustomCivs);
+    EE_PORT_ALIAS(gIsScenarioGame, gWorld, mGameOptions.mIsScenarioGame);
+    EE_PORT_ALIAS(gGameOptions, gWorld, mLobbyOptions);
+    EE_PORT_ALIAS(gCameraZoom, gWorld, mCameraControl.mZoom);
+    EE_PORT_ALIAS(gEffectManager, gWorld, mEffectManager);
+    EE_PORT_ALIAS(gScenarioManager, gWorld, mScenarioManager);
+    EE_PORT_ALIAS(gSavedGameSpeed, gWorld, mSavedGameSpeed);
+    EE_PORT_ALIAS(gMaxPlayers, gWorld, mMaxPlayers);
+    EE_PORT_ALIAS(gStartTime, gWorld, mStartTime);
+    EE_PORT_ALIAS(gLagStatus, gWorld, mLagStatus);
+    EE_PORT_ALIAS(gGameScreenActive, gWorld, mGameScreenActive);
+    EE_PORT_ALIAS(gLoadingSavedGame, gWorld, mLoadingSavedGame);
+    EE_PORT_ALIAS(gWorldClearing, gWorld, mClearing);
+    EE_PORT_ALIAS(gUnitImprovementsAllowed, gWorld, mUnitImprovementsAllowed);
+    EE_PORT_ALIAS(gShowCollisionSpheres, gWorld, mShowCollisionSpheres);
+    EE_PORT_ALIAS(gInCinematic, gWorld, mInCinematic);
+    EE_PORT_ALIAS(gLoadingPlayerMedia, gWorld, mLoadingPlayerMedia);
+    EE_PORT_ALIAS(gUsingCarbon, gWorld, mUsingCarbon);
+    EE_PORT_ALIAS(gLobbyGameOptions, gGamePreferences, mSettings.mGameOptions);
+    EE_PORT_ALIAS(gDifficultyLevel2, gGamePreferences, mSettings.mGameOptions.mDifficulty);
+    EE_PORT_ALIAS(gPlayerName, gGamePreferences, mSettings.mPlayerName);
+    EE_PORT_ALIAS(gWonPlayerName, gGamePreferences, mSettings.mSierraUserID);
+    EE_PORT_ALIAS(gHostedGameName, gGamePreferences, mSettings.mSierraGameName);
+    EE_PORT_ALIAS(gLoadSavedGameName, gGamePreferences, mSettings.mLastGameFile);
+    EE_PORT_ALIAS(gLoadScenarioName, gGamePreferences, mSettings.mLastScenarioFile);
+    EE_PORT_ALIAS(gSideScrollSpeed, gGamePreferences, mSettings.mSideScrollSpeed);
+    EE_PORT_ALIAS(gMasterVolume, gGamePreferences, mSettings.mSoundVolume);
+    EE_PORT_ALIAS(gZoomLock, gGamePreferences, mSettings.mZoomLock);
+    EE_PORT_ALIAS(gDifficultyLevel, gGamePreferences, mSettings.mComputerPlayerDifficultyLevel);
+    EE_PORT_ALIAS(gGameWindowHeight, gGamePreferences, mSettings.mGameWindowHeight);
+    EE_PORT_ALIAS(gGameWindowWidth, gGamePreferences, mSettings.mGameWindowWidth);
+    EE_PORT_ALIAS(gTextureMipLevelsToDrop, gGamePreferences, mSettings.mMIPLevelsToDrop);
+    EE_PORT_ALIAS(gModelDetail, gGamePreferences, mSettings.mModelDetail);
+    EE_PORT_ALIAS(gEffectDetail, gGamePreferences, mSettings.mEffectDetail);
+    EE_PORT_ALIAS(gNetworkAdapter, gGamePreferences, mSettings.mNetworkAdapter);
+    EE_PORT_ALIAS(gScreenIndex, gGamePreferences, mSettings.mScreenID);
+    EE_PORT_ALIAS(gTerrainMIPLevelsToDrop, gGamePreferences, mSettings.mTerrainMIPLevelsToDrop);
+    EE_PORT_ALIAS(gTexturePixelDepth, gGamePreferences, mSettings.mTextureBitDepth);
+    EE_PORT_ALIAS(gAutoSaveCount, gGamePreferences, mSettings.mNumberOfAutoSaves);
+    EE_PORT_ALIAS(gHiddenUnitsMode, gGamePreferences, mSettings.mL5BC);
+    EE_PORT_ALIAS(gZoomEnabled, gGamePreferences, mSettings.mZoomEnabled);
+    EE_PORT_ALIAS(gInterpolateFrames, gGamePreferences, mSettings.mAnimationSmoothing);
+    EE_PORT_ALIAS(gFarRearClipping, gGamePreferences, mSettings.mB5C6);
+    EE_PORT_ALIAS(gDrawClouds, gGamePreferences, mSettings.mDisplayClouds);
+    EE_PORT_ALIAS(gDrawGroundShadows, gGamePreferences, mSettings.mDisplayShadows);
+    EE_PORT_ALIAS(gAmbientEffectsEnabled, gGamePreferences, mSettings.mDisplayBattlefieldAmbients);
+    EE_PORT_ALIAS(gTrilinearFilter, gGamePreferences, mSettings.mTrilinearFilter);
+    EE_PORT_ALIAS(gAmbientSoundEnabled, gGamePreferences, mSettings.mAmbientSounds);
+    EE_PORT_ALIAS(gDrawBlood, gGamePreferences, mSettings.mShowBlood);
+    EE_PORT_ALIAS(gMusicFollowsBattle, gGamePreferences, mSettings.mMusicEnabled);
+    EE_PORT_ALIAS(gOrthographicView, gGamePreferences, mSettings.mB5D6);
+    EE_PORT_ALIAS(gUnitLighting, gGamePreferences, mSettings.mUnitLighting);
+    EE_PORT_ALIAS(gDisplayWeatherEffects, gGamePreferences, mSettings.mDisplayWeatherEffects);
+    EE_PORT_ALIAS(gTakeJPGScreenshots, gGamePreferences, mSettings.mTakeJPGScreenshots);
+    EE_PORT_ALIAS(gAntiAliasing, gGamePreferences, mSettings.mAntiAliasing);
+    EE_PORT_ALIAS(gMapWidth, gContinentManager, mWidth);
+    EE_PORT_ALIAS(gMapHeight, gContinentManager, mHeight);
+    EE_PORT_ALIAS(gContinentManagerChecksum, gContinentManager, mChecksum);
+    EE_PORT_ALIAS(gDCGameSpeed, gContinentManager, mNumWaterTiles);
+    EE_PORT_ALIAS(gNumSpaceTiles, gContinentManager, mNumSpaceTiles);
+    EE_PORT_ALIAS(gContinentManagerClearing, gContinentManager, mClearing);
+    EE_PORT_ALIAS(gGameStateLoadType, gGameState, mGameOptions.mLoadType);
+    EE_PORT_ALIAS(gGameStateIsMultiplayer, gGameState, mGameOptions.mIsMultiplayer);
+    EE_PORT_ALIAS(gGameStateGameSpeed, gGameState, mGameSpeed);
+    EE_PORT_ALIAS(gEEAIRegionSize, gPathManager, mLC8);
+    EE_PORT_ALIAS(gEditorViewRectangle, gViewport, mViewRectangle);
+    EE_PORT_ALIAS(gViewportCameraInverse, gViewport, mCameraInverse);
+    EE_PORT_ALIAS(gViewportYClippingPlane, gViewport, mYClippingPlane);
+}
+#endif

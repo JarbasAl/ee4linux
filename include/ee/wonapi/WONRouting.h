@@ -2462,6 +2462,9 @@ public:
     void AddVersionType(const std::string&);
     void ReadFromBuffer(ReadBuffer&);
     bool operator==(const VersionData&) const;
+#ifdef EE_PORT
+    void ReadFromBuffer(const ReadBuffer& inBuffer) { this->ReadFromBuffer(const_cast<ReadBuffer&>(inBuffer)); }
+#endif
     bool operator!=(const VersionData&) const;
     void SetDescriptionURL	(const std::string& theDescriptionURL)	{ this->mDescriptionURL	= theDescriptionURL;}
     const std::string& GetDescriptionURL()		const { return this->mDescriptionURL;	 }

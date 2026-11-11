@@ -263,7 +263,11 @@ void EECPResearchManager::Research(long inID)
     EETechTreeNode* theNode = this->mTechTree->Get(inID);
     unsigned long i;
     for (i = 0; i < theNode->GetNumUnitClasses() && !theDone; i++)
+#ifdef EE_PORT
+        theDone = this->mManager->mUnitManager->GetUnits(theNode->GetUnitClass(i)) != 0;
+#else
         theDone = this->mManager->mUnitManager->GetUnits(theNode->GetUnitClass(i)) > 0;
+#endif
     if (!theDone) {
         for (i = 0; i < theNode->GetNumUnitClasses() && !theDone; i++) {
             long theClass = theNode->GetUnitClass(i);

@@ -12,6 +12,12 @@ public:
     EESETSUICBPlayer(unsigned long inId, unsigned long inTextBoxType, std::vector<UWideString>& inData, GEFont* inFont,
                      const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inMaxListBoxHeight,
                      UIForm* inForm, unsigned long inIndex, unsigned long inMaxChars, unsigned long inBorderThickness);
+#ifdef EE_PORT
+    EESETSUICBPlayer(unsigned long inId, unsigned long inTextBoxType, const std::vector<UWideString>& inData, GEFont* inFont, const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inMaxListBoxHeight, UIForm* inForm, unsigned long inIndex, unsigned long inMaxChars, unsigned long inBorderThickness)
+        : EESETSUICBPlayer(inId, inTextBoxType, const_cast<std::vector<UWideString>&>(inData), inFont, inLocation, inWidth, inMaxListBoxHeight, inForm, inIndex, inMaxChars, inBorderThickness)
+    {
+    }
+#endif
     virtual ~EESETSUICBPlayer();
     unsigned long GetSelectedPlayer();      // 0x196f5e (the player of the selection; EESETSCondition::Virtual44)
     void SetSelectedPlayer(unsigned long inPlayer);   // 0x196fbd (EESETSCTDiplomacy::Virtual0C)

@@ -291,7 +291,8 @@ void EETechTree::GetChecksum(ESChecksum& ioChecksum)
     bool theCurrentNodeIsResearched = false;
     bool theScenEditorObsoleted = false;
     this->GetNodeIDs(theIDs);
-    for (long i = 0; i < 15; i++) {
+    long i;
+    for (i = 0; i < 15; i++) {
         long theID = this->mEpochs[i].mData->mID;
         theIDs.push_back(theID);
     }

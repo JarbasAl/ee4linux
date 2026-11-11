@@ -73,7 +73,7 @@ bool StringParser::ReadValue(std::list<std::list<std::wstring> > &theList) { ret
 template<class T>
 static void ListToString(const std::list<T> &theList, std::string &theStr)
 {
-    std::list<T>::const_iterator anItr = theList.begin();
+    typename std::list<T>::const_iterator anItr = theList.begin();
     while(anItr!=theList.end())
     {
         StringParser::ValueToString(*anItr,theStr);
@@ -91,7 +91,7 @@ void StringParser::ValueToString(const std::list<std::wstring> &theVal,std::stri
 template<class T>
 static void ListListToString(const std::list<std::list<T> > &theList,std::string &theStr)
 {
-    std::list<std::list<T> >::const_iterator anItr = theList.begin();
+    typename std::list<std::list<T> >::const_iterator anItr = theList.begin();
     while(anItr!=theList.end())
     {
         theStr += "(";

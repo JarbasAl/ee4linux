@@ -10,7 +10,7 @@
 template<class T> unsigned long DeleteVectorContents(T& ioList)
 {
     unsigned long theCount = 0;
-    for (T::iterator theIterator = ioList.begin(); theIterator != ioList.end(); ++theIterator) {
+    for (typename T::iterator theIterator = ioList.begin(); theIterator != ioList.end(); ++theIterator) {
         delete *theIterator;
         theCount++;
     }

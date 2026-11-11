@@ -285,6 +285,9 @@ public:
     virtual void PrePaint(Graphics& inGraphics);
     virtual void Paint(Graphics& inGraphics);                  // +0x18 (0x2f5020)
     virtual void InitComponent(ComponentInit& inInit) {} // empty inline (the vtable slot holds the shared ret 4 at 0x156dd8)
+#ifdef EE_PORT
+    void InitComponent(const ComponentInit& inInit) { this->InitComponent(const_cast<ComponentInit&>(inInit)); }
+#endif
     virtual bool HitTest(int inX, int inY);
     virtual void MouseEnter(int inA, int inB);                 // +0x24 (0x2f4cc0)
     virtual void MouseExit();                                  // +0x28 (0x2f4ce0: the mouse left?)
@@ -2203,6 +2206,9 @@ public:
     void Center(bool);                     // 0x32ae80
     void EndDialog(int, Component*);         // 0x32b0a0
     void OpenPopup(PopupParams&);           // 0x32b0c0
+#ifdef EE_PORT
+    void OpenPopup(const PopupParams& inParams) { this->OpenPopup(const_cast<PopupParams&>(inParams)); }
+#endif
     void ClosePopup(Component*);            // 0x32b0e0
     void InvalidateRoot();                  // 0x32a1e0
     void SetParent(Window*);                // 0x32a210, the parent at +0x80

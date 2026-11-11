@@ -144,7 +144,11 @@ struct RTSMapTileRun;
 class EEAIContinent;
 class EEAIChokePoint;
 class EETown;
+#ifdef EE_PORT   // a modern library declares pair in an inline namespace
+#include <utility>
+#else
 namespace std { template <class _T1, class _T2> struct pair; }   // (the pair overload)
+#endif
 template <class T> class U2DPoint;
 struct EETileDistanceLess {
     EETileDistanceLess(long inX, long inY) : mCenter(inX, inY) {}

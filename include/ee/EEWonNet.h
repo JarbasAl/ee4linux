@@ -185,7 +185,7 @@ public:
 };
 template <class T> class SmartPtr : public ConstSmartPtr<T> {
 public:
-    operator T*() const { return mPtr; }
+    operator T*() const { return this->mPtr; }
     SmartPtr() {}
     // the ternary shape: one store after the test (_Construct<SmartPtr<DirEntity>> 0x2942a1)
     SmartPtr(const SmartPtr<T>& theCopy) : ConstSmartPtr<T>(theCopy.mPtr) {}
@@ -197,11 +197,11 @@ public:
         { T* thePtr = theCopy.get(); *this = thePtr; }
         return *this;
     }
-    T* operator->() const { return mPtr; }
-    T* get() const { return mPtr; }         // (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
+    T* operator->() const { return this->mPtr; }
+    T* get() const { return this->mPtr; }         // (EELobbyGameOptionsCtrl 0x2944ae: a value, loaded per use)
     // Target set bounds compare raw addresses unsigned. Existing SmartPtr ordering is retained;
     // the genuine SDK borrowed raw-pointer conversion is declared above.
-    bool operator<(const SmartPtr<T>& inOther) const { return mPtr < inOther.mPtr; }
+    bool operator<(const SmartPtr<T>& inOther) const { return this->mPtr < inOther.mPtr; }
     struct Comp {
         bool operator()(const SmartPtr<T>& a, const SmartPtr<T>& b) const
         { return a.get() < b.get(); }

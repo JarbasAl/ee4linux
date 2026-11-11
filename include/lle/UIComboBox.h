@@ -20,6 +20,9 @@ public:
                unsigned long inMaxChars, unsigned long inBorderThickness);
     virtual ~UIComboBox();
     void AppendLine(UWideString& inLine);
+#ifdef EE_PORT
+    void AppendLine(const UWideString& inLine) { this->AppendLine(const_cast<UWideString&>(inLine)); }
+#endif
     void AppendStringArray(std::vector<UWideString>& inLines);
     void ChangeWidth(unsigned long inWidth);
     virtual long CopyData();

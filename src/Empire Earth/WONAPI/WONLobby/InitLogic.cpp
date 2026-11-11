@@ -195,7 +195,11 @@ void InitLogic::CrossPromotionImageCompletion(AsyncOp* inOp)
     if (inOp->mStatus != WS_Success)
         return;
     HTTPGetOp* op = static_cast<HTTPGetOp*>(inOp);
+#ifdef EE_PORT
+    SmartPtr<Image> image(Window::GetDefaultWindow()->DecodeImage(op->GetLocalPath().c_str()));
+#else
     SmartPtr<Image> image = Window::GetDefaultWindow()->DecodeImage(op->GetLocalPath().c_str());
+#endif
     LobbyBroadcastEvent(new SetCrossPromotionEvent(image.get(),this->mCrossPromotion),true);
 }
 }

@@ -45,6 +45,13 @@ public:
     }
 #endif
     virtual long CopyTo(GESurface* inTarget, GERectangle& inSource, GERectangle& inDestination, bool inTransparent) = 0;
+#ifdef EE_PORT
+    long CopyTo(GESurface* inTarget, const GERectangle& inSource, const GERectangle& inDestination, bool inTransparent)
+    {
+        return this->CopyTo(inTarget, const_cast<GERectangle&>(inSource), const_cast<GERectangle&>(inDestination),
+                            inTransparent);
+    }
+#endif
     virtual long CopyWithFilter(GESurface* inTarget, GERectangle& inSource, GERectangle& inDestination) = 0;
     virtual long DetachSurface(unsigned long inIndex) = 0;
     virtual long Flip(bool inWait) = 0;

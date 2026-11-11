@@ -13,6 +13,12 @@ public:
     EESEUITechListBox(unsigned long inID, std::vector<UWideString>& inStrings, GEFont* inFont, bool inAutoSelect,
                       const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inHeight, UIForm* inForm,
                       unsigned long inIndex, unsigned long inBorderThickness);
+#ifdef EE_PORT
+    EESEUITechListBox(unsigned long inID, const std::vector<UWideString>& inStrings, GEFont* inFont, bool inAutoSelect, const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inHeight, UIForm* inForm, unsigned long inIndex, unsigned long inBorderThickness)
+        : EESEUITechListBox(inID, const_cast<std::vector<UWideString>&>(inStrings), inFont, inAutoSelect, inLocation, inWidth, inHeight, inForm, inIndex, inBorderThickness)
+    {
+    }
+#endif
     virtual ~EESEUITechListBox() {}         // +0x00 (??_G 0x199aa4 calls the out-of-line copy 0x199ac0)
     virtual long CopyData();                // +0x14 0x19771c
     virtual long DrawPolygons();            // +0x18 0x19789f

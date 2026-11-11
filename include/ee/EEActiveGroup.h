@@ -3,7 +3,11 @@
 #ifndef EE_EEACTIVEGROUP_H
 #define EE_EEACTIVEGROUP_H
 
+#ifdef EE_PORT
+__attribute__((used)) inline void EEActiveGroup::ClearGoal()
+#else
 inline void EEActiveGroup::ClearGoal()
+#endif
 {
     if (this->mGoal)
         delete this->mGoal;

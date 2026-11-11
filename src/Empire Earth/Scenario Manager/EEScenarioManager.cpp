@@ -73,7 +73,7 @@ template<class T> long EESMLoadVector(unsigned long inMajorVersion, unsigned lon
     unsigned long theCount;
     long theResult = inFile.Read(theCount);
     outVector.resize(theCount);
-    for (std::vector<T>::iterator theIterator = outVector.begin(); theIterator != outVector.end() && theResult == kErrorOK;
+    for (typename std::vector<T>::iterator theIterator = outVector.begin(); theIterator != outVector.end() && theResult == kErrorOK;
          theIterator++)
         theResult = theIterator->Load(inMajorVersion, inMinorVersion, inFile);
     return theResult;
@@ -83,7 +83,7 @@ template<class T> long EESMSaveVector(unsigned long inMajorVersion, unsigned lon
 {
     unsigned long theCount = inVector.size();
     long theResult = outFile.Write(theCount);
-    for (std::vector<T>::iterator theIterator = inVector.begin(); theIterator != inVector.end() && theResult == 0;
+    for (typename std::vector<T>::iterator theIterator = inVector.begin(); theIterator != inVector.end() && theResult == 0;
          theIterator++)
         theResult = theIterator->Save(inMajorVersion, inMinorVersion, outFile);
     return theResult;

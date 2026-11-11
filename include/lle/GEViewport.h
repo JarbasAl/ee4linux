@@ -87,6 +87,9 @@ public:
     }
     void SetRearClippingDistance(float inDistance);
     void SetViewRectangle(const GERectangle& inRectangle);
+#ifdef EE_PORT
+    friend struct EEPortAliases;            // the port binds the original's field globals (include/port/compat.h)
+#endif
 private:
     void ComputeOrthographicMatrix();
     void ComputePerspectiveMatrix();

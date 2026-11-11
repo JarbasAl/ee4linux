@@ -171,6 +171,12 @@ public:
     EEUIFSELBUnitList(unsigned long inID, std::vector<UWideString>& inStrings, GEFont* inFont, bool inAutoSelect,
                       const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inHeight, UIForm* inForm,
                       unsigned long inIndex, unsigned long inBorderThickness);
+#ifdef EE_PORT
+    EEUIFSELBUnitList(unsigned long inID, const std::vector<UWideString>& inStrings, GEFont* inFont, bool inAutoSelect, const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inHeight, UIForm* inForm, unsigned long inIndex, unsigned long inBorderThickness)
+        : EEUIFSELBUnitList(inID, const_cast<std::vector<UWideString>&>(inStrings), inFont, inAutoSelect, inLocation, inWidth, inHeight, inForm, inIndex, inBorderThickness)
+    {
+    }
+#endif
     virtual ~EEUIFSELBUnitList() {}
     virtual long UpdateKeyboard();          // +0x7c 0x199e81
     virtual void ButtonUp();                // +0xa4 0x199bc9
@@ -188,6 +194,12 @@ public:
     EEUIFSELBCargoList(unsigned long inID, std::vector<UWideString>& inStrings, GEFont* inFont, bool inAutoSelect,
                        const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inHeight, UIForm* inForm,
                        unsigned long inIndex, unsigned long inBorderThickness);
+#ifdef EE_PORT
+    EEUIFSELBCargoList(unsigned long inID, const std::vector<UWideString>& inStrings, GEFont* inFont, bool inAutoSelect, const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inHeight, UIForm* inForm, unsigned long inIndex, unsigned long inBorderThickness)
+        : EEUIFSELBCargoList(inID, const_cast<std::vector<UWideString>&>(inStrings), inFont, inAutoSelect, inLocation, inWidth, inHeight, inForm, inIndex, inBorderThickness)
+    {
+    }
+#endif
     virtual ~EEUIFSELBCargoList() {}
     void AddCargo(EEUnit* inUnit);          // 0x199f74 (sorted by name)
     void RemoveSelected();                  // 0x19a05f

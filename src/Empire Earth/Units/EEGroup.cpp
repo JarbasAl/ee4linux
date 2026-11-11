@@ -353,7 +353,11 @@ void EEGroup::RequestPath(const EETileCoordinate& inFrom, const EETileCoordinate
 // EEAIContinentManager::GetPathAreaIDAt (inline, its out-of-line COMDAT 0x208334 follows this unit's template
 // block; MoveAlong's first site calls it, the second expands it): the path area's id at inTile, 0 if none.
 // The ternary is unsigned short on both arms (mov ax, not movzx: 0x208341).
+#ifdef EE_PORT
+__attribute__((used)) inline unsigned short EEAIContinentManager::GetPathAreaIDAt(const EETileLocation& inTile)
+#else
 inline unsigned short EEAIContinentManager::GetPathAreaIDAt(const EETileLocation& inTile)
+#endif
 {
     EEAIPathArea* theArea = this->GetPathAreaAt(inTile);
     return theArea != NULL ? theArea->mID : (unsigned short)0;

@@ -10,7 +10,11 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONLobbyResource.h"
 // Empty wide string defined in EEWonNet.cpp
+#ifdef EE_PORT
+extern wchar_t gEmptyWideString[];
+#else
 extern unsigned short gEmptyWideString[];
+#endif
 namespace WONAPI {
 // FUNCTION: WON 0x00728450
 // Returns the shared empty string data, creating it on first use

@@ -1164,7 +1164,11 @@ short LobbyGame::HandleJoinReply(ReadBuffer& inBuffer)
 
 // FUNCTION: WON 0x7a7c50
 // Creates an empty game list for the given game type
+#ifdef EE_PORT
+LobbyGameList::LobbyGameList(int inType) : mIdItr(),mAddrItr() { this->mType=inType; }
+#else
 LobbyGameList::LobbyGameList(int inType) : mIdItr(NULL),mAddrItr(NULL) { this->mType=inType; }
+#endif
 // FUNCTION: WON 0x7a7e00
 // Destroys the game list, releasing every game
 LobbyGameList::~LobbyGameList() {}

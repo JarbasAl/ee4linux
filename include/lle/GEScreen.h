@@ -28,6 +28,15 @@ public:
     virtual long CreateAWindow(const GE2DPoint& inOrigin, unsigned long inWidth, unsigned long inHeight,
                                UString& inClassName, UString& inTitle, GEWindow*& outWindow, unsigned long inStyle,
                                GEWindow* inParent) = 0;
+#ifdef EE_PORT
+    long CreateAWindow(const GE2DPoint& inOrigin, unsigned long inWidth, unsigned long inHeight,
+                       const UString& inClassName, const UString& inTitle, GEWindow*& outWindow, unsigned long inStyle,
+                       GEWindow* inParent)
+    {
+        return this->CreateAWindow(inOrigin, inWidth, inHeight, const_cast<UString&>(inClassName),
+                                   const_cast<UString&>(inTitle), outWindow, inStyle, inParent);
+    }
+#endif
     virtual bool Get32BitDeviceSupport() = 0;
     virtual bool Get32BitTextureSupport() = 0;
     virtual bool GetAttachedToDesktop() const = 0;

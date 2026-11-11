@@ -97,7 +97,7 @@ const UString EEPlayer::sSendChatMessageType("EEPlayer-SendChatMessageType");
 template <class V> long EEDeletePointers(V& ioVector)
 {
     long i = 0;
-    for (V::iterator theIterator = ioVector.begin(); theIterator != ioVector.end(); i++, theIterator++)
+    for (typename V::iterator theIterator = ioVector.begin(); theIterator != ioVector.end(); i++, theIterator++)
         delete *theIterator;
     ioVector.clear();
     return i;
@@ -3780,7 +3780,8 @@ void EEPlayer::SetDiplomaticStance(EEPlayer* inOther, long inStance, EEMap* inMa
                         inOther->RemoveSightSharer(this);
                 if (inOther->mEnemies[this->mPlayerID] == 0) {
                     this->ResetWonderTimers(inOther);
-                    for (RTSUnit* theUnit = this->mFirstUnit; theUnit != NULL; theUnit = theUnit->mNext)
+                    RTSUnit* theUnit;
+                    for (theUnit = this->mFirstUnit; theUnit != NULL; theUnit = theUnit->mNext)
                         theUnit->SightOffHere();
                     this->mEvents.HideEvents(this);
                     for (theUnit = inOther->mFirstUnit; theUnit != NULL; theUnit = theUnit->mNext)
@@ -3807,7 +3808,8 @@ void EEPlayer::SetDiplomaticStance(EEPlayer* inOther, long inStance, EEMap* inMa
                 if (this->mWonderPowers[j] == 5)
                     inOther->AddSightSharer(this);
             if (inOther->mEnemies[this->mPlayerID] == 0) {
-                for (RTSUnit* theUnit = this->mFirstUnit; theUnit != NULL; theUnit = theUnit->mNext)
+                RTSUnit* theUnit;
+                for (theUnit = this->mFirstUnit; theUnit != NULL; theUnit = theUnit->mNext)
                     theUnit->SightOffHere();
                 for (theUnit = inOther->mFirstUnit; theUnit != NULL; theUnit = theUnit->mNext)
                     theUnit->SightOffHere();

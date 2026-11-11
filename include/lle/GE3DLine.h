@@ -18,7 +18,7 @@ public:
     // inline: EE-AOC.exe imports the private ComputeDirection it calls; GEPhysicalModel::Intersects 0x10020e84 expands
     // it (GE2DPoint.cpp emits the exported copy 0x1000c695)
     void Define(const GE3DPoint& inStart, const GE3DPoint& inEnd) { this->mStart = inStart; this->ComputeDirection(inEnd); }
-#ifndef LLE_EXE_HEADERS
+#if !defined(LLE_EXE_HEADERS) || defined(EE_PORT)  /* mingw exports no inline member: the port's exe expands it */
     // header-inline in the engine view (GenerateCorner*Polygons expand the start copy and refuse the direction
     // copy); the exe imports it (0x470d44 count canary moves with the inline body in the exe view)
     void Define(const GE3DPoint& inStart, const GEVector& inDirection) { this->mStart = inStart; this->mDirection = inDirection; }

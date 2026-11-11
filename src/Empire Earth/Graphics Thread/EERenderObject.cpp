@@ -2036,3 +2036,13 @@ void EEResetGraphicsValues()
 // SYNTHETIC: EXE 0x511cbd
 // SYNTHETIC: EXE 0x511cef
 // SYNTHETIC: EXE 0x511d21
+
+#ifdef EE_PORT
+__attribute__((used)) void EEPortAliases::BindRender()
+{
+    EE_PORT_ALIAS(gRenderViewRectangle, gU4E8F08, mViewRectangle);
+    EE_PORT_ALIAS(gRenderCameraInverse, gU4E8F08, mCameraInverse);
+    EE_PORT_ALIAS(gCursorLocation, gU4E8F08, mXCenter);
+    EE_PORT_ALIAS(gUnitPickerLock, gUnitPicker, mLock);
+}
+#endif

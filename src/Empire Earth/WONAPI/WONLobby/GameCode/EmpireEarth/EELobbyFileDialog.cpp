@@ -72,7 +72,11 @@ void EELobbyFileDialog::ListFiles(const std::string& inDirectory, const std::str
 
 // FUNCTION: EXE 0x69115e
 // Creates a GUI string from narrow text
+#ifdef EE_PORT
+__attribute__((weak)) GUIString::GUIString(const char* inText) : mData(new GUIStringData(inText))
+#else
 inline GUIString::GUIString(const char* inText) : mData(new GUIStringData(inText))
+#endif
 {
 }
 
@@ -89,7 +93,11 @@ inline void GUIString::resize(int inLength)
 
 // FUNCTION: EXE 0x6911c9
 // Makes room for a length plus terminator, doubling it when growing, and keeps the text
+#ifdef EE_PORT
+__attribute__((used)) inline void GUIStringData::Reserve(int inLength, bool inGrow)
+#else
 inline void GUIStringData::Reserve(int inLength, bool inGrow)
+#endif
 {
     inLength++;
     if (this->mCapacity < inLength) {
@@ -107,7 +115,11 @@ inline void GUIStringData::Reserve(int inLength, bool inGrow)
 
 // FUNCTION: EXE 0x69121b
 // Gives the string its own copy of the text when it is shared
+#ifdef EE_PORT
+__attribute__((used)) inline void GUIString::CopyOnWrite()
+#else
 inline void GUIString::CopyOnWrite()
+#endif
 {
     if (this->mData->GetRefCount() > 1)
         this->mData = new GUIStringData(*this->mData.mPtr);

@@ -462,7 +462,11 @@ bool HTMLParser2::HandleImage()
 //	string aPath = aTrick;
 
 	char *anExt = NULL;
+#ifdef EE_PORT
+	anExt = (char*)strrchr(anImagePath->c_str(),'.');
+#else
 	anExt = strrchr(anImagePath->c_str(),'.');
+#endif
 	if(anExt==NULL)
 		return false;
 

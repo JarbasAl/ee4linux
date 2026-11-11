@@ -110,7 +110,11 @@ inline long EEAIGetResourceKind(EEUnitClass* inClass)
 }
 
 // 0x29ced: the resource kind of the first unit of class kind 3 on inTile (not on terrain 1), 0 if none
+#ifdef EE_PORT
+__attribute__((used)) inline long EEAIHasResourceUnit(EETile* inTile)
+#else
 inline long EEAIHasResourceUnit(EETile* inTile)
+#endif
 {
     long theResult = 0;
     if (inTile && inTile->mTerrainType != kTerrainDeepWater) {
@@ -146,7 +150,11 @@ inline void EEAIContinentManager::SetPathSector(EEAIPathSector* inSector)
 }
 
 // 0x26fed (COMDAT; declared in ee/EEAIContinentManager.h)
+#ifdef EE_PORT
+__attribute__((used)) inline bool EEAIContinentManager::IsShoreTile(long inX, long inY) const
+#else
 inline bool EEAIContinentManager::IsShoreTile(long inX, long inY) const
+#endif
 {
     return std::binary_search(this->mShoreTiles.begin(), this->mShoreTiles.end(), U2DPoint<long>(inX, inY));
 }
@@ -185,14 +193,22 @@ inline void EEAIContinent::RemoveForestID(unsigned short inID)
 }
 
 // 0x273c9/0x273f1 (COMDATs; declared in ee/EEAIContinentManager.h)
+#ifdef EE_PORT
+__attribute__((used)) inline EEAIPathSubSector* EEAIContinentManager::GetPathSubSectorAt(long inX, long inY)
+#else
 inline EEAIPathSubSector* EEAIContinentManager::GetPathSubSectorAt(long inX, long inY)
+#endif
 {
     const std::vector<EEAIPathSubSector*>& theSubSectors = this->mPathSubSectors;
     unsigned short theID = this->GetPathSubSectorID(inX, inY);
     return theID ? theSubSectors[theID] : NULL;
 }
 
+#ifdef EE_PORT
+__attribute__((used)) inline unsigned short EEAIContinentManager::GetPathSubSectorID(long inX, long inY)
+#else
 inline unsigned short EEAIContinentManager::GetPathSubSectorID(long inX, long inY)
+#endif
 {
     if (!((unsigned long)inX < this->mWidth) || !((unsigned long)inY < this->mHeight))
         return 0;

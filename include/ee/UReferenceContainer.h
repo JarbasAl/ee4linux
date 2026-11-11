@@ -27,7 +27,7 @@ public:
     // inline: EEUGLoadContainer::AddUnit 0x225ab4 (the iterator's frame slot is reused afterwards) (provisional name)
     bool Contains(const T& inItem)
     {
-        std::vector<T>::iterator theIterator;
+        typename std::vector<T>::iterator theIterator;
         return this->Contains(inItem, theIterator);
     }
     // inline: EEPlayer 0x16368f/0x1636cd copy the item into a frame slot, Reference() it inline, then push_back the copy
@@ -58,7 +58,7 @@ UReferenceContainer<T>::~UReferenceContainer()
 template <class T>
 void UReferenceContainer<T>::Clear()
 {
-    for (std::vector<T>::iterator theIterator = this->mItems.begin(); theIterator != this->mItems.end(); ++theIterator)
+    for (typename std::vector<T>::iterator theIterator = this->mItems.begin(); theIterator != this->mItems.end(); ++theIterator)
         (*theIterator)->Dereference();
     this->mItems.clear();
 }
@@ -69,7 +69,7 @@ template <class T>
 bool UReferenceContainer<T>::Remove(const T& inItem)
 {
     bool theResult = false;
-    std::vector<T>::iterator theIterator;
+    typename std::vector<T>::iterator theIterator;
     if (this->Contains(inItem, theIterator))
         theResult = this->Erase(theIterator);
     return theResult;
@@ -78,7 +78,7 @@ bool UReferenceContainer<T>::Remove(const T& inItem)
 template <class T>
 bool UReferenceContainer<T>::Replace(const T& inOld, const T& inNew)
 {
-    std::vector<T>::iterator theIterator;
+    typename std::vector<T>::iterator theIterator;
     bool theResult = this->Contains(inOld, theIterator);
     if (theResult) {
         (*theIterator)->Dereference();
@@ -93,7 +93,7 @@ void UReferenceContainer<T>::operator=(const UReferenceContainer<T>& inOther)
 {
     this->Clear();
     this->mItems.clear();
-    for (std::vector<T>::const_iterator theIterator = inOther.mItems.begin(); theIterator != inOther.mItems.end();
+    for (typename std::vector<T>::const_iterator theIterator = inOther.mItems.begin(); theIterator != inOther.mItems.end();
          ++theIterator)
         this->Add(*theIterator);
 }

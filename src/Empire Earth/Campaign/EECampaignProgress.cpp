@@ -121,6 +121,12 @@ void EECampaignProgress::GetCompletedScenarios(std::vector<UWideString>& outScen
 extern char gEmptyString[];
 // Original cdecl scenario-civilization loader (EEAResetAllPlayerInfo, 0x2806e7).
 long EEApplyCivilizationFile(UString& inName, EEPlayer* inPlayer);
+#ifdef EE_PORT
+static long EEApplyCivilizationFile(const UString& inName, EEPlayer* inPlayer)
+{
+    return EEApplyCivilizationFile(const_cast<UString&>(inName), inPlayer);
+}
+#endif
 
 // FUNCTION: EXE 0x68f56d
 // Before a scenario of a user campaign, loads the player's progress and gives the current player the civilization

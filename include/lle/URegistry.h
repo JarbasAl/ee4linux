@@ -21,6 +21,41 @@ public:
     long GetRegistryValue(long inRootKey, UWideString& inKey, UWideString& inValueName, UWideString& outValue);
     long SetRegistryValue(long inRootKey, UWideString& inKey, UWideString& inValueName, UWideString& inValue);
     long SetRegistryValue(long inRootKey, UWideString& inKey, UWideString& inValueName, long inValue);
+#ifdef EE_PORT
+    // VC6 binds the temporaries that EEPreferences passes to the non-const references above
+    static UWideString& Ref(const UWideString& inString) { return const_cast<UWideString&>(inString); }
+    long CreateRegistryKey(long inRootKey, const UWideString& inKey) { return this->CreateRegistryKey(inRootKey, Ref(inKey)); }
+    long DeleteRegistryValue(long inRootKey, const UWideString& inKey, const UWideString& inValueName)
+    {
+        return this->DeleteRegistryValue(inRootKey, Ref(inKey), Ref(inValueName));
+    }
+    long CreateRegistryValue(long inRootKey, const UWideString& inKey, const UWideString& inValueName,
+                             const UWideString& inValue)
+    {
+        return this->CreateRegistryValue(inRootKey, Ref(inKey), Ref(inValueName), Ref(inValue));
+    }
+    long CreateRegistryValue(long inRootKey, const UWideString& inKey, const UWideString& inValueName, long& inValue)
+    {
+        return this->CreateRegistryValue(inRootKey, Ref(inKey), Ref(inValueName), inValue);
+    }
+    long GetRegistryValue(long inRootKey, const UWideString& inKey, const UWideString& inValueName, long& outValue)
+    {
+        return this->GetRegistryValue(inRootKey, Ref(inKey), Ref(inValueName), outValue);
+    }
+    long GetRegistryValue(long inRootKey, const UWideString& inKey, const UWideString& inValueName, UWideString& outValue)
+    {
+        return this->GetRegistryValue(inRootKey, Ref(inKey), Ref(inValueName), outValue);
+    }
+    long SetRegistryValue(long inRootKey, const UWideString& inKey, const UWideString& inValueName,
+                          const UWideString& inValue)
+    {
+        return this->SetRegistryValue(inRootKey, Ref(inKey), Ref(inValueName), Ref(inValue));
+    }
+    long SetRegistryValue(long inRootKey, const UWideString& inKey, const UWideString& inValueName, long inValue)
+    {
+        return this->SetRegistryValue(inRootKey, Ref(inKey), Ref(inValueName), inValue);
+    }
+#endif
 };
 
 #endif

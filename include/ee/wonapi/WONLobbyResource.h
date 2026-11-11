@@ -126,7 +126,11 @@ public:
     GUIString(const wchar_t* text,unsigned short length) :mData(new GUIStringData(text,length)) {} // bounded constructor (not identified in the original exe)
 #ifdef EE_DINKUM_SXL233
     GUIString(const std::string& inText) : mData(new GUIStringData(inText)) {}
+#ifdef EE_PORT
+    GUIString(const std::wstring& inText); // the port links one copy for both views: EELobbyGame.cpp's
+#else
     GUIString(const std::wstring& inText) : mData(new GUIStringData(inText)) {}
+#endif
 #else
     GUIString(const std::string& inText);  // 0x29848e
     GUIString(const std::wstring& inText); // 0x29258f
@@ -212,7 +216,15 @@ protected:
     virtual ~ResourceConfig(); // complete destructor 0x00790d10, deleting destructor 0x00790870
     bool mAllowOverwrite; //54, natural55..57
     int mParseCount; // offset 0x58, incremented at 0x00793340 before the key is read
+#ifdef EE_PORT
+    // Dinkum's map names its mapped type referent_type
+    template<class T> class ResMap : public std::map<std::string,std::pair<T,int>,StringLessNoCase> {
+    public:
+        typedef std::pair<T,int> referent_type;
+    };
+#else
     template<class T> class ResMap : public std::map<std::string,std::pair<T,int>,StringLessNoCase> {};
+#endif
     typedef ResMap<GUIString> StringMap;
     typedef ResMap<SmartPtr<Image> > ImageMap;
     typedef ResMap<SmartPtr<Font> > FontMap;

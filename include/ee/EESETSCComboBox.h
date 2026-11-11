@@ -11,6 +11,12 @@ public:
     EESETSCComboBox(unsigned long inId, unsigned long inTextBoxType, std::vector<UWideString>& inData, GEFont* inFont,
                     const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inMaxListBoxHeight,
                     UIForm* inForm, unsigned long inIndex, unsigned long inMaxChars, unsigned long inBorderThickness);
+#ifdef EE_PORT
+    EESETSCComboBox(unsigned long inId, unsigned long inTextBoxType, const std::vector<UWideString>& inData, GEFont* inFont, const GE2DPoint& inLocation, unsigned long inWidth, unsigned long inMaxListBoxHeight, UIForm* inForm, unsigned long inIndex, unsigned long inMaxChars, unsigned long inBorderThickness)
+        : EESETSCComboBox(inId, inTextBoxType, const_cast<std::vector<UWideString>&>(inData), inFont, inLocation, inWidth, inMaxListBoxHeight, inForm, inIndex, inMaxChars, inBorderThickness)
+    {
+    }
+#endif
 protected:
     virtual void ChangeSelection();         // +0x8c 0x17e3b5
 };

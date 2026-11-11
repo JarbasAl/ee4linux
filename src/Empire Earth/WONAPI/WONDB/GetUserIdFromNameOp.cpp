@@ -8,7 +8,11 @@
 #include "ee/EEWonNet.h"
 #include "ee/wonapi/WONRouting.h"
 #include "ee/wonapi/WONStatus.h"
+#ifdef EE_PORT
+extern wchar_t gEmptyWideString[];
+#else
 extern unsigned short gEmptyWideString[]; // 0x8e60bc, an empty wide string (zero .bss; defined in EEWonNet.cpp)
+#endif
 namespace WONAPI {
 // FUNCTION: WON 0x006cd3a0
 // Creates a user id lookup with an empty name

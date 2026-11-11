@@ -26,7 +26,11 @@ bool ResourceConfig_AddToMap(const char* typeName,StringParser& value,Map& value
     std::string key;
     value.ReadString(key,true);
     if(key.empty()) throw ConfigObjectException("Invalid resource key.");
+#ifdef EE_PORT
+    std::pair<typename Map::iterator,bool> inserted=values.insert(typename Map::value_type(key,typename Map::referent_type(Type(),generation)));
+#else
     std::pair<Map::iterator,bool> inserted=values.insert(Map::value_type(key,Map::referent_type(Type(),generation)));
+#endif
     int& oldGeneration=inserted.first->second.second;
     if(inserted.second) {
         output=&inserted.first->second.first;

@@ -23,7 +23,11 @@
 #include "ee/wonapi/WONLobbyChatCommands.h"
 #include "ee/wonapi/WONStatus.h"
 #include "ee/wonapi/WONRoutingTypes.h"
+#ifdef EE_PORT
+extern wchar_t gEmptyWideString[];
+#else
 extern unsigned short gEmptyWideString[]; // 0x8e60bc, an empty wide string (zero .bss; defined in EEWonNet.cpp)
+#endif
 // Routes one server notification on a routing connection to a RoutingLogic handler for the op's server.
 // The original's RTTI names this class in the global namespace, not in WONAPI.
 class RoutingOpCompletion : public WONAPI::LogicCompletionBase {

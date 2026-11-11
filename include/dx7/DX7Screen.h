@@ -27,6 +27,9 @@ public:
     virtual long CreateAWindow(const GE2DPoint& inOrigin, unsigned long inWidth, unsigned long inHeight,
                                UString& inClassName, UString& inTitle, GEWindow*& outWindow, unsigned long inStyle,
                                GEWindow* inParent);
+#ifdef EE_PORT
+    using GEScreen::CreateAWindow;
+#endif
     virtual bool Get32BitDeviceSupport() { return this->m32BitDeviceSupport; }
     virtual bool Get32BitTextureSupport() { return this->m32BitTextureSupport; }
     virtual bool GetAttachedToDesktop() const { return this->mAttachedToDesktop; }

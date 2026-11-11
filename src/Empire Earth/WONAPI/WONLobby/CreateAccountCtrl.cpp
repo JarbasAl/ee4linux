@@ -49,7 +49,11 @@ bool CreateAccountCtrl::ShowErrorLabel(bool inVisible,Label* inLabel)
 }
 // FUNCTION: WON 0x007ba6a0
 // Returns whether an e-mail address has an @ after its first character and a dot with text after it
+#ifdef EE_PORT
+bool LobbyIsValidEmail(const std::string& inEmail) throw()
+#else
 bool LobbyIsValidEmail(const std::string& inEmail)
+#endif
 {
     if(inEmail.empty()) return false;
     std::string::size_type at=inEmail.find('@',1);

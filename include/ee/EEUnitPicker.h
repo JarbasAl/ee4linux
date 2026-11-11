@@ -51,6 +51,9 @@ public:
     void Reset();                           // 0x119f7c: Clear, the main viewport, the camera mode (provisional name)
     // 0x119ffb: one drawn unit (EEROUnits) (provisional name)
     void AddUnit(EEUnit* inUnit, const GETransformation& inTransformation, float inPixelSize);
+#ifdef EE_PORT
+    friend struct EEPortAliases;            // the port binds the original's field globals (include/port/compat.h)
+#endif
 private:
     // 0x118eaf: PickUnits' worker for one unit type (provisional name)
     void PickUnitsOfType(const GERectangle& inRectangle, EEPlayer* inPlayer, long inType,

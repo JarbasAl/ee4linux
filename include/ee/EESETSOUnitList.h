@@ -17,6 +17,15 @@ public:
                     unsigned long inIndex, unsigned long inBorderThickness)
         : UILBString(inID, inStrings, inFont, inAutoSelect, GERectangle(inLocation, inWidth, (float)inHeight), inForm,
                      inIndex, inBorderThickness) {}
+#ifdef EE_PORT
+    EESETSOUnitList(unsigned long inID, const std::vector<UWideString>& inStrings, GEFont* inFont, bool inAutoSelect,
+                    const GE2DPoint& inLocation, float inWidth, unsigned long inHeight, UIForm* inForm,
+                    unsigned long inIndex, unsigned long inBorderThickness)
+        : EESETSOUnitList(inID, const_cast<std::vector<UWideString>&>(inStrings), inFont, inAutoSelect, inLocation, inWidth,
+                          inHeight, inForm, inIndex, inBorderThickness)
+    {
+    }
+#endif
     virtual ~EESETSOUnitList() {}
     virtual void ChangeSelectionIndex(unsigned long inIndex, bool inFireEvent, bool inScrollTo);   // +0x90 0x1917b7
 };

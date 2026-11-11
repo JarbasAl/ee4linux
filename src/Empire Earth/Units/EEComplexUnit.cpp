@@ -990,7 +990,11 @@ void EEComplexUnit::CopyFrom(RTSUnit* inUnit)
     this->mGrowth = theOther->GetGrowth();
     // the original stores the member function's address test (mov eax, offset GetB34F; test; setne): the call's
     // parentheses are missing in the original source, so the flag is always true
+#ifdef EE_PORT
+    this->mB34F = true;
+#else
     this->mB34F = theOther->GetB34F;
+#endif
     this->mIsRegrowing = theOther->mIsRegrowing;
     this->mCalamityFlags = theOther->mCalamityFlags;
     this->mNumAreaEffects = 0;
@@ -1923,7 +1927,8 @@ long EEComplexUnit::GetChecksum(unsigned long inFlags)
         }
     }
     if (inFlags & 8) {
-        for (std::vector<EEAreaEffect*>::iterator theEffect = this->mAffectingAreaEffects.mItems.begin(); theEffect != this->mAffectingAreaEffects.mItems.end();
+        std::vector<EEAreaEffect*>::iterator theEffect;
+        for (theEffect = this->mAffectingAreaEffects.mItems.begin(); theEffect != this->mAffectingAreaEffects.mItems.end();
              ++theEffect)
             theSum += (*theEffect)->Checksum();
         for (theEffect = this->mAreaEffects.mItems.begin(); theEffect != this->mAreaEffects.mItems.end(); ++theEffect)

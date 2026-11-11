@@ -41,6 +41,12 @@ public:
                       long inUnknown);
     // 0x1061e9: the same for a placed effect (outHandle may be 0: the logic bomb's first effect, 0xb2408)
     long CreatePlacedEffect(GE3DPoint& inLocation, EEGraphicEffect* inEffect, EEEffectHandle* outHandle);
+#ifdef EE_PORT
+    long CreatePlacedEffect(const GE3DPoint& inLocation, EEGraphicEffect* inEffect, EEEffectHandle* outHandle)
+    {
+        return this->CreatePlacedEffect(const_cast<GE3DPoint&>(inLocation), inEffect, outHandle);
+    }
+#endif
     // 0x106596: an effect placed on a line (EEE3DTeleport 0xfbb22 passes a GE3DLine local: its position and a vertical
     // direction; EEE3DMultiEffect's second ctor 0xf42c3 calls it and is created by it) (provisional name)
     long CreateLineEffect(GE3DLine& inLine, EEGraphicEffect* inEffect, EEEffectHandle* outHandle);

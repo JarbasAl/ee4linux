@@ -149,7 +149,11 @@ void EEDataPreLoading::HandleMessage(unsigned long inMessage, void* inParameter1
         break;
     }
     case 0x402:
+#ifdef EE_PORT
+        this->LoadGame(inParameter1 != 0, inParameter2 != 0);
+#else
         this->LoadGame(inParameter1 > 0, inParameter2 > 0);
+#endif
         break;
     case 0x40c:
         this->mMessageQueueDone->Set();

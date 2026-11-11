@@ -39,7 +39,11 @@ GUIString Clipboard::Get()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // The original copies the 2-byte zero .bss word 0x4e60bc (the empty wide string EEWonNet.cpp also uses).
+#ifdef EE_PORT
+extern wchar_t gEmptyWideString[2];
+#else
 extern unsigned short gEmptyWideString[2];
+#endif
 // FUNCTION: WON 0x007ceb90
 // Replaces the clipboard contents with the string, as Unicode text if a one-time test shows the clipboard
 // accepts it, otherwise as ANSI text

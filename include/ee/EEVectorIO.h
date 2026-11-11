@@ -25,7 +25,7 @@ template <class T> long FSSaveVector(FSFile& outFile, std::vector<T>& inVector, 
     UString theSizeKey = inKey + "-Size";
     UString theElementKey = inKey + "-Element";
     long theResult = outFile.Write((unsigned long)inVector.size());
-    for (std::vector<T>::iterator it = inVector.begin(); it != inVector.end() && theResult == kErrorOK; it++)
+    for (typename std::vector<T>::iterator it = inVector.begin(); it != inVector.end() && theResult == kErrorOK; it++)
         theResult = outFile.Write(*it);
     return theResult;
 }

@@ -248,7 +248,11 @@ void EESELoadThread::HandleMessage(unsigned long inMessage, void* inParameter1, 
         this->Handle406(reinterpret_cast<unsigned long>(inParameter1), reinterpret_cast<unsigned long>(inParameter2));
         break;
     case 0x403:
+#ifdef EE_PORT
+        this->Handle403(reinterpret_cast<unsigned long>(inParameter1), inParameter2 != 0);
+#else
         this->Handle403(reinterpret_cast<unsigned long>(inParameter1), inParameter2 > 0);
+#endif
         break;
     case kLoadThreadStartScenarioTest:
         gUserInterface->StartScenarioTest();

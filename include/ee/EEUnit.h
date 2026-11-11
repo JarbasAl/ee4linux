@@ -1143,6 +1143,9 @@ public:
     void UnloadClassMedia();                // 0x2382fd (EEPlayer::UnloadAllClassMedia, per mSoundLoadedClasses class; provisional name)
     virtual ~EEUnitClass();                 // +0x00 0x2305ee (dereferences the effects and classes)
     virtual void GroundLocation(GE3DPoint& ioLocation);  // +0x04 (the time warp's return, flag 4)
+#ifdef EE_PORT
+    void GroundLocation(const GE3DPoint& inLocation) { this->GroundLocation(const_cast<GE3DPoint&>(inLocation)); }
+#endif
     // +0x08 (base 0x2907a3: empty): the tile under inLocation along the camera line (EEUCNavalCitizen 0x218490)
     virtual void LocationToTile(const GE3DPoint& inLocation, long& outX, long& outY);
     // +0x0c (base 0x2907a3: empty): adjusts a path for the class (EEUCSeaAnimal 0x219d87: random depths) (provisional

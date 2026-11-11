@@ -139,7 +139,11 @@ void HTMLDisplayGen::ClearAccumulatedSegment(int flags)
 
 // Body of the constructor whose marker (0x00737f50) sits at the top of the file
 HTMLDisplayGen::HTMLDisplayGen()
+#ifdef EE_PORT
+    :mTagListItr(),mTagListEnd()
+#else
     :mTagListItr(NULL),mTagListEnd(NULL)
+#endif
 {
     this->mNoBackground=false;
     this->mFontSize=HTMLFontSize_Medium;

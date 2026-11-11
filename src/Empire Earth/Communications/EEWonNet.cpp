@@ -67,7 +67,11 @@ wchar_t* kWonCommunityName = L"EmpireEarth";                    // 0x4bba80
 
 extern char gEmptyString[];                 // 0x4e5b98 (pooled "")
 unsigned long gWonClientId;                 // 0x4e60b8 (RegisterCallback stores the server's client id)
+#ifdef EE_PORT
+wchar_t gEmptyWideString[2];
+#else
 unsigned short gEmptyWideString[2];         // 0x4e60bc (L"": zero .bss right after gWonClientId; size = the gap to 0x4e60c0)
+#endif
 extern unsigned long gNetworkAdapter;       // 0x5308a0 (the adapter of the local address)
 
 static const unsigned short kEEWonNetGameInfoVersion = 1;   // 0x43e480 (ExportGameInfo's record version)
@@ -278,8 +282,16 @@ void EEWonNet::ConnectToLobby()
 {
     RoutingGroupMap::const_iterator theGroup;
     RoutingMemberMap::const_iterator theMember;
+#ifdef EE_PORT
+    theGroup = decltype(theGroup)();
+#else
     theGroup = NULL;
+#endif
+#ifdef EE_PORT
+    theMember = decltype(theMember)();
+#else
     theMember = NULL;
+#endif
     char theName[1024];
     UWideString theString;
 
@@ -331,7 +343,11 @@ void EEWonNet::ListGamesCallback(AsyncOp* inOp)
 void EEWonNet::ListRoomCallback(AsyncOp* inOp)
 {
     WONStatus theStatus = inOp->GetStatus();
+#ifdef EE_PORT
+    RoutingGroupMap::const_iterator theGroup{};
+#else
     RoutingGroupMap::const_iterator theGroup = NULL;
+#endif
     RoutingDataObjectList::iterator theObject = static_cast<RoutingReadDataObjectOp*>(inOp)->mDataObjects.begin();
     RoutingDataObjectList::iterator theData = theObject;
     char theName[1024];
@@ -673,7 +689,11 @@ void EEWonNet::JoinGame(const char* inName, const char* inPassword)
 {
     UWideString theMessage;
     RoutingGroupMap theGroups;
+#ifdef EE_PORT
+    RoutingGroupMap::const_iterator theGroup{};
+#else
     RoutingGroupMap::const_iterator theGroup = NULL;
+#endif
     std::wstring thePassword;
     std::string theName;
     bool theFound;
@@ -807,7 +827,11 @@ bool EEWonNet::RejoinRoom(bool inFlag)
 void EEWonNet::JoinRoom(const char* inRoom, const char* inPassword)
 {
     RoutingGroupMap theGroups;
+#ifdef EE_PORT
+    RoutingGroupMap::const_iterator theGroup{};
+#else
     RoutingGroupMap::const_iterator theGroup = NULL;
+#endif
     UWideString theMessage;
     std::wstring thePassword;
     std::string theName;
@@ -928,7 +952,11 @@ void EEWonNet::ClearGames()
 void EEWonNet::UpdateGameList()
 {
     UWideString theName;
+#ifdef EE_PORT
+    std::map<unsigned short, EEWonNetGameInfo>::iterator theGame{};
+#else
     std::map<unsigned short, EEWonNetGameInfo>::iterator theGame = NULL;
+#endif
     bool theShowClosed;
     bool theShowPassworded;
     bool theShowFirewalled;

@@ -14,6 +14,12 @@ class EEServer : public NESynchronousServer {
 public:
     // 0xca90f (argument names are provisional; the SP random map: (UWideString("EEName"), gU5308A0, 0, 0, true, true))
     EEServer(UWideString& inName, unsigned long inNetworkAdapter, unsigned long inCurrentCommunicationsTick, unsigned long inCurrentPhysicsTick, bool inAllowNewConnections, bool inAnnounce);
+#ifdef EE_PORT
+    EEServer(const UWideString& inName, unsigned long inNetworkAdapter, unsigned long inCurrentCommunicationsTick, unsigned long inCurrentPhysicsTick, bool inAllowNewConnections, bool inAnnounce)
+        : EEServer(const_cast<UWideString&>(inName), inNetworkAdapter, inCurrentCommunicationsTick, inCurrentPhysicsTick, inAllowNewConnections, inAnnounce)
+    {
+    }
+#endif
     virtual ~EEServer();                    // +0x00 0xcaa86 (??_G 0xcaa6a)
     // the engine's pure callbacks, implemented by the game (vtable 0x43e384; EEServer.cpp 0xca90f..0xcd4f9; names by
     // base slot, signatures from the bodies)

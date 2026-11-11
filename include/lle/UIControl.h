@@ -232,7 +232,11 @@ private:
 // The (possibly double-byte) character at inString, as _ismbcdigit/_ismbcspace take it. Header-inline (provisional
 // name and home): the COMDAT sits after its first user, UIEditBox::AddChar (0x1006a9a5), and UITextLabel.cpp
 // and User Interface.cpp call the same copy.
+#ifdef EE_PORT
+__attribute__((used)) inline int GetMultiByteChar(const char* inString)
+#else
 inline int GetMultiByteChar(const char* inString)
+#endif
 {
     int theChar = 0;
     if (_ismbblead(*reinterpret_cast<const unsigned char*>(inString))) {

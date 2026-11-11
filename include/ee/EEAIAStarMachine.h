@@ -162,7 +162,7 @@ EEAIAStarMachine<S, G, M>::~EEAIAStarMachine()
 template <class S, class G, class M>
 void EEAIAStarMachine<S, G, M>::Reset()
 {
-    ResetNodes();
+    this->ResetNodes();
     this->mFound = false;
     this->mGoal.Reset();
 }
@@ -218,7 +218,7 @@ EEAIAStarGraphMachine<S, G, M>::~EEAIAStarGraphMachine()
 template <class S, class G, class M>
 void EEAIAStarGraphMachine<S, G, M>::Reset()
 {
-    ResetNodes();
+    this->ResetNodes();
     this->mGoal.Reset();
 }
 
@@ -228,7 +228,7 @@ void EEAIAStarGraphMachine<S, G, M>::Run()
     if (!this->mFound) {
         this->mNumRuns = 0;
         this->mRevs = 0;
-        Init(this->mNodeCount);
+        this->Init(this->mNodeCount);
         this->mGoal.Attach(this, this);
         this->mGoal.Prepare();
         this->Start();
@@ -244,11 +244,11 @@ bool EEAIAStarGraphMachine<S, G, M>::Start()
     this->mTile.mY = this->mGoal.mGoalTile.mY;
     this->mSector = this->mGoal.GetGoalID();
     M* theStart = this->mGoal.GetStartObject();
-    mCurrentNode = NewNode(this->mGoal.mStartTile, theStart, theStart->mID);
-    mCurrentNode->mPathCost = 0;
-    mCurrentNode->mEstimate = this->mGoal.Estimate(this->mGoal.mStartTile, this->mTile);
-    mCurrentNode->mCost = mCurrentNode->mEstimate + mCurrentNode->mPathCost;
-    AddOpen(mCurrentNode);
+    this->mCurrentNode = this->NewNode(this->mGoal.mStartTile, theStart, theStart->mID);
+    this->mCurrentNode->mPathCost = 0;
+    this->mCurrentNode->mEstimate = this->mGoal.Estimate(this->mGoal.mStartTile, this->mTile);
+    this->mCurrentNode->mCost = this->mCurrentNode->mEstimate + this->mCurrentNode->mPathCost;
+    this->AddOpen(this->mCurrentNode);
     return true;
 }
 
@@ -259,27 +259,27 @@ void EEAIAStarGraphMachine<S, G, M>::Expand()
     this->mRevs++;
     this->mSteps = 0;
     for (;;) {
-        mCurrentNode = RemoveBestOpen();
-        if (this->mGoal.IsGoalNode(mCurrentNode)) {
+        this->mCurrentNode = this->RemoveBestOpen();
+        if (this->mGoal.IsGoalNode(this->mCurrentNode)) {
             this->mFound = false;
             break;
         }
-        M* theObject = static_cast<M*>(mCurrentNode->mObject);
+        M* theObject = static_cast<M*>(this->mCurrentNode->mObject);
         if (theObject->GetNumNeighbors() > 0) {
             for (long i = theObject->mNeighbors.size() - 1; i >= 0; i--) {
                 AStarGraphableObjectBase* theNeighbor = theObject->mNeighbors[i];
                 if (theObject->mID != -1 && this->mGoal.CanEnter(static_cast<M*>(theNeighbor), theObject))
-                    this->AddNode(mCurrentNode, theObject->mNeighbors[i]);
+                    this->AddNode(this->mCurrentNode, theObject->mNeighbors[i]);
             }
         }
-        AddClosed(mCurrentNode);
+        this->AddClosed(this->mCurrentNode);
         if (this->mGoal.mRevLimit != -1 && this->mSteps >= this->mGoal.mRevLimit) {
-            mCurrentNode = 0;
+            this->mCurrentNode = 0;
             this->mFound = true;
             break;
         }
         if (this->mGoal.mMaxRevs != -1 && this->mRevs >= this->mGoal.mMaxRevs) {
-            mCurrentNode = 0;
+            this->mCurrentNode = 0;
             this->mFound = false;
             break;
         }
@@ -289,34 +289,34 @@ void EEAIAStarGraphMachine<S, G, M>::Expand()
     if (!this->mFound)
         this->mGoal.SearchDone(this);
     if (this->mGoal.mSearchFailed) {
-        if (mCurrentNode) {
-            AddClosed(mCurrentNode);
-            mCurrentNode = 0;
+        if (this->mCurrentNode) {
+            this->AddClosed(this->mCurrentNode);
+            this->mCurrentNode = 0;
         }
         this->Restart();
-    } else if (!this->mFound && mCurrentNode)
-        mPath = mCurrentNode;
+    } else if (!this->mFound && this->mCurrentNode)
+        this->mPath = this->mCurrentNode;
     else
-        mCurrentNode = 0;
+        this->mCurrentNode = 0;
 }
 
 template <class S, class G, class M>
 bool EEAIAStarGraphMachine<S, G, M>::Restart()
 {
-    mPath = 0;
+    this->mPath = 0;
     EEAIAStarGraphNode* theNode = this->NextNode();
     if (theNode) {
         this->mTile.mX = theNode->mTile.mX;
         this->mTile.mY = theNode->mTile.mY;
-        mPath = theNode;
-        mCurrentNode = theNode;
+        this->mPath = theNode;
+        this->mCurrentNode = theNode;
         this->mSector = theNode->mIndex;
     } else {
-        mCurrentNode = NewNode(this->mGoal.mStartTile, this->mGoal.GetStartObject(), -1);
-        mCurrentNode->mPathCost = 0;
-        mCurrentNode->mEstimate = 1;
-        mCurrentNode->mCost = 1;
-        mPath = mCurrentNode;
+        this->mCurrentNode = this->NewNode(this->mGoal.mStartTile, this->mGoal.GetStartObject(), -1);
+        this->mCurrentNode->mPathCost = 0;
+        this->mCurrentNode->mEstimate = 1;
+        this->mCurrentNode->mCost = 1;
+        this->mPath = this->mCurrentNode;
     }
     this->mFound = false;
     return true;
@@ -325,14 +325,14 @@ bool EEAIAStarGraphMachine<S, G, M>::Restart()
 template <class S, class G, class M>
 EEAIAStarGraphNode* EEAIAStarGraphMachine<S, G, M>::NextNode()
 {
-    EEAIAStarGraphNode* theOpen = RemoveNearestOpen(this->mTile);
-    EEAIAStarGraphNode* theClosed = RemoveNearestClosed(this->mTile);
+    EEAIAStarGraphNode* theOpen = this->RemoveNearestOpen(this->mTile);
+    EEAIAStarGraphNode* theClosed = this->RemoveNearestClosed(this->mTile);
     if (theOpen) {
         if (theClosed) {
             if (theOpen->mCost <= theClosed->mCost)
-                AddClosed(theClosed);
+                this->AddClosed(theClosed);
             else {
-                AddOpen(theOpen);
+                this->AddOpen(theOpen);
                 theOpen = theClosed;
             }
         }
@@ -347,30 +347,30 @@ void EEAIAStarGraphMachine<S, G, M>::AddNode(EEAIAStarGraphNode* inParent, M* in
     unsigned long theCost = inParent->mPathCost + this->mGoal.GetStepCost(inParent, inObject);
     U2DPoint<long> theTile = inObject->GetGraphLocation();
     long theIndex = inObject->mID;
-    EEAIAStarGraphNode* theOpen = GetOpenNode(theIndex);
-    EEAIAStarGraphNode* theClosed = GetClosedNode(theIndex);
+    EEAIAStarGraphNode* theOpen = this->GetOpenNode(theIndex);
+    EEAIAStarGraphNode* theClosed = this->GetClosedNode(theIndex);
     if (theOpen && theOpen->mPathCost <= theCost)
         return;
     if (theClosed) {
         if (theClosed->mPathCost <= theCost)
             return;
-        RemoveClosed(theClosed);
-        ReleaseNode(theClosed);
+        this->RemoveClosed(theClosed);
+        this->ReleaseNode(theClosed);
     }
     if (!theOpen) {
-        EEAIAStarGraphNode* theNode = NewNode(theTile, inObject, theIndex);
+        EEAIAStarGraphNode* theNode = this->NewNode(theTile, inObject, theIndex);
         theNode->mPathCost = theCost;
         theNode->mParent = inParent;
         theNode->mEstimate = this->mGoal.Estimate(theNode->mTile, this->mTile);  // the goal's heuristic (0xab6c1: Manhattan * 10)
         theNode->mCost = theNode->mEstimate + theCost;
-        AddOpen(theNode);
+        this->AddOpen(theNode);
     } else {
         theOpen->mParent = inParent;
         unsigned long theTotal = theOpen->mEstimate + theCost;
         theOpen->mPathCost = theCost;
         if (theOpen->mCost != theTotal) {
             theOpen->mCost = theTotal;
-            UpdateOpen(theOpen);                // re-sorts the open list (0xab6c1 calls 0x1656d)
+            this->UpdateOpen(theOpen);                // re-sorts the open list (0xab6c1 calls 0x1656d)
         }
     }
 }

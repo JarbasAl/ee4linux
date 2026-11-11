@@ -399,7 +399,8 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerEarthquake::PickTarget()
         this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenOnlyBuildings(this->mProphet, this, true));
         if (theTargets.size() > 0) {
             theTiles.resize(theTargets.size());
-            for (long i = theTargets.size() - 1; i >= 0; i--)
+            long i;
+            for (i = theTargets.size() - 1; i >= 0; i--)
                 theTiles[i] = theTargets[i]->mUnit->GetTile();
             theTile = U2DComputeCenterPoint(theTiles, true);
             for (i = theTargets.size() - 1; i >= 0; i--) {
@@ -822,7 +823,8 @@ EEComplexUnit* EECPASGUProphetCalamityAnalyzerHurricane::PickTarget()
     this->Gather(theTargets, &EECPASGUPCTargetIsUnitSetScreenBase(this->mProphet, this, true));
     if (theTargets.size() > 0) {
         theTiles.resize(theTargets.size());
-        for (long i = theTargets.size() - 1; i >= 0; i--)
+        long i;
+        for (i = theTargets.size() - 1; i >= 0; i--)
             theTiles[i] = theTargets[i]->mUnit->GetTile();
         theTile = U2DComputeCenterPoint(theTiles, true);
         for (i = theTargets.size() - 1; i >= 0; i--) {

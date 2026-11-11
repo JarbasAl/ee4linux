@@ -18,9 +18,9 @@ public:
     T& GetAt(long inIndex) { return (*this)[inIndex]; }
     void Remove(const T& inValue)
     {
-        for (iterator it = begin(); it != end(); ++it)
+        for (typename std::vector<T>::iterator it = this->begin(); it != this->end(); ++it)
             if (*it == inValue) {
-                erase(it);
+                this->erase(it);
                 return;
             }
     }
@@ -95,7 +95,7 @@ void RTSRegionTable<T>::CollectValues(const U2DRectangle<long>& inTiles, std::ve
 {
     this->GetValues(inTiles, outValues);
     std::sort(outValues.begin(), outValues.end(), inLess);
-    std::vector<T>::iterator it = std::unique(outValues.begin(), outValues.end());
+    typename std::vector<T>::iterator it = std::unique(outValues.begin(), outValues.end());
     if (it != outValues.end())
         outValues.erase(it, outValues.end());
 }

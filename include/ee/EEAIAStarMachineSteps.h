@@ -13,7 +13,7 @@ void EEAIAStarMachine<S, G, M>::Run()
         this->mMapWidth = this->mMap->mSize;
         this->mMapHeight = this->mMap->mSize;
         this->mRevs = 0;
-        Init(this->mMap->mSize, this->mMap->mSize);
+        this->Init(this->mMap->mSize, this->mMap->mSize);
         this->mGoal.Attach(this->mMap, this, this);
         this->mGoal.Prepare();
         this->Start();
@@ -28,11 +28,11 @@ bool EEAIAStarMachine<S, G, M>::Start()
     bool theResult = this->TestTile(this->mGoal.mStartTile.GetX(), this->mGoal.mStartTile.GetY());
     const U2DPoint<long>& theGoal = this->mGoal.mGoalTile;
     this->mTile = theGoal;
-    mCurrentNode = NewNode(this->mGoal.mStartTile.GetX(), this->mGoal.mStartTile.GetY());
-    mCurrentNode->mPathCost = 0;
-    mCurrentNode->mEstimate = this->mGoal.Estimate(this->mGoal.mStartTile, this->mTile);
-    mCurrentNode->mCost = mCurrentNode->mEstimate + mCurrentNode->mPathCost;
-    AddOpen(mCurrentNode);
+    this->mCurrentNode = this->NewNode(this->mGoal.mStartTile.GetX(), this->mGoal.mStartTile.GetY());
+    this->mCurrentNode->mPathCost = 0;
+    this->mCurrentNode->mEstimate = this->mGoal.Estimate(this->mGoal.mStartTile, this->mTile);
+    this->mCurrentNode->mCost = this->mCurrentNode->mEstimate + this->mCurrentNode->mPathCost;
+    this->AddOpen(this->mCurrentNode);
     return theResult;
 }
 
@@ -43,22 +43,22 @@ void EEAIAStarMachine<S, G, M>::Expand()
     this->mNumRuns++;
     this->mRevs++;
     for (;;) {
-        mCurrentNode = RemoveBestOpen();
-        if (this->mGoal.IsGoalNode(mCurrentNode)) {
+        this->mCurrentNode = this->RemoveBestOpen();
+        if (this->mGoal.IsGoalNode(this->mCurrentNode)) {
             this->mFound = false;
             break;
         }
-        long theX = mCurrentNode->mX;
-        long theY = mCurrentNode->mY;
+        long theX = this->mCurrentNode->mX;
+        long theY = this->mCurrentNode->mY;
         long theLeft = theX - 1;
         long theBottom = theY - 1;
         long theRight = theX + 1;
         long theTop = theY + 1;
         long theParentX;
         long theParentY;
-        if (mCurrentNode->mParent) {
-            theParentX = mCurrentNode->mParent->mX;
-            theParentY = mCurrentNode->mParent->mY;
+        if (this->mCurrentNode->mParent) {
+            theParentX = this->mCurrentNode->mParent->mX;
+            theParentY = this->mCurrentNode->mParent->mY;
         } else {
             theParentX = 0;
             theParentY = 0;
@@ -68,44 +68,44 @@ void EEAIAStarMachine<S, G, M>::Expand()
         bool theRightOK = this->TestTile(theRight, theY);
         bool theAbove = this->TestTile(theX, theTop);
         if (theBelow && (theParentX != theX || theParentY != theBottom))
-            this->AddNode(mCurrentNode, theX, theBottom);
+            this->AddNode(this->mCurrentNode, theX, theBottom);
         if (theLeftOK && (theParentX != theLeft || theParentY != theY))
-            this->AddNode(mCurrentNode, theLeft, theY);
+            this->AddNode(this->mCurrentNode, theLeft, theY);
         if (theRightOK && (theParentX != theRight || theParentY != theY))
-            this->AddNode(mCurrentNode, theRight, theY);
+            this->AddNode(this->mCurrentNode, theRight, theY);
         if (theAbove && (theParentX != theX || theParentY != theTop))
-            this->AddNode(mCurrentNode, theX, theTop);
+            this->AddNode(this->mCurrentNode, theX, theTop);
         if (this->mCheckCorners) {
             if ((theLeftOK || theBelow) && (theParentX != theLeft || theParentY != theBottom) &&
                 this->TestTile(theLeft, theBottom))
-                this->AddNode(mCurrentNode, theLeft, theBottom);
+                this->AddNode(this->mCurrentNode, theLeft, theBottom);
             if ((theBelow || theRightOK) && (theParentX != theRight || theParentY != theBottom) &&
                 this->TestTile(theRight, theBottom))
-                this->AddNode(mCurrentNode, theRight, theBottom);
+                this->AddNode(this->mCurrentNode, theRight, theBottom);
             if ((theRightOK || theAbove) && (theParentX != theRight || theParentY != theTop) &&
                 this->TestTile(theRight, theTop))
-                this->AddNode(mCurrentNode, theRight, theTop);
+                this->AddNode(this->mCurrentNode, theRight, theTop);
             if ((theAbove || theLeftOK) && (theParentX != theLeft || theParentY != theTop) &&
                 this->TestTile(theLeft, theTop))
-                this->AddNode(mCurrentNode, theLeft, theTop);
+                this->AddNode(this->mCurrentNode, theLeft, theTop);
         } else {
             if (this->TestTile(theLeft, theBottom) && (theParentX != theLeft || theParentY != theBottom))
-                this->AddNode(mCurrentNode, theLeft, theBottom);
+                this->AddNode(this->mCurrentNode, theLeft, theBottom);
             if (this->TestTile(theRight, theBottom) && (theParentX != theRight || theParentY != theBottom))
-                this->AddNode(mCurrentNode, theRight, theBottom);
+                this->AddNode(this->mCurrentNode, theRight, theBottom);
             if (this->TestTile(theRight, theTop) && (theParentX != theRight || theParentY != theTop))
-                this->AddNode(mCurrentNode, theRight, theTop);
+                this->AddNode(this->mCurrentNode, theRight, theTop);
             if (this->TestTile(theLeft, theTop) && (theParentX != theLeft || theParentY != theTop))
-                this->AddNode(mCurrentNode, theLeft, theTop);
+                this->AddNode(this->mCurrentNode, theLeft, theTop);
         }
-        AddClosed(mCurrentNode);
+        this->AddClosed(this->mCurrentNode);
         if (this->mGoal.IsStepLimit(this->mSteps)) {
-            mCurrentNode = 0;
+            this->mCurrentNode = 0;
             this->mFound = true;
             break;
         }
         if (this->mGoal.IsRevLimit(this->mRevs)) {
-            mCurrentNode = 0;
+            this->mCurrentNode = 0;
             this->mFound = false;
             break;
         }
@@ -115,15 +115,15 @@ void EEAIAStarMachine<S, G, M>::Expand()
     if (!this->mFound)
         this->mGoal.SearchDone(this);
     if (this->mGoal.mSearchFailed) {
-        if (mCurrentNode) {
-            AddClosed(mCurrentNode);
-            mCurrentNode = 0;
+        if (this->mCurrentNode) {
+            this->AddClosed(this->mCurrentNode);
+            this->mCurrentNode = 0;
         }
         this->Restart();
-    } else if (!this->mFound && mCurrentNode)
-        mPath = mCurrentNode;
+    } else if (!this->mFound && this->mCurrentNode)
+        this->mPath = this->mCurrentNode;
     else
-        mCurrentNode = 0;
+        this->mCurrentNode = 0;
 }
 
 template <class S, class G, class M>
@@ -131,20 +131,20 @@ bool EEAIAStarMachine<S, G, M>::Restart()
 {
     const bool& theAtGoal = this->mGoal.mAcceptNearest;
     bool theDone = theAtGoal;
-    mPath = 0;
+    this->mPath = 0;
     if (theAtGoal) {
         EEAIAStarNode* theNode = this->NextNode();
         if (theNode) {
-            mPath = theNode;
-            mCurrentNode = theNode;
+            this->mPath = theNode;
+            this->mCurrentNode = theNode;
             this->mTile.mX = theNode->mX;
             this->mTile.mY = theNode->mY;
         } else {
-            mCurrentNode = NewNode(this->mGoal.mStartTile.GetX(), this->mGoal.mStartTile.GetY());
-            mCurrentNode->mPathCost = 0;
-            mCurrentNode->mEstimate = 1;
-            mCurrentNode->mCost = 1;
-            mPath = mCurrentNode;
+            this->mCurrentNode = this->NewNode(this->mGoal.mStartTile.GetX(), this->mGoal.mStartTile.GetY());
+            this->mCurrentNode->mPathCost = 0;
+            this->mCurrentNode->mEstimate = 1;
+            this->mCurrentNode->mCost = 1;
+            this->mPath = this->mCurrentNode;
         }
         this->mFound = false;
         theDone = true;
@@ -154,20 +154,20 @@ bool EEAIAStarMachine<S, G, M>::Restart()
         if (theNode) {
             theDone = this->mGoal.AcceptTile(theNode->mX, theNode->mY, true);
             if (theDone) {
-                mPath = theNode;
-                mCurrentNode = theNode;
+                this->mPath = theNode;
+                this->mCurrentNode = theNode;
                 this->mTile.SetX(theNode->mX);
                 this->mTile.SetY(theNode->mY);
                 this->mFound = false;
             } else
-                ReleaseNode(theNode);
+                this->ReleaseNode(theNode);
         } else {
-            mCurrentNode = NewNode(this->mGoal.mStartTile.GetX(), this->mGoal.mStartTile.GetY());
-            mCurrentNode->mPathCost = 0;
-            mCurrentNode->mEstimate = 1;
-            mCurrentNode->mCost = 1;
+            this->mCurrentNode = this->NewNode(this->mGoal.mStartTile.GetX(), this->mGoal.mStartTile.GetY());
+            this->mCurrentNode->mPathCost = 0;
+            this->mCurrentNode->mEstimate = 1;
+            this->mCurrentNode->mCost = 1;
             this->mFound = false;
-            mPath = mCurrentNode;
+            this->mPath = this->mCurrentNode;
             theDone = true;
         }
     }
@@ -179,7 +179,7 @@ bool EEAIAStarMachine<S, G, M>::TestTile(unsigned long inX, unsigned long inY)
 {
     bool theResult = false;
     if (inX < this->mMapWidth && inY < this->mMapHeight) {
-        unsigned char* theFlag = GetTileFlags(inX, inY);
+        unsigned char* theFlag = this->GetTileFlags(inX, inY);
         if (*theFlag & kAStarTileAccepted || *theFlag & kAStarTileRejected)
             theResult = *theFlag & kAStarTileAccepted;
         else {
@@ -189,7 +189,7 @@ bool EEAIAStarMachine<S, G, M>::TestTile(unsigned long inX, unsigned long inY)
             else
                 *theFlag |= kAStarTileAccepted;
         }
-        ExtendBounds(inX, inY);
+        this->ExtendBounds(inX, inY);
     }
     return theResult;
 }
@@ -197,14 +197,14 @@ bool EEAIAStarMachine<S, G, M>::TestTile(unsigned long inX, unsigned long inY)
 template <class S, class G, class M>
 EEAIAStarNode* EEAIAStarMachine<S, G, M>::NextNode()
 {
-    EEAIAStarNode* theOpen = RemoveNearestOpen(this->mTile);
-    EEAIAStarNode* theClosed = RemoveNearestClosed(this->mTile);
+    EEAIAStarNode* theOpen = this->RemoveNearestOpen(this->mTile);
+    EEAIAStarNode* theClosed = this->RemoveNearestClosed(this->mTile);
     if (theOpen) {
         if (theClosed) {
             if (theOpen->mCost <= theClosed->mCost)
-                AddClosed(theClosed);
+                this->AddClosed(theClosed);
             else {
-                AddOpen(theOpen);
+                this->AddOpen(theOpen);
                 theOpen = theClosed;
             }
         }
@@ -217,29 +217,29 @@ template <class S, class G, class M>
 void EEAIAStarMachine<S, G, M>::AddNode(EEAIAStarNode* inParent, long inX, long inY)
 {
     unsigned long theCost = this->mGoal.GetCost(inParent->mX, inParent->mY, inX, inY) + inParent->mPathCost;
-    EEAIAStarNode* theOpen = FindOpen(inX, inY);
-    EEAIAStarNode* theClosed = FindClosed(inX, inY);
+    EEAIAStarNode* theOpen = this->FindOpen(inX, inY);
+    EEAIAStarNode* theClosed = this->FindClosed(inX, inY);
     if (theOpen && !this->mGoal.IsCheaper(theCost, theOpen->mPathCost))
         return;
     if (theClosed) {
         if (!this->mGoal.IsCheaper(theCost, theClosed->mPathCost))
             return;
-        RemoveClosed(theClosed);
-        ReleaseNode(theClosed);
+        this->RemoveClosed(theClosed);
+        this->ReleaseNode(theClosed);
     }
     if (!theOpen) {
-        EEAIAStarNode* theNode = NewNode(inX, inY);
+        EEAIAStarNode* theNode = this->NewNode(inX, inY);
         theNode->mParent = inParent;
         theNode->mPathCost = theCost;
         theNode->mEstimate = this->mGoal.Estimate(U2DPoint<long>(theNode->mX, theNode->mY), this->mTile);
         theNode->mCost = theNode->mEstimate + theCost;
-        AddOpen(theNode);
+        this->AddOpen(theNode);
     } else {
         theOpen->mPathCost = theCost;
         theOpen->mParent = inParent;
         if (theOpen->mCost != theOpen->mEstimate + theCost) {
             theOpen->mCost = theOpen->mEstimate + theCost;
-            UpdateOpen(theOpen);
+            this->UpdateOpen(theOpen);
         }
     }
 }

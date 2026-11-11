@@ -128,7 +128,11 @@ class LobbyContainer;
 class AccountLogic; class DialogLogic; class InitLogic; class RoutingLogic;
 class StagingLogic; class LanLogic; class PingLogic; class WindowEventBase;
 class ChatCommandParser;
+#ifdef EE_PORT   // VC6 allows an enum without a definition; C++11 needs its underlying type
+enum LobbyStatus : int; enum LobbyRunMode : int;   // LobbyGameType is defined in WONLobbyGUI.h
+#else
 enum LobbyStatus; enum LobbyRunMode; enum LobbyGameType;
+#endif
 // the lobby's private state (0x118 bytes; constructor 0x7628c0, destructor 0x7630a0; created by 0x761fb0).
 // This revision has no BigFileList after mInitError (later SDKs add one).
 class WONLobbyPrv : public RefCount {
