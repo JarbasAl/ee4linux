@@ -71,25 +71,70 @@ def changed_files(base):
     return {(ROOT / n).resolve() for n in names}
 
 
-def coff_sections(data):
-    """Section name -> raw bytes plus its relocations, and the symbol table, of a COFF object, without debug data."""
-    machine, count, _stamp, symptr, nsyms, opt, _chars = struct.unpack_from("<HHIIIHH", data)
+def coff_parse(data):
+    """The sections (without debug sections) and the symbol records of a COFF object."""
+    _machine, count, _stamp, symptr, nsyms, opt, _chars = struct.unpack_from("<HHIIIHH", data)
     strtab = symptr + nsyms * 18
-    sections = {}
+
+    def text(raw):
+        if raw[:4] == b"\0\0\0\0":
+            start = strtab + struct.unpack_from("<I", raw, 4)[0]
+            return data[start:data.index(b"\0", start)].decode("latin-1")
+        return raw[:8].rstrip(b"\0").decode("latin-1")
+
+    sections = []
     for i in range(count):
         off = 20 + opt + i * 40
-        raw_name = data[off:off + 8].rstrip(b"\0")
-        name = raw_name.decode("latin-1")
+        name = data[off:off + 8].rstrip(b"\0").decode("latin-1")
         if name.startswith("/"):
             start = strtab + int(name[1:])
             name = data[start:data.index(b"\0", start)].decode("latin-1")
         size, ptr, relptr, _ln, nrel, _nln, chars = struct.unpack_from("<IIIIHHI", data, off + 16)
+        relocs = [struct.unpack_from("<IIH", data, relptr + r * 10) for r in range(nrel)]
+        sections.append((name, chars, data[ptr:ptr + size] if ptr else b"", relocs))
+    symbols, i = {}, 0
+    while i < nsyms:
+        entry = data[symptr + i * 18:symptr + i * 18 + 18]
+        value, section, kind, storage, naux = struct.unpack_from("<IhHBB", entry, 8)
+        symbols[i] = (text(entry), value, section, kind, storage, data[symptr + (i + 1) * 18:symptr + (i + 1 + naux) * 18])
+        i += 1 + naux
+    return sections, symbols
+
+
+def coff_sections(data):
+    """The object's code and data, independent of the order VC6 emits sections in: each section is keyed by the
+    COMDAT symbol it defines (or by its name and rank), and each relocation names its target instead of its index.
+    Local labels ($L...) are compared by position only: their numbers come from a counter that any edit can shift."""
+    sections, symbols = coff_parse(data)
+    owner = {}
+    for name, value, section, kind, storage, _aux in symbols.values():
+        if section > 0 and storage in (2, 3) and not name.startswith((".", "$L")) and section not in owner:
+            owner[section] = name
+    rank, keys = {}, {}
+    for number, (name, *_rest) in enumerate(sections, 1):
+        if number in owner:
+            keys[number] = f"{name}:{owner[number]}"
+        else:
+            rank[name] = rank.get(name, 0) + 1
+            keys[number] = f"{name}#{rank[name]}"
+
+    def target(index):
+        name, value, section, _kind, storage, _aux = symbols[index]
+        if storage == 6 and name.startswith("$L"):
+            return ("label", keys.get(section), value)
+        if storage == 3 and name.startswith(".") and section > 0:
+            return ("section", keys[section], value)
+        return ("symbol", name)
+
+    content = {}
+    for number, (name, chars, raw, relocs) in enumerate(sections, 1):
         if name.startswith(".debug"):
             continue
-        sections[f"{i}:{name}"] = (chars, data[ptr:ptr + size] if ptr else b"", data[relptr:relptr + nrel * 10])
-    symbols = data[symptr:strtab]
-    strings = data[strtab:]
-    return machine, sections, symbols, strings
+        content[keys[number]] = (chars, raw, sorted((vaddr, target(index), kind) for vaddr, index, kind in relocs))
+    externals = sorted((name, str(keys.get(section, section)), value, kind, storage)
+                       for name, value, section, kind, storage, _aux in symbols.values()
+                       if storage == 2 and not name.startswith("$L"))
+    return content, externals
 
 
 def compile_vc6(tree, rel, mod, out):
@@ -138,10 +183,10 @@ def compare(base, head):
     a, b = coff_sections(base), coff_sections(head)
     if a == b:
         return None
-    diff = sorted(set(a[1]) ^ set(b[1])) + [n for n in a[1] if n in b[1] and a[1][n] != b[1][n]]
-    if a[2:] != b[2:]:
-        diff.append("symbol table")
-    return "code differs: " + ", ".join(diff[:12]) + (f" (+{len(diff) - 12} more)" if len(diff) > 12 else "")
+    diff = sorted(set(a[0]) ^ set(b[0])) + [n for n in a[0] if n in b[0] and a[0][n] != b[0][n]]
+    if a[1] != b[1]:
+        diff.append("external symbols")
+    return "code differs: " + ", ".join(diff[:8]) + (f" (+{len(diff) - 8} more)" if len(diff) > 8 else "")
 
 
 def main():
@@ -149,11 +194,14 @@ def main():
     ap.add_argument("modules", nargs="*", default=list(MODULE_SRC))
     ap.add_argument("--base", default="upstream/fixes", help="revision to compare against (default upstream/fixes)")
     ap.add_argument("-j", type=int, default=2)
+    ap.add_argument("--only", help="check only units whose path contains this text")
     args = ap.parse_args()
     changed = changed_files(args.base)
     cache, units, skipped = {}, [], []
     for mod in args.modules:
         for src in module_sources(mod):
+            if args.only and args.only not in str(src):
+                continue
             if closure(src, cache) & changed:
                 if any("dx7sdk" in str(d) for d in include_dirs(src)) and not (ROOT / "toolchain" / "dx7sdk").exists():
                     skipped.append(src.relative_to(ROOT))
