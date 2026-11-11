@@ -7,7 +7,7 @@
 
 class LLE_API PIMModule {                  // proven sizeof 0x10 (GetModule: operator new(0x10)); operator= implicit
 public:
-    void* GetEntry(const UString& inName) const { return GetProcAddress(this->mInstance, inName); }
+    void* GetEntry(const UString& inName) const { return (void*)GetProcAddress(this->mInstance, inName); }
 #if defined(LOWLEVELENGINE_EXPORTS) || defined(LLE_EXE_HEADERS)   // the exe stores __imp_sDirectory/sType and calls GetModule inline (0x28655a)
     static long GetFirstModule(const FSFileSpec& inDirectory, unsigned long inType, PIMModule*& outModule)
     {
