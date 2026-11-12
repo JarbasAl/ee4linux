@@ -2,8 +2,8 @@
 
 The native build compiles the game's own source against Wine's headers and links it to this layer in place of
 Windows. The layer implements the part of the Win32 API that the game, its plug-ins and WON call. It has files and
-paths, the registry, threads and synchronization, modules and resources, windows and messages, GDI, Winsock, and
-Bink movies.
+paths, the registry, threads and synchronization, modules and resources, windows and messages, GDI, Winsock, Bink
+movies and the Miles Sound System.
 SDL2 gives it windows, input and the clipboard.
 
 Build the layer and run its tests:
@@ -40,3 +40,10 @@ winetricks corefonts tahoma
 The test `check_gdi_metrics` compares the layer with a Windows 11 capture of 169 font requests and prints the result
 for each face. It requires exact line metrics for Tahoma and exact widths for Courier New, because their stand-ins
 measure as on Windows.
+
+## Sound
+
+The Miles mixer plug-in plays through the layer's Miles Sound System, which opens one SDL audio device per Miles
+driver and mixes the playing samples in the device's callback. Samples are the game's PCM WAV files and its MP3 music,
+which FFmpeg decodes once and the layer keeps in memory. `SDL_AUDIODRIVER` chooses the SDL audio driver. When no audio
+device opens, sound goes to SDL's dummy driver and the game runs without sound.

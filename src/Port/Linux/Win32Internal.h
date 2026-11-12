@@ -119,6 +119,12 @@ void PresentWindows();
 // Releases the pixels GDI keeps for a destroyed window
 void ForgetWindowSurface(HWND inWindow);
 
+// ---- Miles (Miles.cpp) ----
+// For tests: Miles drivers opened after this call open no audio device and mix only through MixMiles
+void MilesWithoutDevice();
+// Mixes inFrames stereo frames of a Miles driver's playing samples into outSamples, at the driver's rate
+void MixMiles(void* inDriver, int16_t* outSamples, int inFrames);
+
 // ---- modules (Win32Module.cpp) ----
 // The bytes of a resource in a PE module and their size, or NULL; inLanguage 0 takes the first language
 const void* FindResourceData(HMODULE inModule, LPCSTR inType, LPCSTR inName, WORD inLanguage, DWORD* outSize);

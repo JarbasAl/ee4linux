@@ -49,7 +49,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `GdiTrueType.h`, `GdiTrueType.cpp` and `GdiFontDB.cpp` are adapted from ee-macos
 (https://github.com/maxgraf96/ee-macos) at commit 136d78fdf6608c869f0621942c7dfeba144a74e4. The first lines of each file
-say what changed.
+say what changed. `Miles.cpp` takes Miles 6.1's rules from ee-macos `kit-src/dx/mss32.cpp` at the same commit: the
+preference defaults, the pan law, and the rules for loop counts, starts and positions.
 
 The font metrics test data in `tests/port/linux/data/` are copied unchanged from ee-macos at the same commit: `gdi_metrics_windows11.jsonl`, a Windows 11 capture of 169 font requests, from
 `kit-src/runtime/tests/data/`, and `cases_windows11.txt`, the requests, from `kit-src/tools/gdi_metrics/`.

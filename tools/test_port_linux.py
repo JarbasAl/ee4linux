@@ -5,7 +5,8 @@ layer's objects (build/port-linux/obj/win32, made by build_port.py --target linu
 game's images are, and runs in a temporary folder that is removed afterwards. More checks compare the layer with an
 independent source: every string of the installed Language.dll through LoadStringA against ee-toolkit's PE reader
 (EE_TOOLKIT, EE_LANGUAGE_DLL name others), code page conversion against Python's codecs, font metrics against a
-Windows 11 capture, and Bink playback against ffmpeg. The report gives the tests in and the tests that passed.
+Windows 11 capture, Bink playback against ffmpeg, and Miles' MP3 decoding of the base game's music (EE_SOUNDS) against
+ffmpeg. The report gives the tests in and the tests that passed.
 """
 import collections
 import json
@@ -25,6 +26,9 @@ TOOLKIT = pathlib.Path(os.environ.get("EE_TOOLKIT", pathlib.Path.home() / "Agent
 LANGUAGE_DLL = pathlib.Path(os.environ.get(
     "EE_LANGUAGE_DLL", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" /
     "Empire Earth - The Art of Conquest" / "Language.dll"))
+SOUNDS = pathlib.Path(os.environ.get(
+    "EE_SOUNDS", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" / "Empire Earth" /
+    "Data" / "Sounds"))
 
 
 def build(source, binary, layer):
@@ -280,6 +284,55 @@ def check_movies(scratch, layer):
             and report["last"] == f"{frames} of {frames}")
 
 
+def check_miles(scratch, layer):
+    """MP3 images through the Miles calls decode as FFmpeg's fixed-point MP3 decoder decodes them, at their own rate,
+    with Miles' length in milliseconds and the position at the end in the image's bytes: a made mono MP3 with an ID3
+    tag, and the base game's music."""
+    binary = pathlib.Path(scratch) / "dump_miles"
+    made = build(TESTS / "dump_miles.cpp", binary, layer)
+    if made.returncode:
+        print(f"dump_miles.cpp: does not build\n{made.stderr}")
+        return False
+    tone = pathlib.Path(scratch) / "tone.mp3"
+    made = subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=22050:"
+                           "duration=1.5", "-c:a", "libmp3lame", "-b:a", "64k", "-write_xing", "0", "-metadata",
+                           "title=tone", str(tone)], capture_output=True, text=True)
+    if made.returncode:
+        print(f"miles: the test MP3 is not made\n{made.stderr}")
+        return False
+    music = sorted(SOUNDS.glob("*.mp3"))
+    if not music:
+        print(f"miles: no MP3 in {SOUNDS}")
+        return False
+    good = True
+    for sound in [tone, *music]:
+        out = pathlib.Path(scratch) / f"{sound.stem}.pcm"
+        run = subprocess.run([str(binary), "Z:" + str(sound).replace("/", "\\"), str(out)], capture_output=True,
+                             text=True, timeout=300)
+        report = dict(line.split(" ", 1) for line in run.stdout.splitlines())
+        probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+                                "stream=sample_rate,channels,duration", "-of", "csv=p=0", str(sound)],
+                               capture_output=True, text=True).stdout.strip().split(",")
+        rate, channels, seconds = int(probe[0]), int(probe[1]), float(probe[2])
+        theirs = subprocess.run(["ffmpeg", "-v", "error", "-c:a", "mp3", "-i", str(sound), "-f", "s16le", "-"],
+                                capture_output=True).stdout
+        ours = out.read_bytes() if out.exists() else b""
+        if channels == 1:
+            same = ours[0::4] + ours[1::4] == theirs[0::2] + theirs[1::2] == ours[2::4] + ours[3::4]
+        else:
+            same = ours == theirs
+        size = sound.stat().st_size
+        print(f"miles: {sound.name}: exit {run.returncode}, rate {report.get('rate')}, granularity "
+              f"{report.get('granularity')}, {report.get('ms')} ms, {report.get('frames')} frames, end "
+              f"{report.get('end')}; ffprobe: {rate} Hz, {channels} channels, {seconds} s; PCM "
+              f"{'identical to' if same else 'differs from'} FFmpeg's")
+        good = good and (run.returncode == 0 and same and report.get("rate") == str(rate)
+                         and report.get("granularity") == "1" and report.get("ms") == str(round(seconds * 1000))
+                         and report.get("frames") == str(len(theirs) // (2 * channels))
+                         and report.get("end") == f"{size} of {size}")
+    return good
+
+
 def main():
     layer = sorted(str(o) for o in OBJECTS.rglob("*.o"))
     if not layer:
@@ -306,8 +359,9 @@ def main():
         text_ok = check_text(scratch, layer)
         metrics_ok = check_gdi_metrics(scratch, layer)
         movies_ok = check_movies(scratch, layer)
+        miles_ok = check_miles(scratch, layer)
     linkage_ok = check_linkage(layer)
-    checks = [strings_ok, text_ok, metrics_ok, movies_ok, linkage_ok]
+    checks = [strings_ok, text_ok, metrics_ok, movies_ok, miles_ok, linkage_ok]
     print(f"tests: {len(tests) + len(checks)} in, {passed + sum(checks)} passed")
     return 0 if passed == len(tests) and all(checks) else 1
 
