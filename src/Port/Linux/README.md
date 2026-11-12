@@ -2,7 +2,8 @@
 
 The native build compiles the game's own source against Wine's headers and links it to this layer in place of
 Windows. The layer implements the part of the Win32 API that the game, its plug-ins and WON call. It has files and
-paths, the registry, threads and synchronization, modules and resources, windows and messages, GDI, and Bink movies.
+paths, the registry, threads and synchronization, modules and resources, windows and messages, GDI, Winsock, and
+Bink movies.
 SDL2 gives it windows, input and the clipboard.
 
 Build the layer and run its tests:

@@ -1,7 +1,10 @@
 /* Winsock on the system's BSD sockets, for the native Linux build. It replaces Wine's winsock.h and winsock2.h,
-   which clash with glibc's socket headers. Winsock is the BSD socket API with a few additions: the BSD calls and
-   structures are glibc's, and this header adds the Windows names, error codes and calls (src/Port/Linux/Win32Socket.cpp).
-   fd_set has the Windows layout, a count and an array of sockets, because WON reads its fields. */
+   which clash with glibc's socket headers. Winsock is the BSD socket API with a few additions: the structures are
+   glibc's, and this header adds the Windows names, error codes and calls (src/Port/Linux/Win32Socket.cpp).
+   fd_set has the Windows layout, a count and an array of sockets, because WON reads its fields.
+   The calls that differ from BSD in what they do go to the layer under ee_ws_ names: select takes the Windows
+   fd_set; connect, accept, send and receive re-enable the network events of WSAEventSelect as Winsock does, and send
+   raises no SIGPIPE; getsockopt gives SO_ERROR as a Winsock code; gethostbyname sets a Winsock error. */
 #ifndef EE_PORT_LINUX_WINSOCK2_H
 #define EE_PORT_LINUX_WINSOCK2_H
 
@@ -97,6 +100,25 @@ extern "C" {
 int WINAPI ee_ws_select(int inIgnored, ee_ws_fd_set* ioRead, ee_ws_fd_set* ioWrite, ee_ws_fd_set* ioExcept,
                         const struct timeval* inTimeout);
 
+#define connect ee_ws_connect
+#define accept ee_ws_accept
+#define send ee_ws_send
+#define sendto ee_ws_sendto
+#define recv ee_ws_recv
+#define recvfrom ee_ws_recvfrom
+#define getsockopt ee_ws_getsockopt
+#define gethostbyname ee_ws_gethostbyname
+int WINAPI ee_ws_connect(SOCKET inSocket, const struct sockaddr* inAddress, int inLength);
+SOCKET WINAPI ee_ws_accept(SOCKET inSocket, struct sockaddr* outAddress, int* ioLength);
+int WINAPI ee_ws_send(SOCKET inSocket, const char* inData, int inLength, int inFlags);
+int WINAPI ee_ws_sendto(SOCKET inSocket, const char* inData, int inLength, int inFlags, const struct sockaddr* inTo,
+                        int inToLength);
+int WINAPI ee_ws_recv(SOCKET inSocket, char* outData, int inLength, int inFlags);
+int WINAPI ee_ws_recvfrom(SOCKET inSocket, char* outData, int inLength, int inFlags, struct sockaddr* outFrom,
+                          int* ioFromLength);
+int WINAPI ee_ws_getsockopt(SOCKET inSocket, int inLevel, int inName, char* outValue, int* ioLength);
+struct hostent* WINAPI ee_ws_gethostbyname(const char* inName);
+
 int WINAPI WSAStartup(WORD inVersion, LPWSADATA outData);
 int WINAPI WSACleanup(void);
 int WINAPI WSAGetLastError(void);
@@ -121,37 +143,18 @@ int WINAPI ioctlsocket(SOCKET inSocket, long inCommand, u_long* ioArgument);
 
 typedef HANDLE WSAEVENT, *LPWSAEVENT;
 #define WSA_INVALID_EVENT ((WSAEVENT)NULL)
-typedef struct _WSANETWORKEVENTS {
-    long lNetworkEvents;
-    int iErrorCode[FD_MAX_EVENTS];
-} WSANETWORKEVENTS, *LPWSANETWORKEVENTS;
 
 WSAEVENT WINAPI WSACreateEvent(void);
 BOOL WINAPI WSACloseEvent(WSAEVENT inEvent);
+/* Sets the event when one of the network events happens, and makes the socket non-blocking. An event is set once,
+   then again only after the call that re-enables it: recv or recvfrom for FD_READ, accept for FD_ACCEPT, a send that
+   would block for FD_WRITE. */
 int WINAPI WSAEventSelect(SOCKET inSocket, WSAEVENT inEvent, long inEvents);
-int WINAPI WSAEnumNetworkEvents(SOCKET inSocket, WSAEVENT inEvent, LPWSANETWORKEVENTS outEvents);
 
 #ifdef __cplusplus
 }
 
 /* Winsock's length arguments are int; glibc's are socklen_t */
-inline int getsockopt(SOCKET inSocket, int inLevel, int inName, char* outValue, int* ioLength)
-{
-    socklen_t theLength = (socklen_t)*ioLength;
-    int theResult = ::getsockopt((int)inSocket, inLevel, inName, outValue, &theLength);
-    *ioLength = (int)theLength;
-    return theResult;
-}
-
-inline SOCKET accept(SOCKET inSocket, struct sockaddr* outAddress, int* ioLength)
-{
-    socklen_t theLength = ioLength ? (socklen_t)*ioLength : 0;
-    int theResult = ::accept((int)inSocket, outAddress, ioLength ? &theLength : (socklen_t*)NULL);
-    if (ioLength)
-        *ioLength = (int)theLength;
-    return (SOCKET)theResult;
-}
-
 inline int getsockname(SOCKET inSocket, struct sockaddr* outAddress, int* ioLength)
 {
     socklen_t theLength = (socklen_t)*ioLength;
@@ -165,17 +168,6 @@ inline int getpeername(SOCKET inSocket, struct sockaddr* outAddress, int* ioLeng
     socklen_t theLength = (socklen_t)*ioLength;
     int theResult = ::getpeername((int)inSocket, outAddress, &theLength);
     *ioLength = (int)theLength;
-    return theResult;
-}
-
-inline int recvfrom(SOCKET inSocket, char* outData, int inLength, int inFlags, struct sockaddr* outFrom,
-                    int* ioFromLength)
-{
-    socklen_t theLength = ioFromLength ? (socklen_t)*ioFromLength : 0;
-    int theResult = (int)::recvfrom((int)inSocket, outData, (size_t)inLength, inFlags, outFrom,
-                                    ioFromLength ? &theLength : (socklen_t*)NULL);
-    if (ioFromLength)
-        *ioFromLength = (int)theLength;
     return theResult;
 }
 #endif

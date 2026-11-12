@@ -6,6 +6,8 @@
 // names it, else EE-AOC.exe in the folder the game starts in.
 #include "Win32Internal.h"
 
+#include <iphlpapi.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -32,7 +34,7 @@ struct Module {
 static std::mutex sModulesLock;
 
 // The system DLLs the game loads by name and the layer implements: LoadLibrary gives a module whose functions are
-// the layer's own. WON finds AlphaBlend this way.
+// the layer's own. WON finds AlphaBlend and GetAdaptersInfo this way.
 struct BuiltInFunction {
     const char* mModule;
     const char* mName;
@@ -40,6 +42,7 @@ struct BuiltInFunction {
 };
 static const BuiltInFunction kBuiltInFunctions[] = {
     {"msimg32.dll", "AlphaBlend", reinterpret_cast<void*>(&AlphaBlend)},
+    {"iphlpapi.dll", "GetAdaptersInfo", reinterpret_cast<void*>(&GetAdaptersInfo)},
 };
 
 // The built-in module a LoadLibrary name means, or NULL: the name without its folder, compared without case
