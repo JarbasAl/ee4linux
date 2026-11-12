@@ -253,6 +253,9 @@ public:
     // Under gLock, while GDI holds the surface's DC: runs the draws recorded so far, then lays what GDI wrote since
     // the last call over them, so that draws and GDI reach the image in the order of the calls
     void TakeGdi();
+    // Under gLock, before GDI draws text into inArea of the held DC: the memory and the DC's baseline there take the
+    // image as Direct3D left it, so the text blends with it and every pixel GDI writes is found
+    void BeforeGdi(const RECT& inArea);
     // Under a GLScope: the RGBA8 texture's name, made at the surface size when missing
     GLuint ColourTexture();
     // Under a GLScope: the Z buffer's renderbuffer, made when missing

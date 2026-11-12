@@ -110,10 +110,12 @@ bool TakePaint(HWND inWindow, bool* outErase);
 HCURSOR MakeCursor(SDL_Surface* inImage, int inHotX, int inHotY);
 
 // ---- GDI (Win32Gdi.cpp) ----
+// Called before GDI draws text into a buffer DC, with the area the text can change, outside GDI's lock
+using BufferHook = void (*)(void* inOwner, const RECT& inArea);
 // A DC that draws into pixels the caller keeps: the DirectDraw layer's surfaces. inPitch is the bytes from one row
 // to the next; 16-bit pixels take their layout from the masks. DeleteDC releases the DC, not the pixels.
 HDC CreateBufferDC(void* inBits, int inWidth, int inHeight, int inPitch, int inBitCount, DWORD inRedMask,
-                   DWORD inGreenMask, DWORD inBlueMask);
+                   DWORD inGreenMask, DWORD inBlueMask, BufferHook inBeforeDraw = nullptr, void* inOwner = nullptr);
 // True when GDI wrote pixels of a CreateBufferDC DC since the last call; outRect bounds them
 bool TakeBufferDrawn(HDC inDC, RECT* outRect);
 // On the video thread: shows what GDI drew into windows since the last call

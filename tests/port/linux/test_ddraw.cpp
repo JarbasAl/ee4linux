@@ -940,6 +940,39 @@ static void TestCoherence()
     printf("text and draws: %d background pixels in the box, %d white\n", theYellow, theWhiteInBox);
     CHECK(theYellow > 100 && theWhiteInBox == 4 * 12);
 
+    // GDI over what Direct3D drew after GetDC blends with that image: a red glyph's edges over a white panel keep
+    // full red, and an opaque black box over the panel stays black, though the memory held black when GDI got the DC
+    {
+        Target u(64, 32, kXRGB, false);
+        u.Clear(0xff000000);
+        CHECK(u.mDevice->BeginScene() == D3D_OK);
+        HDC theTextDC = NULL;
+        CHECK(u.mSurface->GetDC(&theTextDC) == DD_OK);
+        u.Quad(0, 0, 64, 32, 0.5f, 0xffffffff);
+        SetBkMode(theTextDC, TRANSPARENT);
+        SetTextColor(theTextDC, RGB(255, 0, 0));
+        CHECK(ExtTextOutA(theTextDC, 2, 2, 0, nullptr, "Wg", 2, nullptr));
+        SetBkColor(theTextDC, RGB(0, 0, 0));
+        RECT theBlack = {40, 4, 60, 28};
+        CHECK(ExtTextOutA(theTextDC, 40, 4, ETO_OPAQUE, &theBlack, "", 0, nullptr));
+        CHECK(u.mDevice->EndScene() == D3D_OK);
+        CHECK(u.mSurface->ReleaseDC(theTextDC) == DD_OK);
+        Locked theLock(u.mSurface, DDLOCK_READONLY);
+        int theInked = 0, theDark = 0, theBlackPixels = 0;
+        for (int y = 0; y < 32; ++y)
+            for (int x = 0; x < 64; ++x) {
+                DWORD c = theLock.Get(x, y) & 0xffffff;
+                if (x < 36) {
+                    theInked += (c & 0xff00) < 0xfa00;
+                    theDark += (c >> 16) < 0xfa;
+                } else
+                    theBlackPixels += c == 0;
+            }
+        printf("text over a panel: %d pixels inked, %d with red below 250, %d black of %d\n", theInked, theDark,
+               theBlackPixels, 20 * 24);
+        CHECK(theInked > 20 && theDark == 0 && theBlackPixels == 20 * 24);
+    }
+
     // the cursor's keyed blit onto a back buffer that Direct3D drew, then the save-under read back from it
     IDirectDrawSurface7* thePointer = Make(4, 4, kXRGB, DDSCAPS_OFFSCREENPLAIN, 0, DDSD_CKSRCBLT);
     DDCOLORKEY theBlue = {0x0000ff, 0x0000ff};
@@ -1066,6 +1099,16 @@ static void TestWindowed()
         CHECK((theLock.Get(0, 0) & 0xffffff) == 0x445566 && (theLock.Get(theClient.right - 1, theClient.bottom - 1) &
                                                              0xffffff) == 0x445566);
     }
+    // the cursor's save-under reads the primary in screen coordinates too (RTSMouse::SaveUnder)
+    IDirectDrawSurface7* theSave = Make(4, 4, kXRGB, DDSCAPS_OFFSCREENPLAIN);
+    Fill(theSave, 0);
+    RECT theUnder = {theOrigin.x + 2, theOrigin.y + 3, theOrigin.x + 6, theOrigin.y + 7};
+    CHECK(theSave->Blt(nullptr, thePrimary, &theUnder, DDBLT_DONOTWAIT, nullptr) == DD_OK);
+    {
+        Locked theLock(theSave, DDLOCK_READONLY);
+        CHECK((theLock.Get(0, 0) & 0xffffff) == 0x445566 && (theLock.Get(3, 3) & 0xffffff) == 0x445566);
+    }
+    CHECK(theSave->Release() == 0);
     CHECK(thePrimary->Release() == 0);
     CHECK(sDraw->SetCooperativeLevel(NULL, DDSCL_NORMAL) == DD_OK);
     DestroyWindow(theWindow);

@@ -10,10 +10,13 @@
 #include <SDL.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstdio>
 #include <cstring>
 #include <set>
+#include <thread>
 
 namespace eeport {
 namespace dx {
@@ -406,8 +409,65 @@ const DWORD kVideoMemory = 512u << 20;
 
 } // namespace
 
+class DirectDraw;
+
+// Writes to the primary outside Flip (the cursor thread's restore, save and draw, a GDI DC, a windowed present) show
+// once they pause for kPresentQuiet, and at the latest kPresentLongest after the first: the steps of one cursor move
+// show as one image, as they do on Windows' front buffer, where each lasts microseconds. The presenter thread shows
+// them; Flip shows at once and takes the pending present with it. The state lives for the whole process, because the
+// presenter thread does.
+struct PresentQueue {
+    std::mutex mLock;                       // after gLock
+    std::condition_variable mWake;
+    DirectDraw* mOwner = nullptr;
+    bool mPending = false, mStarted = false;
+    std::chrono::steady_clock::time_point mFirst, mLast;
+};
+PresentQueue& gPresents = *new PresentQueue;
+const std::chrono::milliseconds kPresentQuiet(4), kPresentLongest(16);
+void PresentPending();
+
 class DirectDraw final : public IDirectDraw7 {
 public:
+    ~DirectDraw()
+    {
+        std::lock_guard<std::mutex> theLock(gPresents.mLock);
+        if (gPresents.mOwner == this) {
+            gPresents.mOwner = nullptr;
+            gPresents.mPending = false;
+        }
+    }
+
+    // Under gLock: shows the primary soon, with the writes to it that follow at once
+    void PresentSoon()
+    {
+        {
+            std::lock_guard<std::mutex> theLock(gPresents.mLock);
+            auto theNow = std::chrono::steady_clock::now();
+            if (!gPresents.mPending || gPresents.mOwner != this)
+                gPresents.mFirst = theNow;
+            gPresents.mLast = theNow;
+            gPresents.mOwner = this;
+            gPresents.mPending = true;
+            if (!gPresents.mStarted) {
+                std::thread(PresentPending).detach();
+                gPresents.mStarted = true;
+            }
+        }
+        gPresents.mWake.notify_one();
+    }
+
+    // Under gLock: Flip shows the primary now, with any write that waited
+    void PresentNow(bool inVSync)
+    {
+        {
+            std::lock_guard<std::mutex> theLock(gPresents.mLock);
+            if (gPresents.mOwner == this)
+                gPresents.mPending = false;
+        }
+        Present(inVSync);
+    }
+
     std::atomic<long> mReferences{1};
     int mSurfaces = 0;              // surfaces alive: the object stays until they go too
     HWND mWindow = NULL;
@@ -1281,8 +1341,13 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Surface::GetDC(HDC* outDC)
         return DDERR_DCALREADYCREATED;
     EnsureCpu();
     mDCBase = mStore.mBits;
+    // before GDI draws text, the memory under it takes what Direct3D drew since, so the text blends with that
+    auto theBeforeText = [](void* inSurface, const RECT& inArea) {
+        std::lock_guard<std::recursive_mutex> theGuard(gLock);
+        static_cast<Surface*>(inSurface)->BeforeGdi(inArea);
+    };
     mDC = CreateBufferDC(mStore.mBits.data(), mWidth, mHeight, mPitch, mFormat.mBytes * 8, mFormat.mMask[0],
-                         mFormat.mMask[1], mFormat.mMask[2]);
+                         mFormat.mMask[1], mFormat.mMask[2], theBeforeText, this);
     if (!mDC)
         return DDERR_CANTCREATEDC;
     *outDC = mDC;
@@ -1300,8 +1365,30 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Surface::ReleaseDC(HDC inDC)
     mDCBase.clear();
     mDCBase.shrink_to_fit();
     if (mKind == kPrimary)
-        mOwner->Present(false);
+        mOwner->PresentSoon();
     return DD_OK;
+}
+
+void Surface::BeforeGdi(const RECT& inArea)
+{
+    if (!mDC)
+        return;
+    TakeGdi();
+    SubmitDraws(this);
+    if (mStore.mCpuValid || !mStore.mGpuValid)
+        return;
+    GLScope theScope;
+    if (!theScope.Ok())
+        return;
+    std::vector<uint8_t> theRGBA((size_t)Width(inArea) * Height(inArea) * 4);
+    ReadTexture(mStore.mTexture, inArea, theRGBA.data());
+    const uint8_t* theIn = theRGBA.data();
+    for (int y = inArea.top; y < inArea.bottom; ++y)
+        for (int x = inArea.left; x < inArea.right; ++x, theIn += 4) {
+            uint8_t* thePixel = Pixel(x, y);
+            mFormat.Encode(theIn, thePixel);
+            memcpy(mDCBase.data() + (thePixel - mStore.mBits.data()), thePixel, mFormat.mBytes);
+        }
 }
 
 void Surface::TakeGdi()
@@ -1454,7 +1541,7 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Surface::Blt(RECT* inDestination,
                 CpuWritten();
         }
         if (mKind == kPrimary)
-            mOwner->Present(false);
+            mOwner->PresentSoon();
         return DD_OK;
     }
 
@@ -1463,6 +1550,11 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Surface::Blt(RECT* inDestination,
     if (theSource->mFormat.mZ || mFormat.mZ)
         return DDERR_UNSUPPORTED;
     RECT theSourceRect = inSourceRect ? *inSourceRect : RECT{0, 0, theSource->mWidth, theSource->mHeight};
+    if (inSourceRect && theSource->mKind == kPrimary && !theSource->mOwner->mExclusive) {
+        // a windowed primary's rectangles are in screen coordinates, as the destination's above
+        POINT theOrigin = theSource->mOwner->PrimaryOrigin();
+        OffsetRect(&theSourceRect, -theOrigin.x, -theOrigin.y);
+    }
     if (theSourceRect.left < 0 || theSourceRect.top < 0 || theSourceRect.right > theSource->mWidth ||
         theSourceRect.bottom > theSource->mHeight || theSourceRect.left >= theSourceRect.right ||
         theSourceRect.top >= theSourceRect.bottom)
@@ -1580,7 +1672,7 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Surface::Blt(RECT* inDestination,
             CpuWritten();
     }
     if (mKind == kPrimary)
-        mOwner->Present(false);
+        mOwner->PresentSoon();
     return DD_OK;
 }
 
@@ -1616,8 +1708,30 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Surface::Flip(IDirectDrawSurface7
     for (size_t i = 0; i + 1 < mChain.size(); ++i)
         mChain[i]->mStore = std::move(mChain[i + 1]->mStore);
     mChain.back()->mStore = std::move(theFront);
-    mOwner->Present(!(inFlags & DDFLIP_NOVSYNC));
+    mOwner->PresentNow(!(inFlags & DDFLIP_NOVSYNC));
     return DD_OK;
+}
+
+void PresentPending()
+{
+    for (;;) {
+        std::unique_lock<std::mutex> theLock(gPresents.mLock);
+        gPresents.mWake.wait(theLock, [] { return gPresents.mPending; });
+        while (gPresents.mPending) {
+            auto theDue = std::min(gPresents.mLast + kPresentQuiet, gPresents.mFirst + kPresentLongest);
+            if (std::chrono::steady_clock::now() >= theDue)
+                break;
+            gPresents.mWake.wait_until(theLock, theDue);
+        }
+        theLock.unlock();
+        std::lock_guard<std::recursive_mutex> theGuard(gLock);
+        theLock.lock();
+        DirectDraw* theOwner = gPresents.mPending ? gPresents.mOwner : nullptr;
+        gPresents.mPending = false;
+        theLock.unlock();
+        if (theOwner)
+            theOwner->Present(false);
+    }
 }
 
 } // namespace dx

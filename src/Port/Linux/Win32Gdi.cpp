@@ -84,6 +84,8 @@ struct DC {
     RECT mClip = {};
     bool mDrawn = false;
     RECT mDrawnRect = {};   // a buffer DC's pixels written since TakeBufferDrawn, while mDrawn is set
+    eeport::BufferHook mBeforeDraw = nullptr;   // a buffer DC's owner, told before text is drawn
+    void* mOwner = nullptr;
 };
 
 std::set<GdiObject*> gObjects;
@@ -676,7 +678,7 @@ Shape EllipseShape(int inLeft, int inTop, int inRight, int inBottom)
 namespace eeport {
 
 HDC CreateBufferDC(void* inBits, int inWidth, int inHeight, int inPitch, int inBitCount, DWORD inRedMask,
-                   DWORD inGreenMask, DWORD inBlueMask)
+                   DWORD inGreenMask, DWORD inBlueMask, BufferHook inBeforeDraw, void* inOwner)
 {
     std::lock_guard<std::recursive_mutex> theLock(gGdiLock);
     Bitmap* theBitmap = new Bitmap;     // the DC's own, not a GDI object: SelectObject cannot reach it
@@ -693,6 +695,8 @@ HDC CreateBufferDC(void* inBits, int inWidth, int inHeight, int inPitch, int inB
     }
     DC* theDC = NewDC(DC::kBuffer);
     theDC->mBitmap = theBitmap;
+    theDC->mBeforeDraw = inBeforeDraw;
+    theDC->mOwner = inOwner;
     return (HDC)theDC;
 }
 
@@ -1533,24 +1537,63 @@ BOOL WINAPI GetCharWidthW(HDC inDC, UINT inFirst, UINT inLast, LPINT outWidths)
     return TRUE;
 }
 
+// Tells a buffer DC's owner where text is about to be drawn: the text's cell widened by one line height for the
+// glyphs' overhang, and the opaque rectangle. It runs outside gGdiLock, because the owner takes its own lock first.
+static void BeforeText(HDC inDC, int inX, int inY, UINT inOptions, const RECT* inRect,
+                       const std::vector<uint32_t>& inText, const INT* inAdvances)
+{
+    eeport::BufferHook theHook = nullptr;
+    void* theOwner = nullptr;
+    RECT theArea = {0, 0, 0, 0};
+    {
+        std::lock_guard<std::recursive_mutex> theLock(gGdiLock);
+        DC* theDC = DCOf(inDC);
+        if (!theDC || theDC->mKind != DC::kBuffer || !theDC->mBeforeDraw)
+            return;
+        const eeport::gdi::GdiFont& theFont = Realized(theDC->mFont);
+        int theWidth = 0;
+        for (size_t i = 0; i < inText.size(); ++i)
+            theWidth += inAdvances ? inAdvances[i] : Advance(theFont, inText[i]);
+        SetRect(&theArea, inX - theFont.height, inY - theFont.height, inX + theWidth + theFont.height,
+                inY + 2 * theFont.height);
+        if (inRect && (inOptions & ETO_OPAQUE)) {
+            theArea.left = std::min(theArea.left, inRect->left);
+            theArea.top = std::min(theArea.top, inRect->top);
+            theArea.right = std::max(theArea.right, inRect->right);
+            theArea.bottom = std::max(theArea.bottom, inRect->bottom);
+        }
+        RECT theDrawable = DrawableOf(theDC);
+        if (!IntersectRect(&theArea, &theArea, &theDrawable))
+            return;
+        theHook = theDC->mBeforeDraw;
+        theOwner = theDC->mOwner;
+    }
+    theHook(theOwner, theArea);
+}
+
 BOOL WINAPI ExtTextOutA(HDC inDC, INT inX, INT inY, UINT inOptions, const RECT* inRect, LPCSTR inText, UINT inLength,
                         const INT* inAdvances)
 {
+    std::vector<uint32_t> theText = CodePoints(inText ? inText : "", inText ? inLength : 0);
+    BeforeText(inDC, inX, inY, inOptions, inRect, theText, inAdvances);
     std::lock_guard<std::recursive_mutex> theLock(gGdiLock);
     DC* theDC = DCOf(inDC);
     if (!theDC)
         return FALSE;
-    return PaintText(theDC, inX, inY, inOptions, inRect, CodePoints(inText ? inText : "", inText ? inLength : 0),
-                    inAdvances);
+    return PaintText(theDC, inX, inY, inOptions, inRect, theText, inAdvances);
 }
 
 BOOL ee_port_TextOutW(HDC inDC, int inX, int inY, const wchar_t* inText, int inLength)
 {
+    if (inLength < 0)
+        return FALSE;
+    std::vector<uint32_t> theText(inText, inText + inLength);
+    BeforeText(inDC, inX, inY, 0, NULL, theText, NULL);
     std::lock_guard<std::recursive_mutex> theLock(gGdiLock);
     DC* theDC = DCOf(inDC);
-    if (!theDC || inLength < 0)
+    if (!theDC)
         return FALSE;
-    return PaintText(theDC, inX, inY, 0, NULL, std::vector<uint32_t>(inText, inText + inLength), NULL);
+    return PaintText(theDC, inX, inY, 0, NULL, theText, NULL);
 }
 
 // ---- icons: a colour bitmap with a mask (white is transparent), or a 32-bit bitmap alone, opaque ----
