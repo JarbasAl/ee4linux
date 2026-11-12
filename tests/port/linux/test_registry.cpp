@@ -146,6 +146,72 @@ int main()
     CHECK(RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\SSSI\\T\\Key A", 0, KEY_READ, &theKey) == ERROR_SUCCESS);
     RegCloseKey(theKey);
 
+    // Subkeys in Windows' order, by upper case: 'A' (0x41) before '_' (0x5f), though 'a' (0x61) sorts after it
+    CHECK(RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Order\\_x", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &theKey, NULL) ==
+          ERROR_SUCCESS);
+    RegCloseKey(theKey);
+    CHECK(RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Order\\a\\deeper", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &theKey,
+                          NULL) == ERROR_SUCCESS);
+    RegCloseKey(theKey);
+    CHECK(RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Order", 0, KEY_READ, &theKey) == ERROR_SUCCESS);
+    char theName[64];
+    DWORD theLength = sizeof theName;
+    CHECK(RegEnumKeyExA(theKey, 0, theName, &theLength, NULL, NULL, NULL, NULL) == ERROR_SUCCESS &&
+          strcmp(theName, "a") == 0 && theLength == 1);
+    theLength = sizeof theName;
+    CHECK(RegEnumKeyExA(theKey, 1, theName, &theLength, NULL, NULL, NULL, NULL) == ERROR_SUCCESS &&
+          strcmp(theName, "_x") == 0 && theLength == 2);
+    theLength = sizeof theName;
+    CHECK(RegEnumKeyExA(theKey, 2, theName, &theLength, NULL, NULL, NULL, NULL) == ERROR_NO_MORE_ITEMS);
+    RegCloseKey(theKey);
+    // A key that the file holds only inside a deeper path still lists; a name and its terminator must fit
+    CHECK(RegOpenKeyExA(HKEY_CURRENT_USER, "Software", 0, KEY_READ, &theKey) == ERROR_SUCCESS);
+    theLength = sizeof theName;
+    FILETIME theTime = {1, 1};
+    CHECK(RegEnumKeyExA(theKey, 0, theName, &theLength, NULL, NULL, NULL, &theTime) == ERROR_SUCCESS &&
+          strcmp(theName, "Mad Doc Software") == 0 && theLength == 16 && theTime.dwLowDateTime == 0);
+    theLength = 16;
+    CHECK(RegEnumKeyExA(theKey, 0, theName, &theLength, NULL, NULL, NULL, NULL) == ERROR_MORE_DATA);
+    theLength = 17;
+    CHECK(RegEnumKeyExA(theKey, 0, theName, &theLength, NULL, NULL, NULL, NULL) == ERROR_SUCCESS && theLength == 16);
+    int theSubkeys = 0;
+    for (DWORD i = 0;; ++i) {
+        theLength = sizeof theName;
+        if (RegEnumKeyExA(theKey, i, theName, &theLength, NULL, NULL, NULL, NULL) != ERROR_SUCCESS)
+            break;
+        ++theSubkeys;
+    }
+    CHECK(theSubkeys == 3);                                 // Mad Doc Software, Order, SSSI
+    RegCloseKey(theKey);
+
+    // Every value once, with its type and data
+    CHECK(RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Mad Doc Software\\EE-AOC", 0, KEY_READ, &theKey) == ERROR_SUCCESS);
+    std::string theSeen;
+    int theValues = 0;
+    for (DWORD i = 0;; ++i) {
+        theLength = sizeof theName;
+        DWORD theValueType = 0;
+        if (RegEnumValueA(theKey, i, theName, &theLength, NULL, &theValueType, NULL, NULL) != ERROR_SUCCESS)
+            break;
+        ++theValues;
+        theSeen += std::string(theName) + ";";
+        if (strcmp(theName, "Blob") == 0) {
+            theLength = sizeof theName;
+            theSize = 2;
+            CHECK(RegEnumValueA(theKey, i, theName, &theLength, NULL, NULL, theBlob, &theSize) == ERROR_MORE_DATA &&
+                  theSize == 4);
+            theLength = sizeof theName;
+            theSize = sizeof theBlob;
+            CHECK(RegEnumValueA(theKey, i, theName, &theLength, NULL, NULL, theBlob, &theSize) == ERROR_SUCCESS &&
+                  theValueType == REG_BINARY && theSize == 4 && theBlob[3] == 0xff);
+        }
+    }
+    CHECK(theValues == 5);
+    for (const char* theExpected : {"Blob;", "Display Shadows;", "Installed From Directory;", "Installed From Volume;",
+                                    "Quote \"me\";"})
+        CHECK(theSeen.find(theExpected) != std::string::npos);
+    RegCloseKey(theKey);
+
     printf("%d checks, %d failed\n", sChecks, sFailures);
     return sFailures ? 1 : 0;
 }

@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <sstream>
 #include <string>
@@ -470,6 +471,81 @@ LSTATUS WINAPI RegDeleteValueA(HKEY inKey, LPCSTR inName)
     if (theKey->mValues.erase(Lower(inName ? inName : "")) == 0)
         return ERROR_FILE_NOT_FOUND;
     WriteRegistryFile();
+    return ERROR_SUCCESS;
+}
+
+// Copies a name into a caller's buffer of ioLength characters with its terminator; ioLength becomes the length
+static LSTATUS CopyName(const std::string& inName, LPSTR outName, LPDWORD ioLength)
+{
+    if (!outName || !ioLength)
+        return ERROR_INVALID_PARAMETER;
+    if (*ioLength <= inName.size())
+        return ERROR_MORE_DATA;
+    memcpy(outName, inName.c_str(), inName.size() + 1);
+    *ioLength = (DWORD)inName.size();
+    return ERROR_SUCCESS;
+}
+
+// The subkeys in Windows' order, by name in upper case. A key in the file may exist only as part of a deeper path,
+// so the names come from every key below this one.
+LSTATUS WINAPI RegEnumKeyExA(HKEY inKey, DWORD inIndex, LPSTR outName, LPDWORD ioNameLength, LPDWORD inReserved,
+                             LPSTR outClass, LPDWORD ioClassLength, PFILETIME outLastWrite)
+{
+    (void)inReserved;
+    std::lock_guard<std::mutex> theLock(sLock);
+    Load();
+    RegistryKey* theKey = FindKey(inKey, NULL);
+    if (!theKey)
+        return ERROR_INVALID_HANDLE;
+    std::string thePrefix = Lower(theKey->mPath) + "\\";
+    std::map<std::string, std::string> theNames;
+    for (auto theEntry = sKeys.lower_bound(thePrefix);
+         theEntry != sKeys.end() && theEntry->first.compare(0, thePrefix.size(), thePrefix) == 0; ++theEntry) {
+        std::string theName = theEntry->second.mPath.substr(thePrefix.size());
+        theName = theName.substr(0, theName.find('\\'));
+        std::string theOrder = theName;
+        for (char& c : theOrder)
+            c = (char)toupper((unsigned char)c);
+        theNames.emplace(theOrder, theName);
+    }
+    if (inIndex >= theNames.size())
+        return ERROR_NO_MORE_ITEMS;
+    if (outClass && ioClassLength && *ioClassLength)
+        *outClass = 0;
+    if (ioClassLength)
+        *ioClassLength = 0;
+    if (outLastWrite)
+        memset(outLastWrite, 0, sizeof *outLastWrite);
+    return CopyName(std::next(theNames.begin(), inIndex)->second, outName, ioNameLength);
+}
+
+// The values by name; Windows gives the order they were made in, which the registry file does not keep
+LSTATUS WINAPI RegEnumValueA(HKEY inKey, DWORD inIndex, LPSTR outName, LPDWORD ioNameLength, LPDWORD inReserved,
+                             LPDWORD outType, LPBYTE outData, LPDWORD ioDataSize)
+{
+    (void)inReserved;
+    std::lock_guard<std::mutex> theLock(sLock);
+    Load();
+    RegistryKey* theKey = FindKey(inKey, NULL);
+    if (!theKey)
+        return ERROR_INVALID_HANDLE;
+    if (inIndex >= theKey->mValues.size())
+        return ERROR_NO_MORE_ITEMS;
+    const RegistryValue& theValue = std::next(theKey->mValues.begin(), inIndex)->second;
+    LSTATUS theResult = CopyName(theValue.mName, outName, ioNameLength);
+    if (theResult != ERROR_SUCCESS)
+        return theResult;
+    if (outType)
+        *outType = theValue.mType;
+    DWORD theSize = (DWORD)theValue.mData.size();
+    if (outData && ioDataSize && *ioDataSize < theSize) {
+        *ioDataSize = theSize;
+        return ERROR_MORE_DATA;
+    }
+    if (outData && ioDataSize)
+        memcpy(outData, theValue.mData.data(), theSize);
+    if (ioDataSize)
+        *ioDataSize = theSize;
     return ERROR_SUCCESS;
 }
 
