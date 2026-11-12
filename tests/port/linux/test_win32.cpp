@@ -302,7 +302,8 @@ static void TestRuntime()
     const unsigned char* theString = (const unsigned char*)"hello";
     CHECK(_mbsninc(theString, 3) == theString + 3 && _mbsninc(theString, 9) == theString + 5);
 
-    // The x87 control word: precision and rounding round-trip through the MSVC form
+    // The x87 control word: precision and rounding round-trip through the MSVC form. x86-64 has no x87 program
+    // mode to round in (the arithmetic is SSE2), so the round trip is all that the 64-bit build can check.
     unsigned int theSaved = _controlfp(0, 0);
     _controlfp(_PC_24, _MCW_PC);
     CHECK((_controlfp(0, 0) & _MCW_PC) == _PC_24);
@@ -312,6 +313,7 @@ static void TestRuntime()
     theThird /= 3.0;
     _controlfp(_RC_CHOP, _MCW_RC);
     CHECK((_controlfp(0, 0) & _MCW_RC) == _RC_CHOP);
+#ifndef __x86_64__
     volatile float theValue = 2.7f;
     long theRounded;
     __asm__ __volatile__("fistpl %0" : "=m"(theRounded) : "t"((double)theValue) : "st");
@@ -319,6 +321,7 @@ static void TestRuntime()
     _controlfp(_RC_NEAR, _MCW_RC);
     __asm__ __volatile__("fistpl %0" : "=m"(theRounded) : "t"((double)theValue) : "st");
     CHECK(theRounded == 3);
+#endif
     _controlfp(theSaved, _MCW_PC | _MCW_RC);
     (void)theThird;
 }

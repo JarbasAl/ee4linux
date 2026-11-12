@@ -1,4 +1,4 @@
-"""Native port tests: build and run the tests of the Win32 layer (python3 -I tools/test_port_linux.py).
+"""Native port tests: build and run the tests of the Win32 layer (python3 -I tools/test_port_linux.py [--target linux64]).
 
 Each tests/port/linux/test_*.cpp compiles with the native unit flags of tools/build_port.py, links against the
 layer's objects (build/port-linux/obj/win32, made by build_port.py --target linux win32) with fopen wrapped, as the
@@ -8,6 +8,7 @@ independent source: every string of the installed Language.dll through LoadStrin
 Windows 11 capture, Bink playback against ffmpeg, and Miles' MP3 decoding of the base game's music (EE_SOUNDS) and
 AoC's data.ssa (EE_AOC_DATA) against ffmpeg. The report gives the tests in and the tests that passed.
 """
+import argparse
 import collections
 import json
 import os
@@ -21,8 +22,13 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_port as bp
 
 TESTS = bp.ROOT / "tests" / "port" / "linux"
-# the Win32 layer and the libraries it carries as source (build_port.py LIBRARY_MODULES)
-OBJECT_DIRS = [bp.ROOT / "build" / "port-linux" / "obj" / mod for mod in ["win32", *bp.LIBRARY_MODULES]]
+TARGET = "linux"
+# the Win32 layer and the libraries it carries as source (build_port.py LIBRARY_MODULES), under the target's folder
+OBJECT_DIRS = []
+
+
+def object_dirs(target):
+    return [bp.ROOT / "build" / f"port-{target}" / "obj" / mod for mod in ["win32", *bp.LIBRARY_MODULES]]
 TOOLKIT = pathlib.Path(os.environ.get("EE_TOOLKIT", pathlib.Path.home() / "AgentWorkspaces" / "games" / "ee-toolkit"))
 LANGUAGE_DLL = pathlib.Path(os.environ.get(
     "EE_LANGUAGE_DLL", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" /
@@ -36,11 +42,11 @@ GM_BANK = pathlib.Path(os.environ.get("EE_GM_BANK", bp.ROOT / "toolchain" / "sou
 
 
 def layer_objects():
-    return sorted(str(o) for folder in OBJECT_DIRS for o in folder.rglob("*.o"))
+    return sorted(str(o) for folder in object_dirs(TARGET) for o in folder.rglob("*.o"))
 
 
 def build(source, binary, layer):
-    cfg = bp.TARGETS["linux"]
+    cfg = bp.TARGETS[TARGET]
     cmd = [str(cfg["cxx"]), *[f for f in cfg["flags"] if f != "-w"], *cfg["cxxflags"],
            *bp.unit_defines(source, "win32"), "-include", str(bp.COMPAT),
            *(f"-I{d}" for d in cfg["includes"]), *(f"-I{d}" for d in bp.INCLUDES),
@@ -430,9 +436,14 @@ def check_dmusic(scratch, layer):
 
 
 def main():
+    global TARGET
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--target", default="linux", choices=sorted(bp.TARGETS), help="which build's objects to test")
+    TARGET = ap.parse_args().target
     layer = layer_objects()
     if not layer:
-        sys.exit(f"no objects in {OBJECT_DIRS[0]}: run python3 -I tools/build_port.py --target linux win32 dmusic")
+        sys.exit(f"no objects in {object_dirs(TARGET)[0]}: run python3 -I tools/build_port.py --target {TARGET} win32 "
+                 f"dmusic")
     tests = sorted(TESTS.glob("test_*.cpp"))
     passed = 0
     with tempfile.TemporaryDirectory(prefix="ee-port-test-") as scratch:

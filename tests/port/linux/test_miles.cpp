@@ -163,7 +163,9 @@ int main()
         usleep(1000);
     DWORD theElapsed = GetTickCount() - theStart;
     CHECK(AIL_sample_status(theTimed) == 2 && AIL_sample_position(theTimed) == 4410);
-    CHECK(theElapsed >= 80 && theElapsed < 1000);
+    // The device paces the mix, and SDL's dummy driver paces it by its own buffer size: a 0.1 s sample ends within a
+    // few callback periods of 0.1 s. The length itself is the position check above, which is exact.
+    CHECK(theElapsed >= 50 && theElapsed < 1000);
     AIL_close_digital_driver(theDevice);
 
     // ---- the driver ----

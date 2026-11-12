@@ -140,11 +140,23 @@ static void TestCreation()
     CHECK(SetWindowPos(theWindow, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE));
     CHECK(sSeen.empty());
 
+#ifdef _WIN64
+    // a 64-bit build has the pointer-sized forms only: Wine's headers keep the GWLP_ indices
+    CHECK(SetWindowLongPtrA(theWindow, GWLP_USERDATA, 1234) == 0 &&
+          GetWindowLongPtrA(theWindow, GWLP_USERDATA) == 1234);
+#else
     CHECK(SetWindowLongA(theWindow, GWL_USERDATA, 1234) == 0 && GetWindowLongA(theWindow, GWL_USERDATA) == 1234);
+#endif
     CHECK(GetWindowLongA(theWindow, GWL_STYLE) == (LONG)(WS_POPUP | WS_VISIBLE));
+#ifdef _WIN64
+    CHECK(SetWindowLongPtrA(theWindow, GWLP_WNDPROC, (LONG_PTR)Subclass) == (LONG_PTR)Recorder);
+    CHECK(SendMessageA(theWindow, WM_USER + 9, 0, 0) == 99);
+    SetWindowLongPtrA(theWindow, GWLP_WNDPROC, (LONG_PTR)Recorder);
+#else
     CHECK(SetWindowLongA(theWindow, GWL_WNDPROC, (LONG)(LONG_PTR)Subclass) == (LONG)(LONG_PTR)Recorder);
     CHECK(SendMessageA(theWindow, WM_USER + 9, 0, 0) == 99);
     SetWindowLongA(theWindow, GWL_WNDPROC, (LONG)(LONG_PTR)Recorder);
+#endif
     CHECK(SendMessageA(theWindow, WM_USER + 9, 0, 0) == 0);
 
     // WM_CREATE returning -1 fails the creation, and the window is destroyed
