@@ -370,6 +370,7 @@ void Pump()
     while (SDL_PollEvent(&theEvent))
         Translate(theEvent);
     ApplyCursor();
+    eeport::PresentWindows();
     if (!gFocus)
         SetAppActive(false);    // focus moved from one window of the game to another within the events above
 }
@@ -491,6 +492,8 @@ SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL)
     Window* theWindow = WindowOf(inWindow);
     if (!theWindow || theWindow == &gDesktop || !StartVideo() || !IsVideoThread() || theWindow->mThread != CurrentThreadID())
         return nullptr;
+    if (theWindow->mNative && theWindow->mNativeGL && !inOpenGL)
+        return nullptr;
     if (theWindow->mNative && theWindow->mNativeGL != inOpenGL) {
         SDL_DestroyWindow(theWindow->mNative);
         theWindow->mNative = nullptr;
@@ -515,6 +518,26 @@ SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL)
 HWND WindowOfNative(SDL_Window* inNative)
 {
     return inNative ? (HWND)SDL_GetWindowData(inNative, "hwnd") : NULL;
+}
+
+bool TakePaint(HWND inWindow, bool* outErase)
+{
+    Window* theWindow = WindowOf(inWindow);
+    if (!theWindow || theWindow == &gDesktop)
+        return false;
+    *outErase = theWindow->mErase;
+    theWindow->mErase = false;
+    theWindow->mInvalid = false;
+    return true;
+}
+
+HCURSOR MakeCursor(SDL_Surface* inImage, int inHotX, int inHotY)
+{
+    Cursor* theCursor = new Cursor;
+    theCursor->mImage = inImage;
+    theCursor->mHotX = inHotX;
+    theCursor->mHotY = inHotY;
+    return (HCURSOR)theCursor;
 }
 
 } // namespace eeport
@@ -661,6 +684,7 @@ BOOL WINAPI DestroyWindow(HWND inWindow)
                                               [inWindow](const Timer& t) { return t.mWindow == inWindow; }),
                                theQueue.mTimers.end());
     }
+    eeport::ForgetWindowSurface(inWindow);
     HWND theNext = NULL;
     {
         std::lock_guard<std::recursive_mutex> theLock(gWindowsLock);
@@ -1124,8 +1148,16 @@ LRESULT WINAPI DefWindowProcA(HWND inWindow, UINT inMessage, WPARAM inWParam, LP
     case WM_PAINT:
         ValidateRect(inWindow, NULL);
         return 0;
-    case WM_ERASEBKGND:
+    case WM_ERASEBKGND: {
+        Window* theWindow = WindowOf(inWindow);
+        HBRUSH theBrush = theWindow && theWindow->mClass ? theWindow->mClass->mClass.hbrBackground : NULL;
+        if (!theBrush)
+            return 0;
+        RECT theRect;
+        GetClientRect(inWindow, &theRect);
+        FillRect((HDC)inWParam, &theRect, theBrush);
         return 1;
+    }
     case WM_MOUSEACTIVATE:
         return MA_ACTIVATE;
     case WM_SETCURSOR:
@@ -1305,6 +1337,33 @@ BOOL WINAPI OffsetRect(LPRECT ioRect, INT inX, INT inY)
     return TRUE;
 }
 
+BOOL WINAPI IsRectEmpty(const RECT* inRect)
+{
+    return !inRect || inRect->right <= inRect->left || inRect->bottom <= inRect->top;
+}
+
+// FALSE and an empty rectangle when the two do not overlap
+BOOL WINAPI IntersectRect(LPRECT outRect, const RECT* inFirst, const RECT* inSecond)
+{
+    RECT theRect = {std::max(inFirst->left, inSecond->left), std::max(inFirst->top, inSecond->top),
+                    std::min(inFirst->right, inSecond->right), std::min(inFirst->bottom, inSecond->bottom)};
+    if (IsRectEmpty(&theRect))
+        SetRect(&theRect, 0, 0, 0, 0);
+    *outRect = theRect;
+    return !IsRectEmpty(&theRect);
+}
+
+BOOL WINAPI InflateRect(LPRECT ioRect, INT inX, INT inY)
+{
+    if (!ioRect)
+        return FALSE;
+    ioRect->left -= inX;
+    ioRect->right += inX;
+    ioRect->top -= inY;
+    ioRect->bottom += inY;
+    return TRUE;
+}
+
 // The right and bottom edges are outside the rectangle
 BOOL WINAPI PtInRect(const RECT* inRect, POINT inPoint)
 {
@@ -1363,11 +1422,7 @@ HCURSOR WINAPI CreateCursor(HINSTANCE, INT inHotX, INT inHotY, INT inWidth, INT 
             Uint32 thePixel = theAnd && !theXor ? 0x00000000 : !theAnd && theXor ? 0xffffffff : 0xff000000;
             ((Uint32*)((Uint8*)theImage->pixels + y * theImage->pitch))[x] = thePixel;
         }
-    Cursor* theCursor = new Cursor;
-    theCursor->mImage = theImage;
-    theCursor->mHotX = inHotX;
-    theCursor->mHotY = inHotY;
-    return (HCURSOR)theCursor;
+    return eeport::MakeCursor(theImage, inHotX, inHotY);
 }
 
 BOOL WINAPI DestroyCursor(HCURSOR inCursor)

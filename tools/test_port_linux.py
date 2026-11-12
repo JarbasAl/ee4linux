@@ -2,13 +2,16 @@
 
 Each tests/port/linux/test_*.cpp compiles with the native unit flags of tools/build_port.py, links against the
 layer's objects (build/port-linux/obj/win32, made by build_port.py --target linux win32) with fopen wrapped, as the
-game's images are, and runs in a temporary
-folder that is removed afterwards. One more test reads every string of the installed Language.dll through
-LoadStringA and compares it with ee-toolkit's PE reader (EE_TOOLKIT, EE_LANGUAGE_DLL name others). The report gives the
-tests in and the tests that passed.
+game's images are, and runs in a temporary folder that is removed afterwards. More checks compare the layer with an
+independent source: every string of the installed Language.dll through LoadStringA against ee-toolkit's PE reader
+(EE_TOOLKIT, EE_LANGUAGE_DLL name others), code page conversion against Python's codecs, font metrics against a
+Windows 11 capture, and Bink playback against ffmpeg. The report gives the tests in and the tests that passed.
 """
+import collections
+import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -119,6 +122,57 @@ def check_text(scratch, layer):
     for line in wrong[:5]:
         print(f"  {line}")
     return not wrong and counts == {"byte": 255, "back": 255, "muldiv": 16, "utf8": 1}
+
+
+def check_gdi_metrics(scratch, layer):
+    """Font metrics against a Windows 11 capture (tests/port/linux/data, from ee-macos): True when every face resolves,
+    Tahoma's line metrics are exact and Courier New's widths and extents are exact.
+
+    Only those two have an installed stand-in with Windows' measurements: Wine's own Tahoma, and Liberation Mono, whose
+    advances are all one width. Liberation Sans and Serif have no VDMX or hdmx table, so their line heights and some
+    advances differ from Arial and Times New Roman by a pixel; the report gives those numbers without gating on them.
+    The Windows faces in the Wine prefix (winetricks corefonts) are used first when they are there.
+    """
+    binary = pathlib.Path(scratch) / "dump_gdi_metrics"
+    made = build(TESTS / "dump_gdi_metrics.cpp", binary, layer)
+    if made.returncode:
+        print(f"dump_gdi_metrics.cpp: does not build\n{made.stderr}")
+        return False
+    output = pathlib.Path(scratch) / "gdi_metrics.jsonl"
+    run = subprocess.run([str(binary), str(TESTS / "data" / "cases_windows11.txt"), str(output)],
+                         capture_output=True, text=True, cwd=scratch)
+    if run.returncode:
+        print(f"dump_gdi_metrics: exit {run.returncode}\n{run.stderr}")
+        return False
+    def load(path):
+        rows = [json.loads(line) for line in path.read_text().splitlines()]
+        return {(r["face"], r["height"], r["weight"], r["italic"]): r for r in rows}
+    windows, ours = load(TESTS / "data" / "gdi_metrics_windows11.jsonl"), load(output)
+    drawn = dict(re.findall(r'font "([^"]+)" is drawn with (.+)', run.stderr))
+    faces = {}
+    for key, want in windows.items():
+        got = ours.get(key)
+        counts = faces.setdefault(key[0], collections.Counter())
+        counts["requests"] += 1
+        if not got:
+            continue
+        counts["answered"] += 1
+        counts["line exact"] += want["tm"][:5] == got["tm"][:5]
+        counts["widths"] += len(want["widths"])
+        counts["widths exact"] += sum(a == b for a, b in zip(want["widths"], got["widths"]))
+        counts["extents"] += len(want["extents"])
+        counts["extents exact"] += sum(a[0] == b[0] for a, b in zip(want["extents"], got["extents"]))
+    print(f"gdi metrics: {len(windows)} Windows 11 requests, {len(ours)} answered")
+    for face, c in faces.items():
+        print(f"  {face} (drawn with {drawn.get(face, 'nothing logged')}): line metrics exact {c['line exact']}/"
+              f"{c['requests']}, widths exact {c['widths exact']}/{c['widths']}, "
+              f"extent widths exact {c['extents exact']}/{c['extents']}")
+    resolved = all(face in drawn and not drawn[face].startswith("no face") for face in faces)
+    tahoma, courier = faces["Tahoma"], faces["Courier New"]
+    return (resolved and len(ours) == len(windows) and all(c["answered"] == c["requests"] for c in faces.values())
+            and tahoma["line exact"] == tahoma["requests"]
+            and courier["widths exact"] == courier["widths"] > 0
+            and courier["extents exact"] == courier["extents"] > 0)
 
 
 def check_linkage(layer):
@@ -250,9 +304,10 @@ def main():
             passed += run.returncode == 0
         strings_ok = check_strings(scratch, layer)
         text_ok = check_text(scratch, layer)
+        metrics_ok = check_gdi_metrics(scratch, layer)
         movies_ok = check_movies(scratch, layer)
     linkage_ok = check_linkage(layer)
-    checks = [strings_ok, text_ok, movies_ok, linkage_ok]
+    checks = [strings_ok, text_ok, metrics_ok, movies_ok, linkage_ok]
     print(f"tests: {len(tests) + len(checks)} in, {passed + sum(checks)} passed")
     return 0 if passed == len(tests) and all(checks) else 1
 

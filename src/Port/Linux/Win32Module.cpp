@@ -19,6 +19,7 @@ namespace eeport {
 struct Module {
     std::string mPath;
     void* mLibrary = NULL;                  // an ELF module's dlopen handle
+    const char* mBuiltIn = NULL;            // a system DLL the layer implements: its name
     std::vector<unsigned char> mImage;      // a PE module's file
     DWORD mResourceRVA = 0;                 // the resource directory, by RVA
     struct Section {
@@ -29,6 +30,32 @@ struct Module {
 };
 
 static std::mutex sModulesLock;
+
+// The system DLLs the game loads by name and the layer implements: LoadLibrary gives a module whose functions are
+// the layer's own. WON finds AlphaBlend this way.
+struct BuiltInFunction {
+    const char* mModule;
+    const char* mName;
+    void* mAddress;
+};
+static const BuiltInFunction kBuiltInFunctions[] = {
+    {"msimg32.dll", "AlphaBlend", reinterpret_cast<void*>(&AlphaBlend)},
+};
+
+// The built-in module a LoadLibrary name means, or NULL: the name without its folder, compared without case
+static const char* BuiltIn(LPCSTR inName)
+{
+    if (!inName)
+        return NULL;
+    const char* theBase = inName;
+    for (const char* c = inName; *c; ++c)
+        if (*c == '\\' || *c == '/')
+            theBase = c + 1;
+    for (const BuiltInFunction& theFunction : kBuiltInFunctions)
+        if (strcasecmp(theBase, theFunction.mModule) == 0)
+            return theFunction.mModule;
+    return NULL;
+}
 
 static DWORD Read32(const std::vector<unsigned char>& inImage, size_t inOffset)
 {
@@ -207,6 +234,9 @@ HMODULE WINAPI LoadLibraryExA(LPCSTR inName, HANDLE inFile, DWORD inFlags)
 {
     (void)inFile, (void)inFlags;
     Module* theModule = new Module;
+    theModule->mBuiltIn = BuiltIn(inName);
+    if (theModule->mBuiltIn)
+        return reinterpret_cast<HMODULE>(theModule);
     theModule->mPath = LinuxPath(inName);
     unsigned char theMagic[4] = {};
     FILE* theFile = fopen(theModule->mPath.c_str(), "rb");
@@ -268,7 +298,13 @@ HMODULE WINAPI GetModuleHandleA(LPCSTR inName)
 FARPROC WINAPI GetProcAddress(HMODULE inModule, LPCSTR inName)
 {
     Module* theModule = ModuleOf(inModule);
-    void* theAddress = theModule && theModule->mLibrary && !IS_INTRESOURCE(inName) ? dlsym(theModule->mLibrary, inName) : NULL;
+    void* theAddress = NULL;
+    if (theModule && theModule->mBuiltIn && !IS_INTRESOURCE(inName)) {
+        for (const BuiltInFunction& theFunction : kBuiltInFunctions)
+            if (theFunction.mModule == theModule->mBuiltIn && strcmp(theFunction.mName, inName) == 0)
+                theAddress = theFunction.mAddress;
+    } else if (theModule && theModule->mLibrary && !IS_INTRESOURCE(inName))
+        theAddress = dlsym(theModule->mLibrary, inName);
     if (!theAddress)
         SetLastError(ERROR_PROC_NOT_FOUND);
     return reinterpret_cast<FARPROC>(theAddress);

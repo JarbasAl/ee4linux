@@ -12,6 +12,7 @@
 #include <mutex>
 #include <string>
 
+struct SDL_Surface;
 struct SDL_Window;
 
 namespace eeport {
@@ -97,10 +98,26 @@ bool IsKeyDown(int inVirtualKey);
 // calls it first; otherwise the first thread to need video does.
 bool StartVideo();
 // The native SDL window of a window, made on first use: with OpenGL for the DirectDraw layer, or with a software
-// surface for GDI. NULL for a window owned by a thread other than the video thread, or without video.
+// surface for GDI. An OpenGL request replaces a software window; a software request on an OpenGL window gets NULL,
+// as the DirectDraw layer owns what it shows. NULL also for a window owned by a thread other than the video
+// thread, or without video.
 SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL);
 // The window of a native SDL window, or NULL
 HWND WindowOfNative(SDL_Window* inNative);
+// For BeginPaint: validates the window and says whether its background needs erasing; false for no window
+bool TakePaint(HWND inWindow, bool* outErase);
+// A cursor or icon from an ARGB8888 image, which the cursor then owns
+HCURSOR MakeCursor(SDL_Surface* inImage, int inHotX, int inHotY);
+
+// ---- GDI (Win32Gdi.cpp) ----
+// A DC that draws into pixels the caller keeps: the DirectDraw layer's surfaces. inPitch is the bytes from one row
+// to the next; 16-bit pixels take their layout from the masks. DeleteDC releases the DC, not the pixels.
+HDC CreateBufferDC(void* inBits, int inWidth, int inHeight, int inPitch, int inBitCount, DWORD inRedMask,
+                   DWORD inGreenMask, DWORD inBlueMask);
+// On the video thread: shows what GDI drew into windows since the last call
+void PresentWindows();
+// Releases the pixels GDI keeps for a destroyed window
+void ForgetWindowSurface(HWND inWindow);
 
 // ---- modules (Win32Module.cpp) ----
 // The bytes of a resource in a PE module and their size, or NULL; inLanguage 0 takes the first language
