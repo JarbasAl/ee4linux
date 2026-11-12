@@ -991,6 +991,16 @@ GLuint Surface::DepthBuffer()
 
 namespace {
 
+// Whether a pixel of a format is inside a colour-key range. Only the bits the format holds count: a 32-bit surface
+// without an alpha channel still carries a byte there, which the game fills with 0xff and its key does not name, so a
+// keyed comparison of the whole value would never match the game's own pixels.
+bool InKey(const Format& inFormat, DWORD inValue, const DDCOLORKEY& inKey)
+{
+    DWORD theBits = inFormat.mMask[0] | inFormat.mMask[1] | inFormat.mMask[2] | inFormat.mMask[3];
+    return (inValue & theBits) >= (inKey.dwColorSpaceLowValue & theBits) &&
+           (inValue & theBits) <= (inKey.dwColorSpaceHighValue & theBits);
+}
+
 // The RGBA rows of a surface's memory. With inKeyed, texels inside the source colour key get alpha 0, and all
 // others alpha 255 when the format has no alpha.
 void DecodeSurface(Surface& inSurface, bool inKeyed, std::vector<uint8_t>& outRGBA)
@@ -1001,11 +1011,8 @@ void DecodeSurface(Surface& inSurface, bool inKeyed, std::vector<uint8_t>& outRG
         for (int x = 0; x < inSurface.mWidth; ++x, theOut += 4) {
             const uint8_t* thePixel = inSurface.Pixel(x, y);
             inSurface.mFormat.Decode(thePixel, theOut);
-            if (inKeyed) {
-                DWORD theValue = inSurface.mFormat.Read(thePixel);
-                if (theValue >= inSurface.mKey.dwColorSpaceLowValue && theValue <= inSurface.mKey.dwColorSpaceHighValue)
-                    theOut[3] = 0;
-            }
+            if (inKeyed && InKey(inSurface.mFormat, inSurface.mFormat.Read(thePixel), inSurface.mKey))
+                theOut[3] = 0;
         }
 }
 
@@ -1610,11 +1617,8 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Surface::Blt(RECT* inDestination,
                 for (int x = theSourceRect.left; x < theSourceRect.right; ++x, theOut += 4) {
                     const uint8_t* thePixel = theSource->Pixel(x, y);
                     theSource->mFormat.Decode(thePixel, theOut);
-                    if (theKeyed) {
-                        DWORD theValue = theSource->mFormat.Read(thePixel);
-                        theOut[3] = theValue >= theKey.dwColorSpaceLowValue && theValue <= theKey.dwColorSpaceHighValue
-                                        ? 0 : 255;
-                    }
+                    if (theKeyed)
+                        theOut[3] = InKey(theSource->mFormat, theSource->mFormat.Read(thePixel), theKey) ? 0 : 255;
                 }
             LoadScratch(theRGBA.data(), theWidth, theHeight);
             const float theScratch[4] = {theFrom[0] - theSourceRect.left, theFrom[1] - theSourceRect.top,
@@ -1661,11 +1665,8 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Surface::Blt(RECT* inDestination,
                                           (int)(theSourceRect.left + (x - theWhole.left + 0.5f) * theScaleX));
                 const uint8_t* thePixel = theRows + (size_t)(theSourceY - theOriginY) * theRowBytes +
                                           (size_t)(theSourceX - theOriginX) * theIn.mBytes;
-                if (theKeyed) {
-                    DWORD theValue = theIn.Read(thePixel);
-                    if (theValue >= theKey.dwColorSpaceLowValue && theValue <= theKey.dwColorSpaceHighValue)
-                        continue;
-                }
+                if (theKeyed && InKey(theIn, theIn.Read(thePixel), theKey))
+                    continue;
                 if (theSame)
                     memcpy(Pixel(x, y), thePixel, mFormat.mBytes);
                 else {

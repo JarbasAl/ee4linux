@@ -995,6 +995,18 @@ static void TestCoherence()
     CHECK(thePointer->Release() == 0);
     CHECK(theUnder->Release() == 0);
 
+    // the same keyed blit of a surface whose unused high byte is set, as the game's pointer textures have it: the key
+    // names the format's own bits, so the blue background still drops
+    IDirectDrawSurface7* theFilledPointer = Make(4, 4, kXRGB, DDSCAPS_OFFSCREENPLAIN, 0, DDSD_CKSRCBLT);
+    CHECK(theFilledPointer->SetColorKey(DDCKEY_SRCBLT, &theBlue) == DD_OK);
+    Fill(theFilledPointer, 0xff0000ff);
+    Fill(theFilledPointer, 0xffff00ff, &theDot);
+    t.Clear(0xff202020);
+    CHECK(t.mSurface->Blt(&theSpot, theFilledPointer, nullptr, DDBLT_DONOTWAIT | DDBLT_KEYSRC, nullptr) == DD_OK);
+    CHECK(t.At(40, 20) == 0x202020 && t.At(41, 21) == 0xff00ff);
+    CHECK(t.At(43, 23) == 0x202020);
+    CHECK(theFilledPointer->Release() == 0);
+
     // 16-bit render target: every R5G6B5 value survives the trip into OpenGL and back
     Target theSixteen(256, 256, k565, false);
     {
