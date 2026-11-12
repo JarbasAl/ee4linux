@@ -5,8 +5,8 @@ layer's objects (build/port-linux/obj/win32, made by build_port.py --target linu
 game's images are, and runs in a temporary folder that is removed afterwards. More checks compare the layer with an
 independent source: every string of the installed Language.dll through LoadStringA against ee-toolkit's PE reader
 (EE_TOOLKIT, EE_LANGUAGE_DLL name others), code page conversion against Python's codecs, font metrics against a
-Windows 11 capture, Bink playback against ffmpeg, and Miles' MP3 decoding of the base game's music (EE_SOUNDS) against
-ffmpeg. The report gives the tests in and the tests that passed.
+Windows 11 capture, Bink playback against ffmpeg, and Miles' MP3 decoding of the base game's music (EE_SOUNDS) and
+AoC's data.ssa (EE_AOC_DATA) against ffmpeg. The report gives the tests in and the tests that passed.
 """
 import collections
 import json
@@ -26,6 +26,7 @@ TOOLKIT = pathlib.Path(os.environ.get("EE_TOOLKIT", pathlib.Path.home() / "Agent
 LANGUAGE_DLL = pathlib.Path(os.environ.get(
     "EE_LANGUAGE_DLL", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" /
     "Empire Earth - The Art of Conquest" / "Language.dll"))
+AOC_DATA = pathlib.Path(os.environ.get("EE_AOC_DATA", LANGUAGE_DLL.parent / "Data" / "data.ssa"))
 SOUNDS = pathlib.Path(os.environ.get(
     "EE_SOUNDS", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" / "Empire Earth" /
     "Data" / "Sounds"))
@@ -286,8 +287,8 @@ def check_movies(scratch, layer):
 
 def check_miles(scratch, layer):
     """MP3 images through the Miles calls decode as FFmpeg's fixed-point MP3 decoder decodes them, at their own rate,
-    with Miles' length in milliseconds and the position at the end in the image's bytes: a made mono MP3 with an ID3
-    tag, and the base game's music."""
+    with Miles' length in milliseconds (the decoded length) and the position at the end in the image's bytes: a made
+    mono MP3 with an ID3 tag, the base game's music and the MP3s in AoC's data.ssa."""
     binary = pathlib.Path(scratch) / "dump_miles"
     made = build(TESTS / "dump_miles.cpp", binary, layer)
     if made.returncode:
@@ -301,8 +302,14 @@ def check_miles(scratch, layer):
         print(f"miles: the test MP3 is not made\n{made.stderr}")
         return False
     music = sorted(SOUNDS.glob("*.mp3"))
-    if not music:
-        print(f"miles: no MP3 in {SOUNDS}")
+    sys.path.insert(0, str(TOOLKIT))
+    from ee_toolkit.container.ssa import Archive
+    archive = Archive(AOC_DATA)
+    for name in archive.names("*.mp3"):
+        music.append(pathlib.Path(scratch) / pathlib.PureWindowsPath(name).name)
+        music[-1].write_bytes(archive.read(name))
+    if len(music) < 2:
+        print(f"miles: {len(music)} MP3s in {SOUNDS} and {AOC_DATA}")
         return False
     good = True
     for sound in [tone, *music]:
@@ -322,13 +329,14 @@ def check_miles(scratch, layer):
         else:
             same = ours == theirs
         size = sound.stat().st_size
+        frames = len(theirs) // (2 * channels)
         print(f"miles: {sound.name}: exit {run.returncode}, rate {report.get('rate')}, granularity "
               f"{report.get('granularity')}, {report.get('ms')} ms, {report.get('frames')} frames, end "
               f"{report.get('end')}; ffprobe: {rate} Hz, {channels} channels, {seconds} s; PCM "
               f"{'identical to' if same else 'differs from'} FFmpeg's")
         good = good and (run.returncode == 0 and same and report.get("rate") == str(rate)
-                         and report.get("granularity") == "1" and report.get("ms") == str(round(seconds * 1000))
-                         and report.get("frames") == str(len(theirs) // (2 * channels))
+                         and report.get("granularity") == "1" and report.get("ms") == str(round(frames * 1000 / rate))
+                         and report.get("frames") == str(frames)
                          and report.get("end") == f"{size} of {size}")
     return good
 
