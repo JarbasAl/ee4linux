@@ -2708,3 +2708,31 @@ void EEPCalamityHelper::Virtual20()
 {
     EEPortUnwritten("EEPCalamityHelper::Virtual20");
 }
+
+#ifdef EE_PORT_LINUX
+// The Linux C++ ABI emits a class's vtable and typeinfo only with its first non-inline virtual function; MSVC and
+// MinGW emit them wherever they are used. These classes' first virtual functions have no body elsewhere.
+#include "ee/EEFOFindNewTargetScreenBase.h"
+
+// 0x220a18 (slots +0x04 and +0x08): mov al, 1; ret 4
+bool EEFOFindNewTargetScreenBase::Virtual04(EEComplexUnit* inUnit)
+{
+    return true;
+}
+
+bool EEFOFindNewTargetScreenBase::Virtual08(EEComplexUnit* inUnit)
+{
+    return true;
+}
+
+// No retail body is identified: every media class the game makes has its own
+long EEMedia::LoadMedia()
+{
+    EEPortUnwritten("EEMedia::LoadMedia");
+}
+
+long EEMedia::UnloadMedia()
+{
+    EEPortUnwritten("EEMedia::UnloadMedia");
+}
+#endif

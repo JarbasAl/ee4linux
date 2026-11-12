@@ -62,7 +62,8 @@ public:                                             // URandom::Generate on the 
     long Generate(long inMinimum, long inMaximum);
 };
 
-#if defined(LOWLEVELENGINE_EXPORTS) || defined(LLE_CURRENT_HEADERS)
+// The Linux build inlines them in the plug-ins too: the engine's shared object emits no out-of-line copy to import
+#if defined(LOWLEVELENGINE_EXPORTS) || defined(LLE_CURRENT_HEADERS) || defined(EE_PORT_LINUX)
 inline long URandomIntegers::Generate(long inMinimum, long inMaximum)
 {
     long theLimit = inMaximum + 1;

@@ -30,3 +30,15 @@ int GUIStringData::Compare(const GUIStringData* inOther, bool inCaseSensitive) c
 {
     return inCaseSensitive ? this->Compare(inOther) : this->CompareNoCase(inOther);
 }
+
+#ifdef EE_PORT_LINUX
+// The Linux C++ ABI emits a class's vtable and typeinfo only with its first non-inline virtual function (see
+// EEPortLinks.cpp). No retail body is identified: every listener the lobby makes has its own.
+void ComponentListener::HandleComponentEvent(ComponentEvent*)
+{
+    OutputDebugStringA("ComponentListener::HandleComponentEvent has no source in this build");
+    MessageBoxA(NULL, "ComponentListener::HandleComponentEvent has no source in this build", "Empire Earth",
+                MB_OK | MB_ICONSTOP);
+    ExitProcess(3);
+}
+#endif
