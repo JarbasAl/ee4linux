@@ -67,6 +67,77 @@ def check_strings(scratch, layer):
         print(f"  {i}: {got.get(i)!r} against {want.get(i)!r}")
     return not wrong and not extra and language == dll.language and len(got) == len(want) and tables > 0
 
+def windows_muldiv(a, b, c):
+    """MulDiv's documented result: a*b/c rounded half away from zero, -1 for c == 0 or a result past 32 bits."""
+    from fractions import Fraction
+    if c == 0:
+        return -1
+    exact = Fraction(a * b, c)
+    result = int(abs(exact) + Fraction(1, 2)) * (1 if exact >= 0 else -1)
+    return result if -2**31 <= result < 2**31 else -1
+
+
+def check_text(scratch, layer):
+    """Windows-1252 and UTF-8 conversion against Python's codecs, MulDiv against exact arithmetic."""
+    binary = pathlib.Path(scratch) / "dump_text"
+    made = build(TESTS / "dump_text.cpp", binary, layer)
+    if made.returncode:
+        print(f"dump_text.cpp: does not build\n{made.stderr}")
+        return False
+    run = subprocess.run([str(binary)], capture_output=True, text=True, cwd=scratch)
+    if run.returncode:
+        print(f"dump_text: exit {run.returncode}\n{run.stderr}")
+        return False
+    wrong, counts = [], {"byte": 0, "back": 0, "muldiv": 0, "utf8": 0}
+    for line in run.stdout.splitlines():
+        kind, *values = line.split()
+        counts[kind] += 1
+        numbers = list(map(int, values))
+        if kind == "byte":
+            byte, code = numbers
+            try:
+                expected = ord(bytes([byte]).decode("cp1252"))
+            except UnicodeDecodeError:
+                expected = byte     # Windows maps the five unassigned bytes to the same code point
+            if code != expected:
+                wrong.append(line)
+        elif kind == "back":
+            byte, back, used_default = numbers
+            if back != byte or used_default:
+                wrong.append(line)
+        elif kind == "utf8":
+            expected = list("café € 🏰\0".encode("utf-16-le"))
+            expected = [expected[i] | expected[i + 1] << 8 for i in range(0, len(expected), 2)]
+            if numbers != expected:
+                wrong.append(f"{line} != {expected}")
+        else:
+            a, b, c, result = numbers
+            if result != windows_muldiv(a, b, c):
+                wrong.append(f"{line} != {windows_muldiv(a, b, c)}")
+    print(f"text: {counts['byte']} bytes decoded, {counts['back']} encoded back, {counts['utf8']} UTF-8 sample, "
+          f"{counts['muldiv']} MulDiv cases; {len(wrong)} wrong")
+    for line in wrong[:5]:
+        print(f"  {line}")
+    return not wrong and counts == {"byte": 255, "back": 255, "muldiv": 16, "utf8": 1}
+
+
+def check_linkage(layer):
+    """The layer defines every Windows function with C linkage. A definition whose parameter types differ from the
+    Windows header's declaration is a C++ overload instead, and the game's calls to the Windows name stay undefined."""
+    overloads = []
+    for obj in layer:
+        symbols = subprocess.run(["nm", "-C", "--defined-only", obj], capture_output=True, text=True).stdout
+        for line in symbols.splitlines():
+            parts = line.split(" ", 2)
+            kind, name = (parts[1], parts[2]) if len(parts) == 3 else ("", "")
+            if kind == "T" and "(" in name and not name.startswith(("eeport::", "ee_port_", "(anonymous")):
+                overloads.append(f"{pathlib.Path(obj).name}: {name}")
+    print(f"linkage: {len(layer)} objects, {len(overloads)} functions with C++ linkage outside eeport")
+    for name in overloads[:10]:
+        print(f"  {name}")
+    return not overloads
+
+
 MOVIES = bp.ROOT / "media" / "Movies"
 
 
@@ -178,9 +249,12 @@ def main():
                 print(run.stderr.rstrip())
             passed += run.returncode == 0
         strings_ok = check_strings(scratch, layer)
+        text_ok = check_text(scratch, layer)
         movies_ok = check_movies(scratch, layer)
-    print(f"tests: {len(tests) + 2} in, {passed + strings_ok + movies_ok} passed")
-    return 0 if passed == len(tests) and strings_ok and movies_ok else 1
+    linkage_ok = check_linkage(layer)
+    checks = [strings_ok, text_ok, movies_ok, linkage_ok]
+    print(f"tests: {len(tests) + len(checks)} in, {passed + sum(checks)} passed")
+    return 0 if passed == len(tests) and all(checks) else 1
 
 
 if __name__ == "__main__":
