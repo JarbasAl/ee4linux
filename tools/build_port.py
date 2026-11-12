@@ -109,7 +109,7 @@ TARGETS = {
     "linux64": {
         "cc": pathlib.Path("/usr/bin/clang"),
         "cxx": pathlib.Path("/usr/bin/clang++"),
-        "flags": ["-m64", "-fPIC", "-O1", "-march=x86-64", "-msse2", "-mfpmath=sse", "-fdeclspec",
+        "flags": ["-m64", "-fPIC", "-O1", "-march=x86-64", "-msse2", "-mfpmath=sse", "-fasm-blocks", "-fdeclspec",
                   "-fdelayed-template-parsing", "-fno-strict-aliasing", "-w", "-ferror-limit=0",
                   "-Wno-address-of-temporary", "-DEE_PORT_LINUX", "-DEE_PORT_LINUX64",
                   "-DDIRECTINPUT_VERSION=0x0700",
