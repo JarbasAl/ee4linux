@@ -8,12 +8,14 @@ images that run under Wine. The unit lists, module flags and per-unit flags are 
 tools/verify.py); only the -D options of those flags are used. Every unit gets EE_PORT defined and include/port/compat.h
 included first.
 
-A unit compiles again when its object is older than the unit or than any header its dependency file names. The report
+A unit compiles again when its object is older than the unit or than any header its dependency file names, or when
+its compile command differs from the one stored beside the object. The report
 gives, per module, the units in, the objects out and the units that failed with their first error; the full compiler
 output is in build/port-<target>/logs/<module>.log.
 
 --link links the seven images (the exe, the engine DLL and the five plug-ins) into build/port-<target>/bin, the engine
-DLL first: the others link against its import library. An image's other imports come from the original's import list
+DLL first: the others link against its import library. For the linux target it links ELF files with the same names
+(LINUX_IMAGES), and the native executable is ee-aoc. An image's other imports come from the original's import list
 (link/<module>/imports.txt): a Windows DLL links against the toolchain's import library, and a retail third-party DLL
 (Miles, Bink) against one made from that list with the original's decorated import names. A DLL's C entry points are
 exported through a .def made from link/<module>/exports.txt; its C++ classes are exported by their declarations.
@@ -38,7 +40,7 @@ from ee import (EEX_INCLUDE_DIRS, LIB_UNITS, LINK_DIR, MODULE_FILES, MODULE_FLAG
 PORT_LIB_UNITS = {"lle": ["implode", "explode"], "mixer": ["mssauto"]}
 # Units of the port build alone: the names that the VC6 link takes from the original image
 # (src/Port/EEPortLinks.cpp and EEPortWonLinks.cpp)
-PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp"]}
+PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp", "Port/EEPortLinux.cpp"]}
 # Modules of the port build alone, each a folder of src: the native build's Win32 layer
 PORT_MODULES = {"win32": "Port/Linux"}
 # C libraries the Win32 layer carries as source, with their own flags in place of the game's: GothicKit/dmusic
@@ -85,7 +87,10 @@ TARGETS = {
                   # Wine's headers define _WIN32, and SDL would then rename main() to SDL_main
                   "-DSDL_MAIN_HANDLED",
                   # VC6 narrows in braced initializers ({ ..., gTexturePixelDepth, ... })
-                  "-Wno-c++11-narrowing"],
+                  "-Wno-c++11-narrowing",
+                  # Wine's headers declare the Win32 functions hidden outside a PE build; the Win32 layer is a shared
+                  # object, so its definitions must be visible to the engine, the plug-ins and the executable
+                  "-DDECLSPEC_IMPORT="],
         "cxxflags": ["-std=gnu++14"],
         "includes": [ROOT / "include" / "port" / "linux"],
         "system_includes": [pathlib.Path("/usr/include/wine/windows"), TOOLCHAIN / "sdl2-i686" / "include" / "SDL2",
@@ -135,9 +140,12 @@ def object_path(out, mod, src):
     return out / "obj" / mod / src.resolve().relative_to(ROOT / "src").with_suffix(".o")
 
 
-def up_to_date(obj, src):
-    dep = obj.with_suffix(".d")
-    if not obj.exists() or not dep.exists():
+def up_to_date(obj, src, cmd):
+    """True when the object was made by this command and is newer than the unit and every header it read."""
+    dep, stamp_file = obj.with_suffix(".d"), obj.with_suffix(".cmd")
+    if not obj.exists() or not dep.exists() or not stamp_file.exists():
+        return False
+    if stamp_file.read_text(errors="replace") != shlex.join(cmd):
         return False
     stamp = obj.stat().st_mtime
     text = dep.read_text(errors="replace").replace("\\\n", " ")
@@ -153,9 +161,6 @@ def up_to_date(obj, src):
 
 def compile_unit(target, out, mod, src):
     obj = object_path(out, mod, src)
-    if up_to_date(obj, src):
-        return mod, src, True, ""
-    obj.parent.mkdir(parents=True, exist_ok=True)
     cfg = TARGETS[target]
     is_c = src.suffix == ".c"
     if mod in LIBRARY_MODULES:
@@ -166,9 +171,14 @@ def compile_unit(target, out, mod, src):
                *unit_defines(src, mod), "-include", str(COMPAT), *(f"-I{d}" for d in cfg.get("includes", [])),
                *(f"-I{d}" for d in INCLUDES), *(f"-isystem{d}" for d in cfg.get("system_includes", [])),
                "-MMD", "-MF", str(obj.with_suffix(".d")), "-c", str(src), "-o", str(obj)]
+    if up_to_date(obj, src, cmd):
+        return mod, src, True, ""
+    obj.parent.mkdir(parents=True, exist_ok=True)
     run = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
     if run.returncode:
         obj.unlink(missing_ok=True)
+    else:
+        obj.with_suffix(".cmd").write_text(shlex.join(cmd))
     return mod, src, run.returncode == 0, run.stderr
 
 
@@ -275,6 +285,87 @@ def link_all(target, out):
     return len(IMAGES) - linked
 
 
+# The native images, in link order, each with its file name and modules. The Win32 layer is one shared object that every
+# other image uses, so all of them share its windows, GDI objects and locks. The engine and the plug-ins keep their
+# Windows names: the engine's plug-in scan loads *.dll from the game folder. The executable is not named EE-AOC.exe,
+# because the layer reads the main module's resources from the retail EE-AOC.exe beside it.
+LINUX_IMAGES = {
+    "eeport": ("libeeport.so", ["win32", "dmusic"]),
+    "lle": (MODULE_FILES["lle"], TARGET_MODULES["lle"]),
+    "tcp": (MODULE_FILES["tcp"], ["tcp"]),
+    "default": (MODULE_FILES["default"], ["default"]),
+    "mixer": (MODULE_FILES["mixer"], ["mixer"]),
+    "dx7hrtnl": (MODULE_FILES["dx7hrtnl"], ["dx7hrtnl"]),
+    "exe": ("ee-aoc", TARGET_MODULES["exe"]),
+}
+# The layer's libraries, copied beside the images under the names the images ask for
+LINUX_RUNTIME = {"sdl2-i686": ["libSDL2-2.0.so.0"],
+                 "ffmpeg-i686": ["libavformat.so.61", "libavcodec.so.61", "libswscale.so.8", "libswresample.so.5",
+                                 "libavutil.so.59"]}
+
+
+def link_linux_image(out, image):
+    cfg = TARGETS["linux"]
+    name, modules = LINUX_IMAGES[image]
+    bin_dir = out / "bin"
+    for folder in (bin_dir, out / "lib", out / "link"):
+        folder.mkdir(parents=True, exist_ok=True)
+    objects, archives = [], []
+    for mod in modules:
+        found = sorted(str(o) for o in (out / "obj" / mod).rglob("*.o"))
+        objects += found
+        if mod in ARCHIVED:
+            archive = out / "lib" / f"lib{mod}.a"
+            archive.unlink(missing_ok=True)
+            mod_rsp = out / "link" / f"{mod}.rsp"
+            mod_rsp.write_text("\n".join(f'"{o}"' for o in found) + "\n")
+            subprocess.run(["llvm-ar", "rcs", str(archive), f"@{mod_rsp}"], check=True)
+            archives.append(str(archive))
+    rsp = out / "link" / f"linux-{image}.rsp"
+    rsp.write_text("\n".join(f'"{o}"' for o in objects if not any(f"/obj/{m}/" in o for m in ARCHIVED)) + "\n")
+    # each image binds its own names to its own definitions, as a Windows DLL does; the executable is
+    # position-independent, so the engine's data stays in the engine
+    # the archives need each other (WON's PNG decoder takes libpng from exeimg), and GNU ld reads an archive once
+    grouped = ["-Wl,--start-group", *archives, "-Wl,--end-group"] if archives else []
+    cmd = [str(cfg["cxx"]), "-m32", f"@{rsp}", *grouped, "-o", str(bin_dir / name), "-Wl,-rpath,$ORIGIN",
+           "-Wl,--wrap=fopen"]
+    if image == "exe":
+        cmd += ["-pie"]
+    else:
+        cmd += ["-shared", f"-Wl,-soname,{name}", "-Wl,-Bsymbolic", "-Wl,-z,defs"]
+    if image == "eeport":
+        cmd += [*(f"-L{TOOLCHAIN / lib / 'lib'}" for lib in LINUX_RUNTIME), "-lSDL2", "-lavformat", "-lavcodec",
+                "-lswscale", "-lswresample", "-lavutil", "-lpthread", "-ldl", "-lm"]
+    else:
+        if image != "lle":
+            cmd.append(str(bin_dir / LINUX_IMAGES["lle"][0]))
+        cmd += [str(bin_dir / LINUX_IMAGES["eeport"][0]), "-lpthread"]
+    run = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
+    (out / "logs" / f"link-{image}.log").write_text(" ".join(cmd) + "\n" + run.stderr)
+    return len(objects), run.returncode == 0, run.stderr
+
+
+def link_linux(out):
+    linked = 0
+    for image in LINUX_IMAGES:
+        count, ok, log = link_linux_image(out, image)
+        print(f"link {LINUX_IMAGES[image][0]}: {count} objects in, {'image out' if ok else 'FAILED'}")
+        linked += ok
+        if not ok:
+            errors = [line for line in log.splitlines() if "error" in line or "undefined" in line]
+            for line in errors[:8]:
+                print(f"  {line}")
+            if len(errors) > 8:
+                print(f"  ... {len(errors) - 8} more in {out / 'logs' / ('link-' + image + '.log')}")
+            if image in ("eeport", "lle"):
+                break
+    for lib, names in LINUX_RUNTIME.items():
+        for library in names:
+            (out / "bin" / library).write_bytes((TOOLCHAIN / lib / "lib" / library).read_bytes())
+    print(f"images: {len(LINUX_IMAGES)} in, {linked} linked")
+    return len(LINUX_IMAGES) - linked
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("modules", nargs="*", help=f"modules to compile (default: all of the target's, from {MODULES})")
@@ -320,8 +411,10 @@ def main():
     if total_in != total_out:
         return 1
     if args.link:
-        if args.target != "mingw":
-            sys.exit("--link supports only the mingw target")
+        if args.target == "linux":
+            if set(args.modules) != set(TARGETS["linux"]["modules"]):
+                sys.exit("--link needs every module compiled: give no module names")
+            return 1 if link_linux(out) else 0
         if set(args.modules) != set(MODULE_SRC):
             sys.exit("--link needs every module compiled: give no module names")
         return 1 if link_all(args.target, out) else 0

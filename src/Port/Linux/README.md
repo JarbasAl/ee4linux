@@ -13,6 +13,26 @@ python3 -I tools/build_port.py --target linux win32
 python3 -I tools/test_port_linux.py
 ```
 
+## Running the game
+
+The native game needs an installed Empire Earth and The Art of Conquest, in the default Wine prefix. Build and link
+the game, then make a run folder from a copy of the installed Art of Conquest:
+
+```
+python3 -I tools/build_port.py --target linux --link
+python3 -I tools/port_linux_folder.py
+cd build/port-linux/run && ./ee-aoc
+```
+
+The layer is `libeeport.so`. The engine and the plug-ins are ELF shared objects that keep their Windows file names,
+because the engine loads its plug-ins from the `*.dll` files in its folder and skips the retail ones. The executable
+is `ee-aoc`, and the retail `EE-AOC.exe` stays beside it, because the layer reads the game's icons, cursors and
+start screen from it. SDL2 and FFmpeg are copied beside the images.
+
+The run folder keeps its settings in `ee-port-registry.reg`. The first start imports them from the Wine prefix,
+with the folder of the base game. The tool puts back the retail files that an ee-toolkit mod replaced;
+`--keep-mod` keeps the mod.
+
 ## Fonts
 
 GDI text uses TrueType faces that are installed on the computer. The layer looks for them in these folders, in this
