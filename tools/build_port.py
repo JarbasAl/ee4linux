@@ -109,7 +109,10 @@ TARGETS = {
     "linux64": {
         "cc": pathlib.Path("/usr/bin/clang"),
         "cxx": pathlib.Path("/usr/bin/clang++"),
+        # WINE_UNIX_LIB: Wine's headers make __stdcall the Windows x64 convention (ms_abi) otherwise, and a Linux
+        # program has one convention of its own; with it the whole port, game and layer, uses the System V one
         "flags": ["-m64", "-fPIC", "-O1", "-march=x86-64", "-msse2", "-mfpmath=sse", "-fasm-blocks", "-fdeclspec",
+                  "-DWINE_UNIX_LIB",
                   "-fdelayed-template-parsing", "-fno-strict-aliasing", "-w", "-ferror-limit=0",
                   "-Wno-address-of-temporary", "-DEE_PORT_LINUX", "-DEE_PORT_LINUX64",
                   "-DDIRECTINPUT_VERSION=0x0700",
@@ -323,8 +326,16 @@ LINUX_IMAGES = {
     "dx7hrtnl": (MODULE_FILES["dx7hrtnl"], ["dx7hrtnl"]),
     "exe": ("ee-aoc", TARGET_MODULES["exe"]),
 }
-# The 64-bit target builds the layer only: the game's own units are not ported yet
-LINUX_IMAGES_64 = {"eeport": ("libeeport.so", ["win32", "dmusic"])}
+# The 64-bit images: the same names and modules as the 32-bit ones, so the engine's plug-in scan finds them
+LINUX_IMAGES_64 = {
+    "eeport": ("libeeport.so", ["win32", "dmusic"]),
+    "lle": (MODULE_FILES["lle"], TARGET_MODULES["lle"]),
+    "tcp": (MODULE_FILES["tcp"], ["tcp"]),
+    "default": (MODULE_FILES["default"], ["default"]),
+    "mixer": (MODULE_FILES["mixer"], ["mixer"]),
+    "dx7hrtnl": (MODULE_FILES["dx7hrtnl"], ["dx7hrtnl"]),
+    "exe": ("ee-aoc", TARGET_MODULES["exe"]),
+}
 # The layer's libraries, copied beside the images under the names the images ask for
 LINUX_RUNTIME = {"sdl2-i686": ["libSDL2-2.0.so.0"],
                  "ffmpeg-i686": ["libavformat.so.61", "libavcodec.so.61", "libswscale.so.8", "libswresample.so.5",
@@ -371,8 +382,8 @@ def link_linux_image(out, image, target="linux"):
         cmd += [*cfg["libs"], "-lm"]
     else:
         if image != "lle":
-            cmd.append(str(bin_dir / LINUX_IMAGES["lle"][0]))
-        cmd += [str(bin_dir / LINUX_IMAGES["eeport"][0]), "-lpthread"]
+            cmd.append(str(bin_dir / images["lle"][0]))
+        cmd += [str(bin_dir / images["eeport"][0]), "-lpthread"]
     run = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
     (out / "logs" / f"link-{image}.log").write_text(" ".join(cmd) + "\n" + run.stderr)
     return len(objects), run.returncode == 0, run.stderr

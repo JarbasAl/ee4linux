@@ -611,7 +611,7 @@ static unsigned long FindAdapterAddressIndex(unsigned long inAdapter)
     // Fix: keep the buffer start for the delete (the walked pointer used to be freed: an interior pointer for a
     // later adapter, a leak when the walk ran off the list).
     IP_ADAPTER_INFO* theBuffer = theAdapter;
-    unsigned long theSize = 0x1900;
+    ULONG theSize = 0x1900;
     if (GetAdaptersInfo(theAdapter, &theSize) == ERROR_SUCCESS) {
         for (unsigned long i = 1; theAdapter != NULL && i < inAdapter; i++)
             theAdapter = theAdapter->Next;
@@ -649,7 +649,7 @@ extern "C" long NPIMEnumerateNetworkAdapters(std::vector<UWideString>& outAdapte
     // Fix: keep the buffer start for the delete (the walked pointer used to be freed: NULL, so the buffer leaked
     // on every call, or an interior pointer with more than 10 adapters).
     IP_ADAPTER_INFO* theBuffer = theAdapter;
-    unsigned long theSize = 0x1900;
+    ULONG theSize = 0x1900;
     DWORD theError = GetAdaptersInfo(theAdapter, &theSize);
     outAdapters.clear();
     while (theError == ERROR_SUCCESS && theAdapter != NULL && theCount < 10) {

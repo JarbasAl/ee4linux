@@ -25,12 +25,12 @@ public:
 protected:
     virtual void CheckForDoublePress() {}
 private:
-    ISMouseAxis(const UWideString& inName, long* inValue, long& inGranularity);
+    ISMouseAxis(const UWideString& inName, LONG* inValue, LONG& inGranularity);
     virtual ~ISMouseAxis();
 
     UWideString mName;                      // +0x04
-    long* mValue;                           // +0x18
-    long mGranularity;                      // +0x1c DIPROP_GRANULARITY
+    LONG* mValue;                           // +0x18
+    LONG mGranularity;                      // +0x1c DIPROP_GRANULARITY
 };
 
 #endif

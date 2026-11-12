@@ -1,10 +1,10 @@
 """Native run folder: make a copy of the installed game that runs the native Linux build (python3 -I tools/port_linux_folder.py --help).
 
-  python3 -I tools/port_linux_folder.py [--keep-mod] [--out DIR]
+  python3 -I tools/port_linux_folder.py [--keep-mod] [--out DIR] [--target linux|linux64]
 
-The folder never touches the installed game. The tool copies the Art of Conquest folder to build/port-linux/run (a
+The folder never touches the installed game. The tool copies the Art of Conquest folder to build/port-<target>/run (a
 reflink copy where the file system allows it), puts back the retail files that an ee-toolkit mod replaced unless
---keep-mod is given, copies the native images and their libraries from build/port-linux/bin over the retail DLLs of
+--keep-mod is given, copies the native images and their libraries from build/port-<target>/bin over the retail DLLs of
 the same names, and adds the General MIDI SoundFont as general-midi.sf2. The retail EE-AOC.exe stays: the native
 build reads its resources. The tool prints the command that starts the game; it does not start it.
 
@@ -29,10 +29,13 @@ SOUNDFONT = ROOT / "toolchain" / "soundfonts" / "GeneralUser-GS.sf2"
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--keep-mod", action="store_true", help="keep the installed ee-toolkit mod's files")
-    ap.add_argument("--out", type=pathlib.Path, default=ROOT / "build" / "port-linux" / "run",
-                    help="the run folder (default build/port-linux/run)")
+    ap.add_argument("--target", default="linux", choices=["linux", "linux64"], help="which build's images to use")
+    ap.add_argument("--out", type=pathlib.Path, help="the run folder (default build/port-<target>/run)")
     args = ap.parse_args()
 
+    global IMAGES
+    IMAGES = ROOT / "build" / f"port-{args.target}" / "bin" if args.target != "linux" else IMAGES
+    args.out = args.out or ROOT / "build" / f"port-{args.target}" / "run"
     if not (IMAGES / "ee-aoc").exists():
         sys.exit(f"port_linux_folder: no {IMAGES / 'ee-aoc'}; run tools/build_port.py --target linux --link first")
     if not SOUNDFONT.exists():

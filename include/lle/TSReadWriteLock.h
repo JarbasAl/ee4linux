@@ -21,7 +21,7 @@ private:
     TSCriticalSection* mWriteLock;          // +0x00
     TSEvent* mNoReaders;                    // +0x04 auto-reset; set when the last reader leaves
     TSEvent* mReading;                      // +0x08 manual-reset; set while readers hold the lock
-    long mReaderCount;                      // +0x0c (Interlocked)
+    LONG mReaderCount;                      // +0x0c (Interlocked): Windows' 32-bit long
 };
 
 #endif

@@ -513,7 +513,14 @@ long FSFileSpec::Read(unsigned char* outData, unsigned long inLength, unsigned l
     if (this->mIsOpen == true) {
         if (this->mHandle) {
             if (this->mFileAccess & kFileAccessRead) {
+#if defined(EE_PORT_LONG64)
+                // the Win32 call counts bytes in a DWORD, which is 32 bits on every target
+                DWORD theReadCount = 0;
+                BOOL theSucceeded = ReadFile(this->mHandle, outData, (DWORD)inLength, &theReadCount, NULL);
+                outRead = theReadCount;
+#else
                 BOOL theSucceeded = ReadFile(this->mHandle, outData, inLength, &outRead, NULL);
+#endif
                 if (outRead == 0) {
                     if (theSucceeded == TRUE)
                         theResult = kErrorEndOfFile;
@@ -736,10 +743,22 @@ long FSFileSpec::Write(const unsigned char* inData, unsigned long inLength, unsi
         if (this->mHandle) {
             if ((this->mFileAccess & 6) == 0)
                 theResult = kErrorNotWritable;
+#if defined(EE_PORT_LONG64)
+            else {
+                DWORD theWritten = 0;
+                BOOL theWrote = WriteFile(this->mHandle, inData, (DWORD)inLength, &theWritten, NULL);
+                outWritten = theWritten;
+                if (!theWrote || outWritten != inLength) {
+                    theResult = kErrorNativeError;
+                    ESRecordNativeError(GetLastError());
+                }
+            }
+#else
             else if (!WriteFile(this->mHandle, inData, inLength, &outWritten, NULL) || outWritten != inLength) {
                 theResult = kErrorNativeError;
                 ESRecordNativeError(GetLastError());
             }
+#endif
         } else
             theResult = kErrorFailed;
     } else

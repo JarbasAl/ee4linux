@@ -34,7 +34,7 @@ TSThread::~TSThread()
 // Returns the thread's exit code (STILL_ACTIVE while running); 0 and a recorded native error on failure
 unsigned long TSThread::GetExitCode()
 {
-    unsigned long theExitCode;
+    DWORD theExitCode;
     if (!GetExitCodeThread(this->mHandle, &theExitCode)) {
         ESRecordNativeError(GetLastError());
         ESGetNativeError();
@@ -147,7 +147,7 @@ void TSThread::SetName(UString& inName)
 long TSThread::StartThread(unsigned long inStackSize)
 {
     HANDLE theHandle = NULL;
-    unsigned long theThreadID;
+    DWORD theThreadID;
     unsigned long i;
     for (i = theThreadID = 0; i < 100; i++) {
         if (theHandle != NULL)
@@ -203,7 +203,7 @@ long TSThread::Terminate()
 
 // FUNCTION: LLE 0x100545c8
 // Thread entry for CreateThread: initialises COM, runs the thread function, then exits the thread with its result
-unsigned long __stdcall TSThread::WIN32ThreadMain(void* inThread)
+DWORD __stdcall TSThread::WIN32ThreadMain(void* inThread)
 {
     unsigned long theResult;
     HRESULT theInitialize = CoInitialize(NULL);

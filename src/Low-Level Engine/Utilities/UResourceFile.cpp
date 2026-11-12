@@ -15,7 +15,7 @@ inline void URFTrace(unsigned long inError, const UString& inPath) {}
 
 // FUNCTION: LLE 0x1008268d
 // Resource language callback: stores the first language found and stops the enumeration
-static bool URFEnumLanguages(HMODULE inModule, LPCSTR inType, LPCSTR inName, WORD inLanguage, LONG inParam)
+static bool URFEnumLanguages(HMODULE inModule, LPCSTR inType, LPCSTR inName, WORD inLanguage, LONG_PTR inParam)
 {
     *reinterpret_cast<unsigned short*>(inParam) = inLanguage;
     return false;
@@ -23,7 +23,7 @@ static bool URFEnumLanguages(HMODULE inModule, LPCSTR inType, LPCSTR inName, WOR
 
 // FUNCTION: LLE 0x1008269c
 // Resource name callback: stores a string table's language, falling back to the OS language
-static bool URFEnumNames(HMODULE inModule, LPCSTR inType, LPSTR inName, LONG inParam)
+static bool URFEnumNames(HMODULE inModule, LPCSTR inType, LPSTR inName, LONG_PTR inParam)
 {
     if (!EnumResourceLanguages(inModule, RT_STRING, inName, (ENUMRESLANGPROC)URFEnumLanguages, inParam)) {
         *reinterpret_cast<unsigned short*>(inParam) = UGetOSLanguage();
@@ -43,7 +43,7 @@ UResourceFile::UResourceFile(const FSFileSpec& inFile)
     this->mModule = LoadLibrary(thePath);
     if (this->mModule == NULL)
         URFTrace(GetLastError(), inFile.GetVolume() + inFile.GetDirectory() + inFile.GetFile());
-    if (!EnumResourceNames(this->mModule, RT_STRING, (ENUMRESNAMEPROC)URFEnumNames, reinterpret_cast<LONG>(&this->mLanguage))) {
+    if (!EnumResourceNames(this->mModule, RT_STRING, (ENUMRESNAMEPROC)URFEnumNames, (LPARAM)&this->mLanguage)) {
         this->mLanguage = UGetOSLanguage();
         ESRecordNativeError(GetLastError());
     }

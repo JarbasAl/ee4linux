@@ -10,7 +10,7 @@
 
 // FUNCTION: LLE 0x1003bab2
 // Creates a mouse axis with a name, the device value it reads and the axis granularity
-ISMouseAxis::ISMouseAxis(const UWideString& inName, long* inValue, long& inGranularity)
+ISMouseAxis::ISMouseAxis(const UWideString& inName, LONG* inValue, LONG& inGranularity)
     : mName(inName), mValue(inValue)
 {
     this->mGranularity = inGranularity;

@@ -197,112 +197,6 @@ LPSTR WINAPI lstrcatA(LPSTR ioText, LPCSTR inText)
 }
 
 // wsprintf writes at most 1024 bytes, its terminator included
-#ifdef __x86_64__
-// A WINAPIV function is a Windows-ABI function here, and its argument list cannot be handed to the C library's
-// vsnprintf, which takes a System V one. The game's formats are integers, characters, strings and one wide integer, so
-// wsprintf formats them itself, reading the Windows argument list.
-static int AppendText(char* outText, int inTail, int inLimit, const char* inText, int inCount)
-{
-    for (int i = 0; i < inCount; ++i)
-        if (inTail + i < inLimit)
-            outText[inTail + i] = inText[i];
-    return inTail + inCount;
-}
-
-static int FormatMs(const char* inFormat, __ms_va_list& ioArguments, char* outText, int inLimit)
-{
-    int theTail = 0;
-    for (const char* theFormat = inFormat; *theFormat; ++theFormat) {
-        if (*theFormat != '%') {
-            theTail = AppendText(outText, theTail, inLimit, theFormat, 1);
-            continue;
-        }
-        const char* theStart = theFormat;
-        ++theFormat;
-        if (*theFormat == '%') {
-            theTail = AppendText(outText, theTail, inLimit, "%", 1);
-            continue;
-        }
-        char theSpec[32];
-        char theText[2048];      // one conversion, before it is cut to wsprintf's 1024
-        int theLength = 1;
-        theSpec[0] = '%';
-        while (*theFormat && strchr("-+ #0", *theFormat) && theLength < 28)
-            theSpec[theLength++] = *theFormat++;
-        while (*theFormat >= '0' && *theFormat <= '9' && theLength < 28)
-            theSpec[theLength++] = *theFormat++;
-        if (*theFormat == '.' && theLength < 28) {
-            theSpec[theLength++] = *theFormat++;
-            while (*theFormat >= '0' && *theFormat <= '9' && theLength < 28)
-                theSpec[theLength++] = *theFormat++;
-        }
-        bool theWide = false;
-        if ((*theFormat == 'l' || *theFormat == 'L' || *theFormat == 'h') && theLength < 28) {
-            theWide = *theFormat == 'l' || *theFormat == 'L';
-            theSpec[theLength++] = *theFormat++;
-            if ((*theFormat == 'l' || *theFormat == 'h') && theLength < 28)
-                theSpec[theLength++] = *theFormat++;
-        }
-        char theConversion = *theFormat;
-        theSpec[theLength++] = theConversion;
-        theSpec[theLength] = '\0';
-        int theCount = 0;
-        switch (theConversion) {
-        case 'd':
-        case 'i':
-            theCount = theWide ? snprintf(theText, sizeof theText, theSpec, __builtin_va_arg(ioArguments, long))
-                               : snprintf(theText, sizeof theText, theSpec, __builtin_va_arg(ioArguments, int));
-            break;
-        case 'u':
-        case 'o':
-        case 'x':
-        case 'X':
-            theCount = theWide
-                           ? snprintf(theText, sizeof theText, theSpec, __builtin_va_arg(ioArguments, unsigned long))
-                           : snprintf(theText, sizeof theText, theSpec, __builtin_va_arg(ioArguments, unsigned));
-            break;
-        case 'c':
-            theCount = snprintf(theText, sizeof theText, theSpec, __builtin_va_arg(ioArguments, int));
-            break;
-        case 's':
-            theCount = snprintf(theText, sizeof theText, theSpec, __builtin_va_arg(ioArguments, const char*));
-            break;
-        case 'p':
-            theCount = snprintf(theText, sizeof theText, theSpec, __builtin_va_arg(ioArguments, void*));
-            break;
-        case 'f':
-        case 'F':
-        case 'e':
-        case 'E':
-        case 'g':
-        case 'G':
-            theCount = snprintf(theText, sizeof theText, theSpec, __builtin_va_arg(ioArguments, double));
-            break;
-        default:
-            // an unknown conversion stays as written
-            theTail = AppendText(outText, theTail, inLimit, theStart, (int)(theFormat - theStart + 1));
-            continue;
-        }
-        if (theCount > 0)
-            theTail = AppendText(outText, theTail, inLimit, theText, theCount);
-    }
-    return theTail;
-}
-
-INT WINAPIV wsprintfA(LPSTR outText, LPCSTR inFormat, ...)
-{
-    if (!outText || !inFormat)
-        return 0;
-    __ms_va_list theArguments;
-    __builtin_ms_va_start(theArguments, inFormat);
-    int theLength = FormatMs(inFormat, theArguments, outText, 1023);
-    __builtin_ms_va_end(theArguments);
-    if (theLength > 1023)
-        theLength = 1023;
-    outText[theLength] = '\0';
-    return theLength;
-}
-#else
 INT WINAPIV wsprintfA(LPSTR outText, LPCSTR inFormat, ...)
 {
     va_list theArguments;
@@ -311,7 +205,6 @@ INT WINAPIV wsprintfA(LPSTR outText, LPCSTR inFormat, ...)
     va_end(theArguments);
     return theLength < 0 ? -1 : theLength > 1023 ? 1023 : theLength;
 }
-#endif
 
 // inNumber * inNumerator / inDenominator, rounded half away from zero; -1 for a zero divisor or an overflow
 INT WINAPI MulDiv(INT inNumber, INT inNumerator, INT inDenominator)

@@ -3,6 +3,12 @@
 
 #include <process.h>
 
+// Wine's headers turn GetCurrentThread into its own internal under WINE_UNIX_LIB; this layer defines the Windows call
+#ifdef GetCurrentThread
+#undef GetCurrentThread
+#endif
+extern "C" HANDLE WINAPI GetCurrentThread(void);
+
 #include <cerrno>
 #include <chrono>
 #include <cstdarg>
@@ -398,7 +404,7 @@ HANDLE WINAPI CreateThread(LPSECURITY_ATTRIBUTES inAttributes, SIZE_T inStackSiz
 }
 
 uintptr_t _beginthreadex(void* inSecurity, unsigned int inStackSize,
-                         unsigned int(__attribute__((stdcall)) * inStart)(void*), void* inArgument,
+                         unsigned int(EE_THREAD_START * inStart)(void*), void* inArgument,
                          unsigned int inFlags, unsigned int* outThreadID)
 {
     (void)inSecurity;
@@ -479,9 +485,16 @@ int WINAPI GetThreadPriority(HANDLE inThread)
     return THREAD_PRIORITY_NORMAL;
 }
 
+#ifdef GetCurrentThreadId
+#undef GetCurrentThreadId
+#endif
 DWORD WINAPI GetCurrentThreadId(void) { return CurrentThreadID(); }
 
-// The pseudo handles of Windows: -1 is the process, -2 the calling thread
+// The pseudo handles of Windows: -1 is the process, -2 the calling thread. Wine's headers name these as macros
+// under WINE_UNIX_LIB, so the layer defines them here with the names spelled out.
+#ifdef GetCurrentProcess
+#undef GetCurrentProcess
+#endif
 HANDLE WINAPI GetCurrentProcess(void) { return reinterpret_cast<HANDLE>(~static_cast<ULONG_PTR>(0)); }
 HANDLE WINAPI GetCurrentThread(void) { return reinterpret_cast<HANDLE>(~static_cast<ULONG_PTR>(1)); }
 

@@ -11,6 +11,23 @@
 #define MAKEINTRESOURCEA(i) ((LPSTR)(ULONG_PTR)(WORD)(ULONG_PTR)(i))
 #define MAKEINTRESOURCEW(i) ((LPWSTR)(ULONG_PTR)(WORD)(ULONG_PTR)(i))
 
+/* Without the Windows ABI the headers leave GetCurrentThreadId as Wine's own internal: the layer defines the Windows
+   call, so the name the headers reach for is answered here */
+#ifdef WINE_UNIX_LIB
+#undef GetCurrentThreadId
+extern "C" DWORD WINAPI GetCurrentThreadId(void);
+static inline DWORD PsGetCurrentThreadId(void) { return GetCurrentThreadId(); }
+#define GetCurrentThreadId() PsGetCurrentThreadId()
+#undef GetCurrentProcess
+extern "C" HANDLE WINAPI GetCurrentProcess(void);
+static inline HANDLE PsGetCurrentProcess(void) { return GetCurrentProcess(); }
+#define GetCurrentProcess() PsGetCurrentProcess()
+#undef GetCurrentThread
+extern "C" HANDLE WINAPI GetCurrentThread(void);
+static inline HANDLE PsGetCurrentThread(void) { return GetCurrentThread(); }
+#define GetCurrentThread() PsGetCurrentThread()
+#endif
+
 #ifdef __cplusplus
 #include <type_traits>
 

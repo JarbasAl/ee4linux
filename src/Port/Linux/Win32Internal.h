@@ -35,31 +35,30 @@ void Log(const char* inFormat, ...) __attribute__((format(printf, 1, 2)));
 // This call saves esp, aligns the stack to 16 bytes as the Linux i386 ABI requires, pushes the arguments, calls, and
 // restores esp.
 //
-// On x86-64 both conventions are the same one, Wine's ms_abi, and no callee pops anything, so the arguments go in the
-// Windows registers: rcx, rdx, r8, r9, then the stack. A typed call does it, with the ABI the headers declare.
+// On x86-64 there is one convention (WINE_UNIX_LIB makes Wine's headers say so), so no callee pops anything and the
+// arguments go as the callback's own parameters.
 #if defined(__x86_64__)
+// With one calling convention on x86-64 (the System V one), the arguments go as the callback's own parameters.
 inline uintptr_t CallCallback(const void* inFunction, const uintptr_t* inArguments, int inCount)
 {
     switch (inCount) {
     case 0:
-        return ((uintptr_t(__attribute__((ms_abi)) *)(void))inFunction)();
+        return ((uintptr_t(*)(void))inFunction)();
     case 1:
-        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t))inFunction)(inArguments[0]);
+        return ((uintptr_t(*)(uintptr_t))inFunction)(inArguments[0]);
     case 2:
-        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t))inFunction)(inArguments[0],
-                                                                                        inArguments[1]);
+        return ((uintptr_t(*)(uintptr_t, uintptr_t))inFunction)(inArguments[0], inArguments[1]);
     case 3:
-        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t, uintptr_t))inFunction)(
-            inArguments[0], inArguments[1], inArguments[2]);
+        return ((uintptr_t(*)(uintptr_t, uintptr_t, uintptr_t))inFunction)(inArguments[0], inArguments[1],
+                                                                          inArguments[2]);
     case 4:
-        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))inFunction)(
+        return ((uintptr_t(*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))inFunction)(
             inArguments[0], inArguments[1], inArguments[2], inArguments[3]);
     case 5:
-        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t))
-                    inFunction)(inArguments[0], inArguments[1], inArguments[2], inArguments[3], inArguments[4]);
+        return ((uintptr_t(*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t))inFunction)(
+            inArguments[0], inArguments[1], inArguments[2], inArguments[3], inArguments[4]);
     default:
-        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
-                                                       uintptr_t))inFunction)(
+        return ((uintptr_t(*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t))inFunction)(
             inArguments[0], inArguments[1], inArguments[2], inArguments[3], inArguments[4], inArguments[5]);
     }
 }

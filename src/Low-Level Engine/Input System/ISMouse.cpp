@@ -38,17 +38,17 @@ ISMouse::ISMouse(IDirectInputDevice* inDevice, HWND inWindow, const UString& inN
     if (this->mDevice->GetObjectInfo(&theInstance, DIMOFS_X, DIPH_BYOFFSET) != DIERR_NOTFOUND) {
         theProperty.diph.dwObj = DIMOFS_X;
         this->mDevice->GetProperty(DIPROP_GRANULARITY, &theProperty.diph);
-        this->mEntities[kMouseXAxis] = new ISMouseAxis("X Axis", &this->mState.lX, (long&)theProperty.dwData);
+        this->mEntities[kMouseXAxis] = new ISMouseAxis("X Axis", &this->mState.lX, (LONG&)theProperty.dwData);
     }
     if (this->mDevice->GetObjectInfo(&theInstance, DIMOFS_Y, DIPH_BYOFFSET) != DIERR_NOTFOUND) {
         theProperty.diph.dwObj = DIMOFS_Y;
         this->mDevice->GetProperty(DIPROP_GRANULARITY, &theProperty.diph);
-        this->mEntities[kMouseYAxis] = new ISMouseAxis("Y Axis", &this->mState.lY, (long&)theProperty.dwData);
+        this->mEntities[kMouseYAxis] = new ISMouseAxis("Y Axis", &this->mState.lY, (LONG&)theProperty.dwData);
     }
     if (this->mDevice->GetObjectInfo(&theInstance, DIMOFS_Z, DIPH_BYOFFSET) != DIERR_NOTFOUND) {
         theProperty.diph.dwObj = DIMOFS_Z;
         this->mDevice->GetProperty(DIPROP_GRANULARITY, &theProperty.diph);
-        this->mEntities[kMouseZAxis] = new ISMouseAxis("Z Axis", &this->mState.lZ, (long&)theProperty.dwData);
+        this->mEntities[kMouseZAxis] = new ISMouseAxis("Z Axis", &this->mState.lZ, (LONG&)theProperty.dwData);
     }
     if (this->mDevice->GetObjectInfo(&theInstance, DIMOFS_BUTTON0, DIPH_BYOFFSET) != DIERR_NOTFOUND)
         this->mEntities[kMouseLeftButton] = new ISMouseButton(this, 0, "Left button");

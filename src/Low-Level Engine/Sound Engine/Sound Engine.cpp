@@ -101,7 +101,8 @@ void SEInitializeCD(GEWindow* inWindow)
     }
     for (unsigned short theIndex = 0;; theIndex++) {
         theOpen.lpstrDeviceType = (LPCSTR)MAKELONG(MCI_DEVTYPE_CD_AUDIO, theIndex);
-        if (mciSendCommand(theIndex, MCI_OPEN, MCI_OPEN_TYPE | MCI_OPEN_TYPE_ID | MCI_WAIT, (DWORD)&theOpen) != 0)
+        if (mciSendCommand(theIndex, MCI_OPEN, MCI_OPEN_TYPE | MCI_OPEN_TYPE_ID | MCI_WAIT,
+                           (DWORD)(DWORD_PTR)&theOpen) != 0)
             break;
         theCD = new SECD(theIndex, theOpen.wDeviceID, theVolume);
     }

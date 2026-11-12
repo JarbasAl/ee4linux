@@ -43,7 +43,7 @@ private:
     TSThread(HANDLE inHandle, unsigned long inThreadID, bool inSuspended);
     ~TSThread();
     long StartThread(unsigned long inStackSize);
-    static unsigned long __stdcall WIN32ThreadMain(void* inThread);
+    static DWORD __stdcall WIN32ThreadMain(void* inThread);
     static unsigned long __stdcall POSIXThreadMain(void* inThread);
 
     TSCriticalSection* mMessageLock;        // +0x00 (ESVERIFY text: this->mMessageLock)
