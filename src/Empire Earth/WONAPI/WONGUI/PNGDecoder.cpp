@@ -21,7 +21,12 @@ using namespace WONAPI;
 
 // FUNCTION: WON 0x007d2630
 // libpng read callback: reads from the decoder's file reader and raises a libpng error on a short read
+#ifdef _WIN64
+// libpng's callbacks carry PNGAPI, the Windows cdecl: a different convention from Linux's on this target
+static void PNGAPI png_filereader_read_data(png_structp png,png_bytep data,png_size_t length)
+#else
 static void png_filereader_read_data(png_structp png,png_bytep data,png_size_t length)
+#endif
 {
     int count=((FileReader*)png->io_ptr)->ReadMaxBytes(data,length);
     if(count!=length)

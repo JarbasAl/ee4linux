@@ -82,7 +82,7 @@ void MSSoundChannel::waveOutProcPrv(HWAVEOUT hwo,UINT uMsg,DWORD dwInstance,DWOR
 		return;
 	for(int i=0; i<this->NUM_BUFFERS; i++)
 	{
-		if(dwParam1==reinterpret_cast<DWORD>(&this->mWaveHeader[i]))
+		if(dwParam1==(DWORD)(DWORD_PTR)&this->mWaveHeader[i])
 		{
 			this->mBufferFree[i] = true;
 			break;
@@ -171,8 +171,8 @@ bool MSSoundChannel::OpenHook()
 	aResult = waveOutOpen(			&this->mWaveOut,
 									WAVE_MAPPER,
 									&wfx,
-									(DWORD)MSSoundChannel::waveOutProc,
-									reinterpret_cast<DWORD>(this),					// User data.
+									(DWORD_PTR)MSSoundChannel::waveOutProc,
+									reinterpret_cast<DWORD_PTR>(this),				// User data.
 									(DWORD)CALLBACK_FUNCTION);
 //									(DWORD)NULL,					// User data.
 //									(DWORD)CALLBACK_NULL);

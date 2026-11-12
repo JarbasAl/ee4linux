@@ -160,12 +160,12 @@ static DWORD __stdcall GetModuleBase(HANDLE hProcess, DWORD dwReturnAddress)
 		 // Ignore the return code since we can't do anything with it.
 		 if (!gSymLoadModuleFunc(hProcess,
 			   NULL, ((cch) ? szFile : NULL),
-			   NULL, (DWORD) memoryBasicInfo.AllocationBase, 0))
+			   NULL, (DWORD)(DWORD_PTR) memoryBasicInfo.AllocationBase, 0))
 			{
 				DWORD dwError = GetLastError();
 //				TRACE1("Error: %d\n", dwError);
 			}
-		 return (DWORD) memoryBasicInfo.AllocationBase;
+		 return (DWORD)(DWORD_PTR) memoryBasicInfo.AllocationBase;
 	  }
 		else
 		{}//TRACE1("Error is %d\n", GetLastError());
@@ -337,6 +337,15 @@ static void MyDumpStack(LPEXCEPTION_POINTERS pInfo)
 
 			DWORD dwMachType;
 
+#ifdef _WIN64
+			dwMachType                  = IMAGE_FILE_MACHINE_AMD64;
+
+			// program counter, stack pointer, and frame pointer
+			stackFrame.AddrPC.Offset    = threadContext.Rip;
+			stackFrame.AddrStack.Offset = threadContext.Rsp;
+			stackFrame.AddrStack.Mode   = AddrModeFlat;
+			stackFrame.AddrFrame.Offset = threadContext.Rbp;
+#else
 			dwMachType                  = IMAGE_FILE_MACHINE_I386;
 
 			// program counter, stack pointer, and frame pointer
@@ -344,6 +353,7 @@ static void MyDumpStack(LPEXCEPTION_POINTERS pInfo)
 			stackFrame.AddrStack.Offset = threadContext.Esp;
 			stackFrame.AddrStack.Mode   = AddrModeFlat;
 			stackFrame.AddrFrame.Offset = threadContext.Ebp;
+#endif
 			stackFrame.AddrFrame.Mode   = AddrModeFlat;
 
 

@@ -50,8 +50,10 @@ public:
     bool CheckNextChar(int inChar); //2a49b0
     bool ReadString(std::wstring& outString, bool inStopAtWhitespace); //2a4ff0
     bool ReadValue(int& outValue); //2a53d0
-    bool ReadValue(__int64 &theInt64);
-    bool ReadValue(unsigned __int64 &theInt64)  { __int64 anInt64; bool aRet = this->ReadValue(anInt64); theInt64 = anInt64; return aRet; }
+    // Windows' __int64, spelled as the type it is: a 64-bit build's long is 64 bits too, and the two overloads
+    // would be the same signature there
+    bool ReadValue(long long &theInt64);
+    bool ReadValue(unsigned long long &theInt64)  { long long anInt64; bool aRet = this->ReadValue(anInt64); theInt64 = anInt64; return aRet; }
     bool ReadValue(long &theLong) { int anInt; bool aRet = this->ReadValue(anInt); theLong = anInt; return aRet; }
     bool ReadValue(unsigned long &theLong) { int anInt; bool aRet = this->ReadValue(anInt); theLong = anInt; return aRet; }
     bool ReadValue(short &theShort) { int anInt; bool aRet = this->ReadValue(anInt); theShort = (short)anInt; return aRet; }
@@ -63,8 +65,8 @@ public:
     // Genuine nominal static formatting overloads; call-only original-owned implementations.
     static void ValueToString(const bool&,std::string&); //2a5820
     static void ValueToString(const int&,std::string&); //2a5a70 call-only scalar formatter
-    static void ValueToString(const unsigned __int64&,std::string&);
-    static void ValueToString(const __int64&,std::string&);
+    static void ValueToString(const unsigned long long&,std::string&);
+    static void ValueToString(const long long&,std::string&);
     static void ValueToString(const unsigned long&,std::string&);
     static void ValueToString(const long&,std::string&);
     static void ValueToString(const short&,std::string&);

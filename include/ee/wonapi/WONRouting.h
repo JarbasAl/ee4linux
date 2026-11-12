@@ -444,8 +444,8 @@ class BlockingSocket : public QueueSocket {
 public:
     WONStatus Connect(const IPAddr&,unsigned long); //2b1c10
     WONStatus SendBytes(const ByteBuffer*,unsigned long); //2b1d00
-    WONStatus SendBytesTo(const ByteBuffer*,const IPAddr&,unsigned long);
-    WONStatus RecvBytesFrom(ByteBufferPtr&,unsigned short,IPAddr&,unsigned long);
+    WONStatus SendBytesTo(const ByteBuffer*,const IPAddr&,DWORD);
+    WONStatus RecvBytesFrom(ByteBufferPtr&,unsigned short,IPAddr&,DWORD);
     WONStatus RecvMsg(ByteBufferPtr&,unsigned long); //2b1f10
     WONStatus RecvBytes(ByteBufferPtr&,DWORD,DWORD inTimeout=0xffffffff);
     WONStatus RecvCRMsg(ByteBufferPtr&,unsigned long); //2b2040

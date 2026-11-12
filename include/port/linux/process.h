@@ -8,8 +8,14 @@
 extern "C" {
 #endif
 
+/* The start routine's convention: the i386 form the images use, and Wine's Windows convention where the two differ */
+#ifdef __x86_64__
+#define EE_THREAD_START __stdcall
+#else
+#define EE_THREAD_START __attribute__((stdcall))
+#endif
 uintptr_t _beginthreadex(void* inSecurity, unsigned int inStackSize,
-                         unsigned int (__attribute__((stdcall)) * inStart)(void*), void* inArgument,
+                         unsigned int (EE_THREAD_START * inStart)(void*), void* inArgument,
                          unsigned int inFlags, unsigned int* outThreadID);
 void _endthreadex(unsigned int inResult);
 

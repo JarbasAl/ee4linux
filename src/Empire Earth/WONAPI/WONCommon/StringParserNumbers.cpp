@@ -13,7 +13,7 @@
 #include "ee/wonapi/WONLobbyResource.h"
 #include "ee/wonapi/WONLobbyParser.h"
 namespace WONAPI {
-// The SDK accumulates in an int even for __int64 output
+// The SDK accumulates in an int even for long long output
 template<class IntType>
 static bool StringParser_ReadInt(StringParser *theParser, IntType &theInt)
 {
@@ -67,19 +67,19 @@ static bool StringParser_ReadInt(StringParser *theParser, IntType &theInt)
 		return false;
 }
 
-bool StringParser::ReadValue(__int64 &theInt64)
+bool StringParser::ReadValue(long long &theInt64)
 {
 	return StringParser_ReadInt(this,theInt64);
 }
 
-void StringParser::ValueToString(const unsigned __int64 &theInt64, std::string &theStr)
+void StringParser::ValueToString(const unsigned long long &theInt64, std::string &theStr)
 {
 	char aBuf[50];
 	sprintf(aBuf,"%I64u",theInt64);
 	theStr += aBuf;
 }
 
-void StringParser::ValueToString(const __int64 &theInt64, std::string &theStr)
+void StringParser::ValueToString(const long long &theInt64, std::string &theStr)
 {
 	char aBuf[50];
 	sprintf(aBuf,"%I64d",theInt64);

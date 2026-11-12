@@ -21,7 +21,7 @@ bool WONAPI::ReadAuthSettings(string& theAuthAddressR,
 	if(aKey.IsOpen())
 	{
 		aKey.GetValue(VALUE_AUTHSERVERIP, theAuthAddressR);
-		unsigned long anAuthPort(15200);
+		DWORD anAuthPort(15200);
 		aKey.QueryDWORD(VALUE_AUTHSERVERPORT, anAuthPort);
 		theAuthPortR = anAuthPort;
 		aKey.GetValue(VALUE_USERNAME, theLoginNameR);

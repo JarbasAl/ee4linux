@@ -53,11 +53,10 @@ private:
     DX7Screen(HMONITOR__* inMonitor, IDirectDraw7* inDirectDraw, const UString& inName, bool inAttachedToDesktop,
               bool inSharesPrimary);
     virtual ~DX7Screen();
-    static long __stdcall EnumTextureFormatCallback(_DDPIXELFORMAT* inFormat, void* inContext);
+    static HRESULT __stdcall EnumTextureFormatCallback(_DDPIXELFORMAT* inFormat, void* inContext);
     static int __stdcall EnumVideoModeCallback(_DDSURFACEDESC2* inDescription, void* inContext);
     void Test32BitSupport();
-    static long __stdcall TestWindowProc(HWND__* inWindow, unsigned int inMessage, unsigned int inWParam,
-                                         long inLParam);
+    static long __stdcall TestWindowProc(HWND__* inWindow, unsigned int inMessage, WPARAM inWParam, LPARAM inLParam);
 
     std::vector<GEVideoMode> mModes;        // +0x0c
     GERectangle mDesktopRectangle;          // +0x1c

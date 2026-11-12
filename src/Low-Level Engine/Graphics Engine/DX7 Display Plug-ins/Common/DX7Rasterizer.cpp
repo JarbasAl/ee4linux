@@ -592,7 +592,7 @@ bool DX7Rasterizer::CanDoCurrentState(GETexture* inTexture, unsigned long inScre
 {
     bool theResult = false;
     this->SetTexture(inTexture, inScreen);
-    unsigned long thePasses;
+    DWORD thePasses;
     HRESULT theError = this->mDX7ScreenStates[inScreen]->GetDevice()->ValidateDevice(&thePasses);
     if (theError == D3D_OK)
         theResult = true;
@@ -880,7 +880,7 @@ bool DX7Rasterizer::GetIsScreenValid(DX7Screen* inScreen)
 // Returns the total video memory of the screen
 long DX7Rasterizer::GetTotalVideoMemory(unsigned long inScreen, unsigned long& outBytes)
 {
-    unsigned long theTotal = 0;
+unsigned long theTotal = 0;
     unsigned long theFree = 0;
     long theResult = this->GetVideoMemory(inScreen, theTotal, theFree);
     if (theResult == kErrorOK)
@@ -892,8 +892,8 @@ long DX7Rasterizer::GetTotalVideoMemory(unsigned long inScreen, unsigned long& o
 // Reads the screen's total and free video memory; 0xd when it cannot be read or is 0
 long DX7Rasterizer::GetVideoMemory(unsigned long inScreen, unsigned long& outTotal, unsigned long& outFree)
 {
-    unsigned long theTotal = 0;
-    unsigned long theFree = 0;
+    DWORD theTotal = 0;
+    DWORD theFree = 0;
     long theResult = 0xd;
     DDSCAPS2 theCaps;
     memset(&theCaps, 0, sizeof(theCaps));

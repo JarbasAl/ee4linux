@@ -46,7 +46,7 @@ RawBuffer Random::getSeed(int)
 {
     RawBuffer bytes(8, static_cast<unsigned char>(0));
     long usage = ++Random::usageCount;
-    unsigned long sectorsPerCluster, bytesPerSector, freeClusters, usedClusters;
+    DWORD sectorsPerCluster, bytesPerSector, freeClusters, usedClusters;
     __int64 seed = 0;
     GetDiskFreeSpaceA(NULL, &sectorsPerCluster, &bytesPerSector, &freeClusters, &usedClusters);
     usedClusters -= freeClusters;
