@@ -119,10 +119,13 @@ TARGETS = {
         "cxxflags": ["-std=gnu++14"],
         "includes": [ROOT / "include" / "port" / "linux"],
         # the system's 64-bit development packages: wine, sdl2, ffmpeg
-        "system_includes": [pathlib.Path("/usr/include/wine/windows"), pathlib.Path("/usr/include/SDL2"),
-                            DMUSIC / "include"],
-        "libs": ["-lpthread", "-ldl", "-lSDL2", "-lavformat", "-lavcodec", "-lswscale", "-lswresample", "-lavutil",
-                 "-Wl,--wrap=fopen"],
+        "system_includes": [pathlib.Path("/usr/include/wine/windows"), TOOLCHAIN / "sdl2-x86_64" / "include" / "SDL2",
+                            TOOLCHAIN / "ffmpeg-x86_64" / "include", DMUSIC / "include"],
+        # the same pinned SDL2 and FFmpeg as the 32-bit build, at 64 bits (tools/fetch_port_toolchain.py)
+        "libs": ["-lpthread", "-ldl",
+                 *(f"{flag}{TOOLCHAIN / lib / 'lib'}" for lib in ("sdl2-x86_64", "ffmpeg-x86_64")
+                   for flag in ("-L", "-Wl,-rpath,")),
+                 "-lSDL2", "-lavformat", "-lavcodec", "-lswscale", "-lswresample", "-lavutil", "-Wl,--wrap=fopen"],
         "modules": ["win32", "dmusic"],
     },
 }
@@ -325,7 +328,10 @@ LINUX_IMAGES_64 = {"eeport": ("libeeport.so", ["win32", "dmusic"])}
 # The layer's libraries, copied beside the images under the names the images ask for
 LINUX_RUNTIME = {"sdl2-i686": ["libSDL2-2.0.so.0"],
                  "ffmpeg-i686": ["libavformat.so.61", "libavcodec.so.61", "libswscale.so.8", "libswresample.so.5",
-                                 "libavutil.so.59"]}
+                                 "libavutil.so.59"],
+                 "sdl2-x86_64": ["libSDL2-2.0.so.0"],
+                 "ffmpeg-x86_64": ["libavformat.so.61", "libavcodec.so.61", "libswscale.so.8", "libswresample.so.5",
+                                   "libavutil.so.59"]}
 
 
 def link_linux_image(out, image, target="linux"):
@@ -387,8 +393,9 @@ def link_linux(out, target="linux"):
                 print(f"  ... {len(errors) - 8} more in {out / 'logs' / ('link-' + image + '.log')}")
             if image in ("eeport", "lle"):
                 break
-    if target == "linux":      # the 64-bit layer uses the system's SDL2 and FFmpeg
-        for lib, names in LINUX_RUNTIME.items():
+    arch = {"linux": "i686", "linux64": "x86_64"}[target]
+    for lib, names in LINUX_RUNTIME.items():
+        if lib.endswith(arch):
             for library in names:
                 (out / "bin" / library).write_bytes((TOOLCHAIN / lib / "lib" / library).read_bytes())
     print(f"images: {len(images)} in, {linked} linked")

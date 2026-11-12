@@ -9,6 +9,10 @@ The native Linux build needs a 32-bit SDL2, which Arch packages only in multilib
 source release (github.com/libsdl-org/SDL) with the system clang -m32 into toolchain/sdl2-i686. SDL loads X11, ALSA
 and PulseAudio at run time; Wayland, PipeWire, JACK and KMS/DRM are off, because their 32-bit libraries are absent.
 
+The 64-bit target (`--target linux64`) gets its own SDL2 and FFmpeg from the same pins, into `toolchain/sdl2-x86_64`
+and `toolchain/ffmpeg-x86_64`: Arch's own SDL2 package is sdl2-compat, a shim over SDL3, and the layer wants the same
+SDL2 on both targets.
+
 Movies play through a 32-bit FFmpeg, built from the pinned release (ffmpeg.org) into toolchain/ffmpeg-i686. It reads
 the game's Bink 1 files and replacement movies in MP4, Matroska/WebM, AVI or MPEG with H.264, HEVC, VP8, VP9 or MPEG
 video. The build is LGPL only (no --enable-gpl, no external libraries). Its x86 assembly needs NASM, built from the
@@ -94,13 +98,16 @@ def fetch_file(name, url, pin):
         sys.exit(f"{name}: sha256 {digest} != pinned {pin}")
 
 
-def build_sdl():
-    """SDL2 for i686 Linux, installed into toolchain/sdl2-i686."""
-    prefix = ROOT / "toolchain" / "sdl2-i686"
+def build_sdl(arch="i686"):
+    """SDL2 for Linux, installed into toolchain/sdl2-<arch>: i686 for the 32-bit build, x86_64 for the 64-bit one."""
+    prefix = ROOT / "toolchain" / f"sdl2-{arch}"
     if (prefix / "lib" / "libSDL2.so").exists():
         return prefix
-    build = ROOT / "toolchain" / "sdl2-build"
-    env = dict(os.environ, CC="clang", CFLAGS="-m32", LDFLAGS="-m32", PKG_CONFIG_LIBDIR="/usr/lib32/pkgconfig")
+    build = ROOT / "toolchain" / f"sdl2-build-{arch}"
+    if arch == "i686":
+        env = dict(os.environ, CC="clang", CFLAGS="-m32", LDFLAGS="-m32", PKG_CONFIG_LIBDIR="/usr/lib32/pkgconfig")
+    else:
+        env = dict(os.environ, CC="clang")
     subprocess.run(["cmake", "-S", ROOT / "toolchain" / "sdl2-src", "-B", build, "-DCMAKE_BUILD_TYPE=Release",
                     f"-DCMAKE_INSTALL_PREFIX={prefix}", *SDL_OPTIONS], env=env, check=True)
     subprocess.run(["cmake", "--build", build, "-j2"], env=env, check=True)
@@ -109,7 +116,6 @@ def build_sdl():
 
 
 FFMPEG_OPTIONS = [
-    "--arch=x86_32", "--target-os=linux", "--cc=clang", "--extra-cflags=-m32", "--extra-ldflags=-m32",
     "--enable-shared", "--disable-static", "--enable-pic", "--disable-programs", "--disable-doc", "--disable-network",
     "--disable-autodetect", "--disable-everything", "--disable-avdevice", "--disable-avfilter",
     "--enable-swscale", "--enable-swresample", "--enable-protocol=file",
@@ -135,14 +141,29 @@ def build_nasm():
     return prefix
 
 
-def build_ffmpeg(nasm):
-    """FFmpeg's libraries for i686 Linux, installed into toolchain/ffmpeg-i686."""
-    prefix = ROOT / "toolchain" / "ffmpeg-i686"
+def build_ffmpeg(nasm, arch="i686"):
+    """FFmpeg's libraries for Linux, installed into toolchain/ffmpeg-<arch>."""
+    prefix = ROOT / "toolchain" / f"ffmpeg-{arch}"
     if (prefix / "lib" / "libavcodec.so").exists():
         return prefix
     source = ROOT / "toolchain" / "ffmpeg-src"
-    subprocess.run(["./configure", f"--prefix={prefix}", f"--x86asmexe={nasm / 'bin' / 'nasm'}", *FFMPEG_OPTIONS],
-                   cwd=source, check=True)
+    target = ["--arch=x86_32", "--target-os=linux", "--cc=clang", "--extra-cflags=-m32", "--extra-ldflags=-m32"]
+    if arch == "x86_64":
+        # a separate copy of the source tree, without the 32-bit build's objects and configuration
+        source = ROOT / "toolchain" / "ffmpeg-src-x86_64"
+        if not (source / "libavutil").exists():
+            import shutil
+            shutil.copytree(ROOT / "toolchain" / "ffmpeg-src", source, symlinks=True)
+            for pattern in ("*.o", "*.d", "*.a", "*.so*"):
+                for stale in source.rglob(pattern):
+                    if stale.is_file():
+                        stale.unlink()
+            for stale in ("config.h", "config.asm", "config.mak", "ffbuild/config.mak", "ffbuild/config.fate",
+                          "ffbuild/config.log", "ffbuild/config.sh"):
+                (source / stale).unlink(missing_ok=True)
+        target = ["--arch=x86_64", "--target-os=linux", "--cc=clang"]
+    subprocess.run(["./configure", f"--prefix={prefix}", f"--x86asmexe={nasm / 'bin' / 'nasm'}", *target,
+                    *FFMPEG_OPTIONS], cwd=source, check=True)
     subprocess.run(["make", "-j2"], cwd=source, check=True)
     subprocess.run(["make", "install"], cwd=source, check=True)
     return prefix
@@ -155,8 +176,10 @@ def main():
     for name, (url, pin) in FILES.items():
         fetch_file(name, url, pin)
         print(f"{name}: {ROOT / 'toolchain' / name}")
-    print(f"sdl2-i686: {build_sdl()}")
-    print(f"ffmpeg-i686: {build_ffmpeg(build_nasm())}")
+    nasm = build_nasm()
+    for arch in ("i686", "x86_64"):
+        print(f"sdl2-{arch}: {build_sdl(arch)}")
+        print(f"ffmpeg-{arch}: {build_ffmpeg(nasm, arch)}")
 
 
 if __name__ == "__main__":
