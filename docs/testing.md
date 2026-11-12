@@ -7,7 +7,8 @@ with independent programs: the installed game's files, FFmpeg, and Python's own 
 
 ```
 python3 -I tools/build_port.py --target linux win32 dmusic
-python3 -I tools/test_port_linux.py
+python3 -I tools/test_port_linux.py                    # the 32-bit layer
+python3 -I tools/test_port_linux.py --target linux64   # the 64-bit layer, against its own objects
 ```
 
 The last line is the verdict, for example `tests: 18 in, 18 passed`. The count is the eleven test binaries plus the

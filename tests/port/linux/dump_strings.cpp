@@ -8,18 +8,19 @@
 static WORD sLanguage;
 static int sTables;
 
-// cdecl and returning bool, as the game's own callbacks (UResourceFile.cpp)
-static bool OnLanguage(HMODULE, LPCSTR, LPCSTR, WORD inLanguage, LONG_PTR)
+// The callbacks carry the Win32 callback convention: on i386 the layer bridges stdcall and cdecl, but on x86-64 the
+// Windows and Linux conventions pass arguments in different registers, so a callback must be declared CALLBACK.
+static BOOL CALLBACK OnLanguage(HMODULE, LPCSTR, LPCSTR, WORD inLanguage, LONG_PTR)
 {
     sLanguage = inLanguage;
-    return false;
+    return FALSE;
 }
 
-static bool OnName(HMODULE inModule, LPCSTR inType, LPSTR inName, LONG_PTR inParam)
+static BOOL CALLBACK OnName(HMODULE inModule, LPCSTR inType, LPSTR inName, LONG_PTR inParam)
 {
     ++sTables;
     EnumResourceLanguagesA(inModule, inType, inName, (ENUMRESLANGPROCA)OnLanguage, inParam);
-    return true;
+    return TRUE;
 }
 
 int main(int inCount, char** inArguments)

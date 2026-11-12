@@ -49,6 +49,16 @@ Linux i386 ABI requires, pushes the arguments, calls, and restores `esp`.
 The layer's own functions are `WINAPI` (stdcall on i386) as Wine's headers declare them, so the link and the call
 agree.
 
+On x86-64 there is no bridging to do: Wine's headers make `WINAPI`, `CALLBACK` and `WINAPIV` the Windows x64
+convention (`ms_abi`), which passes the first four arguments in `rcx`, `rdx`, `r8` and `r9` and reads variadic
+arguments from a Windows argument list. Three consequences:
+
+- a callback handed to a Windows enumeration function must be declared `CALLBACK`; a plain Linux function cast to that
+  type receives the wrong registers, where on i386 only the stack cleanup differed;
+- `CallCallback` uses `ms_abi` function types, not the i386 stack shim;
+- a `WINAPIV` function cannot hand its arguments to the C library's `vsnprintf` (a System V function with a different
+  argument list): `wsprintfA` formats its own (see `FormatMs` in `Win32System.cpp`). See `FormatMs` in `Win32System.cpp`.
+
 ## The C library
 
 `include/port/linux/port_msvcrt.h` adds the MSVC runtime names glibc lacks, in the C locale with a single-byte code

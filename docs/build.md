@@ -58,10 +58,17 @@ Three units exist only in the port build:
 
 ## The x86-64 target
 
-`--target linux64` builds the layer for x86-64 against the system's 64-bit SDL2 and FFmpeg: `libeeport.so` only, so
-far. The game's own units are still 32-bit: the reconstruction's structures carry 32-bit pointers and `long` fields,
-and the source needs a `long` that stays 32 bits wide before those units can compile for x86-64
-([limits](limits.md)).
+`--target linux64` builds the layer for x86-64: `libeeport.so` only, so far. The game's own units are still 32-bit:
+the reconstruction's structures carry 32-bit pointers and `long` fields, and the source needs a `long` that stays 32
+bits wide before those units can compile for x86-64 ([limits](limits.md)).
+
+The 64-bit target uses its own SDL2 and FFmpeg, built from the same pins as the 32-bit ones into
+`toolchain/sdl2-x86_64` and `toolchain/ffmpeg-x86_64`. Arch's own SDL2 package is sdl2-compat, a shim over SDL3, and
+the layer wants the same SDL2 on both targets.
+
+Wine's headers give Win32 functions the Windows x64 calling convention (`ms_abi`) on that target, so the arguments of
+a Win32 function are not Linux's: `CallCallback` passes the game's callbacks the Windows way, and a function pointer
+cast across the two conventions crashes at the first call ([C++ runtime](cxx-runtime.md)).
 
 ```
 python3 -I tools/build_port.py --target linux64 --link      # libeeport.so in build/port-linux64/bin
