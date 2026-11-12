@@ -199,10 +199,24 @@ LPSTR WINAPI lstrcatA(LPSTR ioText, LPCSTR inText)
 // wsprintf writes at most 1024 bytes, its terminator included
 INT WINAPIV wsprintfA(LPSTR outText, LPCSTR inFormat, ...)
 {
+#ifdef __x86_64__
+    // a WINAPIV function is a Windows-ABI function here, so its argument list is ms_va_list (minwindef.h)
+    __ms_va_list theArguments;
+    __builtin_ms_va_start(theArguments, inFormat);
+    char theText[1024];
+    // vsnprintf is a System V function: hand it the argument list through the System V form of the same registers
+    va_list theSystemV;
+    va_copy(theSystemV, *reinterpret_cast<va_list*>(&theArguments));
+    int theLength = vsnprintf(theText, sizeof theText, inFormat, theSystemV);
+    va_end(theSystemV);
+    __builtin_ms_va_end(theArguments);
+    memcpy(outText, theText, theLength < 0 ? 1 : (size_t)theLength + 1);
+#else
     va_list theArguments;
     va_start(theArguments, inFormat);
     int theLength = vsnprintf(outText, 1024, inFormat, theArguments);
     va_end(theArguments);
+#endif
     return theLength < 0 ? -1 : theLength > 1023 ? 1023 : theLength;
 }
 

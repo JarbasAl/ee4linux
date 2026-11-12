@@ -318,7 +318,7 @@ Bitmap* WindowPixels(HWND inWindow)
     RECT theClient;
     if (!GetClientRect(inWindow, &theClient))
         return nullptr;
-    int theWidth = std::max(1L, theClient.right), theHeight = std::max(1L, theClient.bottom);
+    int theWidth = std::max(1L, (long)theClient.right), theHeight = std::max(1L, (long)theClient.bottom);
     Bitmap*& thePixels = gWindowPixels[inWindow];
     if (thePixels && (thePixels->mWidth != theWidth || thePixels->mHeight != theHeight)) {
         Bitmap* theResized = NewBitmap(theWidth, theHeight);

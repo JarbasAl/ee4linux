@@ -28,10 +28,42 @@ void Log(const char* inFormat, ...) __attribute__((format(printf, 1, 2)));
             eeport::Log("%s is not supported; the call does nothing", name);            \
     } while (0)
 
-// Calls a game callback with 32-bit arguments, whether it is stdcall or cdecl: Windows calls the game's cdecl
-// callbacks through stdcall types (UResourceFile's enumeration callbacks), and its callers restore the stack pointer
-// from their frame. This call saves esp, aligns the stack to 16 bytes as the Linux i386 ABI requires, pushes the
-// arguments, calls, and restores esp.
+// Calls a game callback with 32-bit arguments.
+//
+// On i386 the callback may be declared stdcall or cdecl: Windows calls the game's cdecl callbacks through stdcall
+// types (UResourceFile's enumeration callbacks), and their callers restore the stack pointer from their own frame.
+// This call saves esp, aligns the stack to 16 bytes as the Linux i386 ABI requires, pushes the arguments, calls, and
+// restores esp.
+//
+// On x86-64 both conventions are the same one, Wine's ms_abi, and no callee pops anything, so the arguments go in the
+// Windows registers: rcx, rdx, r8, r9, then the stack. A typed call does it, with the ABI the headers declare.
+#if defined(__x86_64__)
+inline uintptr_t CallCallback(const void* inFunction, const uintptr_t* inArguments, int inCount)
+{
+    switch (inCount) {
+    case 0:
+        return ((uintptr_t(__attribute__((ms_abi)) *)(void))inFunction)();
+    case 1:
+        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t))inFunction)(inArguments[0]);
+    case 2:
+        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t))inFunction)(inArguments[0],
+                                                                                        inArguments[1]);
+    case 3:
+        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t, uintptr_t))inFunction)(
+            inArguments[0], inArguments[1], inArguments[2]);
+    case 4:
+        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t, uintptr_t, uintptr_t))inFunction)(
+            inArguments[0], inArguments[1], inArguments[2], inArguments[3]);
+    case 5:
+        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t))
+                    inFunction)(inArguments[0], inArguments[1], inArguments[2], inArguments[3], inArguments[4]);
+    default:
+        return ((uintptr_t(__attribute__((ms_abi)) *)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                                       uintptr_t))inFunction)(
+            inArguments[0], inArguments[1], inArguments[2], inArguments[3], inArguments[4], inArguments[5]);
+    }
+}
+#else
 inline uintptr_t CallCallback(const void* inFunction, const uintptr_t* inArguments, int inCount)
 {
     uintptr_t theResult;
@@ -57,6 +89,7 @@ inline uintptr_t CallCallback(const void* inFunction, const uintptr_t* inArgumen
         : "ecx", "edx", "edi", "memory", "cc");
     return theResult;
 }
+#endif
 
 // ---- kernel objects ----
 // A HANDLE is a pointer to one. Its waitable state changes only under gWaitLock, and every change notifies

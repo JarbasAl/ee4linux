@@ -51,7 +51,7 @@ LIBRARY_MODULES = {
         "folder": DMUSIC,
         # C11 threads come from the library's own shim over POSIX threads; dm_prefix.h renames the shim and the
         # rest of its global names, which glibc's C11 threads and other copies of TinySoundFont also define
-        "flags": ["-m32", "-fPIC", "-O2", "-msse2", "-mfpmath=sse", "-std=c11", "-D_POSIX_C_SOURCE=200809L",
+        "flags": ["-fPIC", "-O2", "-msse2", "-mfpmath=sse", "-std=c11", "-D_POSIX_C_SOURCE=200809L",
                   "-DDM_STATIC=1", "-w", f"-I{DMUSIC / 'include'}", f"-I{DMUSIC / 'src'}",
                   f"-I{DMUSIC / 'vendor' / 'TinySoundFont'}", "-include", str(DMUSIC / "recomp" / "dm_prefix.h")],
     },
@@ -102,6 +102,28 @@ TARGETS = {
                    for flag in ("-L", "-Wl,-rpath,")),
                  "-lSDL2", "-lavformat", "-lavcodec", "-lswscale", "-lswresample", "-lavutil", "-Wl,--wrap=fopen"],
         "modules": ["win32", "dmusic", "lle", "jpeg", "tcp", "default", "mixer", "dx7hrtnl", "exe", "exeimg", "won"],
+    },
+    # Native x86-64 Linux. The same layer, the same headers and the system's 64-bit SDL2 and FFmpeg. x86-64 has no
+    # x87 mode, so the arithmetic is SSE2 like VC6's floating point on a modern Windows target; the game's own units
+    # are not ported yet (docs/ in the wiki audit for the plan).
+    "linux64": {
+        "cc": pathlib.Path("/usr/bin/clang"),
+        "cxx": pathlib.Path("/usr/bin/clang++"),
+        "flags": ["-m64", "-fPIC", "-O1", "-march=x86-64", "-msse2", "-mfpmath=sse", "-fdeclspec",
+                  "-fdelayed-template-parsing", "-fno-strict-aliasing", "-w", "-ferror-limit=0",
+                  "-Wno-address-of-temporary", "-DEE_PORT_LINUX", "-DEE_PORT_LINUX64",
+                  "-DDIRECTINPUT_VERSION=0x0700",
+                  "-DSDL_MAIN_HANDLED",
+                  "-Wno-c++11-narrowing",
+                  "-DDECLSPEC_IMPORT="],
+        "cxxflags": ["-std=gnu++14"],
+        "includes": [ROOT / "include" / "port" / "linux"],
+        # the system's 64-bit development packages: wine, sdl2, ffmpeg
+        "system_includes": [pathlib.Path("/usr/include/wine/windows"), pathlib.Path("/usr/include/SDL2"),
+                            DMUSIC / "include"],
+        "libs": ["-lpthread", "-ldl", "-lSDL2", "-lavformat", "-lavcodec", "-lswscale", "-lswresample", "-lavutil",
+                 "-Wl,--wrap=fopen"],
+        "modules": ["win32", "dmusic"],
     },
 }
 # include/port/case holds the Windows SDK headers that the game names in a case the toolchain's headers do not have
@@ -164,8 +186,8 @@ def compile_unit(target, out, mod, src):
     cfg = TARGETS[target]
     is_c = src.suffix == ".c"
     if mod in LIBRARY_MODULES:
-        cmd = [str(cfg["cc"]), *LIBRARY_MODULES[mod]["flags"], "-MMD", "-MF", str(obj.with_suffix(".d")), "-c",
-               str(src), "-o", str(obj)]
+        cmd = [str(cfg["cc"]), cfg["flags"][0], *LIBRARY_MODULES[mod]["flags"], "-MMD", "-MF",
+               str(obj.with_suffix(".d")), "-c", str(src), "-o", str(obj)]
     else:
         cmd = [str(cfg["cc"] if is_c else cfg["cxx"]), *cfg["flags"], *([] if is_c else cfg["cxxflags"]),
                *unit_defines(src, mod), "-include", str(COMPAT), *(f"-I{d}" for d in cfg.get("includes", [])),
@@ -298,15 +320,18 @@ LINUX_IMAGES = {
     "dx7hrtnl": (MODULE_FILES["dx7hrtnl"], ["dx7hrtnl"]),
     "exe": ("ee-aoc", TARGET_MODULES["exe"]),
 }
+# The 64-bit target builds the layer only: the game's own units are not ported yet
+LINUX_IMAGES_64 = {"eeport": ("libeeport.so", ["win32", "dmusic"])}
 # The layer's libraries, copied beside the images under the names the images ask for
 LINUX_RUNTIME = {"sdl2-i686": ["libSDL2-2.0.so.0"],
                  "ffmpeg-i686": ["libavformat.so.61", "libavcodec.so.61", "libswscale.so.8", "libswresample.so.5",
                                  "libavutil.so.59"]}
 
 
-def link_linux_image(out, image):
-    cfg = TARGETS["linux"]
-    name, modules = LINUX_IMAGES[image]
+def link_linux_image(out, image, target="linux"):
+    cfg = TARGETS[target]
+    images = LINUX_IMAGES if target == "linux" else LINUX_IMAGES_64
+    name, modules = images[image]
     bin_dir = out / "bin"
     for folder in (bin_dir, out / "lib", out / "link"):
         folder.mkdir(parents=True, exist_ok=True)
@@ -321,22 +346,23 @@ def link_linux_image(out, image):
             mod_rsp.write_text("\n".join(f'"{o}"' for o in found) + "\n")
             subprocess.run(["llvm-ar", "rcs", str(archive), f"@{mod_rsp}"], check=True)
             archives.append(str(archive))
-    rsp = out / "link" / f"linux-{image}.rsp"
+    rsp = out / "link" / f"{target}-{image}.rsp"
     rsp.write_text("\n".join(f'"{o}"' for o in objects if not any(f"/obj/{m}/" in o for m in ARCHIVED)) + "\n")
     # each image binds its own names to its own definitions, as a Windows DLL does; the executable is
     # position-independent, so the engine's data stays in the engine
     # the archives need each other (WON's PNG decoder takes libpng from exeimg), and GNU ld reads an archive once
     grouped = ["-Wl,--start-group", *archives, "-Wl,--end-group"] if archives else []
     # every image casts the way MSVC does: src/Port/Linux/CxxAbi.cpp wraps the cast and states the rule
-    cmd = [str(cfg["cxx"]), "-m32", f"@{rsp}", *grouped, "-o", str(bin_dir / name), "-Wl,-rpath,$ORIGIN",
-           "-Wl,--wrap=fopen", "-Wl,--wrap=__dynamic_cast"]
+    cmd = [str(cfg["cxx"]), cfg["flags"][0], f"@{rsp}", *grouped, "-o", str(bin_dir / name),
+           "-Wl,-rpath,$ORIGIN", "-Wl,--wrap=fopen", "-Wl,--wrap=__dynamic_cast"]
     if image == "exe":
         cmd += ["-pie"]
     else:
         cmd += ["-shared", f"-Wl,-soname,{name}", "-Wl,-Bsymbolic", "-Wl,-z,defs"]
     if image == "eeport":
-        cmd += [*(f"-L{TOOLCHAIN / lib / 'lib'}" for lib in LINUX_RUNTIME), "-lSDL2", "-lavformat", "-lavcodec",
-                "-lswscale", "-lswresample", "-lavutil", "-lpthread", "-ldl", "-lm"]
+        if target == "linux":
+            cmd += [*(f"-L{TOOLCHAIN / lib / 'lib'}" for lib in LINUX_RUNTIME)]
+        cmd += [*cfg["libs"], "-lm"]
     else:
         if image != "lle":
             cmd.append(str(bin_dir / LINUX_IMAGES["lle"][0]))
@@ -346,11 +372,12 @@ def link_linux_image(out, image):
     return len(objects), run.returncode == 0, run.stderr
 
 
-def link_linux(out):
+def link_linux(out, target="linux"):
     linked = 0
-    for image in LINUX_IMAGES:
-        count, ok, log = link_linux_image(out, image)
-        print(f"link {LINUX_IMAGES[image][0]}: {count} objects in, {'image out' if ok else 'FAILED'}")
+    images = LINUX_IMAGES if target == "linux" else LINUX_IMAGES_64
+    for image in images:
+        count, ok, log = link_linux_image(out, image, target)
+        print(f"link {images[image][0]}: {count} objects in, {'image out' if ok else 'FAILED'}")
         linked += ok
         if not ok:
             errors = [line for line in log.splitlines() if "error" in line or "undefined" in line]
@@ -360,11 +387,12 @@ def link_linux(out):
                 print(f"  ... {len(errors) - 8} more in {out / 'logs' / ('link-' + image + '.log')}")
             if image in ("eeport", "lle"):
                 break
-    for lib, names in LINUX_RUNTIME.items():
-        for library in names:
-            (out / "bin" / library).write_bytes((TOOLCHAIN / lib / "lib" / library).read_bytes())
-    print(f"images: {len(LINUX_IMAGES)} in, {linked} linked")
-    return len(LINUX_IMAGES) - linked
+    if target == "linux":      # the 64-bit layer uses the system's SDL2 and FFmpeg
+        for lib, names in LINUX_RUNTIME.items():
+            for library in names:
+                (out / "bin" / library).write_bytes((TOOLCHAIN / lib / "lib" / library).read_bytes())
+    print(f"images: {len(images)} in, {linked} linked")
+    return len(images) - linked
 
 
 def main():
@@ -412,10 +440,10 @@ def main():
     if total_in != total_out:
         return 1
     if args.link:
-        if args.target == "linux":
-            if set(args.modules) != set(TARGETS["linux"]["modules"]):
+        if args.target in ("linux", "linux64"):
+            if set(args.modules) != set(TARGETS[args.target]["modules"]):
                 sys.exit("--link needs every module compiled: give no module names")
-            return 1 if link_linux(out) else 0
+            return 1 if link_linux(out, args.target) else 0
         if set(args.modules) != set(MODULE_SRC):
             sys.exit("--link needs every module compiled: give no module names")
         return 1 if link_all(args.target, out) else 0

@@ -56,6 +56,17 @@ Three units exist only in the port build:
 - `src/Port/EEPortLinux.cpp` is the entry point (`main`, which calls `WinMain`) and the GameSpy stubs.
 - `src/Port/Linux/*.cpp` is the Win32 layer.
 
+## The x86-64 target
+
+`--target linux64` builds the layer for x86-64 against the system's 64-bit SDL2 and FFmpeg: `libeeport.so` only, so
+far. The game's own units are still 32-bit: the reconstruction's structures carry 32-bit pointers and `long` fields,
+and the source needs a `long` that stays 32 bits wide before those units can compile for x86-64
+([limits](limits.md)).
+
+```
+python3 -I tools/build_port.py --target linux64 --link      # libeeport.so in build/port-linux64/bin
+```
+
 ## The images
 
 The native link produces ELF files that keep the Windows file names, because the engine loads its plug-ins from the

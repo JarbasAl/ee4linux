@@ -184,8 +184,8 @@ void SyncNative(Window* inWindow)
         return;
     SDL_SetWindowTitle(inWindow->mNative, inWindow->mTitle.c_str());
     SDL_SetWindowPosition(inWindow->mNative, inWindow->mRect.left, inWindow->mRect.top);
-    SDL_SetWindowSize(inWindow->mNative, std::max(1L, inWindow->mRect.right - inWindow->mRect.left),
-                      std::max(1L, inWindow->mRect.bottom - inWindow->mRect.top));
+    SDL_SetWindowSize(inWindow->mNative, (int)std::max(1L, (long)(inWindow->mRect.right - inWindow->mRect.left)),
+                      (int)std::max(1L, (long)(inWindow->mRect.bottom - inWindow->mRect.top)));
     if (inWindow->mVisible && !inWindow->mMinimized) {
         SDL_ShowWindow(inWindow->mNative);
         SDL_RaiseWindow(inWindow->mNative);
@@ -536,8 +536,8 @@ SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL)
     if (!theWindow->mNative) {
         RECT& theRect = theWindow->mRect;
         theWindow->mNative = SDL_CreateWindow(theWindow->mTitle.c_str(), theRect.left, theRect.top,
-                                              std::max(1L, theRect.right - theRect.left),
-                                              std::max(1L, theRect.bottom - theRect.top),
+                                              (int)std::max(1L, (long)(theRect.right - theRect.left)),
+                                              (int)std::max(1L, (long)(theRect.bottom - theRect.top)),
                                               WindowStyleForSDL(theWindow) | (inOpenGL ? SDL_WINDOW_OPENGL : 0));
         if (!theWindow->mNative) {
             Log("SDL window \"%s\" is not made: %s", theWindow->mTitle.c_str(), SDL_GetError());
@@ -997,6 +997,14 @@ BOOL WINAPI SetWindowTextA(HWND inWindow, LPCSTR inText)
     return TRUE;
 }
 
+#ifdef _WIN64
+// A 64-bit build has no 32-bit window-long indices for the values that hold a pointer: Wine's headers keep only the
+// GWLP_ forms. The layer answers the old names too, truncated, for the game's 32-bit-minded calls.
+#define GWL_WNDPROC (-4)
+#define GWL_HINSTANCE (-6)
+#define GWL_USERDATA (-21)
+#endif
+
 LONG WINAPI GetWindowLongA(HWND inWindow, INT inIndex)
 {
     Window* theWindow = WindowOf(inWindow);
@@ -1013,6 +1021,32 @@ LONG WINAPI GetWindowLongA(HWND inWindow, INT inIndex)
     SetLastError(ERROR_INVALID_INDEX);
     return 0;
 }
+
+#ifdef _WIN64
+// The pointer-sized forms; the LONG forms below answer with these, so a 64-bit game and a 32-bit-minded one share
+// one window object.
+LONG_PTR WINAPI GetWindowLongPtrA(HWND inWindow, INT inIndex)
+{
+    Window* theWindow = WindowOf(inWindow);
+    if (!theWindow)
+        return 0;
+    switch (inIndex) {
+    case GWL_WNDPROC: return (LONG_PTR)theWindow->mProcedure;
+    case GWL_HINSTANCE: return (LONG_PTR)theWindow->mInstance;
+    case GWL_ID: return (LONG_PTR)theWindow->mID;
+    case GWL_STYLE: return (LONG_PTR)theWindow->mStyle;
+    case GWL_EXSTYLE: return (LONG_PTR)theWindow->mExStyle;
+    case GWL_USERDATA: return (LONG_PTR)theWindow->mUserData;
+    }
+    SetLastError(ERROR_INVALID_INDEX);
+    return 0;
+}
+
+LONG_PTR WINAPI SetWindowLongPtrA(HWND inWindow, INT inIndex, LONG_PTR inValue)
+{
+    return (LONG_PTR)SetWindowLongA(inWindow, inIndex, (LONG)inValue);
+}
+#endif
 
 LONG WINAPI SetWindowLongA(HWND inWindow, INT inIndex, LONG inValue)
 {
