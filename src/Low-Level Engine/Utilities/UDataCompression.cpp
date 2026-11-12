@@ -134,7 +134,15 @@ long UDataCompression::GetDecompressedSize(const char* inData, unsigned long inL
         theResult = 0x13;
     } else {
         theResult = 0;
+#if defined(EE_PORT_LONG64)
+        // the header's size is 32 bits, and a 64-bit build's unsigned long is wider: the copy must not leave the
+        // upper half as it was
+        unsigned int theSize = 0;
+        memcpy(&theSize, inData + 4, 4);
+        outSize = theSize;
+#else
         memcpy(&outSize, inData + 4, 4);
+#endif
     }
     return theResult;
 }
