@@ -249,6 +249,22 @@ void CursorChanged()
     ApplyCursor();
 }
 
+// The whole wheel notches of an event. SDL 2.26 splits a wheel event into whole notches (y) and a precise delta
+// (preciseY), and a pushed event or a high-resolution wheel may carry only the precise one; the fraction is kept
+// until it adds up to a notch.
+int WheelNotches(const SDL_MouseWheelEvent& inWheel)
+{
+    static float sFraction;
+    float theDelta = inWheel.preciseY != 0.0f ? (float)inWheel.preciseY : (float)inWheel.y;
+    if (inWheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+        theDelta = -theDelta;
+    sFraction += theDelta;
+    int theWhole = (int)sFraction;
+    if (theWhole)
+        sFraction -= (float)theWhole;
+    return theWhole;
+}
+
 // Turns one SDL event into window messages
 void Translate(const SDL_Event& inEvent)
 {
@@ -338,11 +354,12 @@ void Translate(const SDL_Event& inEvent)
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
     case SDL_MOUSEWHEEL: {
+        int theNotches = 0;
         if (inEvent.type == SDL_MOUSEMOTION) {
             eeport::InputMouseMove(inEvent.motion.xrel, inEvent.motion.yrel);
         } else if (inEvent.type == SDL_MOUSEWHEEL) {
-            eeport::InputMouseWheel(inEvent.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -inEvent.wheel.y
-                                                                                      : inEvent.wheel.y);
+            theNotches = WheelNotches(inEvent.wheel);
+            eeport::InputMouseWheel(theNotches);
         } else {
             // DirectInput's buttons 0 to 3 are the left, right, middle and first extra buttons
             static const int kButtons[] = {-1, 0, 2, 1, 3};
@@ -360,8 +377,9 @@ void Translate(const SDL_Event& inEvent)
         if (!theObject)
             return;
         if (inEvent.type == SDL_MOUSEWHEEL) {
-            PostToWindow(theWindow, WM_MOUSEWHEEL, MAKEWPARAM(MouseKeys(), (WORD)(SHORT)(inEvent.wheel.y * WHEEL_DELTA)),
-                         PointParam(gCursorX, gCursorY));
+            if (theNotches)
+                PostToWindow(theWindow, WM_MOUSEWHEEL, MAKEWPARAM(MouseKeys(), (WORD)(SHORT)(theNotches * WHEEL_DELTA)),
+                             PointParam(gCursorX, gCursorY));
             return;
         }
         // The event's position is relative to the native window it happened in, which is not the capture window
@@ -1044,7 +1062,22 @@ LONG_PTR WINAPI GetWindowLongPtrA(HWND inWindow, INT inIndex)
 
 LONG_PTR WINAPI SetWindowLongPtrA(HWND inWindow, INT inIndex, LONG_PTR inValue)
 {
-    return (LONG_PTR)SetWindowLongA(inWindow, inIndex, (LONG)inValue);
+    Window* theWindow = WindowOf(inWindow);
+    if (!theWindow)
+        return 0;
+    LONG_PTR thePrevious = GetWindowLongPtrA(inWindow, inIndex);
+    switch (inIndex) {
+    case GWL_WNDPROC: theWindow->mProcedure = (WNDPROC)inValue; break;
+    case GWL_HINSTANCE: theWindow->mInstance = (HINSTANCE)inValue; break;
+    case GWL_ID: theWindow->mID = (LONG_PTR)inValue; break;
+    case GWL_STYLE: theWindow->mStyle = (DWORD)inValue; break;
+    case GWL_EXSTYLE: theWindow->mExStyle = (DWORD)inValue; break;
+    case GWL_USERDATA: theWindow->mUserData = inValue; break;
+    default:
+        SetLastError(ERROR_INVALID_INDEX);
+        return 0;
+    }
+    return thePrevious;
 }
 #endif
 
