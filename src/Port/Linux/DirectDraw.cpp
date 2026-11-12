@@ -75,6 +75,7 @@ GLuint Compile(GLenum inKind, const char* inSource)
 
 bool StartGL()
 {
+    std::lock_guard<std::recursive_mutex> theSdlLock(gSdlLock);
     if (gContext)
         return true;
     if (!StartVideo())
@@ -203,6 +204,7 @@ int Height(const RECT& inRect) { return inRect.bottom - inRect.top; }
 // ---- the context ----
 GLScope::GLScope(SDL_Window* inWindow)
 {
+    std::lock_guard<std::recursive_mutex> theSdlLock(gSdlLock);
     SDL_Window* theWindow = inWindow ? inWindow : gScopeDepth ? gScopeWindow : gHiddenWindow;
     mOk = gContext != nullptr;
     if (!mOk)
@@ -228,6 +230,7 @@ GLScope::GLScope(SDL_Window* inWindow)
 
 GLScope::~GLScope()
 {
+    std::lock_guard<std::recursive_mutex> theSdlLock(gSdlLock);
     if (mOk && --gScopeDepth == 0) {
         gl.Flush();
         SDL_GL_MakeCurrent(gScopeWindow, nullptr);
@@ -513,10 +516,13 @@ public:
     {
         if (mFullscreen == inOn || !mNative || getenv("EE_PORT_WINDOWED"))
             return;
-        // only the video thread changes native windows: the thread that gave the window
+        // the window's own thread is the one that made its native window, and the one that changes it
         if (NativeWindow(mWindow, true) != mNative)
             return;
-        SDL_SetWindowFullscreen(mNative, inOn ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+        {
+            std::lock_guard<std::recursive_mutex> theSdlLock(gSdlLock);
+            SDL_SetWindowFullscreen(mNative, inOn ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+        }
         mFullscreen = inOn;
     }
 
@@ -525,6 +531,7 @@ public:
     {
         if (!mPrimary || !mNative || !IsWindow(mWindow))
             return;
+        std::lock_guard<std::recursive_mutex> theSdlLock(gSdlLock);
         GLScope theScope(mNative);
         if (!theScope.Ok() || !mPrimary->EnsureGpu())
             return;

@@ -4,9 +4,10 @@
 // window is first drawn to (NativeWindow): the DirectDraw layer asks for an OpenGL one, GDI for a software one. A
 // window has no frame here: its window rectangle is its client rectangle, and SDL draws any decoration outside it.
 //
-// Each thread has one message queue for posted window messages and thread messages. The video thread (StartVideo)
-// pumps SDL events into window messages whenever it peeks or waits for a message. PeekMessage returns, in Windows'
-// order, sent messages (handled at once), posted messages, WM_QUIT, WM_PAINT, then WM_TIMER.
+// Each thread has one message queue for posted window messages and thread messages. A thread that owns a window makes
+// that window's native window, and pumps SDL events into window messages whenever it peeks or waits for a message:
+// SDL is entered under gSdlLock, so the game's window threads may take turns. PeekMessage returns, in Windows' order,
+// sent messages (handled at once), posted messages, WM_QUIT, WM_PAINT, then WM_TIMER.
 #include "Win32Internal.h"
 
 #include <SDL.h>
@@ -24,6 +25,7 @@
 namespace {
 
 using Clock = std::chrono::steady_clock;
+using eeport::gSdlLock;
 using eeport::gWaitChanged;
 using eeport::gWaitLock;
 
@@ -82,7 +84,6 @@ std::recursive_mutex gWindowsLock;
 std::set<Window*> gWindows;                     // under gWindowsLock
 std::map<std::string, WindowClass> gClasses;    // lower-case names, under gWindowsLock
 Window gDesktop;
-SDL_threadID gVideoThread;
 bool gVideoStarted = false;
 bool gAppActive = false;
 HWND gFocus = NULL;
@@ -134,9 +135,15 @@ ThreadQueue& QueueOf(DWORD inThread)
     return gQueues[inThread];
 }
 
-bool IsVideoThread()
+// True when the thread owns a window: such a thread pumps SDL events when it peeks or waits for a message, so it
+// wakes often enough to do that
+bool PumpsEvents(DWORD inThread)
 {
-    return gVideoStarted && SDL_ThreadID() == gVideoThread;
+    std::lock_guard<std::recursive_mutex> theLock(gWindowsLock);
+    for (const Window* theWindow : gWindows)
+        if (!theWindow->mDestroyed && theWindow->mThread == inThread)
+            return true;
+    return false;
 }
 
 void Post(DWORD inThread, HWND inWindow, UINT inMessage, WPARAM inWParam, LPARAM inLParam)
@@ -172,6 +179,7 @@ DWORD WindowStyleForSDL(const Window* inWindow)
 // Brings a window's native SDL window in line with its rectangle, title and visibility
 void SyncNative(Window* inWindow)
 {
+    std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
     if (!inWindow->mNative)
         return;
     SDL_SetWindowTitle(inWindow->mNative, inWindow->mTitle.c_str());
@@ -215,9 +223,10 @@ void SetAppActive(bool inActive)
         PostToWindow((HWND)theWindow, WM_ACTIVATEAPP, inActive, 0);
 }
 
-// On the video thread: shows the current cursor, or hides it when the display count is negative or the cursor is NULL
+// Shows the current cursor, or hides it when the display count is negative or the cursor is NULL
 void ApplyCursor()
 {
+    std::lock_guard<std::recursive_mutex> theSdlLock(gSdlLock);
     std::lock_guard<std::mutex> theLock(gCursorLock);
     if (!gCursorChanged)
         return;
@@ -237,8 +246,7 @@ void CursorChanged()
         std::lock_guard<std::mutex> theLock(gCursorLock);
         gCursorChanged = true;
     }
-    if (IsVideoThread())
-        ApplyCursor();
+    ApplyCursor();
 }
 
 // Turns one SDL event into window messages
@@ -383,10 +391,11 @@ void Translate(const SDL_Event& inEvent)
     }
 }
 
-// On the video thread: turns the pending SDL events into window messages
+// Turns the pending SDL events into window messages, for the thread that pumps them
 void Pump()
 {
-    if (!IsVideoThread())
+    std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
+    if (!gVideoStarted)
         return;
     SDL_Event theEvent;
     while (SDL_PollEvent(&theEvent))
@@ -493,15 +502,17 @@ Clock::duration WaitTime(DWORD inThread, Clock::duration inLongest)
 
 namespace eeport {
 
+std::recursive_mutex gSdlLock;
+
 bool StartVideo()
 {
+    std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
     if (gVideoStarted)
         return true;
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) {
         Log("SDL video does not start: %s", SDL_GetError());
         return false;
     }
-    gVideoThread = SDL_ThreadID();
     gVideoStarted = true;
     SDL_Rect theBounds = {0, 0, 1024, 768};
     SDL_GetDisplayBounds(0, &theBounds);
@@ -513,8 +524,9 @@ bool StartVideo()
 SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL)
 {
     Window* theWindow = WindowOf(inWindow);
-    if (!theWindow || theWindow == &gDesktop || !StartVideo() || !IsVideoThread() || theWindow->mThread != CurrentThreadID())
+    if (!theWindow || theWindow == &gDesktop || !StartVideo() || theWindow->mThread != CurrentThreadID())
         return nullptr;
+    std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
     if (theWindow->mNative && theWindow->mNativeGL && !inOpenGL)
         return nullptr;
     if (theWindow->mNative && theWindow->mNativeGL != inOpenGL) {
@@ -939,16 +951,20 @@ HWND WINAPI SetCapture(HWND inWindow)
 {
     HWND thePrevious = gCapture;
     gCapture = WindowOf(inWindow) ? inWindow : NULL;
-    if (IsVideoThread())
+    {
+        std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
         SDL_CaptureMouse(gCapture ? SDL_TRUE : SDL_FALSE);
+    }
     return thePrevious;
 }
 
 BOOL WINAPI ReleaseCapture(void)
 {
     gCapture = NULL;
-    if (IsVideoThread())
+    {
+        std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
         SDL_CaptureMouse(SDL_FALSE);
+    }
     return TRUE;
 }
 
@@ -1131,7 +1147,7 @@ BOOL WINAPI GetMessageA(LPMSG outMessage, HWND inWindow, UINT inFirst, UINT inLa
     DWORD theThread = eeport::CurrentThreadID();
     while (!NextMessage(outMessage, inWindow, inFirst, inLast, true)) {
         std::unique_lock<std::mutex> theLock(gWaitLock);
-        gWaitChanged.wait_for(theLock, WaitTime(theThread, IsVideoThread() ? std::chrono::milliseconds(5)
+        gWaitChanged.wait_for(theLock, WaitTime(theThread, PumpsEvents(theThread) ? std::chrono::milliseconds(5)
                                                                             : std::chrono::milliseconds(50)));
     }
     return outMessage->message != WM_QUIT;
@@ -1465,8 +1481,8 @@ BOOL WINAPI DestroyCursor(HCURSOR inCursor)
             gCursorChanged = true;
         }
     }
-    // An SDL cursor belongs to the video thread; one made elsewhere is never freed, as a cursor is rarely destroyed
-    if (IsVideoThread()) {
+    {
+        std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
         SDL_FreeCursor(theCursor->mNative);
         SDL_FreeSurface(theCursor->mImage);
         delete theCursor;
@@ -1513,8 +1529,10 @@ BOOL WINAPI SetCursorPos(INT inX, INT inY)
 {
     gCursorX = inX;
     gCursorY = inY;
-    if (IsVideoThread())
+    {
+        std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
         SDL_WarpMouseGlobal(inX, inY);
+    }
     return TRUE;
 }
 

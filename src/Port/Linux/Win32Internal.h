@@ -78,6 +78,8 @@ struct KernelObject {
 
 extern std::mutex gWaitLock;
 extern std::condition_variable gWaitChanged;
+// SDL's video subsystem is used from more than one thread: the lock serialises every call into it
+extern std::recursive_mutex gSdlLock;
 
 HANDLE NewHandle(KernelObject* inObject);
 // The object of a handle, or NULL for NULL, INVALID_HANDLE_VALUE and the pseudo handles

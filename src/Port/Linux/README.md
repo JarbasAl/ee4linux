@@ -88,6 +88,17 @@ The test `test_ddraw` draws on Mesa's software renderer through SDL's offscreen 
 expected pixel comes from Direct3D 7's rules for coverage, lighting, fog, blending and the alpha test, worked out in
 the test.
 
+## Threads and the C++ runtime
+
+A window belongs to the thread that made it. That thread makes the window's native window and pumps SDL's events when
+it peeks or waits for a message, and every call into SDL is serialised, so the start screen's thread and the game's
+threads take turns. The thread the entry point runs on has a thread object as well, so `GetCurrentThread`'s pseudo
+handle answers outside the threads the game starts.
+
+`dynamic_cast` follows MSVC's rule, not the Itanium ABI's: the type in the object's own vtable decides. The game keeps
+the `RTSDummyUnit` heads of its unit lists in `RTSUnit` pointers and casts them back, which MSVC allows and the Itanium
+ABI refuses, so the images link with `--wrap=__dynamic_cast`, which `CxxAbi.cpp` answers.
+
 ## Sound
 
 The Miles mixer plug-in plays through the layer's Miles Sound System, which opens one SDL audio device per Miles
