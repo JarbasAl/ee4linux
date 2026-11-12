@@ -3,7 +3,7 @@
 The native build compiles the game's own source against Wine's headers and links it to this layer in place of
 Windows. The layer implements the part of the Win32 API that the game, its plug-ins and WON call. It has files and
 paths, the registry, threads and synchronization, modules and resources, windows and messages, GDI, Winsock,
-DirectInput, DirectMusic, Bink movies and the Miles Sound System.
+DirectDraw and Direct3D, DirectInput, DirectMusic, Bink movies and the Miles Sound System.
 SDL2 gives it windows, input and the clipboard.
 
 Build the layer and run its tests:
@@ -47,6 +47,26 @@ DirectInput gives the game its system keyboard and mouse from SDL's events. A ke
 0x80 for an extended key, as in DirectInput. While the game holds the mouse exclusively, SDL is in relative mouse
 mode: the system cursor is hidden, the game draws its own, and the window gets no mouse messages. The game releases
 the mouse when it stops being the active application, and in full screen when it shows the multiplayer lobby.
+
+## Display
+
+The DX7 display plug-in draws through `DirectDraw.cpp` and `Direct3D.cpp`, which implement DirectDraw 7 and Direct3D
+7 on OpenGL 3.3 core. They implement the interfaces and the fixed-function subset that the plug-in uses: one vertex
+format, texture stage 0, up to eight lights, vertex fog, colour keys, mipmaps and GDI text on surfaces.
+
+Each surface keeps its pixels twice: in memory, in the exact layout of its pixel format, and in an OpenGL texture.
+Lock, Blt and GetDC work on the memory, and Direct3D draws into the texture. Each copy is brought up to date only when
+the other one changed. Direct3D draws are recorded and run at EndScene, or earlier when a surface that they use is
+read. One lock serialises all threads, as DDSCL_MULTITHREADED does, so the cursor thread and the loading thread can
+use surfaces while the graphics thread draws.
+
+In full screen, the window covers the desktop and the game's mode is scaled to fit it with its aspect kept. The modes
+on offer are 640x480, 800x600 and the common sizes up to the desktop's, in 16 and 32 bits. Set `EE_PORT_WINDOWED` to
+keep the window at the mode's size.
+
+The test `test_ddraw` draws on Mesa's software renderer through SDL's offscreen driver, so it needs no display. Each
+expected pixel comes from Direct3D 7's rules for coverage, lighting, fog, blending and the alpha test, worked out in
+the test.
 
 ## Sound
 

@@ -114,6 +114,8 @@ HCURSOR MakeCursor(SDL_Surface* inImage, int inHotX, int inHotY);
 // to the next; 16-bit pixels take their layout from the masks. DeleteDC releases the DC, not the pixels.
 HDC CreateBufferDC(void* inBits, int inWidth, int inHeight, int inPitch, int inBitCount, DWORD inRedMask,
                    DWORD inGreenMask, DWORD inBlueMask);
+// True when GDI wrote pixels of a CreateBufferDC DC since the last call; outRect bounds them
+bool TakeBufferDrawn(HDC inDC, RECT* outRect);
 // On the video thread: shows what GDI drew into windows since the last call
 void PresentWindows();
 // Releases the pixels GDI keeps for a destroyed window

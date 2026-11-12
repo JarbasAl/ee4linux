@@ -83,6 +83,7 @@ struct DC {
     bool mClipped = false;
     RECT mClip = {};
     bool mDrawn = false;
+    RECT mDrawnRect = {};   // a buffer DC's pixels written since TakeBufferDrawn, while mDrawn is set
 };
 
 std::set<GdiObject*> gObjects;
@@ -241,6 +242,17 @@ struct Painter {
         if (!Inside(inX, inY))
             return;
         WritePixel(mDC->mBitmap, inX, inY, inColor);
+        if (mDC->mKind == DC::kBuffer) {
+            RECT& theRect = mDC->mDrawnRect;
+            if (!mDC->mDrawn)
+                SetRect(&theRect, inX, inY, inX + 1, inY + 1);
+            else {
+                theRect.left = std::min<LONG>(theRect.left, inX);
+                theRect.top = std::min<LONG>(theRect.top, inY);
+                theRect.right = std::max<LONG>(theRect.right, inX + 1);
+                theRect.bottom = std::max<LONG>(theRect.bottom, inY + 1);
+            }
+        }
         mDC->mDrawn = true;
     }
     // inCoverage of 255 is inColor, 0 leaves the pixel
@@ -682,6 +694,17 @@ HDC CreateBufferDC(void* inBits, int inWidth, int inHeight, int inPitch, int inB
     DC* theDC = NewDC(DC::kBuffer);
     theDC->mBitmap = theBitmap;
     return (HDC)theDC;
+}
+
+bool TakeBufferDrawn(HDC inDC, RECT* outRect)
+{
+    std::lock_guard<std::recursive_mutex> theLock(gGdiLock);
+    DC* theDC = DCOf(inDC);
+    if (!theDC || theDC->mKind != DC::kBuffer || !theDC->mDrawn)
+        return false;
+    *outRect = theDC->mDrawnRect;
+    theDC->mDrawn = false;
+    return true;
 }
 
 void PresentWindows()
