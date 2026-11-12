@@ -101,6 +101,18 @@ struct Thread : KernelObject {
 
 static thread_local Thread* tThread;
 
+// The calling thread's thread object. A thread this layer starts gets its object in ThreadMain; a thread it did not
+// start (the main thread of the entry point) gets one on first use, so that GetCurrentThread's pseudo handle refers to
+// a real object there too.
+static Thread* CurrentThreadObject()
+{
+    if (!tThread) {
+        tThread = new Thread;
+        tThread->mID = CurrentThreadID();
+    }
+    return tThread;
+}
+
 static void FinishThread(Thread* inThread, DWORD inExitCode)
 {
     {
@@ -194,7 +206,7 @@ BOOL WINAPI DuplicateHandle(HANDLE inSourceProcess, HANDLE inSource, HANDLE inTa
                             DWORD inAccess, BOOL inInherit, DWORD inOptions)
 {
     (void)inSourceProcess, (void)inTargetProcess, (void)inAccess, (void)inInherit;
-    KernelObject* theObject = inSource == GetCurrentThread() ? tThread : ObjectOf(inSource);
+    KernelObject* theObject = inSource == GetCurrentThread() ? CurrentThreadObject() : ObjectOf(inSource);
     if (!theObject) {
         tLastError = ERROR_INVALID_HANDLE;
         return FALSE;
@@ -276,7 +288,7 @@ DWORD WINAPI WaitForMultipleObjects(DWORD inCount, const HANDLE* inHandles, BOOL
         return WAIT_FAILED;
     }
     for (DWORD i = 0; i < inCount; ++i) {
-        theObjects[i] = inHandles[i] == GetCurrentThread() ? tThread : ObjectOf(inHandles[i]);
+        theObjects[i] = inHandles[i] == GetCurrentThread() ? CurrentThreadObject() : ObjectOf(inHandles[i]);
         if (!theObjects[i]) {
             tLastError = ERROR_INVALID_HANDLE;
             return WAIT_FAILED;
@@ -419,7 +431,7 @@ BOOL WINAPI TerminateThread(HANDLE inThread, DWORD inExitCode)
 
 BOOL WINAPI GetExitCodeThread(HANDLE inThread, LPDWORD outExitCode)
 {
-    KernelObject* theObject = inThread == GetCurrentThread() ? tThread : ObjectOf(inThread);
+    KernelObject* theObject = inThread == GetCurrentThread() ? CurrentThreadObject() : ObjectOf(inThread);
     if (!theObject || theObject->mKind != KernelObject::kThread) {
         *outExitCode = STILL_ACTIVE;
         return inThread == GetCurrentThread();
@@ -453,7 +465,7 @@ DWORD WINAPI SuspendThread(HANDLE inThread)
 
 BOOL WINAPI SetThreadPriority(HANDLE inThread, int inPriority)
 {
-    KernelObject* theObject = inThread == GetCurrentThread() ? tThread : ObjectOf(inThread);
+    KernelObject* theObject = inThread == GetCurrentThread() ? CurrentThreadObject() : ObjectOf(inThread);
     if (theObject && theObject->mKind == KernelObject::kThread)
         static_cast<Thread*>(theObject)->mPriority = inPriority;
     return TRUE;
@@ -461,7 +473,7 @@ BOOL WINAPI SetThreadPriority(HANDLE inThread, int inPriority)
 
 int WINAPI GetThreadPriority(HANDLE inThread)
 {
-    KernelObject* theObject = inThread == GetCurrentThread() ? tThread : ObjectOf(inThread);
+    KernelObject* theObject = inThread == GetCurrentThread() ? CurrentThreadObject() : ObjectOf(inThread);
     if (theObject && theObject->mKind == KernelObject::kThread)
         return static_cast<Thread*>(theObject)->mPriority;
     return THREAD_PRIORITY_NORMAL;

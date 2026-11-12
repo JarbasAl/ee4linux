@@ -81,6 +81,24 @@ static unsigned int __attribute__((stdcall)) HoldMutex(void*)
 
 static void TestThreads()
 {
+    // The calling thread has a thread object as well, though the layer did not start it: GetCurrentThread's pseudo
+    // handle answers for the thread, and a duplicate of it is a handle to the same thread, as on Windows
+    HANDLE theSelf = NULL;
+    CHECK(DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(), &theSelf,
+                          THREAD_ALL_ACCESS, FALSE, DUPLICATE_SAME_ACCESS));
+    CHECK(theSelf != NULL && theSelf != GetCurrentThread());
+    DWORD theSelfCode = 0;
+    CHECK(GetExitCodeThread(theSelf, &theSelfCode) && theSelfCode == STILL_ACTIVE);
+    CHECK(GetExitCodeThread(GetCurrentThread(), &theSelfCode) && theSelfCode == STILL_ACTIVE);
+    CHECK(WaitForSingleObject(theSelf, 0) == WAIT_TIMEOUT);     // the calling thread has not exited
+    CHECK(GetThreadPriority(theSelf) == THREAD_PRIORITY_NORMAL);
+    CHECK(SetThreadPriority(theSelf, THREAD_PRIORITY_ABOVE_NORMAL));
+    CHECK(GetThreadPriority(GetCurrentThread()) == THREAD_PRIORITY_ABOVE_NORMAL);
+    CHECK(SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL));
+    CHECK(CloseHandle(theSelf));
+    CHECK(GetExitCodeThread(GetCurrentThread(), &theSelfCode));  // the pseudo handle outlives the duplicate
+    CHECK(GetThreadPriority(GetCurrentThread()) == THREAD_PRIORITY_NORMAL);
+
     HANDLE theEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
     DWORD theID = 0;
     HANDLE theThread = CreateThread(NULL, 0, SetLater, theEvent, 0, &theID);
