@@ -723,6 +723,7 @@ BOOL WINAPI DestroyWindow(HWND inWindow)
     HWND theNext = NULL;
     {
         std::lock_guard<std::recursive_mutex> theLock(gWindowsLock);
+        std::lock_guard<std::recursive_mutex> theSdlLock(gSdlLock);
         if (theWindow->mNative)
             SDL_DestroyWindow(theWindow->mNative);
         theWindow->mNative = nullptr;
@@ -763,14 +764,18 @@ BOOL WINAPI ShowWindow(HWND inWindow, INT inCommand)
         theWindow->mVisible = true;
         theWindow->mMinimized = true;
         theWindow->mStyle |= WS_VISIBLE;
-        if (theWindow->mNative)
+        if (theWindow->mNative) {
+            std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
             SDL_MinimizeWindow(theWindow->mNative);
+        }
         break;
     default:
         theWindow->mVisible = true;
         theWindow->mStyle |= WS_VISIBLE;
-        if (theWindow->mMinimized && theWindow->mNative)
+        if (theWindow->mMinimized && theWindow->mNative) {
+            std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
             SDL_RestoreWindow(theWindow->mNative);
+        }
         theWindow->mMinimized = false;
         break;
     }
@@ -936,8 +941,10 @@ HWND WINAPI SetFocus(HWND inWindow)
     if (WindowOf(thePrevious))
         CallProcedure(thePrevious, WM_KILLFOCUS, (WPARAM)inWindow, 0);
     SetFocusWindow(inWindow);
-    if (theWindow->mNative)
+    if (theWindow->mNative) {
+        std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
         SDL_RaiseWindow(theWindow->mNative);
+    }
     CallProcedure(inWindow, WM_SETFOCUS, (WPARAM)thePrevious, 0);
     return thePrevious;
 }
@@ -983,8 +990,10 @@ BOOL WINAPI SetWindowTextA(HWND inWindow, LPCSTR inText)
     if (!theWindow)
         return FALSE;
     theWindow->mTitle = inText ? inText : "";
-    if (theWindow->mNative)
+    if (theWindow->mNative) {
+        std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
         SDL_SetWindowTitle(theWindow->mNative, theWindow->mTitle.c_str());
+    }
     return TRUE;
 }
 
@@ -1454,6 +1463,7 @@ HICON WINAPI LoadIconA(HINSTANCE, LPCSTR)
 HCURSOR WINAPI CreateCursor(HINSTANCE, INT inHotX, INT inHotY, INT inWidth, INT inHeight, LPCVOID inAndMask,
                             LPCVOID inXorMask)
 {
+    std::unique_lock<std::recursive_mutex> theLock(gSdlLock);
     SDL_Surface* theImage = SDL_CreateRGBSurfaceWithFormat(0, inWidth, inHeight, 32, SDL_PIXELFORMAT_ARGB8888);
     if (!theImage)
         return NULL;
@@ -1564,7 +1574,10 @@ BOOL WINAPI EmptyClipboard(void)
 
 BOOL WINAPI IsClipboardFormatAvailable(UINT inFormat)
 {
-    return (inFormat == CF_TEXT || inFormat == CF_UNICODETEXT) && eeport::StartVideo() && SDL_HasClipboardText();
+    if (inFormat != CF_TEXT && inFormat != CF_UNICODETEXT)
+        return FALSE;
+    std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
+    return eeport::StartVideo() && SDL_HasClipboardText();
 }
 
 HANDLE WINAPI SetClipboardData(UINT inFormat, HANDLE inData)
@@ -1586,8 +1599,11 @@ HANDLE WINAPI SetClipboardData(UINT inFormat, HANDLE inData)
         theText.resize(std::max(0, WideCharToMultiByte(CP_UTF8, 0, theWide.c_str(), -1, &theText[0],
                                                        (int)theText.size(), nullptr, nullptr) - 1));
     }
-    if (!eeport::StartVideo() || SDL_SetClipboardText(theText.c_str()) != 0)
-        return NULL;
+    {
+        std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
+        if (!eeport::StartVideo() || SDL_SetClipboardText(theText.c_str()) != 0)
+            return NULL;
+    }
     std::lock_guard<std::mutex> theLock(gClipboardLock);
     gClipboardBlocks.push_back(inData);
     return inData;
@@ -1596,7 +1612,10 @@ HANDLE WINAPI SetClipboardData(UINT inFormat, HANDLE inData)
 // The text in a block the clipboard owns until it is next emptied
 HANDLE WINAPI GetClipboardData(UINT inFormat)
 {
-    if ((inFormat != CF_TEXT && inFormat != CF_UNICODETEXT) || !eeport::StartVideo() || !SDL_HasClipboardText())
+    if (inFormat != CF_TEXT && inFormat != CF_UNICODETEXT)
+        return NULL;
+    std::lock_guard<std::recursive_mutex> theSdlLock(gSdlLock);
+    if (!eeport::StartVideo() || !SDL_HasClipboardText())
         return NULL;
     char* theText = SDL_GetClipboardText();
     std::vector<wchar_t> theWide(strlen(theText) + 1);

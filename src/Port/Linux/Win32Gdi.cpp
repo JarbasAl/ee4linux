@@ -342,6 +342,7 @@ bool Present(HWND inWindow)
     SDL_Window* theNative = eeport::NativeWindow(inWindow, false);
     if (!theNative)
         return false;
+    std::lock_guard<std::recursive_mutex> theLock(eeport::gSdlLock);
     SDL_Surface* theTarget = SDL_GetWindowSurface(theNative);
     if (!theTarget)
         return true;
@@ -1604,6 +1605,7 @@ HICON WINAPI CreateIconIndirect(PICONINFO inInfo)
     if (!theColor)
         return NULL;
     Bitmap* theMask = BitmapOf(inInfo->hbmMask);
+    std::lock_guard<std::recursive_mutex> theSdlLock(eeport::gSdlLock);
     SDL_Surface* theImage =
         SDL_CreateRGBSurfaceWithFormat(0, theColor->mWidth, theColor->mHeight, 32, SDL_PIXELFORMAT_ARGB8888);
     if (!theImage)
