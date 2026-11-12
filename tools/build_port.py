@@ -73,7 +73,14 @@ TARGETS = {
                   "-Wno-c++11-narrowing"],
         "cxxflags": ["-std=gnu++14"],
         "includes": [ROOT / "include" / "port" / "linux"],
-        "system_includes": [pathlib.Path("/usr/include/wine/windows")],
+        "system_includes": [pathlib.Path("/usr/include/wine/windows"), TOOLCHAIN / "sdl2-i686" / "include" / "SDL2",
+                            TOOLCHAIN / "ffmpeg-i686" / "include"],
+        # the Win32 layer's libraries (tools/fetch_port_toolchain.py builds SDL2 and FFmpeg), found at run time
+        # through the rpath
+        "libs": ["-lpthread", "-ldl",
+                 *(f"{flag}{TOOLCHAIN / lib / 'lib'}" for lib in ("sdl2-i686", "ffmpeg-i686")
+                   for flag in ("-L", "-Wl,-rpath,")),
+                 "-lSDL2", "-lavformat", "-lavcodec", "-lswscale", "-lswresample", "-lavutil", "-Wl,--wrap=fopen"],
         "modules": ["win32", "lle", "jpeg", "tcp", "default", "mixer", "dx7hrtnl", "exe", "exeimg", "won"],
     },
 }

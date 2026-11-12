@@ -29,8 +29,7 @@ def build(source, binary, layer):
     cmd = [str(cfg["cxx"]), *[f for f in cfg["flags"] if f != "-w"], *cfg["cxxflags"],
            *bp.unit_defines(source, "win32"), "-include", str(bp.COMPAT),
            *(f"-I{d}" for d in cfg["includes"]), *(f"-I{d}" for d in bp.INCLUDES),
-           *(f"-isystem{d}" for d in cfg["system_includes"]), str(source), *layer, "-lpthread", "-ldl",
-           "-Wl,--wrap=fopen", "-o", str(binary)]
+           *(f"-isystem{d}" for d in cfg["system_includes"]), str(source), *layer, *cfg["libs"], "-o", str(binary)]
     return subprocess.run(cmd, capture_output=True, text=True)
 
 
@@ -68,6 +67,87 @@ def check_strings(scratch, layer):
         print(f"  {i}: {got.get(i)!r} against {want.get(i)!r}")
     return not wrong and not extra and language == dll.language and len(got) == len(want) and tables > 0
 
+MOVIES = bp.ROOT / "media" / "Movies"
+
+
+def ffmpeg_frame(movie, number, width, height):
+    """Frame `number` (from 1) of a movie as BGRA, decoded by the system's FFmpeg: the second decoder."""
+    run = subprocess.run(["ffmpeg", "-v", "error", "-i", str(movie), "-vf", f"select=eq(n\\,{number - 1})",
+                          "-frames:v", "1", "-pix_fmt", "bgra", "-f", "rawvideo", "-"], capture_output=True)
+    return run.stdout if len(run.stdout) == width * height * 4 else None
+
+
+def mean_difference(first, second):
+    return sum(abs(a - b) for a, b in zip(first, second)) / len(first)
+
+
+def play(scratch, layer, name, wait, frames, env=None):
+    """Runs dump_movie on a movie name; returns its report as a dict and the folder of its frames."""
+    binary = pathlib.Path(scratch) / "dump_movie"
+    if not binary.exists():
+        made = build(TESTS / "dump_movie.cpp", binary, layer)
+        if made.returncode:
+            print(f"dump_movie.cpp: does not build\n{made.stderr}")
+            return None, None
+    out = pathlib.Path(tempfile.mkdtemp(dir=scratch))
+    run = subprocess.run([str(binary), name, str(int(wait)), str(out), *map(str, frames)], capture_output=True,
+                         text=True, cwd=scratch, env=dict(os.environ, SDL_AUDIODRIVER="dummy", **(env or {})))
+    if run.returncode:
+        print(f"dump_movie {name}: exit {run.returncode}\n{run.stderr}")
+        return None, None
+    report = {}
+    for line in run.stdout.splitlines():
+        key, _, value = line.partition(" ")
+        report[key] = value
+    return report, out
+
+
+def check_frames(movie, report, out, frames):
+    width, height = map(int, report["size"].split())
+    good = True
+    for number in frames:
+        ours = (out / f"frame-{number}.bgra").read_bytes()
+        theirs = ffmpeg_frame(movie, number, width, height)
+        difference = mean_difference(ours, theirs) if theirs else None
+        print(f"  frame {number}: mean difference {difference if difference is None else round(difference, 3)}")
+        good = good and difference is not None and difference < 2
+    return good
+
+
+def check_movies(scratch, layer):
+    """A made movie in the game's Movies folder replaces its .bik, plays in time and decodes as FFmpeg decodes it.
+    The downloaded intro in media/Movies, when present, plays to its last frame."""
+    folder = pathlib.Path(scratch) / "Movies"
+    folder.mkdir()
+    movie = folder / "Test.webm"
+    made = subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=15:duration=2",
+                           "-f", "lavfi", "-i", "sine=frequency=440:duration=2", "-c:v", "libvpx-vp9", "-c:a",
+                           "libopus", str(movie)], capture_output=True, text=True)
+    if made.returncode:
+        print(f"movies: the test movie is not made\n{made.stderr}")
+        return False
+    report, out = play(scratch, layer, "movies\\TEST.bik", True, [1, 15, 30])
+    if report is None:
+        return False
+    seconds = float(report["seconds"])
+    print(f"movies: Test.webm as movies\\TEST.bik: size {report['size']}, frames {report['frames']}, played "
+          f"{report['played']}, last {report['last']}, {seconds:.3f} s")
+    good = (report["size"] == "320 240" and report["frames"] == "30" and report["played"] == "30"
+            and report["last"] == "30 of 30" and 1.85 < seconds < 2.3)
+    good = check_frames(movie, report, out, [1, 15, 30]) and good
+    intro = MOVIES / "Empire Earth.webm"
+    if not intro.exists():
+        print(f"movies: {intro} is absent; the intro check did not run")
+        return good
+    report, out = play(scratch, layer, "Movies\\Empire Earth.bik", False, [700],
+                       env={"EE_PORT_MOVIES": str(MOVIES)})
+    if report is None:
+        return False
+    print(f"movies: the intro: size {report['size']}, frames {report['frames']}, played {report['played']}, "
+          f"last {report['last']}, decode rate {report['rate']} frames per second")
+    good = check_frames(intro, report, out, [700]) and good
+    return good and report["size"] == "3194 2160" and report["played"] == "1471" and report["last"] == "1471 of 1471"
+
 
 def main():
     layer = sorted(str(o) for o in OBJECTS.rglob("*.o"))
@@ -92,8 +172,9 @@ def main():
                 print(run.stderr.rstrip())
             passed += run.returncode == 0
         strings_ok = check_strings(scratch, layer)
-    print(f"tests: {len(tests) + 1} in, {passed + strings_ok} passed")
-    return 0 if passed == len(tests) and strings_ok else 1
+        movies_ok = check_movies(scratch, layer)
+    print(f"tests: {len(tests) + 2} in, {passed + strings_ok + movies_ok} passed")
+    return 0 if passed == len(tests) and strings_ok and movies_ok else 1
 
 
 if __name__ == "__main__":

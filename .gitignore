@@ -2,3 +2,5 @@ build/
 toolchain/
 __pycache__/
 *.pyc
+# Replacement media (movies) from the player's own sources; never committed
+/media/
