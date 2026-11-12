@@ -19,6 +19,12 @@
 // FUNCTION: DX7HRTNL 0x10010512
 // FUNCTION: EXE 0x548291
 // Converts the float on the FPU stack to an integer, rounding towards zero (fast replacement for the CRT's)
+#if defined(__x86_64__)
+// A 64-bit build compiles float-to-integer conversions itself (cvttss2si), so the CRT's _ftol has no caller here.
+extern "C" void _ftol()
+{
+}
+#else
 extern "C" __declspec(naked) void _ftol()
 {
     __asm
@@ -54,3 +60,4 @@ extern "C" __declspec(naked) void _ftol()
         ret
     }
 }
+#endif // __x86_64__

@@ -93,9 +93,11 @@ public:
     const RefCount* CreateRef() const { InterlockedIncrement(&mRefCount); return this; } //actual SDK const retain API, same native+4
     void Release() { if (InterlockedDecrement(&mRefCount) <= 0) delete this; }
     //: GUIString::CopyOnWrite 0x29121b compares the count unsigned (`jbe`)
-    unsigned long GetRefCount() const { return mRefCount; }
+    ULONG GetRefCount() const { return mRefCount; }
 
-    mutable long mRefCount;                         // +0x04
+    // Windows' 32-bit long: the count is one dword at +0x04 on every target, and the interlocked calls take a 32-bit
+    // counter (Wine's LONG on a 64-bit build is an int)
+    mutable LONG mRefCount;                         // +0x04
 };
 
 // WONAPI's lock (no vtable: the lobby lock's `$E` ctor 0x297ef1 pushes the global's address straight to

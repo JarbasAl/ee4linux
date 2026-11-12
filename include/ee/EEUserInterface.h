@@ -115,7 +115,7 @@ public:
     long Run(void* inParameter);            // 0x2779b8 (the UI thread's loop; called from 0x140d73)
     void HandleMessage(unsigned long inMessage, long inParam1, long inParam2);  // 0x27828f (void: no result in eax) (the 0x401..0x443 switch)
     // 0x2798ce (address taken at 0x144747; calls the members below through gUserInterface)
-    static long __stdcall WindowProc(HWND__* inWindow, unsigned int inMessage, unsigned int inWParam,
+    static long __stdcall WindowProc(HWND__* inWindow, unsigned int inMessage, WPARAM inWParam,
                                      long inLParam);
     void ChangeRasterizer(long inRasterizer, long inScreen);  // 0x276804 (switches gRasterizer; message 0x41e)
     // 0x2768fe: resizes the game window (Empire Earth.cpp 0x140306) when the size changes or inForce

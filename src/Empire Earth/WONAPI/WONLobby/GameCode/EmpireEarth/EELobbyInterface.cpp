@@ -635,7 +635,9 @@ void EELobbyHide()
         thePoint.x = 0;
         thePoint.y = 0;
         ClientToScreen(gGameWindow->GetOSRepresentation(), &thePoint);
-        gMouse->SetPosition(GE2DPoint(thePoint.x, thePoint.y));
+        // POINT's members are Windows' LONG; on a 64-bit build that is an int, and the two constructors are equal
+        // candidates without the cast the original's exact match had
+        gMouse->SetPosition(GE2DPoint((long)thePoint.x, (long)thePoint.y));
         gMouse->mPointer = 0;
     }
     gEELobbyPlatformWindow->Show(false);
@@ -655,7 +657,8 @@ void EELobbyRunSierraUpdate()
         HINSTANCE theResult = ShellExecuteA(GetDesktopWindow(), "open",
             theFile.GetVolume() + theFile.GetDirectory() + theFile.GetFile(), NULL,
             theFile.GetVolume() + theFile.GetDirectory(), SW_SHOWNORMAL);
-        if ((int)theResult > 32) {
+        // ShellExecute returns a value above 32 on success, as an integer the width of a pointer
+        if ((INT_PTR)theResult > 32) {
             PostQuitMessage(0);
             return;
         }
