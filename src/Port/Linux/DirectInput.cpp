@@ -1,5 +1,5 @@
 // DirectInput 7 (dinput.dll) for the game's system keyboard and mouse (Input System.cpp), fed by SDL's events.
-// Win32Window.cpp passes each key, mouse movement, button and wheel event from the video thread; an acquired device
+// Win32Window.cpp passes each key, mouse movement, button and wheel event from the thread that pumps; an acquired device
 // keeps its state and its buffer of events, which the game reads from any thread.
 //
 // The rules are DirectInput's: a foreground device is acquired only while its window's top-level window has the

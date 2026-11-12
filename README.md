@@ -75,6 +75,19 @@ Testing (automated, on the full-source build of the game and engine):
   start in every direction between original and rebuilt images. Peer sync during play was not shown there.
 - Not covered yet: audio output, physical input devices.
 
+## Native Linux build
+
+`linux` carries a native build: the same source compiled for i386 Linux, with a Win32 layer (`src/Port/Linux/`) in
+place of Windows and its DirectX. It runs the game, its engine and its plug-ins as ELF files with the Windows names,
+on SDL2, OpenGL, FFmpeg and a SoundFont. `docs/` documents it, from the toolchain to every subsystem.
+
+```
+python3 -I tools/fetch_port_toolchain.py
+python3 -I tools/build_port.py --target linux --link
+python3 -I tools/port_linux_folder.py
+cd build/port-linux/run && ./ee-aoc
+```
+
 ## Building
 
 Requirements: Windows (the 32-bit VC6 tools run natively on 64-bit Windows 10/11), Python 3.12 (standard library

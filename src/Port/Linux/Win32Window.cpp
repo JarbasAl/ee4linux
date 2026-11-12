@@ -96,11 +96,11 @@ void SetFocusWindow(HWND inWindow)
     eeport::InputFocus(inWindow);
 }
 
-// The mouse position in screen coordinates, kept by the video thread from SDL events, so that any thread can read it
+// The mouse position in screen coordinates, kept from SDL events by the thread that pumps, so that any thread reads it
 // without calling into the windowing system
 std::atomic<LONG> gCursorX{0}, gCursorY{0};
 
-// A cursor handle points to one of these. The SDL cursor is made on the video thread when the cursor is first shown.
+// A cursor handle points to one of these. The SDL cursor is made under gSdlLock when the cursor is first shown.
 struct Cursor {
     SDL_SystemCursor mSystem = SDL_SYSTEM_CURSOR_ARROW;
     SDL_Surface* mImage = nullptr;       // a made cursor; NULL for a system cursor
@@ -1150,7 +1150,7 @@ BOOL WINAPI PeekMessageA(LPMSG outMessage, HWND inWindow, UINT inFirst, UINT inL
     return NextMessage(outMessage, inWindow, inFirst, inLast, (inFlags & PM_REMOVE) != 0);
 }
 
-// Waits for a message; FALSE for WM_QUIT. The video thread wakes every 5 ms to pump SDL events.
+// Waits for a message; FALSE for WM_QUIT. A thread that owns a window wakes every 5 ms to pump SDL events.
 BOOL WINAPI GetMessageA(LPMSG outMessage, HWND inWindow, UINT inFirst, UINT inLast)
 {
     DWORD theThread = eeport::CurrentThreadID();

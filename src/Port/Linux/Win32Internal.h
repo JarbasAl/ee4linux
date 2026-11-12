@@ -96,13 +96,13 @@ bool KeyOf(int inScancode, BYTE* outVirtualKey, BYTE* outScanCode, bool* outExte
 bool IsKeyDown(int inVirtualKey);
 
 // ---- windows and messages (Win32Window.cpp) ----
-// Starts SDL video. The calling thread becomes the one that pumps SDL events into window messages: the native main
-// calls it first; otherwise the first thread to need video does.
+// Starts SDL video: once, from whichever thread needs it first, under gSdlLock. Every thread that owns a window
+// pumps SDL events into window messages when it peeks or waits for one.
 bool StartVideo();
-// The native SDL window of a window, made on first use: with OpenGL for the DirectDraw layer, or with a software
-// surface for GDI. An OpenGL request replaces a software window; a software request on an OpenGL window gets NULL,
-// as the DirectDraw layer owns what it shows. NULL also for a window owned by a thread other than the video
-// thread, or without video.
+// The native SDL window of a window, made on first use by the thread that owns the window: with OpenGL for the
+// DirectDraw layer, or with a software surface for GDI. An OpenGL request replaces a software window; a software
+// request on an OpenGL window gets NULL, as the DirectDraw layer owns what it shows. NULL also for a window owned by
+// another thread, or without video.
 SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL);
 // The window of a native SDL window, or NULL
 HWND WindowOfNative(SDL_Window* inNative);
@@ -120,13 +120,14 @@ HDC CreateBufferDC(void* inBits, int inWidth, int inHeight, int inPitch, int inB
                    DWORD inGreenMask, DWORD inBlueMask, BufferHook inBeforeDraw = nullptr, void* inOwner = nullptr);
 // True when GDI wrote pixels of a CreateBufferDC DC since the last call; outRect bounds them
 bool TakeBufferDrawn(HDC inDC, RECT* outRect);
-// On the video thread: shows what GDI drew into windows since the last call
+// Shows what GDI drew into windows since the last call, from the thread that pumps
 void PresentWindows();
 // Releases the pixels GDI keeps for a destroyed window
 void ForgetWindowSurface(HWND inWindow);
 
 // ---- DirectInput (DirectInput.cpp) ----
-// The video thread passes SDL's input. A key is its DIK code: the PC scan code, plus 0x80 for an extended key.
+// The thread that pumps passes SDL's input in. A key is its DIK code: the PC scan code, plus 0x80 for an extended
+// key.
 void InputKey(BYTE inCode, bool inDown);
 void InputMouseMove(int inX, int inY);
 void InputMouseWheel(int inNotches);
@@ -136,7 +137,7 @@ void InputMouseButton(int inButton, bool inDown);
 void InputFocus(HWND inFocus);
 // Whether DirectInput holds the mouse exclusively: the window then gets no mouse messages
 bool MouseHeld();
-// On the video thread: puts SDL into relative mouse mode while DirectInput holds the mouse
+// Under gSdlLock, from the thread that pumps: puts SDL into relative mouse mode while DirectInput holds the mouse
 void ApplyMouseMode();
 
 // ---- Miles (Miles.cpp) ----

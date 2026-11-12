@@ -3,7 +3,7 @@
 // A bitmap is a pixel buffer: 32-bit for the bitmaps GDI makes (compatible bitmaps, DIB conversions, resources),
 // or the caller's own layout for a DIB section and for a DirectDraw surface's DC (CreateBufferDC). A window DC draws
 // into a 32-bit buffer the layer keeps for the window; releasing a DC that drew shows the buffer in the window's
-// native SDL window, at once on the video thread or at its next message pump otherwise.
+// native SDL window, at once on the thread that draws or at its next message pump otherwise.
 //
 // Text is TrueType through stb_truetype, measured as GDI measures it (GdiTrueType.cpp), from the installed faces
 // (GdiFontDB.cpp). One lock serialises all GDI calls, as the glyph cache and the font scan are shared.

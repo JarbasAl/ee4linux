@@ -1,5 +1,8 @@
 # The Win32 layer of the native Linux build
 
+`docs/` in the repository root documents the whole native build: the toolchain, the run folder, every subsystem, the
+tests and the failure modes. This page is the layer's own summary and its how-to.
+
 The native build compiles the game's own source against Wine's headers and links it to this layer in place of
 Windows. The layer implements the part of the Win32 API that the game, its plug-ins and WON call. It has files and
 paths, the registry, threads and synchronization, modules and resources, windows and messages, GDI, Winsock,
