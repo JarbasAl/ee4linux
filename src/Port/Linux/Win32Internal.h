@@ -138,6 +138,12 @@ void ApplyMouseMode();
 void MilesWithoutDevice();
 // Mixes inFrames stereo frames of a Miles driver's playing samples into outSamples, at the driver's rate
 void MixMiles(void* inDriver, int16_t* outSamples, int inFrames);
+// The music the Miles mixer adds to the first driver opened: DirectMusic's synthesizer. It adds inFrames stereo
+// frames at inRate into ioStereo, interleaved, at full scale 1, on the audio thread under the mixer's lock.
+using MusicSource = void (*)(float* ioStereo, int inFrames, int inRate);
+void SetMusicSource(MusicSource inSource);
+// The device rate of the driver the music plays through, or 0 while no driver is open
+int MusicRate();
 
 // ---- modules (Win32Module.cpp) ----
 // The bytes of a resource in a PE module and their size, or NULL; inLanguage 0 takes the first language

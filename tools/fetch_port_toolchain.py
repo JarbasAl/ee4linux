@@ -14,6 +14,11 @@ the game's Bink 1 files and replacement movies in MP4, Matroska/WebM, AVI or MPE
 video. The build is LGPL only (no --enable-gpl, no external libraries). Its x86 assembly needs NASM, built from the
 pinned release (nasm.us) into toolchain/nasm. The NASM pin is the sha256 of the archive whose sha512 Arch's nasm
 package records.
+
+DirectMusic plays the instruments that the game's bands take from Windows' General MIDI collection (gm.dls, which no
+one may redistribute) from GeneralUser GS 2.0.3 by S. Christian Collins, a General MIDI SoundFont whose licence allows
+use and redistribution in software. The script puts it and its licence in toolchain/soundfonts, from the author's
+repository (github.com/mrbumpy409/GeneralUser-GS) at a pinned commit.
 """
 import os
 import subprocess
@@ -43,6 +48,14 @@ PACKAGES = {
         "733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1",
     ),
 }
+GENERALUSER = ("https://raw.githubusercontent.com/mrbumpy409/GeneralUser-GS/"
+               "684543d5e5efaef08d02be50dcda8d552478fa60/")
+FILES = {
+    "soundfonts/GeneralUser-GS.sf2": (
+        GENERALUSER + "GeneralUser-GS.sf2", "9575028c7a1f589f5770fccc8cff2734566af40cd26ed836944e9a5152688cfe"),
+    "soundfonts/GeneralUser-GS-LICENSE.txt": (
+        GENERALUSER + "documentation/LICENSE.txt", "7b32efefdf95ce38a043799f0659853ddc00fbaa14d8c50f0aca16b9b8b405be"),
+}
 SDL_OPTIONS = ["-DSDL_SHARED=ON", "-DSDL_STATIC=OFF", "-DSDL_TEST=OFF", "-DSDL_WAYLAND=OFF", "-DSDL_PIPEWIRE=OFF",
                "-DSDL_JACK=OFF", "-DSDL_KMSDRM=OFF", "-DSDL_VULKAN=OFF", "-DSDL_X11=ON", "-DSDL_OPENGL=ON",
                "-DSDL_ALSA=ON", "-DSDL_PULSEAUDIO=ON"]
@@ -67,6 +80,18 @@ def fetch(name, url, pin):
     (top,) = staging.iterdir()
     top.rename(dest)
     staging.rmdir()
+
+
+def fetch_file(name, url, pin):
+    dest = ROOT / "toolchain" / name
+    if not dest.exists():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        part = dest.with_name(dest.name + ".part")
+        urllib.request.urlretrieve(url, part)
+        part.rename(dest)
+    digest = hashlib.sha256(dest.read_bytes()).hexdigest()
+    if digest != pin:
+        sys.exit(f"{name}: sha256 {digest} != pinned {pin}")
 
 
 def build_sdl():
@@ -126,6 +151,9 @@ def build_ffmpeg(nasm):
 def main():
     for name, (url, pin) in PACKAGES.items():
         fetch(name, url, pin)
+        print(f"{name}: {ROOT / 'toolchain' / name}")
+    for name, (url, pin) in FILES.items():
+        fetch_file(name, url, pin)
         print(f"{name}: {ROOT / 'toolchain' / name}")
     print(f"sdl2-i686: {build_sdl()}")
     print(f"ffmpeg-i686: {build_ffmpeg(build_nasm())}")

@@ -21,7 +21,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_port as bp
 
 TESTS = bp.ROOT / "tests" / "port" / "linux"
-OBJECTS = bp.ROOT / "build" / "port-linux" / "obj" / "win32"
+# the Win32 layer and the libraries it carries as source (build_port.py LIBRARY_MODULES)
+OBJECT_DIRS = [bp.ROOT / "build" / "port-linux" / "obj" / mod for mod in ["win32", *bp.LIBRARY_MODULES]]
 TOOLKIT = pathlib.Path(os.environ.get("EE_TOOLKIT", pathlib.Path.home() / "AgentWorkspaces" / "games" / "ee-toolkit"))
 LANGUAGE_DLL = pathlib.Path(os.environ.get(
     "EE_LANGUAGE_DLL", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" /
@@ -30,6 +31,12 @@ AOC_DATA = pathlib.Path(os.environ.get("EE_AOC_DATA", LANGUAGE_DLL.parent / "Dat
 SOUNDS = pathlib.Path(os.environ.get(
     "EE_SOUNDS", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" / "Empire Earth" /
     "Data" / "Sounds"))
+MUSIC = pathlib.Path(os.environ.get("EE_MUSIC", SOUNDS.parent / "Music"))
+GM_BANK = pathlib.Path(os.environ.get("EE_GM_BANK", bp.ROOT / "toolchain" / "soundfonts" / "GeneralUser-GS.sf2"))
+
+
+def layer_objects():
+    return sorted(str(o) for folder in OBJECT_DIRS for o in folder.rglob("*.o"))
 
 
 def build(source, binary, layer):
@@ -341,10 +348,89 @@ def check_miles(scratch, layer):
     return good
 
 
+GUID_LITERAL = re.compile(r"const GUID k?(\w+) = \{(0x[0-9a-f]+), (0x[0-9a-f]+), (0x[0-9a-f]+), \{([^}]*)\}\};")
+WINE_GUID = re.compile(r"DEFINE_GUID\(\s*(\w+)\s*,([^)]*)\)")
+WINE_HEADERS = pathlib.Path("/usr/include/wine/windows")
+
+
+def riff_chunks(data, start, end):
+    """The (id, body start, body end) of the chunks from start to end, and of the chunks inside every RIFF and LIST."""
+    while start + 8 <= end:
+        cid, size = data[start:start + 4], int.from_bytes(data[start + 4:start + 8], "little")
+        body = start + 8
+        yield cid, body, min(body + size, end)
+        if cid in (b"RIFF", b"LIST"):
+            yield from riff_chunks(data, body + 4, min(body + size, end))
+        start = body + size + (size & 1)
+
+
+def collections_wanted(segment):
+    """The DLS collections Windows supplies that a segment's bands take instruments from. A band instrument
+    (DMUS_IO_INSTRUMENT, dmusicf.h) with a valid patch (DMUS_IO_INST_PATCH 0x1 or BANKSELECT 0x2) and the flag
+    DMUS_IO_INST_GM 0x100, GS 0x200 or XG 0x400 at byte 28 comes from gm.dls, gs.dls or xg.dls, in that order."""
+    data = segment.read_bytes()
+    wanted = set()
+    for cid, body, end in riff_chunks(data, 0, len(data)):
+        if cid != b"bins" or end - body < 32:
+            continue
+        flags = int.from_bytes(data[body + 28:body + 32], "little")
+        if flags & 0x3:
+            wanted |= {name for bit, name in [(0x100, "gm.dls"), (0x200, "gs.dls"), (0x400, "xg.dls")]
+                       if flags & bit and not flags & (bit - 1) & 0x700}
+    return wanted
+
+
+def check_dmusic(scratch, layer):
+    """The DirectMusic GUIDs the layer and its test write out are Wine's, and each of the base game's songs asks for
+    the collections that its bands' instrument flags name, read from the files by a RIFF walk of their own."""
+    wine = {}
+    for header in WINE_HEADERS.glob("*.h"):
+        for name, values in WINE_GUID.findall(header.read_text(errors="replace")):
+            numbers = re.findall(r"0x[0-9a-fA-F]+", values)
+            if len(numbers) == 11:
+                wine.setdefault(name, tuple(int(v, 16) for v in numbers))
+    literals, wrong = 0, []
+    for source in [bp.ROOT / "src" / "Port" / "Linux" / "DirectMusic.cpp", TESTS / "test_dmusic.cpp"]:
+        for name, d1, d2, d3, rest in GUID_LITERAL.findall(source.read_text()):
+            if not name.startswith(("IID_", "CLSID_", "GUID_")):
+                continue
+            literals += 1
+            ours = (int(d1, 16), int(d2, 16), int(d3, 16), *(int(v, 16) for v in rest.split(",")))
+            if wine.get(name) != ours:
+                wrong.append(f"{source.name}: {name} {'not in Wine' if name not in wine else 'differs from Wine'}")
+    print(f"dmusic: {literals} GUID literals against {len(wine)} DEFINE_GUIDs of Wine, {len(wrong)} wrong")
+    for line in wrong:
+        print(f"  {line}")
+    good = literals > 20 and not wrong
+
+    binary = pathlib.Path(scratch) / "dump_dmusic"
+    made = build(TESTS / "dump_dmusic.cpp", binary, layer)
+    if made.returncode:
+        print(f"dump_dmusic.cpp: does not build\n{made.stderr}")
+        return False
+    songs = sorted(MUSIC.glob("*.sgt"))
+    asked = re.compile(r"DLS collection '([^']*)' for instrument")
+    differ = 0
+    for song in songs:
+        run = subprocess.run([str(binary), str(MUSIC), song.name], capture_output=True, text=True, timeout=120,
+                             env=dict(os.environ, EE_GM_BANK="", EE_DMUSIC_LOG="warn"))
+        theirs = collections_wanted(song)
+        # an instrument with a bank select and no program or collection (Pawns' channel 0) asks for no file
+        ours = set(asked.findall(run.stderr))
+        unnamed = "" in ours
+        ours.discard("")
+        same = run.returncode == 0 and ours == theirs
+        differ += not same
+        print(f"dmusic: {song.name}: exit {run.returncode}, asks for {sorted(ours)}"
+              f"{' and an unnamed collection' if unnamed else ''}; the bands name {sorted(theirs)}")
+    print(f"dmusic: {len(songs)} songs in, {len(songs) - differ} agree")
+    return good and len(songs) == 8 and differ == 0
+
+
 def main():
-    layer = sorted(str(o) for o in OBJECTS.rglob("*.o"))
+    layer = layer_objects()
     if not layer:
-        sys.exit(f"no objects in {OBJECTS}: run python3 -I tools/build_port.py --target linux win32")
+        sys.exit(f"no objects in {OBJECT_DIRS[0]}: run python3 -I tools/build_port.py --target linux win32 dmusic")
     tests = sorted(TESTS.glob("test_*.cpp"))
     passed = 0
     with tempfile.TemporaryDirectory(prefix="ee-port-test-") as scratch:
@@ -357,7 +443,8 @@ def main():
                 print(f"{test.name}: does not build\n{made.stderr}")
                 continue
             run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=120, cwd=data,
-                                 env={"EE_PORT_TEST_DIR": str(data), "PATH": "/usr/bin:/bin"})
+                                 env={"EE_PORT_TEST_DIR": str(data), "PATH": "/usr/bin:/bin", "EE_MUSIC": str(MUSIC),
+                                      "EE_GM_BANK": str(GM_BANK)})
             ended = f"ended by signal {-run.returncode}" if run.returncode < 0 else ""
             print(f"{test.name}: {run.stdout.strip()} {ended}".rstrip())
             if run.stderr.strip():
@@ -368,8 +455,9 @@ def main():
         metrics_ok = check_gdi_metrics(scratch, layer)
         movies_ok = check_movies(scratch, layer)
         miles_ok = check_miles(scratch, layer)
+        dmusic_ok = check_dmusic(scratch, layer)
     linkage_ok = check_linkage(layer)
-    checks = [strings_ok, text_ok, metrics_ok, movies_ok, miles_ok, linkage_ok]
+    checks = [strings_ok, text_ok, metrics_ok, movies_ok, miles_ok, dmusic_ok, linkage_ok]
     print(f"tests: {len(tests) + len(checks)} in, {passed + sum(checks)} passed")
     return 0 if passed == len(tests) and all(checks) else 1
 

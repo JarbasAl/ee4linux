@@ -84,6 +84,9 @@ struct Driver {
 // gLock guards every driver and sample; the audio callback takes it to mix
 std::mutex gLock;
 std::set<Driver*> gDrivers;
+// DirectMusic's synthesizer, which plays through the first driver opened, as DirectMusic plays through DirectSound
+eeport::MusicSource gMusic;
+Driver* gMusicDriver;
 std::set<Sample*> gSamples;
 S32 gPreferences[64];
 bool gPreferencesSet;
@@ -276,6 +279,12 @@ void Mix(Driver& ioDriver, int16_t* outSamples, int inFrames)
     for (Sample* theSample : ioDriver.mSamples)
         if (theSample->mPlaying)
             MixSample(*theSample, theMix.data(), inFrames, ioDriver.mDeviceRate);
+    if (gMusic && &ioDriver == gMusicDriver) {
+        std::vector<float> theMusic(theMix.size());
+        gMusic(theMusic.data(), inFrames, ioDriver.mDeviceRate);
+        for (size_t i = 0; i < theMix.size(); ++i)
+            theMix[i] += int32_t(lrintf(std::min(std::max(theMusic[i], -2.0f), 2.0f) * 32767.0f));
+    }
     for (size_t i = 0; i < theMix.size(); ++i)
         outSamples[i] = int16_t(std::min(std::max(theMix[i], -32768), 32767));
 }
@@ -549,6 +558,8 @@ DirectSound gDirectSound;
 void CloseDriver(Driver* inDriver, std::unique_lock<std::mutex>& ioLock)
 {
     gDrivers.erase(inDriver);
+    if (gMusicDriver == inDriver)
+        gMusicDriver = gDrivers.empty() ? nullptr : *gDrivers.begin();
     if (inDriver->mDevice) {
         // the callback takes gLock, and closing waits for it to return
         ioLock.unlock();
@@ -568,6 +579,18 @@ void eeport::MilesWithoutDevice()
 {
     std::lock_guard<std::mutex> theGuard(gLock);
     gWithoutDevice = true;
+}
+
+void eeport::SetMusicSource(MusicSource inSource)
+{
+    std::lock_guard<std::mutex> theGuard(gLock);
+    gMusic = inSource;
+}
+
+int eeport::MusicRate()
+{
+    std::lock_guard<std::mutex> theGuard(gLock);
+    return gMusicDriver ? gMusicDriver->mDeviceRate : 0;
 }
 
 void eeport::MixMiles(void* inDriver, int16_t* outSamples, int inFrames)
@@ -724,6 +747,8 @@ HDIGDRIVER AILCALL AIL_open_digital_driver(U32 inRate, S32 inBits, S32 inChannel
         OpenDevice(*theDriver);
     std::lock_guard<std::mutex> theGuard(gLock);
     gDrivers.insert(theDriver);
+    if (!gMusicDriver)
+        gMusicDriver = theDriver;
     return reinterpret_cast<HDIGDRIVER>(theDriver);
 }
 

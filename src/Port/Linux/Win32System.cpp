@@ -592,14 +592,7 @@ void WINAPI CoUninitialize(void)
 {
 }
 
-// No COM class is registered yet; DirectMusic answers here once the port has it
-HRESULT WINAPI CoCreateInstance(REFCLSID, LPUNKNOWN, DWORD, REFIID, LPVOID* outObject)
-{
-    if (outObject)
-        *outObject = NULL;
-    EE_PORT_UNSUPPORTED("CoCreateInstance");
-    return REGDB_E_CLASSNOTREG;
-}
+// CoCreateInstance is DirectMusic.cpp's: DirectMusic's are the only COM classes the game creates
 
 // ---- multimedia devices this build does not have: the game then uses none ----
 UINT WINAPI mixerGetNumDevs(void)

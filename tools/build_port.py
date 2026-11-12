@@ -41,7 +41,20 @@ PORT_LIB_UNITS = {"lle": ["implode", "explode"], "mixer": ["mssauto"]}
 PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp"]}
 # Modules of the port build alone, each a folder of src: the native build's Win32 layer
 PORT_MODULES = {"win32": "Port/Linux"}
-MODULES = list(MODULE_SRC) + list(PORT_MODULES)
+# C libraries the Win32 layer carries as source, with their own flags in place of the game's: GothicKit/dmusic
+# (src/Port/Linux/third_party/dmusic/README.md), the DirectMusic composer and synthesizer behind DirectMusic.cpp
+DMUSIC = ROOT / "src" / "Port" / "Linux" / "third_party" / "dmusic"
+LIBRARY_MODULES = {
+    "dmusic": {
+        "folder": DMUSIC,
+        # C11 threads come from the library's own shim over POSIX threads; dm_prefix.h renames the shim and the
+        # rest of its global names, which glibc's C11 threads and other copies of TinySoundFont also define
+        "flags": ["-m32", "-fPIC", "-O2", "-msse2", "-mfpmath=sse", "-std=c11", "-D_POSIX_C_SOURCE=200809L",
+                  "-DDM_STATIC=1", "-w", f"-I{DMUSIC / 'include'}", f"-I{DMUSIC / 'src'}",
+                  f"-I{DMUSIC / 'vendor' / 'TinySoundFont'}", "-include", str(DMUSIC / "recomp" / "dm_prefix.h")],
+    },
+}
+MODULES = list(MODULE_SRC) + list(PORT_MODULES) + list(LIBRARY_MODULES)
 TARGETS = {
     "mingw": {
         "cc": TOOLCHAIN / "llvm-mingw" / "bin" / "i686-w64-mingw32-clang",
@@ -76,14 +89,14 @@ TARGETS = {
         "cxxflags": ["-std=gnu++14"],
         "includes": [ROOT / "include" / "port" / "linux"],
         "system_includes": [pathlib.Path("/usr/include/wine/windows"), TOOLCHAIN / "sdl2-i686" / "include" / "SDL2",
-                            TOOLCHAIN / "ffmpeg-i686" / "include"],
+                            TOOLCHAIN / "ffmpeg-i686" / "include", DMUSIC / "include"],
         # the Win32 layer's libraries (tools/fetch_port_toolchain.py builds SDL2 and FFmpeg), found at run time
         # through the rpath
         "libs": ["-lpthread", "-ldl",
                  *(f"{flag}{TOOLCHAIN / lib / 'lib'}" for lib in ("sdl2-i686", "ffmpeg-i686")
                    for flag in ("-L", "-Wl,-rpath,")),
                  "-lSDL2", "-lavformat", "-lavcodec", "-lswscale", "-lswresample", "-lavutil", "-Wl,--wrap=fopen"],
-        "modules": ["win32", "lle", "jpeg", "tcp", "default", "mixer", "dx7hrtnl", "exe", "exeimg", "won"],
+        "modules": ["win32", "dmusic", "lle", "jpeg", "tcp", "default", "mixer", "dx7hrtnl", "exe", "exeimg", "won"],
     },
 }
 # include/port/case holds the Windows SDK headers that the game names in a case the toolchain's headers do not have
@@ -109,6 +122,8 @@ def unit_defines(src, mod):
 
 
 def module_jobs(mod):
+    if mod in LIBRARY_MODULES:
+        return [(mod, p) for p in sorted(LIBRARY_MODULES[mod]["folder"].rglob("*.c"))]
     if mod in PORT_MODULES:
         return [(mod, p) for p in sorted((ROOT / "src" / PORT_MODULES[mod]).glob("*.cpp"))]
     paths = module_sources(mod) + [ROOT / "src" / LIB_UNITS[n] for n in PORT_LIB_UNITS.get(mod, [])]
@@ -143,10 +158,14 @@ def compile_unit(target, out, mod, src):
     obj.parent.mkdir(parents=True, exist_ok=True)
     cfg = TARGETS[target]
     is_c = src.suffix == ".c"
-    cmd = [str(cfg["cc"] if is_c else cfg["cxx"]), *cfg["flags"], *([] if is_c else cfg["cxxflags"]),
-           *unit_defines(src, mod), "-include", str(COMPAT), *(f"-I{d}" for d in cfg.get("includes", [])),
-           *(f"-I{d}" for d in INCLUDES), *(f"-isystem{d}" for d in cfg.get("system_includes", [])),
-           "-MMD", "-MF", str(obj.with_suffix(".d")), "-c", str(src), "-o", str(obj)]
+    if mod in LIBRARY_MODULES:
+        cmd = [str(cfg["cc"]), *LIBRARY_MODULES[mod]["flags"], "-MMD", "-MF", str(obj.with_suffix(".d")), "-c",
+               str(src), "-o", str(obj)]
+    else:
+        cmd = [str(cfg["cc"] if is_c else cfg["cxx"]), *cfg["flags"], *([] if is_c else cfg["cxxflags"]),
+               *unit_defines(src, mod), "-include", str(COMPAT), *(f"-I{d}" for d in cfg.get("includes", [])),
+               *(f"-I{d}" for d in INCLUDES), *(f"-isystem{d}" for d in cfg.get("system_includes", [])),
+               "-MMD", "-MF", str(obj.with_suffix(".d")), "-c", str(src), "-o", str(obj)]
     run = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
     if run.returncode:
         obj.unlink(missing_ok=True)

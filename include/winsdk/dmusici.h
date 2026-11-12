@@ -353,8 +353,8 @@ EXTERN_C const GUID GUID_PerfMasterGrooveLevel;       // d2ac28b2-...
 EXTERN_C const GUID IID_IDirectMusicComposer;         // d2ac28bf-...
 EXTERN_C const GUID GUID_NOTIFICATION_PERFORMANCE;    // 81f75bc5-4e5d-11d2-bcc7-00a0c922e6eb
 EXTERN_C const GUID IID_IDirectMusicLoader;           // 2ffaaca2-5dca-11d2-afa6-00aa0024d8b6
-EXTERN_C const GUID IID_IDirectMusicPerformance2;     // 07d43d03-6523-11d2-871d-00600893b1bd
-EXTERN_C const GUID IID_IDirectMusicSegment2;         // f96029a2-4282-11d2-8717-00600893b1bd
+EXTERN_C const GUID IID_IDirectMusicPerformance2;     // 6fc2cae0-bc78-11d2-afa6-00aa0024d8b6
+EXTERN_C const GUID IID_IDirectMusicSegment2;         // d38894d1-c052-11d2-872f-00600893b1bd
 EXTERN_C const GUID IID_IDirectMusicSegmentState;     // a3afdcc7-d3ee-11d1-bc8d-00a0c922e6eb
 EXTERN_C const GUID GUID_PerfAutoDownload;            // fb09565b-3631-11d2-bcb8-00a0c922e6eb
 EXTERN_C const GUID IID_IKsControl;                   // 28f54685-06fd-11d2-b27a-00a0c9223196
