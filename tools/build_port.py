@@ -69,6 +69,8 @@ TARGETS = {
                   "-Wno-address-of-temporary", "-DEE_PORT_LINUX",
                   # the game creates DirectInput 7 (Input System.cpp); Wine's dinput.h defaults to 8
                   "-DDIRECTINPUT_VERSION=0x0700",
+                  # Wine's headers define _WIN32, and SDL would then rename main() to SDL_main
+                  "-DSDL_MAIN_HANDLED",
                   # VC6 narrows in braced initializers ({ ..., gTexturePixelDepth, ... })
                   "-Wno-c++11-narrowing"],
         "cxxflags": ["-std=gnu++14"],

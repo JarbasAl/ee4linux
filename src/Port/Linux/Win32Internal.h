@@ -12,6 +12,8 @@
 #include <mutex>
 #include <string>
 
+struct SDL_Window;
+
 namespace eeport {
 
 // Writes a line to stderr with the "ee-port: " prefix
@@ -83,12 +85,22 @@ KernelObject* ObjectOf(HANDLE inHandle);
 // The calling thread's id: sequential from 1, the first thread to ask (the main thread) gets 1
 DWORD CurrentThreadID();
 
-// ---- thread message queues (Win32Message.cpp) ----
-struct ThreadQueue {
-    std::deque<MSG> mMessages;      // under gWaitLock
-};
-// The queue of a thread, made on first use; NULL for an id that never had one when inCreate is false
-ThreadQueue* QueueOf(DWORD inThread, bool inCreate);
+// ---- keys (Win32Keys.cpp) ----
+// The virtual-key code, the PC scan code (set 1) and the extended flag of an SDL scancode; false for a key the game
+// has no code for
+bool KeyOf(int inScancode, BYTE* outVirtualKey, BYTE* outScanCode, bool* outExtended);
+// Whether a virtual key is down now
+bool IsKeyDown(int inVirtualKey);
+
+// ---- windows and messages (Win32Window.cpp) ----
+// Starts SDL video. The calling thread becomes the one that pumps SDL events into window messages: the native main
+// calls it first; otherwise the first thread to need video does.
+bool StartVideo();
+// The native SDL window of a window, made on first use: with OpenGL for the DirectDraw layer, or with a software
+// surface for GDI. NULL for a window owned by a thread other than the video thread, or without video.
+SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL);
+// The window of a native SDL window, or NULL
+HWND WindowOfNative(SDL_Window* inNative);
 
 // ---- modules (Win32Module.cpp) ----
 // The bytes of a resource in a PE module and their size, or NULL; inLanguage 0 takes the first language
