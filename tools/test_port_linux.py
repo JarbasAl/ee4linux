@@ -135,18 +135,24 @@ def check_movies(scratch, layer):
     good = (report["size"] == "320 240" and report["frames"] == "30" and report["played"] == "30"
             and report["last"] == "30 of 30" and 1.85 < seconds < 2.3)
     good = check_frames(movie, report, out, [1, 15, 30]) and good
-    intro = MOVIES / "Empire Earth.webm"
-    if not intro.exists():
-        print(f"movies: {intro} is absent; the intro check did not run")
+    intro = next((f for f in sorted(MOVIES.glob("Empire Earth.*")) if f.suffix != ".bik"), None)
+    if intro is None:
+        print(f"movies: no intro in {MOVIES}; the intro check did not run")
         return good
+    probe = subprocess.run(["ffprobe", "-v", "error", "-count_packets", "-select_streams", "v:0", "-show_entries",
+                            "stream=width,height,nb_read_packets", "-of", "csv=p=0", str(intro)],
+                           capture_output=True, text=True).stdout.strip().split(",")
+    width, height, frames = probe
     report, out = play(scratch, layer, "Movies\\Empire Earth.bik", False, [700],
                        env={"EE_PORT_MOVIES": str(MOVIES)})
     if report is None:
         return False
-    print(f"movies: the intro: size {report['size']}, frames {report['frames']}, played {report['played']}, "
-          f"last {report['last']}, decode rate {report['rate']} frames per second")
+    print(f"movies: {intro.name}: size {report['size']}, frames {report['frames']}, played {report['played']}, "
+          f"last {report['last']}, decode rate {report['rate']} frames per second; ffprobe: {width}x{height}, "
+          f"{frames} frames")
     good = check_frames(intro, report, out, [700]) and good
-    return good and report["size"] == "3194 2160" and report["played"] == "1471" and report["last"] == "1471 of 1471"
+    return (good and report["size"] == f"{width} {height}" and report["played"] == frames
+            and report["last"] == f"{frames} of {frames}")
 
 
 def main():
