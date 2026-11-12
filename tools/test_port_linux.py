@@ -44,7 +44,9 @@ def build(source, binary, layer):
     cmd = [str(cfg["cxx"]), *[f for f in cfg["flags"] if f != "-w"], *cfg["cxxflags"],
            *bp.unit_defines(source, "win32"), "-include", str(bp.COMPAT),
            *(f"-I{d}" for d in cfg["includes"]), *(f"-I{d}" for d in bp.INCLUDES),
-           *(f"-isystem{d}" for d in cfg["system_includes"]), str(source), *layer, *cfg["libs"], "-o", str(binary)]
+           *(f"-isystem{d}" for d in cfg["system_includes"]), str(source), *layer, *cfg["libs"],
+           # the cast rule the game is linked with: src/Port/Linux/CxxAbi.cpp
+           "-Wl,--wrap=__dynamic_cast", "-o", str(binary)]
     return subprocess.run(cmd, capture_output=True, text=True)
 
 

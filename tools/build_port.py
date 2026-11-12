@@ -327,8 +327,9 @@ def link_linux_image(out, image):
     # position-independent, so the engine's data stays in the engine
     # the archives need each other (WON's PNG decoder takes libpng from exeimg), and GNU ld reads an archive once
     grouped = ["-Wl,--start-group", *archives, "-Wl,--end-group"] if archives else []
+    # every image casts the way MSVC does: src/Port/Linux/CxxAbi.cpp wraps the cast and states the rule
     cmd = [str(cfg["cxx"]), "-m32", f"@{rsp}", *grouped, "-o", str(bin_dir / name), "-Wl,-rpath,$ORIGIN",
-           "-Wl,--wrap=fopen"]
+           "-Wl,--wrap=fopen", "-Wl,--wrap=__dynamic_cast"]
     if image == "exe":
         cmd += ["-pie"]
     else:
