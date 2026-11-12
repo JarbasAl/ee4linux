@@ -88,6 +88,13 @@ bool gAppActive = false;
 HWND gFocus = NULL;
 HWND gCapture = NULL;
 
+// Moves the keyboard focus, which DirectInput's foreground devices follow
+void SetFocusWindow(HWND inWindow)
+{
+    gFocus = inWindow;
+    eeport::InputFocus(inWindow);
+}
+
 // The mouse position in screen coordinates, kept by the video thread from SDL events, so that any thread can read it
 // without calling into the windowing system
 std::atomic<LONG> gCursorX{0}, gCursorY{0};
@@ -249,7 +256,7 @@ void Translate(const SDL_Event& inEvent)
             break;
         case SDL_WINDOWEVENT_FOCUS_GAINED:
             SetAppActive(true);
-            gFocus = theWindow;
+            SetFocusWindow(theWindow);
             PostToWindow(theWindow, WM_ACTIVATE, WA_ACTIVE, 0);
             PostToWindow(theWindow, WM_SETFOCUS, 0, 0);
             break;
@@ -257,7 +264,7 @@ void Translate(const SDL_Event& inEvent)
             PostToWindow(theWindow, WM_ACTIVATE, WA_INACTIVE, 0);
             PostToWindow(theWindow, WM_KILLFOCUS, 0, 0);
             if (gFocus == theWindow)
-                gFocus = NULL;
+                SetFocusWindow(NULL);
             break;
         case SDL_WINDOWEVENT_MINIMIZED:
             theObject->mMinimized = true;
@@ -304,6 +311,7 @@ void Translate(const SDL_Event& inEvent)
                                                        : (theDown ? WM_KEYDOWN : WM_KEYUP);
         LPARAM theFlags = 1 | (theScan << 16) | (theExtended ? 1 << 24 : 0) | (theAlt ? 1 << 29 : 0) |
                           (theDown ? (inEvent.key.repeat ? 1 << 30 : 0) : (3u << 30));
+        eeport::InputKey(BYTE(theScan | (theExtended ? 0x80 : 0)), theDown);
         PostToWindow(gFocus, theMessage, theKey, theFlags);
         break;
     }
@@ -322,6 +330,20 @@ void Translate(const SDL_Event& inEvent)
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
     case SDL_MOUSEWHEEL: {
+        if (inEvent.type == SDL_MOUSEMOTION) {
+            eeport::InputMouseMove(inEvent.motion.xrel, inEvent.motion.yrel);
+        } else if (inEvent.type == SDL_MOUSEWHEEL) {
+            eeport::InputMouseWheel(inEvent.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -inEvent.wheel.y
+                                                                                      : inEvent.wheel.y);
+        } else {
+            // DirectInput's buttons 0 to 3 are the left, right, middle and first extra buttons
+            static const int kButtons[] = {-1, 0, 2, 1, 3};
+            if (inEvent.button.button < sizeof kButtons / sizeof kButtons[0])
+                eeport::InputMouseButton(kButtons[inEvent.button.button], inEvent.type == SDL_MOUSEBUTTONDOWN);
+        }
+        // the window gets no mouse messages while DirectInput holds the mouse
+        if (eeport::MouseHeld())
+            return;
         HWND theWindow = gCapture ? gCapture
                                   : eeport::WindowOfNative(SDL_GetWindowFromID(inEvent.type == SDL_MOUSEWHEEL
                                                                                     ? inEvent.wheel.windowID
@@ -369,6 +391,7 @@ void Pump()
     SDL_Event theEvent;
     while (SDL_PollEvent(&theEvent))
         Translate(theEvent);
+    eeport::ApplyMouseMode();
     ApplyCursor();
     eeport::PresentWindows();
     if (!gFocus)
@@ -696,7 +719,7 @@ BOOL WINAPI DestroyWindow(HWND inWindow)
             gCapture = NULL;
         if (gFocus != inWindow)
             return TRUE;
-        gFocus = NULL;
+        SetFocusWindow(NULL);
         // As on Windows, the latest visible top-level window of the thread becomes active
         for (Window* theOther : gWindows)
             if (!theOther->mDestroyed && theOther->mVisible && !(theOther->mStyle & WS_CHILD) &&
@@ -704,7 +727,7 @@ BOOL WINAPI DestroyWindow(HWND inWindow)
                 theNext = (HWND)theOther;
     }
     if (theNext) {
-        gFocus = theNext;
+        SetFocusWindow(theNext);
         CallProcedure(theNext, WM_ACTIVATE, WA_ACTIVE, 0);
         CallProcedure(theNext, WM_SETFOCUS, 0, 0);
     }
@@ -750,7 +773,7 @@ BOOL WINAPI ShowWindow(HWND inWindow, INT inCommand)
         if (!gAppActive && !theWindow->mNative)
             SetAppActive(true);
         if (!theWindow->mNative) {
-            gFocus = inWindow;
+            SetFocusWindow(inWindow);
             CallProcedure(inWindow, WM_ACTIVATE, WA_ACTIVE, 0);
             CallProcedure(inWindow, WM_SETFOCUS, 0, 0);
         }
@@ -761,6 +784,11 @@ BOOL WINAPI ShowWindow(HWND inWindow, INT inCommand)
 BOOL WINAPI CloseWindow(HWND inWindow)
 {
     return WindowOf(inWindow) ? (ShowWindow(inWindow, SW_MINIMIZE), TRUE) : FALSE;
+}
+
+BOOL WINAPI IsWindow(HWND inWindow)
+{
+    return WindowOf(inWindow) != nullptr;
 }
 
 BOOL WINAPI IsWindowVisible(HWND inWindow)
@@ -895,7 +923,7 @@ HWND WINAPI SetFocus(HWND inWindow)
         return thePrevious;
     if (WindowOf(thePrevious))
         CallProcedure(thePrevious, WM_KILLFOCUS, (WPARAM)inWindow, 0);
-    gFocus = inWindow;
+    SetFocusWindow(inWindow);
     if (theWindow->mNative)
         SDL_RaiseWindow(theWindow->mNative);
     CallProcedure(inWindow, WM_SETFOCUS, (WPARAM)thePrevious, 0);

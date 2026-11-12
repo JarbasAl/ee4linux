@@ -2,8 +2,8 @@
 
 The native build compiles the game's own source against Wine's headers and links it to this layer in place of
 Windows. The layer implements the part of the Win32 API that the game, its plug-ins and WON call. It has files and
-paths, the registry, threads and synchronization, modules and resources, windows and messages, GDI, Winsock, Bink
-movies and the Miles Sound System.
+paths, the registry, threads and synchronization, modules and resources, windows and messages, GDI, Winsock,
+DirectInput, Bink movies and the Miles Sound System.
 SDL2 gives it windows, input and the clipboard.
 
 Build the layer and run its tests:
@@ -40,6 +40,13 @@ winetricks corefonts tahoma
 The test `check_gdi_metrics` compares the layer with a Windows 11 capture of 169 font requests and prints the result
 for each face. It requires exact line metrics for Tahoma and exact widths for Courier New, because their stand-ins
 measure as on Windows.
+
+## Input
+
+DirectInput gives the game its system keyboard and mouse from SDL's events. A key's code is its PC scan code, plus
+0x80 for an extended key, as in DirectInput. While the game holds the mouse exclusively, SDL is in relative mouse
+mode: the system cursor is hidden, the game draws its own, and the window gets no mouse messages. The game releases
+the mouse when it stops being the active application, and in full screen when it shows the multiplayer lobby.
 
 ## Sound
 

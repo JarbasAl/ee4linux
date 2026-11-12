@@ -119,6 +119,20 @@ void PresentWindows();
 // Releases the pixels GDI keeps for a destroyed window
 void ForgetWindowSurface(HWND inWindow);
 
+// ---- DirectInput (DirectInput.cpp) ----
+// The video thread passes SDL's input. A key is its DIK code: the PC scan code, plus 0x80 for an extended key.
+void InputKey(BYTE inCode, bool inDown);
+void InputMouseMove(int inX, int inY);
+void InputMouseWheel(int inNotches);
+// Buttons 0 to 3: left, right, middle, first extra
+void InputMouseButton(int inButton, bool inDown);
+// The keyboard focus moved to a window, or to none of the game's
+void InputFocus(HWND inFocus);
+// Whether DirectInput holds the mouse exclusively: the window then gets no mouse messages
+bool MouseHeld();
+// On the video thread: puts SDL into relative mouse mode while DirectInput holds the mouse
+void ApplyMouseMode();
+
 // ---- Miles (Miles.cpp) ----
 // For tests: Miles drivers opened after this call open no audio device and mix only through MixMiles
 void MilesWithoutDevice();

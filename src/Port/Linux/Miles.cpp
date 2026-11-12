@@ -480,9 +480,6 @@ std::shared_ptr<const Decoded> Decode(const uint8_t* inImage, uint32_t inSize)
     return theDecoded;
 }
 
-const GUID kIID_IUnknown = {0x00000000, 0x0000, 0x0000, {0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
-const GUID kIID_IDirectSound = {0x279afa83, 0x4981, 0x11ce, {0xa5, 0x21, 0x00, 0x20, 0xaf, 0x0b, 0xe5, 0x60}};
-
 // The DirectSound object that AIL_get_DirectSound_info gives. The mixer reads its capabilities and hands it to
 // DirectMusic; the layer's own mixer plays every sound, so it makes no buffers.
 class DirectSound final : public IDirectSound {
@@ -491,7 +488,7 @@ public:
     {
         if (!outObject)
             return E_POINTER;
-        if (memcmp(&inID, &kIID_IUnknown, sizeof(GUID)) != 0 && memcmp(&inID, &kIID_IDirectSound, sizeof(GUID)) != 0) {
+        if (!IsEqualGUID(inID, IID_IUnknown) && !IsEqualGUID(inID, IID_IDirectSound)) {
             *outObject = nullptr;
             return E_NOINTERFACE;
         }
