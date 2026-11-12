@@ -7,6 +7,12 @@
 #include "port_msvcrt.h"
 #endif
 
+/* Windows' long is 32 bits on every target; a 64-bit Linux build's is 64. Code that keeps a 32-bit value in a long
+   has to say so where the difference matters (see FSFileSpec's 32-bit file fields). */
+#if defined(__LP64__) || defined(_WIN64)
+#define EE_PORT_LONG64 1
+#endif
+
 #define NOMINMAX        /* windows.h's min and max macros break the C++ library; the templates below replace them */
 
 /* Clang has no structured exception handling for 32-bit mingw or Linux. The two WON handlers (the thread entry's

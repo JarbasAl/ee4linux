@@ -410,14 +410,30 @@ long FSMemoryFile::Read(float& outValue)
 
 long FSMemoryFile::Read(long& outValue)
 {
+#if defined(EE_PORT_LONG64)
+    unsigned long theRead;
+    unsigned int theValue = 0;
+    long theResult = this->Read(reinterpret_cast<unsigned char*>(&theValue), sizeof(theValue), theRead);
+    outValue = static_cast<long>(static_cast<int>(theValue));
+    return theResult;
+#else
     unsigned long theRead;
     return this->Read(reinterpret_cast<unsigned char*>(&outValue), sizeof(outValue), theRead);
+#endif
 }
 
 long FSMemoryFile::Read(unsigned long& outValue)
 {
+#if defined(EE_PORT_LONG64)
+    unsigned long theRead;
+    unsigned int theValue = 0;
+    long theResult = this->Read(reinterpret_cast<unsigned char*>(&theValue), sizeof(theValue), theRead);
+    outValue = theValue;
+    return theResult;
+#else
     unsigned long theRead;
     return this->Read(reinterpret_cast<unsigned char*>(&outValue), sizeof(outValue), theRead);
+#endif
 }
 
 // FUNCTION: LLE 0x1000a64d
@@ -560,14 +576,26 @@ long FSMemoryFile::Write(const float& inValue)
 
 long FSMemoryFile::Write(const long& inValue)
 {
+#if defined(EE_PORT_LONG64)
+    unsigned long theWritten;
+    unsigned int theValue = static_cast<unsigned int>(static_cast<int>(inValue));
+    return this->Write(reinterpret_cast<const unsigned char*>(&theValue), sizeof(theValue), theWritten);
+#else
     unsigned long theWritten;
     return this->Write(reinterpret_cast<const unsigned char*>(&inValue), sizeof(inValue), theWritten);
+#endif
 }
 
 long FSMemoryFile::Write(const unsigned long& inValue)
 {
+#if defined(EE_PORT_LONG64)
+    unsigned long theWritten;
+    unsigned int theValue = static_cast<unsigned int>(inValue);
+    return this->Write(reinterpret_cast<const unsigned char*>(&theValue), sizeof(theValue), theWritten);
+#else
     unsigned long theWritten;
     return this->Write(reinterpret_cast<const unsigned char*>(&inValue), sizeof(inValue), theWritten);
+#endif
 }
 
 // FUNCTION: LLE 0x1000a7fb
