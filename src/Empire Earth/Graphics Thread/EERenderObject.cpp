@@ -699,10 +699,20 @@ void EERenderObject::Fn10C036()
     gRenderEnvironment.mCloudOffset += theElapsed * gRenderEnvironment.mWindSpeed;
     sF529078 += theElapsed;
     float theFade;
+#ifdef EE_PORT_LINUX64
+    // An instant fade has the rate FLT_MAX. x87 keeps rate * elapsed in extended precision, where it stays finite;
+    // in SSE's single precision it is infinite, and 0 * infinity made the fade NaN and every light black
+    double theFadeStep = (double)sF529074 * sF529078;
+    if (sL529070 == 0)
+        theFade = (float)(sLightFadeStart + (1.0f - sLightFadeStart) * theFadeStep);
+    else
+        theFade = (float)((1.0f - theFadeStep) * sLightFadeStart);
+#else
     if (sL529070 == 0)
         theFade = sLightFadeStart + (1.0f - sLightFadeStart) * (sF529074 * sF529078);
     else
         theFade = (1.0f - sF529074 * sF529078) * sLightFadeStart;
+#endif
     if (theFade > 1.0f)
         theFade = 1.0f;
     else if (theFade < 0.0f)
@@ -712,10 +722,19 @@ void EERenderObject::Fn10C036()
     sLightFade = theFade;
     sF529080 += theElapsed;
     float theZoom;
+#ifdef EE_PORT_LINUX64
+    // the letterbox's instant change has the rate FLT_MAX too
+    double theZoomStep = (double)sF52907C * sF529080;
+    if (sLetterboxDirection == 1)
+        theZoom = (float)(sLetterboxStart + (1.0f - sLetterboxStart) * theZoomStep);
+    else
+        theZoom = (float)((1.0f - theZoomStep) * sLetterboxStart);
+#else
     if (sLetterboxDirection == 1)
         theZoom = sLetterboxStart + (1.0f - sLetterboxStart) * (sF52907C * sF529080);
     else
         theZoom = (1.0f - sF52907C * sF529080) * sLetterboxStart;
+#endif
     if (theZoom > 1.0f)
         theZoom = 1.0f;
     else if (theZoom < 0.0f)
