@@ -146,12 +146,17 @@ int main(int argc, char** argv)
     unsigned long theDouble = 0, theQuadruple = 0;
     std::vector<std::string> theFunctions = LinesWith(theLogged.mError, "functions ");
     CHECK(theFunctions.size() == 1 && sscanf(theFunctions[0].c_str(), "functions %lx %lx", &theDouble, &theQuadruple) == 2);
-    // each site is the multiplication inside its function, which is a few instructions long
+    // each site is the multiplication inside its function, which is a few instructions long: a site belongs to the
+    // function that starts nearest below it, as the compiler may place the two functions 8 bytes apart
     int theInDouble = 0, theInQuadruple = 0;
     for (const std::string& theSite : theSites) {
         unsigned long theOffset = LoggedOffset(theSite);
-        theInDouble += theOffset >= theDouble && theOffset < theDouble + 16;
-        theInQuadruple += theOffset >= theQuadruple && theOffset < theQuadruple + 16;
+        bool theAboveDouble = theOffset >= theDouble && theOffset < theDouble + 16;
+        bool theAboveQuadruple = theOffset >= theQuadruple && theOffset < theQuadruple + 16;
+        if (theAboveDouble && theAboveQuadruple)
+            (theDouble > theQuadruple ? theAboveQuadruple : theAboveDouble) = false;
+        theInDouble += theAboveDouble;
+        theInQuadruple += theAboveQuadruple;
     }
     CHECK(theInDouble == 1 && theInQuadruple == 1);
 
