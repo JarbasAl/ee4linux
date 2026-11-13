@@ -54,6 +54,7 @@ The units, in the order they matter:
 | `Win32Keys.cpp` | scan codes and virtual keys |
 | `Guids.cpp` | the DirectX and DirectMusic GUIDs |
 | `CxxAbi.cpp` | MSVC's `dynamic_cast` rule ([C++ runtime](cxx-runtime.md)) |
+| `FloatWatch.cpp` | x86-64 only: the overflow log, `EE_PORT_FPE_LOG` ([testing](testing.md)) |
 
 `Win32Internal.h` is the header the layer's units share: the `eeport` helpers, the SDL lock, the thread ids, and the
 declarations of the internals that more than one unit needs.
