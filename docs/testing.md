@@ -63,6 +63,8 @@ env -u DISPLAY -u WAYLAND_DISPLAY SDL_VIDEODRIVER=offscreen SDL_AUDIODRIVER=dumm
 ```
 
 The quotes are part of the last argument, because the game's command-line parser asks `-loadgame` for a quoted name.
+The game does not stop on SIGTERM, so a time limit sends SIGKILL after it: `timeout -k 10 150 ./ee-aoc …`. Without
+that, the game outlives the limit, and the next run starts a second copy in the same folder.
 The game starts, loads that scenario, and prints `Game loaded. Game state checksum: …` when the world is in place.
 
 The round trip to look for is a save and the load of that save. The script presses F4 for the quick save, which writes
@@ -94,6 +96,28 @@ space. The game then stops with SIGSEGV where it reads through that pointer, as 
 ```
 python3 -I tools/build_port.py --target linux64 --link --sanitize pointer-overflow
 ```
+
+## Overflow runs
+
+The i386 build keeps a float product in x87 extended precision, where `FLT_MAX * x` stays finite. The x86-64 build
+computes it in SSE single precision, where the same product is infinite, and 0 times that infinity is NaN. NaN passes
+every clamp, because every comparison with it is false. Code that relies on x87's range is therefore correct on i386
+and wrong on x86-64, and no compiler warning finds it. The light fade was such a site: its NaN made every light black.
+
+`EE_PORT_FPE_LOG` makes the x86-64 layer stop at each overflow. The log names the instruction the first time, and the
+game then runs on with the same infinity as a run without the variable:
+
+```
+EE_PORT_FPE_LOG=1 ./ee-aoc
+ee-port: float overflow at Low-Level Engine.dll+0x69d0a (_ZNK8GEVector12CrossProductERKS_RS_)
+addr2line -f -C -e "Low-Level Engine.dll" 0x69d0a
+```
+
+An overflow is a fault only when its infinity reaches a value the game uses. In a load of `TEST.ees` and the play
+that follows it, the only sites are the star models' normals and bounding sphere, computed once from the vertex
+array before the positions are written. The array is new and uninitialized, so its values are leftovers from the
+heap, and the sites change between runs. Every frame computes both again from the real positions before the sky is
+drawn, so the infinity is never used.
 
 ## What the tests do not cover
 

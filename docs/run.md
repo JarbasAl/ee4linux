@@ -48,6 +48,7 @@ retail game in one registry would.
 | `EE_DMUSIC_LOG` | `warn`, `info` or `debug`: how much of dmusic's log to print |
 | `EE_PORT_NO_MESSAGE_BOXES` | any value: a message box answers OK at once, and only its text goes to the log |
 | `EE_PORT_INPUT_SCRIPT` | a file of timed key and mouse events to feed the game, for a run without a person at the keyboard ([testing](testing.md)) |
+| `EE_PORT_FPE_LOG` | x86-64 build, any value: the log names each instruction that overflows single precision, once ([testing](testing.md)) |
 | `SDL_VIDEODRIVER` | the SDL video driver. `offscreen` runs the game with no window. |
 | `SDL_AUDIODRIVER` | the SDL audio driver. `dummy` runs the game without sound. |
 | `WINEPREFIX` | the prefix the settings are imported from. Default `~/.wine`. |

@@ -66,6 +66,7 @@ nothing to leave out, and a function that cannot mean what it means on Windows i
 | a Windows build of the layer | the Windows images use the real Windows and the retail DirectX |
 | the original's image checksums | only the Windows images carry the compensation block that matches the retail files' checksums |
 | retail-equal bytes on x86-64 | the record layouts are the retail's and the files the game writes are the ones it reads back, but pointer width, the SSE2 arithmetic and the register allocation differ, so the 64-bit images are compared by behaviour, never by bytes ([testing](testing.md)) |
+| x87's range for float arithmetic on x86-64 | the i386 build keeps a float product in x87 extended precision, where `FLT_MAX * x` stays finite. The x86-64 build computes it in SSE single precision, where it is infinite, and 0 times it is NaN. The light fade and the letterbox zoom compute their products in double on x86-64. `EE_PORT_FPE_LOG` finds any other site ([testing](testing.md)) |
 
 ## Things that look missing but are not
 
