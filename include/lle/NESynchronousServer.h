@@ -130,6 +130,10 @@ public:
     void StopPing() { this->mPing = false; }
     void UnlockSendCommunicationsTick() { this->mSendCommunicationsTickLock->Leave(); }
     void SetTempOutOfSynchPTs(unsigned char inPTs) { this->mTempOutOfSynchPTs = inPTs; }
+    // The headless simulation (platform/PlatSim.h): the physics thread sends the next communications tick itself, and
+    // the send thread sends none while the game runs
+    void SimCommunicationsTick();
+    bool SimGameRunning() const { return this->mGameState == 3 || this->mGameState == 4; }   // playing, paused
 
     void AbortXfer(unsigned long inXferID);
     unsigned long GetMessageManagerCurrentMessageNumber();

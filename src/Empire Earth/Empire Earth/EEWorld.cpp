@@ -120,6 +120,7 @@
 #include "ee/EEAEManager.h"
 #include "ee/EEE2DLightGlow.h"
 #include "ee/EEStringIDs.h"
+#include "platform/PlatSim.h"
 
 // Unit-local declarations of functions and globals no header declares yet (provisional names)
 extern bool gLocalPlayerOut;                // 0x4e6099 (ee/EEMessage.h)
@@ -691,6 +692,11 @@ void EEWorld::DumpMedia(FSFileSpec& inFile, bool inLeaks)
 // scenario), stamps their end time and ends any cinematic; for the local player it redraws the minimap
 void EEWorld::RemovePlayerFromGame(bool inHasWon, unsigned long inPlayerID)
 {
+    // the headless simulation keeps the idle local human in (platform/PlatSim.h)
+    if (gPlatSimNoHumanDefeat && !inHasWon && (long)inPlayerID == this->mCurrentPlayer) {
+        gPlatSimNoHumanDefeatHits++;
+        return;
+    }
     EEPlayer* thePlayer = this->mPlayers[inPlayerID];
     this->MarkPlayerOut(inPlayerID);
     this->RemovePlayerFromTeams(inPlayerID);

@@ -32,7 +32,8 @@ compiles the same source with Clang for i386 Linux. Wine's headers declare the W
 ## Quick start
 
 The native build needs an installed *Empire Earth* and *The Art of Conquest*, in the default Wine prefix
-(`~/.wine`). The game data is never modified.
+(`~/.wine`) or in folders that `EE_GAME_DIR` and `EE_BASE_GAME_DIR` name ([run](run.md)). The game data is never
+modified.
 
 ```
 python3 -I tools/fetch_port_toolchain.py          # once: Clang target files, 32-bit SDL2, FFmpeg, NASM, a SoundFont
@@ -63,5 +64,6 @@ cd build/port-linux/run && ./ee-aoc
 | [network](network.md) | Winsock, adapters, and the multiplayer libraries |
 | [C++ runtime](cxx-runtime.md) | the dialect gaps, casts, callbacks, and the C library |
 | [testing](testing.md) | the test harness, every test, and the checks against other programs |
+| [simulator](simulator.md) | `ee-aoc --sim`: seeded computer games without a display, and their comparison |
 | [troubleshooting](troubleshooting.md) | the failures seen so far, and what each one means |
 | [limits](limits.md) | what the port does not do |

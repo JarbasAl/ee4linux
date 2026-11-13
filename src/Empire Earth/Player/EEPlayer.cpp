@@ -69,6 +69,7 @@
 #include "LostDebug.h"   // synthetic, NOT original source (LOST-DEBUG: EE_LOST_DEBUG)
 #include "ee/EEStringIDs.h"
 #include "lle/ISKeyCode.h"
+#include "platform/PlatSim.h"
 // EEUnitGoal.cpp's goal counter (0x964480; Save and Load write and read it: it is not file-static in the original)
 // (sGoalCounter: ee/EmpireEarth.h)
 // the main game form's blinking buttons (0x27fcf0, cdecl; EEPlayer::RepairPointers keeps its result, so not void as
@@ -3913,6 +3914,11 @@ void EEPlayer::RefreshTerrainVisibility()
 // Sets the player's game result; a new victory or defeat of another player is announced in the chat log
 void EEPlayer::SetGameResult(long inState)
 {
+    // the headless simulation never defeats the idle local human (platform/PlatSim.h)
+    if (gPlatSimNoHumanDefeat && inState == 2 && gWorld.mPlayers[gWorld.mCurrentPlayer] == this) {
+        gPlatSimNoHumanDefeatHits++;
+        return;
+    }
     GEColor theColor(1.0f, 1.0f, 1.0f);
     UWideString theText;
     UWideString theReason;

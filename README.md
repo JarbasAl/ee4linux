@@ -108,13 +108,17 @@ variable, and [troubleshooting](docs/troubleshooting.md) the known failures.
 ```
 python3 -I tools/test_port_linux.py --target linux64          # the Win32 layer's tests and checks
 python3 -I tools/test_long32.py                               # the 64-bit build's long rewrite
+python3 -I tools/sim.py --seeds 2 --repeat 2                  # a headless computer game, twice, compared
 ```
 
 [testing](docs/testing.md) describes them, and how to play the whole game headless from a script of timed key presses.
+[simulator](docs/simulator.md) describes `ee-aoc --sim`, which plays a seeded computer-against-computer game in
+seconds.
 
 ## Credits
 
 - The source reconstruction: [Protryon/empire_earth](https://github.com/Protryon/empire_earth).
+- The headless simulator: [Protryon/empire_earth_next](https://github.com/Protryon/empire_earth_next).
 - [SDL2](https://www.libsdl.org/), [FFmpeg](https://ffmpeg.org/) (LGPL build),
   [GothicKit/dmusic](https://github.com/GothicKit/dmusic), TinySoundFont, stb_truetype, and the GeneralUser GS
   SoundFont by S. Christian Collins.
@@ -122,7 +126,8 @@ python3 -I tools/test_long32.py                               # the 64-bit build
 ## License
 
 The code this repository adds is licensed under the GNU General Public License, version 3 ([LICENSE](LICENSE)). The
-source reconstruction this repository builds on carries no license from its authors. The third-party libraries under
+source reconstruction this repository builds on, and the code ported from empire_earth_next, carry no license from
+their authors. The third-party libraries under
 `src/ThirdParty/` and `src/Port/Linux/third_party/` keep their own licenses.
 
 Empire Earth is the property of its rights holders. This repository contains none of its data.

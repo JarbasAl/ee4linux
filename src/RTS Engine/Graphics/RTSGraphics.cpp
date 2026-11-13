@@ -41,6 +41,7 @@
 #include "ee/EEGameSound.h"
 #include "ee/EEMouse.h"
 #include "ee/RTSGraphics.h"
+#include "platform/PlatSim.h"
 #include "LostDebug.h"
 
 // FUNCTION: EXE 0x51a1cc
@@ -126,7 +127,8 @@ unsigned long RTSGraphics::Main(void* inGraphics)
             UMSetFloatingPointRoundingMode(0);
         if (theResult == kErrorOK)
             theGraphics->HandleMessage(theMessage, theParameter1, theParameter2);
-        if (!EELobbyIsShown() && !theGraphics->mIsPaused && !theGraphics->mIsQuitting) {
+        // the headless simulation (platform/PlatSim.h) draws nothing: the thread only answers its messages
+        if (!gPlatSimMode && !EELobbyIsShown() && !theGraphics->mIsPaused && !theGraphics->mIsQuitting) {
             gMouse->mInputLock->Enter();
             gISMouse->RefreshXY();
             gMouse->Update();
