@@ -9,21 +9,40 @@ the same names, and adds the General MIDI SoundFont as general-midi.sf2. The ret
 build reads its resources. The tool prints the command that starts the game; it does not start it.
 
 Settings go to ee-port-registry.reg in the folder. The first start imports them, and the base Empire Earth folder,
-from the default Wine prefix.
+from the Wine prefix (WINEPREFIX, else ~/.wine). When that prefix does not record the base game, or EE_BASE_GAME_DIR
+names it, the tool writes ee-port-registry.reg itself with the two install folders, and the game starts with default
+settings. EE_GAME_DIR and EE_BASE_GAME_DIR name game folders outside a Wine prefix (tools/port_run.py).
 """
 import argparse
 import json
+import os
 import pathlib
 import shutil
 import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from port_run import GAME, mod_backup, sha256
+from port_run import BASE_GAME, BASE_GAME_KEY, GAME, GAME_KEY, installed_folder, mod_backup, sha256
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 IMAGES = ROOT / "build" / "port-linux" / "bin"
 SOUNDFONT = ROOT / "toolchain" / "soundfonts" / "GeneralUser-GS.sf2"
+
+REGISTRY_HEADER = "WINE REGISTRY Version 2\n;; The Empire Earth native port's registry (ee-port-registry.reg)\n"
+
+
+def escaped(text):
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def install_keys(folders):
+    """ee-port-registry.reg text that gives each key its install folder as a Z: path (Z: is the root, as in Wine)"""
+    text = REGISTRY_HEADER
+    for key, folder in folders.items():
+        name = escaped("HKEY_CURRENT_USER\\" + key)
+        directory = escaped(str(folder.resolve()).replace("/", "\\").rstrip("\\") + "\\")
+        text += f'\n[{name}]\n"Installed From Directory"="{directory}"\n"Installed From Volume"="Z:"\n'
+    return text
 
 
 def main():
@@ -37,7 +56,7 @@ def main():
     IMAGES = ROOT / "build" / f"port-{args.target}" / "bin" if args.target != "linux" else IMAGES
     args.out = args.out or ROOT / "build" / f"port-{args.target}" / "run"
     if not (IMAGES / "ee-aoc").exists():
-        sys.exit(f"port_linux_folder: no {IMAGES / 'ee-aoc'}; run tools/build_port.py --target linux --link first")
+        sys.exit(f"port_linux_folder: no {IMAGES / 'ee-aoc'}; run tools/build_port.py --target {args.target} --link first")
     if not SOUNDFONT.exists():
         sys.exit(f"port_linux_folder: no {SOUNDFONT}; run tools/fetch_port_toolchain.py first")
     if args.out.exists():
@@ -64,8 +83,17 @@ def main():
         shutil.copy2(image, args.out / image.name)
     shutil.copy2(SOUNDFONT, args.out / "general-midi.sf2")
 
+    registry = "imported from the Wine prefix at the first start"
+    if os.environ.get("EE_BASE_GAME_DIR") or installed_folder(BASE_GAME_KEY) is None:
+        if not BASE_GAME.is_dir():
+            sys.exit(f"port_linux_folder: no base Empire Earth folder {BASE_GAME}; set EE_BASE_GAME_DIR")
+        (args.out / "ee-port-registry.reg").write_text(
+            install_keys({GAME_KEY: args.out, BASE_GAME_KEY: BASE_GAME}))
+        registry = f"written with the base game at {BASE_GAME}"
+
     mod = "kept" if backup is not None and args.keep_mod else f"{len(restored)} retail files put back"
-    print(f"port_linux_folder: {GAME.name} copied to {args.out}; mod: {mod}; {len(images)} native files copied")
+    print(f"port_linux_folder: {GAME} copied to {args.out}; mod: {mod}; {len(images)} native files copied")
+    print(f"settings: {registry}")
     for image in images:
         print(f"  {image.name}  {sha256(image)[:16]}")
     print("Start the game with:")

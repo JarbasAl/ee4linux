@@ -24,7 +24,59 @@ import sys
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-GAME = pathlib.Path.home() / ".wine/drive_c/Program Files (x86)/Empire Earth/Empire Earth - The Art of Conquest"
+PREFIX = pathlib.Path(os.environ.get("WINEPREFIX") or pathlib.Path.home() / ".wine")
+DEFAULT_FOLDER = PREFIX / "drive_c" / "Program Files (x86)" / "Empire Earth"
+
+
+def resolve_case(base, parts):
+    """base joined with the parts, each part matched to an existing entry without regard to case, as Windows does"""
+    path = base
+    for part in parts:
+        if not (path / part).exists() and path.is_dir():
+            part = next((entry.name for entry in path.iterdir() if entry.name.lower() == part.lower()), part)
+        path = path / part
+    return path
+
+
+def installed_folder(key):
+    """The folder the Wine prefix's registry gives for a game key ("Installed From Volume" and "Installed From
+    Directory" under HKEY_CURRENT_USER), mapped through the prefix's drive links; None when the key is not there."""
+    try:
+        text = (PREFIX / "user.reg").read_text(errors="replace")
+    except OSError:
+        return None
+    header = "[" + key.replace("\\", "\\\\") + "]"
+    start = next((i for i, line in enumerate(text.splitlines()) if line.lower().startswith(header.lower())), None)
+    if start is None:
+        return None
+    values = {}
+    for line in text.splitlines()[start + 1:]:
+        if line.startswith("["):
+            break
+        name, _, value = line.partition("=")
+        values[name.strip('"')] = value.strip('"').replace("\\\\", "\\")
+    volume, directory = values.get("Installed From Volume"), values.get("Installed From Directory")
+    if not volume or not directory:
+        return None
+    drive = PREFIX / "dosdevices" / volume.lower()
+    if not drive.exists():
+        return None
+    return resolve_case(drive.resolve(), [part for part in directory.split("\\") if part])
+
+
+def game_folder(variable, key, name):
+    """A game folder: the environment variable when it is set, else the folder the prefix's registry records, else the
+    default install folder in the prefix"""
+    if os.environ.get(variable):
+        return pathlib.Path(os.environ[variable])
+    return installed_folder(key) or DEFAULT_FOLDER / name
+
+
+# The Art of Conquest folder (EE_GAME_DIR names another) and the base game's (EE_BASE_GAME_DIR)
+GAME_KEY = "Software\\Mad Doc Software\\EE-AOC"
+BASE_GAME_KEY = "Software\\SSSI\\Empire Earth"
+GAME = game_folder("EE_GAME_DIR", GAME_KEY, "Empire Earth - The Art of Conquest")
+BASE_GAME = game_folder("EE_BASE_GAME_DIR", BASE_GAME_KEY, "Empire Earth")
 IMAGES = ROOT / "build" / "port-mingw" / "bin"
 WORK = ROOT / "build" / "port-run"
 EVIDENCE = pathlib.Path.home() / "AgentWorkspaces" / "knowledge" / "wiki" / "audits" / "ee-linux"

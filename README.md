@@ -79,18 +79,19 @@ Not tested yet: a network game between native builds. Reports are welcome.
 You need:
 
 - Linux on x86-64 with X11, or Wayland with XWayland.
-- Clang, Python 3, CMake and make.
+- Clang, Python 3, CMake and make. `EE_CC` and `EE_CXX` name a Clang that is not on `PATH`.
 - The `wine` package, for its Windows headers only (`/usr/include/wine/windows`). The game itself does not run in
   Wine.
-- *Empire Earth* with *The Art of Conquest*, installed in a Wine prefix (`~/.wine` by default, or set `WINEPREFIX`).
-  The game reads its settings and its base folder from that prefix on the first start.
+- *Empire Earth* with *The Art of Conquest*. In a Wine prefix (`~/.wine` by default, or set `WINEPREFIX`), the game
+  reads its settings and its base folder from the prefix on the first start. In other folders, set `EE_GAME_DIR` and
+  `EE_BASE_GAME_DIR` ([run](docs/run.md#the-first-start)).
 - For the 32-bit build only: the 32-bit glibc and C++ runtime (on Arch: `lib32-glibc`, `lib32-gcc-libs`,
   `lib32-libstdc++`).
 
 The 64-bit build:
 
 ```
-python3 -I tools/fetch_port_toolchain.py                     # once: builds SDL2 and FFmpeg into toolchain/
+python3 -I tools/fetch_port_toolchain.py --target linux64    # once: builds SDL2 and FFmpeg into toolchain/
 python3 -I tools/build_port.py --target linux64 --link -j 8   # the game, in build/port-linux64/bin
 python3 -I tools/port_linux_folder.py --target linux64        # a copy of your installed game with it
 cd build/port-linux64/run && ./ee-aoc

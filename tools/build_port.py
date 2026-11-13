@@ -31,6 +31,7 @@ import os
 import pathlib
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 
@@ -64,6 +65,18 @@ LIBRARY_MODULES = {
 MODULES = list(MODULE_SRC) + list(PORT_MODULES) + list(LIBRARY_MODULES)
 # Wine's Windows headers: the wine package's, or a copy on a build machine without Wine (EE_WINE_HEADERS)
 WINE_HEADERS = pathlib.Path(os.environ.get("EE_WINE_HEADERS", "/usr/include/wine/windows"))
+
+
+def find_compiler(name, variable):
+    """The Clang driver: the variable (EE_CC, EE_CXX) when it is set, else the first `name` on PATH, so a Clang outside
+    /usr/bin (Gentoo's /usr/lib/llvm/<version>/bin, for example) needs no change here."""
+    found = os.environ.get(variable) or shutil.which(name)
+    return pathlib.Path(found) if found else pathlib.Path("/usr/bin") / name
+
+
+CLANG = find_compiler("clang", "EE_CC")
+CLANGXX = find_compiler("clang++", "EE_CXX")
+
 TARGETS = {
     "mingw": {
         "cc": TOOLCHAIN / "llvm-mingw" / "bin" / "i686-w64-mingw32-clang",
@@ -83,8 +96,8 @@ TARGETS = {
     # include/port/linux comes before them and implements what the game calls. Every unit is position-independent,
     # because the engine and the plug-ins are shared objects.
     "linux": {
-        "cc": pathlib.Path("/usr/bin/clang"),
-        "cxx": pathlib.Path("/usr/bin/clang++"),
+        "cc": CLANG,
+        "cxx": CLANGXX,
         # -fdeclspec, not -fms-extensions: that makes the MSVC intrinsics built-ins, which Wine's headers define
         "flags": ["-m32", "-fPIC", "-O1", "-march=i686", "-mfpmath=387", "-fasm-blocks", "-fdeclspec",
                   "-fdelayed-template-parsing", "-fno-strict-aliasing", "-w", "-ferror-limit=0",
@@ -114,8 +127,8 @@ TARGETS = {
     # x87 mode, so the arithmetic is SSE2 like VC6's floating point on a modern Windows target; the game's own units
     # are not ported yet (docs/ in the wiki audit for the plan).
     "linux64": {
-        "cc": pathlib.Path("/usr/bin/clang"),
-        "cxx": pathlib.Path("/usr/bin/clang++"),
+        "cc": CLANG,
+        "cxx": CLANGXX,
         # WINE_UNIX_LIB: Wine's headers make __stdcall the Windows x64 convention (ms_abi) otherwise, and a Linux
         # program has one convention of its own; with it the whole port, game and layer, uses the System V one
         "flags": ["-m64", "-fPIC", "-O1", "-g1", "-march=x86-64", "-msse2", "-mfpmath=sse", "-fasm-blocks", "-fdeclspec",
