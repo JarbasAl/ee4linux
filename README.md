@@ -120,6 +120,8 @@ python3 -I tools/test_long32.py                               # the 64-bit build
 
 ## License
 
-No license is granted. Empire Earth is the property of its rights holders. The third-party libraries under
-`src/ThirdParty/` and `src/Port/Linux/third_party/` keep their own licenses. The reconstruction this repository builds
-on grants no license either.
+The code this repository adds is licensed under the GNU General Public License, version 3 ([LICENSE](LICENSE)). The
+source reconstruction this repository builds on carries no license from its authors. The third-party libraries under
+`src/ThirdParty/` and `src/Port/Linux/third_party/` keep their own licenses.
+
+Empire Earth is the property of its rights holders. This repository contains none of its data.
