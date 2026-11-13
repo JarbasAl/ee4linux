@@ -32,6 +32,7 @@ behaviour of the Windows function, or from another program; the layer is never c
 | `test_system` | conversion buffer rules, `wsprintf`, INI files, global memory, multimedia timers, the clock, version and volume queries |
 | `test_registry` | the import from a Wine prefix, value types and sizes, the file written, key deletion |
 | `test_cxxabi` | MSVC's `dynamic_cast` rule: the cross-cast the game makes, a cast that must still fail, null, and both reference forms |
+| `test_null_checks` | the null tests the game relies on after a member call through a null pointer, compiled with the game's unit flags |
 
 The display tests choose SDL's offscreen video driver and Mesa's software renderer, so no window and no graphics card
 are needed, and the expected pixels do not depend on the machine.
