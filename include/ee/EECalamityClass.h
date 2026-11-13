@@ -70,6 +70,14 @@ struct EECalamityData {
     bool mBE8;                              // +0xe8 -> +0x24
 };
 
+#ifdef EE_PORT
+// The record is the file's layout: 0xec bytes with no pointer among them, so it is the same on every target. A wider
+// long would move every field after it.
+static_assert(sizeof(EECalamityData) == 0xec, "a dbcalamity.dat record is 0xec bytes");
+static_assert(__builtin_offsetof(EECalamityData, mDatabaseID) == 0x7c, "mDatabaseID is at +0x7c");
+static_assert(__builtin_offsetof(EECalamityData, mBE8) == 0xe8, "mBE8 is at +0xe8");
+#endif
+
 class EECalamityClass {
 public:
     EECalamityClass();                      // 0xadcd9

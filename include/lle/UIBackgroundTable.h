@@ -49,6 +49,13 @@ struct UIDbDataBackgrounds {
     bool mAttribute3;                       // +0x130
 };
 
+#ifdef EE_PORT
+// UIBackgroundTable::Create reads 0x134 bytes of this record per background; it holds no pointer.
+static_assert(sizeof(UIDbDataBackgrounds) == 0x134, "a UI background record is 0x134 bytes");
+static_assert(__builtin_offsetof(UIDbDataBackgrounds, mTopOffset) == 0xc8, "mTopOffset is at +0xc8");
+static_assert(__builtin_offsetof(UIDbDataBackgrounds, mAttribute3) == 0x130, "mAttribute3 is at +0x130");
+#endif
+
 class LLE_API UIBackgroundTable {
 public:
     UIBackgroundTable();

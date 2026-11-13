@@ -8,11 +8,8 @@
 #endif
 
 /* Windows' long is 32 bits on every target; a 64-bit Linux build's is 64. The x86-64 build compiles the game from a
-   copy in which long is 32 bits (tools/long32.py), and defines EE_PORT_LONG32. EE_PORT_LONG64 marks the code that
-   keeps a 32-bit value in a 64-bit long. */
-#if (defined(__LP64__) || defined(_WIN64)) && !defined(EE_PORT_LONG32)
-#define EE_PORT_LONG64 1
-#endif
+   copy in which long is 32 bits (tools/long32.py), and defines EE_PORT_LONG32 for the places where the source itself
+   must change for a wider pointer. */
 
 #define NOMINMAX        /* windows.h's min and max macros break the C++ library; the templates below replace them */
 
@@ -30,6 +27,18 @@
 #ifdef __cplusplus
 #include <typeinfo>     /* VC6 allows typeid without it */
 #include <type_traits>
+
+/* The target's own widths. This header is the port's, so tools/long32.py does not rewrite it and its long is the
+   compiler's: the 32-bit long of the rewrite is a property of the game's files, which the layout asserts beside each
+   record check (a unit the rewrite missed changes a record's size and fails there). What is left to check here is the
+   target itself. */
+static_assert(sizeof(int) == 4, "the game's fixed-width fields are int-sized");
+static_assert(sizeof(char) == 1, "the game's bytes are bytes");
+#ifdef EE_PORT_LINUX64
+static_assert(sizeof(void*) == 8, "the x86-64 target is a 64-bit port: pointers are 8 bytes wide");
+#else
+static_assert(sizeof(void*) == 4, "the 32-bit targets keep the retail's pointer width");
+#endif
 
 #include <cstring>
 #include <cwchar>

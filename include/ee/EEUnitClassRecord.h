@@ -344,4 +344,12 @@ struct EEUnitClassRecord {
     char mC7A7;                  // +0x7a7
 };
 
+#ifdef EE_PORT
+// dbobjects.dat's unit record is 0x7a8 bytes and holds no pointer; the class factory copies it field by field.
+static_assert(sizeof(EEUnitClassRecord) == 0x7a8, "a dbobjects.dat unit record is 0x7a8 bytes");
+static_assert(__builtin_offsetof(EEUnitClassRecord, mPackedType) == 0x47c, "mPackedType is at +0x47c");
+static_assert(__builtin_offsetof(EEUnitClassRecord, mAttributes) == 0x484, "mAttributes is at +0x484");
+static_assert(__builtin_offsetof(EEUnitClassRecord, mC7A7) == 0x7a7, "mC7A7 is at +0x7a7");
+#endif
+
 #endif

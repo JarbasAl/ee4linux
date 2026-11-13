@@ -58,6 +58,13 @@ struct EEGameVariantData {
     long mL110;                             // +0x110 (0 in every record)
 };
 
+#ifdef EE_PORT
+// The loader reads 0x114 bytes of this record whole, and it holds no pointer.
+static_assert(sizeof(EEGameVariantData) == 0x114, "a dbgamevariant.dat record is 0x114 bytes");
+static_assert(__builtin_offsetof(EEGameVariantData, mDatabaseID) == 0x64, "mDatabaseID is at +0x64");
+static_assert(__builtin_offsetof(EEGameVariantData, mSelectable) == 0x10c, "mSelectable is at +0x10c");
+#endif
+
 // RTTI EEGameVariant (vtable 0x43e51c, one slot: ??_G 0xd6919; sizeof 0x84: the loader's `new`). The ctor 0xd6910 and
 // dtor 0xd6935 only store the vptr (out of line, user-declared empty). Every member is copied from an
 // EEGameVariantData record by the loader 0xd693c (types from the copy instructions: mov = long, fld/fstp = float).

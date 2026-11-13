@@ -20,6 +20,13 @@ struct EEATCItem {
     unsigned long mKind;                    // +0x04
 };
 
+#ifdef EE_PORT
+// The retail item is 8 bytes: a 4-byte unit pointer and the kind behind it. A 64-bit build's is 16, and each field
+// keeps its place behind the wider pointer.
+static_assert(__builtin_offsetof(EEATCItem, mKind) == sizeof(void*), "mKind sits behind the unit pointer");
+static_assert(sizeof(EEATCItem) == 2 * sizeof(void*), "an item is a pointer and a kind, padded to the pointer's size");
+#endif
+
 // One airport (0x2c bytes; the vector's element, the same size as EEPGSPlayerReport so the vector COMDATs are ICF-shared)
 struct EEATCAirport {
     EEATCAirport() : mAirport(NULL) {}      // 0x14ea04 (out of line, right after its first user)
@@ -38,6 +45,12 @@ struct EEATCCandidate {
     float mDistance;                        // +0x04 (squared tile distance)
     long mFree;                             // +0x08 (the cargo weight still free there)
 };
+
+#ifdef EE_PORT
+// 12 bytes retail: the pointer, then the distance and the free weight. A 64-bit build's is 16.
+static_assert(__builtin_offsetof(EEATCCandidate, mDistance) == sizeof(void*), "mDistance sits behind the airport pointer");
+static_assert(sizeof(EEATCCandidate) == sizeof(void*) + 8, "a candidate is a pointer, a float and a long");
+#endif
 
 class EEAirTrafficControl {
 public:

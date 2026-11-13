@@ -45,6 +45,14 @@ struct EEWorldTableEntry {
     long mL18;                              // +0x18 (entry 31: 1, entry 48: 0x50200; otherwise 0)
 };
 
+#ifdef EE_PORT
+// EEWorldTable's loader reads 0x1c bytes per record of db\dbworld.dat and the vector moves it as 7 dwords, so the
+// record has no pointer and the same layout on every target.
+static_assert(sizeof(EEWorldTableEntry) == 0x1c, "a dbworld.dat record is 0x1c bytes");
+static_assert(__builtin_offsetof(EEWorldTableEntry, mDatabaseID) == 0x8, "mDatabaseID is at +0x08");
+static_assert(__builtin_offsetof(EEWorldTableEntry, mL18) == 0x18, "mL18 is at +0x18");
+#endif
+
 // RTTI EEWorldTable (vtable 0x43f810; ctor 0xdcb53 out of line, in EEUnitBehavior.cpp's range; ??_G 0xdd087). The
 // dtor is inline: the global's atexit stub 0x13eca6 stores the vptr, clears the vector, then destroys it.
 // Its only instance is gWorldTable (0x52fca0). The game reads the constants as gWorldTable.mEntries[k].<field>: the

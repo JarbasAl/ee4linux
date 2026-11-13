@@ -27,6 +27,13 @@ struct EECivPower {
     long mUnitType;                        // +0x94
 };
 
+#ifdef EE_PORT
+// EECivPowersManager copies 0x26 dwords of this record out of dbcivpowers.dat, and it holds no pointer.
+static_assert(sizeof(EECivPower) == 0x98, "a civilization power record is 0x98 bytes");
+static_assert(__builtin_offsetof(EECivPower, mDatabaseID) == 0x64, "mDatabaseID is at +0x64");
+static_assert(__builtin_offsetof(EECivPower, mUnitType) == 0x94, "mUnitType is at +0x94");
+#endif
+
 class EEPlayer;
 
 class EECivPowersManager {

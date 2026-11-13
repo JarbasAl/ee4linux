@@ -43,6 +43,13 @@ struct EEAreaEffectData {
     bool mBB8;                              // +0xb8
 };
 
+#ifdef EE_PORT
+// EEAEManager::Load reads 0xbc bytes of this record from the area-effect table, and it holds no pointer.
+static_assert(sizeof(EEAreaEffectData) == 0xbc, "an area-effect template record is 0xbc bytes");
+static_assert(__builtin_offsetof(EEAreaEffectData, mID) == 0x68, "mID is at +0x68");
+static_assert(__builtin_offsetof(EEAreaEffectData, mBB8) == 0xb8, "mBB8 is at +0xb8");
+#endif
+
 class EEAreaEffectTemplate : public UReferenceCounter {
 public:
     EEAreaEffectTemplate();                 // 0x27c0f3

@@ -56,4 +56,11 @@ struct EETechTreeRecord {
     long mDefaultUnitClass;                 // +0x108 -> mU08->mU40
 };
 
+#ifdef EE_PORT
+// The tech tree reads 0x10c bytes of this record with one FSFile::Read, and it holds no pointer.
+static_assert(sizeof(EETechTreeRecord) == 0x10c, "a tech tree record is 0x10c bytes");
+static_assert(__builtin_offsetof(EETechTreeRecord, mID) == 0x68, "mID is at +0x68");
+static_assert(__builtin_offsetof(EETechTreeRecord, mDefaultUnitClass) == 0x108, "mDefaultUnitClass is at +0x108");
+#endif
+
 #endif

@@ -513,14 +513,7 @@ long FSFileSpec::Read(unsigned char* outData, unsigned long inLength, unsigned l
     if (this->mIsOpen == true) {
         if (this->mHandle) {
             if (this->mFileAccess & kFileAccessRead) {
-#if defined(EE_PORT_LONG64)
-                // the Win32 call counts bytes in a DWORD, which is 32 bits on every target
-                DWORD theReadCount = 0;
-                BOOL theSucceeded = ReadFile(this->mHandle, outData, (DWORD)inLength, &theReadCount, NULL);
-                outRead = theReadCount;
-#else
                 BOOL theSucceeded = ReadFile(this->mHandle, outData, inLength, &outRead, NULL);
-#endif
                 if (outRead == 0) {
                     if (theSucceeded == TRUE)
                         theResult = kErrorEndOfFile;
@@ -551,41 +544,20 @@ long FSFileSpec::Read(float& outValue)
 
 long FSFileSpec::Read(long& outValue)
 {
-#if defined(EE_PORT_LONG64)
-    // the file holds Windows' 32-bit long: read those 32 bits and widen them
-    unsigned long theRead = 0;
-    unsigned int theValue = 0;
-    long theResult = this->Read(reinterpret_cast<unsigned char*>(&theValue), sizeof(theValue), theRead);
-    outValue = static_cast<long>(static_cast<int>(theValue));
-    if (theRead != sizeof(theValue) && theResult == kErrorOK)
-        theResult = kErrorFailed;
-    return theResult;
-#else
     unsigned long theRead = 0;
     long theResult = this->Read(reinterpret_cast<unsigned char*>(&outValue), sizeof(outValue), theRead);
     if (theRead != sizeof(outValue) && theResult == kErrorOK)
         theResult = kErrorFailed;
     return theResult;
-#endif
 }
 
 long FSFileSpec::Read(unsigned long& outValue)
 {
-#if defined(EE_PORT_LONG64)
-    unsigned long theRead = 0;
-    unsigned int theValue = 0;
-    long theResult = this->Read(reinterpret_cast<unsigned char*>(&theValue), sizeof(theValue), theRead);
-    outValue = theValue;
-    if (theRead != sizeof(theValue) && theResult == kErrorOK)
-        theResult = kErrorFailed;
-    return theResult;
-#else
     unsigned long theRead = 0;
     long theResult = this->Read(reinterpret_cast<unsigned char*>(&outValue), sizeof(outValue), theRead);
     if (theRead != sizeof(outValue) && theResult == kErrorOK)
         theResult = kErrorFailed;
     return theResult;
-#endif
 }
 
 // FUNCTION: LLE 0x10009bcc
@@ -743,22 +715,10 @@ long FSFileSpec::Write(const unsigned char* inData, unsigned long inLength, unsi
         if (this->mHandle) {
             if ((this->mFileAccess & 6) == 0)
                 theResult = kErrorNotWritable;
-#if defined(EE_PORT_LONG64)
-            else {
-                DWORD theWritten = 0;
-                BOOL theWrote = WriteFile(this->mHandle, inData, (DWORD)inLength, &theWritten, NULL);
-                outWritten = theWritten;
-                if (!theWrote || outWritten != inLength) {
-                    theResult = kErrorNativeError;
-                    ESRecordNativeError(GetLastError());
-                }
-            }
-#else
             else if (!WriteFile(this->mHandle, inData, inLength, &outWritten, NULL) || outWritten != inLength) {
                 theResult = kErrorNativeError;
                 ESRecordNativeError(GetLastError());
             }
-#endif
         } else
             theResult = kErrorFailed;
     } else
@@ -776,26 +736,14 @@ long FSFileSpec::Write(const float& inValue)
 
 long FSFileSpec::Write(const long& inValue)
 {
-#if defined(EE_PORT_LONG64)
-    unsigned long theWritten = 0;
-    unsigned int theValue = static_cast<unsigned int>(static_cast<int>(inValue));
-    return this->Write(reinterpret_cast<const unsigned char*>(&theValue), sizeof(theValue), theWritten);
-#else
     unsigned long theWritten = 0;
     return this->Write(reinterpret_cast<const unsigned char*>(&inValue), sizeof(inValue), theWritten);
-#endif
 }
 
 long FSFileSpec::Write(const unsigned long& inValue)
 {
-#if defined(EE_PORT_LONG64)
-    unsigned long theWritten = 0;
-    unsigned int theValue = static_cast<unsigned int>(inValue);
-    return this->Write(reinterpret_cast<const unsigned char*>(&theValue), sizeof(theValue), theWritten);
-#else
     unsigned long theWritten = 0;
     return this->Write(reinterpret_cast<const unsigned char*>(&inValue), sizeof(inValue), theWritten);
-#endif
 }
 
 // FUNCTION: LLE 0x10009e6e

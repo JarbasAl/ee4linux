@@ -54,6 +54,13 @@ struct UIDbDataForms {
     bool mUseExclusiveCoords;               // +0x10a
 };
 
+#ifdef EE_PORT
+// UIForm::Create reads 0x10c bytes of this record from the UI database; it holds no pointer.
+static_assert(sizeof(UIDbDataForms) == 0x10c, "a UI form record is 0x10c bytes");
+static_assert(__builtin_offsetof(UIDbDataForms, mID) == 0xc8, "mID is at +0xc8");
+static_assert(__builtin_offsetof(UIDbDataForms, mUseExclusiveCoords) == 0x10a, "mUseExclusiveCoords is at +0x10a");
+#endif
+
 // A control the form creates from the controls table when it opens (exported AddDatabaseControl parameter type;
 // 8-byte vector element at UIForm +0x48)
 struct UICDatabase {
