@@ -322,11 +322,13 @@ bool EECPBuildManager::StartBuilding(EECPBuildRequest inRequest)
                     }
                 } else
                     theTarget = EEMakeBuilding(theThis->mPlayer, theClassID, theTile.mX, theTile.mY);
-                EEUGBuildRepair* theGoal = new EEUGBuildRepair(theWorker->GetPlayer(), theTarget, false);
-                theWorker->ClearGoalQueue(0);
-                theWorker->SetGoal(theGoal, 0, 0);
-                theWorker->StartAction(kActionMoveToRepairSite);
-                theWorker->mUnitClass->ActionChanged(theWorker);
+                if (theTarget != NULL) {   // a requeued farm request orders no one (was a build goal on NULL)
+                    EEUGBuildRepair* theGoal = new EEUGBuildRepair(theWorker->GetPlayer(), theTarget, false);
+                    theWorker->ClearGoalQueue(0);
+                    theWorker->SetGoal(theGoal, 0, 0);
+                    theWorker->StartAction(kActionMoveToRepairSite);
+                    theWorker->mUnitClass->ActionChanged(theWorker);
+                }
                 theResult = true;
             } else {
                 bool theSpace = (gWorld.mMap->mMapCharacteristics & kRMMapWaterlessMap) == kRMMapWaterlessMap;
@@ -884,8 +886,8 @@ bool EECPBuildManager::FindProductionSite(long inUnitClass, EETileCoordinate& ou
 }
 
 // FUNCTION: EXE 0x468a45
-// Finds a dock or navy yard site among the water site tiles away from existing ones; returns true without
-// setting outTile when the site is buildable but no builder is found
+// Finds a dock or navy yard site among the water site tiles away from existing ones; sites without a
+// builder are skipped
 bool EECPBuildManager::FindShoreSite(long inUnitClass, long inSize, EETileCoordinate& outTile)
 {
     std::vector<EEUnit*> the24;
@@ -910,15 +912,16 @@ bool EECPBuildManager::FindShoreSite(long inUnitClass, long inSize, EETileCoordi
             if (theResult && theUnitManager->FindBuilderForTile(theSites[i], inUnitClass) != NULL) {
                 outTile.mX = theSites[i].GetX();
                 outTile.mY = theSites[i].GetY();
-            }
+            } else
+                theResult = false;   // no builder: keep looking
         }
     }
     return theResult;
 }
 
 // FUNCTION: EXE 0x468c90
-// Finds a space dock, turret or station site among space tiles away from units of its class; returns true
-// without setting outTile when the site is buildable but no builder is found
+// Finds a space dock, turret or station site among space tiles away from units of its class; sites
+// without a builder are skipped
 // Class 0x302 searches the shore tiles of the town continents (nearest first) on planet maps, else the town continent's
 // shore tiles near own units; others use mSpaceSites. 0x2d8 keeps 75 from its kind and uses EEIsSpaceDockSiteOpen
 // (its tile moved by -1, -1)
@@ -988,7 +991,9 @@ bool EECPBuildManager::FindSpaceSite(long inUnitClass, long inSize, EETileCoordi
                     this->mTownCenterTile.mX, this->mTownCenterTile.GetY());
             else
                 theResult = EEIsSpaceDockSiteOpen(theSites[i].mX, theSites[i].GetY(), this->mPlayer);
-            if (!theResult || theUnitManager->FindBuilderForTile(theSites[i], inUnitClass) == NULL)
+            if (theResult && theUnitManager->FindBuilderForTile(theSites[i], inUnitClass) == NULL)
+                theResult = false;   // no builder: keep looking
+            if (!theResult)
                 continue;
             outTile.mX = theSites[i].mX;
             outTile.mY = theSites[i].GetY();
@@ -1102,7 +1107,7 @@ bool EECPBuildManager::FindTowerSite(long inUnitClass, long inSize, EETileCoordi
                     EEGetTilesInRadius((*theGate)->GetTileX(), (*theGate)->GetTileY(), 5, true, theRadiusTiles);
                     std::vector<EETileCoordinate>::iterator theIt;
                     for (theIt = theRadiusTiles.begin(); theIt != theRadiusTiles.end();) {
-                        if (this->HasGateNear(theIt->GetX(), theIt->GetY(), 2.0f) || this->HasWallNear(theIt->GetX(), theIt->GetY(), 2.0f)
+                        if (this->HasGateNear(theIt->GetX(), theIt->GetY(), 2.0f) || this->HasWallNear(theIt->GetX(), theIt->GetY(), 4.0f)   // 2 tiles squared, like the gate test (was 2: 1.4 tiles)
                             || (inUnitClass == 0x2f0 ? this->HasUnitNear(0x2f0, theIt->GetX(), theIt->GetY(), theRange)
                                 : this->HasTowerNear(theIt->GetX(), theIt->GetY(), theRange)))
                             theIt = theRadiusTiles.erase(theIt);

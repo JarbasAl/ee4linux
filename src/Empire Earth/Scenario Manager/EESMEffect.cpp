@@ -194,6 +194,10 @@ void EESMEffect::BuildObject()
             EEComputerPlayer* thePlayer = dynamic_cast<EEComputerPlayer*>(gWorld.GetPlayer(*(thePlayers.begin() + i)));
             if (thePlayer == NULL)
                 continue;
+            // per player: no town, continent or "any count" carried over from the previous player
+            theTown = NULL;
+            theContinent = NULL;
+            theAnyCount = false;
             if (thePlayer->mTowns.size() != 0)
                 theTown = thePlayer->mTowns[0];
             if (theTown == NULL) {
@@ -237,7 +241,7 @@ void EESMEffect::BuildObject()
                 theRequirement.mNumWanted = theCount;
                 if (!theAnyCount) {
                     theStrategy.mNumUnits += theCount;
-                    theStrategy.mNumRemaining = theStrategy.mNumUnits + theCount;
+                    theStrategy.mNumRemaining = theStrategy.mNumUnits;
                 }
             }
             bool theAddRequirement = true;
@@ -289,6 +293,7 @@ void EESMEffect::CreateAIMilitaryGroup()
             if (thePlayer == NULL)
                 continue;
             EECPCombatManager* theCombat = thePlayer->mCombatManager;
+            theAnyCount = false;
             theTask.mMode = kAGModeCombat;
             if (this->mUsesTargetArea) {
                 EESMArea* theArea = gWorld.mScenarioManager->GetArea(this->mTargetArea);
@@ -375,7 +380,7 @@ void EESMEffect::CreateAIMilitaryGroup()
                     theRequirement.mNumWanted = theCount;
                     if (!theAnyCount) {
                         theStrategy.mNumUnits += theCount;
-                        theStrategy.mNumRemaining = theStrategy.mNumUnits + theCount;
+                        theStrategy.mNumRemaining = theStrategy.mNumUnits;
                     }
                 }
                 bool theAddRequirement = true;
@@ -475,7 +480,7 @@ void EESMEffect::ModifyAIMilitaryTarget()
 }
 
 // FUNCTION: EXE 0x5bc60f
-// Copies another effect's settings, texts and object list, except its attack and favourite-units flags
+// Copies another effect's settings, texts and object list
 void EESMEffect::Copy(const EESMEffect& inEffect)
 {
     this->mName = inEffect.mName;
@@ -544,6 +549,8 @@ void EESMEffect::Copy(const EESMEffect& inEffect)
     this->mAIToggle = inEffect.mAIToggle;
     this->mUsesTargetArea = inEffect.mUsesTargetArea;
     this->mIsAddTarget = inEffect.mIsAddTarget;
+    this->mIsAttack = inEffect.mIsAttack;
+    this->mUsesFavorites = inEffect.mUsesFavorites;
     this->mID = inEffect.mID;
 }
 
@@ -676,43 +683,43 @@ void EESMEffect::SetPlayerAttribute(long inPlayer, unsigned long inAttribute, lo
             thePlayer->mScenarioVariables[inAttribute - 11] += theAmount;
         break;
     case kSMPlayerValueStoneSent:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[2] = theAmount; thePlayer->mSavedGroups.Set(0x11, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x11, theAmount - (long)thePlayer->mTributes[2]); thePlayer->mTributes[2] = theAmount; }
         else thePlayer->AddTribute(0, 4, theAmount);
         break;
     case kSMPlayerValueStoneReceived:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[7] = theAmount; thePlayer->mSavedGroups.Set(0x12, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x12, theAmount - (long)thePlayer->mTributes[7]); thePlayer->mTributes[7] = theAmount; }
         else thePlayer->AddTribute(1, 4, theAmount);
         break;
     case kSMPlayerValueGoldSent:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[3] = theAmount; thePlayer->mSavedGroups.Set(0x11, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x11, theAmount - (long)thePlayer->mTributes[3]); thePlayer->mTributes[3] = theAmount; }
         else thePlayer->AddTribute(0, 5, theAmount);
         break;
     case kSMPlayerValueGoldReceived:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[8] = theAmount; thePlayer->mSavedGroups.Set(0x12, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x12, theAmount - (long)thePlayer->mTributes[8]); thePlayer->mTributes[8] = theAmount; }
         else thePlayer->AddTribute(1, 5, theAmount);
         break;
     case kSMPlayerValueWoodSent:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[1] = theAmount; thePlayer->mSavedGroups.Set(0x11, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x11, theAmount - (long)thePlayer->mTributes[1]); thePlayer->mTributes[1] = theAmount; }
         else thePlayer->AddTribute(0, 3, theAmount);
         break;
     case kSMPlayerValueWoodReceived:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[6] = theAmount; thePlayer->mSavedGroups.Set(0x12, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x12, theAmount - (long)thePlayer->mTributes[6]); thePlayer->mTributes[6] = theAmount; }
         else thePlayer->AddTribute(1, 3, theAmount);
         break;
     case kSMPlayerValueFoodSent:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[0] = theAmount; thePlayer->mSavedGroups.Set(0x11, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x11, theAmount - (long)thePlayer->mTributes[0]); thePlayer->mTributes[0] = theAmount; }
         else thePlayer->AddTribute(0, 2, theAmount);
         break;
     case kSMPlayerValueFoodReceived:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[5] = theAmount; thePlayer->mSavedGroups.Set(0x12, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x12, theAmount - (long)thePlayer->mTributes[5]); thePlayer->mTributes[5] = theAmount; }
         else thePlayer->AddTribute(1, 2, theAmount);
         break;
     case kSMPlayerValueIronSent:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[4] = theAmount; thePlayer->mSavedGroups.Set(0x11, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x11, theAmount - (long)thePlayer->mTributes[4]); thePlayer->mTributes[4] = theAmount; }
         else thePlayer->AddTribute(0, 6, theAmount);
         break;
     case kSMPlayerValueIronReceived:
-        if (inMode == kSMValueModeToExactly) { thePlayer->mTributes[9] = theAmount; thePlayer->mSavedGroups.Set(0x12, theAmount); }
+        if (inMode == kSMValueModeToExactly) { thePlayer->mSavedGroups.Reset(0x12, theAmount - (long)thePlayer->mTributes[9]); thePlayer->mTributes[9] = theAmount; }
         else thePlayer->AddTribute(1, 6, theAmount);
         break;
     default:
@@ -720,7 +727,7 @@ void EESMEffect::SetPlayerAttribute(long inPlayer, unsigned long inAttribute, lo
             if (inMode == kSMValueModeToExactly)
                 thePlayer->mSavedGroups.Set(inAttribute - 30, theAmount);
             else
-                thePlayer->mSavedGroups.Reset(inAttribute - 29, theAmount);
+                thePlayer->mSavedGroups.Reset(inAttribute - 30, theAmount);
         } else if (inAttribute - 61 == 0) {
             if (inMode == kSMValueModeToExactly) thePlayer->mMiningLimit = theAmount;
             else thePlayer->mMiningLimit += theAmount;
@@ -870,7 +877,7 @@ void EESMEffect::CreateUnits()
                 theUnit->GetComplexUnit()->SetFlightTime(theUnit->GetStats()->mFlightTime);
                 theUnit->GetComplexUnit()->SetAmmunition(theUnit->GetUnitClass()->mAmmunition);
                 theDirection.mX = (float)theMap->mSize * 0.5f - theLocation.GetX();
-                theDirection.mY = theLocation.GetX() - theLocation.GetY();
+                theDirection.mY = (float)theMap->mSize * 0.5f - theLocation.GetY();   // towards the map centre
                 theDirection.mZ = 0.0f;
                 theDirection.Normalize();
                 float theHeading = UMArcTan2(-theDirection.GetX(),theDirection.GetY());
@@ -1109,8 +1116,9 @@ void EESMEffect::Execute(bool inIsCinematic)
                         EESMObject* theEventObject = theManager->GetScenarioObject(this->mLocationObject);
                         theEventObject->Evaluate(false);
                         EEUnit* theUnit = NULL;
-                        for (i = 0; theUnit == NULL && i < theEventObject->GetUnitCount(); i++)
-                            theUnit = gWorld.GetUnit(theEventObject->mUnits[i]);
+                        // own index: i is the loop over the chosen players
+                        for (unsigned long theIndex = 0; theUnit == NULL && theIndex < theEventObject->GetUnitCount(); theIndex++)
+                            theUnit = gWorld.GetUnit(theEventObject->mUnits[theIndex]);
                         if (theUnit == NULL)
                             break;
                         if (theUnit->mComplexUnit != NULL && theUnit->mComplexUnit->mContainer == NULL) {
@@ -1307,7 +1315,7 @@ void EESMEffect::Execute(bool inIsCinematic)
                         for (RTSTileUnitNode* theNode = theMapTile->mUnits; theNode != NULL; theNode = theNode->mNext) {
                             EEUnit* theUnit = theNode->mUnit;
                             if (theUnit == NULL || std::find(theUnits.begin(), theUnits.end(), theUnit) != theUnits.end()
-                                || theClass->CanCastAt(NULL, thePoint, theTiles[0].GetX(), theTiles[0].GetY(), true, theUnit) != 0)
+                                || theClass->CanCastAt(NULL, thePoint, theUnit->mTileX, theUnit->mTileY, true, theUnit) != 0)
                                 continue;
                             USingleton<EECalamityManager>::GetInstance()->CreateUnitCalamity(theClassEnum, -1,
                                 theUnit->GetUnitID(), 0);
@@ -2414,12 +2422,13 @@ void EESMEffect::SetAIVariable()
             thePlayer->mInitialAttackDelayMax = max(this->mIntValue1, this->mIntValue2);
             thePlayer->mInitialAttackDelayMin = min(this->mIntValue1, this->mIntValue2);
             break;
-        case kCPBehaviorAttackDelayModifier:
-            thePlayer->mDifficulty = this->mIntValue1;
+        case kCPBehaviorAttackDelayModifier:   // as EEComputerPlayer::Init (was mDifficulty = value 1)
+            thePlayer->mAttackDelayModifierEasy = this->mIntValue1;
+            thePlayer->mAttackDelayModifierHard = this->mIntValue2;
             break;
         case kCPBehaviorTroopsToAssistAllies:
             thePlayer->mAssistAlliesDelayEasy = this->mIntValue1 * 60000;
-            thePlayer->mAssistAlliesDelayMedium = this->mIntValue1 * 60000;
+            thePlayer->mAssistAlliesDelayMedium = this->mIntValue2 * 60000;   // value 2, as Init
             theValue = (long)(this->mFloatValue * 60000.0f);
             thePlayer->mAssistAlliesDelayHard = theValue;
             break;
@@ -2443,13 +2452,13 @@ void EESMEffect::SetAIVariable()
             break;
         case kCPBehaviorAttackGroupModifier:
             thePlayer->mAttackGroupModifierEasy = this->mIntValue1;
-            thePlayer->mAttackGroupModifierMedium = this->mIntValue1;
+            thePlayer->mAttackGroupModifierMedium = this->mIntValue2;   // value 2, as Init
             theValue = (long)this->mFloatValue;
             thePlayer->mAttackGroupModifierHard = theValue;
             break;
         case kCPBehaviorCountWeights:
             thePlayer->mMilitaryCountWeight = (float)this->mIntValue1 * 0.01f;
-            thePlayer->mMilitaryCountWeight = (float)this->mIntValue2 * 0.01f;
+            thePlayer->mWorkerCountWeight = (float)this->mIntValue2 * 0.01f;   // as Init (was mMilitaryCountWeight again)
             break;
         case kCPBehaviorAttackGroupSize:
             thePlayer->mAttackGroupSizeMin = min(this->mIntValue1, this->mIntValue2);
@@ -2610,7 +2619,9 @@ void EESMEffect::SetAIVariable()
             thePlayer->mSpecializedUnitPercentage = this->mFloatValue;
             break;
         case kCPBehaviorMaximumAttackResponseRange:
-            thePlayer->mMaxAttackResponseRange = this->mFloatValue;
+            // the triggers compare it with squared distances: square it as EECPBehaviorTable::Load squares the
+            // database value (the editor slider uses the unsquared range)
+            thePlayer->mMaxAttackResponseRange = this->mFloatValue * this->mFloatValue;
             break;
         case kCPBehaviorPriestUsage:
             thePlayer->mPriestMaxPerGroup = this->mIntValue1;
@@ -2672,7 +2683,7 @@ void EESMEffect::SetAIVariable()
             thePlayer->mMaxEnabledManagers = this->mIntValue1;
             break;
         case kCPBehaviorUnitCostReductionMedium:
-            thePlayer->mUnitCostMedium = this->mFloatValue * 0.01f;
+            thePlayer->mUnitCostMedium = this->mFloatValue;   // a percentage, as Init (the user scales it by 0.01)
             break;
         case kCPBehaviorEnableInterval:
             thePlayer->mEnableInterval = this->mFloatValue;
@@ -2757,8 +2768,11 @@ void EESMEffect::SetAIVariable()
             thePlayer->SetTowerMax(UMFloatToLong(this->mFloatValue));
             break;
         }
+        case kCPBehaviorUnitCostReductionEasyAndHard:   // its own values, as Init (was the epoch frequency modifier body)
+            thePlayer->mUnitCostReductionEasy = this->mIntValue1;
+            thePlayer->mUnitCostReductionHard = this->mIntValue2;
+            break;
         case kCPBehaviorEpochFrequencyModifier:
-        case kCPBehaviorUnitCostReductionEasyAndHard:
             thePlayer->mEpochFrequencyModifierEasy = this->mIntValue1;
             thePlayer->mEpochFrequencyModifierHard = this->mIntValue2;
             break;
@@ -2812,7 +2826,9 @@ void EESMEffect::SetAIVariable()
             thePlayer->SetAntiAirMax(UMFloatToLong(this->mFloatValue));
             break;
         }
-        case kCPBehaviorSpecializedUnitSelectionChance:
+        case kCPBehaviorSpecializedUnitSelectionChance:   // its own value, as Init (was the RPS islands body)
+            thePlayer->mSpecializedUnitChance = this->mFloatValue;
+            break;
         case kCPBehaviorRPSSelectionIslands:
             thePlayer->mRPSSelectionIslands = this->mFloatValue;
             break;
@@ -3270,7 +3286,7 @@ void EESMEffect::ChangeAttribute()
         EEModifyUnitAttribute(this->mAttribute, this->mUsesPercent, thePlayer, theUpgrade, this->mAttributeAmount, this->mAttributeMode);
     } else {
         EEUnit* theUnit = this->mAttributeUnit != -1 ? gWorld.GetUnit(this->mAttributeUnit) : NULL;
-        EEChangeUnit(this->mAttribute, false, theUnit, this->mAttributeAmount, 0, false, this->mAttributeMode);
+        EEChangeUnit(this->mAttribute, this->mUsesPercent, theUnit, this->mAttributeAmount, 0, false, this->mAttributeMode);
     }
 }
 
@@ -3669,6 +3685,9 @@ void EESMEffect::TaskUnitsToArea()
         bool theUnset = theArea->IsUnset();
         if (!theUnset && !theArea->IsOffMap()) {
             theArea->GetTiles(theTiles);
+            // An area with no tiles (e.g. anchored to a unit that is gone) has no destination
+            if (theTiles.empty())
+                return;
             long theIndex = gPhysics->GetRandom(0L, (long)theTiles.size() - 1);
             theLocation.SetX((float)(theTiles[theIndex]).GetX());
             theLocation.SetY((float)(theTiles[theIndex]).GetY());

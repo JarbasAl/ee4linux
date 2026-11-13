@@ -1380,7 +1380,8 @@ EETown* EEPlayer::GetNearestTown(const EETileLocation& inTile, EETileLocation& o
                 theCandidate = this->mTowns[i]->GetClosestPoint(inTile);
                 if (theCandidate.DistanceToSquared(inTile) < theDistance) {
                     outTile = theCandidate;
-                    theDistance = theCandidate.DistanceToSquared(theCandidate);
+                    theTown = this->mTowns[i];   // the closer town too (was its tile only)
+                    theDistance = theCandidate.DistanceToSquared(inTile);   // was (theCandidate): always 0
                 }
             } else {
                 outTile = this->mTowns[i]->GetClosestPoint(inTile);
@@ -1690,7 +1691,7 @@ bool EEPlayer::CanAfford(EETechnology* inTechnology, long inUnitType, long inCou
 {
     bool theResult = this->CanAffordScaled(inTechnology, inUnitType, 1.0f, inCount);
     if (!theResult)
-        theResult = this->CanAffordSingleResource(inTechnology, inCount, 1);
+        theResult = this->CanAffordSingleResource(inTechnology, inUnitType, inCount);   // was (inTechnology, inCount, 1)
     return theResult;
 }
 
@@ -2970,9 +2971,10 @@ void EEPlayer::RemoveQueuedImprovement(long inUnitType, long inImprovement, bool
     }
     if (theImprovement == theQueue.end())
         return;
+    bool theWasHead = theImprovement == theQueue.begin();   // the one in progress (was: the map's first entry)
     theQueue.erase(theImprovement);
     this->RefundImprovement(gUnitClassTable[inUnitType], inImprovement, 1.0f);
-    if (theIterator == this->mQueuedImprovements.begin())
+    if (theWasHead)
         this->mQueuedImprovements[inUnitType].first = 0.0f;
     if (theQueue.size() == 0)
         this->mQueuedImprovements.erase(theIterator);
@@ -3955,7 +3957,7 @@ void EEPlayer::Pay(EETechnology* inTechnology, long inUnitType, float inFraction
         if (inTechnology->mData->mCostResource == 1) {
             for (i = 2; i < 7; i++) {
                 long theCost = this->ScaleCost((long)(inTechnology->GetCost(i, inUnitType, 1.0f) * inFraction));
-                if (this->mResourceCaps[i] <= theCost) {
+                if (this->mResourceCaps[i] >= theCost) {   // the first resource that covers it, as CanAffordSingleResource (was <=)
                     this->TakeResource(i, theCost);
                     break;
                 }
@@ -4228,7 +4230,7 @@ void EEPlayer::UnitTaken(RTSUnit* inUnit, bool inSwapped)
 {
     EEComplexUnit* theUnit = static_cast<EEComplexUnit*>(inUnit);
     this->mPopulationCount -= theUnit->mUnitClass->GetPopulationCost();
-    if (!theUnit->mUnitClass->IsLandBuilding() || theUnit->GetComplexUnit()->mIsBuilt) {
+    if (!theUnit->mUnitClass->IsLandBuilding() || theUnit->GetComplexUnit() == NULL || theUnit->GetComplexUnit()->mIsBuilt) {
         if (theUnit->mUnitClass->mIsVital
             && (theUnit->GetComplexUnit() == NULL
                 || theUnit->GetComplexUnit()->mPreviousPart == NULL
@@ -4262,7 +4264,7 @@ void EEPlayer::UnitTaken(RTSUnit* inUnit, bool inSwapped)
     }
     if (theUnit->mUnitClass->mUnitType == kUnitTypeHouse)
         this->SuggestRecomputeAllAreaEffects();
-    if (!(!gWorldClearing && theUnit->mUnitClass->mBlocksTile || theUnit->mUnitClass->mCategory == kUnitCategoryGate))
+    if (!(!gWorldClearing && (theUnit->mUnitClass->mBlocksTile || theUnit->mUnitClass->mCategory == kUnitCategoryGate)))
         return;
     gContinentManager.UpdateWallUnit(theUnit, true);
     if (!theUnit->mUnitClass->mIsTree || !gGameScreenActive)
@@ -4597,9 +4599,7 @@ void EEPlayer::EnableCamouflagePower()
     EEUnitSet* theSet = gUnitSetManager.GetSet(gCivPowersManager.GetPowerRecord(kCivPowerCamouflage)->mUnitSet);
     for (; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
         EEComplexUnit* theComplex = theUnit->GetComplexUnit();
-        // The original forwards Contains' bool as a unit-set index, as its paired reset routine does.
-        if (theComplex == NULL
-            || gUnitSetManager.GetSet(theSet->Contains(theUnit->mUnitClass->mUnitType)) == NULL)
+        if (theComplex == NULL || !theSet->Contains(theUnit->mUnitClass->mUnitType))
             continue;
         unsigned long theCommand = theComplex->mCommand ? theComplex->mCommand->mType : 0;
         if (theCommand == kActionIdle)
@@ -4618,9 +4618,7 @@ void EEPlayer::DisableCamouflagePower()
     EEUnitSet* theSet = gUnitSetManager.GetSet(gCivPowersManager.GetPowerRecord(kCivPowerCamouflage)->mUnitSet);
     for (; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
         EEComplexUnit* theComplexUnit = theUnit->GetComplexUnit();
-        // (the set test's bool is passed on as a set index, as written)
-        if (theComplexUnit == NULL
-            || gUnitSetManager.GetSet(theSet->Contains(theUnit->mUnitClass->mUnitType)) == NULL)
+        if (theComplexUnit == NULL || !theSet->Contains(theUnit->mUnitClass->mUnitType))   // membership (was GetSet(bool))
             continue;
         theComplexUnit->SetCloakableChain(false);
         theComplexUnit->SetCloakedChain(false);

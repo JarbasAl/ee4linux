@@ -744,8 +744,8 @@ bool EECPPersonnel::OfferUnit(EEComplexUnit* inUnit)
 }
 
 // FUNCTION: EXE 0x48707b
-// From the Atomic - WW1 epoch on, kills the player's living obsolete units of 17 unit types that some human
-// player cannot see
+// From the Atomic - WW1 epoch on, kills the player's living obsolete units of 17 unit types that no human
+// player can see
 void EECPPersonnel::RetireObsoleteUnits()
 {
     std::vector<EEPlayer*> thePlayers;
@@ -781,12 +781,10 @@ void EECPPersonnel::RetireObsoleteUnits()
             case kUnitTypeCav07CarabineersGun:
             case kUnitTypeCav09ImperialCuirassierSword:
             case kUnitTypeInf08Halberdier: {
-                bool theFound = false;
-                for (i = thePlayers.size() - 1; i >= 0; i--) {
-                    if (theFound)
-                        break;
-                    theFound = theComplexUnit->mHitPoints > 0 && !EEIsSeenBy(theComplexUnit, thePlayers[i], true);
-                }
+                // retired only when no human player sees it (was: when any one human does not)
+                bool theFound = theComplexUnit->mHitPoints > 0;
+                for (i = thePlayers.size() - 1; i >= 0 && theFound; i--)
+                    theFound = !EEIsSeenBy(theComplexUnit, thePlayers[i], true);
                 if (theFound)
                     theUnits.push_back(theComplexUnit);
                 break;
@@ -932,8 +930,7 @@ void EECPPersonnel::UnitsSwapped(std::vector<EEPUnitSwap>& ioSwaps)
             for (it = theRange.first, theEnd = theRange.second; it != theEnd; ++it) {
                 if (it->second != (ioSwaps[i]).mNew)
                     continue;
-                it->second->Dereference();
-                (ioSwaps[i]).mNew->Reference();
+                it->second->Dereference();   // the erased entry's reference (no new one is taken)
                 this->mUnits.erase(it);
                 break;
             }

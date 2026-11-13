@@ -466,15 +466,15 @@ void EEScenarioManager::MoveAreaDown(unsigned long inIndex)
 }
 
 // FUNCTION: EXE 0x5b0c45
-// Swaps a user condition with the next one and renumbers references; the last user condition swaps with the
-// first object condition
+// Swaps a user condition with the next user condition and renumbers references
 void EEScenarioManager::MoveConditionDown(unsigned long inIndex)
 {
     EESMCondition* theCondition = this->mConditions[inIndex];
     unsigned long theCount;
     for (theCount = 0; theCount < this->mConditions.size() && this->mConditions[theCount]->mType != kSMConditionObject; theCount++)
         ;
-    if (inIndex <= 0 || inIndex >= theCount || !(inIndex < this->mConditions.size() - 1))
+    // the next condition must be a user condition too (the object conditions stay at the end)
+    if (inIndex <= 0 || inIndex + 1 >= theCount || !(inIndex < this->mConditions.size() - 1))
         return;
     this->mConditions[inIndex] = this->mConditions[inIndex + 1];
     this->mConditions[inIndex + 1] = theCondition;
@@ -625,7 +625,7 @@ void EEScenarioManager::EraseTimedEffect(unsigned long inIndex)
 }
 
 // FUNCTION: EXE 0x5b120d
-// Appends a copy of an area named <name_Copy> and returns it; advances the area ID counter twice, skipping an ID
+// Appends a copy of an area named <name_Copy> with the next area ID and returns it
 EESMArea* EEScenarioManager::DuplicateArea(unsigned long inIndex)
 {
     UWideString theNewName;
@@ -644,8 +644,7 @@ EESMArea* EEScenarioManager::DuplicateArea(unsigned long inIndex)
     EESMArea* theArea = new EESMArea;
     theArea->Copy(*this->mAreas[inIndex]);
     theArea->mName = theNewName;
-    long theID = ++this->mNextAreaID;
-    this->mNextAreaID++;
+    long theID = ++this->mNextAreaID;   // one new ID per area, as in NewArea
     theArea->mID = theID;
     this->mAreas.push_back(theArea);
     return theArea;
@@ -1768,11 +1767,12 @@ theEnd:
         theResult = inFile.Read(this->mTriggerTimer);
     if (theResult == kErrorOK)
         theResult = this->mMediaStrings.Load(inMajorVersion, inMinorVersion, inFile);
-    if (theResult == kErrorOK)
+    // written only from minor version 0x14 on (Save): older files go straight on to the debug-ID flag
+    if (theResult == kErrorOK && inMinorVersion >= 0x14)
         theResult = inFile.Read(this->mIsMovingCamera);
-    if (theResult == kErrorOK)
+    if (theResult == kErrorOK && inMinorVersion >= 0x14)
         theResult = inFile.Read(this->mStartX);
-    if (theResult == kErrorOK)
+    if (theResult == kErrorOK && inMinorVersion >= 0x14)
         theResult = inFile.Read(this->mStartY);
     if (theResult == kErrorOK)
         theResult = inFile.Read(this->mShowDebugIDs);

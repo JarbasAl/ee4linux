@@ -381,15 +381,16 @@ EEAIContinent* EECPASGLand::GetTargetContinent(unsigned short inID, unsigned sho
 }
 
 // FUNCTION: EXE 0x4466dd
-// Builds the terrain mask the sub-group may cross from its units' terrain flags, plus walls and gates; each unit
-// overwrites the mask and the AND is with itself, so the last unit read (index 0) decides
+// Builds the terrain mask the sub-group may cross from its units' terrain flags (the intersection
+// over all units), plus walls and gates
 // NEAR: inlining and register allocation differ from the original
 void EECPASGLand::BuildMoveMask()
 {
     memset(this->mFlags.mFlags, 1, sizeof(this->mFlags.mFlags));
+    EECPASGFlags theUnitFlags;   // each unit's flags, ANDed into the mask (was written straight into it)
     for (long i = this->mUnits.size() - 1; i >= 0; i--) {
-        this->mUnits[i]->mUnit->GetUnitClass()->GetTerrainFlags(this->mUnits[i]->mUnit, this->mFlags);
-        this->mFlags.And(this->mFlags);
+        this->mUnits[i]->mUnit->GetUnitClass()->GetTerrainFlags(this->mUnits[i]->mUnit, theUnitFlags);
+        this->mFlags.And(theUnitFlags);
     }
     this->mFlags.mPlayerID = this->mPlayer->mPlayerID;
     this->mFlags.mFlags[kAITileWall] = true;
@@ -467,13 +468,11 @@ void EECPASGLand::GetPathCosts(void* inFrom, void* inTo, EECPASGWeights& outWeig
         if (this->GetPlayer()->GetTechnologies()->GetCurrentEpoch() > kTechEpochPrehistoric && theAir != 0 && (this->GetMission() == 2 || this->GetMission() == 0) &&
             gPhysics->mRandom.Generate() > 0.15f && (!theMixedSectors || gPhysics->mRandom.Generate() > kASGLMixedChance) &&
             theReadiness != 0.0f) {
-            theReadiness /= (float)this->mUnits.size();
-            outWeights.mValues[1] = max(0.0f, 1.0f - theReadiness);
+            outWeights.mValues[1] = max(0.0f, 1.0f - theReadiness / (float)this->mUnits.size());   // the average, not stored back
         }
         if (this->GetPlayer()->GetTechnologies()->GetCurrentEpoch() >= kTechEpochSpace && theSpace != 0 && (this->GetMission() == 2 || this->GetMission() == 0) &&
             theReadiness != 0.0f) {
-            theReadiness /= (float)this->mUnits.size();
-            outWeights.mValues[10] = max(0.0f, 1.0f - theReadiness);
+            outWeights.mValues[10] = max(0.0f, 1.0f - theReadiness / (float)this->mUnits.size());   // averaged once (was again)
         }
         if (this->GetPlayer()->GetTechnologies()->GetCurrentEpoch() >= kTechEpochAtomicModern && theLand != 0 &&
             gPhysics->mRandom.Generate() > 0.15f && theReadiness != 0.0f)
@@ -1596,7 +1595,7 @@ bool EECPASGLand::AdvanceSubSector()
             theWeights.Fill(0.0f);
             theWeights.Fill(1.0f);
             if (this->mFlags.mFlags[kAITileWater] == true)
-                theWeights.mValues[2] = 0.0f;
+                theWeights.mValues[1] = 0.0f;   // the water weight (GetPathCosts); was the tile kind 2 used as the slot
             // The space weight is slot 10, as in GetPathCosts (the tile kind 15 indexed one past the 15 weights).
             if (this->mFlags.mFlags[kAITileSpace] == true)
                 theWeights.mValues[10] = 0.0f;
@@ -1701,7 +1700,7 @@ bool EECPASGLand::CheckNextSubSector(long inTime)
                     theWeights.Fill(0.0f);
                     theWeights.Fill(1.0f);
                     if (this->mFlags.mFlags[kAITileWater] == true)
-                        theWeights.mValues[2] = 0.0f;
+                        theWeights.mValues[1] = 0.0f;   // the water weight (GetPathCosts); was the tile kind 2 used as the slot
                     // The space weight is slot 10, as in GetPathCosts (the tile kind 15 indexed one past the 15 weights).
                     if (this->mFlags.mFlags[kAITileSpace] == true)
                         theWeights.mValues[10] = 0.0f;

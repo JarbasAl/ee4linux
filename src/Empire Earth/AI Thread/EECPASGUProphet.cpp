@@ -193,7 +193,7 @@ void EECPASGUProphetCalamityAnalyzerBase::ReleaseUnit()
 
 // FUNCTION: EXE 0x409318
 // Multiplies the score by 1.75 when the prophet stands at a choke point; when asked, aims the volcano at the targets'
-// centre inside it (or a random point of it), score 0 when neither is castable; never sets outFound
+// centre inside it (or a random point of it), score 0 when neither is castable; outFound tells whether it aimed
 float EECPASGUProphetCalamityAnalyzerVolcano::ApplyChokePointBonus(float inScore, bool inUseTargets, bool& outFound)
 {
     std::vector<EETileCoordinate> theTiles;
@@ -201,7 +201,6 @@ float EECPASGUProphetCalamityAnalyzerVolcano::ApplyChokePointBonus(float inScore
     U2DPoint<long> theTile;
     EEAIChokePoint* theChokePoint = gContinentManager.GetChokePointAt(this->mProphet->mUnit);
     float theResult = inScore;
-    // The original (0x40935b) clears this output and never sets it, even when a candidate succeeds.
     outFound = false;
     if (theChokePoint != NULL) {
         // The original's float at 0x839740 is 1.75 (bytes 00 00 e0 3f), read from the frozen image.
@@ -225,6 +224,8 @@ float EECPASGUProphetCalamityAnalyzerVolcano::ApplyChokePointBonus(float inScore
             if (theAllowed) {
                 this->mTile.mX = theTile.GetX();
                 this->mTile.mY = theTile.GetY();
+                outFound = true;   // the choke point aim stands (Evaluate then skips PickTarget)
+                this->SetUnit(NULL);   // a ground cast: no target unit left over from an earlier pick
             } else
                 theResult = 0.0f;
         }
@@ -1188,7 +1189,7 @@ bool EECPASGUProphet::Retarget()
         theOldY = theGoal->mTileY;
     }
     for (theIter = theRanked.begin(); theIter != theRanked.end() && !theChanged; theIter++) {
-        EECPASGUProphetCalamityAnalyzerBase* theAnalyzer = theRanked.begin()->second;
+        EECPASGUProphetCalamityAnalyzerBase* theAnalyzer = theIter->second;   // this pass's analyzer (was always the best)
         bool theSelect = !theKeepGoal;
         if (theKeepGoal) {
             if (theAnalyzer->mTechID == theGoal->mCalamityType) {
@@ -1357,7 +1358,7 @@ bool EECPASGUProphet::ShouldRetreat()
             long theAttack = theClass->mFamily;
             if (theClass->CanBeAttacked() && gU4E8708[theAttack][theDefense] != 0.0f) {
                 float theDistance = this->GetUnit()->DistanceSquaredTo(theUnit);
-                if (theDistance <= 36.0f || theDistance <= theUnit->GetStats()->mRange + theUnit->GetStats()->mRange) {
+                if (theDistance <= 36.0f || theDistance <= theUnit->GetStats()->mRange * theUnit->GetStats()->mRange) {   // squared (was range + range)
                     theClass = theUnit->GetUnitClass();
                     theDefense = this->GetUnit()->GetUnitClass()->mAmmoType;
                     theAttack = theClass->mFamily;

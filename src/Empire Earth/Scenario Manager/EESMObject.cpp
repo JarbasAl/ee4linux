@@ -302,7 +302,7 @@ bool EESMObject::Evaluate(bool inIncludeDead)
                 }
             }
             if (theKeep && this->mVisibleByCheck != 0) {
-                gWorld.mScenarioManager->ChoosePlayer(this->mSelectedByPlayer, &thePlayers, false);
+                gWorld.mScenarioManager->ChoosePlayer(this->mVisibleByPlayer, &thePlayers, false);
                 for (unsigned long j = 0; j < thePlayers.size(); j++) {
                     EEPlayer* thePlayer = gWorld.mPlayers[thePlayers[j]];
                     if (this->mVisibleByCheck == 1)
@@ -474,8 +474,9 @@ bool EESMObject::FindPlacement(unsigned long inUnitType, GE2DPoint& outLocation,
                     theArea->GetTiles(theAreaTiles);
             }
         } else if (this->mInAreaCheck == 2 && theArea != NULL) {
+            // the area's own tiles, to leave out below
             if (!theArea->IsUnset() && theArea->mSelectMode != 0)
-                theArea->GetTiles(theAreaTiles);
+                theArea->GetTiles(theTiles);
             for (long row = 0; row < theWidth; ++row) {
                 long x = row;
                 long y = row + theHeight;
@@ -484,8 +485,7 @@ bool EESMObject::FindPlacement(unsigned long inUnitType, GE2DPoint& outLocation,
                     if (theArea->IsUnset())
                         theAreaTiles.push_back(theTile);
                     else if (theArea->mSelectMode == 0) {
-                        if ((float)x < theArea->mRect.GetLeft() && theArea->mRect.GetRight() < (float)x
-                            && (float)y < theArea->mRect.GetTop() && theArea->mRect.GetBottom() < (float)y)
+                        if (!theArea->ContainsTile(theTile))
                             theAreaTiles.push_back(theTile);
                     } else if (std::find(theTiles.begin(),theTiles.end(),theTile) == theTiles.end())
                         theAreaTiles.push_back(theTile);
@@ -493,8 +493,7 @@ bool EESMObject::FindPlacement(unsigned long inUnitType, GE2DPoint& outLocation,
                     if (theArea->IsUnset())
                         theAreaTiles.push_back(theNextTile);
                     else if (theArea->mSelectMode == 0) {
-                        if ((float)(x + 1) < theArea->mRect.GetLeft() && theArea->mRect.GetRight() < (float)(x + 1)
-                            && (float)y < theArea->mRect.GetTop() && theArea->mRect.GetBottom() < (float)y)
+                        if (!theArea->ContainsTile(theNextTile))
                             theAreaTiles.push_back(theNextTile);
                     } else if (std::find(theTiles.begin(),theTiles.end(),theNextTile) == theTiles.end())
                         theAreaTiles.push_back(theNextTile);
@@ -777,9 +776,11 @@ long EESMObject::GetUnitAttribute(unsigned long inAttribute, bool inPercent, EEU
         theResult = theStats->mArmor[0] - theStats->mUnitClass->mArmor[0];
         goto attribute_42;
     case kSMUnitAttributeArrowArmorPlus:
-    case kSMUnitAttributePierceArmorPlus:
         theResult = theStats->mArmor[1] - theStats->mUnitClass->mArmor[1];
         goto attribute_44;
+    case kSMUnitAttributePierceArmorPlus:   // armor slot 2, as the attribute effect uses (shared the arrow body)
+        theResult = theStats->mArmor[2] - theStats->mUnitClass->mArmor[2];
+        goto attribute_pierce;
     case kSMUnitAttributeGunArmorPlus:
         theResult = theStats->mArmor[3] - theStats->mUnitClass->mArmor[3];
         goto attribute_45;
@@ -852,12 +853,20 @@ long EESMObject::GetUnitAttribute(unsigned long inAttribute, bool inPercent, EEU
         }
         break;
     case kSMUnitAttributeTotalArrowArmor:
-    case kSMUnitAttributeTotalPierceArmor:
         theResult = theStats->mArmor[1];
     attribute_44:
         if (inPercent) {
             if (theClass->mArmor[1] > 0)
                 { theResult = (long)(theResult * 100.0f / theClass->mArmor[1]); break; }
+            { theResult = 100; break; }
+        }
+        break;
+    case kSMUnitAttributeTotalPierceArmor:   // armor slot 2 (shared the arrow body)
+        theResult = theStats->mArmor[2];
+    attribute_pierce:
+        if (inPercent) {
+            if (theClass->mArmor[2] > 0)
+                { theResult = (long)(theResult * 100.0f / theClass->mArmor[2]); break; }
             { theResult = 100; break; }
         }
         break;
@@ -1100,7 +1109,7 @@ long EESMObject::Load(unsigned long inMajorVersion, unsigned long inMinorVersion
         theResult = inFile.Read(this->mFamily);
     if (theResult == kErrorOK)
         theResult = inFile.Read(this->mClass);
-    if (theResult == kErrorOK)
+    if (theResult == kErrorOK && inMinorVersion >= 0x2a)   // written only from minor version 0x2a on (Save)
         theResult = inFile.Read(this->mParent);
     if (theResult == kErrorOK)
         theResult = inFile.Read(this->mMinCount);
@@ -1288,8 +1297,8 @@ long EESMObject::Save(unsigned long inMajorVersion, unsigned long inMinorVersion
 #include "ee/EEHerd.h"
 
 // FUNCTION: EXE 0x5c8871
-// Raises or lowers a player's unit type stat by an amount or percent of the class value (armor keeps only bonus +
-// change), clamped, and queues the change as a pending effect
+// Raises or lowers a player's unit type stat by an amount or percent of the class value (armor: the bonus over the
+// class base changes and is clamped at 0), clamped, and queues the change as a pending effect
 // Original cdecl helper. Parameter types follow the dispatcher's pushes and the actual player/upgrade readers.
 // Every case is written out in full (the original reads inUpgrade->mUnitClass per case; the int cases' shared
 // add/clamp/store tail is VC6 tail merging); theAdd is the original's sete (negate when it is false).
@@ -1334,7 +1343,8 @@ void EEModifyUnitAttribute(unsigned long inAttribute, bool inPercentage, EEPlaye
         theFloat = (inUpgrade->mArmor[theArmor] - (float)inUpgrade->mUnitClass->mArmor[theArmor]) + theFloat;
         if (theFloat < 0.0f)
             theFloat = 0.0f;
-        inUpgrade->mArmor[theArmor] = theFloat;
+        // the clamped bonus goes back on top of the class base armor (the upgrade holds the total armor)
+        inUpgrade->mArmor[theArmor] = theFloat + (float)inUpgrade->mUnitClass->mArmor[theArmor];
         break;
     }
     case kSMUnitAttributeReloadTimePlus:
@@ -1586,11 +1596,11 @@ void EEChangeUnit(unsigned long inAttribute, bool inPercentage, EEUnit* inUnit,
         if (theAmount < 0) theAmount = 0;
         unsigned long theState = 6;
         if (inAttribute == kSMUnitAttributeAnyResource) {
-            if (theComplex == NULL || theComplex->mCommand == NULL || theComplex->mCommand->mType != kActionGatherResource) {
-                inUnit->SetResourceAmount(theAmount);
+            // any resource: a random type unless the unit is gathering, which keeps the type it gathers
+            inUnit->SetResourceAmount(theAmount);
+            if (theComplex == NULL || theComplex->mCommand == NULL || theComplex->mCommand->mType != kActionGatherResource)
                 inUnit->SetResourceType(gPhysics->GetRandom(2L, 6L));
-            }
-            theState = 4;
+            break;
         } else if (inAttribute == kSMUnitAttributeStone) theState = 4;
         else if (inAttribute == kSMUnitAttributeGold) theState = 5;
         else if (inAttribute == kSMUnitAttributeWood) theState = 3;

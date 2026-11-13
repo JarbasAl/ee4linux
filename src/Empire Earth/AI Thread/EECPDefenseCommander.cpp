@@ -379,7 +379,7 @@ bool EEAIFOGatherAllDeathMatchDefenseBuildUpUnits::Screen(EEUnitClass* inClass)
                 EETechTreeNode* theOther = this->mPlayer->GetTechTree()->Get(theClass->GetTechnology());
                 if (theOther != NULL) {
                     theResult = true;
-                    if (theOther->GetIsObsolete() || theNode->mScenEditorObsoleted != false) {
+                    if (theOther->GetIsObsolete() || theOther->mScenEditorObsoleted != false) {   // the upgrade node's flag (was the first node's)
                         EECPUnitManager* theManager = this->mPlayer->mCivilizationManager->mUnitManager;
                         std::deque<EEComplexUnit*>* theUnits = theManager->GetUnits(theNode->GetUnitClass(0));
                         if (theUnits == NULL || !(theUnits->size() > 0))
@@ -1044,7 +1044,7 @@ float EECPDefenseCommander::ComputeTownThreat(EETown* inTown, long& outPlayerID,
             if (inTown->mHull.BoundedContains(theArmy->mHull.GetCenter())) {
                 theSum += (long)(theArmy->mStrength * 2.0f);
                 if (inFill) {
-                    thePoint = inTown->mHull.GetClosestPoint(thePoint);
+                    thePoint = inTown->mHull.GetClosestPoint(theArmy->mHull.GetCenter());   // the army's (was the stale point)
                     it = ioMap->find(thePoint);
                     if (it != ioMap->end())
                         it->second.mEnemy += (long)(theArmy->mStrength * 1.5f);
@@ -1130,7 +1130,7 @@ float EECPDefenseCommander::ComputeTownThreat(EETown* inTown, long& outPlayerID,
 
 // FUNCTION: EXE 0x4799fa
 // Returns how many more population the defensive groups may use (defensive cap minus used share of the unit
-// limit); with no unit limit it returns the population already used
+// limit); 0 with no unit limit
 long EECPDefenseCommander::GetUnitAllowance()
 {
     std::vector<EECPAttackSubGroup*> theGroups;
@@ -1153,11 +1153,12 @@ long EECPDefenseCommander::GetUnitAllowance()
         } else
             theUsed += (theGroups[i])->mRequest->GetPopulation();
     }
+    long theAllowance = 0;   // no unit limit: no allowance (was the population already used)
     if (theTotal > 0) {
         float theFraction = (float)theUsed / theTotal;
-        theUsed = theFraction < theShare ? (long)((theShare - theFraction) * theTotal) : 0;
+        theAllowance = theFraction < theShare ? (long)((theShare - theFraction) * theTotal) : 0;
     }
-    return theUsed;
+    return theAllowance;
 }
 
 // FUNCTION: EXE 0x479bd1
@@ -1867,7 +1868,7 @@ void EECPDefenseCommander::AssignSubGroupTask(EECPAttackSubGroup* inSubGroup, EE
     inSubGroup->GetLocation(theFrom);
     outTask.mIsActive = false;
     if (this->mAttackCommander->GetCombatManager()->mDefendTasks.size() > 0) {
-        float theChance = max(0.9f, this->mAttackCommander->GetCombatManager()->mDefendTasks.size() * 0.05f + 0.5f);
+        float theChance = min(0.9f, this->mAttackCommander->GetCombatManager()->mDefendTasks.size() * 0.05f + 0.5f);   // 50% + 5% per task, capped at 90% (was max: never below 90%)
         switch (inSubGroup->mKind) {
         case kASGKindLand:
             theCombat2 = false;

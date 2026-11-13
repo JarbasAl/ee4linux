@@ -2156,7 +2156,7 @@ void EEUnitClass::PlayCreationEffect(EEUnit* inUnit)
 
 // FUNCTION: EXE 0x6340a7
 // Launches a projectile (or carried cargo) from the unit's weapon tag point toward the target or ground point; the
-// idle-after-launch test compares the category with 0x16e and never passes
+// volcano idles after each launch
 void EEUnitClass::LaunchShot(EEComplexUnit* inUnit, EEUnit* inTarget, GE3DPoint& inLocation, EEComplexUnit* inCargo)
 {
     GE3DPoint theOffset;
@@ -2246,7 +2246,7 @@ void EEUnitClass::LaunchShot(EEComplexUnit* inUnit, EEUnit* inTarget, GE3DPoint&
     theClass->LaunchProjectile(theCreated->GetComplexUnit(), inLocation);
     // LOST-DEBUG: none: exact only; the wrapper refuses RTSMap::GetTile (inline_sim +k calls after the site, 11 natural getters so far)
     EE_LOST_DEBUG(1);
-    if (inUnit->GetUnitClass()->GetCategory() == 0x16e)
+    if (inUnit->GetUnitClass()->GetUnitType() == kUnitTypeVolcano)   // the unit type (was the category, which never is 0x16e)
         inUnit->StartAction(kActionIdle);
 }
 
@@ -3528,11 +3528,13 @@ void EEUnitClass::FindPath(EEComplexUnit* inUnit)
                 thePosition.mY += theSide.GetY();
                 thePosition.mX += theSide.GetX();
                 theSideTile = U2DPoint<long>(UMFloor(thePosition.GetX()), UMFloor(thePosition.GetY()));
+                bool theLeftSqueezed = false;  // a squeeze beside the unit settles the left side (as the right)
                 if (EECanStandOn(theSideTile, inUnit)) {
                     if (UMAbs(theSideTile.GetX() - inUnit->GetTileX()) == 1 && UMAbs(theSideTile.GetY() - inUnit->GetTileY()) == 1 &&
                         EEIsTileTopAbove(theSideTile.GetX(), inUnit->GetTileY(), 0.0f, &theDummy, true) &&
                         EEIsTileTopAbove(inUnit->GetTileX(), theSideTile.GetY(), 0.0f, &theDummy, true)) {
                         theLeft = 0x7fffffff;
+                        theLeftSqueezed = true;
                     } else {
                         for (RTSTileUnitNode* theNode = gWorld.mMap->GetTile(theSideTile.GetX(), theSideTile.GetY())->mUnits;
                              theNode != NULL; theNode = theNode->mNext)
@@ -3542,7 +3544,7 @@ void EEUnitClass::FindPath(EEComplexUnit* inUnit)
                 theGoalPoint.mY += theSide.GetY();
                 theGoalPoint.mX += theSide.GetX();
                 theTile = U2DPoint<long>(UMFloor(theGoalPoint.GetX()), UMFloor(theGoalPoint.GetY()));
-                if (EECanStandOn(theTile, inUnit)) {
+                if (!theLeftSqueezed && EECanStandOn(theTile, inUnit)) {
                     if (UMAbs(theTile.GetX() - inUnit->GetTileX()) == 1 && UMAbs(theTile.GetY() - inUnit->GetTileY()) == 1 &&
                         EEIsTileTopAbove(theTile.GetX(), inUnit->GetTileY(), 0.0f, &theDummy, true) &&
                         EEIsTileTopAbove(inUnit->GetTileX(), theTile.GetY(), 0.0f, &theDummy, true)) {
@@ -3896,8 +3898,8 @@ void EEUnitClass::CreateDeathUnit(EEComplexUnit* inUnit)
                                                          theTransformation.GetZ()), false);
     theComplex->SetVelocity(0.0f);
     theComplex->SetLauncherClass(theCreated->GetUnitClass());
-    // The shipping routine gives the newly created unit itself as owner.
-    theComplex->SetOwner(theComplex);
+    // the dying unit owns its death unit, as a shooter owns its shot (FireProjectile)
+    theComplex->SetOwner(inUnit);
     theComplex->SetProjectileStart(GE3DPoint(theTransformation.GetX(), theTransformation.GetY(),
                                       theTransformation.GetZ()));
     theComplex->SetGoal(theGoal, 0, 0);

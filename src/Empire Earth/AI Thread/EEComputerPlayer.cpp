@@ -1138,8 +1138,8 @@ void EEComputerPlayer::Init()
     this->mAttackFrequencyPerEpoch = gCPBehaviors[kCPBehaviorAttackFrequencyPerEpoch].mFloatValue;
     this->mAttackFrequencyModifierEasy = gCPBehaviors[kCPBehaviorAttackFrequencyModifier].mIntValue1;
     this->mAttackFrequencyModifierHard = gCPBehaviors[kCPBehaviorAttackFrequencyModifier].mIntValue2;
-    this->mAttackFrequencyCeiling = gCPBehaviors[kCPBehaviorAttackFrequencyBoundaries].mIntValue2;
-    this->mAttackFrequencyFloor = gCPBehaviors[kCPBehaviorAttackFrequencyBoundaries].mIntValue1;
+    this->mAttackFrequencyCeiling = gCPBehaviors[kCPBehaviorAttackFrequencyBoundary].mIntValue2;
+    this->mAttackFrequencyFloor = gCPBehaviors[kCPBehaviorAttackFrequencyBoundary].mIntValue1;
     this->mAttackFrequencyMax = gCPBehaviors[kCPBehaviorAttackFrequency].mIntValue2;
     this->mAttackFrequencyMin = gCPBehaviors[kCPBehaviorAttackFrequency].mIntValue1;
     this->mInitialAttackDelayPerEpoch = gCPBehaviors[kCPBehaviorInitialAttackDelayPerEpoch].mIntValue1;
@@ -4728,7 +4728,6 @@ void EEComputerPlayer::Clear()
 // FUNCTION: EXE 0x43cff8
 // After loading, restores the managers and resource centers, rebases saved times to the game clock, fixes the
 // attack bounds and missing favourite types, and flags stranded units; returns the first error
-// As in the original, the space-type fallback stores 730 into mFavoriteSeaType, not mFavoriteSpaceType
 long EEComputerPlayer::RepairPointers(unsigned long inMajorVersion, unsigned long inMinorVersion)
 {
     long theResult = EEPlayer::RepairPointers(inMajorVersion, inMinorVersion);
@@ -4778,7 +4777,7 @@ long EEComputerPlayer::RepairPointers(unsigned long inMajorVersion, unsigned lon
     if (gUnitClassTable[this->mFavoriteSpaceType] == NULL) {
         this->ChooseFavoriteSpaceType();
         if (gUnitClassTable[this->mFavoriteSpaceType] == NULL)
-            this->mFavoriteSeaType = 730;
+            this->mFavoriteSpaceType = 730;
     }
     this->mSeed = this->mPlayerID % 10;
     if (this->mInteractionManager != NULL)
@@ -4923,7 +4922,7 @@ void EEComputerPlayer::SetNextIslandExpansionTime()
 
 // FUNCTION: EXE 0x43d677
 // Writes the base player, the managers, the resource centers and every tuning value to the saved game; returns
-// the first write error (resource center errors are ignored; clears mIsEnableTimeSet before writing it)
+// the first write error (resource center errors are ignored; the enable-time flag is written as false)
 
 long EEComputerPlayer::Save(unsigned long inMajorVersion, unsigned long inMinorVersion, FSFile& outFile)
 {
@@ -4940,11 +4939,13 @@ long EEComputerPlayer::Save(unsigned long inMajorVersion, unsigned long inMinorV
         theResult = outFile.Write(this->mLBD4);
     if (theResult == kErrorOK)
         theResult = outFile.Write(this->mFavoriteLandType);
-    this->mIsEnableTimeSet = false;
+    // the flag is saved as false (a loaded game schedules its next manager-enable check afresh), without
+    // clearing it in the running game
+    bool theEnableTimeSet = false;
     if (theResult == kErrorOK)
         theResult = outFile.Write(this->mNextEnableTime);
     if (theResult == kErrorOK)
-        theResult = outFile.Write(this->mIsEnableTimeSet);
+        theResult = outFile.Write(theEnableTimeSet);
     if (theResult == kErrorOK)
         theResult = outFile.Write(this->mBuildingDamaged);
     if (theResult == kErrorOK)
