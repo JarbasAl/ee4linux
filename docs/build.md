@@ -34,8 +34,20 @@ sha256 does not match the pin. It fetches:
 | `nasm` | the assembler FFmpeg's x86 code needs |
 | `soundfonts` | GeneralUser GS 2.0.3, whose licence allows redistribution in software |
 
-The native target uses the system `/usr/bin/clang++` for `-m32`, so a 32-bit compiler runtime and glibc are needed:
-`lib32-glibc`, `lib32-gcc-libs` and `lib32-libstdc++` on Arch.
+`--target linux64` builds only the x86-64 libraries, and `--target linux` only the i686 ones. `--target mingw`
+fetches llvm-mingw too. With no `--target`, the tool fetches everything.
+
+The native targets use the system Clang: `EE_CC` and `EE_CXX` when they are set, else the first `clang` and `clang++`
+on `PATH`, else `/usr/bin`. On Gentoo, for example:
+
+```
+EE_CC=/usr/lib/llvm/23/bin/clang EE_CXX=/usr/lib/llvm/23/bin/clang++ python3 -I tools/build_port.py --target linux64 --link
+```
+
+The i686 target compiles with `-m32`, so a 32-bit compiler runtime and glibc are needed: `lib32-glibc`,
+`lib32-gcc-libs` and `lib32-libstdc++` on Arch. Its SDL2 and FFmpeg find the 32-bit libraries through the first
+pkg-config folder that exists of `/usr/lib32/pkgconfig`, `/usr/lib/i386-linux-gnu/pkgconfig`, and `/usr/lib/pkgconfig`
+on a system with a separate `/usr/lib64`. `EE_PKG_CONFIG_32` names another folder.
 
 The 32-bit SDL2 is built without Wayland, PipeWire, JACK and KMS/DRM, because their 32-bit libraries are absent. SDL
 loads X11, ALSA and PulseAudio at run time.

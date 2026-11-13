@@ -10,13 +10,15 @@ python3 -I tools/port_linux_folder.py [--keep-mod] [--target linux|linux64] [--o
 What the tool does:
 
 1. Copies the Art of Conquest folder to `build/port-linux/run` (`cp -a --reflink=auto`, so a file system that
-   supports reflinks copies nothing).
+   supports reflinks copies nothing). The folder comes from `EE_GAME_DIR` when it is set, else from the install path
+   that the Wine prefix's registry records, else from `drive_c/Program Files (x86)/Empire Earth` in the prefix.
 2. Puts back the retail files that an ee-toolkit mod replaced, unless `--keep-mod` is given. The mod's backups carry
    the sha256 of each file before the change; a file that does not match its record stops the tool.
 3. Copies the native images and their libraries from `build/port-linux/bin/` over the retail files of the same names.
    The retail `EE-AOC.exe` stays, because the layer reads its resources.
 4. Copies the General MIDI SoundFont in as `general-midi.sf2`.
-5. Prints the command that starts the game. It does not start the game.
+5. Writes `ee-port-registry.reg` with the two install folders when `EE_BASE_GAME_DIR` is set or the Wine prefix does
+   not record the base game ([the first start](#the-first-start)).6. Prints the command that starts the game. It does not start the game.
 
 ```
 cd build/port-linux/run && ./ee-aoc
@@ -30,6 +32,18 @@ EE_PORT_WINDOWED=1 ./ee-aoc        # the game's own window size instead of the d
 The first registry call imports the game's settings from the Wine prefix: `HKEY_CURRENT_USER` from `user.reg`,
 `HKEY_LOCAL_MACHINE` from `system.reg`, where a 32-bit program's keys sit under `Software\Wow6432Node`. The layer also
 takes the base game's folder from there, which is how the game finds its data.
+
+A game installed outside a Wine prefix has no registry to import. Give the tool both folders, and it writes
+`ee-port-registry.reg` with them as `Z:` paths. The game then starts with its default settings:
+
+```
+EE_GAME_DIR="$HOME/.local/share/EmpireEarth/Empire Earth - The Art of Conquest" \
+EE_BASE_GAME_DIR="$HOME/.local/share/EmpireEarth/Empire Earth" \
+python3 -I tools/port_linux_folder.py --target linux64
+```
+
+Without the base game's folder, the game stops at once with "Empire Earth: Art of Conquest requires the original
+Empire Earth game in order to run."
 
 The settings then live in `ee-port-registry.reg` in the run folder, so they travel with it. Every change writes the
 whole file again. A second copy of the game therefore does not share the settings with the first, as two copies of the
@@ -52,6 +66,8 @@ retail game in one registry would.
 | `SDL_VIDEODRIVER` | the SDL video driver. `offscreen` runs the game with no window. |
 | `SDL_AUDIODRIVER` | the SDL audio driver. `dummy` runs the game without sound. |
 | `WINEPREFIX` | the prefix the settings are imported from. Default `~/.wine`. |
+| `EE_GAME_DIR` | `tools/port_linux_folder.py`: the Art of Conquest folder to copy, instead of the one in the Wine prefix |
+| `EE_BASE_GAME_DIR` | `tools/port_linux_folder.py`: the base Empire Earth folder, written into the run folder's settings |
 | `XDG_DATA_HOME` | where the font search looks for `fonts/` before `~/.fonts` |
 
 ## What the game writes

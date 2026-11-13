@@ -21,6 +21,7 @@ import tempfile
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_port as bp
 import long32
+import port_run
 
 TESTS = bp.ROOT / "tests" / "port" / "linux"
 TARGET = "linux"
@@ -31,13 +32,9 @@ OBJECT_DIRS = []
 def object_dirs(target):
     return [bp.ROOT / "build" / f"port-{target}" / "obj" / mod for mod in ["win32", *bp.LIBRARY_MODULES]]
 TOOLKIT = pathlib.Path(os.environ.get("EE_TOOLKIT", pathlib.Path.home() / "AgentWorkspaces" / "games" / "ee-toolkit"))
-LANGUAGE_DLL = pathlib.Path(os.environ.get(
-    "EE_LANGUAGE_DLL", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" /
-    "Empire Earth - The Art of Conquest" / "Language.dll"))
+LANGUAGE_DLL = pathlib.Path(os.environ.get("EE_LANGUAGE_DLL", port_run.GAME / "Language.dll"))
 AOC_DATA = pathlib.Path(os.environ.get("EE_AOC_DATA", LANGUAGE_DLL.parent / "Data" / "data.ssa"))
-SOUNDS = pathlib.Path(os.environ.get(
-    "EE_SOUNDS", pathlib.Path.home() / ".wine" / "drive_c" / "Program Files (x86)" / "Empire Earth" / "Empire Earth" /
-    "Data" / "Sounds"))
+SOUNDS = pathlib.Path(os.environ.get("EE_SOUNDS", port_run.BASE_GAME / "Data" / "Sounds"))
 MUSIC = pathlib.Path(os.environ.get("EE_MUSIC", SOUNDS.parent / "Music"))
 GM_BANK = pathlib.Path(os.environ.get("EE_GM_BANK", bp.ROOT / "toolchain" / "soundfonts" / "GeneralUser-GS.sf2"))
 
