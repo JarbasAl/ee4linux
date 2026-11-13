@@ -870,7 +870,12 @@ static void EELoadScript(const UString& inName, std::map<long, EEUnitAction*>*& 
                     theState = 4;
                 } else {
                     theDelimiters = ", ";
+#ifdef EE_PORT_LONG32
+                    // a step back: the unsigned length would move a 64-bit pointer 4 GiB forward
+                    theCursor += 5 - (long)theToken.GetLength();
+#else
                     theCursor += 5 - theToken.GetLength();
+#endif
                     theState = 3;
                 }
                 break;

@@ -17,7 +17,11 @@ class EEUnitClass;
 class EEUCBuilding : public EEUnitClass {
 public:
     EEUCBuilding();                         // inline
+#ifdef EE_PORT_LONG32
+    EEUCBuilding(EEUnitClassRecord* inRecord, LONG_PTR inModel);   // inline: defined in EEUnitClass.cpp (the class factory 0x2358b1; out of line 0x2361e3)
+#else
     EEUCBuilding(EEUnitClassRecord* inRecord, long inModel);   // inline: defined in EEUnitClass.cpp (the class factory 0x2358b1; out of line 0x2361e3)
+#endif
     EEUnit* FindNearestTargetBuilding(EEUnit* inUnit);  // 0x20ed72 (EnabledChanged passes this in ecx; provisional name)
     virtual ~EEUCBuilding() {}              // +0x00 dtor 0x2305ee
     virtual void GroundLocation(GE3DPoint& ioLocation); // +0x04 0x20e58d (ICF: EEUCBuildingPriest, EEUCGate...)

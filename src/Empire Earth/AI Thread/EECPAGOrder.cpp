@@ -105,14 +105,22 @@ void EECPAGOrder::ReleaseSubGroup()
 long EECPAGOrder::Restore(unsigned long inMajorVersion, unsigned long inMinorVersion, EECPAttackGroup* inGroup)
 {
     if (this->mSubGroup) {
+#ifdef EE_PORT_LONG32
+        this->mSubGroup = inGroup->mCommander->GetSubGroup((unsigned long)(UINT_PTR)(UINT_PTR)(this->mSubGroup));
+#else
         this->mSubGroup = inGroup->mCommander->GetSubGroup(reinterpret_cast<unsigned long>(this->mSubGroup));
+#endif
         if (this->mSubGroup)
             this->mSubGroup->Reference();
     } else {
         this->mSubGroup = NULL;
     }
     if (this->mOtherSubGroup) {
+#ifdef EE_PORT_LONG32
+        this->mOtherSubGroup = inGroup->mCommander->GetSubGroup((unsigned long)(UINT_PTR)(UINT_PTR)(this->mOtherSubGroup));
+#else
         this->mOtherSubGroup = inGroup->mCommander->GetSubGroup(reinterpret_cast<unsigned long>(this->mOtherSubGroup));
+#endif
         if (this->mOtherSubGroup)
             this->mOtherSubGroup->Reference();
     } else {

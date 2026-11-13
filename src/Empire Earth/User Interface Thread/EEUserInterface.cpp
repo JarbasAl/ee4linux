@@ -708,7 +708,11 @@ long EEUserInterface::Run(void* inParameter)
         this->mThread->UnlockMessageQueue();
         for (unsigned long i = 0; i < theMessages.size(); i++) {
             EEUIThreadMessage& theEntry = theMessages[i];
+#ifdef EE_PORT_LONG32
+            this->HandleMessage(theEntry.mMessage, reinterpret_cast<LONG_PTR>(theEntry.mParameter1), reinterpret_cast<LONG_PTR>(theEntry.mParameter2));
+#else
             this->HandleMessage(theEntry.mMessage, reinterpret_cast<long>(theEntry.mParameter1), reinterpret_cast<long>(theEntry.mParameter2));
+#endif
         }
         theMessages.clear();
         if (UMGetFloatingPointPrecision() != kFPPrecision53)
@@ -914,7 +918,11 @@ void EEUserInterface::AddIMEResultString(HWND inWindow)
 // FUNCTION: EXE 0x67828f
 // Handles one UI thread message (0x401..0x443): loading, forms, saved games, scenario editor, screenshots,
 // chat log, movies, civilization builder, lobby updates and load progress
+#ifdef EE_PORT_LONG32
+void EEUserInterface::HandleMessage(unsigned long inMessage, LONG_PTR inParameter1, LONG_PTR inParameter2)
+#else
 void EEUserInterface::HandleMessage(unsigned long inMessage, long inParameter1, long inParameter2)
+#endif
 {
     switch (inMessage) {
     case 0x407: {
@@ -1761,7 +1769,11 @@ void EEUserInterface::ResumeGraphics()
 // FUNCTION: EXE 0x6798ce
 // Handles the game window's messages: creation, close, size, activation (minimizing and suspending input while
 // inactive), keys, IME and the lobby's custom messages
+#ifdef EE_PORT_LONG32
+LRESULT __stdcall EEUserInterface::WindowProc(HWND inWindow, UINT inMessage, WPARAM inWParam, LPARAM inLParam)
+#else
 long __stdcall EEUserInterface::WindowProc(HWND inWindow, UINT inMessage, WPARAM inWParam, LPARAM inLParam)
+#endif
 {
     static float sMasterVolume = gSoundManager != NULL ? gSoundManager->GetMasterVolume() : 0.0f;
     static float sMusicVolume = gConductor != NULL ? gConductor->GetConductor().GetVolume() : 0.0f;

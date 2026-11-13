@@ -31,6 +31,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import long32
 import verify
 from ee import (EEX_INCLUDE_DIRS, LIB_UNITS, LINK_DIR, MODULE_FILES, MODULE_FLAGS, MODULE_SRC, ROOT, TARGET_MODULES,
                 TOOLCHAIN, module_sources)
@@ -57,6 +58,8 @@ LIBRARY_MODULES = {
     },
 }
 MODULES = list(MODULE_SRC) + list(PORT_MODULES) + list(LIBRARY_MODULES)
+# Wine's Windows headers: the wine package's, or a copy on a build machine without Wine (EE_WINE_HEADERS)
+WINE_HEADERS = pathlib.Path(os.environ.get("EE_WINE_HEADERS", "/usr/include/wine/windows"))
 TARGETS = {
     "mingw": {
         "cc": TOOLCHAIN / "llvm-mingw" / "bin" / "i686-w64-mingw32-clang",
@@ -93,7 +96,7 @@ TARGETS = {
                   "-DDECLSPEC_IMPORT="],
         "cxxflags": ["-std=gnu++14"],
         "includes": [ROOT / "include" / "port" / "linux"],
-        "system_includes": [pathlib.Path("/usr/include/wine/windows"), TOOLCHAIN / "sdl2-i686" / "include" / "SDL2",
+        "system_includes": [WINE_HEADERS, TOOLCHAIN / "sdl2-i686" / "include" / "SDL2",
                             TOOLCHAIN / "ffmpeg-i686" / "include", DMUSIC / "include"],
         # the Win32 layer's libraries (tools/fetch_port_toolchain.py builds SDL2 and FFmpeg), found at run time
         # through the rpath
@@ -111,10 +114,10 @@ TARGETS = {
         "cxx": pathlib.Path("/usr/bin/clang++"),
         # WINE_UNIX_LIB: Wine's headers make __stdcall the Windows x64 convention (ms_abi) otherwise, and a Linux
         # program has one convention of its own; with it the whole port, game and layer, uses the System V one
-        "flags": ["-m64", "-fPIC", "-O1", "-march=x86-64", "-msse2", "-mfpmath=sse", "-fasm-blocks", "-fdeclspec",
+        "flags": ["-m64", "-fPIC", "-O1", "-g1", "-march=x86-64", "-msse2", "-mfpmath=sse", "-fasm-blocks", "-fdeclspec",
                   "-DWINE_UNIX_LIB",
                   "-fdelayed-template-parsing", "-fno-strict-aliasing", "-w", "-ferror-limit=0",
-                  "-Wno-address-of-temporary", "-DEE_PORT_LINUX", "-DEE_PORT_LINUX64",
+                  "-Wno-address-of-temporary", "-DEE_PORT_LINUX", "-DEE_PORT_LINUX64", "-DEE_PORT_LONG32",
                   "-DDIRECTINPUT_VERSION=0x0700",
                   "-DSDL_MAIN_HANDLED",
                   "-Wno-c++11-narrowing",
@@ -122,14 +125,16 @@ TARGETS = {
         "cxxflags": ["-std=gnu++14"],
         "includes": [ROOT / "include" / "port" / "linux"],
         # the system's 64-bit development packages: wine, sdl2, ffmpeg
-        "system_includes": [pathlib.Path("/usr/include/wine/windows"), TOOLCHAIN / "sdl2-x86_64" / "include" / "SDL2",
+        "system_includes": [WINE_HEADERS, TOOLCHAIN / "sdl2-x86_64" / "include" / "SDL2",
                             TOOLCHAIN / "ffmpeg-x86_64" / "include", DMUSIC / "include"],
         # the same pinned SDL2 and FFmpeg as the 32-bit build, at 64 bits (tools/fetch_port_toolchain.py)
         "libs": ["-lpthread", "-ldl",
                  *(f"{flag}{TOOLCHAIN / lib / 'lib'}" for lib in ("sdl2-x86_64", "ffmpeg-x86_64")
                    for flag in ("-L", "-Wl,-rpath,")),
                  "-lSDL2", "-lavformat", "-lavcodec", "-lswscale", "-lswresample", "-lavutil", "-Wl,--wrap=fopen"],
-        "modules": ["win32", "dmusic"],
+        "modules": ["win32", "dmusic", "lle", "jpeg", "tcp", "default", "mixer", "dx7hrtnl", "exe", "exeimg", "won"],
+        # the game compiles from a copy in which long is 32 bits wide, as on Windows (tools/long32.py)
+        "long32": True,
     },
 }
 # include/port/case holds the Windows SDK headers that the game names in a case the toolchain's headers do not have
@@ -195,10 +200,11 @@ def compile_unit(target, out, mod, src):
         cmd = [str(cfg["cc"]), cfg["flags"][0], *LIBRARY_MODULES[mod]["flags"], "-MMD", "-MF",
                str(obj.with_suffix(".d")), "-c", str(src), "-o", str(obj)]
     else:
+        place = (lambda path: long32.shadow(out / "long32", path)) if cfg.get("long32") else (lambda path: path)
         cmd = [str(cfg["cc"] if is_c else cfg["cxx"]), *cfg["flags"], *([] if is_c else cfg["cxxflags"]),
                *unit_defines(src, mod), "-include", str(COMPAT), *(f"-I{d}" for d in cfg.get("includes", [])),
-               *(f"-I{d}" for d in INCLUDES), *(f"-isystem{d}" for d in cfg.get("system_includes", [])),
-               "-MMD", "-MF", str(obj.with_suffix(".d")), "-c", str(src), "-o", str(obj)]
+               *(f"-I{place(d)}" for d in INCLUDES), *(f"-isystem{d}" for d in cfg.get("system_includes", [])),
+               "-MMD", "-MF", str(obj.with_suffix(".d")), "-c", str(place(src)), "-o", str(obj)]
     if up_to_date(obj, src, cmd):
         return mod, src, True, ""
     obj.parent.mkdir(parents=True, exist_ok=True)
@@ -392,6 +398,13 @@ def link_linux_image(out, image, target="linux"):
 def link_linux(out, target="linux"):
     linked = 0
     images = LINUX_IMAGES if target == "linux" else LINUX_IMAGES_64
+    # the libraries go beside the images first: the linker finds the layer's libraries through its rpath
+    arch = {"linux": "i686", "linux64": "x86_64"}[target]
+    (out / "bin").mkdir(parents=True, exist_ok=True)
+    for lib, names in LINUX_RUNTIME.items():
+        if lib.endswith(arch):
+            for library in names:
+                (out / "bin" / library).write_bytes((TOOLCHAIN / lib / "lib" / library).read_bytes())
     for image in images:
         count, ok, log = link_linux_image(out, image, target)
         print(f"link {images[image][0]}: {count} objects in, {'image out' if ok else 'FAILED'}")
@@ -404,11 +417,6 @@ def link_linux(out, target="linux"):
                 print(f"  ... {len(errors) - 8} more in {out / 'logs' / ('link-' + image + '.log')}")
             if image in ("eeport", "lle"):
                 break
-    arch = {"linux": "i686", "linux64": "x86_64"}[target]
-    for lib, names in LINUX_RUNTIME.items():
-        if lib.endswith(arch):
-            for library in names:
-                (out / "bin" / library).write_bytes((TOOLCHAIN / lib / "lib" / library).read_bytes())
     print(f"images: {len(images)} in, {linked} linked")
     return len(images) - linked
 
@@ -433,6 +441,9 @@ def main():
     if missing:
         sys.exit("units missing:\n  " + "\n  ".join(missing))
 
+    if TARGETS[args.target].get("long32"):
+        seen, written = long32.sync(out / "long32")
+        print(f"long32: {seen} files in, {written} written")
     results = {mod: [] for mod in args.modules}
     with concurrent.futures.ThreadPoolExecutor(args.j) as pool:
         for mod, src, ok, log in pool.map(lambda job: compile_unit(args.target, out, *job), jobs):

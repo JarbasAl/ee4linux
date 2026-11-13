@@ -4,7 +4,11 @@
 // There is one device, the primary display, with the desktop's size. A display mode is a size and a depth that the
 // layer pretends to set: in full screen the game window covers the desktop and shows the primary scaled to fit, with
 // its aspect kept. The primary of a windowed game is the window's client area, and its rectangles are in screen
-// coordinates, as on the desktop surface of Windows. Every write to the primary shows at once.
+// coordinates, as on the desktop surface of Windows. Flip shows the primary at once; other writes to it show within
+// 16 ms (PresentQueue).
+//
+// EE_PORT_FRAME_DUMP names a folder: every 5 seconds a shown frame is written there as frame-NNN.ppm, at most 200 of
+// them, so a run on SDL's offscreen driver can be inspected.
 #include "DirectDrawInternal.h"
 
 #include <SDL.h>
@@ -562,7 +566,31 @@ public:
         const float theTexel[4] = {0, 0, 1, 1};
         SetBlitTexture(mPrimary->mStore.mTexture, theScale != 1.0f);
         DrawQuad(thePosition, theTexel, false);
+        DumpFrame();
         SDL_GL_SwapWindow(mNative);
+    }
+
+    // Under a GLScope, in Present: writes the primary to EE_PORT_FRAME_DUMP when the last frame there is 5 s old
+    void DumpFrame()
+    {
+        static const char* const sFolder = getenv("EE_PORT_FRAME_DUMP");
+        static int sCount = 0;
+        static Uint32 sLast = 0;
+        if (!sFolder || sCount >= 200 || (sCount > 0 && SDL_GetTicks() - sLast < 5000))
+            return;
+        sLast = SDL_GetTicks();
+        int theWidth = mPrimary->mWidth, theHeight = mPrimary->mHeight;
+        std::vector<uint8_t> theRGBA((size_t)theWidth * theHeight * 4);
+        ReadTexture(mPrimary->mStore.mTexture, {0, 0, theWidth, theHeight}, theRGBA.data());
+        char thePath[4096];
+        snprintf(thePath, sizeof(thePath), "%s/frame-%03d.ppm", sFolder, sCount++);
+        FILE* theFile = fopen(thePath, "wb");
+        if (!theFile)
+            return;
+        fprintf(theFile, "P6\n%d %d\n255\n", theWidth, theHeight);
+        for (size_t i = 0; i < theRGBA.size(); i += 4)
+            fwrite(&theRGBA[i], 1, 3, theFile);
+        fclose(theFile);
     }
 
     COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE QueryInterface(REFIID inID, void** outObject) override

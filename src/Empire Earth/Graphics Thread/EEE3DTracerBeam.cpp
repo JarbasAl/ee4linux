@@ -351,7 +351,11 @@ long EEE3DTracerBeam::RepairPointers()
 {
     long theResult = EEEffect::RepairPointers();
     if (theResult == 0 && this->mTarget != (EEUnit*)-1) {
+#ifdef EE_PORT_LONG32
+        this->mTarget = dynamic_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget)));
+#else
         this->mTarget = dynamic_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mTarget)));
+#endif
         if (this->mTarget == NULL)
             theResult = 7;
         else

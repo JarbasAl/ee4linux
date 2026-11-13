@@ -37,27 +37,43 @@ public:
 // vtable 0x44b15c; ??_G 0x272382; ProcessEvent 0x1e68f5; sizeof 0x30; ctor 0x272339
 class EEUIESLELoadFile : public UIEvent {
 public:
+#ifdef EE_PORT_LONG32
+    EEUIESLELoadFile(const UString& inExtension, const UString& inDirectory, LONG_PTR inForm)
+#else
     EEUIESLELoadFile(const UString& inExtension, const UString& inDirectory, long inForm)
+#endif
         : mExtension(inExtension), mDirectory(inDirectory), mForm(inForm) {}   // (provisional name; out of line copy 0x272339)
     virtual ~EEUIESLELoadFile() {}
     virtual long ProcessEvent(UIForm* inForm, UIEntity* inEntity);
 
     UString mExtension;         // +0x0c appended to the selected name
     UString mDirectory;         // +0x1c EEOpenSaveGameFile's directory
+#ifdef EE_PORT_LONG32
+    LONG_PTR mForm;                 // +0x2c (provisional name; ctor stores eax)
+#else
     long mForm;                 // +0x2c (provisional name; ctor stores eax)
+#endif
 };
 
 // vtable 0x44b170; ??_G 0x272412; ProcessEvent 0x1e6a39; sizeof 0x30; ctor 0x2723c9
 class EEUIESLESaveFile : public UIEvent {
 public:
+#ifdef EE_PORT_LONG32
+    EEUIESLESaveFile(const UString& inExtension, const UString& inDirectory, LONG_PTR inForm)
+#else
     EEUIESLESaveFile(const UString& inExtension, const UString& inDirectory, long inForm)
+#endif
         : mExtension(inExtension), mDirectory(inDirectory), mForm(inForm) {}   // (provisional name; out of line copy 0x2723c9)
     virtual ~EEUIESLESaveFile() {}
     virtual long ProcessEvent(UIForm* inForm, UIEntity* inEntity);
 
     UString mExtension;         // +0x0c appended to the typed name
     UString mDirectory;         // +0x1c below the startup directory (the scenario save's EEASaveGame directory)
+#ifdef EE_PORT_LONG32
+    LONG_PTR mForm;                 // +0x2c (provisional name; ctor stores eax)
+#else
     long mForm;                 // +0x2c (provisional name; ctor stores eax)
+#endif
 };
 
 // vtable 0x44b10c; ??_G 0x272459; ProcessEvent 0x1e717c; sizeof 0xc; ctor inline; new at 0x2722c1

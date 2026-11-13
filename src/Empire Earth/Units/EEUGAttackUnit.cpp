@@ -351,8 +351,16 @@ long EEUGAttackUnit::Load(unsigned long inMajorVersion, unsigned long inMinorVer
 long EEUGAttackUnit::RepairPointers(unsigned long inFirst, unsigned long inSecond)
 {
     long theResult = 3;
+#ifdef EE_PORT_LONG32
+    if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget) != -1) {
+#else
     if (reinterpret_cast<unsigned long>(this->mTarget) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mTarget = static_cast<EEUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget)));
+#else
         this->mTarget = static_cast<EEUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mTarget)));
+#endif
         if (this->mTarget != NULL) {
             this->mTarget->Reference();
             theResult = 0;
@@ -360,8 +368,16 @@ long EEUGAttackUnit::RepairPointers(unsigned long inFirst, unsigned long inSecon
                 this->mTargetTileX = this->mTarget->mTileX;
                 this->mTargetTileY = this->mTarget->mTileY;
             }
+#ifdef EE_PORT_LONG32
+            if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mAttacker) != -1) {
+#else
             if (reinterpret_cast<unsigned long>(this->mAttacker) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+                this->mAttacker = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mAttacker)));
+#else
                 this->mAttacker = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mAttacker)));
+#endif
                 if (this->mAttacker != NULL) {
                     EEPlayer* thePlayer = this->mAttacker->mPlayer;
                     if (thePlayer->mNumAttacks == 0)

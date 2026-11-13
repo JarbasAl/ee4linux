@@ -1322,20 +1322,44 @@ void EECPAttackSubGroupUnit::ReleaseTarget()
 long EECPAttackSubGroupUnit::Restore(unsigned long inMajorVersion, unsigned long inMinorVersion)
 {
     this->mLocation.Restore(inMajorVersion, inMinorVersion);
+#ifdef EE_PORT_LONG32
+    if ((long)(LONG_PTR)(LONG_PTR)(this->GetUnit()) != -1) {
+#else
     if (reinterpret_cast<long>(this->GetUnit()) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mUnit = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->GetUnit()))));
+#else
         this->mUnit = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->GetUnit()))));
+#endif
         if (this->GetUnit() != NULL)
             this->GetUnit()->Reference();
     } else
         this->mUnit = NULL;
+#ifdef EE_PORT_LONG32
+    if ((long)(LONG_PTR)(LONG_PTR)(this->mTarget) != -1) {
+#else
     if (reinterpret_cast<long>(this->mTarget) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mTarget = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget))));
+#else
         this->mTarget = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mTarget))));
+#endif
         if (this->mTarget != NULL)
             this->mTarget->Reference();
     } else
         this->mTarget = NULL;
+#ifdef EE_PORT_LONG32
+    if ((long)(LONG_PTR)(LONG_PTR)(this->mEscort) != -1) {
+#else
     if (reinterpret_cast<long>(this->mEscort) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mEscort = this->mSubGroup->FindUnit(dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mEscort)))));
+#else
         this->mEscort = this->mSubGroup->FindUnit(dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mEscort)))));
+#endif
         if (this->mEscort != NULL)
             this->mEscort->Reference();
     } else

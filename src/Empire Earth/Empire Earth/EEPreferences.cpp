@@ -14,7 +14,12 @@
 #include "ee/EEGamePreferences.h"
 #include "ee/EEStringIDs.h"
 #include "ee/EETechTreeTechID.h"
+#ifdef EE_PORT_LONG32
+// a 64-bit HKEY: its low 32 bits, which URegistry widens back with the sign, as Windows' 32-bit handle values are
+#define kEERootKey ((long)(LONG_PTR)HKEY_CURRENT_USER)
+#else
 #define kEERootKey ((long)HKEY_CURRENT_USER)
+#endif
 #define kEERegistryKey "Software\\Mad Doc Software\\EE-AOC"
 #define kEEGameOptionsKey "Software\\Mad Doc Software\\EE-AOC\\Game Options"
 #define kEEOriginalRegistryKey "Software\\SSSI\\Empire Earth"

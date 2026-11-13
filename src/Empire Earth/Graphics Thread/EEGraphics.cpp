@@ -129,16 +129,32 @@ void EEGraphics::HandleMessage(unsigned long inMessage, void* inParameter1, void
 {
     switch (inMessage) {
     case 0x506:
+#ifdef EE_PORT_LONG32
+        EEStartLightFadeIn((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1));
+#else
         EEStartLightFadeIn(reinterpret_cast<unsigned long>(inParameter1));
+#endif
         break;
     case 0x507:
+#ifdef EE_PORT_LONG32
+        EEStartLightFadeOut((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1));
+#else
         EEStartLightFadeOut(reinterpret_cast<unsigned long>(inParameter1));
+#endif
         break;
     case 0x508:
+#ifdef EE_PORT_LONG32
+        EEStartLetterboxIn((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1));
+#else
         EEStartLetterboxIn(reinterpret_cast<unsigned long>(inParameter1));
+#endif
         break;
     case 0x509:
+#ifdef EE_PORT_LONG32
+        EEStartLetterboxOut((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1));
+#else
         EEStartLetterboxOut(reinterpret_cast<unsigned long>(inParameter1));
+#endif
         break;
     case 0x503:
         EEInitialiseScene();
@@ -157,7 +173,11 @@ void EEGraphics::HandleMessage(unsigned long inMessage, void* inParameter1, void
         this->SaveScreenShot(static_cast<EEScreenCapture*>(inParameter1));
         break;
     case 0x502:
+#ifdef EE_PORT_LONG32
+        this->mLockMode = (long)(LONG_PTR)(LONG_PTR)(inParameter1);
+#else
         this->mLockMode = reinterpret_cast<long>(inParameter1);
+#endif
         break;
     case 0x50a:
         this->mMessageQueueDone->Set();

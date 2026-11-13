@@ -15,7 +15,11 @@ class EEUnitClass;
 class EEUCBasicPriest : public EEUnitClass {
 public:
     // inline (EEUCLandPriest's ctor 0x216d57 calls EEUnitClass's directly and stores only its own vptr)
+#ifdef EE_PORT_LONG32
+    EEUCBasicPriest(EEUnitClassRecord* inRecord, LONG_PTR inArg) : EEUnitClass(true, inRecord, inArg) {}
+#else
     EEUCBasicPriest(EEUnitClassRecord* inRecord, long inArg) : EEUnitClass(true, inRecord, inArg) {}
+#endif
     // +0x00: an inline user-declared dtor (??_G 0x21882c, every priest class's by ICF, stores this vptr before
     // calling EEUnitClass's 0x2305ee)
     virtual ~EEUCBasicPriest() {}

@@ -35,6 +35,10 @@ __declspec(dllimport) BINKSNDOPEN __stdcall BinkOpenDirectSound(U32 inParameter)
 }
 #endif
 
+#ifdef EE_PORT_LONG32
+#define BinkSoundUseDirectSound(lpDS) BinkSetSoundSystem(BinkOpenDirectSound, (U32)(UINT_PTR)(lpDS))
+#else
 #define BinkSoundUseDirectSound(lpDS) BinkSetSoundSystem(BinkOpenDirectSound, (U32)(lpDS))
+#endif
 
 #endif

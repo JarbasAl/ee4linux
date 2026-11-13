@@ -512,10 +512,18 @@ UIEvent* EECreateSaveLoadEvent(UIForm* inForm, unsigned long inID)
     case kControlEventLoadGameByDbClick:
         if (gGameScreenActive == true || !gUIManager->mInScenarioEditor)
             theEvent = new EEUIESLELoadFile(gSavedGameExtension, "Saved Games\\",
+#ifdef EE_PORT_LONG32
+                                            reinterpret_cast<LONG_PTR>(theManager->mMainGameForm));
+#else
                                             reinterpret_cast<long>(theManager->mMainGameForm));
+#endif
         else
             theEvent = new EEUIESLELoadFile(gScenarioExtension, "Scenarios\\",
+#ifdef EE_PORT_LONG32
+                                            reinterpret_cast<LONG_PTR>(theManager->mScenarioEditorForm));
+#else
                                             reinterpret_cast<long>(theManager->mScenarioEditorForm));
+#endif
         break;
     case kControlEventSaveGame:
     case kControlEventSaveGameByEnter:
@@ -523,16 +531,32 @@ UIEvent* EECreateSaveLoadEvent(UIForm* inForm, unsigned long inID)
         if (theManager->mInScenarioEditor == true) {
             if (gGameScreenActive == true)
                 theEvent = new EEUIESLESaveFile(gScenarioExtension, UString("data\\") + UString("Scenarios\\"),
+#ifdef EE_PORT_LONG32
+                                                reinterpret_cast<LONG_PTR>(theManager->mMainGameForm));
+#else
                                                 reinterpret_cast<long>(theManager->mMainGameForm));
+#endif
             else
                 theEvent = new EEUIESLESaveFile(gScenarioExtension, UString("data\\") + UString("Scenarios\\"),
+#ifdef EE_PORT_LONG32
+                                                reinterpret_cast<LONG_PTR>(theManager->mScenarioEditorForm));
+#else
                                                 reinterpret_cast<long>(theManager->mScenarioEditorForm));
+#endif
         } else {
             if (gGameScreenActive == true)
+#ifdef EE_PORT_LONG32
+                theEvent = new EEUIESLESaveFile(gSavedGameExtension, UString(""), reinterpret_cast<LONG_PTR>(theManager->mMainGameForm));
+#else
                 theEvent = new EEUIESLESaveFile(gSavedGameExtension, UString(""), reinterpret_cast<long>(theManager->mMainGameForm));
+#endif
             else
                 theEvent = new EEUIESLESaveFile(gSavedGameExtension, UString(""),
+#ifdef EE_PORT_LONG32
+                                                reinterpret_cast<LONG_PTR>(theManager->mScenarioEditorForm));
+#else
                                                 reinterpret_cast<long>(theManager->mScenarioEditorForm));
+#endif
         }
         break;
     case kControlEventCancelSave:
@@ -1223,7 +1247,11 @@ UIEvent* EECreateScenarioLoadEvent(UIForm* inForm, unsigned long inID)
         switch (inID) {
         case kControlEventSLLoadGame:
         case kControlEventSLLoadLoadGameByDbClick:
+#ifdef EE_PORT_LONG32
+            theEvent = new EEUIESCLELoadFile(gScenarioExtension, "Scenarios\\", reinterpret_cast<LONG_PTR>(inForm));
+#else
             theEvent = new EEUIESCLELoadFile(gScenarioExtension, "Scenarios\\", reinterpret_cast<long>(inForm));
+#endif
             break;
         case kControlEventSLLoadCancel:
             theEvent = new EEUIESCLECancel;
@@ -1310,7 +1338,11 @@ UIEvent* EECreateSinglePlayerLoadEvent(UIForm* inForm, unsigned long inID)
             break;
         case kControlEventSPLoadLoadGame:
         case kControlEventSPLoadLoadGameByDbClick:
+#ifdef EE_PORT_LONG32
+            theEvent = new EEUIESPLELoadFile(gSavedGameExtension, "Saved Games\\", reinterpret_cast<LONG_PTR>(inForm));
+#else
             theEvent = new EEUIESPLELoadFile(gSavedGameExtension, "Saved Games\\", reinterpret_cast<long>(inForm));
+#endif
             break;
         }
     }

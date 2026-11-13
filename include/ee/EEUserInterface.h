@@ -113,10 +113,22 @@ public:
     void PushBack(std::deque<EEAction*>& inQueue, TSCriticalSection* inLock, EEAction* inAction);  // 0x278f54
     void ClearQueue(std::deque<EEAction*>& inQueue, TSCriticalSection* inLock);  // 0x276fe0 (Dereference each)
     long Run(void* inParameter);            // 0x2779b8 (the UI thread's loop; called from 0x140d73)
+#ifdef EE_PORT_LONG32
+    void HandleMessage(unsigned long inMessage, LONG_PTR inParam1, LONG_PTR inParam2);  // 0x27828f (void: no result in eax) (the 0x401..0x443 switch)
+#else
     void HandleMessage(unsigned long inMessage, long inParam1, long inParam2);  // 0x27828f (void: no result in eax) (the 0x401..0x443 switch)
+#endif
     // 0x2798ce (address taken at 0x144747; calls the members below through gUserInterface)
+#ifdef EE_PORT_LONG32
+    static LRESULT __stdcall WindowProc(HWND__* inWindow, unsigned int inMessage, WPARAM inWParam,
+#else
     static long __stdcall WindowProc(HWND__* inWindow, unsigned int inMessage, WPARAM inWParam,
+#endif
+#ifdef EE_PORT_LONG32
+                                     LPARAM inLParam);
+#else
                                      long inLParam);
+#endif
     void ChangeRasterizer(long inRasterizer, long inScreen);  // 0x276804 (switches gRasterizer; message 0x41e)
     // 0x2768fe: resizes the game window (Empire Earth.cpp 0x140306) when the size changes or inForce
     void ResizeGameScreen(unsigned long inWidth, unsigned long inHeight, bool inForce, bool inFlag);

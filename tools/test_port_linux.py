@@ -358,7 +358,7 @@ def check_miles(scratch, layer):
 
 GUID_LITERAL = re.compile(r"const GUID k?(\w+) = \{(0x[0-9a-f]+), (0x[0-9a-f]+), (0x[0-9a-f]+), \{([^}]*)\}\};")
 WINE_GUID = re.compile(r"DEFINE_GUID\(\s*(\w+)\s*,([^)]*)\)")
-WINE_HEADERS = pathlib.Path("/usr/include/wine/windows")
+WINE_HEADERS = pathlib.Path(os.environ.get("EE_WINE_HEADERS", "/usr/include/wine/windows"))
 
 
 def riff_chunks(data, start, end):

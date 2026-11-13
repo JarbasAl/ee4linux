@@ -527,7 +527,11 @@ long EEGroup::RepairPointers(unsigned long inMajorVersion, unsigned long inMinor
 {
     std::vector<long> theIDs;
     for (std::vector<EEComplexUnit*>::iterator it = this->mUnits.begin(); it != this->mUnits.end(); it++)
+#ifdef EE_PORT_LONG32
+        theIDs.push_back((long)(LONG_PTR)*it);
+#else
         theIDs.push_back((long)*it);
+#endif
     this->mUnits.clear();
     for (unsigned long i = 0; i < theIDs.size(); i++) {
         EEUnit* theUnit = static_cast<EEUnit*>(gWorld.GetUnit(*(theIDs.begin() + i)));

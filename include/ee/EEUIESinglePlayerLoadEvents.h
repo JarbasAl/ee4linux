@@ -20,13 +20,21 @@ public:
 // vtable 0x44b88c; ??_G 0x27451d; ProcessEvent 0x1e900e; sizeof 0x30; ctor 0x2744d4
 class EEUIESPLELoadFile : public UIEvent {
 public:
+#ifdef EE_PORT_LONG32
+    EEUIESPLELoadFile(const UString& inExtension, const UString& inDirectory, LONG_PTR inForm) : mExtension(inExtension), mDirectory(inDirectory), mForm(inForm) {}    // (provisional name; out of line copy 0x2744d4)
+#else
     EEUIESPLELoadFile(const UString& inExtension, const UString& inDirectory, long inForm) : mExtension(inExtension), mDirectory(inDirectory), mForm(inForm) {}    // (provisional name; out of line copy 0x2744d4)
+#endif
     virtual ~EEUIESPLELoadFile() {}
     virtual long ProcessEvent(UIForm* inForm, UIEntity* inEntity);
 
     UString mExtension;         // +0x0c (gSavedGameExtension; appended to the selected name)
     UString mDirectory;         // +0x1c ("data\" "Saved Games\")
+#ifdef EE_PORT_LONG32
+    LONG_PTR mForm;                 // +0x2c (provisional name; ctor stores eax)
+#else
     long mForm;                 // +0x2c (provisional name; ctor stores eax)
+#endif
 };
 
 // vtable 0x44b058; ??_G 0x271e05; ProcessEvent 0x1e92a1; sizeof 0xc; ctor inline; new at 0x271b55

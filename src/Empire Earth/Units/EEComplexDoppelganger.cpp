@@ -297,7 +297,11 @@ long EEComplexDoppelganger::Load(unsigned long inMajorVersion, unsigned long inM
 // it if the unit or model is gone; returns 0
 long EEComplexDoppelganger::RepairPointers(unsigned long inFirst, unsigned long inSecond)
 {
+#ifdef EE_PORT_LONG32
+    unsigned long theModel = (unsigned long)(UINT_PTR)(UINT_PTR)(this->mModel);
+#else
     unsigned long theModel = reinterpret_cast<unsigned long>(this->mModel);
+#endif
     this->mModel = NULL;
     if (EEDoppelganger::RepairPointers(inFirst, inSecond) == kErrorOK) {
         EEModel* theMedia = (EEModel*)EEMedia::Get(theModel);
@@ -773,14 +777,26 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
     }
     long theCount = this->mCitizenBuildQueue.size();
     for (long unit = 0; unit < theCount; unit++) {
+#ifdef EE_PORT_LONG32
+        this->mCitizenBuildQueue[unit] = static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mCitizenBuildQueue[unit])));
+#else
         this->mCitizenBuildQueue[unit] = static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mCitizenBuildQueue[unit])));
+#endif
         this->mCitizenBuildQueue[unit]->Reference();
     }
     theCount = this->mCargo.size();
     for (long cargo = 0; cargo < theCount; cargo++) {
+#ifdef EE_PORT_LONG32
+        if (this->GetPlayer()->HasLoadedUnitID((unsigned long)(UINT_PTR)(UINT_PTR)(this->mCargo[cargo])))
+#else
         if (this->GetPlayer()->HasLoadedUnitID(reinterpret_cast<unsigned long>(this->mCargo[cargo])))
+#endif
             continue;
+#ifdef EE_PORT_LONG32
+        EEComplexUnit* theUnit = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mCargo[cargo])));
+#else
         EEComplexUnit* theUnit = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mCargo[cargo])));
+#endif
         theUnit->Reference();
         theCargo.push_back(theUnit);
     }
@@ -821,22 +837,42 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
     if (this->mPatrolGroup == (EEPPatrolGroup*)-1)
         this->mPatrolGroup = NULL;
     else {
+#ifdef EE_PORT_LONG32
+        this->mPatrolGroup = this->GetPlayer()->GetPatrolGroup((unsigned long)(UINT_PTR)(UINT_PTR)(this->mPatrolGroup));
+#else
         this->mPatrolGroup = this->GetPlayer()->GetPatrolGroup(reinterpret_cast<unsigned long>(this->mPatrolGroup));
+#endif
         if (this->mPatrolGroup != NULL)
             this->mPatrolGroup->Reference();
         else
             theResult = 3;
     }
+#ifdef EE_PORT_LONG32
+    this->mPreviousPart = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mPreviousPart)));
+#else
     this->mPreviousPart = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mPreviousPart)));
+#endif
     if (this->mPreviousPart != NULL)
         this->mPreviousPart->Reference();
+#ifdef EE_PORT_LONG32
+    this->mNextPart = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mNextPart)));
+#else
     this->mNextPart = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mNextPart)));
+#endif
     if (this->mNextPart != NULL)
         this->mNextPart->Reference();
+#ifdef EE_PORT_LONG32
+    this->mHomeBase = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mHomeBase)));
+#else
     this->mHomeBase = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mHomeBase)));
+#endif
     if (this->mHomeBase != NULL)
         this->mHomeBase->Reference();
+#ifdef EE_PORT_LONG32
+    this->mContainer = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mContainer)));
+#else
     this->mContainer = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mContainer)));
+#endif
     if (this->mContainer != NULL) {
         // A not-yet-repaired cargo vector still holds IDs; a repaired one holds actual unit pointers.
         if (this->mContainer->mUnitClass->mTransportCapacity < 1
@@ -869,17 +905,29 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
     }
     this->mBuildQueue.clear();
     this->mBuildQueue = theResearch;
+#ifdef EE_PORT_LONG32
+    EEUnit* theLink = dynamic_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mGatheredResource)));
+#else
     EEUnit* theLink = dynamic_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mGatheredResource)));
+#endif
     this->mGatheredResource = NULL;
     if (theLink != NULL && (theLink->GetUnitID() != 0 || theLink->mResourceType != kResourceNone))
         this->SetGatheredResource(theLink);
+#ifdef EE_PORT_LONG32
+    this->mLastAttacker = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mLastAttacker)));
+#else
     this->mLastAttacker = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mLastAttacker)));
+#endif
     if (this->mLastAttacker != NULL)
         this->mLastAttacker->Reference();
     if (this->mOwner == (EEComplexUnit*)-1 || this->mOwner == NULL)
         this->mOwner = NULL;
     else {
+#ifdef EE_PORT_LONG32
+        this->mOwner = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mOwner)));
+#else
         this->mOwner = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mOwner)));
+#endif
         if (this->mOwner != NULL)
             this->mOwner->Reference();
         else
@@ -888,7 +936,11 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
     if (this->mMine == (EEUnit*)-1 || this->GetUnitClass() == NULL)
         this->mMine = NULL;
     else {
+#ifdef EE_PORT_LONG32
+        this->mMine = dynamic_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mMine)));
+#else
         this->mMine = dynamic_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mMine)));
+#endif
         if (this->mMine != NULL)
             this->mMine->Reference();
     }
@@ -914,7 +966,11 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
         this->GetPlayer()->AddWonder(this, !(inMajorVersion == 0 && inMinorVersion < 0xe2));
     this->mHerd = NULL;
     for (long linked = this->mHeldUnits.size() - 1; linked >= 0; linked--) {
+#ifdef EE_PORT_LONG32
+        this->mHeldUnits[linked] = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mHeldUnits[linked])));
+#else
         this->mHeldUnits[linked] = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mHeldUnits[linked])));
+#endif
         if (this->mHeldUnits[linked] != NULL)
             this->mHeldUnits[linked]->Reference();
         else
@@ -923,13 +979,21 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
     if (this->mHolder == (EEComplexUnit*)-1)
         this->mHolder = NULL;
     else {
+#ifdef EE_PORT_LONG32
+        this->mHolder = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mHolder)));
+#else
         this->mHolder = dynamic_cast<EEComplexUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mHolder)));
+#endif
         if (this->mHolder != NULL)
             this->mHolder->Reference();
     }
     if (theLostContainer == true)
         this->GetPlayer()->AddStrandedUnit(this);
+#ifdef EE_PORT_LONG32
+    unsigned long theBehavior = (unsigned long)(UINT_PTR)(UINT_PTR)(this->mBehavior);
+#else
     unsigned long theBehavior = reinterpret_cast<unsigned long>(this->mBehavior);
+#endif
     if (theBehavior < 8) {
         if (theBehavior == 3 || theBehavior == 4)
             this->mBehavior = NULL;
@@ -952,7 +1016,11 @@ long EEComplexUnit::RepairPointers(unsigned long inMajorVersion, unsigned long i
     EETagPointList* theTags = this->mStats->mModel->mTagPoints[this->mAnimation];
     if (this->GetPlayer() != NULL && theTags != NULL && theTags->GetNumTagPoints() <= this->mWeaponTagPoint)
         this->mWeaponTagPoint = 0;
+#ifdef EE_PORT_LONG32
+    theLink = dynamic_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mLastResource)));
+#else
     theLink = dynamic_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mLastResource)));
+#endif
     this->mLastResource = NULL;
     if (theLink != NULL && (theLink->GetUnitID() != 0 || theLink->mResourceType != kResourceNone))
         this->SetLastResource(theLink);

@@ -628,7 +628,11 @@ void DX7Screen::Test32BitSupport()
 
 // FUNCTION: DX7HR 0x1000e1af
 // Window procedure of the 32-bit probe window: default handling only
+#ifdef EE_PORT_LONG32
+LRESULT __stdcall DX7Screen::TestWindowProc(HWND__* inWindow, unsigned int inMessage, WPARAM inWParam,
+#else
 long __stdcall DX7Screen::TestWindowProc(HWND__* inWindow, unsigned int inMessage, WPARAM inWParam,
+#endif
                                          LPARAM inLParam)
 {
     return DefWindowProc(inWindow, inMessage, inWParam, inLParam);

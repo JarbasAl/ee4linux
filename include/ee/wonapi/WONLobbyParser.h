@@ -53,8 +53,15 @@ public:
     // Windows' __int64, spelled as the type it is: a 64-bit build's long is 64 bits too, and the two overloads
     // would be the same signature there
     bool ReadValue(long long &theInt64);
+#ifdef EE_PORT_LONG32
+    // Wine's __int64 is the target's 64-bit long, which the game's 32-bit long no longer names
+    bool ReadValue(__int64 &theInt64) { long long anInt64; bool aRet = this->ReadValue(anInt64); theInt64 = anInt64; return aRet; }
+    bool ReadValue(unsigned __int64 &theInt64) { long long anInt64; bool aRet = this->ReadValue(anInt64); theInt64 = anInt64; return aRet; }
+#endif
     bool ReadValue(unsigned long long &theInt64)  { long long anInt64; bool aRet = this->ReadValue(anInt64); theInt64 = anInt64; return aRet; }
+#ifndef EE_PORT_LONG32     // a 32-bit long is the int overload
     bool ReadValue(long &theLong) { int anInt; bool aRet = this->ReadValue(anInt); theLong = anInt; return aRet; }
+#endif
     bool ReadValue(unsigned long &theLong) { int anInt; bool aRet = this->ReadValue(anInt); theLong = anInt; return aRet; }
     bool ReadValue(short &theShort) { int anInt; bool aRet = this->ReadValue(anInt); theShort = (short)anInt; return aRet; }
     bool ReadValue(unsigned short &theShort) { int anInt; bool aRet = this->ReadValue(anInt); theShort = (unsigned short)anInt; return aRet; }
@@ -67,8 +74,14 @@ public:
     static void ValueToString(const int&,std::string&); //2a5a70 call-only scalar formatter
     static void ValueToString(const unsigned long long&,std::string&);
     static void ValueToString(const long long&,std::string&);
+#ifdef EE_PORT_LONG32
+    static void ValueToString(const __int64& theInt64,std::string& theStr) { long long anInt64 = theInt64; ValueToString(anInt64, theStr); }
+    static void ValueToString(const unsigned __int64& theInt64,std::string& theStr) { unsigned long long anInt64 = theInt64; ValueToString(anInt64, theStr); }
+#endif
     static void ValueToString(const unsigned long&,std::string&);
+#ifndef EE_PORT_LONG32
     static void ValueToString(const long&,std::string&);
+#endif
     static void ValueToString(const short&,std::string&);
     static void ValueToString(const char&,std::string&);
     static void ValueToString(const unsigned char&,std::string&);

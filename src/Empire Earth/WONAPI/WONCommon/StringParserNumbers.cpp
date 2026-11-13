@@ -93,12 +93,14 @@ void StringParser::ValueToString(const unsigned long &theLong, std::string &theS
 	theStr += aBuf;
 }
 
+#ifndef EE_PORT_LONG32
 void StringParser::ValueToString(const long &theLong, std::string &theStr)
 {
 	char aBuf[50];
 	sprintf(aBuf,"%d",theLong);
 	theStr += aBuf;
 }
+#endif
 
 void StringParser::ValueToString(const short &theShort, std::string &theStr)
 {

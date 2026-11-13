@@ -216,12 +216,28 @@ long EEUGPatrol::Load(unsigned long inMajorVersion, unsigned long inMinorVersion
 long EEUGPatrol::RepairPointers(unsigned long inFirst, unsigned long inSecond)
 {
     long theResult = 0;
+#ifdef EE_PORT_LONG32
+    if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget) != -1) {
+#else
     if (reinterpret_cast<unsigned long>(this->mTarget) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mTarget = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget)));
+#else
         this->mTarget = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mTarget)));
+#endif
         if (this->mTarget != NULL) {
             this->mTarget->Reference();
+#ifdef EE_PORT_LONG32
+            if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mPatrolGroup) != -1) {
+#else
             if (reinterpret_cast<unsigned long>(this->mPatrolGroup) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+                this->mPatrolGroup = this->mTarget->GetPlayer()->GetPatrolGroup((unsigned long)(UINT_PTR)(UINT_PTR)(this->mPatrolGroup));
+#else
                 this->mPatrolGroup = this->mTarget->GetPlayer()->GetPatrolGroup(reinterpret_cast<unsigned long>(this->mPatrolGroup));
+#endif
                 if (this->mPatrolGroup != NULL)
                     this->mPatrolGroup->Reference();
                 else {

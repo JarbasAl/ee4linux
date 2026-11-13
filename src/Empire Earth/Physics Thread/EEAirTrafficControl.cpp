@@ -596,13 +596,21 @@ long EEAirTrafficControl::RepairPointers(unsigned long inMajorVersion, unsigned 
 {
     std::vector<EEATCAirport>::iterator theSlot = this->mSlots.begin();
     while (theSlot != this->mSlots.end()) {
+#ifdef EE_PORT_LONG32
+        EEComplexUnit* theAirport = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)theSlot->mAirport));
+#else
         EEComplexUnit* theAirport = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)theSlot->mAirport));
+#endif
         if (theAirport != NULL) {
             theSlot->mAirport = theAirport;
             theAirport->Reference();
             std::deque<EEATCItem>::iterator theItem = theSlot->mLanding.begin();
             while (theItem != theSlot->mLanding.end()) {
+#ifdef EE_PORT_LONG32
+                EEComplexUnit* theUnit = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(*theItem).mUnit));
+#else
                 EEComplexUnit* theUnit = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(*theItem).mUnit));
+#endif
                 if (theUnit != NULL) {
                     (*theItem).mUnit = theUnit;
                     theUnit->Reference();
@@ -613,7 +621,11 @@ long EEAirTrafficControl::RepairPointers(unsigned long inMajorVersion, unsigned 
             }
             theItem = theSlot->mTakeoff.begin();
             while (theItem != theSlot->mTakeoff.end()) {
+#ifdef EE_PORT_LONG32
+                EEComplexUnit* theUnit = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(*theItem).mUnit));
+#else
                 EEComplexUnit* theUnit = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(*theItem).mUnit));
+#endif
                 if (theUnit != NULL) {
                     (*theItem).mUnit = theUnit;
                     theUnit->Reference();

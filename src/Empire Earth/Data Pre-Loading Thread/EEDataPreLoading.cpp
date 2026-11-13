@@ -130,9 +130,17 @@ void EEDataPreLoading::HandleMessage(unsigned long inMessage, void* inParameter1
         break;
     case 0x404:
     case 0x409: {
+#ifdef EE_PORT_LONG32
+        EEPlayer* thePlayer = gWorld.mPlayers[(long)(LONG_PTR)(LONG_PTR)(inParameter1)];
+#else
         EEPlayer* thePlayer = gWorld.mPlayers[reinterpret_cast<long>(inParameter1)];
+#endif
         if (thePlayer != NULL) {
+#ifdef EE_PORT_LONG32
+            EEUnitClass* theClass = gUnitClassTable[(long)(LONG_PTR)(LONG_PTR)(inParameter2)];
+#else
             EEUnitClass* theClass = gUnitClassTable[reinterpret_cast<long>(inParameter2)];
+#endif
             if (theClass != NULL)
                 this->LoadUnitClassMedia(thePlayer, theClass, inMessage == 0x404);
         }
@@ -140,9 +148,17 @@ void EEDataPreLoading::HandleMessage(unsigned long inMessage, void* inParameter1
     }
     case 0x40a:
     case 0x40b: {
+#ifdef EE_PORT_LONG32
+        EEPlayer* thePlayer = gWorld.mPlayers[(long)(LONG_PTR)(LONG_PTR)(inParameter1)];
+#else
         EEPlayer* thePlayer = gWorld.mPlayers[reinterpret_cast<long>(inParameter1)];
+#endif
         if (thePlayer != NULL) {
+#ifdef EE_PORT_LONG32
+            EETechTreeNode* theNode = thePlayer->mTechnologies->Get((long)(LONG_PTR)(LONG_PTR)(inParameter2));
+#else
             EETechTreeNode* theNode = thePlayer->mTechnologies->Get(reinterpret_cast<long>(inParameter2));
+#endif
             if (theNode != NULL)
                 this->LoadTechnologyMedia(thePlayer, theNode, inMessage == 0x40a);
         }

@@ -223,7 +223,11 @@ long EECPExplorationManager::Restore(unsigned long inMajorVersion, unsigned long
     long i;
     for (i = this->mRequests.size() - 1; i >= 0; i--) {
         EECPPersonnelRequest* theRequest =
+#ifdef EE_PORT_LONG32
+            this->GetPlayer()->GetCombatManager()->GetPersonnel()->GetRequest((long)(LONG_PTR)(LONG_PTR)(this->mRequests[i]));
+#else
             this->GetPlayer()->GetCombatManager()->GetPersonnel()->GetRequest(reinterpret_cast<long>(this->mRequests[i]));
+#endif
         if (theRequest != NULL) {
             theRequest->Reference();
             this->mRequests[i] = theRequest;

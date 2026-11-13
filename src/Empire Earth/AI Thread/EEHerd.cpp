@@ -898,13 +898,25 @@ long EEHerd::RepairPointers(long, long)
 {
     std::vector<EEComplexUnit*> theYoung;
     std::vector<U2DPoint<long> > theTiles;
+#ifdef EE_PORT_LONG32
+    this->mPlayer = gWorld.GetPlayer((unsigned long)(UINT_PTR)(UINT_PTR)(this->GetPlayer()));
+#else
     this->mPlayer = gWorld.GetPlayer(reinterpret_cast<unsigned long>(this->GetPlayer()));
+#endif
+#ifdef EE_PORT_LONG32
+    this->mAnimal = EEAnimal::sTable[(unsigned long)(UINT_PTR)(UINT_PTR)(this->GetAnimal())];
+#else
     this->mAnimal = EEAnimal::sTable[reinterpret_cast<unsigned long>(this->GetAnimal())];
+#endif
     if (this->GetAnimal())
         this->mRadiusSquared = this->GetAnimal()->GetHerdRadius() * this->GetAnimal()->GetHerdRadius();
     for (long i = this->mUnits.size() - 1; i >= 0; i--) {
         if (this->mUnits[i] != (EEComplexUnit*)-1) {
+#ifdef EE_PORT_LONG32
+            unsigned long theID = (unsigned long)(UINT_PTR)(UINT_PTR)(this->mUnits[i]);
+#else
             unsigned long theID = reinterpret_cast<unsigned long>(this->mUnits[i]);
+#endif
             this->mUnits[i] = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(theID)));
             if (this->mUnits[i]) {
                 this->mUnits[i]->mReferenceCount++;
@@ -920,7 +932,11 @@ long EEHerd::RepairPointers(long, long)
             this->mAnimal = EEAnimal::Get(this->mUnits[0]->GetUnitClass()->GetAnimalID());
     }
     if (this->GetLeader() != (EEComplexUnit*)-1) {
+#ifdef EE_PORT_LONG32
+        this->mLeader = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->GetLeader()))));
+#else
         this->mLeader = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->GetLeader()))));
+#endif
         if (this->GetLeader())
             this->GetLeader()->mReferenceCount++;
     } else
@@ -935,7 +951,11 @@ long EEHerd::RepairPointers(long, long)
             this->PickLeader();
     }
     if (this->GetTarget() != (EEComplexUnit*)-1) {
+#ifdef EE_PORT_LONG32
+        this->mTarget = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->GetTarget()))));
+#else
         this->mTarget = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->GetTarget()))));
+#endif
         if (this->GetTarget())
             this->GetTarget()->mReferenceCount++;
     } else

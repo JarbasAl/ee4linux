@@ -307,13 +307,29 @@ long EEUGCastCalamity::Load(unsigned long inMajorVersion, unsigned long inMinorV
 long EEUGCastCalamity::RepairPointers(unsigned long inFirst, unsigned long inSecond)
 {
     long theResult = 3;
+#ifdef EE_PORT_LONG32
+    if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mSource) != -1) {
+#else
     if (reinterpret_cast<unsigned long>(this->mSource) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mSource = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mSource)));
+#else
         this->mSource = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mSource)));
+#endif
         if (this->mSource != NULL) {
             this->mSource->Reference();
             theResult = 0;
+#ifdef EE_PORT_LONG32
+            if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget) != -1) {
+#else
             if (reinterpret_cast<unsigned long>(this->mTarget) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+                this->mTarget = static_cast<EEUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget)));
+#else
                 this->mTarget = static_cast<EEUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mTarget)));
+#endif
                 if (this->mTarget != NULL)
                     this->mTarget->Reference();
             } else

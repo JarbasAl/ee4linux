@@ -62,9 +62,17 @@ EEAIPathSector::~EEAIPathSector()
 
 // FUNCTION: EXE 0x42bc72
 // Adds a neighbouring sector id unless it is already listed
+#ifdef EE_PORT_LONG32
+void EEAIPathSector::AddNeighbor(LONG_PTR inID)
+#else
 void EEAIPathSector::AddNeighbor(long inID)
+#endif
 {
+#ifdef EE_PORT_LONG32
+    std::vector<LONG_PTR>::iterator theNeighbor = std::find(this->mNeighbors.begin(), this->mNeighbors.end(), inID);
+#else
     std::vector<long>::iterator theNeighbor = std::find(this->mNeighbors.begin(), this->mNeighbors.end(), inID);
+#endif
     if (theNeighbor == this->mNeighbors.end())
         this->mNeighbors.push_back(inID);
 }

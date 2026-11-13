@@ -871,10 +871,18 @@ void FlushEffectBatches()
 long EEEffect::RepairPointers()
 {
     long theResult = 0;
+#ifdef EE_PORT_LONG32
+    if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mUnit) == 0xffffffff)
+#else
     if (reinterpret_cast<unsigned long>(this->mUnit) == 0xffffffff)
+#endif
         this->mUnit = NULL;
     else {
+#ifdef EE_PORT_LONG32
+        this->mUnit = dynamic_cast<EEUnit*>(static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mUnit))));
+#else
         this->mUnit = dynamic_cast<EEUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mUnit))));
+#endif
         if (this->mUnit == NULL)
             theResult = 7;
         else

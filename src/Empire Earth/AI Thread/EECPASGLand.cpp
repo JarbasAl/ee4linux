@@ -2385,7 +2385,11 @@ long EECPASGLand::Restore(unsigned long inMajorVersion, unsigned long inMinorVer
     EECPAttackSubGroup* theSubGroup;
     if (this->mTransport != NULL) {
         EECPAttackCommander* theCommander = this->mGroup->mCommander;
+#ifdef EE_PORT_LONG32
+        theSubGroup = theCommander->GetSubGroup((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTransport));
+#else
         theSubGroup = theCommander->GetSubGroup(reinterpret_cast<unsigned long>(this->mTransport));
+#endif
         if (theSubGroup != NULL) {
             theSubGroup->Reference();
             this->mTransport = dynamic_cast<EECPASGTransport*>(theSubGroup);

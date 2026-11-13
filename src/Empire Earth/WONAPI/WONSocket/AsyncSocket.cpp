@@ -348,7 +348,11 @@ WONStatus AsyncSocket::Open()
             reinterpret_cast<const char*>(&aBroadcast), 4) == SOCKET_ERROR)
             return this->GetLastSocketError();
     }
+#ifdef EE_PORT_LONG32
+    u_long aNonBlocking = 1;
+#else
     unsigned long aNonBlocking = 1;
+#endif
     if (ioctlsocket(this->mSocket, FIONBIO, &aNonBlocking) == SOCKET_ERROR)
         return this->GetLastSocketError();
     this->OpenHook();
@@ -426,7 +430,11 @@ WONStatus AsyncSocket::Accept(SmartPtr<AsyncSocket>& outSocket)
     aLinger.l_onoff = 0;
     setsockopt(aSocket, SOL_SOCKET, SO_LINGER,
         reinterpret_cast<const char*>(&aLinger), 4);
+#ifdef EE_PORT_LONG32
+    u_long aNonBlocking = 1;
+#else
     unsigned long aNonBlocking = 1;
+#endif
     ioctlsocket(aSocket, FIONBIO, &aNonBlocking);
     outSocket = this->Duplicate();
     outSocket->mSocket = aSocket;

@@ -12,9 +12,16 @@ static const long kInvalidRootKey = 3;
 
 inline bool URIsRootKey(long inRootKey)
 {
+#ifdef EE_PORT_LONG32
+    // the predefined keys' 32-bit values, as EEPreferences passes them
+    return inRootKey == (long)(LONG_PTR)HKEY_CLASSES_ROOT || inRootKey == (long)(LONG_PTR)HKEY_CURRENT_CONFIG
+        || inRootKey == (long)(LONG_PTR)HKEY_LOCAL_MACHINE || inRootKey == (long)(LONG_PTR)HKEY_USERS
+        || inRootKey == (long)(LONG_PTR)HKEY_DYN_DATA || inRootKey == (long)(LONG_PTR)HKEY_CURRENT_USER;
+#else
     return inRootKey == (long)HKEY_CLASSES_ROOT || inRootKey == (long)HKEY_CURRENT_CONFIG
         || inRootKey == (long)HKEY_LOCAL_MACHINE || inRootKey == (long)HKEY_USERS
         || inRootKey == (long)HKEY_DYN_DATA || inRootKey == (long)HKEY_CURRENT_USER;
+#endif
 }
 
 // Header-inline members emitted here

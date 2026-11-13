@@ -18,8 +18,16 @@ public:
     long Stop();
     long Stop(unsigned long& outElapsed, unsigned long& outRemaining);
 private:
+#ifdef EE_PORT_LONG32
+    static void __stdcall TimerCallback(unsigned int inTimerID, unsigned int inMessage, DWORD_PTR inUser,
+#else
     static void __stdcall TimerCallback(unsigned int inTimerID, unsigned int inMessage, unsigned long inUser,
+#endif
+#ifdef EE_PORT_LONG32
+                                        DWORD_PTR inParameter1, DWORD_PTR inParameter2);
+#else
                                         unsigned long inParameter1, unsigned long inParameter2);
+#endif
 
     void (*mCallback)(void*);               // +0x00
     void* mParameter;                       // +0x04

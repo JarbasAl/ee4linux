@@ -166,7 +166,11 @@ long EEUGHealUnit::RepairPointers(unsigned long inFirst, unsigned long inSecond)
     long theResult = 0;
     if (this->mTarget != NULL) {
         theResult = 3;
+#ifdef EE_PORT_LONG32
+        RTSUnit* theUnit = ::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget));
+#else
         RTSUnit* theUnit = ::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mTarget));
+#endif
         if (theUnit != NULL) {
             this->mTarget = static_cast<EEUnit*>(theUnit)->mComplexUnit;
             if (this->mTarget != NULL) {

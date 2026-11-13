@@ -751,7 +751,11 @@ long EEUGGather::FindUnfinishedFarm(EEComplexUnit* inUnit)
             break;
         }
     }
+#ifdef EE_PORT_LONG32
+    return (theResult != NULL);
+#else
     return reinterpret_cast<long>(theResult);
+#endif
 }
 
 // FUNCTION: EXE 0x62371b
@@ -840,8 +844,16 @@ void EEUGGather::PathTaken(EEComplexUnit* inUnit)
 long EEUGGather::RepairPointers(unsigned long inFirst, unsigned long inSecond)
 {
     long theResult = 0;
+#ifdef EE_PORT_LONG32
+    if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mResource) != -1) {
+#else
     if (reinterpret_cast<unsigned long>(this->mResource) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mResource = static_cast<EEUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mResource)));
+#else
         this->mResource = static_cast<EEUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mResource)));
+#endif
         if (this->mResource != NULL)
             this->mResource->Reference();
         else
@@ -851,8 +863,16 @@ long EEUGGather::RepairPointers(unsigned long inFirst, unsigned long inSecond)
         this->mWaiting = false;
         this->mGathering = false;
     }
+#ifdef EE_PORT_LONG32
+    if (theResult == 0 && (unsigned long)(UINT_PTR)(UINT_PTR)(this->mStorage) != -1) {
+#else
     if (theResult == 0 && reinterpret_cast<unsigned long>(this->mStorage) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mStorage = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mStorage)));
+#else
         this->mStorage = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mStorage)));
+#endif
         if (this->mStorage != NULL)
             this->mStorage->Reference();
         else

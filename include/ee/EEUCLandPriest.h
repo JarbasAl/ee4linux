@@ -23,6 +23,10 @@ public:
 };
 
 // 0x531d58: the value EEUCLandPriest's ctor passes on (provisional name; EEUCNavalPriest's is 0x531d68)
+#ifdef EE_PORT_LONG32
+extern LONG_PTR gPhysicsModels[12];     // 0x531d58 (EEPMLand.cpp: pointers to the EEPM* singletons; [0] is the land one)
+#else
 extern long gPhysicsModels[12];     // 0x531d58 (EEPMLand.cpp: pointers to the EEPM* singletons; [0] is the land one)
+#endif
 
 #endif

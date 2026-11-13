@@ -92,9 +92,17 @@ long DX7Rasterizer::Draw(GETerrainMesh& inMesh, unsigned long inScreen, bool inO
                 theIndex = theIterator->second;
                 if (theIndex < 9 && theIndex > 0) {
                     this->mScreenStates[inScreen]->m32C[1] +=
+#ifdef EE_PORT_LONG32
+                        (unsigned long)(UINT_PTR)inMesh.GetTerrainMaterialList()[theIndex].mIndices.back();
+#else
                         (unsigned long)inMesh.GetTerrainMaterialList()[theIndex].mIndices.back();
+#endif
                     this->mScreenStates[inScreen]->m32C[1] +=
+#ifdef EE_PORT_LONG32
+                        (unsigned long)(UINT_PTR)inMesh.GetTerrainMaterialList()[theIndex].mStripIndices.back();
+#else
                         (unsigned long)inMesh.GetTerrainMaterialList()[theIndex].mStripIndices.back();
+#endif
                     this->SetTexture(theIterator->first, inScreen);
                     this->mDX7ScreenStates[inScreen]->mDevice->SetRenderState(D3DRENDERSTATE_CLIPPING, FALSE);
                     this->DrawTerrainMaterial(&theViewport, inMesh.GetTerrainMaterialList()[theIndex].mIndices, inScreen);
@@ -110,9 +118,17 @@ long DX7Rasterizer::Draw(GETerrainMesh& inMesh, unsigned long inScreen, bool inO
             theIndex = (*theIterator).second;
             if (!inMesh.GetIsSpaceMap() || theIndex >= 9 || theIndex <= 0) {
                 this->mScreenStates[inScreen]->m32C[1] +=
+#ifdef EE_PORT_LONG32
+                    (unsigned long)(UINT_PTR)inMesh.GetTerrainMaterialList()[theIndex].mIndices.back();
+#else
                     (unsigned long)inMesh.GetTerrainMaterialList()[theIndex].mIndices.back();
+#endif
                 this->mScreenStates[inScreen]->m32C[1] +=
+#ifdef EE_PORT_LONG32
+                    (unsigned long)(UINT_PTR)inMesh.GetTerrainMaterialList()[theIndex].mStripIndices.back();
+#else
                     (unsigned long)inMesh.GetTerrainMaterialList()[theIndex].mStripIndices.back();
+#endif
                 this->SetTexture((*theIterator).first, inScreen);
                 this->mDX7ScreenStates[inScreen]->mDevice->SetRenderState(D3DRENDERSTATE_CLIPPING, FALSE);
                 this->DrawTerrainMaterial(&theViewport, inMesh.GetTerrainMaterialList()[theIndex].mIndices, inScreen);
@@ -552,7 +568,11 @@ long DX7Rasterizer::DrawTerrainMaterial(GEViewport* inViewport, std::vector<GETe
     float theVisibilities[3];
     float theAlphas[3];
     std::vector<GETerrainMesh::GETMPolygon*>::iterator thePolygon = inPolygons.begin();
+#ifdef EE_PORT_LONG32
+    unsigned long theRemaining = (unsigned long)(UINT_PTR)inPolygons.back() * 3;
+#else
     unsigned long theRemaining = (unsigned long)inPolygons.back() * 3;
+#endif
     while (theRemaining > 0) {
         unsigned long theBatch = theRemaining;
         if (theBatch >= 0x960)
@@ -646,8 +666,16 @@ long DX7Rasterizer::DrawWater(GETerrainMesh& inMesh, unsigned long inScreen, boo
         this->mDX7ScreenStates[inScreen]->mDevice->SetTransform(D3DTRANSFORMSTATE_PROJECTION, &theMatrix);
         unsigned long theCount = theMaterials.size();
         for (unsigned long i = 0; i < theCount; i++) {
+#ifdef EE_PORT_LONG32
+            this->mScreenStates[inScreen]->m32C[1] += (unsigned long)(UINT_PTR)theMaterials[i].mIndices.back();
+#else
             this->mScreenStates[inScreen]->m32C[1] += (unsigned long)theMaterials[i].mIndices.back();
+#endif
+#ifdef EE_PORT_LONG32
+            this->mScreenStates[inScreen]->m32C[1] += (unsigned long)(UINT_PTR)theMaterials[i].mStripIndices.back();
+#else
             this->mScreenStates[inScreen]->m32C[1] += (unsigned long)theMaterials[i].mStripIndices.back();
+#endif
             this->SetTexture(theMaterials[i].mTexture, inScreen);
             this->mDX7ScreenStates[inScreen]->mDevice->SetRenderState(D3DRENDERSTATE_CLIPPING, FALSE);
             theResult = this->DrawTerrainMaterial(&theViewport, theMaterials[i].mIndices, inScreen);

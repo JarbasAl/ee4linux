@@ -631,8 +631,16 @@ long EEUGBuildRepair::RepairPointers(unsigned long inMajorVersion, unsigned long
 {
     GE3DPoint thePosition;
     long theResult = 3;
+#ifdef EE_PORT_LONG32
+    if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget) != -1) {
+#else
     if (reinterpret_cast<unsigned long>(this->mTarget) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mTarget = static_cast<EEUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mTarget)));
+#else
         this->mTarget = static_cast<EEUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mTarget)));
+#endif
         if (this->mTarget != NULL) {
             this->mTarget->Reference();
             this->mPlayer = this->mTarget->mPlayer;

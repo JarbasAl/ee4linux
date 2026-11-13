@@ -753,7 +753,11 @@ extern "C" long NPIMPublish(const UString& inName, const UWideString& inAddress,
     UString theHost;
     UWideString theAddress;
     unsigned long thePort = htons(33334);
+#ifdef EE_PORT_LONG32
+    u_long theNonBlocking = 1;
+#else
     unsigned long theNonBlocking = 1;
+#endif
     bool theFound = false;
     if (!inFlag55 && QueryGames(inName, NULL) == 0) {
         unsigned long theCount = NPIMGetDetectedGameCount();
@@ -847,7 +851,11 @@ TCPServer::TCPServer()
 static long CreateSocket(long inType, SOCKET* outSocket, unsigned long* ioPort)
 {
     long theResult;
+#ifdef EE_PORT_LONG32
+    u_long theNonBlocking = 1;
+#else
     unsigned long theNonBlocking = 1;
+#endif
     int theLength = sizeof(sockaddr_in);
     NPIMDeactivate();
     NPIMActivate();
@@ -1386,7 +1394,11 @@ static long QueryGames(const UString& inName, hostent* inHost)
     unsigned long theDeadline;
     int theFromLength;
     int theBroadcast;
+#ifdef EE_PORT_LONG32
+    u_long theNonBlocking = 1;
+#else
     unsigned long theNonBlocking = 1;
+#endif
     if (inName.GetLength() > 0) {
         gSocketLock->Enter();
         theSendSocket = socket(AF_INET, SOCK_DGRAM, 0);

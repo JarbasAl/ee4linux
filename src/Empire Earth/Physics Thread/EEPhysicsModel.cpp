@@ -38,7 +38,11 @@
 
 extern EEToHitTable gToHitTable;           // 0x5318e8 (Empire Earth.cpp; as EECPAttackSubGroupUnit.cpp declares it)
 
+#ifdef EE_PORT_LONG32
+LONG_PTR gPhysicsModels[12];            // 0x531d58: one `new` of each EEPM* class (EEUnitClass +0x110 points at one)
+#else
 long gPhysicsModels[12];            // 0x531d58: one `new` of each EEPM* class (EEUnitClass +0x110 points at one)
+#endif
 // This unit's .data is 0x4c2368..0x4c2380 (after EEPhysics.cpp's RTTI, before the EEPMProjectile type descriptor):
 // 0.5f, 0.75f, 1.0f, 4000, 2000, 1. 0x4c236c/0x4c2370 have no reader in the exe and stay undefined here.
 float gPhysicsModelsF = 0.5f;       // 0x4c2368: world table entry 79's float, set with the singletons (provisional name)
@@ -60,18 +64,66 @@ static const float kPMMaximumTilt = 0.34906587f;  // 0x4423a0 (unit-local const,
 // Creates the twelve physics model singletons (land to spaceship) and reads world table entry 79's float
 void EEInitPhysicsModels()
 {
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[0] = (LONG_PTR) new EEPMLand;
+#else
     gPhysicsModels[0] = (long) new EEPMLand;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[1] = (LONG_PTR) new EEPMAirplane;
+#else
     gPhysicsModels[1] = (long) new EEPMAirplane;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[2] = (LONG_PTR) new EEPMHelicopter;
+#else
     gPhysicsModels[2] = (long) new EEPMHelicopter;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[3] = (LONG_PTR) new EEPMHovercraft;
+#else
     gPhysicsModels[3] = (long) new EEPMHovercraft;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[4] = (LONG_PTR) new EEPMNaval;
+#else
     gPhysicsModels[4] = (long) new EEPMNaval;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[5] = (LONG_PTR) new EEPMSubmergedNaval;
+#else
     gPhysicsModels[5] = (long) new EEPMSubmergedNaval;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[6] = (LONG_PTR) new EEPMProjectile;
+#else
     gPhysicsModels[6] = (long) new EEPMProjectile;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[7] = (LONG_PTR) new EEPMMissile;
+#else
     gPhysicsModels[7] = (long) new EEPMMissile;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[8] = (LONG_PTR) new EEPMBuilding;
+#else
     gPhysicsModels[8] = (long) new EEPMBuilding;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[9] = (LONG_PTR) new EEPMSeaAnimal;
+#else
     gPhysicsModels[9] = (long) new EEPMSeaAnimal;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[10] = (LONG_PTR) new EEPMAirAnimal;
+#else
     gPhysicsModels[10] = (long) new EEPMAirAnimal;
+#endif
+#ifdef EE_PORT_LONG32
+    gPhysicsModels[11] = (LONG_PTR) new EEPMSpaceship;
+#else
     gPhysicsModels[11] = (long) new EEPMSpaceship;
+#endif
     gPhysicsModelsF = gWorldTable.GetFloatValue(79);
 }
 
@@ -468,7 +520,11 @@ void EEFreePhysicsModels()
 // Re-bobs a unit that stands still (except under the helicopter model), else brakes it as Step4
 void EEPhysicsModel::Step3(EEComplexUnit* inUnit)
 {
+#ifdef EE_PORT_LONG32
+    if (inUnit->GetVelocity() == 0.0f && inUnit->mAngularVelocity.mYaw == 0.0f && reinterpret_cast<LONG_PTR>(this) != gPhysicsModels[2]) {
+#else
     if (inUnit->GetVelocity() == 0.0f && inUnit->mAngularVelocity.mYaw == 0.0f && reinterpret_cast<long>(this) != gPhysicsModels[2]) {
+#endif
         this->RemoveBob(inUnit);
         this->ApplyBob(inUnit);
     } else {

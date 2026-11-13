@@ -1049,7 +1049,11 @@ enum EEUnitClassWeapon { kWeaponTotal = 6, keeucwTotal = kWeaponTotal /* spelled
 extern EEUnitClass* gUnitClassTable[871];
 // 0x531d58: the EEPM* physics model singletons (EEPMLand.cpp; the EEUC* ctors pass one to EEUnitClass) (provisional
 // name)
+#ifdef EE_PORT_LONG32
+extern LONG_PTR gPhysicsModels[12];
+#else
 extern long gPhysicsModels[12];
+#endif
 // 0x4e872c: EEUCUpgradeTable::sTable's _First (the unit class ctor indexes it with its record +0x238) (provisional
 // alias)
 struct EEUnitClassImprovementTable;
@@ -1134,7 +1138,11 @@ struct EEUnitClassImprovementTable {
 class EEUnitClass : public UReferenceCounter {
 public:
     // 0x22f317 (out of line; every EEUC* ctor calls it with 1, its record and its class's global) (provisional names)
+#ifdef EE_PORT_LONG32
+    EEUnitClass(long inIsComplex, EEUnitClassRecord* inRecord, LONG_PTR inArg3);
+#else
     EEUnitClass(long inIsComplex, EEUnitClassRecord* inRecord, long inArg3);
+#endif
     // 0x2364c0: the value for inKey in the map at +0x60 (0 when there is no map or no entry); the bombers ask for
     // 0x7e0 (provisional name)
     EEUnitAction* FindAction(long inKey);

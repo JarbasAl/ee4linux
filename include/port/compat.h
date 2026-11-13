@@ -7,9 +7,10 @@
 #include "port_msvcrt.h"
 #endif
 
-/* Windows' long is 32 bits on every target; a 64-bit Linux build's is 64. Code that keeps a 32-bit value in a long
-   has to say so where the difference matters (see FSFileSpec's 32-bit file fields). */
-#if defined(__LP64__) || defined(_WIN64)
+/* Windows' long is 32 bits on every target; a 64-bit Linux build's is 64. The x86-64 build compiles the game from a
+   copy in which long is 32 bits (tools/long32.py), and defines EE_PORT_LONG32. EE_PORT_LONG64 marks the code that
+   keeps a 32-bit value in a 64-bit long. */
+#if (defined(__LP64__) || defined(_WIN64)) && !defined(EE_PORT_LONG32)
 #define EE_PORT_LONG64 1
 #endif
 

@@ -21,14 +21,22 @@ public:
 // vtable 0x44b800; ??_G 0x2741b9; ProcessEvent 0x1e86b6; sizeof 0x30; ctor 0x274170
 class EEUIESCLELoadFile : public UIEvent {
 public:
+#ifdef EE_PORT_LONG32
+    EEUIESCLELoadFile(const UString& inExtension, const UString& inDirectory, LONG_PTR inForm)
+#else
     EEUIESCLELoadFile(const UString& inExtension, const UString& inDirectory, long inForm)
+#endif
         : mExtension(inExtension), mDirectory(inDirectory), mForm(inForm) {}   // (provisional name; out of line copy 0x274170)
     virtual ~EEUIESCLELoadFile() {}
     virtual long ProcessEvent(UIForm* inForm, UIEntity* inEntity);
 
     UString mExtension;         // +0x0c appended to the selected name
     UString mDirectory;         // +0x1c EEOpenSaveGameFile's directory
+#ifdef EE_PORT_LONG32
+    LONG_PTR mForm;                 // +0x2c (provisional name; ctor stores eax)
+#else
     long mForm;                 // +0x2c (provisional name; ctor stores eax)
+#endif
 };
 
 // vtable 0x44b7ec; ??_G 0x274145; ProcessEvent 0x1e88be; sizeof 0xc; ctor inline; new at 0x2740d6

@@ -2087,7 +2087,11 @@ long EECPAttackSubGroup::Restore(unsigned long inMajorVersion, unsigned long inM
                 theResult = this->mTask.Restore(inMajorVersion, inMinorVersion);
         }
     }
+#ifdef EE_PORT_LONG32
+    this->mRequest = (long)(LONG_PTR)(LONG_PTR)(this->mRequest) != -1 ? this->mGroup->mCommander->GetPersonnel()->GetRequest((long)(LONG_PTR)(LONG_PTR)(this->mRequest)) : 0;
+#else
     this->mRequest = reinterpret_cast<long>(this->mRequest) != -1 ? this->mGroup->mCommander->GetPersonnel()->GetRequest(reinterpret_cast<long>(this->mRequest)) : 0;
+#endif
     if (this->mRequest)
         this->mRequest->Reference();
     if (this->mUnits.size() > 0)

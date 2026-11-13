@@ -242,14 +242,26 @@ void EESELoadThread::HandleMessage(unsigned long inMessage, void* inParameter1, 
         this->mIsDone = true;
         break;
     case kLoadThreadCreateGhostUnit:
+#ifdef EE_PORT_LONG32
+        this->Handle402((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1), (unsigned long)(UINT_PTR)(UINT_PTR)(inParameter2));
+#else
         this->Handle402(reinterpret_cast<unsigned long>(inParameter1), reinterpret_cast<unsigned long>(inParameter2));
+#endif
         break;
     case kLoadThreadLoadEpochMedia:
+#ifdef EE_PORT_LONG32
+        this->Handle406((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1), (unsigned long)(UINT_PTR)(UINT_PTR)(inParameter2));
+#else
         this->Handle406(reinterpret_cast<unsigned long>(inParameter1), reinterpret_cast<unsigned long>(inParameter2));
+#endif
         break;
     case 0x403:
 #ifdef EE_PORT
+#ifdef EE_PORT_LONG32
+        this->Handle403((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1), inParameter2 != 0);
+#else
         this->Handle403(reinterpret_cast<unsigned long>(inParameter1), inParameter2 != 0);
+#endif
 #else
         this->Handle403(reinterpret_cast<unsigned long>(inParameter1), inParameter2 > 0);
 #endif
@@ -263,7 +275,11 @@ void EESELoadThread::HandleMessage(unsigned long inMessage, void* inParameter1, 
         static_cast<UReferenceCounter*>(inParameter1)->Dereference();
         break;
     case kLoadThreadLoadTerrain:
+#ifdef EE_PORT_LONG32
+        this->Handle408((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1), false);
+#else
         this->Handle408(reinterpret_cast<unsigned long>(inParameter1), false);
+#endif
         break;
     case kLoadThreadShowLoadedObject:
         gUserInterface->ShowLoadedObject(static_cast<UReferenceCounter*>(inParameter1));
@@ -274,10 +290,18 @@ void EESELoadThread::HandleMessage(unsigned long inMessage, void* inParameter1, 
         this->mIsDone = true;
         break;
     case kLoadThreadUnloadEpochMedia:
+#ifdef EE_PORT_LONG32
+        this->Handle407((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1), (unsigned long)(UINT_PTR)(UINT_PTR)(inParameter2));
+#else
         this->Handle407(reinterpret_cast<unsigned long>(inParameter1), reinterpret_cast<unsigned long>(inParameter2));
+#endif
         break;
     case kLoadThreadUnloadTerrain:
+#ifdef EE_PORT_LONG32
+        this->Handle408((unsigned long)(UINT_PTR)(UINT_PTR)(inParameter1), true);
+#else
         this->Handle408(reinterpret_cast<unsigned long>(inParameter1), true);
+#endif
         break;
     case kLoadThreadMessageQueueDone:
         this->mMessageQueueDone->Set();

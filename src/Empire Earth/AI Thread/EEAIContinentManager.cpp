@@ -1009,7 +1009,11 @@ void EEAIContinentManager::CreatePathAreas(EEMap* inMap)
     for (long i = this->mPathSubSectors.size() - 1; i >= 0; i--) {
         EEAIPathSubSector* theSubSector = this->GetPathSubSectorsAt(i);
         if (theSubSector && this->mContinents[theSubSector->mContinentID])
+#ifdef EE_PORT_LONG32
+            theSubSector->mSector->AddNeighbor(reinterpret_cast<LONG_PTR>(this->mContinents[theSubSector->mContinentID]));
+#else
             theSubSector->mSector->AddNeighbor(reinterpret_cast<long>(this->mContinents[theSubSector->mContinentID]));
+#endif
     }
 }
 

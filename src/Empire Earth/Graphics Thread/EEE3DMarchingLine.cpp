@@ -316,10 +316,26 @@ long EEE3DMarchingLine::RepairPointers()
     EEGraphicEffect* theEffect = this->mGraphicEffect;
     long theResult = EEEffect::RepairPointers();
     if (theResult == 0) {
+#ifdef EE_PORT_LONG32
+        if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mFromUnit) > 0)
+#else
         if (reinterpret_cast<unsigned long>(this->mFromUnit) > 0)
+#endif
+#ifdef EE_PORT_LONG32
+            this->mFromUnit = static_cast<EEUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mFromUnit)));
+#else
             this->mFromUnit = static_cast<EEUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mFromUnit)));
+#endif
+#ifdef EE_PORT_LONG32
+        if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mToUnit) > 0)
+#else
         if (reinterpret_cast<unsigned long>(this->mToUnit) > 0)
+#endif
+#ifdef EE_PORT_LONG32
+            this->mToUnit = static_cast<EEUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mToUnit)));
+#else
             this->mToUnit = static_cast<EEUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mToUnit)));
+#endif
         this->mGraphicObject = theEffect->mGraphicObject;
         this->mGraphicObject->LoadMedia();
     }

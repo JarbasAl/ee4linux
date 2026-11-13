@@ -28,7 +28,11 @@ public:
     void SetModelPath(FSPath* inPath);
     void VerifyModels();
 private:
+#ifdef EE_PORT_LONG32
+    std::map<UString, UINT_PTR> mModels;   // +0x00 name -> GEModel*
+#else
     std::map<UString, unsigned long> mModels;   // +0x00 name -> GEModel*
+#endif
     FSPath* mPath;                          // +0x0c (referenced)
     TSCriticalSection* mCriticalSection;    // +0x10
     unsigned long mMemoryFootprint;         // +0x14 sum of the loaded models' SizeOf()

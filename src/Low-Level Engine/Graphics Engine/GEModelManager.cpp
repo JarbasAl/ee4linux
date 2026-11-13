@@ -61,7 +61,11 @@ GEModel* GEModelManager::CreateModel(unsigned long inPolygonCount, unsigned long
     this->mCriticalSection->Enter();
     sprintf(theName, "GEModelManager::CreateModel(%s_%d)", (const char*)inName, sModelNumber++);
     theModel = new GEModel(inPolygonCount, inVertexCount, inMaterialCount, inTagPointCount, inFrameCount, inSubModelCount, theName, inFlags, this);
+#ifdef EE_PORT_LONG32
+    this->mModels[theName] = reinterpret_cast<UINT_PTR>(theModel);
+#else
     this->mModels[theName] = reinterpret_cast<unsigned long>(theModel);
+#endif
     this->mCriticalSection->Leave();
     return theModel;
 }
@@ -85,7 +89,11 @@ GEModel* GEModelManager::CreateSubModel(unsigned long inPolygonCount, unsigned l
 // Writes the list of loaded models and their reference counts to a file
 void GEModelManager::DumpAllLoadedMedia(FSFileSpec& inFile)
 {
+#ifdef EE_PORT_LONG32
+    std::map<UString, UINT_PTR>::iterator theIter;
+#else
     std::map<UString, unsigned long>::iterator theIter;
+#endif
     this->mCriticalSection->Enter();
     fprintf(inFile, "\n\n*********Model Manager - Current Loaded Files In Memory*********\n\n");
     for (theIter = this->mModels.begin(); theIter != this->mModels.end(); theIter++)
@@ -101,7 +109,11 @@ GEModel* GEModelManager::LoadModel(const UString& inName, std::map<unsigned long
     UString theFileName = inName + ".cem";
     FSFileSpec* theFile = NULL;
     GEModel* theModel = NULL;
+#ifdef EE_PORT_LONG32
+    std::map<UString, UINT_PTR>::iterator theIter;
+#else
     std::map<UString, unsigned long>::iterator theIter;
+#endif
     TSScheduler::GetCurrentThreadIndex();
     this->mCriticalSection->Enter();
     theIter = this->mModels.find(theFileName);
@@ -111,7 +123,11 @@ GEModel* GEModelManager::LoadModel(const UString& inName, std::map<unsigned long
         if (theFile->Open(kFileAccessRead) == kErrorOK) {
             theModel = new GEModel(this);
             if (theModel->Load(*theFile, ioTextures, true) == kErrorOK) {
+#ifdef EE_PORT_LONG32
+                this->mModels[theFileName] = reinterpret_cast<UINT_PTR>(theModel);
+#else
                 this->mModels[theFileName] = reinterpret_cast<unsigned long>(theModel);
+#endif
                 this->mMemoryFootprint += theModel->SizeOf();
             } else {
                 GEReportModelFile(theFile->GetVolume(), theFile->GetDirectory(), theFile->GetFile());
@@ -134,7 +150,11 @@ GEModel* GEModelManager::LoadModel(const UString& inName, std::map<unsigned long
 long GEModelManager::RemoveAllModels()
 {
     long theResult = kErrorOK;
+#ifdef EE_PORT_LONG32
+    std::map<UString, UINT_PTR>::iterator theIter;
+#else
     std::map<UString, unsigned long>::iterator theIter;
+#endif
     GEModel* theModel;
     this->mCriticalSection->Enter();
     for (theIter = this->mModels.begin(); theIter != this->mModels.end();) {
@@ -157,7 +177,11 @@ long GEModelManager::RemoveAllModels()
 long GEModelManager::RemoveModel(GEModel* inModel)
 {
     long theResult = 3;
+#ifdef EE_PORT_LONG32
+    std::map<UString, UINT_PTR>::iterator theIter;
+#else
     std::map<UString, unsigned long>::iterator theIter;
+#endif
     this->mCriticalSection->Enter();
     for (theIter = this->mModels.begin(); theIter != this->mModels.end(); theIter++)
         if ((GEModel*)theIter->second == inModel) {
@@ -189,7 +213,11 @@ void GEModelManager::SetModelPath(FSPath* inPath)
 // Runs the self check on every loaded model (results ignored)
 void GEModelManager::VerifyModels()
 {
+#ifdef EE_PORT_LONG32
+    std::map<UString, UINT_PTR>::iterator theIter = this->mModels.begin();
+#else
     std::map<UString, unsigned long>::iterator theIter = this->mModels.begin();
+#endif
     this->mCriticalSection->Enter();
     for (; theIter != this->mModels.end(); theIter++)
         ((GEModel*)theIter->second)->Verify();

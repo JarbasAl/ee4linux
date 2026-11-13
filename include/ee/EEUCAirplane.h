@@ -18,7 +18,11 @@ class EEUCAirplane : public EEUCLandable {
 public:
     EEUCAirplane();                         // inline
     EEUCAirplane(EEUnitClassRecord* inRecord);   // inline: defined in EEUnitClass.cpp (the class factory 0x2358b1)
+#ifdef EE_PORT_LONG32
+    EEUCAirplane(EEUnitClassRecord* inRecord, LONG_PTR inModel);   // inline: defined in EEUnitClass.cpp (the class factory 0x2358b1)
+#else
     EEUCAirplane(EEUnitClassRecord* inRecord, long inModel);   // inline: defined in EEUnitClass.cpp (the class factory 0x2358b1)
+#endif
     virtual ~EEUCAirplane() {}              // +0x00 dtor 0x2305ee
     virtual void ActionChanged(EEComplexUnit* inUnit); // +0x74 0x20b192
     virtual void Update(EEComplexUnit* inUnit);      // +0xb8 0x20b9f0 trivial: push dword ptr [esp + 4]; call 0x616a11; ret 4 (ICF: EEUCPlanetSpaceship)

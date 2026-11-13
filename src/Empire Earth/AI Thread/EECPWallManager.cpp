@@ -902,12 +902,24 @@ long EECPWallManager::Restore(unsigned long inMajorVersion, unsigned long inMino
     this->mWalls.clear();
     for (i = 0; i < theWalls.size(); i++) {
         theWall = theWalls[i];
+#ifdef EE_PORT_LONG32
+        if ((unsigned long)(UINT_PTR)(UINT_PTR)(theWall.mUnit) == -1)
+#else
         if (reinterpret_cast<unsigned long>(theWall.mUnit) == -1)
+#endif
             continue;
+#ifdef EE_PORT_LONG32
+        theUnit = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(theWall.mUnit))));
+#else
         theUnit = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(theWall.mUnit))));
+#endif
         if (theUnit == NULL)
             continue;
+#ifdef EE_PORT_LONG32
+        EEPlayer* thePlayer = gWorld.mPlayers[(unsigned long)(UINT_PTR)(UINT_PTR)(theWall.mEnemy)];
+#else
         EEPlayer* thePlayer = gWorld.mPlayers[reinterpret_cast<unsigned long>(theWall.mEnemy)];
+#endif
         EEPlayer* theEnemy = dynamic_cast<EEPlayer*>(thePlayer);
         if (theEnemy == NULL)
             continue;
@@ -920,9 +932,17 @@ long EECPWallManager::Restore(unsigned long inMajorVersion, unsigned long inMino
     this->mGates.clear();
     for (i = 0; i < theGates.size(); i++) {
         theUnit = theGates[i];
+#ifdef EE_PORT_LONG32
+        if ((unsigned long)(UINT_PTR)(UINT_PTR)(theUnit) == -1)
+#else
         if (reinterpret_cast<unsigned long>(theUnit) == -1)
+#endif
             continue;
+#ifdef EE_PORT_LONG32
+        theUnit = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(theUnit))));
+#else
         theUnit = dynamic_cast<EEComplexUnit*>(static_cast<EEUnit*>(gWorld.GetUnit(reinterpret_cast<unsigned long>(theUnit))));
+#endif
         if (theUnit != NULL) {
             theUnit->Reference();
             this->mGates.push_back(theUnit);

@@ -450,7 +450,11 @@ long EEEMStorm::Restore()
 {
     long theResult = 0;
     EEEffectHandle theHandle;
+#ifdef EE_PORT_LONG32
+    theHandle.mValue = (unsigned long)(UINT_PTR)(UINT_PTR)(this->mStorm);
+#else
     theHandle.mValue = reinterpret_cast<unsigned long>(this->mStorm);
+#endif
     this->mStorm = dynamic_cast<EEE3DStorm*>(gEffectManager->GetEffect(theHandle));
     if (this->mStorm != NULL)
         this->mStorm->Reference();

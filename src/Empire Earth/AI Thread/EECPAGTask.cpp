@@ -89,9 +89,21 @@ long EECPAGTask::Load(unsigned long inMajorVersion, unsigned long inMinorVersion
 long EECPAGTask::Restore(unsigned long inMajorVersion, unsigned long inMinorVersion)
 {
     long theResult = this->mLocation.Restore(inMajorVersion, inMinorVersion);
+#ifdef EE_PORT_LONG32
+    this->mPlayer = ::gWorld.mPlayers[(unsigned long)(UINT_PTR)(UINT_PTR)(this->mPlayer)];
+#else
     this->mPlayer = ::gWorld.mPlayers[reinterpret_cast<unsigned long>(this->mPlayer)];
+#endif
+#ifdef EE_PORT_LONG32
+    if ((unsigned long)(UINT_PTR)(UINT_PTR)(this->mUnit) != -1) {
+#else
     if (reinterpret_cast<unsigned long>(this->mUnit) != -1) {
+#endif
+#ifdef EE_PORT_LONG32
+        this->mUnit = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit((unsigned long)(UINT_PTR)(UINT_PTR)(this->mUnit)));
+#else
         this->mUnit = dynamic_cast<EEComplexUnit*>(::gWorld.GetUnit(reinterpret_cast<unsigned long>(this->mUnit)));
+#endif
         if (this->mUnit)
             this->mUnit->Reference();
     } else {
