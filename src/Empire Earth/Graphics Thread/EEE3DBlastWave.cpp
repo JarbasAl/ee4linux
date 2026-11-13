@@ -117,7 +117,7 @@ void EEE3DBlastWave::FollowUnit()
     unsigned long theFrame = this->mUnit->mComplexUnit->mPhysicalModel.GetFrame();
     EETagPointList* theList = this->mUnit->mComplexUnit->GetModel()->GetTagPoints(this->mUnit->mComplexUnit->GetAnimation(), 0x12);
     if (theList != NULL && !theList->mPoints.empty()) {
-        theList->Scale(theLocation, theScale);
+        EETagPointList::Scale(theLocation, theScale);
         const std::vector<EETagPoint*>& thePoints = theList->mPoints;
         thePoints.front()->GetPoint(theFrame, theLocation, thePoint);
         GETransformation theTransformation(false);

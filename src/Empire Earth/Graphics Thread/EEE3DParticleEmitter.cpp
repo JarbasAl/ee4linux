@@ -264,7 +264,7 @@ long EEE3DParticleEmitter::Step()
                 EETagPointList* theTags = theGraphic->GetTagPoints(theUnit->GetAnimation(), this->mGraphicEffect->mTagPointKind);
                 if (this->mGraphicEffect->mTagPointKind != 0x15 && theTags) {
                     unsigned long theFrame = theUnit->mPhysicalModel.GetFrame();
-                    theTags->Scale(theTransformation, theUnit->mPhysicalModel.GetScale());
+                    EETagPointList::Scale(theTransformation, theUnit->mPhysicalModel.GetScale());
                     if (theGraphic->GetNumParts() > 0) {
                         unsigned long thePartIndex;
                         thePart.MakeIdentity();

@@ -292,7 +292,7 @@ long EEE3DDamageVent::Step()
                 thePart->Aim(theFromList, theToList);
             const GETransformation& theLocation = theComplex->mPhysicalModel.GetLocation();
             GETransformation theUnitTransformation(theLocation);
-            theFromList->Scale(theUnitTransformation, theComplex->mStats->GetScale());
+            EETagPointList::Scale(theUnitTransformation, theComplex->mStats->GetScale());
             GE3DPoint theFrom;
             GE3DPoint theTo;
             (theFromList->GetTagPoint(thePart->mTag))->GetPoint(0, theUnitTransformation, theFrom);

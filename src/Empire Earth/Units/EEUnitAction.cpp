@@ -874,7 +874,7 @@ static void EELoadScript(const UString& inName, std::map<long, EEUnitAction*>*& 
                     // a step back: the unsigned length would move a 64-bit pointer 4 GiB forward
                     theCursor += 5 - (long)theToken.GetLength();
 #else
-                    theCursor += 5 - theToken.GetLength();
+                    theCursor -= (long)theToken.GetLength() - 5;   // back to just after "anyof"/"allof"
 #endif
                     theState = 3;
                 }

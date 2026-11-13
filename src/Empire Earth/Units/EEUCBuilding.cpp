@@ -540,7 +540,7 @@ void EEUCBuilding::ReleaseUnit(EEComplexUnit* inUnit)
         EEComplexUnit* theCargo = inUnit->FindPassenger(theCargoID);
         if (theCargo != NULL) {
             if (thePoints != NULL && !thePoints->mPoints.empty()) {
-                thePoints->Scale(theTransformation, inUnit->mStats->GetScale());
+                EETagPointList::Scale(theTransformation, inUnit->mStats->GetScale());
                 thePoints->mPoints[0]->GetPoint(theCargo->mPhysicalModel.GetFrame(), theTransformation, thePosition);
             }
             theCargo->mPhysicalModel.SetScale(theCargo->mStats->GetScale()

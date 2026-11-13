@@ -209,7 +209,7 @@ void EEPMAirplane::FollowCarrier(EEComplexUnit* inUnit)
     inUnit->GetPathStart(theNext, theIndex);
     inUnit->mPhysicalModel.GetLocation().GetPosition(thePosition);
     float theDistance = thePosition.DistanceTo(theNext);
-    theTags->Scale(theTransformation, theScale);
+    EETagPointList::Scale(theTransformation, theScale);
     theTags->mPoints[2]->GetPoint(theCarrier->mPhysicalModel.GetFrame(), theTransformation, theNext);
     theTags->mPoints[0]->GetPoint(theCarrier->mPhysicalModel.GetFrame(), theTransformation, theStart);
     theDistance = theStart.DistanceTo(theNext) - theDistance;
@@ -385,7 +385,7 @@ bool EEPMAirplane::IsDocked(EEComplexUnit* inUnit)
         EETagPointList* theTags = theCarrier->GetModel()->mTagPoints[theCarrier->GetAnimation()];
         inUnit->GetPathStart(theNext, theIndex);
         if (theTags) {
-            theTags->Scale(theTransformation, theCarrier->mStats->mScale);
+            EETagPointList::Scale(theTransformation, theCarrier->mStats->mScale);
             const std::vector<EETagPoint*>& thePoints = theTags->mPoints;
             thePoints[2]->GetPoint(theCarrier->mPhysicalModel.GetFrame(), theTransformation, theDeck);
         } else {

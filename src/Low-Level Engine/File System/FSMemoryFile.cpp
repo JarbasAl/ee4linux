@@ -299,20 +299,15 @@ void FSMemoryFile::IncreaseFileSize(unsigned long inLength)
 {
     unsigned long theLength = this->mAllocatedLength + inLength;
     unsigned char* theBuffer = new unsigned char[theLength];
-#ifdef EE_PORT_LONG32
-    // A file that has no buffer yet has no old address to subtract; the distance from a null pointer is not a
-    // difference to take, so its position and its end are the new buffer
+    // Rebase by offsets: adding (new - old) to an old pointer is arithmetic across two allocations. A file that has no
+    // buffer yet has no old address, so its position and its end are the new buffer
     if (this->mStart) {
-        this->mCurrent += theBuffer - this->mStart;
-        this->mEnd += theBuffer - this->mStart;
+        this->mCurrent = theBuffer + (this->mCurrent - this->mStart);
+        this->mEnd = theBuffer + (this->mEnd - this->mStart);
     } else {
         this->mCurrent = theBuffer;
         this->mEnd = theBuffer;
     }
-#else
-    this->mCurrent += theBuffer - this->mStart;
-    this->mEnd += theBuffer - this->mStart;
-#endif
     this->mLimit = theBuffer + theLength;
     this->mStart = theBuffer;
     if (this->mBuffer) {

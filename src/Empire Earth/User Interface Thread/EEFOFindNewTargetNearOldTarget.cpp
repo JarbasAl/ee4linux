@@ -424,6 +424,8 @@ bool EEGetBlockingUnits(EEPlayer* inPlayer, long inUnitType, EETile* inTile, boo
                std::vector<EEUnit*>& outUnits)
 {
     outUnits.clear();
+    if (inTile == NULL)
+        return false;   // a tile off the map (GetTile's NULL) holds no units; the original read through it
     for (RTSTileUnitNode* theNode = inTile->mUnits; theNode != NULL; theNode = theNode->mNext) {
         EEUnit* theUnit = theNode->mUnit;
         if (theUnit != NULL && EEGetTileUnitStanding(theUnit, inPlayer, inUnitType, inIgnoreOwner) == 2)
@@ -6300,7 +6302,7 @@ bool EEIsLineToUnitBlocked(EEComplexUnit* inUnit, EEUnit* inTarget, EEUnit** out
             EETagPointList* theList = theModel->mTagPoints[theUnit->mAnimation];
             unsigned long theFrame = theUnit->mPhysicalModel.GetFrame();
             unsigned long theIndex = theUnit->mWeaponTagPoint;
-            theList->Scale(theTransformation, theScale);
+            EETagPointList::Scale(theTransformation, theScale);
             if (theModel->GetNumParts() > 0) {
                 theOrientation.MakeIdentity();
                 if (theModel->FindTurretPart(theList->GetTagPoint(theIndex)->mModel, thePart) == 0)

@@ -1530,7 +1530,8 @@ void EEUCSpaceTransport::FindUnloadTiles(EEComplexUnit* inTransport, U2DPoint<lo
             U2DPoint<long>* thePoint = &(*theTile);
             float theDistance = outUnloadTile->DistanceToSquaredF(*thePoint);
             EEMapTile* theMapTile = ::gWorld.mMap->GetTile(thePoint->GetX(), thePoint->GetY());
-            if (thePoint == NULL || theDistance > theRange
+            // a tile off the map ends the line (GetTile returns NULL there, and EEGetBlockingUnits read through it)
+            if (thePoint == NULL || theMapTile == NULL || theDistance > theRange
                 || EEGetBlockingUnits(inTransport->GetPlayer(), this->GetUnitType(), theMapTile, 0, theUnits)
                 || !this->CanUnloadNear(NULL, inTransport->mCargo[0], outUnloadTile, outFirstCargoTile, thePoint))
                 break;
