@@ -1625,6 +1625,9 @@ void EEMChangeSelectedUnitCollisionSphere::Execute()
                 }
             }
             theUnit->mCollisionRadius = (float)theUnit->mUnitClass->mInnerCollisionSphere;
+            // the other units of the class (collected for sea units) take the new radius too
+            for (unsigned long j = 0; j < theUnits.size(); j++)
+                static_cast<EEComplexUnit*>(theUnits[j])->mCollisionRadius = (float)theUnit->mUnitClass->mInnerCollisionSphere;
         }
     }
 }
@@ -6305,7 +6308,7 @@ void EEMResearchTechnology::Execute()
                 && theComplexUnit && theComplexUnit->mIsBuilt && theCount > 0) {
                 for (unsigned long j = 0; j < theCount; j++) {
                     if (theAll || (theWonder && !gWorld.mGameOptions.mIsScenarioGame)) {
-                        unsigned long theQueue = theOther->mComplexUnit->GetBuildQueueSize() + theOther->mComplexUnit->mCurrentResearch != 100000;
+                        unsigned long theQueue = theOther->mComplexUnit->GetBuildQueueSize() + (theOther->mComplexUnit->mCurrentResearch != 100000);   // queue + the one in progress (precedence)
                         if (theQueue < theBestQueue) {
                             theBestQueue = theQueue;
                             theBest = theOther;
@@ -7488,10 +7491,12 @@ issue:
             case 15:
                 if (!this->mIsQueued)
                     theUnit->ClearAllGoalQueues();
+                // each queue owns its own goal: the attack copy goes to the first one only
                 theUnit->QueueGoal(theCopy != NULL ? theCopy : theGoal->Clone(), 3);
-                theUnit->QueueGoal(theCopy != NULL ? theCopy : theGoal->Clone(), 2);
-                theUnit->QueueGoal(theCopy != NULL ? theCopy : theGoal->Clone(), 1);
-                theUnit->QueueGoal(theCopy != NULL ? theCopy : theGoal->Clone(), 4);
+                theCopy = NULL;
+                theUnit->QueueGoal(theGoal->Clone(), 2);
+                theUnit->QueueGoal(theGoal->Clone(), 1);
+                theUnit->QueueGoal(theGoal->Clone(), 4);
                 theUnit->mGoalQueues[4].ResetTimer();
                 theUnit->mGoalQueues[4].AddTime(60000);
                 theUnit->mGoalQueues[3].ResetTimer();
@@ -7505,6 +7510,10 @@ issue:
                 if (!this->mIsQueued)
                     theUnit->ClearGoalQueue(4);
                 theUnit->QueueGoal(new EEUGLocation(this->mPoint, true, true, false, 0.0f, false, 0), 4);
+                delete theCopy;
+                break;
+            default:
+                delete theCopy;
                 break;
             }
         }
@@ -8474,6 +8483,7 @@ void EEMUnloadTransport::Execute()
                 continue;
             EEUGUnloadTransport* theGoal = new EEUGUnloadTransport(theUnit->GetComplexUnit(), this->GetX(), this->GetY(), false);
             unsigned long theCount = theActiveGroup->GetNumUnits();
+            theCanUnload = false;  // each part looks for its own loaded transport
             for (unsigned long j = 0; j < theCount && !theCanUnload; j++) {
                 theUnit = theActiveGroup->GetUnit(j);
                 if ((theUnit->GetUnitClass()->IsTransport() || theUnit->GetUnitClass()->mIsParatrooperBomber)

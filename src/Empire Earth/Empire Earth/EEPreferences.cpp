@@ -530,13 +530,12 @@ long EEGamePreferences::Load()
         theString = this->mSettings.mLastGameFile;
         this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEERegistryKey), UWideString("Last Game File"), theString);
     }
-    // (sic: the default of "Last Scenario File" writes the last game file)
     theResult = this->mRegistry.GetRegistryValue(kEERootKey, UWideString(kEERegistryKey), UWideString("Last Scenario File"), theString);
     if (theResult == 0) {
         this->mSettings.mLastScenarioFile = theString;
     } else {
         this->mSettings.mLastScenarioFile = EEGamePreferences::sDefaultSettings.mLastScenarioFile;
-        theString = this->mSettings.mLastGameFile;
+        theString = this->mSettings.mLastScenarioFile;
         this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEERegistryKey), UWideString("Last Scenario File"), theString);
     }
     theResult = this->mRegistry.GetRegistryValue(kEERootKey, UWideString(kEERegistryKey), UWideString("Show Blood"), theValue);
@@ -749,7 +748,7 @@ long EEGamePreferences::Load()
 
 // FUNCTION: EXE 0x53505e
 // Reads the last game options from the registry's "Game Options" key, writing defaults for missing values;
-// victory is always allowed; returns 0
+// returns 0
 long EEGamePreferences::LoadGameOptions()
 {
     UWideString theString;
@@ -768,9 +767,9 @@ long EEGamePreferences::LoadGameOptions()
     if (theResult == 0) {
         this->mSettings.mGameOptions.mMapType = theString;
     } else {
-        // (sic: the member gets "", the registry "Continental")
-        this->mSettings.mGameOptions.SetMapType("");
+        // the member and the registry both get the default map type
         theString = "Continental";
+        this->mSettings.mGameOptions.SetMapType(theString);
         this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Map Type"), theString);
     }
     theResult = this->mRegistry.GetRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Starting Resources"), theValue);
@@ -878,10 +877,13 @@ long EEGamePreferences::LoadGameOptions()
         this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Cheat Codes"), theValue);
     }
     theResult = this->mRegistry.GetRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Victory Allowed"), theValue);
-    if (theResult == 0)
+    if (theResult == 0) {
+        this->mSettings.mGameOptions.mVictory = theValue == 1;
+    } else {
         this->mSettings.mGameOptions.mVictory = true;
-    else
-        this->mSettings.mGameOptions.mVictory = true;
+        theValue = 1;
+        this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Victory Allowed"), theValue);
+    }
     return 0;
 }
 
@@ -1050,7 +1052,9 @@ long EEGamePreferences::SaveGameOptions()
     theValue = this->mSettings.mGameOptions.mLockSpeed == true;
     this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Lock Speed"), theValue);
     theValue = this->mSettings.mGameOptions.mCheatCodes == true;
-    return this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Cheat Codes"), theValue);
+    this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Cheat Codes"), theValue);
+    theValue = this->mSettings.mGameOptions.mVictory == true;
+    return this->mRegistry.CreateRegistryValue(kEERootKey, UWideString(kEEGameOptionsKey), UWideString("Victory Allowed"), theValue);
 }
 
 // FUNCTION: EXE 0x536b49

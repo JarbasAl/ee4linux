@@ -799,7 +799,7 @@ void EECPResourceManager::FindMines(unsigned long inCount, bool inNear, std::vec
 
 // FUNCTION: EXE 0x490602
 // Returns the first forage bush of a resource center that is reachable, not crowded, unthreatened and in range
-// of the town center; stops at the first bush that is not visible
+// of the town center; bushes not visible are skipped
 EEUnit* EECPResourceManager::FindFarm(bool inNeedsDropSite, bool inNear, EEComplexUnit* inUnit)
 {
     EETileDistanceLess theTile(0, 0);
@@ -835,7 +835,7 @@ EEUnit* EECPResourceManager::FindFarm(bool inNeedsDropSite, bool inNear, EECompl
                 continue;
         }
         if (!static_cast<EETile*>(theUnit->GetRTSTile())->IsVisibleTo(thePlayer))
-            break;
+            continue;   // skip it (was break: ended the whole search)
         if (gWorld.GetResourceUsers(theUnit) >= theLimit)
             continue;
         theTile.mCenter.mX = theUnit->GetTileX();
@@ -1167,7 +1167,7 @@ void EECPResourceManager::UnitsSwapped(std::vector<EEPUnitSwap>& inSwaps)
         if (theNew == NULL)
             continue;
         long theCategory = theNew->GetUnitClass()->mCategory;
-        if ((theCategory != kUnitCategoryLandCitizen && theCategory != kUnitCategoryNavalCitizen) || theUnit->mPlayer != thePlayer)
+        if ((theCategory != kUnitCategoryLandCitizen && theCategory != kUnitCategoryNavalCitizen) || theNew->mPlayer != thePlayer)
             continue;
         EEUGGather* theGoal = dynamic_cast<EEUGGather*>(theNew->GetLoadGoal());
         if (theGoal != NULL && theGoal->mResource != NULL)
@@ -1309,7 +1309,7 @@ long EECPResourceManager::Save(unsigned long inMajorVersion, unsigned long inMin
 // NEAR: the 0x92230 assign shape is a guess from the decompiler outline; the original returns true on every
 // path (0x49195e)
 // FUNCTION: EXE 0x4916e6
-// Loads as many gatherers as fit on a transport and ships them to a resource to gather it; returns true even
+// Loads as many gatherers as fit on a transport and ships them to a resource to gather it; returns false
 // when the transport cannot unload there
 bool EECPResourceManager::FerryGatherers(std::vector<EEComplexUnit*>& inUnits, EEComplexUnit* inTransport, EEUnit* inResource)
 {
@@ -1340,8 +1340,10 @@ bool EECPResourceManager::FerryGatherers(std::vector<EEComplexUnit*>& inUnits, E
             }
             if (theGather != NULL)
                 delete theGather;
-        } else
+        } else {
             delete theUnload;
+            return false;   // cannot unload there: RequestFerry's failure branch runs (was true)
+        }
     }
     return true;
 }
@@ -1443,6 +1445,7 @@ bool EECPResourceManager::UpdateWantedGatherers()
                         theNeed = 0;
                     }
                 } else if (j != 3) {
+                    theFound = 0;   // this resource's units only (was carried over from the earlier resources)
                     for (unsigned long k = 0; k < thePlayer->GetNumResourceCenters(); k++) {
                         std::vector<EEUnit*> theUnits = thePlayer->GetResourceCenter(k)->mUnits;
                         for (std::vector<EEUnit*>::iterator it = theUnits.begin(); it != theUnits.end(); it++)

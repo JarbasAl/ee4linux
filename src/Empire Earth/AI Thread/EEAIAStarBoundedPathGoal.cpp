@@ -271,27 +271,27 @@ long EEAIAStarBoundedPathGoal::GetDefaultCost(long inFromX, long inFromY, long i
     EEGetTileInDirection(inX, inY, &theX, &theY, 4, theRange);
     theNeighbor = theMap->GetTile(theX, theY);
     if (theNeighbor && (theNeighbor->GetAIValue() || !this->GetUnit()->GetUnitClass()->CanMoveOnTerrain(this->GetUnit(), theNeighbor->GetTerrainType())
-                        || this->GetContinentID() != gContinentManager.GetContinentID(inX, inY)))
+                        || this->GetContinentID() != gContinentManager.GetContinentID(theX, theY)))
         theCost *= 2;
     else {
         EEGetTileInDirection(inX, inY, &theX, &theY, 3, theRange);
         theNeighbor = theMap->GetTile(theX, theY);
         if (theNeighbor && (theNeighbor->GetAIValue() || !this->GetUnit()->GetUnitClass()->CanMoveOnTerrain(this->GetUnit(), theNeighbor->GetTerrainType())
-                            || this->GetContinentID() != gContinentManager.GetContinentID(inX, inY)))
+                            || this->GetContinentID() != gContinentManager.GetContinentID(theX, theY)))
             theCost *= 2;
         else {
             EEGetTileInDirection(inX, inY, &theX, &theY, 1, theRange);
             theNeighbor = theMap->GetTile(theX, theY);
             if (theNeighbor && (theNeighbor->GetAIValue()
                                 || !this->GetUnit()->GetUnitClass()->CanMoveOnTerrain(this->GetUnit(), theNeighbor->GetTerrainType())
-                                || this->GetContinentID() != gContinentManager.GetContinentID(inX, inY)))
+                                || this->GetContinentID() != gContinentManager.GetContinentID(theX, theY)))
                 theCost *= 2;
             else {
                 EEGetTileInDirection(inX, inY, &theX, &theY, 6, theRange);
                 theNeighbor = theMap->GetTile(theX, theY);
                 if (theNeighbor && (theNeighbor->GetAIValue()
                                     || !this->GetUnit()->GetUnitClass()->CanMoveOnTerrain(this->GetUnit(), theNeighbor->GetTerrainType())
-                                    || this->GetContinentID() != gContinentManager.GetContinentID(inX, inY)))
+                                    || this->GetContinentID() != gContinentManager.GetContinentID(theX, theY)))
                     theCost *= 2;
             }
         }

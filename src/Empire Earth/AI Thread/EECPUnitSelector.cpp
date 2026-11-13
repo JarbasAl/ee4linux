@@ -313,6 +313,7 @@ void EECPUnitSelector::AllocateFavoriteUnits(EECPUnitSelectionGroup* inGroup)
         } else if (theFavorite != 0) {
             for (long i = theStrategy->mNumAir - 1; i >= 0; --i)
                 inGroup->mSelected.push_back(theFavorite);
+            theStrategy->mNumAir = 0;
         }
         theStrategy->mNumLand += theStrategy->mNumAir;
         theStrategy->mNumAir = 0;
@@ -342,6 +343,7 @@ void EECPUnitSelector::AllocateFavoriteUnits(EECPUnitSelectionGroup* inGroup)
         } else if (theFavorite != 0) {
             for (long i = theStrategy->mNumSea - 1; i >= 0; --i)
                 inGroup->mSelected.push_back(theFavorite);
+            theStrategy->mNumSea = 0;
         }
         theStrategy->mNumLand += theStrategy->mNumSea;
         theStrategy->mNumSea = 0;
@@ -371,6 +373,7 @@ void EECPUnitSelector::AllocateFavoriteUnits(EECPUnitSelectionGroup* inGroup)
         } else if (theFavorite != 0) {
             for (long i = theStrategy->mNumSpace - 1; i >= 0; --i)
                 inGroup->mSelected.push_back(theFavorite);
+            theStrategy->mNumSpace = 0;
         }
         theStrategy->mNumLand += theStrategy->mNumSpace;
         theStrategy->mNumSpace = 0;
@@ -1019,7 +1022,7 @@ void EECPUnitSelector::ComputeDomainShares(EECPUnitSelectionGroup* inGroup)
 
 // FUNCTION: EXE 0x49ab2f
 // Returns the share of the group for the sea (inSea) or space, from the domain's tile share, own vs target
-// strength and a random factor; with no target strength there it always divides by the own sea-unit count
+// strength and a random factor; with no target strength there it uses the own unit count of that domain
 float EECPUnitSelector::GetDomainShare(EECPUnitSelectionGroup* inGroup, bool inSea)
 {
     float theResult = 0.0f;
@@ -1043,7 +1046,7 @@ float EECPUnitSelector::GetDomainShare(EECPUnitSelectionGroup* inGroup, bool inS
                 else
                     theRatio = 1.0f - theShare;
             } else
-                theRatio = ((float)inSea + 2.0f != 0.0f) ? (float)theOwn->GetNumSeaUnits() : (float)theOwn->GetNumSpaceUnits();
+                theRatio = inSea ? (float)theOwn->GetNumSeaUnits() : (float)theOwn->GetNumSpaceUnits();
             float theFraction = (inSea ? (float)theLand : (float)theSea) / theTotal;
             if (theFraction > kHeightEpsilon) {
                 theResult = gPhysics->GetRandom(0.85f, 1.15f) * theFraction;

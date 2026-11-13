@@ -516,7 +516,7 @@ void EEHerd::Graze(EEComplexUnit* inUnit, unsigned long inTime)
                 theOther.SetX(gPhysics->GetRandom(0, theRight - theLeft) + theLeft);
                 theOther.SetY(gPhysics->GetRandom(0, theBottom - theTop) + theTop);
                 if (std::find(theTried.begin(), theTried.end(), theOther) == theTried.end())
-                    theFound = this->CanStandOn(inUnit, theOther);
+                    theFound = this->CanStandOn(theYoung, theOther);
             }
             if (theFound) {
                 theTried.push_back(theOther);
@@ -529,7 +529,7 @@ void EEHerd::Graze(EEComplexUnit* inUnit, unsigned long inTime)
                                                       false, false);
         if (!this->GiveGoal(theYoung, theYoungGoal, 0, kActionPrepareToMove) && theYoungGoal)
             delete theYoungGoal;
-        inUnit->SetGrazeTime(gPhysics->GetRandom(this->GetAnimal()->GetMinGrazeTime(), this->GetAnimal()->GetMaxGrazeTime()) + inTime);
+        theYoung->SetGrazeTime(gPhysics->GetRandom(this->GetAnimal()->GetMinGrazeTime(), this->GetAnimal()->GetMaxGrazeTime()) + inTime);
     }
 }
 
@@ -662,8 +662,8 @@ void EEHerd::GrowUnit(EEComplexUnit* inUnit)
 
 // NEAR: EEPlayer::mHerds is a vector<long> in ee/EEPlayer.h (EEHerd* elements): the herds go through casts here
 // FUNCTION: EXE 0x4a3295
-// Surrounds an animal of the nearest other non-predator herd on the continent (always its first: the distances
-// to its animals are computed but unused); returns whether the herd now has a target
+// Surrounds the animal nearest the leader in the nearest other non-predator herd on the continent; returns
+// whether the herd now has a target
 bool EEHerd::FollowNearestHerd()
 {
     std::vector<EEHerd*> theHerds;
@@ -681,9 +681,13 @@ bool EEHerd::FollowNearestHerd()
     }
     if (theBestHerd) {
         EEComplexUnit* theTarget = NULL;
+        float theNearest = 0.0f;
         for (long j = theBestHerd->mUnits.size() - 1; j >= 0; j--) {
-            theLeader->DistanceSquaredTo(theBestHerd->mUnits[j]);
-            theTarget = theBestHerd->mUnits[j];
+            float theDistance = theLeader->DistanceSquaredTo(theBestHerd->mUnits[j]);
+            if (theTarget == NULL || theDistance <= theNearest) {
+                theTarget = theBestHerd->mUnits[j];
+                theNearest = theDistance;
+            }
         }
         if (theTarget)
             this->Surround(theTarget);
@@ -1160,13 +1164,13 @@ void EEHerd::Surround(EEComplexUnit* inTarget)
 }
 
 // FUNCTION: EXE 0x4a45b7
-// Chase state: while the target lives and the chase timer has run out, re-chases it once it moves 3 tiles;
+// Chase state: while the target lives and the chase timer runs, re-chases it once it moves 3 tiles;
 // otherwise ends the chase, sends the herd grazing and restarts the timer; returns 1000 ms
 unsigned long EEHerd::UpdateChasing(unsigned long inTime)
 {
     U2DPoint<long> theTile;
     bool theFollowing = true;
-    if (this->mTarget && this->mTarget->mHitPoints > 0 && this->mChaseTime <= inTime) {
+    if (this->mTarget && this->mTarget->mHitPoints > 0 && this->mChaseTime > inTime) {
         theTile = this->mTarget->GetTile();
         if (theTile.DistanceToSquaredF(this->mCenter) > 9.0f) {
             theFollowing = this->Chase();
@@ -1184,22 +1188,24 @@ unsigned long EEHerd::UpdateChasing(unsigned long inTime)
 }
 
 // FUNCTION: EXE 0x4a467b
-// Hunt state: while the target lives and the hunt timer runs, re-circles it when it changes tile; ends the hunt
-// (grazing, timer restarted) only when circling fails, otherwise the state stays; returns 1000 ms
+// Hunt state: while the target lives and the hunt timer runs, re-circles it when it changes tile; otherwise, or
+// when circling fails, ends the hunt (grazing, timer restarted); returns 1000 ms
 unsigned long EEHerd::UpdateHunting(unsigned long inTime)
 {
     U2DPoint<long> theTile;
-    if (!this->mTarget || !(this->mTarget->mHitPoints > 0) || !(this->mHuntTime > inTime))
-        return 1000;
-    long theY = this->mTarget->mTileY;
-    theTile.mX = this->mTarget->mTileX;
-    theTile.mY = theY;
-    if (theTile == this->mCenter)
-        return 1000;
-    bool theFollowing = this->MoveTo(theTile, gPhysics->GetRandom(2L, 5L));
-    this->mCenter = theTile;
-    if (theFollowing)
-        return 1000;
+    // the hunt goes on while the target lives and the hunt timer runs; a dead target, an expired timer or a
+    // failed circling ends it
+    if (this->mTarget && this->mTarget->mHitPoints > 0 && this->mHuntTime > inTime) {
+        long theY = this->mTarget->mTileY;
+        theTile.mX = this->mTarget->mTileX;
+        theTile.mY = theY;
+        if (theTile == this->mCenter)
+            return 1000;
+        bool theFollowing = this->MoveTo(theTile, gPhysics->GetRandom(2L, 5L));
+        this->mCenter = theTile;
+        if (theFollowing)
+            return 1000;
+    }
     this->ReleaseTarget();
     this->ResetGrazeTimes(this->mUnits.size(), true);
     this->mState = 0;
@@ -1216,7 +1222,7 @@ unsigned long EEHerd::UpdateIdle(unsigned long inTime)
 
 // FUNCTION: EXE 0x4a475f
 // Attack state: orders animals without a goal to attack the live target; else sends some grazing, sets the
-// follow timer to a bare interval (no current time added) and rests; returns 1000 ms
+// follow timer to the rest interval from now and rests; returns 1000 ms
 unsigned long EEHerd::UpdateAttacking(unsigned long inTime)
 {
     if (this->mTarget && this->mTarget->mHitPoints > 0) {
@@ -1229,7 +1235,7 @@ unsigned long EEHerd::UpdateAttacking(unsigned long inTime)
         }
     } else {
         this->ResetGrazeTimes(gPhysics->Fn82D66(this->mUnits), true);
-        this->mFollowTime = gPhysics->GetRandom(this->mAnimal->GetMinRestInterval(), this->mAnimal->GetMaxRestInterval());
+        this->mFollowTime = gPhysics->GetRandom(this->mAnimal->GetMinRestInterval(), this->mAnimal->GetMaxRestInterval()) + inTime;
         this->mState = 0;
     }
     return 1000;

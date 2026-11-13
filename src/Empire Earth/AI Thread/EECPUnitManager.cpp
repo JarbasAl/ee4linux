@@ -176,18 +176,20 @@ bool EECPUnitManager::CancelRequest(long inUnitClass, unsigned long inCount, lon
         if (theLeft == 0)
             goto done;
         std::deque<EECPUMRequest>& theRequests = this->mRequests[i];
-        for (it = theRequests.begin(); it != theRequests.end() && theLeft != 0; ++it) {
+        for (it = theRequests.begin(); it != theRequests.end() && theLeft != 0;) {
             if ((*it).mUnitClass == inUnitClass && (*it).mContinent == inContinent && (*it).mTownID == inTownID) {
-                if (inCount < (*it).mCount) {
-                    (*it).mCount -= inCount;
-                    theLeft -= inCount;
-                    this->mNumInProduction -= inCount;
+                if (theLeft < (*it).mCount) {   // only the count still left (was inCount)
+                    (*it).mCount -= theLeft;
+                    this->mNumInProduction -= theLeft;
+                    theLeft = 0;
                 } else {
                     theLeft -= (*it).mCount;
                     this->mNumInProduction -= (*it).mCount;
-                    theRequests.erase(it, it + 1);
+                    it = theRequests.erase(it, it + 1);   // continue at the next request
+                    continue;
                 }
             }
+            ++it;
         }
     }
     if (theLeft != 0) {
@@ -277,7 +279,8 @@ void EECPUnitManager::BalanceProduction(EEComplexUnit* inUnit)
             theTechnologies.push_back(theTechnology);
         }
     }
-    unsigned long theShare = theTechnologies.size() / theClassUnits->size();
+    // shared among the same-continent buildings that receive a share (not all buildings of the class)
+    unsigned long theShare = theUnits.empty() ? 0 : theTechnologies.size() / theUnits.size();
     for (theUnit = theUnits.begin(); theUnit != theUnits.end(); theUnit++) {
         for (unsigned long k = theShare; k > 0; k--) {
             long theTechnology = theTechnologies.back();
@@ -724,11 +727,11 @@ void EECPUnitManager::RequestUnits(long inUnitClass, long inCount, long inTownID
 }
 
 // FUNCTION: EXE 0x494c80
-// Releases every tracked unit and clears the waiting counts, but only the requests of the first 7 epochs
+// Releases every tracked unit and clears the waiting counts and every epoch's requests
 void EECPUnitManager::Reset()
 {
     this->ReleaseUnits();
-    for (long i = 0; i < 7; i++)
+    for (long i = 0; i < 15; i++)   // every epoch's requests (was the first 7)
         this->mRequests[i].clear();
     this->mWaitingCounts.clear();
 }

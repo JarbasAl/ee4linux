@@ -725,8 +725,7 @@ bool EECPAttackSubGroupUnit::Retarget()
     return this->GetTarget() != NULL;
 }
 
-// The unit class's slot +0x40 is called with mUnit here; the first loop's distance test reads the last distance,
-// not the best (as in the original, bytes 0x4646b5).
+// The unit class's slot +0x40 is called with mUnit here.
 // FUNCTION: EXE 0x4645ba
 // Moves the unit away from danger: out of a nearby calamity area or from contagious targets, back towards
 // the sub group's centre, else lets the unit class flee and runs from the nearest target
@@ -752,7 +751,7 @@ void EECPAttackSubGroupUnit::Flee()
                     theNearestUnit = *theIt;
                 }
             }
-            if (theBest != 0.0f && theDistance <= 256.0f && theNearestUnit != NULL
+            if (theBest != 0.0f && theBest <= 256.0f && theNearestUnit != NULL   // the nearest one (was the last distance)
                 && gContinentManager.GetContinentAt(theNearestUnit) == gContinentManager.GetContinentAt(this->mUnit)
                 && EEGetAreaEffectBounds(3, theNearestUnit, &theBounds)) {
                 EEFOLocationScreenEnsureContinentAndPathOverlay theScreen;
@@ -813,11 +812,10 @@ void EECPAttackSubGroupUnit::Flee()
             theTo.mY = UMCos(1.5707964f - theHeading) * 2.0f + theFrom.GetY();
             if (this->mUnit->FindFleePoint(&theTo, &theFrom, 12, -18.0f, 18.0f, 3.0f, 8.0f, &theScreen)) {
                 EEUGLocation* theGoal = new EEUGLocation(&theFrom, true, true, false, 0.0f, false, false);
-                if (!this->mSubGroup->GiveGoal(this->mUnit, theGoal, 0, kActionPrepareToMove)) {
-                    if (theGoal != NULL)
-                        delete theGoal;
-                    return;
-                }
+                if (this->mSubGroup->GiveGoal(this->mUnit, theGoal, 0, kActionPrepareToMove))
+                    return;   // success ends the flee, as the other two steps (was: return on failure)
+                if (theGoal != NULL)
+                    delete theGoal;
             }
         }
     }
@@ -873,7 +871,7 @@ long EECPAttackSubGroupUnit::GetTargetWeight(EECPASTargetUnit* inTarget)
     EEUnitClassUpgrade* theTargetStats = theTarget->mStats;
     float theRangeSquared = theRange * theRange;
     long theKind = 2;
-    float theToHit = gToHitTable.GetAttackFactor(this->mUnit->mUnitClass->mAmmoType, this->mUnit->mUnitClass, this->mUnit->mPlayer->mPlayerID,
+    float theToHit = gToHitTable.GetAttackFactor(this->mUnit->mUnitClass->mAmmoType, theTarget->mUnitClass, this->mUnit->mPlayer->mPlayerID,   // the target's class, as GetToHit (was this unit's)
                                           theTarget->mPlayer->mPlayerID);
     long theX = theTarget->mTileX;
     long theY = theTarget->mTileY;
@@ -1021,12 +1019,13 @@ void EECPAttackSubGroupUnit::SetState(long inState, unsigned long inTime)
         this->Flee();
         break;
     case kASGUStateChooseAction:
-        this->ReleaseTarget();
+        // the target is tested before it is released (was after: always NULL)
         if (this->mTargetPickResult == -1 && (this->mTarget == NULL || this->mTarget->mHitPoints <= 0)) {
             this->mTargetPickResult = 0;
             this->mPostAttackMode = 1;
         } else
             this->mPostAttackMode = 2;
+        this->ReleaseTarget();
         break;
     }
 }

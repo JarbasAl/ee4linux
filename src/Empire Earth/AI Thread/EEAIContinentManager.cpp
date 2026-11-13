@@ -1230,7 +1230,8 @@ void EEAIContinentManager::CreateScenarioAreas(EEMap* inMap)
         this->mRectangleAreas[i] = NULL;
     for (i = theManager->mAreas.size() - 1; i >= 0; i--) {
         EEAIRectangleArea* theArea = NULL;
-        if (!theManager->mAreas[i] ||
+        // the areas the count above admitted: unset areas too are skipped (they got no slot)
+        if (!theManager->mAreas[i] || theManager->mAreas[i]->IsUnset() ||
             !(theManager->mAreas[i]->GetRect().GetHeight() > 0.0f) ||
             !(theManager->mAreas[i]->GetRect().GetWidth() > 0.0f))
             continue;
@@ -1851,12 +1852,12 @@ bool EEAIContinentManager::AreConnected(EEAIContinent* inFirst, EEAIContinent* i
                 if (inFlags & 2)
                     theResult = inFirst->mCounts[kAIChainLandWaterCliff] != 0 && inFirst->mCounts[kAIChainLandWaterCliff] == inSecond->mCounts[kAIChainLandWaterCliff];
                 else if (inFlags & 8)
-                    theResult = inFirst->mCounts[kAIChainLandWaterSpace] != 0 && inFirst->mCounts[kAIChainLandWaterSpace] == inSecond->mCounts[kAIChainLandWaterSpace];
+                    theResult = inFirst->mCounts[kAIChainLandCliffSpace] != 0 && inFirst->mCounts[kAIChainLandCliffSpace] == inSecond->mCounts[kAIChainLandCliffSpace];   // cliff + space (was the water + space chain)
                 else
                     theResult = inFirst->mCounts[kAIChainLandCliff] != 0 && inFirst->mCounts[kAIChainLandCliff] == inSecond->mCounts[kAIChainLandCliff];
             } else if (inFlags & 2) {
                 if (inFlags & 8)
-                    theResult = inFirst->mCounts[kAIChainLandCliffSpace] != 0 && inFirst->mCounts[kAIChainLandCliffSpace] == inSecond->mCounts[kAIChainLandCliffSpace];
+                    theResult = inFirst->mCounts[kAIChainLandWaterSpace] != 0 && inFirst->mCounts[kAIChainLandWaterSpace] == inSecond->mCounts[kAIChainLandWaterSpace];   // water + space (was the cliff + space chain)
                 else
                     theResult = inFirst->mCounts[kAIChainLandWater] != 0 && inFirst->mCounts[kAIChainLandWater] == inSecond->mCounts[kAIChainLandWater];
             } else if (inFlags & 8)
@@ -2344,7 +2345,7 @@ void EEAIContinentManager::RepairPathArea(const U2DPoint<long>& inTile)
                         theNeighbours[i].second->GetContinentID() != theArea->GetContinentID())
                         continue;
                     if (theKind == kAITileUnitObstacle)
-                        theOK = theArea->mUnitID == EEAIGetTileWallID(inTile);
+                        theOK = theNeighbours[i].second->mUnitID == EEAIGetTileWallID(inTile);   // the neighbour's wall (was the old area's)
                     if (!theOK)
                         continue;
                     // a diagonal neighbour joins only through two same-kind orthogonal steps

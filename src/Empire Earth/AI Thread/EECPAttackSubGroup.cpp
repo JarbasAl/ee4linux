@@ -475,7 +475,7 @@ void EECPAttackSubGroup::MoveToNearestTown()
                     continue;
                 theTownTile.mX = 0;
                 theTownTile.mY = 0;
-                theTown = this->mPlayer->GetNearestTown(theTile, theTownTile);
+                theTown = this->mPlayer->mAllies[i]->GetNearestTown(theTile, theTownTile);   // the ally's (was mPlayer's)
                 if (theTown && !theTown->Contains(theTile))
                     theTowns.insert(std::make_pair(theTile.DistanceToSquared(theTownTile),
                                                                             theTown));
@@ -828,14 +828,15 @@ void EECPAttackSubGroup::UpdateAreaEffect()
 }
 
 // FUNCTION: EXE 0x45c925
-// Rebuilds the move mask from the units' terrain flags and stamps the player ID; the mask is ANDed with itself, so
-// the last unit read (index 0) decides it
+// Rebuilds the move mask from the units' terrain flags (the intersection over all units) and stamps
+// the player ID
 void EECPAttackSubGroup::BuildMoveMask()
 {
     memset(this->mFlags.mFlags, 1, sizeof(this->mFlags.mFlags));
+    EECPASGFlags theUnitFlags;   // each unit's flags, ANDed into the mask (was written straight into it)
     for (long i = this->mUnits.size() - 1; i >= 0; i--) {
-        this->mUnits[i]->GetUnit()->mUnitClass->GetTerrainFlags(this->mUnits[i]->GetUnit(), this->mFlags);
-        this->mFlags.And(this->mFlags);
+        this->mUnits[i]->GetUnit()->mUnitClass->GetTerrainFlags(this->mUnits[i]->GetUnit(), theUnitFlags);
+        this->mFlags.And(theUnitFlags);
     }
     this->mFlags.mPlayerID = this->mPlayer->GetPlayerID();
 }
@@ -1248,7 +1249,7 @@ void EECPAttackSubGroup::PlaceFormation(const EECPILocation& inLocation)
 
 // FUNCTION: EXE 0x45d92f
 // Moves every unit the personnel request delivered into the sub-group, regroups, releases the request and refreshes;
-// returns RegroupHere's result (the largest scan range found is never stored)
+// keeps the largest scan range; returns RegroupHere's result
 bool EECPAttackSubGroup::TakeRequestedUnits()
 {
     EEPlayer* thePlayer = this->mGroup->mTask.mPlayer;
@@ -1267,6 +1268,7 @@ bool EECPAttackSubGroup::TakeRequestedUnits()
         theSubGroupUnit->Virtual48();
         this->mUnits.push_back(theSubGroupUnit);
     }
+    this->mScanRange = (long)theMax;   // the largest scan range found (was never stored)
     this->RankUnits();
     bool theResult = this->RegroupHere();
     this->mGroup->mCommander->mPersonnel->ReleaseRequest(this->mRequest->mID);
@@ -1355,11 +1357,11 @@ void EECPAttackSubGroup::PickSplitUnits(std::vector<EEComplexUnit*>& outUnits)
     if (this->mSplitKind == 4) {
         float theFraction;
         if (gPhysics->GetRandom() < 0.65f) {
-            theFraction = (float)(gPhysics->GetRandom(3L, 7L) / 10);
+            theFraction = gPhysics->GetRandom(3L, 7L) / 10.0f;   // 0.3..0.7 (was an integer division: 0)
             if (theFraction * this->mUnits.size() <= 0.0f)
                 theFraction = 0.5f;
         } else {
-            theFraction = (float)(gPhysics->GetRandom(3L, 7L) / 10);
+            theFraction = gPhysics->GetRandom(3L, 7L) / 10.0f;   // 0.3..0.7 (was an integer division: 0)
         }
         this->PickByUpgrade(theSelected, theReverse, theFraction);
         theCount = theSelected.size();

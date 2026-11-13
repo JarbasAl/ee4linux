@@ -988,13 +988,7 @@ void EEComplexUnit::CopyFrom(RTSUnit* inUnit)
     this->mCurrentPhysicsAction = theOther->mCurrentPhysicsAction;
     this->mCurrentPhysicsOrder = theOther->mCurrentPhysicsOrder;
     this->mGrowth = theOther->GetGrowth();
-    // the original stores the member function's address test (mov eax, offset GetB34F; test; setne): the call's
-    // parentheses are missing in the original source, so the flag is always true
-#ifdef EE_PORT
-    this->mB34F = true;
-#else
-    this->mB34F = theOther->GetB34F;
-#endif
+    this->mB34F = theOther->GetB34F();   // the call (was the member function's address: always true)
     this->mIsRegrowing = theOther->mIsRegrowing;
     this->mCalamityFlags = theOther->mCalamityFlags;
     this->mNumAreaEffects = 0;
@@ -1380,8 +1374,8 @@ bool EEComplexUnit::UpdateHidden()
                     this->mHiddenFlags |= kHiddenFlagHidden;
                     this->mHiddenFlags ^= (this->mHiddenFlags ^ thePhase) & kHiddenFlagPhaseMask;
                     for (EEComplexUnit* theChild = this->mNextPart; theChild != NULL; theChild = theChild->mNextPart) {
-                        this->mHiddenFlags |= kHiddenFlagHidden;
-                        this->mHiddenFlags ^= (this->mHiddenFlags ^ thePhase) & kHiddenFlagPhaseMask;
+                        theChild->mHiddenFlags |= kHiddenFlagHidden;
+                        theChild->mHiddenFlags ^= (theChild->mHiddenFlags ^ thePhase) & kHiddenFlagPhaseMask;
                     }
                     theIndex = -1;
                     break;
@@ -2999,11 +2993,12 @@ void EEComplexUnit::ReplaceUnits(const std::vector<EEPUnitSwap>& inReplacements)
             theTarget = theTargets[theIndex];
             for (std::vector<EEPUnitSwap>::const_iterator thePair =
                 inReplacements.begin(); thePair != inReplacements.end(); ++thePair) {
-                if (thePair->mOld == theTarget)
-                    this->AddBuildTarget(thePair->mNew);
-                else
-                    this->AddBuildTarget(theTarget);
+                if (thePair->mOld == theTarget) {
+                    theTarget = thePair->mNew;
+                    break;
+                }
             }
+            this->AddBuildTarget(theTarget);
         }
     }
 }
@@ -3455,7 +3450,7 @@ void EEComplexUnit::RemoveWaypointMarker(long inX, long inY)
 
 // FUNCTION: EXE 0x5fdc58
 // Starts the next build-queue entry the built building can produce (a citizen may come out female), dropping and
-// refunding unavailable entries; the last one dropped when the queue empties is not refunded
+// refunding unavailable entries
 void EEComplexUnit::StartProduction()
 {
     float theTimeScale = 1.0f;
@@ -3503,12 +3498,13 @@ void EEComplexUnit::StartProduction()
             return;
         }
         while (!theNode->GetIsAvailable()) {
+            // every dropped entry is refunded, the last one too
             this->mBuildQueue.erase(this->mBuildQueue.begin());
-            if (this->mBuildQueue.empty())
-                break;
             if (theNode->mData->mUnitClass <= 0)
                 gUserInterface->UpdateJITManufacturing();
             this->GetPlayer()->RefundTechnology(theNode, this->GetUnitClass()->GetUnitType(), 1.0f);
+            if (this->mBuildQueue.empty())
+                break;
             theNode = this->GetPlayer()->GetTechTree()->Get(this->mBuildQueue.front().mTechnology);
         }
         if (this->mBuildQueue.empty())
