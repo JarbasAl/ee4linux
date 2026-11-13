@@ -83,6 +83,10 @@ TARGETS = {
         "cxx": TOOLCHAIN / "llvm-mingw" / "bin" / "i686-w64-mingw32-clang++",
         "flags": ["-O1", "-march=i686", "-mfpmath=387", "-fasm-blocks", "-fms-extensions", "-fdelayed-template-parsing",
                   "-fno-strict-aliasing", "-w", "-ferror-limit=0",
+                  # VC6 never used a member call to infer that a pointer is non-null. The game calls members that
+                  # ignore `this` through null pointers and tests the pointer afterwards (EEIsLineToUnitBlocked calls
+                  # theList->Scale, then tests theList), so the later null tests must stay
+                  "-fno-delete-null-pointer-checks",
                   # VC6 code passes &Temporary(...) as an argument; the temporary lives to the end of the full
                   # expression in both compilers, and no callee keeps the pointer
                   "-Wno-address-of-temporary"],
@@ -102,6 +106,7 @@ TARGETS = {
         "flags": ["-m32", "-fPIC", "-O1", "-march=i686", "-mfpmath=387", "-fasm-blocks", "-fdeclspec",
                   "-fdelayed-template-parsing", "-fno-strict-aliasing", "-w", "-ferror-limit=0",
                   "-Wno-address-of-temporary", "-DEE_PORT_LINUX",
+                  "-fno-delete-null-pointer-checks",   # see the mingw target
                   # the game creates DirectInput 7 (Input System.cpp); Wine's dinput.h defaults to 8
                   "-DDIRECTINPUT_VERSION=0x0700",
                   # Wine's headers define _WIN32, and SDL would then rename main() to SDL_main
@@ -135,6 +140,7 @@ TARGETS = {
                   "-DWINE_UNIX_LIB",
                   "-fdelayed-template-parsing", "-fno-strict-aliasing", "-w", "-ferror-limit=0",
                   "-Wno-address-of-temporary", "-DEE_PORT_LINUX", "-DEE_PORT_LINUX64", "-DEE_PORT_LONG32",
+                  "-fno-delete-null-pointer-checks",   # see the mingw target
                   "-DDIRECTINPUT_VERSION=0x0700",
                   "-DSDL_MAIN_HANDLED",
                   "-Wno-c++11-narrowing",
