@@ -65,5 +65,6 @@ cd build/port-linux/run && ./ee-aoc
 | [C++ runtime](cxx-runtime.md) | the dialect gaps, casts, callbacks, and the C library |
 | [testing](testing.md) | the test harness, every test, and the checks against other programs |
 | [simulator](simulator.md) | `ee-aoc --sim`: seeded computer games without a display, and their comparison |
+| [Age of AI](ageofai.md) | the port of Grille's AI mod, and the index of its hook sites in this tree |
 | [troubleshooting](troubleshooting.md) | the failures seen so far, and what each one means |
 | [limits](limits.md) | what the port does not do |
