@@ -179,7 +179,7 @@ void EEEffect2D::CreateParts(GE3DPoint& outPosition, float& outHeight, float inO
                 theFrame = 0;
                 theScale = theStats->GetScale();
             }
-            theList->Scale(theTransformation, theScale);
+            EETagPointList::Scale(theTransformation, theScale);
             for (unsigned long i = 0; i < theList->GetNumTagPoints(); i++) {
                 EEGraphicObject* theObject = this->GetGraphicObject();
                 theObject->LoadMedia();

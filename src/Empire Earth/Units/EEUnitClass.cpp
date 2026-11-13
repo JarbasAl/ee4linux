@@ -5,6 +5,7 @@
 // Range 0x22f272..0x23a5bf. Unit flags: the exe's module set.
 #include <windows.h>
 #include <stdio.h>
+#include <cstddef>
 #include "ee/EEUCUpgradeTable.h"
 #include "lle/LowLevelEngine.h"
 #include "lle/GE2DPoint.h"
@@ -442,6 +443,10 @@ EEUnitClass::EEUnitClass(long inIsComplex, EEUnitClassRecord* inRecord, long inA
     this->mAreaEffectTemplates[1] = inRecord->mAreaEffectTemplate1;
     this->mAreaEffectTemplates[2] = inRecord->mAreaEffectTemplate2;
     this->mAreaEffectTemplates[3] = inRecord->mAreaEffectTemplate3;
+    // (the two layouts must agree on every target: the entries and the maximum level at the same offsets)
+    static_assert(offsetof(EEUnitClassImprovementTable, mEntries) == offsetof(EEUCUpgradeTable, mFactors)
+        && offsetof(EEUnitClassImprovementTable, mMaxLevel) == offsetof(EEUCUpgradeTable, mMaxLevel)
+        && sizeof(EEUnitClassImprovementEntry) == sizeof(EEUCUpgradeFactor), "improvement table layout");
     EEUnitClassImprovementTable* theTable = reinterpret_cast<EEUnitClassImprovementTable*>(EEUCUpgradeTable::sTable[inRecord->mUpgradeTableIndex]);
     if (theTable != NULL)
         this->mImprovements = theTable;
@@ -2307,7 +2312,7 @@ void EEUnitClass::CreateRipples(EEComplexUnit* inUnit)
         !EEIsSeenBy(inUnit, ::gWorld.GetCurrentPlayer(), true))
         return;
     theModel = inUnit->mPhysicalModel.GetLocation();
-    theTags->Scale(theModel, inUnit->mPhysicalModel.GetScale());
+    EETagPointList::Scale(theModel, inUnit->mPhysicalModel.GetScale());
     for (unsigned long i = 0; i < theTags->mPoints.size(); i++) {
         unsigned long theFrame = inUnit->mPhysicalModel.GetFrame();
         theTags->GetTagPoint(i)->GetPoint(theFrame, theModel, theLocation);

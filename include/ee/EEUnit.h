@@ -1127,9 +1127,13 @@ struct EEUnitClassImprovementEntry {
     float mStepFactor;
 };
 
+// It is EEUCUpgradeTable read through another type (EEUnitClass::EEUnitClass reinterpret_casts it), so its first member
+// stands for that class's vtable pointer and is pointer-sized. Where long has 4 bytes and a pointer 8 (the linux64
+// build), a long here put every entry 4 bytes off, and the maximum level read a step factor, 0: no improvement could be
+// bought. mMaxLevel is long, as EEUCUpgradeTable's is.
 struct EEUnitClassImprovementTable {
     long GetMaxLevel() const { return this->mMaxLevel; }  // (provisional name; inline-budget evidence: 0x563c6d)
-    long mU00;                              // +0x00
+    void* mU00;                             // +0x00 (EEUCUpgradeTable's vtable pointer)
     EEUnitClassImprovementEntry mEntries[16];   // +0x04
     long mMaxLevel;                         // +0x84
 };
