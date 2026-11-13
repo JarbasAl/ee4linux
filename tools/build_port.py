@@ -13,6 +13,10 @@ its compile command differs from the one stored beside the object. The report
 gives, per module, the units in, the objects out and the units that failed with their first error; the full compiler
 output is in build/port-<target>/logs/<module>.log.
 
+--sanitize CHECKS builds a linux target with -fsanitize=CHECKS and links the runtime into every image, with recovery
+turned off so the first report stops the run and names the site. The output folder is build/port-<target>-<CHECKS>,
+so a sanitized build never mixes objects with the normal one.
+
 --link links the seven images (the exe, the engine DLL and the five plug-ins) into build/port-<target>/bin, the engine
 DLL first: the others link against its import library. For the linux target it links ELF files with the same names
 (LINUX_IMAGES), and the native executable is ee-aoc. An image's other imports come from the original's import list
@@ -349,6 +353,11 @@ LINUX_RUNTIME = {"sdl2-i686": ["libSDL2-2.0.so.0"],
                  "sdl2-x86_64": ["libSDL2-2.0.so.0"],
                  "ffmpeg-x86_64": ["libavformat.so.61", "libavcodec.so.61", "libswscale.so.8", "libswresample.so.5",
                                    "libavutil.so.59"]}
+# The sanitizer runtime the images link against, for --sanitize: clang leaves it out of a shared object's link, and
+# every image but the executable is one
+SANITIZE_RUNTIME = {"linux": "libclang_rt.ubsan_standalone-i686.a",
+                    "linux64": "libclang_rt.ubsan_standalone-x86_64.a"}
+SANITIZE_LIBS = []
 
 
 def link_linux_image(out, image, target="linux"):
@@ -376,8 +385,8 @@ def link_linux_image(out, image, target="linux"):
     # the archives need each other (WON's PNG decoder takes libpng from exeimg), and GNU ld reads an archive once
     grouped = ["-Wl,--start-group", *archives, "-Wl,--end-group"] if archives else []
     # every image casts the way MSVC does: src/Port/Linux/CxxAbi.cpp wraps the cast and states the rule
-    cmd = [str(cfg["cxx"]), cfg["flags"][0], f"@{rsp}", *grouped, "-o", str(bin_dir / name),
-           "-Wl,-rpath,$ORIGIN", "-Wl,--wrap=fopen", "-Wl,--wrap=__dynamic_cast"]
+    cmd = [str(cfg["cxx"]), *cfg["flags"], f"@{rsp}", *grouped, "-o", str(bin_dir / name),
+           "-Wl,-rpath,$ORIGIN", "-Wl,--wrap=fopen", "-Wl,--wrap=__dynamic_cast", *SANITIZE_LIBS]
     if image == "exe":
         cmd += ["-pie"]
     else:
@@ -428,14 +437,36 @@ def main():
     ap.add_argument("--target", default="mingw", choices=sorted(TARGETS))
     ap.add_argument("--out", type=pathlib.Path, help="output folder (default build/port-<target>)")
     ap.add_argument("--link", action="store_true", help="link the images after compiling every module")
+    ap.add_argument("--sanitize", metavar="CHECKS",
+                    help="compile and link the linux targets with -fsanitize=CHECKS (a comma list, e.g. "
+                         "pointer-overflow or undefined) and stop at the first report; the default output folder "
+                         "gets the first check's name")
     args = ap.parse_args()
+    if args.sanitize and args.target == "mingw":
+        sys.exit("--sanitize is for the linux targets: the mingw images run under Wine and are the reference")
+    if args.sanitize:
+        checks = [c.strip() for c in args.sanitize.split(",") if c.strip()]
+        # the report names the site and the run stops there, instead of a half-executed program carrying on
+        TARGETS[args.target]["flags"] += [f"-fsanitize={','.join(checks)}", f"-fno-sanitize-recover={','.join(checks)}",
+                                          "-fno-omit-frame-pointer"]
+        TARGETS[args.target]["libs"] += [f"-fsanitize={','.join(checks)}"]
+        # clang names the runtime itself for the executable only, so the shared images get it here, and each of them
+        # stays self-contained under -z defs
+        probe = subprocess.run([str(TARGETS[args.target]["cxx"]),
+                                f"-print-file-name={SANITIZE_RUNTIME[args.target]}"],
+                               capture_output=True, text=True).stdout.strip()
+        runtime = pathlib.Path(probe) if probe else None
+        if not runtime or not runtime.is_file():
+            sys.exit(f"--sanitize needs {SANITIZE_RUNTIME[args.target]}, which this compiler has not: {probe!r}")
+        SANITIZE_LIBS[:] = [str(runtime)]
     args.modules = args.modules or TARGETS[args.target].get("modules", list(MODULE_SRC))
     unknown = set(args.modules) - set(MODULES)
     if unknown:
         sys.exit(f"unknown module(s) {', '.join(sorted(unknown))}; known: {', '.join(MODULES)}")
     if not TARGETS[args.target]["cxx"].exists():
         sys.exit(f"{TARGETS[args.target]['cxx']} is missing: python3 -I tools/fetch_port_toolchain.py")
-    out = args.out or ROOT / "build" / f"port-{args.target}"
+    suffix = f"-{args.sanitize.split(',')[0]}" if args.sanitize else ""
+    out = args.out or ROOT / "build" / f"port-{args.target}{suffix}"
     jobs = [job for mod in args.modules for job in module_jobs(mod)]
     missing = [str(p) for _, p in jobs if not p.exists()]
     if missing:

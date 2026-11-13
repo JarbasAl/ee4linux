@@ -48,3 +48,38 @@ from any thread, because the state and the buffers are behind the layer's own lo
 SDL's text input gives the game its characters, as `WM_CHAR`, so a keyboard layout that produces text works as it does
 on Windows. `TranslateMessage` adds only the characters SDL does not give as text: Backspace, Tab, Enter and Escape,
 and Ctrl with a letter.
+
+## Scripted input
+
+`EE_PORT_INPUT_SCRIPT` names a file of timed events, which the thread that pumps hands to SDL's queue at the times
+the file states. The events travel the path above, so the layer and the game handle them as they handle a person's
+keys and clicks: one line holds a time in milliseconds from the first pump and one event.
+
+```
+# a quick save, then a quick load forty seconds later
+55000 key down F4
+55120 key up F4
+95000 key down Left Shift
+95100 key down F4
+95200 key up F4
+95300 key up Left Shift
+```
+
+A key is named as SDL names its scancode, which for the modifiers and the keypad is more than one word
+(`Left Shift`, `Keypad 4`). A button is `left`, `middle` or `right`, and a mouse line also carries the position:
+
+```
+1000 mouse move 512 384
+1500 mouse down left 512 384
+1560 mouse up left 512 384
+```
+
+A mouse line does not put the game's cursor at its position. While DirectInput holds the mouse, which it does in the
+menus and in a game, the game moves its cursor by the relative motion only. The script sends the difference from its
+own previous position, and `RTSMouse::Update` scales each step by the screen size, the sensitivity and the smallest
+step it has seen. In an offscreen run, the window also never gets the focus, so DirectInput gives up the mouse and
+drops the motion. Key lines work in both cases: the quick save and the quick load above reach the game.
+
+A line the parser cannot read is logged with its number and skipped, so one typo does not cancel the events that
+follow. The script's modifiers are also set as SDL's own modifier state, which is what the layer's `GetKeyState`
+answers from.

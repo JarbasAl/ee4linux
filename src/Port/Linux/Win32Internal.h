@@ -138,6 +138,10 @@ bool StartVideo();
 SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL);
 // The window of a native SDL window, or NULL
 HWND WindowOfNative(SDL_Window* inNative);
+// The SDL id of the window that takes an event now: the keyboard focus, else any window with a native one, else 0
+uint32_t FocusNativeID();
+// Feeds the events of EE_PORT_INPUT_SCRIPT that are due to SDL's queue, from the thread that pumps
+void FeedInputScript();
 // For BeginPaint: validates the window and says whether its background needs erasing; false for no window
 bool TakePaint(HWND inWindow, bool* outErase);
 // A cursor or icon from an ARGB8888 image, which the cursor then owns

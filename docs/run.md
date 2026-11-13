@@ -4,7 +4,7 @@ The native images run from a copy of the installed game. `tools/port_linux_folde
 game is never touched.
 
 ```
-python3 -I tools/port_linux_folder.py [--keep-mod] [--out DIR]
+python3 -I tools/port_linux_folder.py [--keep-mod] [--target linux|linux64] [--out DIR]
 ```
 
 What the tool does:
@@ -22,6 +22,8 @@ What the tool does:
 cd build/port-linux/run && ./ee-aoc
 EE_PORT_WINDOWED=1 ./ee-aoc        # the game's own window size instead of the desktop
 ```
+
+`--target linux64` builds the same folder from the 64-bit images, in `build/port-linux64/run` ([build](build.md)).
 
 ## The first start
 
@@ -45,6 +47,8 @@ retail game in one registry would.
 | `EE_GM_BANK` | the SoundFont for the General MIDI instruments instead of `general-midi.sf2` beside the executable |
 | `EE_DMUSIC_LOG` | `warn`, `info` or `debug`: how much of dmusic's log to print |
 | `EE_PORT_NO_MESSAGE_BOXES` | any value: a message box answers OK at once, and only its text goes to the log |
+| `EE_PORT_INPUT_SCRIPT` | a file of timed key and mouse events to feed the game, for a run without a person at the keyboard ([testing](testing.md)) |
+| `SDL_VIDEODRIVER` | the SDL video driver. `offscreen` runs the game with no window. |
 | `SDL_AUDIODRIVER` | the SDL audio driver. `dummy` runs the game without sound. |
 | `WINEPREFIX` | the prefix the settings are imported from. Default `~/.wine`. |
 | `XDG_DATA_HOME` | where the font search looks for `fonts/` before `~/.fonts` |
@@ -69,5 +73,6 @@ The layer writes one line per notable event to standard error, prefixed `ee-port
 | `font "Arial" is drawn with Liberation Sans` | a face resolved to a stand-in ([GDI](gdi-and-fonts.md)) |
 | `CreateMutexA("…"): named mutexes are not shared between processes here` | expected: the layer has no cross-process objects, so the game's single-instance check cannot stop a second copy |
 | `… is not supported; the call does nothing` | the game called something outside the layer's scope; printed once per call site ([limits](limits.md)) |
+| `input script: N events from …` | the script read at the first pump; `(some lines were skipped)` follows a line the parser refused, and each refusal is logged with its line number |
 
 The game's own lines (`::EESetVideoMode: …`, `CMUCreateTrees: …`) come from the reconstruction's debug output.

@@ -51,13 +51,56 @@ are needed, and the expected pixels do not depend on the machine.
 The font check needs the fonts it measures; the Miles check needs the installed game's music; the movie intro check
 needs `media/Movies` and reports that it did not run when the file is absent.
 
+## Playing the whole game without a display
+
+A build can run with no window and no sound and be driven by a script of timed events ([input](input.md)), which is
+how a run of the whole game is checked on a machine with neither:
+
+```
+cd build/port-linux64/run
+env -u DISPLAY -u WAYLAND_DISPLAY SDL_VIDEODRIVER=offscreen SDL_AUDIODRIVER=dummy \
+    EE_PORT_INPUT_SCRIPT=/path/to/script.txt ./ee-aoc -loadgame '"TEST.ees"'
+```
+
+The quotes are part of the last argument, because the game's command-line parser asks `-loadgame` for a quoted name.
+The game starts, loads that scenario, and prints `Game loaded. Game state checksum: …` when the world is in place.
+
+The round trip to look for is a save and the load of that save. The script presses F4 for the quick save, which writes
+`Data/Saved Games/QuickSave ….ees`, and Shift+F4 for the quick load, which prints `Game loaded` a second time with the
+restored state's checksum. Both events go through the layer's key path, so a hot key that fires is the layer's key
+handling, the engine's modifier state and the game's hot-key table agreeing.
+
+The message after a load can say `wrong checksum` and still be right. The save keeps the world's checksum from the
+moment it was written, and the game compares it with the loaded world. Each player's part is its id, its unit count
+and its next unit id. The save writes a path point as its type alone and the load skips it, so a player with path
+points comes back with fewer units, by exactly that number. A verbose checksum (`EEPChecksum(true)` in
+`BuildSaveGameChunks`) names each entry that differs: when only the `RTSPlayer` entries differ, by each player's path
+points, every other part of the checksum agrees.
+
+`-update_saved_games` is not a route to this: it converts the saved games before a game exists, and the code that
+mutes the sound for the conversion reads the world's map, which is still null at that point.
+
+## Sanitizer runs
+
+`--sanitize` builds a target with the sanitizer's checks on and recovery off, in a folder of its own, so the first
+report stops the game where the fault is ([build](build.md)). `pointer-overflow` reports two faults: an offset added
+to a null pointer, and a sum that wraps around the address space. It stops the game, for example, at a memory file
+that moves its null position by the address of its first buffer.
+
+It does not report the fault that a 32-bit `long` brings to x86-64: a pointer plus an unsigned 32-bit step back. A
+step back of 2 is the unsigned value 4294967294, so the pointer moves 4 GiB forward and stays inside the address
+space. The game then stops with SIGSEGV where it reads through that pointer, as it did in `EEGetScriptToken`.
+
+```
+python3 -I tools/build_port.py --target linux64 --link --sanitize pointer-overflow
+```
+
 ## What the tests do not cover
 
 - A real window, a real GPU and a real sound device. The display tests are software-rendered and headless, and the
   sound tests mix in memory.
 - Frame timing and the pointer's flicker, which need a display.
-- The game itself. The tests call the layer; the game played through it is the other evidence
-  ([troubleshooting](troubleshooting.md) lists what was checked on a real desktop).
+- The game's frames. A scripted run proves that the game loads, saves and reads its input; nothing compares a frame.
 - The NVIDIA driver. Every pixel check so far ran on Mesa.
 
 ## Adding a test

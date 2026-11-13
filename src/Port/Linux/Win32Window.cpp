@@ -415,6 +415,7 @@ void Pump()
     std::lock_guard<std::recursive_mutex> theLock(gSdlLock);
     if (!gVideoStarted)
         return;
+    eeport::FeedInputScript();
     SDL_Event theEvent;
     while (SDL_PollEvent(&theEvent))
         Translate(theEvent);
@@ -571,6 +572,22 @@ SDL_Window* NativeWindow(HWND inWindow, bool inOpenGL)
 HWND WindowOfNative(SDL_Window* inNative)
 {
     return inNative ? (HWND)SDL_GetWindowData(inNative, "hwnd") : NULL;
+}
+
+uint32_t FocusNativeID()
+{
+    Window* theWindow = WindowOf(gFocus);
+    if (!theWindow || theWindow == &gDesktop || !theWindow->mNative) {
+        theWindow = nullptr;
+        std::lock_guard<std::recursive_mutex> theGuard(gWindowsLock);
+        for (Window* theEach : gWindows) {
+            if (theEach->mNative) {
+                theWindow = theEach;
+                break;
+            }
+        }
+    }
+    return theWindow && theWindow->mNative ? SDL_GetWindowID(theWindow->mNative) : 0;
 }
 
 bool TakePaint(HWND inWindow, bool* outErase)

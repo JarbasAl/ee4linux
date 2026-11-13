@@ -12,6 +12,15 @@ python3 -I tools/build_port.py --target linux -j 8       # more compilers at onc
 
 `--link` needs every module of the target compiled, so it takes no module names.
 
+`--sanitize CHECKS` compiles and links a Linux target with `-fsanitize=CHECKS`, a comma-separated list such as
+`pointer-overflow` or `undefined`. Recovery is off (`-fno-sanitize-recover`), so the first report stops the image where
+the fault is. The objects go to a folder of their own, `build/port-<target>-<first check>`, so a sanitized build never
+mixes with the normal one. The `mingw` target refuses the option: its images are the reference that runs under Wine.
+
+```
+python3 -I tools/build_port.py --target linux64 --link --sanitize pointer-overflow
+```
+
 ## The toolchain
 
 `tools/fetch_port_toolchain.py` puts the toolchain in `toolchain/`, which git ignores. It refuses an archive whose
@@ -58,20 +67,36 @@ Three units exist only in the port build:
 
 ## The x86-64 target
 
-`--target linux64` builds the layer for x86-64: `libeeport.so` only, so far. The game's own units are still 32-bit:
-the reconstruction's structures carry 32-bit pointers and `long` fields, and the source needs a `long` that stays 32
-bits wide before those units can compile for x86-64 ([limits](limits.md)).
+`--target linux64` builds the whole game for x86-64: the same seven images as the native target. The game's units
+compile from a copy of `src/` in which `long` is 32 bits wide, as it is on Windows (the build writes it under `long32/`
+and the compiler sees that copy). A `long` field therefore keeps the retail's width, and every record that the game
+writes to a file, a network message or an index keeps its size and its offsets.
+
+Each of those records carries the size and the offsets its layout comment states, as a `static_assert` beside the
+comment. The x86-64 build compiles those checks against the retail widths, so a changed field fails the build instead
+of the game.
 
 The 64-bit target uses its own SDL2 and FFmpeg, built from the same pins as the 32-bit ones into
 `toolchain/sdl2-x86_64` and `toolchain/ffmpeg-x86_64`. Arch's own SDL2 package is sdl2-compat, a shim over SDL3, and
 the layer wants the same SDL2 on both targets.
+
+The images are not the retail files' bytes. x86-64 has no x87 mode so the arithmetic is SSE2, pointers are 64 bits
+wide, and only the Windows images carry the compensation block that matches the retail files' checksums. The 32-bit
+native and Windows images stay the byte-for-byte reference: a change that leaves `ee-aoc` and `Low-Level Engine.dll`
+identical on `--target linux` changes nothing the game executes.
 
 Wine's headers give Win32 functions the Windows x64 calling convention (`ms_abi`) on that target, so the arguments of
 a Win32 function are not Linux's: `CallCallback` passes the game's callbacks the Windows way, and a function pointer
 cast across the two conventions crashes at the first call ([C++ runtime](cxx-runtime.md)).
 
 ```
-python3 -I tools/build_port.py --target linux64 --link      # libeeport.so in build/port-linux64/bin
+python3 -I tools/build_port.py --target linux64 --link      # the seven images in build/port-linux64/bin
+```
+
+The run folder is the same copy of the installation with the 64-bit images over it:
+
+```
+python3 -I tools/port_linux_folder.py --target linux64      # build/port-linux64/run
 ```
 
 ## The images

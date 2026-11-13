@@ -63,9 +63,9 @@ nothing to leave out, and a function that cannot mean what it means on Windows i
 
 | Missing | Why |
 | --- | --- |
-| a 64-bit game | the layer builds for x86-64 (`--target linux64`), the game's own units do not yet: the source carries the retail's 32-bit pointers and `long` fields, fixed offsets and inline assembly. |
 | a Windows build of the layer | the Windows images use the real Windows and the retail DirectX |
 | the original's image checksums | only the Windows images carry the compensation block that matches the retail files' checksums |
+| retail-equal bytes on x86-64 | the record layouts are the retail's and the files the game writes are the ones it reads back, but pointer width, the SSE2 arithmetic and the register allocation differ, so the 64-bit images are compared by behaviour, never by bytes ([testing](testing.md)) |
 
 ## Things that look missing but are not
 

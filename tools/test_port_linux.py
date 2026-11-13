@@ -20,6 +20,7 @@ import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_port as bp
+import long32
 
 TESTS = bp.ROOT / "tests" / "port" / "linux"
 TARGET = "linux"
@@ -41,15 +42,22 @@ MUSIC = pathlib.Path(os.environ.get("EE_MUSIC", SOUNDS.parent / "Music"))
 GM_BANK = pathlib.Path(os.environ.get("EE_GM_BANK", bp.ROOT / "toolchain" / "soundfonts" / "GeneralUser-GS.sf2"))
 
 
+def long32_copy(target):
+    """The copy of the game's source with a 32-bit long that build_port.py compiles a long32 target from."""
+    return bp.ROOT / "build" / f"port-{target}" / "long32"
+
+
 def layer_objects():
     return sorted(str(o) for folder in object_dirs(TARGET) for o in folder.rglob("*.o"))
 
 
 def build(source, binary, layer):
     cfg = bp.TARGETS[TARGET]
+    # the game's headers as the layer was compiled against them: on a long32 target, Miles' and Bink's S32 is 32 bits
+    includes = [long32.shadow(long32_copy(TARGET), d) for d in bp.INCLUDES] if cfg.get("long32") else bp.INCLUDES
     cmd = [str(cfg["cxx"]), *[f for f in cfg["flags"] if f != "-w"], *cfg["cxxflags"],
            *bp.unit_defines(source, "win32"), "-include", str(bp.COMPAT),
-           *(f"-I{d}" for d in cfg["includes"]), *(f"-I{d}" for d in bp.INCLUDES),
+           *(f"-I{d}" for d in cfg["includes"]), *(f"-I{d}" for d in includes),
            *(f"-isystem{d}" for d in cfg["system_includes"]), str(source), *layer, *cfg["libs"],
            # the cast rule the game is linked with: src/Port/Linux/CxxAbi.cpp
            "-Wl,--wrap=__dynamic_cast", "-o", str(binary)]
@@ -440,6 +448,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--target", default="linux", choices=sorted(bp.TARGETS), help="which build's objects to test")
     TARGET = ap.parse_args().target
+    if bp.TARGETS[TARGET].get("long32"):
+        seen, written = long32.sync(long32_copy(TARGET))
+        print(f"long32: {seen} files in, {written} written")
     layer = layer_objects()
     if not layer:
         sys.exit(f"no objects in {object_dirs(TARGET)[0]}: run python3 -I tools/build_port.py --target {TARGET} win32 "
