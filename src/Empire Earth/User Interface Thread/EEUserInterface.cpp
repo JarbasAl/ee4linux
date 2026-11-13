@@ -145,6 +145,7 @@ RTSRenderObject* gU56534C;                  // 0x56534c (the UI's render object;
 extern UString gUserInterfaceThreadName;   // 0x52a220 (Empire Earth.cpp)
 void EEStopAllSounds();                     // 0x140ceb (Empire Earth.cpp)
 #include "ee/EEStringIDs.h"
+#include "platform/PlatSim.h"
 // one queued thread message (Run collects them under the queue lock, then handles them; 12 bytes)
 struct EEUIThreadMessage {
     unsigned long mMessage;
@@ -728,7 +729,9 @@ long EEUserInterface::Run(void* inParameter)
             gWorld.mCameraControl.Update((theTime - sLastTime) * 0.001f);
             sLastTime = theTime;
         }
-        Sleep(1);
+        // the headless simulation (platform/PlatSim.h): while its game runs, the interface, whose update takes the
+        // world's read lock, is updated 50 times a second instead of every millisecond
+        Sleep(gPlatSimRun ? 20 : 1);
     }
     return 0;
 }

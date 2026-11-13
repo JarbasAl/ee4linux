@@ -66,6 +66,7 @@
 #include "ee/EEGraphics.h"
 #include "ee/EEComputerPlayer.h"
 #include "ee/EECPCombatManager.h"
+#include "platform/PlatSim.h"
 
 // chain at 0x53e967 (wrapper)
 UString gU530BE0("B7B226DDB7B226DDBCD9344624C93DE6C4A90DD4B7B20375");
@@ -1915,6 +1916,9 @@ UResourceFile* gResource;
 // Runs the game: single-instance check, start-up, splash and intro, the user interface loop, then shutdown;
 // returns 1 when the original Empire Earth install is missing, else 0
 // (the previous instance and show command arguments are unused)
+void EESimPreferences();   // the headless simulation (src/Port/EESim.cpp)
+void EESimStart();
+
 int WINAPI WinMain(HINSTANCE inInstance, HINSTANCE inPreviousInstance, LPSTR inCommandLine, int inShowCommand)
 {
     long theResult;
@@ -1924,7 +1928,7 @@ int WINAPI WinMain(HINSTANCE inInstance, HINSTANCE inPreviousInstance, LPSTR inC
     bool theShowMovies;
     FSFileSpec theResourceFile;
     FSFileSpec theLogFile;
-    if (EECreateInstanceMutex()) {
+    if (gPlatSimMode || EECreateInstanceMutex()) {   // any number of simulations at once
         sCallWndProcHook = SetWindowsHookExA(WH_CALLWNDPROC, EECallWndProcHook, NULL, 0);
         theHResult = CoInitialize(NULL);
 
@@ -1948,6 +1952,8 @@ int WINAPI WinMain(HINSTANCE inInstance, HINSTANCE inPreviousInstance, LPSTR inC
             theResult = gGamePreferences.Load();
 
             ESVERIFY_AT(theResult == keseOK, 3637);
+            if (gPlatSimMode)
+                EESimPreferences();
             const UString& theOriginal = gGamePreferences.mSettings.mOriginalInstalledFromDirectory;
             if (theOriginal == "") {
                 UWideString theErrorMessage;
@@ -1963,12 +1969,16 @@ int WINAPI WinMain(HINSTANCE inInstance, HINSTANCE inPreviousInstance, LPSTR inC
             EEShowSinglePlayerScreen();
             // the original tests the constant 1 here (push 1; pop eax; test eax,eax; je, no-/Og)
             if (1) {
-                theSplashScreen.Start();
+                if (!gPlatSimMode)
+                    theSplashScreen.Start();
                 theInitialized = EEInitializePart1();
-                theSplashScreen.Stop();
+                if (!gPlatSimMode)
+                    theSplashScreen.Stop();
                 if (theInitialized) {
-                    EEPlayIntroMovies(theShowMovies == false);
+                    EEPlayIntroMovies(gPlatSimMode || theShowMovies == false);
                     EEInitializePart2();
+                    if (gPlatSimMode)
+                        EESimStart();
                     if (EEParseCommandLine(inCommandLine)) {
                         theResult = gUserInterface->Run((void*)&(const UString&)inCommandLine);
                         theInitialized = theResult == kErrorOK;

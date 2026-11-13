@@ -106,6 +106,7 @@
 #include "ee/EEUIFScenarioEditor.h"
 #include "ee/EEUIFMGMainGroup.h"
 #include "ee/EEUIManager.h"
+#include "platform/PlatSim.h"
 static const float kDisbandRefund = 0.75f;   // EEMDisband (its own .rdata word: a named constant)
 static unsigned char CompressUnits(std::vector<unsigned long>& inUnits, unsigned long inOwner, unsigned char* outBuffer);
 static void DecompressUnits(unsigned char* inBuffer, unsigned char inSize, std::vector<long>& outUnits);
@@ -8074,6 +8075,8 @@ void EEMStartLoading::Execute()
 {
     FSFileSpec theFile;
     UString theName;
+    if (gPlatSimSeedSet)   // the headless simulation's seed (platform/PlatSim.h)
+        this->mSeed = (long)gPlatSimSeed;
     gGameOptions.mLock->ReadLock();
     gGameOptions.Fn130272();
     gGameOptions.mLock->ReadUnlock();

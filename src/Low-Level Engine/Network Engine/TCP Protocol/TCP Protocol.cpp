@@ -8,6 +8,14 @@
 #include "lle/LowLevelEngine.h"
 #include "LostDebug.h"  // NOT original source: EE_LOST_DEBUG filler (ResolveAddress; docs/LOST_DEBUG.md)
 #include "TCPPacketType.h"
+#include "platform/PlatSim.h"
+
+// The game's fixed ports, 33334 (messages) and 33335 (file transfers). The headless simulation moves them by
+// gPlatSimPortOffset (platform/PlatSim.h), so several simulations run on one machine at once.
+static inline unsigned short TCPPort(unsigned short inPort)
+{
+    return (unsigned short)(inPort + gPlatSimPortOffset);
+}
 // ---- Result codes returned by the NPIM entry points (provisional names); values proven by codegen.
 enum {
     kNPIMOK = 0,
@@ -444,7 +452,7 @@ extern "C" long NPIMConnectForXfer(TCPHost** inHost, long inMode, WSAEVENT* inEv
     if (gXferSocket != INVALID_SOCKET) {
         sockaddr_in theAddress;
         theAddress.sin_family = AF_INET;
-        theAddress.sin_port = htons(33335);
+        theAddress.sin_port = htons(TCPPort(33335));
         theAddress.sin_addr.s_addr = theHost->mAddress;
         if (connect(gXferSocket, (sockaddr*)&theAddress, sizeof(theAddress)) != SOCKET_ERROR) {
             TCPConnection* theConnection = new TCPConnection;
@@ -489,7 +497,7 @@ static long ResolveAddress(const UString& inName, const UString& inHost, const U
                     memcpy(outAddress, &gDetectedGames[theIndex].mStreamAddress, sizeof(sockaddr_in));
                 else
                     memcpy(outAddress, &gDetectedGames[theIndex].mDatagramAddress, sizeof(sockaddr_in));
-                outAddress->sin_port = htons(33334);
+                outAddress->sin_port = htons(TCPPort(33334));
                 *outSocket = theSocket;
                 theResult = kNPIMOK;
             } else {
@@ -509,7 +517,7 @@ static long ResolveAddress(const UString& inName, const UString& inHost, const U
                 *outSocket = theSocket;
                 memset(outAddress, 0, sizeof(sockaddr_in));
                 outAddress->sin_family = AF_INET;
-                outAddress->sin_port = htons(33334);
+                outAddress->sin_port = htons(TCPPort(33334));
                 memcpy(&outAddress->sin_addr, theHost->h_addr_list[0], 4);
                 theResult = kNPIMOK;
             } else {
@@ -708,7 +716,7 @@ extern "C" long NPIMGetStatus(const UWideString& inName, unsigned long inPort)
     long theResult = kNPIMOK;
     theName = inName;
     if (theName == inName) {
-        unsigned short thePort = inPort != 0 ? (unsigned short)(inPort >> 16) : htons(33334);
+        unsigned short thePort = inPort != 0 ? (unsigned short)(inPort >> 16) : htons(TCPPort(33334));
         unsigned long theSeed = 0xffffffff;
         if (gRandomBuffer == NULL)
             gRandomBuffer = new char[kRandomBufferSize];
@@ -752,7 +760,7 @@ extern "C" long NPIMPublish(const UString& inName, const UWideString& inAddress,
     UString theName;
     UString theHost;
     UWideString theAddress;
-    unsigned long thePort = htons(33334);
+    unsigned long thePort = htons(TCPPort(33334));
 #ifdef EE_PORT_LONG32
     u_long theNonBlocking = 1;
 #else
@@ -805,7 +813,7 @@ extern "C" long NPIMPublish(const UString& inName, const UWideString& inAddress,
                 sockaddr_in theLocal;
                 memset(&theLocal, 0, sizeof(theLocal));
                 theLocal.sin_family = AF_INET;
-                theLocal.sin_port = htons(33335);
+                theLocal.sin_port = htons(TCPPort(33335));
                 if (bind(gSocket7280, (sockaddr*)&theLocal, sizeof(theLocal)) == 0 &&
                     listen(gSocket7280, SOMAXCONN) == 0) {
                     WSAEventSelect(gSocket7280, *inListenEvent, FD_READ);
@@ -1059,7 +1067,7 @@ extern "C" long NPIMReceiveFrom(TCPServer** inHandle, unsigned long inSize, char
                         theKey = (unsigned char)(gRandom->Generate() * 254.0f + 1.0f);
                         memcpy(&thePacket, &theKey, 1);
                         Encipher(&thePacket.mType, sizeof(thePacket) - 1, theKey);
-                        theFrom.sin_port = htons(33334);
+                        theFrom.sin_port = htons(TCPPort(33334));
                         if (sendto(theSocket, reinterpret_cast<char*>(&thePacket), sizeof(thePacket), 0, (sockaddr*)&theFrom,
                                    sizeof(theFrom)) == SOCKET_ERROR) {
                             ESRecordNativeError(WSAGetLastError());
@@ -1406,7 +1414,7 @@ static long QueryGames(const UString& inName, hostent* inHost)
             sockaddr_in theTo;
             memset(&theTo, 0, sizeof(theTo));
             theTo.sin_family = AF_INET;
-            theTo.sin_port = htons(33334);
+            theTo.sin_port = htons(TCPPort(33334));
             if (inHost == NULL)
                 theTo.sin_addr.s_addr = htonl(INADDR_BROADCAST);
             else
@@ -1416,7 +1424,7 @@ static long QueryGames(const UString& inName, hostent* inHost)
                 sockaddr_in theLocal;
                 memset(&theLocal, 0, sizeof(theLocal));
                 theLocal.sin_family = AF_INET;
-                theLocal.sin_port = htons(33334);
+                theLocal.sin_port = htons(TCPPort(33334));
                 theReceiveSocket = socket(AF_INET, SOCK_DGRAM, 0);
                 if (bind(theReceiveSocket, (sockaddr*)&theLocal, sizeof(theLocal)) == 0 &&
                     ioctlsocket(theReceiveSocket, FIONBIO, &theNonBlocking) == 0) {

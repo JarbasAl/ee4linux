@@ -46,7 +46,8 @@ from ee import (EEX_INCLUDE_DIRS, LIB_UNITS, LINK_DIR, MODULE_FILES, MODULE_FLAG
 PORT_LIB_UNITS = {"lle": ["implode", "explode"], "mixer": ["mssauto"]}
 # Units of the port build alone: the names that the VC6 link takes from the original image
 # (src/Port/EEPortLinks.cpp and EEPortWonLinks.cpp)
-PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp", "Port/EEPortLinux.cpp"]}
+PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp", "Port/EEPortLinux.cpp", "Port/EESim.cpp"],
+              "lle": ["Port/EEPortSim.cpp"]}
 # Modules of the port build alone, each a folder of src: the native build's Win32 layer
 PORT_MODULES = {"win32": "Port/Linux"}
 # C libraries the Win32 layer carries as source, with their own flags in place of the game's: GothicKit/dmusic
