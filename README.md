@@ -119,6 +119,8 @@ seconds.
 
 - The source reconstruction: [Protryon/empire_earth](https://github.com/Protryon/empire_earth).
 - The headless simulator: [Protryon/empire_earth_next](https://github.com/Protryon/empire_earth_next).
+- The Age of AI engine and its settings: [Grille/Empire-Earth-Age-of-AI](https://github.com/Grille/Empire-Earth-Age-of-AI)
+  (GPL-3.0).
 - [SDL2](https://www.libsdl.org/), [FFmpeg](https://ffmpeg.org/) (LGPL build),
   [GothicKit/dmusic](https://github.com/GothicKit/dmusic), TinySoundFont, stb_truetype, and the GeneralUser GS
   SoundFont by S. Christian Collins.

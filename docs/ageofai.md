@@ -6,8 +6,39 @@ it redirects calls, replaces vtable slots and hooks import slots, at addresses t
 build.
 
 The native build has the game's source. So the port of Age of AI is C++ in that source, with explicit calls where
-the mod has hooks. It does not patch addresses. This page describes the tool that finds, for each of the mod's
-hooks, the function, member or class that the hook changes here.
+the mod has hooks. It does not patch addresses. The port's files are in `src/Empire Earth/AI Thread/AgeOfAI/`. Each
+file names the upstream files it comes from, at commit `39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07`.
+
+## The AI engine
+
+Each computer player plays one of two AI engines: the classic AI, which is the game's own, or Age of AI. The
+classic AI is the default. `EEComputerPlayer::Update` asks `AgeOfAI::EngineOf` for the player's engine.
+
+The engine comes from `ageofai.ini` in the game folder, the same file and keys as the mod's. The game reads it once,
+when the first computer player updates. `tools/port_linux_folder.py` copies `config/ageofai.ini` into the run folder
+when the game folder has no `ageofai.ini`. That copy sets `enabled=0`. A missing file gives every key its default,
+and the classic AI.
+
+| Key | Effect in the port |
+| --- | --- |
+| `[general] enabled` | `1`: every computer player plays Age of AI. `0` (the default): every computer player plays the classic AI. |
+| `[general] scenario_ai` | `1` (the default): an Age of AI player updates with the scenario flag clear. A scenario or campaign started from the menu sets that flag, and several classic AI routines then skip their planning. |
+
+The game reads and checks every other key of the file, and the other keys do nothing yet. The module PRs give them
+their effect. A key's text is a number, a name from the key's list, or a constant expression: numbers, `%` (`35%`
+is 0.35), `+ - * / ( )`, `min`, `max`, `abs`, `round` and `floor`. A value that cannot be used keeps the key's
+default. The game writes one line to the standard error for each such value, for each value outside the key's range,
+and for each key or section that is not a setting:
+
+```
+ageofai: ageofai.ini [general] scenario_ai=maybe: no names in a setting: numbers, %, + - * / ( ), min, max, abs, round, floor - the default instead
+ageofai: ageofai.ini [general] bogus: no such setting (a misspelt key?) - ignored
+```
+
+`tools/sim.py --ageofai FILE` gives every simulated game that file ([simulator](simulator.md)).
+
+The rest of this page describes the tool that finds, for each of the mod's hooks, the function, member or class that
+the hook changes here.
 
 ## The hook-site index
 

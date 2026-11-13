@@ -8,6 +8,9 @@ reflink copy where the file system allows it), puts back the retail files that a
 the same names, and adds the General MIDI SoundFont as general-midi.sf2. The retail EE-AOC.exe stays: the native
 build reads its resources. The tool prints the command that starts the game; it does not start it.
 
+The tool adds config/ageofai.ini, the settings of the Age of AI engine (docs/ageofai.md), unless the game folder has
+an ageofai.ini of its own. The file selects the classic AI.
+
 Settings go to ee-port-registry.reg in the folder. The first start imports them, and the base Empire Earth folder,
 from the Wine prefix (WINEPREFIX, else ~/.wine). When that prefix does not record the base game, or EE_BASE_GAME_DIR
 names it, the tool writes ee-port-registry.reg itself with the two install folders, and the game starts with default
@@ -27,6 +30,7 @@ from port_run import BASE_GAME, BASE_GAME_KEY, GAME, GAME_KEY, installed_folder,
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 IMAGES = ROOT / "build" / "port-linux" / "bin"
 SOUNDFONT = ROOT / "toolchain" / "soundfonts" / "GeneralUser-GS.sf2"
+AGEOFAI_INI = ROOT / "config" / "ageofai.ini"
 
 REGISTRY_HEADER = "WINE REGISTRY Version 2\n;; The Empire Earth native port's registry (ee-port-registry.reg)\n"
 
@@ -82,6 +86,10 @@ def main():
     for image in images:
         shutil.copy2(image, args.out / image.name)
     shutil.copy2(SOUNDFONT, args.out / "general-midi.sf2")
+    ageofai = "the game folder's own"
+    if not (args.out / "ageofai.ini").exists():
+        shutil.copy2(AGEOFAI_INI, args.out / "ageofai.ini")
+        ageofai = f"{AGEOFAI_INI.relative_to(ROOT)} (the classic AI)"
 
     registry = "imported from the Wine prefix at the first start"
     if os.environ.get("EE_BASE_GAME_DIR") or installed_folder(BASE_GAME_KEY) is None:
@@ -94,6 +102,7 @@ def main():
     mod = "kept" if backup is not None and args.keep_mod else f"{len(restored)} retail files put back"
     print(f"port_linux_folder: {GAME} copied to {args.out}; mod: {mod}; {len(images)} native files copied")
     print(f"settings: {registry}")
+    print(f"ageofai.ini: {ageofai}")
     for image in images:
         print(f"  {image.name}  {sha256(image)[:16]}")
     print("Start the game with:")

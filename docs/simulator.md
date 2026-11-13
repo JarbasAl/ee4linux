@@ -29,6 +29,7 @@ The options before `--` belong to the tool, and the options after it go to `ee-a
 | `--jobs N` | runs at once (default 1) |
 | `--wall-timeout S` | wall seconds per run (default 3600). The tool kills a run 60 seconds after that. |
 | `--out DIR` | the output folder (default `build/sim/<time>`) |
+| `--ageofai FILE` | the `ageofai.ini` of every run, which selects the AI engine ([Age of AI](ageofai.md)). Without it, a run uses the run folder's file. |
 
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.

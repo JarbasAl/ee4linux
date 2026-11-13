@@ -1,11 +1,13 @@
 """Headless simulation runs: seeded computer-against-computer games of ee-aoc --sim (python3 -I tools/sim.py --help).
 
-  python3 -I tools/sim.py [--target linux64] [--seeds 1-10] [--repeat 2] [--jobs 4] [--out DIR] -- [--sim options]
+  python3 -I tools/sim.py [--target linux64] [--seeds 1-10] [--repeat 2] [--jobs 4] [--out DIR] [--ageofai FILE]
+                          -- [--sim options]
 
 Each run plays one seed in a stage of its own: the run folder (tools/port_linux_folder.py) hard-linked file by file,
 with the files and folders the game writes copied, and the build's images copied over it. The game therefore never
 writes into the run folder, and several runs go at once. A run writes report-<seed>-<n>.json, trace-<seed>-<n>.txt
 (one line per communications tick) and log-<seed>-<n>.txt (the game's standard error) into the output folder.
+--ageofai FILE puts that file in each stage as ageofai.ini, the settings of the Age of AI engine (docs/ageofai.md).
 
 With --repeat 2 or more, each seed runs that many times and the tool compares the runs: the same seed must give the
 same trace and the same report, apart from the wall-clock times. The tool prints one line per run, the comparison
@@ -64,6 +66,9 @@ def stage(run_dir, bin_dir, slot_dir):
 def run_one(args, seed, repeat, slot):
     slot_dir = args.stage / str(slot)
     stage(args.run, args.bin, slot_dir)
+    if args.ageofai:
+        (slot_dir / "ageofai.ini").unlink(missing_ok=True)
+        shutil.copy2(args.ageofai, slot_dir / "ageofai.ini")
     name = f"{seed}-{repeat}"
     report = args.out / f"report-{name}.json"
     trace = args.out / f"trace-{name}.txt"
@@ -124,6 +129,7 @@ def main():
     ap.add_argument("--jobs", type=int, default=1, help="runs at once (default 1)")
     ap.add_argument("--wall-timeout", type=int, default=3600, help="wall seconds per run (default 3600)")
     ap.add_argument("--out", type=pathlib.Path, help="the output folder (default build/sim/<time>)")
+    ap.add_argument("--ageofai", type=pathlib.Path, help="the ageofai.ini of every run (default the run folder's)")
     ap.add_argument("sim_options", nargs="*", help="after --: options of ee-aoc --sim (--ai, --game-seconds, ...)")
     args = ap.parse_args()
 
@@ -136,6 +142,8 @@ def main():
         sys.exit(f"sim: no {args.bin / 'ee-aoc'}; run tools/build_port.py --target {args.target} --link first")
     if not args.run.is_dir():
         sys.exit(f"sim: no run folder {args.run}; run tools/port_linux_folder.py --target {args.target} first")
+    if args.ageofai and not args.ageofai.is_file():
+        sys.exit(f"sim: no {args.ageofai}")
     args.out.mkdir(parents=True, exist_ok=True)
 
     runs = [(seed, n) for seed in parse_seeds(args.seeds) for n in range(1, args.repeat + 1)]

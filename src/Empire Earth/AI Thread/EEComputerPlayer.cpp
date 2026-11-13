@@ -33,6 +33,7 @@
 #include "ee/EEAIRandom.h"
 #include "ee/EEPlayer.h"
 #include "ee/EEComputerPlayer.h"
+#include "AgeOfAI/AgeOfAI.h"
 #include "ee/EEUnit.h"
 #include "ee/EEMap.h"
 #include "ee/RTSWorld.h"
@@ -5565,6 +5566,7 @@ void EEComputerPlayer::EpochMediaUnloaded(long inEpoch)
 // expansion timers and the manager updates; finally kills the units queued as stranded
 void EEComputerPlayer::Update(unsigned long inTime)
 {
+    AgeOfAI::ScenarioFlagScope theScenarioFlag(gWorld.mGameOptions.mIsScenarioGame, AgeOfAI::ClearsScenarioFlag(this));
     UWideString theUnused1;
     UWideString theUnused2;
     if (!this->mIsStarted) {
