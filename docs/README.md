@@ -4,8 +4,8 @@ This folder documents the native Linux build of *Empire Earth: The Art of Conque
 compiled for i386 Linux — and, with `--target linux64`, for x86-64 — drawing and playing through a Win32 layer
 instead of Windows.
 
-The Windows images that the reconstruction produces are documented in the top-level `README.md`. This folder covers
-the port only.
+The Windows images that the reconstruction produces are documented in the reconstruction's own README, upstream at
+[Protryon/empire_earth](https://github.com/Protryon/empire_earth). This folder covers the port only.
 
 ## What it is
 
