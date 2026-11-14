@@ -70,6 +70,18 @@ includes naval buildings and leaves out its separate ship and aircraft kinds, is
 The rest of this page describes the tool that finds, for each of the mod's hooks, the function, member or class that
 the hook changes here.
 
+## The early game
+
+An Age of AI player (with `[ai_base] early_towers` and `tower_bait`, both on) plays the playtester's opening. In the
+first two epochs it queues two guard towers by the town centre, four tiles out: one towards the map's centre, one on
+the side where its citizens work. It adds up to two builders to every unfinished tower within 20 tiles of the town
+centre, every 10 game seconds. Up to the Bronze Age, a citizen that has an enemy soldier within five tiles, or one
+attacking it, and stands outside its towers' reach, walks to the nearest finished tower within 25 tiles and stands 1.5
+tiles behind it from the enemy: the raiders that follow come under the tower. `AgeOfAIEarly.cpp` is the module and
+`AgeOfAIEarlyGeometry.cpp` holds the places. The report of a simulated game gives the player `early_towers_queued`,
+`early_builders` and `early_baits`. The first army (`early_army`), the militia (`early_militia`) and the stone of the
+core towers in the worker plan wait for the files that hold them.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

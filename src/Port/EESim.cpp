@@ -238,6 +238,7 @@ struct PlayerSample {
     // an Age of AI player's memory (AgeOfAI::MemoryOf); mHasIntel is false for the others
     bool mHasIntel = false;
     long mIntelRecords = 0, mIntelBuildings = 0, mIntelSoldiers = 0, mIntelSeenNow = 0, mIntelCells = 0, mIntelArmy = 0;
+    long mEarlyQueued = 0, mEarlyBuilders = 0, mEarlyBaits = 0;
 };
 
 struct Sample {
@@ -314,6 +315,10 @@ Sample TakeSample()
             int theCount = 0;
             theMemory.Army(theHP, theAttack, thePower, theCount);
             p.mIntelArmy = theCount;
+            AgeOfAI::EarlyCounts theEarly = AgeOfAI::EarlyCountsOf(i);
+            p.mEarlyQueued = (long)theEarly.mQueued;
+            p.mEarlyBuilders = (long)theEarly.mBuilders;
+            p.mEarlyBaits = (long)theEarly.mBaits;
         }
         for (long r = 0; r < 5; r++)
             p.mResources[r] = thePlayer->mResourceCaps[kResourceFood + r];
@@ -801,12 +806,13 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[256] = "";
+        char theIntel[384] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
-                     "\"cells_looked\": %ld, \"army\": %ld}",
-                     p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy);
+                     "\"cells_looked\": %ld, \"army\": %ld, \"early_towers_queued\": %ld, \"early_builders\": %ld, \"early_baits\": %ld}",
+                     p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
+                     p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits);
         char theText[768];
         snprintf(theText, sizeof(theText),
                  "%s{\"index\": %lu, \"engine\": \"%s\", \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "

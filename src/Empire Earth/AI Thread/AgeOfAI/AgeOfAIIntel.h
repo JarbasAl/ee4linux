@@ -84,6 +84,8 @@ public:
     bool IsSeen(const Sighting& inSighting) const;
     // A building the viewer has seen and not seen gone
     bool Remembers(unsigned long inUnit) const;
+    // A unit that hit one of the viewer's units at the last scan
+    bool IsRevealed(unsigned long inUnit) const;
     // ms since a unit of the viewer or an ally was near (x, y); ~0 for never
     unsigned LookedAgo(int inX, int inY) const;
     // Soldiers remembered within inRadius tiles of (x, y) and not seen now, seen within 5 minutes: hit points, attack
@@ -104,6 +106,7 @@ public:
 private:
     std::vector<Record> mRecords;
     std::vector<unsigned long> mKnown;        // the buildings of mRecords, sorted
+    std::vector<unsigned long> mRevealed;     // the units that hit the viewer's at the last scan, sorted
     std::vector<uint32_t> mLooked;            // kCells x kCells: game ms of the last look; 0 never
     unsigned mFloor[16];
     unsigned mNow, mLast;

@@ -29,6 +29,11 @@ bool Memory::Remembers(unsigned long inUnit) const
     return std::binary_search(this->mKnown.begin(), this->mKnown.end(), inUnit);
 }
 
+bool Memory::IsRevealed(unsigned long inUnit) const
+{
+    return std::binary_search(this->mRevealed.begin(), this->mRevealed.end(), inUnit);
+}
+
 unsigned Memory::LookedAgo(int inX, int inY) const
 {
     int theX = inX / kCell, theY = inY / kCell;
@@ -93,6 +98,11 @@ void Memory::Update(const Scan& inScan)
         }
     }
     this->mLast = this->mNow = theNow;
+    this->mRevealed.clear();
+    for (const Sighting& theSighting : inScan.mEnemies)
+        if (theSighting.mRevealed)
+            this->mRevealed.push_back(theSighting.mUnit);
+    std::sort(this->mRevealed.begin(), this->mRevealed.end());
 
     // looked at now: the cells whose middle an eye sees
     for (const Eye& theEye : inScan.mEyes)

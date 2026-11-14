@@ -51,6 +51,13 @@ ProjectileCounts& Projectiles();
 bool LobEachShotOn();
 void LobBeforeShot(EEComplexUnit* inShooter, EEUnit* inTarget);
 
+// The early game of an Age of AI player ([ai_base] early_towers, tower_bait): EEComputerPlayer::Update calls it.
+void TickEarly(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct EarlyCounts {
+    unsigned long mQueued, mPlaced, mBuilders, mBaits;   // towers queued, core spots handed out, builders added, citizens sent to bait
+};
+EarlyCounts EarlyCountsOf(unsigned long inPlayerID);
+
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {
 public:
