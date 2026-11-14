@@ -80,8 +80,25 @@ static void TestSplit()
     Check(!Split(negative, kPerWorker, 20, true, 1, 18, keep), "negative needs count as none");
 }
 
+static void TestDonor()
+{
+    long count[7] = {0, 0, 14, 2, 0, 17, 11};
+    unsigned long target[7] = {0, 0, 2, 2, 0, 9, 38};
+    // surpluses: food 12, wood 0, stone 0, gold 8, iron -27; iron is short
+    Check(Donor(count, target, 0, 6) == 2, "iron short: the donor is food (surplus 12 beats gold's 8)");
+    Check(Donor(count, target, 1 << 2, 6) == 5, "food dry: gold (surplus 8)");
+    Check(Donor(count, target, (1 << 2) | (1 << 5), 6) == -1, "food and gold dry: none");
+    Check(Donor(count, target, 0, 2) == 5, "food itself short: not its own donor; gold");
+    long even[7] = {0, 0, 4, 2, 0, 11, 6};
+    unsigned long evenTarget[7] = {0, 0, 2, 2, 0, 9, 8};
+    Check(Donor(even, evenTarget, 0, 6) == -1, "a surplus of 2 stays: no donor (food 2, gold 2)");
+    long three[7] = {0, 0, 5, 2, 0, 11, 6};
+    Check(Donor(three, evenTarget, 0, 6) == 2, "a surplus of 3 gives: food");
+}
+
 int main()
 {
+    TestDonor();
     TestNeeds();
     TestSplit();
     printf("test_ageofai_workers.cpp: %d checks, %d failed\n", sChecks, sFailures);

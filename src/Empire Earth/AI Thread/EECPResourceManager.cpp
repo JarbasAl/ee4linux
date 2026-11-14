@@ -985,6 +985,14 @@ EEUnit* EECPResourceManager::FindForestTarget(long inCount, EEComplexUnit* inUni
 // crowded, unthreatened, away from other players' areas and reachable from the unit
 EEUnit* EECPResourceManager::FindResourceTarget(long inResource, EEComplexUnit* inUnit, bool inBackwards)
 {
+    // an Age of AI player picks the mine nearest to a drop site first (AgeOfAI::FindMine, which falls back on the game's search)
+    if (AgeOfAI::EngineOf(this->mManager->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
+        return AgeOfAI::FindMine(this, inResource, inUnit, inBackwards);
+    return this->FindResourceTargetGame(inResource, inUnit, inBackwards);
+}
+
+EEUnit* EECPResourceManager::FindResourceTargetGame(long inResource, EEComplexUnit* inUnit, bool inBackwards)
+{
     EETileDistanceLess theTile(0, 0);
     EEComputerPlayer* thePlayer = this->mManager->mPlayer;
     EECPBuildManager* theBuildManager = this->mManager->mBuildManager;
@@ -1504,7 +1512,10 @@ void EECPResourceManager::Update(unsigned long inTime)
     }
     if (inTime >= this->mNextAssignGatherersTime) {
         if (this->mNextAssignGatherersTime > 0)
-            this->AssignGatherers();
+            {
+                this->AssignGatherers();
+                AgeOfAI::Rebalance(this);
+            }
         this->mNextAssignGatherersTime = inTime + 10000;
     }
     if (thePlayer->mSeesAll || !thePlayer->mCanExplore || !(inTime >= this->mNextResourceCheckTime))
