@@ -205,6 +205,8 @@ void EEComputerPlayer::AddResource(long inIndex, long inAmount)
 {
     EEPlayer::AddResource(inIndex, inAmount);
     this->mCivilizationManager->mResourceManager->Spend(inIndex, inAmount);
+    if (AgeOfAI::EngineOf(this->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
+        AgeOfAI::OnIncome(this, inIndex, inAmount);
 }
 
 // FUNCTION: EXE 0x42d1c7
@@ -5570,6 +5572,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
     if (AgeOfAI::EngineOf(this->mPlayerID) == AgeOfAI::kEngineAgeOfAI) {
         AgeOfAI::TickIntel(this, inTime);
         AgeOfAI::TickEarly(this, inTime);
+        AgeOfAI::RatesUpdate(this, inTime);
     }
     UWideString theUnused1;
     UWideString theUnused2;

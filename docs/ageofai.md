@@ -82,6 +82,20 @@ tiles behind it from the enemy: the raiders that follow come under the tower. `A
 `early_builders` and `early_baits`. The first army (`early_army`), the militia (`early_militia`) and the stone of the
 core towers in the worker plan wait for the files that hold them.
 
+## The economy before farms
+
+The game gives each resource gatherers by its demand, and its food demand is a phantom. An Age of AI player with
+`[ai_base] copper_plan` `on` (the default) or `next_epoch` replaces the game's count of wanted gatherers, every five
+game seconds, in the Prehistoric and Stone Ages. For each resource it asks what is still needed: the game's demand
+(for stone, gold and iron only up to the reserve plus `mineral_worker_margin`), less the stock; the reserve is what the
+Copper Age costs (with `next_epoch` only the next epoch's); the stone of the first two towers; and with `food_plan`
+`count_trained` the food of the citizens still to come (50 each, at most 10 at a time, up to `min_workforce`) and a ceiling
+on wood by the next three queued buildings. It gives the gatherers in proportion to the time each need takes to
+gather: the need divided by the income per worker, measured every 30 game seconds. A few stay on food and wood, and with
+`next_epoch` half the workers (up to `food_floor`) go to food. From the Copper Age on the game's targets stand. The
+military's reserves, the fields' wood, the pull of gatherers to food and the late rules wait for their files.
+`AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the hooks.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower
