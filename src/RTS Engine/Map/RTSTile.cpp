@@ -59,11 +59,13 @@ RTSTile::~RTSTile()
 }
 
 // FUNCTION: EXE 0x5246c4
-// Drops one of the player's sight references on the tile; the last one leaves it explored
+// Drops one of the player's sight references on the tile; the last one leaves it explored. The count is kept whole
+// (RTSSight.h): the original's low byte wrapped at 255 units
 void RTSTile::RemoveSight(EEPlayer* inPlayer)
 {
-    if (this->GetVisibility(inPlayer->GetPlayerID()) > 1)
-        this->mVisibility[inPlayer->GetPlayerID() >> 1] += -1 << ((inPlayer->GetPlayerID() & 1) << 4);
+    unsigned long theCount = this->GetSightCount(inPlayer->GetPlayerID());
+    if (theCount > 1)
+        this->SetVisibility(RTSSightEntry(RTSSightRemoved(theCount)), inPlayer);
 }
 
 // FUNCTION: EXE 0x524708
@@ -107,12 +109,10 @@ void RTSTile::Dump(FILE* inFile, unsigned long inPlayerCount) const
 
 // FUNCTION: EXE 0x5247ed
 // Adds a sight reference of the player to the tile; an unexplored tile becomes seen
+// (the count is kept whole, RTSSight.h: the original restarted a low byte of 0 at 2 and read it as unexplored)
 void RTSTile::AddSight(EEPlayer* inPlayer)
 {
-    if (this->GetVisibility(inPlayer->GetPlayerID()) != 0)
-        this->mVisibility[inPlayer->GetPlayerID() >> 1] += 1 << ((inPlayer->GetPlayerID() & 1) << 4);
-    else
-        this->SetVisibility(2, inPlayer);
+    this->SetVisibility(RTSSightEntry(RTSSightAdded(this->GetSightCount(inPlayer->GetPlayerID()))), inPlayer);
 }
 
 // FUNCTION: EXE 0x52483c

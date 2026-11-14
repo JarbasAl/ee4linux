@@ -408,7 +408,7 @@ void EEMiniMap::TellTileVisibility(EETile* inTile, long inX, long inY)
     } else {
         if (thePlayer->mSeesAll || gFreeCamera)
             this->CountCellOn(inX, inY);
-        for (long i = inTile->GetVisibility(thePlayer->mPlayerID) - 1; i > 0; i--)
+        for (long i = (long)inTile->GetSightCount(thePlayer->mPlayerID) - 1; i > 0; i--)
             this->CountCellOn(inX, inY);
     }
 }

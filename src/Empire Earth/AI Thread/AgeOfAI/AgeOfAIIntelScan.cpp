@@ -193,7 +193,7 @@ Intel::Scan ScanFor(EEPlayer* inViewer, unsigned inNow, bool inRevealAttackers)
             theSighting.mY = (int)theUnit->mTileY;
             theSighting.mHitPoints = (int)theUnit->mHitPoints;
             theSighting.mAttack = AttackOf(theUnit, theSighting.mKind);
-            theSighting.mCount = theUnit->mTile != NULL ? (unsigned)theUnit->mTile->GetVisibility(inViewer->mPlayerID) : 0;
+            theSighting.mCount = theUnit->mTile != NULL ? (unsigned)theUnit->mTile->GetSightCount(inViewer->mPlayerID) : 0;
             theScan.mEnemies.push_back(theSighting);
         }
     }
