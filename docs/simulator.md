@@ -138,3 +138,7 @@ A change to aiming or combat shows as a change of the share `hit_unit / (hit_uni
 The report of every computer player has `gatherers` and `wanted`: the citizens on food, wood, stone, gold and iron, and
 the number the player's worker plan wants on each. A large gap, as with iron at 33 wanted and 11 working, means the
 citizens cannot be placed at the mines.
+
+Each computer player's report also has `drop_sites` (its finished drop-site buildings by the resource they take, index 0 to 6;
+the Town Center and Settlement take type 1, everything) and `drop_distance_x10` (the gatherers' mean tile distance to the
+nearest drop site that takes their resource, times 10; -1 for no gatherers or no site).

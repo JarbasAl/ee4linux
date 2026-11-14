@@ -243,6 +243,8 @@ struct PlayerSample {
     long mEarlyQueued = 0, mEarlyBuilders = 0, mEarlyBaits = 0;
     bool mHasGatherers = false;                          // a computer player: its gatherers and the gatherers it wants, food..iron
     long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
+    long mDropSites[7] = {0, 0, 0, 0, 0, 0, 0};          // the player's drop-site buildings by the resource they take (0 and 1: all)
+    long mDropDistance[5] = {0, 0, 0, 0, 0};            // the gatherers' mean tile distance to the nearest drop site that takes their resource, x 10
 };
 
 struct Sample {
@@ -310,6 +312,37 @@ Sample TakeSample()
             if (theComputer != NULL && theComputer->mCivilizationManager != NULL && theComputer->mCivilizationManager->mResourceManager != NULL) {
                 EECPResourceManager* theResources = theComputer->mCivilizationManager->mResourceManager;
                 p.mHasGatherers = true;
+                struct Drop { long mX, mY, mType; };
+                std::vector<Drop> theDrops;
+                for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext))
+                    if (theUnit->mHitPoints > 0 && theUnit->mUnitClass != NULL && theUnit->mUnitClass->IsDropSite() && theUnit->mComplexUnit != NULL
+                        && !theUnit->mComplexUnit->IsFoundation()) {
+                        Drop theDrop = {theUnit->mTileX, theUnit->mTileY, (long)theUnit->mUnitClass->mResourceType};
+                        theDrops.push_back(theDrop);
+                        if (theDrop.mType >= 0 && theDrop.mType < 7)
+                            p.mDropSites[theDrop.mType]++;
+                    }
+                for (int r = 0; r < 5; r++) {
+                    double theSum = 0;
+                    long theN = 0;
+                    for (size_t g = 0; g < theResources->mGatherers[r + 2].size(); g++) {
+                        EEComplexUnit* theGatherer = theResources->mGatherers[r + 2][g];
+                        double theBest = -1;
+                        for (size_t d = 0; d < theDrops.size(); d++) {
+                            if (theDrops[d].mType != r + 2 && theDrops[d].mType > 1)
+                                continue;
+                            double theDX = (double)(theDrops[d].mX - theGatherer->mTileX), theDY = (double)(theDrops[d].mY - theGatherer->mTileY);
+                            double theDistance = sqrt(theDX * theDX + theDY * theDY);
+                            if (theBest < 0 || theDistance < theBest)
+                                theBest = theDistance;
+                        }
+                        if (theBest >= 0) {
+                            theSum += theBest;
+                            theN++;
+                        }
+                    }
+                    p.mDropDistance[r] = theN > 0 ? (long)(theSum / theN * 10.0) : -1;
+                }
                 for (int r = 0; r < 5; r++) {
                     p.mGatherers[r] = (long)theResources->mGatherers[r + 2].size();
                     p.mWanted[r] = (long)theResources->mWantedGatherers[r + 2];
@@ -828,12 +861,14 @@ std::string PlayersJson(const Sample& inSample)
                      "\"cells_looked\": %ld, \"army\": %ld, \"early_towers_queued\": %ld, \"early_builders\": %ld, \"early_baits\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits);
-        char theGatherers[200] = "";
+        char theGatherers[400] = "";
         if (p.mHasGatherers)
             snprintf(theGatherers, sizeof(theGatherers),
-                     ", \"gatherers\": [%d, %d, %d, %d, %d], \"wanted\": [%d, %d, %d, %d, %d]", (int)p.mGatherers[0],
+                     ", \"gatherers\": [%d, %d, %d, %d, %d], \"wanted\": [%d, %d, %d, %d, %d], \"drop_sites\": [%d, %d, %d, %d, %d, %d, %d], \"drop_distance_x10\": [%d, %d, %d, %d, %d]", (int)p.mGatherers[0],
                      (int)p.mGatherers[1], (int)p.mGatherers[2], (int)p.mGatherers[3], (int)p.mGatherers[4], (int)p.mWanted[0],
-                     (int)p.mWanted[1], (int)p.mWanted[2], (int)p.mWanted[3], (int)p.mWanted[4]);
+                     (int)p.mWanted[1], (int)p.mWanted[2], (int)p.mWanted[3], (int)p.mWanted[4], (int)p.mDropSites[0], (int)p.mDropSites[1],
+                     (int)p.mDropSites[2], (int)p.mDropSites[3], (int)p.mDropSites[4], (int)p.mDropSites[5], (int)p.mDropSites[6],
+                     (int)p.mDropDistance[0], (int)p.mDropDistance[1], (int)p.mDropDistance[2], (int)p.mDropDistance[3], (int)p.mDropDistance[4]);
         char theText[1024];
         snprintf(theText, sizeof(theText),
                  "%s{\"index\": %lu, \"engine\": \"%s\", \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "
