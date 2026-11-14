@@ -70,6 +70,8 @@ tool exits 1 when a run fails, a seed does not agree, or a report is missing.
 | `--map-type NAME` | the lobby's map type line (default the first, `Continental`) |
 | `--difficulty NAME` | the lobby's difficulty line (default `Hard`) |
 | `--classic-players LIST` | player numbers, comma apart, that play the classic AI whatever `ageofai.ini` says |
+| `--army NAME:COUNT` | at `--army-at`, each computer player gets COUNT units of the first land class whose name has NAME in it (without case), six tiles from its buildings towards the next computer player, each sent to attack that player's nearest building. Repeat it for more kinds. Every player gets the same units, so any map gives a fair fight. |
+| `--army-at S` | the game second the armies appear (default 120) |
 | `--lobby CONTROL=VALUE` | any lobby list, by line name or `#index`, for example `209=#2` |
 | `--game-seconds S` | the game time at which the run stops (default 2700) |
 | `--sample-seconds S` | the game time between report samples (default 30) |
@@ -123,3 +125,11 @@ The simulator is ported from [Protryon/empire_earth_next](https://github.com/Pro
 (`src/Empire Earth/Empire Earth/EESim.cpp`, `include/platform/PlatSim.h` and `tools/sim.py` at `ddb437ab`), without
 its AI-engine, rules and settings options. The trace follows the sync trace of Grille's
 [Age of AI](https://github.com/Grille/Empire-Earth-Age-of-AI) (`dll/test/trace.c` at `39d8ee42`).
+
+## Fights and projectiles
+
+The default game has almost no fights in an hour. `--army thrower:20 --army bow:20 --army-at 60` puts 20 ranged
+units of each kind on every computer player at game second 60, and they fight at once. Their armies fall from about 40
+to 7 within ten game minutes. The report has a `projectiles` object: the shots of plain projectiles (`fired`), how many
+the aim-ahead fix led (`led`), and the projectiles that came down on a unit (`hit_unit`) and on the ground (`hit_ground`).
+A change to aiming or combat shows as a change of the share `hit_unit / (hit_unit + hit_ground)`.

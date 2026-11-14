@@ -3,6 +3,7 @@
 // EEUC* subclass), the EEUC* inline dtors and slots emitted with their vtables (0x2362e3..0x23649e), more EEUnitClass
 // members and the EEFOFindNewTarget* functors to 0x23a5bf (EEUnitClassImprovement.cpp follows).
 // Range 0x22f272..0x23a5bf. Unit flags: the exe's module set.
+#include "../AI Thread/AgeOfAI/AgeOfAI.h"
 #include <windows.h>
 #include <stdio.h>
 #include <cstddef>
@@ -1036,6 +1037,8 @@ void EEUnitClass::FireShot(EEComplexUnit* inUnit)
         inUnit->Fn1FEA22(UMFloatToLong(inUnit->mReloadTimer * 1.5f));
     EEUnit* theTarget;
     EEFindDropLocation(inUnit, &theTarget, &thePoint, NULL);
+    if (this->mProjectileClass != NULL && theTarget != NULL && !inUnit->mIsSpecialAttack)
+        AgeOfAI::LeadShot(inUnit, theTarget, thePoint);
     if (this->mProjectileClass == NULL) {
         if (inUnit->mStats->mRange > 1.0f && theTarget != NULL && !inUnit->mStats->mCanFireOverWalls &&
             EEIsLineToUnitBlocked(inUnit, theTarget, &theBlocker, &theBlockX, &theBlockY)) {
