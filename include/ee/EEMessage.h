@@ -216,6 +216,10 @@ public:
     virtual char* GetMessageLabel() const;
 
     long GetUnitIDsAt(unsigned long inIndex) const { return this->mUnitIDs[inIndex]; }
+    // Port: a box of more units than one message holds. HasRest: this message was the last one built and units wait;
+    // TakeRestNext: the next message built packs them instead of picking again.
+    bool HasRest() const;
+    static void TakeRestNext();
     std::vector<long> mUnitIDs;             // +0x10
     GERectangle mRectangle;                 // +0x20
     long mL30;                              // +0x30

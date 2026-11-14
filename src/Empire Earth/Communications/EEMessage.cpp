@@ -66,6 +66,7 @@
 #include "ee/EmpireEarth.h"
 #include "ee/EEUserInterface.h"
 #include "ee/EEMessage.h"
+#include "ee/EESelectionPack.h"
 #include "ee/EECommunications.h"
 #include "ee/EEClient.h"
 #include "ee/EEServer.h"
@@ -108,7 +109,6 @@
 #include "ee/EEUIManager.h"
 #include "platform/PlatSim.h"
 static const float kDisbandRefund = 0.75f;   // EEMDisband (its own .rdata word: a named constant)
-static unsigned char CompressUnits(std::vector<unsigned long>& inUnits, unsigned long inOwner, unsigned char* outBuffer);
 static void DecompressUnits(unsigned char* inBuffer, unsigned char inSize, std::vector<long>& outUnits);
 #include "LostDebug.h"                      // NOT original source: the EE_LOST_DEBUG stand-in (0x4b8f8e)
 // FUNCTION: EXE 0x4b8cda
@@ -7098,65 +7098,49 @@ bool EEMSelectUnit::IsResponse(NEMessage* inMessage)
     return false;
 }
 
+// The selection on the wire is packed by ee/EESelectionPack.h (the original packed at most 63 ids, here as many as fit
+// the 255 bytes). What does not fit waits for the lasso, which sends it as messages that add to the selection.
+namespace {
+struct SelectionRest {
+    std::vector<unsigned long> mOrdered;    // the units of the last box, in packing order
+    size_t mNext;                           // the first one not packed yet
+    const EEMSelectUnits* mMessage;         // the message that packed up to mNext
+    bool mTake;                             // the next message packs the rest instead of picking
+} sSelectionRest = {std::vector<unsigned long>(), 0, NULL, false};
+}
+
 // FUNCTION: EXE 0x4c5d7f
 // Creates a box selection: picks the local player's units of the given type in the rectangle and stores
 // them compressed (and decoded)
 EEMSelectUnits::EEMSelectUnits(const GERectangle& inRectangle, long inUnitType, unsigned char inType)
     : EEMessage(inType, true)
 {
-    std::vector<unsigned long> theUnits;
     this->mRectangle = inRectangle;
     this->mL30 = inUnitType;
-    gUnitPicker.PickUnits(this->mRectangle, gWorld.GetCurrentPlayer(), inUnitType, theUnits);
+    if (!sSelectionRest.mTake) {
+        std::vector<unsigned long> theUnits;
+        gUnitPicker.PickUnits(this->mRectangle, gWorld.GetCurrentPlayer(), inUnitType, theUnits);
+        SelectionOrder(theUnits, sSelectionRest.mOrdered);
+        sSelectionRest.mNext = 0;
+    }
+    sSelectionRest.mTake = false;
     long thePlayerID = gWorld.GetCurrentPlayer()->mPlayerID;
-    this->mBufferSize = CompressUnits(theUnits, thePlayerID, this->mBuffer);
+    size_t thePacked = 0;
+    this->mBufferSize = (unsigned char)SelectionPack(sSelectionRest.mOrdered, sSelectionRest.mNext, thePlayerID, this->mBuffer,
+                                                     thePacked);
+    sSelectionRest.mNext += thePacked;
+    sSelectionRest.mMessage = this;
     DecompressUnits(this->mBuffer, this->mBufferSize, this->mUnitIDs);
 }
 
-// The selection on the wire: byte 0 is the owner (the ids' top byte), then runs of a count byte (low 6 bits; the top 2 bits: 0, 1 or 2 bytes of the ids' middle 16 bits follow) and the ids' low bytes; at most 63 ids.
-// FUNCTION: EXE 0x4c5e67
-// Packs unit ids into the compact selection format above (at most 63 ids); returns the byte count
-static unsigned char CompressUnits(std::vector<unsigned long>& inUnits, unsigned long inOwner, unsigned char* outBuffer)
+bool EEMSelectUnits::HasRest() const
 {
-    std::map<unsigned long, std::vector<unsigned long> > theGroups;
-    unsigned long theGroup, theLow;
-    std::map<unsigned long, std::vector<unsigned long> >::iterator it;
-    unsigned long theRemaining = 63;
-    unsigned long i;
-    *outBuffer = (unsigned char)inOwner;
-    unsigned char* theStart = outBuffer + 1;
-    unsigned char* theCursor = theStart;
-    unsigned long theSize = 1;
-    for (i = 0; i < inUnits.size(); i++) {
-        theGroup = (inUnits[i] >> 8) & 0xffff;
-        theLow = inUnits[i] & 0xff;
-        theGroups[theGroup].push_back(theLow);
-    }
-    for (it = theGroups.begin(); it != theGroups.end(); it++) {
-        if (theRemaining == 0)
-            break;
-        unsigned long theCount = it->second.size();
-        if (theCount != 0) {
-            if (theCount > theRemaining)
-                theCount = theRemaining;
-            theGroup = it->first;
-            if (theGroup == 0) {
-                *theCursor++ = (unsigned char)theCount; theSize++;
-            } else if (theGroup <= 0xff) {
-                *theCursor++ = (unsigned char)(theCount + 0x40);
-                *theCursor++ = (unsigned char)theGroup; theSize += 2;
-            } else {
-                *theCursor++ = (unsigned char)(theCount + 0x80);
-                *theCursor++ = (unsigned char)(theGroup >> 8);
-                *theCursor++ = (unsigned char)theGroup; theSize += 3;
-            }
-            for (unsigned long j = 0; j < theCount; j++) {
-                *theCursor++ = (unsigned char)it->second[j]; theSize++; theRemaining--;
-            }
-        }
-    }
-    if (theCursor == theStart) { *theCursor = 0xff; theSize++; }
-    return (unsigned char)theSize;
+    return sSelectionRest.mMessage == this && sSelectionRest.mNext < sSelectionRest.mOrdered.size();
+}
+
+void EEMSelectUnits::TakeRestNext()
+{
+    sSelectionRest.mTake = true;
 }
 
 // FUNCTION: EXE 0x4c5fd1

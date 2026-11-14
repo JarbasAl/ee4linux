@@ -32,8 +32,25 @@ EEALasso::~EEALasso()
 void EEALasso::Virtual4()
 {
     if (this->mMessage) {
-        gCommunications->ProcessLocalUserInput(this->mMessage, kSlotNone);
+        EEMSelectUnits* theMessage = this->mMessage;
+        bool theMore = theMessage->HasRest();
+        GERectangle theRectangle = theMessage->mRectangle;
+        long theUnitType = theMessage->mL30;
+        bool theToggle = dynamic_cast<EEMAddAndRemoveUnitsFromSelectedGroup*>(theMessage) != NULL;
+        gCommunications->ProcessLocalUserInput(theMessage, kSlotNone);
         this->mMessage = NULL;
+        // a box of more units than one message holds: the rest goes after it as messages that add to the selection
+        // (a control box's toggle each id once, so the same)
+        for (int theMessages = 1; theMore && theMessages < 64; theMessages++) {
+            EEMSelectUnits::TakeRestNext();
+            EEMSelectUnits* theNext;
+            if (theToggle)
+                theNext = new EEMAddAndRemoveUnitsFromSelectedGroup(theRectangle, theUnitType, 0x50);
+            else
+                theNext = new EEMAddUnitsToSelectedGroup(theRectangle, theUnitType, 0x4f);
+            theMore = theNext->HasRest();
+            gCommunications->ProcessLocalUserInput(theNext, kSlotNone);
+        }
     }
 }
 
