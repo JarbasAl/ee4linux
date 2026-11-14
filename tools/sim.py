@@ -150,6 +150,13 @@ def summary(result):
             f" {epochs}")
 
 
+# Options of ee-aoc --sim for a kind of game; the options after -- come last and win. The default game (a Small map, two
+# computer players, the Prehistoric start) has almost no fights in an hour: the computer players average 1.5 army units.
+# `fights`: three computer players on a Tiny map, lobby control 183 (the start age) at line 8 and control 181 (the
+# resources) at line 4, so the armies meet in the first hour.
+PRESETS = {"fights": ["--ai", "3", "--map-size", "Tiny", "--lobby", "183=#8", "--lobby", "181=#4", "--game-seconds", "3600"]}
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--target", default="linux64", choices=["linux", "linux64"])
@@ -161,8 +168,11 @@ def main():
     ap.add_argument("--wall-timeout", type=int, default=3600, help="wall seconds per run (default 3600)")
     ap.add_argument("--out", type=pathlib.Path, help="the output folder (default build/sim/<time>)")
     ap.add_argument("--ageofai", type=pathlib.Path, help="the ageofai.ini of every run (default the run folder's)")
+    ap.add_argument("--preset", choices=sorted(PRESETS), help="options of a kind of game, before the options after -- "
+                    "(fights: three computer players on a Tiny map, started in a later age with many resources)")
     ap.add_argument("sim_options", nargs="*", help="after --: options of ee-aoc --sim (--ai, --game-seconds, ...)")
     args = ap.parse_args()
+    args.sim_options = PRESETS.get(args.preset, []) + args.sim_options
 
     build = ROOT / "build" / f"port-{args.target}"
     args.run = (args.run or build / "run").resolve()
