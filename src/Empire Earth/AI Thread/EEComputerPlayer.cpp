@@ -5567,8 +5567,10 @@ void EEComputerPlayer::EpochMediaUnloaded(long inEpoch)
 void EEComputerPlayer::Update(unsigned long inTime)
 {
     AgeOfAI::ScenarioFlagScope theScenarioFlag(gWorld.mGameOptions.mIsScenarioGame, AgeOfAI::ClearsScenarioFlag(this->mPlayerID));
-    if (AgeOfAI::EngineOf(this->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
+    if (AgeOfAI::EngineOf(this->mPlayerID) == AgeOfAI::kEngineAgeOfAI) {
         AgeOfAI::TickIntel(this, inTime);
+        AgeOfAI::TickEarly(this, inTime);
+    }
     UWideString theUnused1;
     UWideString theUnused2;
     if (!this->mIsStarted) {

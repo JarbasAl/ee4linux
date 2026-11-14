@@ -49,7 +49,8 @@ PORT_LIB_UNITS = {"lle": ["implode", "explode"], "mixer": ["mssauto"]}
 PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp", "Port/EEPortLinux.cpp", "Port/EESim.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAI.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAISettings.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIIntel.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIIntelScan.cpp",
-                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIRoles.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIRoles.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIEarlyGeometry.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIEarly.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAILead.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAILeadShot.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAILob.cpp"],
               "lle": ["Port/EEPortSim.cpp"]}

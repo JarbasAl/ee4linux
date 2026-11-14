@@ -68,6 +68,10 @@ static void TestFloor()
     Scan t = MakeScan(3000, {Unit(10, 2, kSoldier, 20, 20, 1), Unit(11, 2, kSoldier, 21, 20, 1)});
     t.mEnemies[1].mRevealed = true;
     r.Update(t);
+    Check(r.IsRevealed(11) && !r.IsRevealed(10), "IsRevealed: the unit that hit, not its neighbour");
+    r.Update(MakeScan(6000, {Unit(10, 2, kSoldier, 20, 20, 1), Unit(11, 2, kSoldier, 21, 20, 1)}));
+    Check(!r.IsRevealed(11), "revealed for one scan only");
+    r.Update(t);
     Check(r.SeenNow() == 1 && Find(r, 11) != NULL && Find(r, 10) == NULL, "a revealed unit is seen at the floor, its neighbour is not");
 }
 
