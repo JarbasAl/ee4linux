@@ -246,6 +246,40 @@ void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow)
     theRates.mTime = inNow;
 }
 
+// The attempt at the next epoch, pulled forward: the game plans it by a timer, often long after the player could pay. Before
+// the Copper Age with the copper plan, and in every epoch with epoch_pacing rush, the attempt moves to now as soon as the
+// stock pays the next epoch (the research of the requirements the game then asks for first). A request for them still
+// pending after five minutes is asked again. The follow pacing (waiting for the humans) and the timer pacing's catch-up
+// are not ported.
+void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sPending[16];
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    long theEpoch = Epoch(inPlayer);
+    const int kPacingRush = 2;
+    bool theRush = theSettings.epoch_pacing == kPacingRush;
+    if (!((theSettings.copper_plan != 0 && theEpoch < kFarmEpoch) || theRush))
+        return;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theEpoch < 0 || theEpoch >= 13 || inPlayer->mTechnologies->Get(theEpoch + 1) == NULL)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (theCivilization->mEpochResearchRequested) {
+        if (sPending[idx] == 0 || inNow < sPending[idx])
+            sPending[idx] = inNow ? inNow : 1;
+        else if (inNow - sPending[idx] > 5 * 60000) {
+            theCivilization->mEpochResearchRequested = false;
+            sPending[idx] = 0;
+        }
+    } else
+        sPending[idx] = 0;
+    for (int r = 2; r < 7; r++)
+        if (inPlayer->mResourceCaps[r] < EpochCost(inPlayer, theEpoch + 1, r))
+            return;
+    if (theCivilization->mNextEpochAdvanceTime > inNow + 5000)
+        theCivilization->mNextEpochAdvanceTime = inNow;
+}
+
 // The gatherers wanted of each resource, after the game's own count (EECPResourceManager::Update, every 5 seconds):
 // before the Copper Age the plan of AgeOfAIWorkers.h replaces it
 void EconTargets(EECPResourceManager* inResources)
