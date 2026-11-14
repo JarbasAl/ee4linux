@@ -163,6 +163,8 @@ struct Options {
     unsigned mClassicPlayers = 0;                        // --classic-players: bit n is player n
     std::vector<std::pair<std::string, long>> mArmies;   // --army NAME:COUNT: units of every computer player, sent at an enemy
     double mArmyAt = 120;                                // --army-at S: the game second they appear
+    bool mArmySpot = false;                              // --army-spot X,Y: the armies appear at this tile, whatever the map
+    long mArmySpotX = 0, mArmySpotY = 0;
 };
 
 Options sOptions;
@@ -458,6 +460,10 @@ void SpawnArmies()
         if (theTarget == NULL || theLength < 1)
             continue;
         long theFromX = theBaseX + (long)lround(theDX / theLength * 6), theFromY = theBaseY + (long)lround(theDY / theLength * 6);
+        if (sOptions.mArmySpot) {
+            theFromX = sOptions.mArmySpotX;
+            theFromY = sOptions.mArmySpotY;
+        }
         long theMade = 0, theSlot = 0;
         for (const std::pair<std::string, long>& theArmy : sOptions.mArmies) {
             EEUnitClass* theClass = FindUnitClass(theArmy.first);
@@ -475,8 +481,9 @@ void SpawnArmies()
                 theMade++;
             }
         }
-        Note("ARMY player %lu: %ld units at %ld,%ld, to attack player %lu's building at %ld,%ld", thePlayers[k], theMade, theFromX,
-             theFromY, thePlayers[(k + 1) % thePlayers.size()], (long)theTarget->mTileX, (long)theTarget->mTileY);
+        Note("ARMY player %u: %d units at %d,%d, to attack player %u's building at %d,%d", (unsigned)thePlayers[k], (int)theMade,
+             (int)theFromX, (int)theFromY, (unsigned)thePlayers[(k + 1) % thePlayers.size()], (int)theTarget->mTileX,
+             (int)theTarget->mTileY);
     }
 }
 
@@ -1002,6 +1009,7 @@ const char* kUsage =
     "                         in its name, six tiles from its buildings towards the next player, sent to attack\n"
     "                         that player's nearest building (repeat for more kinds)\n"
     "  --army-at S            the game second the armies appear (default 120)\n"
+    "  --army-spot X,Y        the armies appear at this tile, even off the map (a test of units put off it)\n"
     "  --classic-players L    player numbers, comma apart, that play the classic AI whatever ageofai.ini says\n"
     "  --lobby CONTROL=VALUE  any lobby combo of form 26 by line name or #index (e.g. 209=#2)\n"
     "  --game-seconds S       stop at this game time (default 2700)\n"
@@ -1112,6 +1120,12 @@ int EESimMain(int argc, char** argv)
                 return 64;
             }
             sOptions.mArmies.push_back(std::make_pair(theText.substr(0, theColon), theCount));
+        } else if (theOption == "--army-spot") {
+            if (sscanf(value().c_str(), "%ld,%ld", &sOptions.mArmySpotX, &sOptions.mArmySpotY) != 2) {
+                fprintf(stderr, "ee-aoc --sim: --army-spot takes X,Y\n");
+                return 64;
+            }
+            sOptions.mArmySpot = true;
         } else if (theOption == "--army-at")
             sOptions.mArmyAt = atof(value().c_str());
         else if (theOption == "--classic-players") {

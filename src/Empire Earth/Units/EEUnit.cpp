@@ -594,6 +594,20 @@ void EEUnit::SetHitPoints(long inHitPoints)
 // and divides into reused slots; the four (EEComplexUnit*)this casts follow the EEUnitClass slot types (likely EEUnit*)
 void EEUnit::MoveTo(long inX, long inY, bool inUpdateTiles)
 {
+    // A tile off the map (not the game's own -10000, which takes a unit off the map: garrisoned, loaded) is the nearest tile
+    // on it, and the unit's position moves there too. The world's x-sorted unit list walks off its end for an x past every
+    // unit's, and the game crashed in a long game from a unit put off the map by an unload (Age of AI's offmap.c).
+    if (gWorld.mMap != NULL && gWorld.mMap->mSize > 0 && !(inX == -10000 && inY == -10000)) {
+        long theLimit = (long)gWorld.mMap->mSize - 1;
+        if (inX < 0 || inY < 0 || inX > theLimit || inY > theLimit) {
+            inX = inX < 0 ? 0 : inX > theLimit ? theLimit : inX;
+            inY = inY < 0 ? 0 : inY > theLimit ? theLimit : inY;
+            if (this->mComplexUnit != NULL) {
+                const_cast<GETransformation&>(this->mComplexUnit->mPhysicalModel.GetLocation()).SetX((float)inX + 0.5f);
+                const_cast<GETransformation&>(this->mComplexUnit->mPhysicalModel.GetLocation()).SetY((float)inY + 0.5f);
+            }
+        }
+    }
     long theOldX = this->mTileX;
     long theOldY = this->mTileY;
     RTSRegionTable<EEComplexUnit*>* theRegions = gWorld.mMap ? gWorld.mMap->mUnitRegions : 0;
