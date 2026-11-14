@@ -927,6 +927,9 @@ bool EEUGBuildRepair::EvaluateCondition(EEComplexUnit* inUnit, unsigned long inE
 // Follows a building replaced by another unit, dropping the target when the new unit belongs to an enemy
 void EEUGBuildRepair::ReplaceUnit(EEComplexUnit* inOld, EEComplexUnit* inNew, EEComplexUnit*)
 {
+    // a gate has no part to replace it (EEGetAttackPart gives none): nothing is replaced, and the goal keeps its building
+    if (inNew == NULL)
+        return;
     if (this->mTarget == NULL || this->mTarget->mComplexUnit == NULL || this->mTarget->mComplexUnit != inOld)
         return;
     this->mTarget->mComplexUnit->Dereference();
