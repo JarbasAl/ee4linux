@@ -39,6 +39,7 @@
 #include "ee/EEUnitSetManager.h"
 #include "ee/EECivPowersManager.h"
 #include "ee/EEUCProjectile.h"
+#include "../AI Thread/AgeOfAI/AgeOfAI.h"
 
 // 0x447338: the height below which a projectile has landed (one .rdata copy per unit: a named const)
 static const float kProjectileLowHeight = 3.0f;
@@ -268,6 +269,7 @@ long EEUCProjectile::EvaluateCondition(EEComplexUnit* inUnit, unsigned long inEv
             if (EEUUGetIsUnitClassTargetable(inUnit, theTarget->GetUnitClass()))
                 inUnit->SetGoal(new EEUGAttackUnit(inUnit, theTarget, false, false), 0, 0);
             theFlag = true;
+            AgeOfAI::Projectiles().mHitUnit++;
         }
         break;
     }
@@ -284,6 +286,8 @@ long EEUCProjectile::EvaluateCondition(EEComplexUnit* inUnit, unsigned long inEv
         break;
     case kTriggerProjectileHitGround:
         theFlag = this->CheckGroundImpact(inUnit);
+        if (theFlag)
+            AgeOfAI::Projectiles().mHitGround++;
         break;
     default:
         theResult = EEUnitClass::EvaluateCondition(inUnit, inEvent);

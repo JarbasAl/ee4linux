@@ -70,6 +70,14 @@ includes naval buildings and leaves out its separate ship and aircraft kinds, is
 The rest of this page describes the tool that finds, for each of the mod's hooks, the function, member or class that
 the hook changes here.
 
+## Game fixes
+
+`[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower
+that shoots a plain projectile (an arrow, a stone, a cannon ball) aim where a moving target will be when the shot comes
+down. Before, the aim was the place the target stood when the shot was fired, and a slow projectile missed nearly
+everything that walked across its line of fire. The flight time comes from the game's own arc solver. Missiles steer
+by themselves and are left alone. In a multiplayer game every player needs the same setting.
+
 ## The hook-site index
 
 ```

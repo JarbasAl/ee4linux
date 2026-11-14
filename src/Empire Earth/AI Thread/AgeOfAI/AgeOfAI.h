@@ -9,6 +9,9 @@
 #include "AgeOfAIIntel.h"
 
 class EEComputerPlayer;
+class EEComplexUnit;
+class EEUnit;
+class GE3DPoint;
 
 namespace AgeOfAI {
 
@@ -32,6 +35,16 @@ bool ClearsScenarioFlag(unsigned long inPlayerID);
 // EEComputerPlayer::Update calls it for an Age of AI player.
 void TickIntel(EEComputerPlayer* inPlayer, unsigned long inNow);
 const Intel::Memory& MemoryOf(unsigned long inPlayerID);
+
+// Aiming ahead ([general] lead_targets; AgeOfAILead.h). LeadShot moves a plain projectile's aim to where its moving target
+// will be when it comes down; EEUnitClass::FireShot calls it. The counts are the shots of plain projectiles and how
+// many were led, and the projectiles that came down on a unit and on the ground (the simulator's report).
+bool LeadTargetsOn();
+void LeadShot(EEComplexUnit* inShooter, EEUnit* inTarget, GE3DPoint& ioAim);
+struct ProjectileCounts {
+    unsigned long mFired, mLed, mHitUnit, mHitGround;
+};
+ProjectileCounts& Projectiles();
 
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {

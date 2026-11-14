@@ -134,6 +134,9 @@
 #include "lle/USingleton.h"
 #include "ee/EEComputerPlayer.h"
 #include "ee/EEUnit.h"
+#include "ee/EEUnitClassIDs.h"
+#include "ee/EEUGAttackUnit.h"
+#include "ee/EEUnit.h"
 #include "platform/PlatSim.h"
 
 namespace {
@@ -158,6 +161,8 @@ struct Options {
     long mAutoSaveMs = 0;                                // the game's autosave period (0: none)
     bool mQuiet = false;
     unsigned mClassicPlayers = 0;                        // --classic-players: bit n is player n
+    std::vector<std::pair<std::string, long>> mArmies;   // --army NAME:COUNT: units of every computer player, sent at an enemy
+    double mArmyAt = 120;                                // --army-at S: the game second they appear
 };
 
 Options sOptions;
@@ -381,11 +386,107 @@ void Finish(const char* inOutcome)
     sDone.notify_all();
 }
 
+bool sArmiesSpawned = false;
+
+std::string LowerCase(std::string inText)
+{
+    for (char& c : inText)
+        c = (char)tolower((unsigned char)c);
+    return inText;
+}
+
+// The first land unit class whose name has inName in it (without case), or NULL
+EEUnitClass* FindUnitClass(const std::string& inName)
+{
+    for (unsigned long i = 0; i < 871; i++) {
+        EEUnitClass* theClass = gUnitClassTable[i];
+        if (theClass == NULL || theClass->mCategory != kUnitCategoryLand)
+            continue;
+        if (LowerCase((const char*)theClass->GetName()).find(LowerCase(inName)) != std::string::npos)
+            return theClass;
+    }
+    return NULL;
+}
+
+// The mean tile of a player's buildings; false when it has none
+bool BaseOf(EEPlayer* inPlayer, long& outX, long& outY)
+{
+    long theCount = 0, theX = 0, theY = 0;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (!IsCounted(theUnit) || !IsBuildingCategory(theUnit->mUnitClass->mCategory))
+            continue;
+        theX += theUnit->mTileX;
+        theY += theUnit->mTileY;
+        theCount++;
+    }
+    if (theCount == 0)
+        return false;
+    outX = theX / theCount;
+    outY = theY / theCount;
+    return true;
+}
+
+// --army: at the given game second, each computer player gets the armies of the options, a block of units six tiles from
+// its buildings towards the next computer player, each sent to attack that player's nearest building. The units come
+// from the first land class of that name, the same for every player: a fair fight on any map.
+void SpawnArmies()
+{
+    sArmiesSpawned = true;
+    std::vector<unsigned long> thePlayers;
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++)
+        if ((long)i != gWorld.mCurrentPlayer && gWorld.GetPlayer(i) != NULL && gWorld.GetPlayer(i)->mFirstUnit != NULL)
+            thePlayers.push_back(i);
+    for (size_t k = 0; k < thePlayers.size() && thePlayers.size() > 1; k++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(thePlayers[k]);
+        EEPlayer* theEnemy = gWorld.GetPlayer(thePlayers[(k + 1) % thePlayers.size()]);
+        long theBaseX, theBaseY, theEnemyX, theEnemyY;
+        if (!BaseOf(theOwner, theBaseX, theBaseY) || !BaseOf(theEnemy, theEnemyX, theEnemyY))
+            continue;
+        EEUnit* theTarget = NULL;
+        long theBest = 0;
+        for (EEUnit* theUnit = theEnemy->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (!IsCounted(theUnit) || !IsBuildingCategory(theUnit->mUnitClass->mCategory))
+                continue;
+            long theDistance = (theUnit->mTileX - theBaseX) * (theUnit->mTileX - theBaseX)
+                + (theUnit->mTileY - theBaseY) * (theUnit->mTileY - theBaseY);
+            if (theTarget == NULL || theDistance < theBest) {
+                theTarget = theUnit;
+                theBest = theDistance;
+            }
+        }
+        double theDX = theEnemyX - theBaseX, theDY = theEnemyY - theBaseY, theLength = sqrt(theDX * theDX + theDY * theDY);
+        if (theTarget == NULL || theLength < 1)
+            continue;
+        long theFromX = theBaseX + (long)lround(theDX / theLength * 6), theFromY = theBaseY + (long)lround(theDY / theLength * 6);
+        long theMade = 0, theSlot = 0;
+        for (const std::pair<std::string, long>& theArmy : sOptions.mArmies) {
+            EEUnitClass* theClass = FindUnitClass(theArmy.first);
+            if (theClass == NULL)
+                continue;
+            for (long n = 0; n < theArmy.second; theSlot++) {
+                if (theSlot > 4000)
+                    break;
+                long theX = theFromX + (theSlot % 12) - 6, theY = theFromY + (theSlot / 12);   // rows of 12 tiles
+                EEUnit* theUnit = theClass->CreateUnit(theX, theY, (long)thePlayers[k], false, NULL);
+                if (theUnit == NULL || theUnit->mComplexUnit == NULL)
+                    continue;
+                theUnit->mComplexUnit->SetGoal(new EEUGAttackUnit(theUnit->mComplexUnit, theTarget, false, false), false, 0);
+                n++;
+                theMade++;
+            }
+        }
+        Note("ARMY player %lu: %ld units at %ld,%ld, to attack player %lu's building at %ld,%ld", thePlayers[k], theMade, theFromX,
+             theFromY, thePlayers[(k + 1) % thePlayers.size()], (long)theTarget->mTileX, (long)theTarget->mTileY);
+    }
+}
+
 // the physics thread, after each communications tick, under the physics lock
 void AfterTick()
 {
     long theTime = gPhysics->mGameTime;
     unsigned long theCount = gWorld.GetNumPlayers();
+    if (!sOptions.mArmies.empty() && !sArmiesSpawned && theTime >= (long)(sOptions.mArmyAt * 1000))
+        SpawnArmies();
     if (sSyncFile)
         WriteSyncLine();
     if (sResults.size() < theCount)
@@ -767,6 +868,14 @@ void WriteReport(int inCode, const std::string& inError)
         j += std::string(k ? ", " : "") + "{\"player\": " + std::to_string(sDefeats[k].mPlayer) + ", \"game_ms\": " +
              std::to_string(sDefeats[k].mGameMs) + ", \"pt\": " + std::to_string(sDefeats[k].mPT) + "}";
     j += "],\n";
+    {
+        const AgeOfAI::ProjectileCounts& theCounts = AgeOfAI::Projectiles();
+        char theProjectiles[200];
+        snprintf(theProjectiles, sizeof(theProjectiles),
+                 "  \"projectiles\": {\"fired\": %u, \"led\": %u, \"hit_unit\": %u, \"hit_ground\": %u},\n", (unsigned)theCounts.mFired,
+                 (unsigned)theCounts.mLed, (unsigned)theCounts.mHitUnit, (unsigned)theCounts.mHitGround);
+        j += theProjectiles;
+    }
     j += "  \"players\": " + (theLast ? PlayersJson(*theLast) : std::string("[]")) + ",\n";
     // per world player, the game ms each epoch was first reached (index: the epoch; an epoch never reached is missing
     // from the end)
@@ -889,6 +998,10 @@ const char* kUsage =
     "  --map-size NAME        lobby map size line (default Small)\n"
     "  --map-type NAME        lobby map type line (default Continental)\n"
     "  --difficulty NAME      lobby difficulty line (default Hard)\n"
+    "  --army NAME:COUNT      at --army-at, each computer player gets COUNT units of the first land class with NAME\n"
+    "                         in its name, six tiles from its buildings towards the next player, sent to attack\n"
+    "                         that player's nearest building (repeat for more kinds)\n"
+    "  --army-at S            the game second the armies appear (default 120)\n"
     "  --classic-players L    player numbers, comma apart, that play the classic AI whatever ageofai.ini says\n"
     "  --lobby CONTROL=VALUE  any lobby combo of form 26 by line name or #index (e.g. 209=#2)\n"
     "  --game-seconds S       stop at this game time (default 2700)\n"
@@ -990,6 +1103,17 @@ int EESimMain(int argc, char** argv)
             sOptions.mMapType = value();
         else if (theOption == "--difficulty")
             sOptions.mDifficulty = value();
+        else if (theOption == "--army") {
+            std::string theText = value();
+            size_t theColon = theText.rfind(':');
+            long theCount = theColon == std::string::npos ? 0 : atol(theText.c_str() + theColon + 1);
+            if (theCount < 1) {
+                fprintf(stderr, "ee-aoc --sim: --army takes NAME:COUNT, a part of a land unit's name and how many\n");
+                return 64;
+            }
+            sOptions.mArmies.push_back(std::make_pair(theText.substr(0, theColon), theCount));
+        } else if (theOption == "--army-at")
+            sOptions.mArmyAt = atof(value().c_str());
         else if (theOption == "--classic-players") {
             std::string theList = value();
             for (const char* p = theList.c_str(); *p;) {
