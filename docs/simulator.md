@@ -30,6 +30,11 @@ The options before `--` belong to the tool, and the options after it go to `ee-a
 | `--wall-timeout S` | wall seconds per run (default 3600). The tool kills a run 60 seconds after that. |
 | `--out DIR` | the output folder (default `build/sim/<time>`) |
 | `--ageofai FILE` | the `ageofai.ini` of every run, which selects the AI engine ([Age of AI](ageofai.md)). Without it, a run uses the run folder's file. |
+| `--preset fights` | three computer players on a Tiny map, started in a later age (lobby control 183 at line 8) with many resources (control 181 at line 4), for 3600 game seconds. The options after `--` come last and win. |
+
+The default game (a Small map, two computer players, the Prehistoric start) has almost no fights in an hour: the
+computer players average 1.5 army units. With `--preset fights` they average about 10, and several lose most of their
+population, so changes to combat, aiming and movement show in the scorecard.
 
 After the runs, the tool prints a scorecard per AI engine: for each engine, the computer players, the games they
 won, their defeats, and the mean epoch, population, army, buildings and value at the end. It counts each seed once,
