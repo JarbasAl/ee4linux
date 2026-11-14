@@ -64,6 +64,7 @@ EarlyCounts EarlyCountsOf(unsigned long inPlayerID);
 void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount);
 void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow);
 void EconTargets(EECPResourceManager* inResources);
+void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The stone of the core towers still missing (EarlyTowers): the worker plan counts it
 long EarlyTowerStone(EEComputerPlayer* inPlayer);
 

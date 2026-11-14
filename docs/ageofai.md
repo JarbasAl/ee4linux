@@ -94,6 +94,12 @@ on wood by the next three queued buildings. It gives the gatherers in proportion
 gather: the need divided by the income per worker, measured every 30 game seconds. A few stay on food and wood, and with
 `next_epoch` half the workers (up to `food_floor`) go to food. From the Copper Age on the game's targets stand. The
 military's reserves, the fields' wood, the pull of gatherers to food and the late rules wait for their files.
+
+The game plans its attempt at the next epoch by a timer, often long after the player could pay. With the copper plan,
+before the Copper Age, and in every epoch with `epoch_pacing` `rush`, an Age of AI player moves the attempt to now as
+soon as its stock pays the next epoch (the game then researches the requirements it asks for first). A request for them
+that is still pending after five minutes is asked again. The `follow` pacing (waiting for the humans) and the catch-up of
+the `timer` pacing are not ported.
 `AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the hooks.
 
 ## Game fixes
