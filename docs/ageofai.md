@@ -116,6 +116,20 @@ the kind, 20 at most. After each assignment pass the rebalance moves up to 2 gat
 short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. Not ported yet: the danger test of
 `attack.c`, `local_mines`/`town_work` (off by default) and the overseas mines.
 
+## What is dangerous for the citizens
+
+The game's searches send citizens through the enemy's defences, to sites raiders stand at, and to places where citizens
+were just killed. An Age of AI player (`avoid_towers_citizens`, `citizen_threats`, `threat_memory`, `hurt_seen_short`,
+all on) refuses a mine, field or forest in these cases: a known enemy soldier it sees or remembers (for a minute) within
+its reach, which is its range plus 3 tiles and at most 15 (27 with `citizen_threats`: artillery, ships); citizens hurt
+within 6 tiles lately (1 for food and wood, 3 for stone, gold and iron; for two minutes, or twenty seconds when the raider
+was in sight); and the straight way from the nearest drop site to the site crossing the range plus 2 tiles of a known enemy
+defence (a building or fortress with a ground attack). Every 4 seconds, before the assignment, the player refreshes the
+defences it has seen and compares each citizen's hit points with the last look to mark where one lost some. `AgeOfAIDanger.cpp`
+holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. Not ported yet:
+`raid_held` (a town that holds against the raiders), `behind_walls` and `ship_reach_exact` (off by default), the danger map
+the route searches read, and the rest of `citizens_safety` (the citizens sent back, the strays, the flight, the shelter).
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

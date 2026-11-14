@@ -9,6 +9,7 @@
 #include "AgeOfAIIntel.h"
 
 class EEComputerPlayer;
+class EEPlayer;
 class EECPResourceManager;
 class EEComplexUnit;
 class EEUnit;
@@ -36,6 +37,7 @@ bool ClearsScenarioFlag(unsigned long inPlayerID);
 // EEComputerPlayer::Update calls it for an Age of AI player.
 void TickIntel(EEComputerPlayer* inPlayer, unsigned long inNow);
 const Intel::Memory& MemoryOf(unsigned long inPlayerID);
+bool SeenBy(EEUnit* inUnit, EEPlayer* inViewer);   // attack.c seen_by: what the player knows of a unit
 
 // Aiming ahead ([general] lead_targets; AgeOfAILead.h). LeadShot moves a plain projectile's aim to where its moving target
 // will be when it comes down; EEUnitClass::FireShot calls it. The counts are the shots of plain projectiles and how
@@ -73,6 +75,14 @@ long EarlyTowerStone(EEComputerPlayer* inPlayer);
 EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, bool inBackwards);
 void MineCrowds(EECPResourceManager* inResources);
 void Rebalance(EECPResourceManager* inResources);
+
+// What is dangerous for the citizens (attack.c): SiteDanger is what the mine, food and wood searches refuse; RaidersKnown is raiders in
+// sight or remembered; SafetyTick (every 4 seconds, from the resource manager's update) refreshes the defences seen and the places of
+// the citizens' hurts.
+bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource);
+bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0);
+bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0);
+void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {

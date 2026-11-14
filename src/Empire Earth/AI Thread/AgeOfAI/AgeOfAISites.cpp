@@ -324,7 +324,7 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
         if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY))
             continue;
         const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
-        if (!RouteSafe(theBuild, theDrop.mX, theDrop.mY, theSite->mTileX, theSite->mTileY))
+        if (!RouteSafe(theBuild, theDrop.mX, theDrop.mY, theSite->mTileX, theSite->mTileY) || SiteDanger(thePlayer, theSite, false, (int)inType))
             continue;
         theBest = theSite;
         theBestD = theD;
@@ -346,6 +346,8 @@ EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* i
     if (theResult != NULL)
         return theResult;
     theResult = inResources->FindResourceTargetGame(inType, inUnit, inBackwards);
+    if (theResult != NULL && SiteDanger(thePlayer, theResult, inType == 2, (int)inType))   // the searches refuse a dangerous site
+        theResult = NULL;
     if (theResult != NULL && theSettings.mine_crowds && inType >= 4 && inType < 7) {
         unsigned thePI = thePlayer->mPlayerID & 15;
         AimCount(thePlayer);

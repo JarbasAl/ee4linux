@@ -326,17 +326,6 @@ void EarlyTowers(EEComputerPlayer* inPlayer, const SettingsAI& inSettings, unsig
         }
 }
 
-// seen by the player: its count above the owner's floor, or hitting one of its units; the game's view with honest_vision off
-bool SeenBy(EEUnit* inUnit, EEPlayer* inViewer, const SettingsAI& inSettings)
-{
-    unsigned long theCount = inUnit->mTile != NULL ? inUnit->mTile->GetSightCount(inViewer->mPlayerID) : 0;
-    if (!inSettings.honest_vision)
-        return theCount != 0;
-    const Intel::Memory& theMemory = MemoryOf(inViewer->mPlayerID);
-    unsigned long theOwner = inUnit->mPlayer != NULL ? inUnit->mPlayer->mPlayerID : 0;
-    return theCount > theMemory.Floor((int)theOwner) || theMemory.IsRevealed(inUnit->mUnitID);
-}
-
 // A citizen with an enemy soldier within 5 tiles (or one attacking it), outside its own towers' reach, walks to the nearest
 // finished tower within 25 tiles and stands 1.5 tiles behind it from the enemy, so the raiders that follow come under it.
 // Up to the Bronze Age, every 2 seconds.
@@ -374,7 +363,7 @@ void TowerBait(EEComputerPlayer* inPlayer, const SettingsAI& inSettings, unsigne
                     theCover[theCovers].mY = theUnit->mTileY;
                     theCover[theCovers++].mRange = theRange;
                 }
-            } else if (theEnemyCount < 64 && Roles::IsSoldier(theClass->mCategory, theClass->mFamily) && SeenBy(theUnit, inPlayer, inSettings)) {
+            } else if (theEnemyCount < 64 && Roles::IsSoldier(theClass->mCategory, theClass->mFamily) && SeenBy(theUnit, inPlayer)) {
                 EEUnitGoal* theGoal = theUnit->mComplexUnit != NULL ? theUnit->mComplexUnit->mGoalState : NULL;
                 theEnemies[theEnemyCount].mX = theUnit->mTileX;
                 theEnemies[theEnemyCount].mY = theUnit->mTileY;
