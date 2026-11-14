@@ -129,6 +129,7 @@
 #include "ee/EECPCivilizationManager.h"
 #include "AgeOfAI.h"
 #include "AgeOfAISettings.h"
+#include "AgeOfAIRoles.h"
 #include "AgeOfAIWorkers.h"
 
 namespace AgeOfAI {
@@ -209,6 +210,39 @@ long QueuedWood(EEComputerPlayer* inPlayer, EECPBuildManager* inBuild)
     return theWood;
 }
 
+}
+
+TrainingScope::TrainingScope(EEComputerPlayer* inPlayer, long inUnitClass) : mPlayer(inPlayer)
+{
+    for (int r = 0; r < 7; r++)
+        this->mHidden[r] = 0;
+    if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (theSettings.copper_plan == 0 || Epoch(inPlayer) >= kFarmEpoch || inPlayer->mCivilizationManager == NULL
+        || inPlayer->mCivilizationManager->mResourceManager == NULL)
+        return;
+    long theStock[7], theReserve[7], theVisible[7];
+    for (int r = 0; r < 7; r++)
+        theStock[r] = inPlayer->mResourceCaps[r];
+    BudgetReserve(inPlayer, theSettings.copper_plan, theReserve);
+    bool theCitizen = false;
+    if (inUnitClass >= 0 && inUnitClass < 871 && gUnitClassTable[inUnitClass] != NULL) {
+        EEUnitClass* theClass = gUnitClassTable[inUnitClass];
+        theCitizen = (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kCitizen) != 0;
+    }
+    Workers::Visible(theStock, theReserve, theCitizen, theSettings.copper_plan, Workforce(inPlayer->mCivilizationManager->mResourceManager),
+                     theSettings.min_workforce, theVisible);
+    for (int r = 2; r < 7; r++) {
+        this->mHidden[r] = theStock[r] - theVisible[r];
+        inPlayer->mResourceCaps[r] -= this->mHidden[r];
+    }
+}
+
+TrainingScope::~TrainingScope()
+{
+    for (int r = 2; r < 7; r++)
+        this->mPlayer->mResourceCaps[r] += this->mHidden[r];
 }
 
 // An income of the player's, from EEComputerPlayer::AddResource

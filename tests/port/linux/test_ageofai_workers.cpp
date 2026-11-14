@@ -80,8 +80,30 @@ static void TestSplit()
     Check(!Split(negative, kPerWorker, 20, true, 1, 18, keep), "negative needs count as none");
 }
 
+static void TestVisible()
+{
+    long stock[7] = {0, 0, 600, 300, 100, 900, 50}, reserve[7] = {0, 0, 400, 100, 0, 800, 200}, visible[7];
+    // a soldier: the stock above the reserve; below it 0 (iron 50 of 200 reserve)
+    Visible(stock, reserve, false, 1, 50, 40, visible);
+    Check(visible[2] == 200 && visible[3] == 200 && visible[4] == 100 && visible[5] == 100 && visible[6] == 0,
+          "a soldier sees the stock above the reserve: 200, 200, 100, 100, 0");
+    // a citizen, workforce 5 (under 10): the whole stock
+    Visible(stock, reserve, true, 1, 5, 40, visible);
+    Check(visible[2] == 600 && visible[5] == 900, "a citizen with a workforce of 5 sees everything");
+    // a citizen, workforce 30 (under min_workforce 40): the whole stock too (the economy grows first)
+    Visible(stock, reserve, true, 1, 30, 40, visible);
+    Check(visible[2] == 600, "a workforce of 30 of 40: the whole food");
+    // a citizen, workforce 45: its food is under the reserve, the other resources are all visible (citizens pay food only)
+    Visible(stock, reserve, true, 1, 45, 40, visible);
+    Check(visible[2] == 200 && visible[3] == 300 && visible[5] == 900, "a workforce of 45: food above the reserve (200), the rest all");
+    // copper plan 0 (the game): a citizen sees the stock above the reserve like a soldier
+    Visible(stock, reserve, true, 0, 5, 40, visible);
+    Check(visible[2] == 200, "no copper plan: no exception for citizens");
+}
+
 int main()
 {
+    TestVisible();
     TestNeeds();
     TestSplit();
     printf("test_ageofai_workers.cpp: %d checks, %d failed\n", sChecks, sFailures);

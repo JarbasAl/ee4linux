@@ -68,6 +68,21 @@ void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The stone of the core towers still missing (EarlyTowers): the worker plan counts it
 long EarlyTowerStone(EEComputerPlayer* inPlayer);
 
+// The reserve of the next epoch, held back from a training order (AgeOfAIWorkers.h Visible). EECPUnitManager::StartProduction
+// makes one: for an Age of AI player before the Copper Age with the copper plan, the stock above what the order may spend
+// is taken out of the player's stock for the call and put back after, so the game's own training sees the rest only.
+class TrainingScope {
+public:
+    TrainingScope(EEComputerPlayer* inPlayer, long inUnitClass);
+    ~TrainingScope();
+    TrainingScope(const TrainingScope&) = delete;
+    TrainingScope& operator=(const TrainingScope&) = delete;
+
+private:
+    EEComputerPlayer* mPlayer;
+    long mHidden[7];
+};
+
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {
 public:

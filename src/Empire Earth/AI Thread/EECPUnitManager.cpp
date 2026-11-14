@@ -1,6 +1,7 @@
 // C:\EEX\Empire Earth\AI Thread\EECPUnitManager.cpp (file name inferred: no __FILE__; the class-static key
 // "EECPUnitManager-Data", guarded chain 0x9350f..0x93552). A computer player's unit manager: 0x9350f..0x979ff.
 // The deque/map/sort COMDATs 0x95e70.. follow from the source.
+#include "AgeOfAI/AgeOfAI.h"
 #include <windows.h>
 #include <vector>
 #include <deque>
@@ -821,6 +822,7 @@ long EECPUnitManager::Save(unsigned long inMajorVersion, unsigned long inMinorVe
 // the continent with the most; returns true and the count started
 bool EECPUnitManager::StartProduction(EECPUMRequest& inRequest, long& outMade)
 {
+    AgeOfAI::TrainingScope theBudget(this->mManager->mPlayer, inRequest.mUnitClass);
     std::vector<EEComplexUnit*> theUnits;
     std::vector<EEComplexUnit*> theCandidates;
     std::map<unsigned short, unsigned long> theCounts;

@@ -77,5 +77,20 @@ bool Split(const long inNeed[7], const float inPerWorker[7], int inTotal, bool i
     return true;
 }
 
+void Visible(const long inStock[7], const long inReserve[7], bool inCitizen, int inCopperPlan, long inWorkforce,
+             long inMinWorkforce, long outVisible[7])
+{
+    for (int r = 0; r < 7; r++)
+        outVisible[r] = inStock[r];
+    for (int r = kFirst; r <= kLast; r++) {
+        long theVisible = inStock[r] - inReserve[r];
+        if (inCitizen && inCopperPlan != 0) {
+            if (r != 2 || inWorkforce < 10 || inWorkforce < inMinWorkforce)
+                theVisible = inStock[r];
+        }
+        outVisible[r] = theVisible < 0 ? 0 : theVisible > inStock[r] ? inStock[r] : theVisible;
+    }
+}
+
 }
 }

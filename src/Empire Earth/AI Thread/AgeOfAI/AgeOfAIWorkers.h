@@ -33,6 +33,13 @@ void Needs(const long inDemand[7], const long inStock[7], const long inReserve[7
 bool Split(const long inNeed[7], const float inPerWorker[7], int inTotal, bool inReservePlan, int inCopperPlan,
            int inFoodFloor, unsigned long ioTarget[7]);
 
+// What a training order may spend (outVisible[2..6]) of the stock, the reserve held back for the next epoch. A unit that is no
+// citizen sees the stock above the reserve. A citizen before farms (inCopperPlan 1 or 2) sees the whole stock of wood,
+// stone, gold and iron (the plan counts it), and of food while the workforce is under 10 or under inMinWorkforce (the
+// economy grows first); above that the reserve applies to it too.
+void Visible(const long inStock[7], const long inReserve[7], bool inCitizen, int inCopperPlan, long inWorkforce,
+             long inMinWorkforce, long outVisible[7]);
+
 }
 }
 
