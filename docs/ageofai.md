@@ -102,6 +102,20 @@ that is still pending after five minutes is asked again. The `follow` pacing (wa
 the `timer` pacing are not ported.
 `AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the hooks.
 
+## Mines and the worker rebalance
+
+The game's assignment hands out idle citizens only and never takes a gatherer back, and its mine search takes the first
+acceptable mine in the order of the resource centers. An Age of AI player (`mine_choice`, `mine_crowds`, `rebalance_workers`,
+all on) searches differently for stone, gold and iron: the free mine nearest to one of its drop sites (Town Center,
+Capitol, Settlement), with the game's checks (an active resource center, explored, a free gatherer slot, no enemy near,
+the citizen's continent) and no known enemy on the straight way from that drop site; with nothing found, the game's own
+search. A mine counts as full when the working gatherers or the AI's own citizens aiming at it reach the cap, since the
+game counts only those that work. Every 10 seconds the citizens beyond the cap at a mine go to the nearest free mine of
+the kind, 20 at most. After each assignment pass the rebalance moves up to 2 gatherers (4 with `citizen_plan`
+`mine_slots`) from the resource with the most gatherers above its wanted count to a stone, gold or iron mine that is
+short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. Not ported yet: the danger test of
+`attack.c`, `local_mines`/`town_work` (off by default) and the overseas mines.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

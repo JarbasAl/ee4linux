@@ -68,6 +68,12 @@ void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The stone of the core towers still missing (EarlyTowers): the worker plan counts it
 long EarlyTowerStone(EEComputerPlayer* inPlayer);
 
+// The mine search of an Age of AI player (sites.c): EECPResourceManager::FindResourceTarget calls it for such a player. The rebalance
+// (econ.c, with the mine crowds) runs after each assignment pass.
+EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, bool inBackwards);
+void MineCrowds(EECPResourceManager* inResources);
+void Rebalance(EECPResourceManager* inResources);
+
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {
 public:

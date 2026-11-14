@@ -42,6 +42,7 @@ public:
     void GetIdleFarms(long inMax, std::vector<EEComplexUnit*>& outUnits);  // 0x90a63 (ret 8)
     EEUnit* FindForestTarget(long inResource, EEComplexUnit* inUnit);  // 0x90af3 (ret 8)
     EEUnit* FindResourceTarget(long inResource, EEComplexUnit* inUnit, bool inArg);  // 0x90cb5 (ret 0xc)
+    EEUnit* FindResourceTargetGame(long inResource, EEComplexUnit* inUnit, bool inArg);  // port: the game's own search, FindResourceTarget's body
     EEUnit* FindNearestDock(EEComplexUnit* inUnit); // 0x90ec6 (ret 4)
     EEComplexUnit* FindNearestTownCenter(EEComplexUnit* inUnit);  // 0x90f72 (ret 4): the nearest of the player's 0x2b/0x23/0x29 units
     void Earn(long inResource, unsigned long inAmount);   // 0x91037 (ret 8; EEComputerPlayer 0x3eea8)

@@ -77,5 +77,19 @@ bool Split(const long inNeed[7], const float inPerWorker[7], int inTotal, bool i
     return true;
 }
 
+int Donor(const long inCount[7], const unsigned long inTarget[7], int inDry, int inFor)
+{
+    int theDonor = -1;
+    long theBest = 2;
+    for (int t = kFirst; t <= kLast; t++) {
+        long theSurplus = inCount[t] - (long)inTarget[t];
+        if (t != inFor && !((inDry >> t) & 1) && theSurplus > theBest) {
+            theBest = theSurplus;
+            theDonor = t;
+        }
+    }
+    return theDonor;
+}
+
 }
 }

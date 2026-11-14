@@ -33,6 +33,12 @@ void Needs(const long inDemand[7], const long inStock[7], const long inReserve[7
 bool Split(const long inNeed[7], const float inPerWorker[7], int inTotal, bool inReservePlan, int inCopperPlan,
            int inFoodFloor, unsigned long ioTarget[7]);
 
+// The rebalance: the game's assignment only hands out idle citizens and never takes a gatherer back, so workers stay where an
+// old target sent them (21 on iron with a target of 9 while gold had 5). Resource inFor is short by 2 or more: the donor is
+// the resource, other than inFor and not in the mask inDry (bit r), with the most gatherers above its target, and at least 3
+// above it (a surplus of 2 stays as a margin). -1 for none. inCount is the gatherers on each resource.
+int Donor(const long inCount[7], const unsigned long inTarget[7], int inDry, int inFor);
+
 }
 }
 
