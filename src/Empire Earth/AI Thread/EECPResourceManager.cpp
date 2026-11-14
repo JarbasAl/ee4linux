@@ -1513,6 +1513,8 @@ void EECPResourceManager::Update(unsigned long inTime)
     if (inTime >= this->mNextAssignGatherersTime) {
         if (this->mNextAssignGatherersTime > 0)
             {
+                if (AgeOfAI::EngineOf(thePlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
+                    AgeOfAI::SafetyTick(thePlayer, inTime);   // before the assignment
                 this->AssignGatherers();
                 AgeOfAI::Rebalance(this);
             }

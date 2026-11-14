@@ -223,4 +223,19 @@ void TickIntel(EEComputerPlayer* inPlayer, unsigned long inNow)
     theMemory.Update(ScanFor(inPlayer, (unsigned)inNow, gSettingsAI[theDifficulty].reveal_attackers != 0));
 }
 
+// What player pl knows of unit u (attack.c seen_by). The count is how many of pl's (and its allies') units see u now, plus a
+// floor every unit of the human carries in the AIs' slots (the AIs see the human's units everywhere). With honest_vision seen is
+// above that floor, or hitting one of pl's units, or a building pl has seen before; without it the count as the game keeps it.
+bool SeenBy(EEUnit* inUnit, EEPlayer* inViewer)
+{
+    unsigned long theCount = inUnit->mTile != NULL ? inUnit->mTile->GetSightCount(inViewer->mPlayerID) : 0;
+    if (!gSettingsAI[kDifficultyMedium].honest_vision)
+        return theCount != 0;
+    const Intel::Memory& theMemory = MemoryOf(inViewer->mPlayerID);
+    unsigned long theOwner = inUnit->mPlayer != NULL ? inUnit->mPlayer->mPlayerID : 0;
+    if (theCount > theMemory.Floor((int)theOwner) || theMemory.IsRevealed(inUnit->mUnitID))
+        return true;
+    return inUnit->mUnitClass != NULL && Roles::IsBuildingCategory(inUnit->mUnitClass->mCategory) && theMemory.Remembers(inUnit->mUnitID);
+}
+
 }

@@ -97,6 +97,7 @@ public:
     const std::vector<Record>& Records() const { return this->mRecords; }
     unsigned Floor(int inOwner) const { return inOwner >= 0 && inOwner < 16 ? this->mFloor[inOwner] : 0; }
     unsigned Now() const { return this->mNow; }
+    unsigned Last() const { return this->mLast; }
     unsigned SeenNow() const { return this->mSeenNow; }
     unsigned Dropped() const { return this->mDropped; }
     unsigned Moved() const { return this->mMoved; }
