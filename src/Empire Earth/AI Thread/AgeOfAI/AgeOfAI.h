@@ -9,6 +9,7 @@
 #include "AgeOfAIIntel.h"
 
 class EEComputerPlayer;
+class EECPResourceManager;
 class EEComplexUnit;
 class EEUnit;
 class GE3DPoint;
@@ -57,6 +58,14 @@ struct EarlyCounts {
     unsigned long mQueued, mPlaced, mBuilders, mBaits;   // towers queued, core spots handed out, builders added, citizens sent to bait
 };
 EarlyCounts EarlyCountsOf(unsigned long inPlayerID);
+
+// The economy of an Age of AI player (AgeOfAIWorkers.h). OnIncome is called from EEComputerPlayer::AddResource, RatesUpdate
+// from its update, EconTargets from EECPResourceManager::Update after the game's count of wanted gatherers.
+void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount);
+void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow);
+void EconTargets(EECPResourceManager* inResources);
+// The stone of the core towers still missing (EarlyTowers): the worker plan counts it
+long EarlyTowerStone(EEComputerPlayer* inPlayer);
 
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {

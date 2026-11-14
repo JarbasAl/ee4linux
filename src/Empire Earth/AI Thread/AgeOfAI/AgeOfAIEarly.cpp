@@ -432,6 +432,25 @@ void TowerBait(EEComputerPlayer* inPlayer, const SettingsAI& inSettings, unsigne
 
 }
 
+long EarlyTowerStone(EEComputerPlayer* inPlayer)
+{
+    const SettingsAI& theSettings = gSettingsAI[inPlayer->GetDifficulty() > 2 ? 1 : inPlayer->GetDifficulty()];
+    if (!theSettings.early_towers || Epoch(inPlayer) > 1 || inPlayer->mCivilizationManager == NULL ||
+        inPlayer->mCivilizationManager->mBuildManager == NULL)
+        return 0;
+    EECPBuildManager* theBuild = inPlayer->mCivilizationManager->mBuildManager;
+    long theType = NewestTower(inPlayer);
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theType == 0 || theBaseX == -10000)
+        return 0;
+    int theFinished, theAll;
+    TowersAt(inPlayer, theBaseX, theBaseY, Early::kCoreDistance + 3, theFinished, theAll);
+    if (theAll >= Early::kCoreTowers)
+        return 0;
+    EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[theType]->mTechnology);
+    return (Early::kCoreTowers - theAll) * (theNode != NULL ? theNode->GetCost(kResourceStone, theType, 1.0f) : 0);
+}
+
 EarlyCounts EarlyCountsOf(unsigned long inPlayerID)
 {
     const EarlyState& theState = sEarly[inPlayerID & 15];

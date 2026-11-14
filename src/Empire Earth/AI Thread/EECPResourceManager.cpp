@@ -1,6 +1,7 @@
 // C:\EEX\Empire Earth\AI Thread\EECPResourceManager.cpp (file name inferred: no __FILE__; the class-static key
 // "EECPResourceManager-Data"). A computer player's resource manager: 0x8e702..0x9350f (the key chain first, then two
 // sort predicates, the members in address order, the sort/find_if COMDATs last).
+#include "AgeOfAI/AgeOfAI.h"
 #include <windows.h>
 #include <vector>
 #include <deque>
@@ -1495,8 +1496,10 @@ void EECPResourceManager::Update(unsigned long inTime)
     if (!thePlayer->mCanGather)
         return;
     if (inTime >= this->mNextWantedGatherersTime) {
-        if (this->mNextWantedGatherersTime > 0)
+        if (this->mNextWantedGatherersTime > 0) {
             this->UpdateWantedGatherers();
+            AgeOfAI::EconTargets(this);
+        }
         this->mNextWantedGatherersTime = inTime + 5000;
     }
     if (inTime >= this->mNextAssignGatherersTime) {
