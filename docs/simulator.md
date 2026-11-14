@@ -31,6 +31,13 @@ The options before `--` belong to the tool, and the options after it go to `ee-a
 | `--out DIR` | the output folder (default `build/sim/<time>`) |
 | `--ageofai FILE` | the `ageofai.ini` of every run, which selects the AI engine ([Age of AI](ageofai.md)). Without it, a run uses the run folder's file. |
 
+After the runs, the tool prints a scorecard per AI engine: for each engine, the computer players, the games they
+won, their defeats, and the mean epoch, population, army, buildings and value at the end. It counts each seed once,
+by its first run that played. Each player in a report has an `engine` field: `classic`, `ageofai` or `human`. The game option
+`--classic-players 3,4` keeps those players on the classic AI whatever `ageofai.ini` says, so one game holds both
+engines and the scorecard compares them. A scorecard of one engine against itself shows the noise between the
+players' starting positions.
+
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.
 
@@ -54,6 +61,7 @@ tool exits 1 when a run fails, a seed does not agree, or a report is missing.
 | `--map-size NAME` | the lobby's map size line (default `Small`) |
 | `--map-type NAME` | the lobby's map type line (default the first, `Continental`) |
 | `--difficulty NAME` | the lobby's difficulty line (default `Hard`) |
+| `--classic-players LIST` | player numbers, comma apart, that play the classic AI whatever `ageofai.ini` says |
 | `--lobby CONTROL=VALUE` | any lobby list, by line name or `#index`, for example `209=#2` |
 | `--game-seconds S` | the game time at which the run stops (default 2700) |
 | `--sample-seconds S` | the game time between report samples (default 30) |

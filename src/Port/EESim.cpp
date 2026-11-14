@@ -93,6 +93,7 @@
 #include "lle/NESynchronousServer.h"
 #include "lle/FSRestorable.h"
 #include "ee/EmpireEarth.h"
+#include "AgeOfAI/AgeOfAI.h"
 #include "ee/EEAction.h"
 #include "ee/EEARemovePlayer.h"
 #include "ee/EEMessage.h"
@@ -156,6 +157,7 @@ struct Options {
     long mPortOffset = -1;                               // -1: from the process id
     long mAutoSaveMs = 0;                                // the game's autosave period (0: none)
     bool mQuiet = false;
+    unsigned mClassicPlayers = 0;                        // --classic-players: bit n is player n
 };
 
 Options sOptions;
@@ -675,11 +677,15 @@ std::string PlayersJson(const Sample& inSample)
         const PlayerSample& p = inSample.mPlayers[k];
         char theText[512];
         snprintf(theText, sizeof(theText),
-                 "%s{\"index\": %lu, \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "
+                 "%s{\"index\": %lu, \"engine\": \"%s\", \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "
                  "\"victory_units\": %ld, \"citizens\": %ld, \"army\": %ld, \"buildings\": %ld, \"strength\": %ld, "
                  "\"value\": %ld, \"resources\": {\"food\": %ld, \"wood\": %ld, \"stone\": %ld, \"gold\": %ld, "
                  "\"iron\": %ld}}",
-                 k ? ", " : "", p.mIndex, p.mHuman ? "true" : "false", p.mResult, p.mEpoch, p.mPopulation,
+                 k ? ", " : "", p.mIndex,
+                 p.mHuman                                                           ? "human"
+                 : AgeOfAI::EngineOf(p.mIndex) == AgeOfAI::kEngineAgeOfAI ? "ageofai"
+                                                                               : "classic",
+                 p.mHuman ? "true" : "false", p.mResult, p.mEpoch, p.mPopulation,
                  p.mVictoryUnits, p.mCitizens, p.mArmy, p.mBuildings, p.mStrength, p.mValue, p.mResources[0],
                  p.mResources[1], p.mResources[2], p.mResources[3], p.mResources[4]);
         theOut += theText;
@@ -859,6 +865,7 @@ const char* kUsage =
     "  --map-size NAME        lobby map size line (default Small)\n"
     "  --map-type NAME        lobby map type line (default Continental)\n"
     "  --difficulty NAME      lobby difficulty line (default Hard)\n"
+    "  --classic-players L    player numbers, comma apart, that play the classic AI whatever ageofai.ini says\n"
     "  --lobby CONTROL=VALUE  any lobby combo of form 26 by line name or #index (e.g. 209=#2)\n"
     "  --game-seconds S       stop at this game time (default 2700)\n"
     "  --sample-seconds S     report sample interval in game seconds (default 30)\n"
@@ -959,6 +966,20 @@ int EESimMain(int argc, char** argv)
             sOptions.mMapType = value();
         else if (theOption == "--difficulty")
             sOptions.mDifficulty = value();
+        else if (theOption == "--classic-players") {
+            std::string theList = value();
+            for (const char* p = theList.c_str(); *p;) {
+                char* theEnd;
+                long n = strtol(p, &theEnd, 10);
+                if (theEnd == p || n < 1 || n > 15) {
+                    fprintf(stderr, "ee-aoc --sim: --classic-players takes player numbers 1..15, comma apart\n");
+                    return 64;
+                }
+                sOptions.mClassicPlayers |= 1u << n;
+                p = *theEnd == ',' ? theEnd + 1 : theEnd;
+            }
+            AgeOfAI::SetClassicPlayers(sOptions.mClassicPlayers);
+        }
         else if (theOption == "--lobby") {
             std::string theValue = value();
             size_t theEqual = theValue.find('=');

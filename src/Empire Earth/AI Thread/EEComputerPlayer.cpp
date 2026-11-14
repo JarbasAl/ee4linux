@@ -5566,7 +5566,7 @@ void EEComputerPlayer::EpochMediaUnloaded(long inEpoch)
 // expansion timers and the manager updates; finally kills the units queued as stranded
 void EEComputerPlayer::Update(unsigned long inTime)
 {
-    AgeOfAI::ScenarioFlagScope theScenarioFlag(gWorld.mGameOptions.mIsScenarioGame, AgeOfAI::ClearsScenarioFlag(this));
+    AgeOfAI::ScenarioFlagScope theScenarioFlag(gWorld.mGameOptions.mIsScenarioGame, AgeOfAI::ClearsScenarioFlag(this->mPlayerID));
     UWideString theUnused1;
     UWideString theUnused2;
     if (!this->mIsStarted) {
