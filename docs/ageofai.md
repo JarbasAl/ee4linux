@@ -78,6 +78,12 @@ down. Before, the aim was the place the target stood when the shot was fired, an
 everything that walked across its line of fire. The flight time comes from the game's own arc solver. Missiles steer
 by themselves and are left alone. In a multiplayer game every player needs the same setting.
 
+`[general] lob_each_shot` (on) changes how archers, slingers, the pilum and the trebuchet fire over walls. The game lets
+them shoot flat until one shot hits a wall, then lobs every later shot until they get a new order, wall gone or not. Now
+a unit looks along the line to its target before each shot: a wall in the way gets the high arc, else the shot is flat.
+After the game's own flat shot hit a wall, the unit lobs four more shots before it looks again. In a multiplayer game
+every player needs the same setting.
+
 ## The hook-site index
 
 ```
