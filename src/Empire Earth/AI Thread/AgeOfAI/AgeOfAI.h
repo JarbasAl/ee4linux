@@ -6,6 +6,10 @@
 #ifndef AGEOFAI_AGEOFAI_H
 #define AGEOFAI_AGEOFAI_H
 
+#include "AgeOfAIIntel.h"
+
+class EEComputerPlayer;
+
 namespace AgeOfAI {
 
 enum Engine { kEngineClassic, kEngineAgeOfAI };
@@ -22,6 +26,12 @@ void SetClassicPlayers(unsigned inMask);
 // started from the menu sets the flag, and several of the classic AI's routines then skip their planning, so the AI
 // only gathers. Editor test-play and saved games leave it clear. dll/engine/scenario_ai.c upstream.
 bool ClearsScenarioFlag(unsigned long inPlayerID);
+
+// What an Age of AI player knows of its enemies (AgeOfAIIntel.h), kept per player number. TickIntel takes the
+// player's scan when one is due (every 3 game seconds) and [ai_base] honest_vision is on for its difficulty;
+// EEComputerPlayer::Update calls it for an Age of AI player.
+void TickIntel(EEComputerPlayer* inPlayer, unsigned long inNow);
+const Intel::Memory& MemoryOf(unsigned long inPlayerID);
 
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {

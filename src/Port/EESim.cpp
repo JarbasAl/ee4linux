@@ -228,6 +228,9 @@ struct PlayerSample {
     long mValue = 0;            // the cost of every live unit and building, all resources summed
     long mResources[5] = {0, 0, 0, 0, 0};
     unsigned long mResult = 0;  // EEPlayer::mGameResult: 1 victorious, 2 defeated
+    // an Age of AI player's memory (AgeOfAI::MemoryOf); mHasIntel is false for the others
+    bool mHasIntel = false;
+    long mIntelRecords = 0, mIntelBuildings = 0, mIntelSoldiers = 0, mIntelSeenNow = 0, mIntelCells = 0, mIntelArmy = 0;
 };
 
 struct Sample {
@@ -290,6 +293,21 @@ Sample TakeSample()
         p.mPopulation = thePlayer->mPopulationCount;
         p.mVictoryUnits = thePlayer->mEndOfGameCount;
         p.mResult = thePlayer->mGameResult;
+        if (!p.mHuman && AgeOfAI::EngineOf(i) == AgeOfAI::kEngineAgeOfAI) {
+            const AgeOfAI::Intel::Memory& theMemory = AgeOfAI::MemoryOf(i);
+            p.mHasIntel = true;
+            p.mIntelRecords = (long)theMemory.Records().size();
+            for (const AgeOfAI::Intel::Record& theRecord : theMemory.Records()) {
+                p.mIntelBuildings += theRecord.mKind == AgeOfAI::Intel::kBuilding;
+                p.mIntelSoldiers += theRecord.mKind == AgeOfAI::Intel::kSoldier;
+            }
+            p.mIntelSeenNow = (long)theMemory.SeenNow();
+            p.mIntelCells = theMemory.CellsLooked(0, true);
+            float theHP = 0, theAttack = 0, thePower = 0;
+            int theCount = 0;
+            theMemory.Army(theHP, theAttack, thePower, theCount);
+            p.mIntelArmy = theCount;
+        }
         for (long r = 0; r < 5; r++)
             p.mResources[r] = thePlayer->mResourceCaps[kResourceFood + r];
         for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
@@ -675,19 +693,25 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theText[512];
+        char theIntel[256] = "";
+        if (p.mHasIntel)
+            snprintf(theIntel, sizeof(theIntel),
+                     ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
+                     "\"cells_looked\": %ld, \"army\": %ld}",
+                     p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy);
+        char theText[768];
         snprintf(theText, sizeof(theText),
                  "%s{\"index\": %lu, \"engine\": \"%s\", \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "
                  "\"victory_units\": %ld, \"citizens\": %ld, \"army\": %ld, \"buildings\": %ld, \"strength\": %ld, "
                  "\"value\": %ld, \"resources\": {\"food\": %ld, \"wood\": %ld, \"stone\": %ld, \"gold\": %ld, "
-                 "\"iron\": %ld}}",
+                 "\"iron\": %ld}%s}",
                  k ? ", " : "", p.mIndex,
                  p.mHuman                                                           ? "human"
                  : AgeOfAI::EngineOf(p.mIndex) == AgeOfAI::kEngineAgeOfAI ? "ageofai"
                                                                                : "classic",
                  p.mHuman ? "true" : "false", p.mResult, p.mEpoch, p.mPopulation,
                  p.mVictoryUnits, p.mCitizens, p.mArmy, p.mBuildings, p.mStrength, p.mValue, p.mResources[0],
-                 p.mResources[1], p.mResources[2], p.mResources[3], p.mResources[4]);
+                 p.mResources[1], p.mResources[2], p.mResources[3], p.mResources[4], theIntel);
         theOut += theText;
     }
     return theOut + "]";

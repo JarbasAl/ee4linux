@@ -37,6 +37,33 @@ ageofai: ageofai.ini [general] bogus: no such setting (a misspelt key?) - ignore
 
 `tools/sim.py --ageofai FILE` gives every simulated game that file ([simulator](simulator.md)).
 
+## What an Age of AI player knows
+
+The classic AI sees every unit of the human everywhere: the game keeps, for each unit, how many units of each player
+see it, and every unit of the human carries a floor of that count in the computer players' slots. With
+`[ai_base] honest_vision` (on by default, per difficulty) an Age of AI player sees a unit only when its count is above
+the least count among that owner's units, or when the unit is hitting one of the player's own units
+(`reveal_attackers`, on by default). The player keeps a memory of what it saw:
+
+- A building stays known until its place is looked at and it is gone. A building that leaves the game within six
+  seconds of its last sighting died in sight, and is dropped at once.
+- A soldier counts for 10 minutes at the place where it was seen. When a unit of the player or an ally comes within six
+  tiles of that place and the soldier is not seen, the soldier is "somewhere": it still counts in the army the player
+  knows of, but no longer at a place.
+- A place is looked at when a unit of the player or an ally is within eight tiles. The map is cut into cells of 6x6 tiles.
+- The memory holds 1024 records; a new sighting in a full memory replaces the oldest record.
+
+The memory is `AgeOfAIIntel.cpp`, and it knows no game types. `AgeOfAIIntelScan.cpp` reads the game into a scan every
+three game seconds, for each Age of AI player, from `EEComputerPlayer::Update`. A unit is known by its unit id, so the
+memory does not depend on where the heap puts the unit. The report of a simulated game gives each Age of AI player an
+`intel` object: records, buildings and soldiers remembered, units seen at the last scan, cells looked at, and the
+soldiers in the army it knows of.
+
+Nothing reads the memory yet: the modules that judge an enemy's strength, the defence of a place or the danger of a
+route ask it, and each arrives in its own change. A soldier is any unit of a military class: land, naval, air, heroes,
+priests and transports; not citizens, rams, animals, shots or buildings. Upstream's own test, an "army family" that
+includes naval buildings and leaves out its separate ship and aircraft kinds, is not copied.
+
 The rest of this page describes the tool that finds, for each of the mod's hooks, the function, member or class that
 the hook changes here.
 
