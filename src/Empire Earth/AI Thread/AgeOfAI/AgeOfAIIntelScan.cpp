@@ -121,6 +121,7 @@
 #include "ee/EEUnitClassIDs.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIIntel.h"
+#include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
 
 namespace AgeOfAI {
@@ -129,27 +130,11 @@ namespace {
 
 Intel::Memory sMemories[16];
 
-bool IsBuildingCategory(unsigned long inCategory)
-{
-    return inCategory == kUnitCategoryBuilding || inCategory == kUnitCategoryBuilding19 || inCategory == kUnitCategoryNavalBuilding
-        || inCategory == kUnitCategoryMiningBuilding || inCategory == kUnitCategoryGate || inCategory == kUnitCategoryFortress
-        || inCategory == kUnitCategoryBuildingPriest || inCategory == kUnitCategorySpaceBuilding;
-}
-
-// A building, a soldier (the army's classes: land, naval, air, heroes, priests, transports; not citizens, rams, shots,
-// animals), or other. Upstream tells a soldier by its "army family" and cannot reach its ship and aircraft kinds, so
-// ships and aircraft are soldiers there too.
 Intel::Kind KindOf(EEUnitClass* inClass)
 {
-    unsigned long theCategory = inClass->mCategory;
-    if (IsBuildingCategory(theCategory))
+    if (Roles::IsBuildingCategory(inClass->mCategory))
         return Intel::kBuilding;
-    if (theCategory == kUnitCategoryLandCitizen || theCategory == kUnitCategoryNavalCitizen || theCategory == kUnitCategoryAmbient
-        || theCategory == kUnitCategoryResource || theCategory == kUnitCategoryProjectile || theCategory == kUnitCategorySeaAnimal
-        || theCategory == kUnitCategoryAirAnimal || inClass->mFamily == kUnitFamilyRam || inClass->mFamily == kUnitFamilyAnimal
-        || inClass->mFamily == kUnitFamilyCitizen)
-        return Intel::kOther;
-    return Intel::kSoldier;
+    return Roles::IsSoldier(inClass->mCategory, inClass->mFamily) ? Intel::kSoldier : Intel::kOther;
 }
 
 // The attack a unit of the memory is judged by: a building's when it shoots at the land (range from 1 to 30), a

@@ -59,6 +59,9 @@ memory does not depend on where the heap puts the unit. The report of a simulate
 `intel` object: records, buildings and soldiers remembered, units seen at the last scan, cells looked at, and the
 soldiers in the army it knows of.
 
+`AgeOfAIRoles.cpp` says what a unit class is (tower, wall, gate, siege weapon, ram, citizen, transport ship, fishing
+boat, building, soldier) from its category, family and range, so a data mod's new tower or ram needs no name here.
+
 Nothing reads the memory yet: the modules that judge an enemy's strength, the defence of a place or the danger of a
 route ask it, and each arrives in its own change. A soldier is any unit of a military class: land, naval, air, heroes,
 priests and transports; not citizens, rams, animals, shots or buildings. Upstream's own test, an "army family" that
