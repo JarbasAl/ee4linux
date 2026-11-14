@@ -133,6 +133,8 @@
 #include "lle/U2DPolygon.h"
 #include "lle/USingleton.h"
 #include "ee/EEComputerPlayer.h"
+#include "ee/EECPCivilizationManager.h"
+#include "ee/EECPResourceManager.h"
 #include "ee/EEUnit.h"
 #include "ee/EEUnitClassIDs.h"
 #include "ee/EEUGAttackUnit.h"
@@ -239,6 +241,8 @@ struct PlayerSample {
     bool mHasIntel = false;
     long mIntelRecords = 0, mIntelBuildings = 0, mIntelSoldiers = 0, mIntelSeenNow = 0, mIntelCells = 0, mIntelArmy = 0;
     long mEarlyQueued = 0, mEarlyBuilders = 0, mEarlyBaits = 0;
+    bool mHasGatherers = false;                          // a computer player: its gatherers and the gatherers it wants, food..iron
+    long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
 };
 
 struct Sample {
@@ -301,6 +305,17 @@ Sample TakeSample()
         p.mPopulation = thePlayer->mPopulationCount;
         p.mVictoryUnits = thePlayer->mEndOfGameCount;
         p.mResult = thePlayer->mGameResult;
+        if (!p.mHuman) {
+            EEComputerPlayer* theComputer = dynamic_cast<EEComputerPlayer*>(thePlayer);
+            if (theComputer != NULL && theComputer->mCivilizationManager != NULL && theComputer->mCivilizationManager->mResourceManager != NULL) {
+                EECPResourceManager* theResources = theComputer->mCivilizationManager->mResourceManager;
+                p.mHasGatherers = true;
+                for (int r = 0; r < 5; r++) {
+                    p.mGatherers[r] = (long)theResources->mGatherers[r + 2].size();
+                    p.mWanted[r] = (long)theResources->mWantedGatherers[r + 2];
+                }
+            }
+        }
         if (!p.mHuman && AgeOfAI::EngineOf(i) == AgeOfAI::kEngineAgeOfAI) {
             const AgeOfAI::Intel::Memory& theMemory = AgeOfAI::MemoryOf(i);
             p.mHasIntel = true;
@@ -813,19 +828,25 @@ std::string PlayersJson(const Sample& inSample)
                      "\"cells_looked\": %ld, \"army\": %ld, \"early_towers_queued\": %ld, \"early_builders\": %ld, \"early_baits\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits);
-        char theText[768];
+        char theGatherers[200] = "";
+        if (p.mHasGatherers)
+            snprintf(theGatherers, sizeof(theGatherers),
+                     ", \"gatherers\": [%d, %d, %d, %d, %d], \"wanted\": [%d, %d, %d, %d, %d]", (int)p.mGatherers[0],
+                     (int)p.mGatherers[1], (int)p.mGatherers[2], (int)p.mGatherers[3], (int)p.mGatherers[4], (int)p.mWanted[0],
+                     (int)p.mWanted[1], (int)p.mWanted[2], (int)p.mWanted[3], (int)p.mWanted[4]);
+        char theText[1024];
         snprintf(theText, sizeof(theText),
                  "%s{\"index\": %lu, \"engine\": \"%s\", \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "
                  "\"victory_units\": %ld, \"citizens\": %ld, \"army\": %ld, \"buildings\": %ld, \"strength\": %ld, "
                  "\"value\": %ld, \"resources\": {\"food\": %ld, \"wood\": %ld, \"stone\": %ld, \"gold\": %ld, "
-                 "\"iron\": %ld}%s}",
+                 "\"iron\": %ld}%s%s}",
                  k ? ", " : "", p.mIndex,
                  p.mHuman                                                           ? "human"
                  : AgeOfAI::EngineOf(p.mIndex) == AgeOfAI::kEngineAgeOfAI ? "ageofai"
                                                                                : "classic",
                  p.mHuman ? "true" : "false", p.mResult, p.mEpoch, p.mPopulation,
                  p.mVictoryUnits, p.mCitizens, p.mArmy, p.mBuildings, p.mStrength, p.mValue, p.mResources[0],
-                 p.mResources[1], p.mResources[2], p.mResources[3], p.mResources[4], theIntel);
+                 p.mResources[1], p.mResources[2], p.mResources[3], p.mResources[4], theIntel, theGatherers);
         theOut += theText;
     }
     return theOut + "]";

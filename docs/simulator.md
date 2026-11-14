@@ -134,3 +134,7 @@ units of each kind on every computer player at game second 60, and they fight at
 to 7 within ten game minutes. The report has a `projectiles` object: the shots of plain projectiles (`fired`), how many
 the aim-ahead fix led (`led`), and the projectiles that came down on a unit (`hit_unit`) and on the ground (`hit_ground`).
 A change to aiming or combat shows as a change of the share `hit_unit / (hit_unit + hit_ground)`.
+
+The report of every computer player has `gatherers` and `wanted`: the citizens on food, wood, stone, gold and iron, and
+the number the player's worker plan wants on each. A large gap, as with iron at 33 wanted and 11 working, means the
+citizens cannot be placed at the mines.
