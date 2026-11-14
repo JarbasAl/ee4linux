@@ -2,6 +2,7 @@
 // the exe's module set. Data: the key 0x563520 (guard byte 0x563518); vtable 0x447380. Its Virtual30 0x21d460 is
 // also EEUGAttackGround's (ICF keeps this copy); its Virtual28/Virtual54 are folded into EEUGAttackGround.cpp's.
 
+#include "../AI Thread/AgeOfAI/AgeOfAI.h"
 #include <windows.h>
 #include <stdio.h>
 
@@ -291,6 +292,8 @@ void EEUGAttackUnit::Step(EEComplexUnit* inUnit)
         break;
     case kActionAttackEnemyUnit: {
             inUnit->SetCurrentPhysicsAction(1);
+            if (inUnit->mStats->mCanFireOverWalls && this->mTarget != NULL && AgeOfAI::LobEachShotOn())
+                AgeOfAI::LobBeforeShot(inUnit, this->mTarget);
             long theSet = EEGetAttackFrameSet(inUnit);
             unsigned long theFrame = inUnit->GetModel()->mSound1Frames[theSet];
             inUnit->SetAnimation(theSet, -1, 0);

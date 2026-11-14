@@ -120,8 +120,10 @@
 #include "ee/EEUnit.h"
 #include "ee/EEUnitClassIDs.h"
 #include "ee/EEUnitUtilities.h"
+#include "ee/EEAreaUtilities.h"
 #include "AgeOfAI.h"
 #include "AgeOfAILead.h"
+#include "AgeOfAILob.h"
 #include "AgeOfAISettings.h"
 
 namespace AgeOfAI {
@@ -129,6 +131,7 @@ namespace AgeOfAI {
 namespace {
 
 ProjectileCounts sCounts;
+std::map<unsigned long, Lob::State> sLob;   // by unit id; not saved: a loaded game's unit looks again
 
 float TileHeight(float inX, float inY)
 {
@@ -224,6 +227,25 @@ void LeadShot(EEComplexUnit* inShooter, EEUnit* inTarget, GE3DPoint& ioAim)
     ioAim.SetX(theX);
     ioAim.SetY(theY);
     sCounts.mLed++;
+}
+
+bool LobEachShotOn()
+{
+    EngineOf(1);                     // reads ageofai.ini once
+    return gSettings.lob_each_shot != 0;
+}
+
+// Before a shot of a unit that may lob over walls: it looks along the line to its target and fires high only when a wall
+// stands in it (AgeOfAILob.h).
+void LobBeforeShot(EEComplexUnit* inShooter, EEUnit* inTarget)
+{
+    EEUnit* theBlocker = NULL;
+    long theX = 0, theY = 0;
+    bool theBlocked = EEIsLineToUnitBlocked(inShooter, inTarget, &theBlocker, &theX, &theY) && theBlocker != NULL && theBlocker != inTarget;
+    if (sLob.size() > 8192)
+        sLob.clear();
+    bool theHigh = Lob::Decide(sLob[inShooter->mUnitID], inShooter->mIsFiringHigh, theBlocked);
+    inShooter->SetIsFiringHigh(theHigh);
 }
 
 }

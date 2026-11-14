@@ -46,6 +46,11 @@ struct ProjectileCounts {
 };
 ProjectileCounts& Projectiles();
 
+// Lobbing shot by shot ([general] lob_each_shot; AgeOfAILob.h). EEUGAttackUnit calls LobBeforeShot at the start of each
+// attack of a unit that may fire over walls.
+bool LobEachShotOn();
+void LobBeforeShot(EEComplexUnit* inShooter, EEUnit* inTarget);
+
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {
 public:
