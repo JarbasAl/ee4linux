@@ -47,7 +47,8 @@ PORT_LIB_UNITS = {"lle": ["implode", "explode"], "mixer": ["mssauto"]}
 # Units of the port build alone: the names that the VC6 link takes from the original image
 # (src/Port/EEPortLinks.cpp and EEPortWonLinks.cpp), the simulator, and Age of AI
 PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp", "Port/EEPortLinux.cpp", "Port/EESim.cpp",
-                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAI.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAISettings.cpp"],
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAI.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAISettings.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIIntel.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIIntelScan.cpp"],
               "lle": ["Port/EEPortSim.cpp"]}
 # Modules of the port build alone, each a folder of src: the native build's Win32 layer
 PORT_MODULES = {"win32": "Port/Linux"}
