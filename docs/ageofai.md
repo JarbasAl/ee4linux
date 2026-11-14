@@ -12,7 +12,7 @@ file names the upstream files it comes from, at commit `39d8ee4256a4e6b50c1b4d8e
 ## The AI engine
 
 Each computer player plays one of two AI engines: the classic AI, which is the game's own, or Age of AI. The
-classic AI is the default. `EEComputerPlayer::Update` asks `AgeOfAI::EngineOf` for the player's engine.
+classic AI is the default. `EEComputerPlayer::Update` asks `AgeOfAI::EngineOf` for the player's engine, by player number.
 
 The engine comes from `ageofai.ini` in the game folder, the same file and keys as the mod's. The game reads it once,
 when the first computer player updates. `tools/port_linux_folder.py` copies `config/ageofai.ini` into the run folder

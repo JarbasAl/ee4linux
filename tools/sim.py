@@ -7,7 +7,8 @@ Each run plays one seed in a stage of its own: the run folder (tools/port_linux_
 with the files and folders the game writes copied, and the build's images copied over it. The game therefore never
 writes into the run folder, and several runs go at once. A run writes report-<seed>-<n>.json, trace-<seed>-<n>.txt
 (one line per communications tick) and log-<seed>-<n>.txt (the game's standard error) into the output folder.
---ageofai FILE puts that file in each stage as ageofai.ini, the settings of the Age of AI engine (docs/ageofai.md).
+The tool ends with a scorecard per AI engine (the "engine" field of each player in the report: classic or ageofai),
+so a game with --classic-players in its options compares the engines. --ageofai FILE puts that file in each stage as ageofai.ini, the settings of the Age of AI engine (docs/ageofai.md).
 
 With --repeat 2 or more, each seed runs that many times and the tool compares the runs: the same seed must give the
 same trace and the same report, apart from the wall-clock times. The tool prints one line per run, the comparison
@@ -33,6 +34,8 @@ WRITTEN_DIRS = ["Users", "Data/Saved Games"]
 WRITTEN_SUFFIXES = {".reg", ".log", ".cfg"}
 # report fields that depend on the wall clock
 WALL_FIELDS = {"wall_seconds", "wall_seconds_game", "wall"}
+# the player fields the scorecard averages
+FIELDS = ["epoch", "population", "army", "buildings", "value"]
 
 
 def parse_seeds(text):
@@ -109,6 +112,34 @@ def compare(same):
     return "agree", 1, 1, len(next(iter(traces)).splitlines())
 
 
+def scorecard(results):
+    """Per AI engine over the runs' reports: the computer players, their games won and their defeats, and the mean of
+    each player's epoch, population, army, buildings and value at the end. Each seed counts once: its first run that played."""
+    rows = {}
+    seen = set()
+    for r in sorted(results, key=lambda r: (r["seed"], r["repeat"])):
+        report = r["report"]
+        if report is None or report["outcome"] == "error" or r["seed"] in seen:
+            continue
+        seen.add(r["seed"])
+        for p in report["players"]:
+            if p["human"]:
+                continue
+            row = rows.setdefault(p["engine"], {"players": 0, "wins": 0, "defeats": 0, **dict.fromkeys(FIELDS, 0)})
+            row["players"] += 1
+            row["wins"] += p["index"] in report["winners"]
+            row["defeats"] += p["index"] in report["defeat_order"]
+            for field in FIELDS:
+                row[field] += p[field]
+    lines = [f"scorecard: {len(seen)} seeds, one run each; means per computer player"]
+    lines.append(f"{'engine':9} {'players':>7} {'wins':>5} {'defeats':>7} " + " ".join(f"{f:>10}" for f in FIELDS))
+    for engine, row in sorted(rows.items()):
+        n = row["players"]
+        lines.append(f"{engine:9} {n:7d} {row['wins']:5d} {row['defeats']:7d} " +
+                     " ".join(f"{row[f] / n:10.1f}" for f in FIELDS))
+    return lines
+
+
 def summary(result):
     report = result["report"]
     if report is None:
@@ -175,6 +206,7 @@ def main():
             if status != "agree":
                 differ.append(seed)
     reports_read = sum(r["report"] is not None for r in results)
+    print("\n".join(scorecard(results)))
     print(f"runs: {len(runs)} in, {reports_read} out; {len(failed)} failed; output {args.out}")
     return 1 if failed or differ or reports_read != len(runs) else 0
 

@@ -31,16 +31,24 @@ const Settings& Loaded()
     return gSettings;
 }
 
+unsigned sClassicPlayers;
+
 }
 
-Engine EngineOf(const EEComputerPlayer*)
+void SetClassicPlayers(unsigned inMask)
 {
-    return Loaded().enabled ? kEngineAgeOfAI : kEngineClassic;
+    sClassicPlayers = inMask;
 }
 
-bool ClearsScenarioFlag(const EEComputerPlayer* inPlayer)
+Engine EngineOf(unsigned long inPlayerID)
 {
-    return EngineOf(inPlayer) == kEngineAgeOfAI && gSettings.scenario_ai;
+    bool theClassic = inPlayerID < 16 && ((sClassicPlayers >> inPlayerID) & 1);
+    return Loaded().enabled && !theClassic ? kEngineAgeOfAI : kEngineClassic;
+}
+
+bool ClearsScenarioFlag(unsigned long inPlayerID)
+{
+    return EngineOf(inPlayerID) == kEngineAgeOfAI && gSettings.scenario_ai;
 }
 
 }
