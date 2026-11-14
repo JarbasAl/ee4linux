@@ -3905,7 +3905,7 @@ void EEPlayer::RefreshTerrainVisibility()
         for (unsigned long y = 0; y < theSize; y++) {
             RTSTile* theTile = theMap->GetTile(x, y);
             if (theTile)
-                theMap->mTerrainMesh.SetTileReferenceCount(x, y, theTile->GetVisibility(this->mPlayerID));
+                theMap->mTerrainMesh.SetTileReferenceCount(x, y, theTile->GetSightCount(this->mPlayerID));
         }
     }
 }

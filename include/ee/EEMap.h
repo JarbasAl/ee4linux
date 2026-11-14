@@ -11,6 +11,7 @@
 #include "lle/U2DRectangle.h"           // RTSColoredRectangle holds one by value
 #include "lle/GEColor.h"               // RTSColoredRectangle holds one by value
 #include "ee/EERandomMapIDs.h"
+#include "ee/RTSSight.h"
 
 // One map tile (provisional name and layout)
 class EEDoppelganger;
@@ -76,6 +77,12 @@ public:
     static const UString sModelIndex;       // "RTSTile-ModelIndex" (0x529860)
     static const UString sTerrainIndex;     // "RTSTile-TerrainIndex" (0x529850)
     void RemoveSight(EEPlayer* inPlayer);   // 0x1246c4 (EEPlayer::RemoveSharedSight/RemoveOwnSight; provisional name)
+    // The whole sight count of a player (RTSSight.h): 0 unexplored, 1 explored, 2 + n for n units in sight. GetVisibility
+    // is its low byte, the part the game's own readers look at.
+    unsigned long GetSightCount(unsigned long inPlayerID) const
+    {
+        return RTSSightCount((this->mVisibility[inPlayerID >> 1] >> ((inPlayerID & 1) << 4)) & 0xffff);
+    }
 
     long GetTerrainType() const { return this->mTerrainType; }  // inline (EEUCTransport::FilterLoadable 0x61c806 budget) r37_big B2
     long mTerrainType;                      // +0x04 (calamity effects sit at height 0 on 1 and 10)
