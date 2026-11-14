@@ -106,6 +106,14 @@ struct EERenderShadow {
 typedef std::multimap<GETexture*, EERenderUnit*> EERenderUnitMap;
 typedef std::multimap<GETexture*, EERenderShadow*> EERenderShadowMap;
 
+// How many units, buildings and missiles, and how many placed objects (decorations, trees, ground shadows), one frame
+// draws. The game drew at most 0x200 and 0x600; in a big fight, and the more so at high resolutions, the list was full
+// and the farthest objects blinked in and out (a 360-archer fight reached 445 with the arrows in flight). Age of AI's
+// `[display] draw_limit` (dll/engine/drawlist.c at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0) raises them to
+// 4096 and three times that.
+const unsigned long kRenderUnitMax = 4096;
+const unsigned long kRenderShadowMax = 3 * kRenderUnitMax;
+
 struct EERenderLists {
     // inline: its COMDAT 0x1117da closes EERenderObject.cpp with the template COMDATs (first user: the init chain)
     EERenderLists()
@@ -124,8 +132,8 @@ struct EERenderLists {
     std::vector<EERenderUnitRecord> mGhostRecords;  // +0x48
     std::vector<EERenderUnit*> mSelectedUnits;  // +0x58 (the units with a selection ring/bar)
     std::vector<EERenderShadow*> mSelectedObjects;  // +0x68
-    EERenderUnit mRenderUnits[0x200];       // +0x78
-    EERenderShadow mRenderShadows[0x600];   // +0x29078
+    EERenderUnit mRenderUnits[kRenderUnitMax];       // +0x78 (the game: 0x200 of them; the members after it move)
+    EERenderShadow mRenderShadows[kRenderShadowMax];   // (the game: 0x600 of them, at +0x29078)
     EERenderUnit* mSelectedUnit;            // +0x3f878 (0x528cd0: its bars are drawn outside mU58) (provisional name)
     EERenderShadow* mSelectedObject;        // +0x3f87c (0x528cd4) (provisional name)
     unsigned long mRenderUnitCount;         // +0x3f880

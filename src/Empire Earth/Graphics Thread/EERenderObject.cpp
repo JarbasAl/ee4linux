@@ -387,7 +387,7 @@ void EEInitialiseScene()
     sLetterboxStart = 1.0f;
     for (unsigned long i = 0; i < 5; i++)
         gEffectQueues[i].clear();
-    for (unsigned long j = 0; j < 0x200; j++)
+    for (unsigned long j = 0; j < kRenderUnitMax; j++)
         EERenderLists::sInstance.mRenderUnits[j].mHealthBars.resize(1, 0.0f);
     sSceneInitialised = true;
     sU529060 = new GEBitmap;
@@ -449,7 +449,7 @@ bool EERenderObject::IsUnitDrawn(EEUnit* inUnit, EETile* inTile, std::set<EEUnit
     if ((inTile->IsSeenBy(thePlayer) || theOwnedTarget || gFreeCamera) && theStats->GetScale() != 0.0f) {
         EEUnitClass* theClass = inUnit->mUnitClass;
         if (!theClass->mIsTree && theClass->GetUnitType() != kUnitTypePathPoint) {
-            if (EERenderLists::sInstance.mRenderUnitCount < 0x200
+            if (EERenderLists::sInstance.mRenderUnitCount < kRenderUnitMax
                 && (theComplexUnit == NULL
                     || (theComplexUnit->mCommand == NULL ? 0 : theComplexUnit->mCommand->mType) != kActionDead)) {
                 if (theClass->GetTileSize() > 1) {
@@ -502,7 +502,7 @@ bool EERenderObject::IsUnitDrawn(EEUnit* inUnit, EETile* inTile, std::set<EEUnit
             } else {
                 theResult = false;
             }
-        } else if (theClass->mIsTree && EERenderLists::sInstance.mRenderShadowCount < 0x600) {
+        } else if (theClass->mIsTree && EERenderLists::sInstance.mRenderShadowCount < kRenderShadowMax) {
             long theID = inUnit->GetUnitID();
             long theSize = theClass->GetTileSize();
             float theHalf = theSize * 0.5f;
@@ -1618,12 +1618,12 @@ void EERenderObject::FillRenderLists()
                                      EERenderLists::sInstance.mRenderUnitCount,
                                      theDoppelganger->mUnit->GetUnitClass()->mIsObstacle ? EERenderLists::sInstance.mUnits1
                                                                                 : EERenderLists::sInstance.mUnits0,
-                                     0x200, theX, theY, theInfo);
+                                     kRenderUnitMax, theX, theY, theInfo);
                         } else {
                             this->FillDoppelgangerObject(theDoppelganger,
                                      &EERenderLists::sInstance.mRenderShadows[EERenderLists::sInstance.mRenderShadowCount],
                                      EERenderLists::sInstance.mRenderShadowCount, EERenderLists::sInstance.mShadows0,
-                                     0x600, theX, theY, theInfo);
+                                     kRenderShadowMax, theX, theY, theInfo);
                         }
                     }
                 }
