@@ -107,6 +107,11 @@ AI player with ten or more gatherers takes, every 15 game seconds, one available
 candidates whose event raises the gathering rate of citizens (or of all units) and schedules it as the game does for its
 own choice: it orders the building that researches it, if missing, and reserves the cost.
 
+The game gives a computer player the line upgrades of an epoch (the techs of kind 7) the moment it enters the epoch, with no
+cost, building or time. With `[ai_base] paid_upgrades` on (the default) an Age of AI player schedules them with its
+research manager instead, so they are researched at their buildings and paid for, as a human player does. The army plan's
+`upgrade` bit, which holds back lines the player does not use, and the retry of lost upgrades are not ported.
+
 ## Mines and the worker rebalance
 
 The game's assignment hands out idle citizens only and never takes a gatherer back, and its mine search takes the first

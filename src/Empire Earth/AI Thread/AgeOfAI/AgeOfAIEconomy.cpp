@@ -369,4 +369,21 @@ void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow)
     }
 }
 
+// PAID UPGRADES (epoch_upgrades in econ.c, [ai_base] paid_upgrades): the game researches the kind-7 techs of an epoch (the
+// unit and building line upgrades) for a computer player on the spot, without cost, building or time. An Age of AI
+// player schedules each with its research manager instead: it is researched at its building and paid like a human's.
+// The army plan's UPGRADE bit (a line it does not use yet waits) is not ported; it is off by default.
+bool EpochUpgrades(EEComputerPlayer* inPlayer, EETechTreeEpoch* inEpoch)
+{
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (!SettingsOf(inPlayer).paid_upgrades || theCivilization == NULL || theCivilization->mResearchManager == NULL)
+        return false;
+    for (std::map<long, EETechTreeNode*>::iterator theNode = inEpoch->mNodes.begin(); theNode != inEpoch->mNodes.end(); ++theNode) {
+        EETechTreeNode* theTech = theNode->second;
+        if (theTech->mData->mKind == 7 && theTech->mData->mResearchedWithEpoch && !theTech->mIsResearched)
+            theCivilization->mResearchManager->Research(theTech->mData->mID);
+    }
+    return true;
+}
+
 }
