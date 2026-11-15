@@ -245,6 +245,7 @@ struct PlayerSample {
     long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
     long mDropSites[7] = {0, 0, 0, 0, 0, 0, 0};          // the player's drop-site buildings by the resource they take (0 and 1: all)
     long mDropDistance[5] = {0, 0, 0, 0, 0};            // the gatherers' mean tile distance to the nearest drop site that takes their resource, x 10
+    long mEpochNeeded = 0, mEpochDone = 0, mRequestOut = 0, mAdvanceEnabled = 0, mNextAdvance = 0;   // the next epoch's requirements and the state of the AI's advance
     long mTechs = 0;                                     // the techs the player has researched
 };
 
@@ -313,6 +314,14 @@ Sample TakeSample()
             if (theComputer != NULL && theComputer->mCivilizationManager != NULL && theComputer->mCivilizationManager->mResourceManager != NULL) {
                 EECPResourceManager* theResources = theComputer->mCivilizationManager->mResourceManager;
                 p.mHasGatherers = true;
+                if (thePlayer->mTechnologies != NULL && thePlayer->mTechnologies->mCurrentEpoch >= 0 && thePlayer->mTechnologies->mCurrentEpoch < 14) {
+                    EETechTreeEpoch& theNext = thePlayer->mTechnologies->mEpochs[thePlayer->mTechnologies->mCurrentEpoch + 1];
+                    p.mEpochNeeded = theNext.mRequiredSOL;
+                    p.mEpochDone = theNext.mCurrentSOL;
+                }
+                p.mRequestOut = theComputer->mCivilizationManager->mEpochResearchRequested ? 1 : 0;
+                p.mAdvanceEnabled = theComputer->mCivilizationManager->mEpochAdvanceEnabled ? 1 : 0;
+                p.mNextAdvance = (long)theComputer->mCivilizationManager->mNextEpochAdvanceTime / 1000;
                 if (thePlayer->mTechnologies != NULL)
                     for (unsigned long e = 0; e < kTechEpochAll; e++)
                         for (std::map<long, EETechTreeNode*>::iterator n = thePlayer->mTechnologies->mEpochs[e].mNodes.begin();
@@ -868,14 +877,14 @@ std::string PlayersJson(const Sample& inSample)
                      "\"cells_looked\": %ld, \"army\": %ld, \"early_towers_queued\": %ld, \"early_builders\": %ld, \"early_baits\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits);
-        char theGatherers[480] = "";
+        char theGatherers[600] = "";
         if (p.mHasGatherers)
             snprintf(theGatherers, sizeof(theGatherers),
-                     ", \"gatherers\": [%d, %d, %d, %d, %d], \"wanted\": [%d, %d, %d, %d, %d], \"drop_sites\": [%d, %d, %d, %d, %d, %d, %d], \"drop_distance_x10\": [%d, %d, %d, %d, %d], \"techs\": %d", (int)p.mGatherers[0],
+                     ", \"gatherers\": [%d, %d, %d, %d, %d], \"wanted\": [%d, %d, %d, %d, %d], \"drop_sites\": [%d, %d, %d, %d, %d, %d, %d], \"drop_distance_x10\": [%d, %d, %d, %d, %d], \"techs\": %d, \"epoch_requirements\": [%d, %d], \"request_out\": %d, \"advance_enabled\": %d, \"next_advance_s\": %d", (int)p.mGatherers[0],
                      (int)p.mGatherers[1], (int)p.mGatherers[2], (int)p.mGatherers[3], (int)p.mGatherers[4], (int)p.mWanted[0],
                      (int)p.mWanted[1], (int)p.mWanted[2], (int)p.mWanted[3], (int)p.mWanted[4], (int)p.mDropSites[0], (int)p.mDropSites[1],
                      (int)p.mDropSites[2], (int)p.mDropSites[3], (int)p.mDropSites[4], (int)p.mDropSites[5], (int)p.mDropSites[6],
-                     (int)p.mDropDistance[0], (int)p.mDropDistance[1], (int)p.mDropDistance[2], (int)p.mDropDistance[3], (int)p.mDropDistance[4], (int)p.mTechs);
+                     (int)p.mDropDistance[0], (int)p.mDropDistance[1], (int)p.mDropDistance[2], (int)p.mDropDistance[3], (int)p.mDropDistance[4], (int)p.mTechs, (int)p.mEpochDone, (int)p.mEpochNeeded, (int)p.mRequestOut, (int)p.mAdvanceEnabled, (int)p.mNextAdvance);
         char theText[1024];
         snprintf(theText, sizeof(theText),
                  "%s{\"index\": %lu, \"engine\": \"%s\", \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "

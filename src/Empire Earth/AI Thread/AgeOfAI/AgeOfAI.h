@@ -10,6 +10,8 @@
 
 class EEComputerPlayer;
 class EETechTreeEpoch;
+class EECPUnitManager;
+struct EECPUMRequest;
 class EEPlayer;
 class EECPResourceManager;
 class EEComplexUnit;
@@ -74,6 +76,11 @@ void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool CanPlace(EEPlayer* inPlayer, long inType, long inX, long inY);
 // The drop sites by the forests (WoodDrops, called once a game second)
 void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow);
+// The game's training of a request, through the player's budget (StartProduction of the unit manager)
+bool TrainUnits(EECPUnitManager* inUnits, EECPUMRequest& inRequest, long& outMade);
+long WildFood(EEComputerPlayer* inPlayer);
+// The settings the player's own fields take, once per player on its first update
+void ApplySettings(EEComputerPlayer* inPlayer);
 void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool EpochUpgrades(EEComputerPlayer* inPlayer, EETechTreeEpoch* inEpoch);
 // The stone of the core towers still missing (EarlyTowers): the worker plan counts it

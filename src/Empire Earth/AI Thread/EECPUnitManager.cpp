@@ -57,6 +57,7 @@
 #include "ee/EECPCombatManager.h"
 #include "ee/EECPUMGatherUnitsScreenBase.h"
 #include "ee/EECPUnitManager.h"
+#include "AgeOfAI/AgeOfAI.h"
 #include "ee/EEAIFOUnitsToKillScoringBase.h"
 #include "ee/EEAIFOSubGroupFilter.h"
 #include <EEAIFunctionObjects.h>
@@ -820,6 +821,13 @@ long EECPUnitManager::Save(unsigned long inMajorVersion, unsigned long inMinorVe
 // Queues a request's units round-robin at the least busy built producers in its town, on its continent or else on
 // the continent with the most; returns true and the count started
 bool EECPUnitManager::StartProduction(EECPUMRequest& inRequest, long& outMade)
+{
+    if (AgeOfAI::EngineOf(this->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
+        return AgeOfAI::TrainUnits(this, inRequest, outMade);
+    return this->StartProductionGame(inRequest, outMade);
+}
+
+bool EECPUnitManager::StartProductionGame(EECPUMRequest& inRequest, long& outMade)
 {
     std::vector<EEComplexUnit*> theUnits;
     std::vector<EEComplexUnit*> theCandidates;

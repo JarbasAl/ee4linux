@@ -5570,6 +5570,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
 {
     AgeOfAI::ScenarioFlagScope theScenarioFlag(gWorld.mGameOptions.mIsScenarioGame, AgeOfAI::ClearsScenarioFlag(this->mPlayerID));
     if (AgeOfAI::EngineOf(this->mPlayerID) == AgeOfAI::kEngineAgeOfAI) {
+        AgeOfAI::ApplySettings(this);
         AgeOfAI::TickIntel(this, inTime);
         AgeOfAI::TickEarly(this, inTime);
         AgeOfAI::RatesUpdate(this, inTime);
