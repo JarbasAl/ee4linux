@@ -132,6 +132,7 @@
 #include "ee/EEUGGather.h"
 #include "ee/EEUGBuildRepair.h"
 #include "ee/EEUGLocation.h"
+#include "ee/EEUGAttackUnit.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
@@ -561,6 +562,191 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
                 return true;
         }
     return false;
+}
+
+// MUSTER (muster in defence.c, [ai_base] muster): an enemy army in the base got the defenders one by one. Every 3 s: enemy
+// soldiers within 22 tiles of the base (strength = hit points x attack) against the own soldiers within 35 and the own
+// towers within 22. Only when the fight at home is hopeless - at least 8 enemies and the home side under half of their
+// strength - every own soldier there goes to a rally point 18 tiles beyond the base, away from the enemy's centre; new
+// ones join as they are trained. Once the soldiers at the rally point are 1.3 times the enemy in the base, each attacks the
+// nearest enemy soldier. The muster ends when the enemy is gone (fewer than 3), when soldiers and towers can stand up to
+// it again, or when the enemy follows to the rally point a third time (then it fights where it is); a new muster waits
+// 30 s or 60 s. Not ported: the fight estimate (stats.c, off by default), the chat line, the exceptions of unit_goal for
+// shore guns and garrisons (bunker.c, towns.c), and the citizens' flight to the rally point (SafetyTick).
+namespace {
+
+struct Muster {
+    bool mOn;
+    int mMoves;
+    float mRX, mRY;
+    unsigned long mSince, mCool, mCoolLength;
+} sMuster[16];
+
+float UnitPower(EEUnit* inUnit)
+{
+    float theAttack = inUnit->mStats != NULL ? inUnit->mStats->mAttack : (float)inUnit->mUnitClass->mAttack;
+    return (float)inUnit->mHitPoints * (theAttack > 0 ? theAttack : 0);
+}
+
+void AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
+{
+    if (inUnit->mHitPoints <= 0 || inUnit->mTileX == -10000 || inUnit->mComplexUnit == NULL)
+        return;
+    EEUGAttackUnit* theGoal = new EEUGAttackUnit(inUnit->mComplexUnit, inTarget, true, false);
+    inUnit->mComplexUnit->SetGoal(theGoal, false, 0);
+    inUnit->mComplexUnit->StartAction(kActionPrepareToMove);
+    inUnit->mUnitClass->ActionChanged(inUnit->mComplexUnit);
+}
+
+}
+
+void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (!Cfg().muster || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    Muster& theMuster = sMuster[idx];
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL || theCivilization->mBuildManager->mTownCenterTile.mX == -10000) {
+        theMuster.mOn = false;
+        return;
+    }
+    long theBaseX = theCivilization->mBuildManager->mTownCenterTile.mX, theBaseY = theCivilization->mBuildManager->mTownCenterTile.mY;
+    std::vector<EEUnit*> theOwn, theEnemy;
+    float theEnemyPower = 0, theOwnPower = 0, theTowerPower = 0, theEX = 0, theEY = 0;
+    int theEnemies = 0;
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* thePlayer = gWorld.mPlayers[p];
+        if (thePlayer == NULL)
+            continue;
+        for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+                continue;
+            long theDX = theUnit->mTileX - theBaseX, theDY = theUnit->mTileY - theBaseY, theD2 = theDX * theDX + theDY * theDY;
+            float theRange, theAttack;
+            if (thePlayer == inPlayer && theD2 <= 22 * 22 && DefenceStats(theUnit, theRange, theAttack)) {
+                theTowerPower += (float)theUnit->mHitPoints * theAttack;
+                continue;
+            }
+            if (!Roles::IsSoldier(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily))
+                continue;
+            if (thePlayer == inPlayer) {
+                if (theD2 > 35 * 35)
+                    continue;
+                if (theOwn.size() < 256)
+                    theOwn.push_back(theUnit);
+                theOwnPower += UnitPower(theUnit);
+            } else if (thePlayer->mPlayerID > 0 && IsEnemyOf(inPlayer, thePlayer) && theD2 <= 22 * 22) {
+                float thePower = UnitPower(theUnit);
+                theEnemyPower += thePower;
+                theEX += (float)theUnit->mTileX * thePower;
+                theEY += (float)theUnit->mTileY * thePower;
+                theEnemies++;
+                if (theEnemy.size() < 128)
+                    theEnemy.push_back(theUnit);
+            }
+        }
+    }
+    float theStand = theEnemyPower > 0 ? (theOwnPower + theTowerPower) / theEnemyPower : 1e6f;
+    struct Local {
+        static void Rally(Muster& ioMuster, long inBX, long inBY, float inEnemyPower, float inEX, float inEY)
+        {
+            float theCX = inEnemyPower > 0 ? inEX / inEnemyPower : (float)inBX + 1, theCY = inEnemyPower > 0 ? inEY / inEnemyPower : (float)inBY;
+            float theDX = (float)inBX - theCX, theDY = (float)inBY - theCY, theLength = sqrtf(theDX * theDX + theDY * theDY);
+            if (theLength < 1.0f) {
+                theDX = 1.0f;
+                theDY = 0.0f;
+                theLength = 1.0f;
+            }
+            float theSize = gWorld.mMap != NULL ? (float)gWorld.mMap->mSize : 0;
+            float theRX = (float)inBX + theDX / theLength * 18.0f, theRY = (float)inBY + theDY / theLength * 18.0f;
+            if (theSize > 8) {
+                theRX = theRX < 3 ? 3 : theRX > theSize - 4 ? theSize - 4 : theRX;
+                theRY = theRY < 3 ? 3 : theRY > theSize - 4 ? theSize - 4 : theRY;
+            }
+            ioMuster.mRX = theRX;
+            ioMuster.mRY = theRY;
+        }
+        static EEUnit* Nearest(const std::vector<EEUnit*>& inEnemy, EEUnit* inUnit)
+        {
+            EEUnit* theBest = NULL;
+            long theBestD = 0x7FFFFFFF;
+            for (size_t k = 0; k < inEnemy.size(); k++) {
+                if (inEnemy[k]->mHitPoints <= 0)
+                    continue;
+                long theDX = inEnemy[k]->mTileX - inUnit->mTileX, theDY = inEnemy[k]->mTileY - inUnit->mTileY, theD = theDX * theDX + theDY * theDY;
+                if (theD < theBestD) {
+                    theBestD = theD;
+                    theBest = inEnemy[k];
+                }
+            }
+            return theBest;
+        }
+    };
+    if (!theMuster.mOn) {
+        if (theEnemies < 8 || theStand >= 0.5f || (theMuster.mCool != 0 && inNow - theMuster.mCool < theMuster.mCoolLength))
+            return;
+        theMuster.mOn = true;
+        theMuster.mMoves = 0;
+        theMuster.mSince = inNow != 0 ? inNow : 1;
+        Local::Rally(theMuster, theBaseX, theBaseY, theEnemyPower, theEX, theEY);
+    } else {
+        if (theEnemies < 3 || theStand >= 1.0f) {
+            theMuster.mOn = false;
+            theMuster.mCool = inNow != 0 ? inNow : 1;
+            theMuster.mCoolLength = 30000;
+            return;
+        }
+        float theRallyPower = 0;
+        for (size_t k = 0; k < theOwn.size(); k++) {
+            float theDX = (float)theOwn[k]->mTileX - theMuster.mRX, theDY = (float)theOwn[k]->mTileY - theMuster.mRY;
+            if (theDX * theDX + theDY * theDY <= 100)
+                theRallyPower += UnitPower(theOwn[k]);
+        }
+        float theGathered = theEnemyPower > 0 ? theRallyPower / theEnemyPower : 1e6f;
+        if (theGathered >= 1.3f) {   // strike
+            for (size_t k = 0; k < theOwn.size(); k++) {
+                EEUnit* theTarget = Local::Nearest(theEnemy, theOwn[k]);
+                if (theTarget != NULL)
+                    AttackUnit(theOwn[k], theTarget);
+            }
+            theMuster.mOn = false;
+            theMuster.mCool = inNow != 0 ? inNow : 1;
+            theMuster.mCoolLength = 30000;
+            return;
+        }
+        bool theNearRally = false;
+        for (size_t k = 0; k < theEnemy.size() && !theNearRally; k++) {
+            float theDX = (float)theEnemy[k]->mTileX - theMuster.mRX, theDY = (float)theEnemy[k]->mTileY - theMuster.mRY;
+            theNearRally = theDX * theDX + theDY * theDY <= 100;
+        }
+        if (theNearRally && ++theMuster.mMoves >= 3) {   // it follows: no getting away - fight where it is
+            theMuster.mOn = false;
+            theMuster.mCool = inNow != 0 ? inNow : 1;
+            theMuster.mCoolLength = 60000;
+            for (size_t k = 0; k < theOwn.size(); k++) {
+                EEUnit* theTarget = Local::Nearest(theEnemy, theOwn[k]);
+                if (theTarget != NULL)
+                    AttackUnit(theOwn[k], theTarget);
+            }
+            return;
+        }
+        if (theNearRally)
+            Local::Rally(theMuster, theBaseX, theBaseY, theEnemyPower, theEX, theEY);
+    }
+    for (size_t k = 0; k < theOwn.size(); k++) {   // everyone who isn't there or on the way
+        EEUnit* theUnit = theOwn[k];
+        float theDX = (float)theUnit->mTileX - theMuster.mRX, theDY = (float)theUnit->mTileY - theMuster.mRY;
+        if (theDX * theDX + theDY * theDY <= 36 || theUnit->mComplexUnit == NULL)
+            continue;
+        EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theUnit->mComplexUnit->mGoalState);
+        if (theLocation != NULL && fabsf(theLocation->mLocation.GetX() - theMuster.mRX) < 2 && fabsf(theLocation->mLocation.GetY() - theMuster.mRY) < 2)
+            continue;
+        if (theUnit->mHitPoints > 0 && theUnit->mTileX != -10000)
+            MoveTo(theUnit->mComplexUnit, theMuster.mRX, theMuster.mRY);
+    }
 }
 
 }
