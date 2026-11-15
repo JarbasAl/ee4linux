@@ -251,6 +251,7 @@ float sEpochAccount[16][7];   // copper_plan next_epoch: the next epoch's money,
 long sEpochAccountEpoch[16];
 unsigned long sSaveSince[16];   // the game time a refused soldier began to wait for its price, 0: none
 bool sRecovering[16], sHadEconomy[16];
+bool sHomeGuardCall;   // set around the home guard's order: early_soldiers lets it train in the first epoch
 
 // econ.c budget_reserve: what a unit order leaves of the stock for the next epoch. With the copper plan, before the Copper
 // Age, its cost; else the next epoch's cost faded in over the reserve window before the planned attempt. The pacing
@@ -731,7 +732,7 @@ void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow)
 // Not ported: the fleet's mix and accounts (navy.c), metal_plan's value choice and workforce_plan's thrift (metal.c,
 // citizens.c), citizen_plan FIRST, the idle-citizen stop (idle_citizen_slack is off), the room for the mod's own orders (they
 // are not ported), diplo.c's base_threatened.
-bool TrainUnits(EECPUnitManager* inUnits, EECPUMRequest& inRequest, long& outMade)
+bool TrainUnits(EECPUnitManager* inUnits, EECPUMRequest& inRequest, long& outMade, bool inModOrder)
 {
     EEComputerPlayer* thePlayer = inUnits->mPlayer;
     const SettingsAI& theSettings = SettingsOf(thePlayer);
@@ -766,7 +767,7 @@ bool TrainUnits(EECPUnitManager* inUnits, EECPUMRequest& inRequest, long& outMad
     long theWorkforce = Workforce(theCivilization->mResourceManager);
     int theCopper = theSettings.copper_plan;
     bool theEarly = theSettings.early_army && theEpoch < kFarmEpoch;
-    bool theNoArmy = theEarly && theMilitary && !theRequirement && theEpoch == 0 && !theSettings.early_soldiers;
+    bool theNoArmy = theEarly && theMilitary && !theRequirement && theEpoch == 0 && !(theSettings.early_soldiers && sHomeGuardCall);
     bool theRecover = Recovering(thePlayer, theWorkforce);
     long theVisible[7] = {0, 0, 0, 0, 0, 0, 0};
     for (int r = 2; r < 7; r++) {
@@ -849,6 +850,13 @@ bool TrainUnits(EECPUnitManager* inUnits, EECPUMRequest& inRequest, long& outMad
             theRequest.mUnitClass = (unsigned long)theSubstitute;
         if (theAfford > 0 && (theAfford < (long)theRequest.mCount || theSubstitute != 0))
             theRequest.mCount = (unsigned long)theAfford;
+        if (inModOrder && (theSettings.train_room >> idx & 1)) {   // the mod's own order: no more than the room under the population cap
+            long theRoomLeft = thePlayer->GetPopulationLimit(0) - inUnits->mNumInProduction - thePlayer->GetTotalPopulation(true, false);
+            if (theRoomLeft <= 0)
+                return false;
+            if (theRoomLeft < (long)theRequest.mCount)
+                theRequest.mCount = (unsigned long)theRoomLeft;
+        }
         long theDepth = theCitizen ? 0 : theSettings.train_queue;
         long theRoom = theDepth > 0 ? QueueRoom(thePlayer, inUnits, (long)theRequest.mUnitClass, theDepth) : -1;
         long theAsked = theRequest.mCount > 0 ? (long)theRequest.mCount : 1;
@@ -936,6 +944,60 @@ void ApplySettings(EEComputerPlayer* inPlayer)
         inPlayer->mAttackForRevengeChance = Pct(theSettings.attack_revenge);
     if (theSettings.last_stand_buildings >= 0)
         inPlayer->mBonzaiAttackLevel = theSettings.last_stand_buildings;
+}
+
+// HOME GUARD (home_guard in defence.c, [ai_base] home_guard): the unit manager trains only what is ordered, mostly the next
+// attack's group. Every 10 s, with fewer than max(6 + home_guard x epoch, home_guard_share x the military room) own soldiers
+// within 25 tiles of the base, up to 5 more of the strongest land soldier the game can train go through the budget.
+// The room is the population limit x (1 - citizen share). Not ported: the chat line and the fight estimate.
+void HomeGuard(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (!theSettings.home_guard || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 10000))
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    if (theCivilization == NULL || theCivilization->mUnitManager == NULL || theCivilization->mBuildManager == NULL
+        || inPlayer->mTechnologies == NULL)
+        return;
+    long theBaseX = theCivilization->mBuildManager->mTownCenterTile.mX, theBaseY = theCivilization->mBuildManager->mTownCenterTile.mY;
+    if (theBaseX == -10000)
+        return;
+    long theEpoch = Epoch(inPlayer);
+    long theTarget = 6 + (long)theSettings.home_guard * theEpoch;
+    long theRoom = (long)((float)inPlayer->GetPopulationLimit(0) * (1.0f - inPlayer->mCitizenPercentage) * theSettings.home_guard_share);
+    if (theRoom > theTarget)
+        theTarget = theRoom;
+    if (theSettings.early_army && theEpoch == 0) {
+        theTarget = inNow >= 120000 ? theSettings.early_soldiers : 0;
+        if (!theTarget)
+            return;
+    }
+    long theHome = 0;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL
+            || !Roles::IsSoldier(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily))
+            continue;
+        long theDX = theUnit->mTileX - theBaseX, theDY = theUnit->mTileY - theBaseY;
+        theHome += theDX * theDX + theDY * theDY <= 625;
+    }
+    if (theHome >= theTarget)
+        return;
+    long theBig[7] = {0, 0, 1 << 20, 1 << 20, 1 << 20, 1 << 20, 1 << 20}, theGot = 0;
+    long theType = SubstituteSoldier(inPlayer, theBig, 1, theGot, false);
+    if (theType == 0)
+        return;
+    EECPUMRequest theRequest;
+    theRequest.mUnitClass = (unsigned long)theType;
+    theRequest.mCount = (unsigned long)(theTarget - theHome < 5 ? theTarget - theHome : 5);
+    theRequest.mTownID = 0;
+    theRequest.mContinent = 0;
+    long theMade = 0;
+    sHomeGuardCall = true;
+    TrainUnits(theCivilization->mUnitManager, theRequest, theMade, true);
+    sHomeGuardCall = false;
 }
 
 }

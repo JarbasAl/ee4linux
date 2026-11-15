@@ -71,7 +71,8 @@ public:
     void DropObsoleteRequests(long inEpoch);  // 0x94cac (ret 4)
     long Restore(unsigned long inMajorVersion, unsigned long inMinorVersion);   // 0x94d9b
     long Save(unsigned long inMajorVersion, unsigned long inMinorVersion, FSFile& outFile);  // 0x94db4
-    bool StartProduction(EECPUMRequest& inRequest, long& outMade);  // 0x94f42 (ret 8; returns al)
+    bool StartProduction(EECPUMRequest& inRequest, long& outMade);  // 0x94f42 (ret 8; returns al): Age of AI players' go through their budget first
+    bool StartProductionGame(EECPUMRequest& inRequest, long& outMade);   // the game's own, the body of 0x94f42
     void UnitAdded(EEUnit* inUnit, long inArg);  // 0x95440 (ret 8; reads the argument's +0x30 complex unit)
     void UnitLost(EEUnit* inUnit);          // 0x956b9 (ret 4; likewise)
     bool CancelRequest(long inUnitClass, unsigned long inCount, long inTownID, unsigned short inContinent);  // 0x93893 (ret 0x10) (provisional name)

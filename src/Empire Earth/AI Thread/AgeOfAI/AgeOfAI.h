@@ -77,7 +77,9 @@ bool CanPlace(EEPlayer* inPlayer, long inType, long inX, long inY);
 // The drop sites by the forests (WoodDrops, called once a game second)
 void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The game's training of a request, through the player's budget (StartProduction of the unit manager)
-bool TrainUnits(EECPUnitManager* inUnits, EECPUMRequest& inRequest, long& outMade);
+bool TrainUnits(EECPUnitManager* inUnits, EECPUMRequest& inRequest, long& outMade, bool inModOrder = false);
+// The soldiers kept at home (HomeGuard, every 10 game seconds)
+void HomeGuard(EEComputerPlayer* inPlayer, unsigned long inNow);
 long WildFood(EEComputerPlayer* inPlayer);
 // The settings the player's own fields take, once per player on its first update
 void ApplySettings(EEComputerPlayer* inPlayer);
