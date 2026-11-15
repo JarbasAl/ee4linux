@@ -125,10 +125,14 @@ its reach, which is its range plus 3 tiles and at most 15 (27 with `citizen_thre
 within 6 tiles lately (1 for food and wood, 3 for stone, gold and iron; for two minutes, or twenty seconds when the raider
 was in sight); and the straight way from the nearest drop site to the site crossing the range plus 2 tiles of a known enemy
 defence (a building or fortress with a ground attack). Every 4 seconds, before the assignment, the player refreshes the
-defences it has seen and compares each citizen's hit points with the last look to mark where one lost some. `AgeOfAIDanger.cpp`
+defences it has seen, compares each citizen's hit points with the last look to mark where one lost some, sends home the strays of
+an attack (unassigned citizens marching to an enemy building), and sends gatherers and builders back to their drop site when their
+site has raiders near, citizens hurt near it, or lies behind a known enemy defence; builders only at fields, since the wall
+manager sends the builders of walls and towers again and again. The repair round's order for a building is refused while enemy soldiers it
+knows stand within 8 tiles, and (`repair_one_walker`) while another of its citizens already holds a build goal on the building. `AgeOfAIDanger.cpp`
 holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. Not ported yet:
 `raid_held` (a town that holds against the raiders), `behind_walls` and `ship_reach_exact` (off by default), the danger map
-the route searches read, and the rest of `citizens_safety` (the citizens sent back, the strays, the flight, the shelter).
+the route searches read, and the flight of an overrun base and the shelter in a fortress (they need `defence.c` and `bunker.c`).
 
 ## Game fixes
 
