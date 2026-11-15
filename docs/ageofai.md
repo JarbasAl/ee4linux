@@ -165,7 +165,18 @@ within 22. With 8 or more enemies and the home side under half of their strength
 point 18 tiles beyond the base, away from the enemy, and new soldiers join it. Once the soldiers at the rally point are 1.3
 times the enemy in the base, each attacks the nearest enemy soldier. The muster ends when fewer than 3 enemies are left,
 when soldiers and towers can hold the base again, or when the enemy follows to the rally point a third time; a new muster
-waits 30 or 60 seconds. The citizens' flight to the rally point and the fight estimate are not ported.
+waits 30 or 60 seconds. The citizens' flight to the rally point is not ported.
+
+## The fight estimate
+
+`AgeOfAIStats.cpp` estimates how long each of two sides needs to destroy the other, from the game's own unit data, as
+Grille's `stats.c` does. Each unit deals the game's shot damage: the attack of its owner's stats, times the hit factor
+and the weapon table, less the target's armour, rounded and at least 1. A shot takes the reload time plus 2 seconds.
+A unit that cannot move never hits one that outranges it, and an outranged unit walks the difference under fire first.
+Artillery cannot hit a unit that has closed inside its minimum range, and area damage counts up to 2 neighbours of the
+target. The ratio of two sides is the square root of the time the enemy needs over the time the own side needs, so twice
+the units of one type give 2. The citizen militia uses it (`early_militia`), and so do muster and hold-the-town with
+`[ai_base] fight_estimate=1`; those rules are not ported yet, so nothing calls it.
 
 ## Game fixes
 
