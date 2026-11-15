@@ -456,4 +456,10 @@ void TickEarly(EEComputerPlayer* inPlayer, unsigned long inNow)
     TowerBait(inPlayer, theSettings, inNow);
 }
 
+
+bool CanPlace(EEPlayer* inPlayer, long inType, long inX, long inY)
+{
+    return PlacedOK(inPlayer, inType, inX, inY);
+}
+
 }

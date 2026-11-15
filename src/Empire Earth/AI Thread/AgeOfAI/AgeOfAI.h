@@ -70,6 +70,10 @@ void EconTargets(EECPResourceManager* inResources);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 // An epoch's line upgrades (kind 7): false when the game researches them itself, true when they are scheduled for research
+// The game's placement test of a building type on every tile of its footprint, inside the map's border
+bool CanPlace(EEPlayer* inPlayer, long inType, long inX, long inY);
+// The drop sites by the forests (WoodDrops, called once a game second)
+void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow);
 void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool EpochUpgrades(EEComputerPlayer* inPlayer, EETechTreeEpoch* inEpoch);
 // The stone of the core towers still missing (EarlyTowers): the worker plan counts it

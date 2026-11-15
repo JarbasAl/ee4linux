@@ -130,6 +130,12 @@ the kind, 20 at most. After each assignment pass the rebalance moves up to 2 gat
 short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. Not ported yet: the danger test of
 `attack.c`, `local_mines`/`town_work` (off by default) and the overseas mines.
 
+The game puts no drop site by the forest its woodcutters work. With `[ai_base] wood_drop` on (the default), an Age of AI player
+looks every game minute for woodcutters whose tree is 15 or more tiles from a drop site. When 8 or more of them work within 8
+tiles of one tree, and no Settlement is going up and the player can build one, it lays a Settlement at the placeable spot
+nearest the middle of their trees (2 to 12 tiles away), with no enemy building or soldiers near. The cost reserve that holds
+the Settlement's price back from training waits for the training budget.
+
 ## What is dangerous for the citizens
 
 The game's searches send citizens through the enemy's defences, to sites raiders stand at, and to places where citizens
