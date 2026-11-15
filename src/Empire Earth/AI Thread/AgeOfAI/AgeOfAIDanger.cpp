@@ -592,16 +592,17 @@ float UnitPower(EEUnit* inUnit)
     return (float)inUnit->mHitPoints * (theAttack > 0 ? theAttack : 0);
 }
 
-void AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
+}
+
+bool AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
 {
-    if (inUnit->mHitPoints <= 0 || inUnit->mTileX == -10000 || inUnit->mComplexUnit == NULL)
-        return;
+    if (inUnit->mHitPoints <= 0 || inUnit->mTileX == -10000 || inUnit->mComplexUnit == NULL || inUnit->mComplexUnit->mIsDisabled)
+        return false;
     EEUGAttackUnit* theGoal = new EEUGAttackUnit(inUnit->mComplexUnit, inTarget, true, false);
     inUnit->mComplexUnit->SetGoal(theGoal, false, 0);
     inUnit->mComplexUnit->StartAction(kActionPrepareToMove);
     inUnit->mUnitClass->ActionChanged(inUnit->mComplexUnit);
-}
-
+    return true;
 }
 
 void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)

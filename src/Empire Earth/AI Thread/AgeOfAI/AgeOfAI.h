@@ -124,6 +124,19 @@ struct OutdatedCounts {
 OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID);
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding);
+// An attack goal for inUnit, as unit_goal with goal_attack (attack.c) gives it; false: refused (dead, off the map, a
+// unit with no goals, or disabled)
+bool AttackUnit(EEUnit* inUnit, EEUnit* inTarget);
+
+// Counter-fire (counterfire.c, AgeOfAICounterFire.h): soldiers sent at enemies that shoot from beyond their victims'
+// reach. CounterFire is called every tick and acts every 2 game seconds; CounterFireUnit says whether a unit is
+// committed to it.
+void CounterFire(EEComputerPlayer* inPlayer, unsigned long inNow);
+bool CounterFireUnit(EEPlayer* inPlayer, EEUnit* inUnit, unsigned long inNow);
+struct CounterFireCounts {
+    unsigned long mSorties, mSent, mShort;   // targets attacked, soldiers sent, targets left because the soldiers were too weak
+};
+CounterFireCounts CounterFireCountsOf(unsigned long inPlayerID);
 
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {
