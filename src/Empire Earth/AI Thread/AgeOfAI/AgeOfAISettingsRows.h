@@ -200,7 +200,7 @@
     X(STR,    llm,      llm_extra,                "", 256, 0) \
     X(STR,    llm,      llm_api_key,              "", 128, 0) \
     X(FLAG,   llm,      llm_log,                  1, 0, 0) \
-    D(SHARE, cost_percent,                  100, 0, 1000) \
+    D(SHARE, cost_percent,                  0, 0, 1000) \
     D(CHOICE, copper_plan,                   "on", "game,on,next_epoch", 0) \
     D(SHARE, epoch_share,                   40, 0, 100) \
     D(NUM,   food_floor,                    18, 0, 0) \
