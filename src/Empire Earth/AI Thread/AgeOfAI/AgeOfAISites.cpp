@@ -476,4 +476,80 @@ void Rebalance(EECPResourceManager* inResources)
     }
 }
 
+// WOOD DROP (wood_drops in mines.c, [ai_base] wood_drop): nothing in the game puts a drop site by the forest its woodcutters
+// work. Every minute, while no Settlement is going up and the player can build one: the woodcutters whose tree lies 15 or
+// more tiles from a drop site, the tree with most of them within 8 tiles; with 8 or more there a Settlement is laid at the
+// placeable spot nearest the middle of their trees (2 to 12 tiles), no enemy building or soldiers near. Not ported: the
+// reserve of the Settlement's cost that wood_reserve holds back from training (the training budget is not ported), and the
+// build manager's placement bookkeeping of econ.c hook_place (the retries of dropped placements).
+void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (!SettingsOf(inPlayer).wood_drop || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 60000))
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mResourceManager == NULL || theCivilization->mBuildManager == NULL)
+        return;
+    DropsCached(inPlayer);
+    if (sDrops[idx].mDrops.empty())
+        return;
+    struct Spot { long mX, mY; };
+    std::vector<Spot> theForests;
+    std::deque<EEComplexUnit*>& theWoodcutters = theCivilization->mResourceManager->mGatherers[3];
+    for (size_t k = 0; k < theWoodcutters.size() && theForests.size() < 1024; k++) {
+        EEUnit* theSite = NULL;
+        if (theWoodcutters[k] == NULL || !IsGathering(theWoodcutters[k], &theSite) || theSite == NULL)
+            continue;
+        if (DropNearest(idx, theSite->mTileX, theSite->mTileY, false, NULL) >= 15 * 15) {
+            Spot theSpot = {theSite->mTileX, theSite->mTileY};
+            theForests.push_back(theSpot);
+        }
+    }
+    int theBest = -1, theCount = 0;
+    for (size_t i = 0; i < theForests.size(); i++) {
+        int theNear = 0;
+        for (size_t j = 0; j < theForests.size(); j++) {
+            long theDX = theForests[i].mX - theForests[j].mX, theDY = theForests[i].mY - theForests[j].mY;
+            theNear += theDX * theDX + theDY * theDY <= 8 * 8;
+        }
+        if (theNear > theCount) {
+            theCount = theNear;
+            theBest = (int)i;
+        }
+    }
+    if (theCount < 8)
+        return;
+    long theSumX = 0, theSumY = 0;
+    for (size_t j = 0; j < theForests.size(); j++) {
+        long theDX = theForests[theBest].mX - theForests[j].mX, theDY = theForests[theBest].mY - theForests[j].mY;
+        if (theDX * theDX + theDY * theDY <= 8 * 8) {
+            theSumX += theForests[j].mX;
+            theSumY += theForests[j].mY;
+        }
+    }
+    long theMidX = theSumX / theCount, theMidY = theSumY / theCount;
+    long theEpoch = inPlayer->mTechnologies != NULL ? inPlayer->mTechnologies->mCurrentEpoch : -1;
+    if (theEpoch < 0 || theEpoch >= 14 || gUnitClassTable[kUnitTypeSettlement] == NULL || theCivilization->mBuildManager->HasEnemyNear(theMidX, theMidY))
+        return;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext))   // one going up: wait for it
+        if (theUnit->mHitPoints > 0 && theUnit->mUnitClass != NULL && (long)theUnit->mUnitClass->mUnitType == kUnitTypeSettlement
+            && (theUnit->mComplexUnit == NULL || theUnit->mComplexUnit->IsFoundation() || !theUnit->mComplexUnit->mIsBuilt))
+            return;
+    if (!inPlayer->CanProduceUnitType(kUnitTypeSettlement, 0x20, NULL))
+        return;
+    for (int r = 2; r <= 12; r++)
+        for (int ax = -r; ax <= r; ax++)
+            for (int ay = -r; ay <= r; ay++) {
+                if (abs(ax) != r && abs(ay) != r)
+                    continue;
+                long theX = theMidX + ax, theY = theMidY + ay;
+                if (!CanPlace(inPlayer, kUnitTypeSettlement, theX, theY) || RaidersNear(inPlayer, theX, theY, 12))
+                    continue;
+                theCivilization->mBuildManager->StartBuilding(EECPBuildRequest(kUnitTypeSettlement, U2DPoint<long>(theX, theY)));
+                return;
+            }
+}
+
 }
