@@ -134,7 +134,10 @@ Intel::Kind KindOf(EEUnitClass* inClass)
 {
     if (Roles::IsBuildingCategory(inClass->mCategory))
         return Intel::kBuilding;
-    return Roles::IsSoldier(inClass->mCategory, inClass->mFamily) ? Intel::kSoldier : Intel::kOther;
+    // intel.c counts siege weapons with the soldiers (is_soldier || is_siege)
+    bool theSoldier = Roles::IsSoldier(inClass->mCategory, inClass->mFamily, inClass->mRange)
+                      || (Roles::RolesOf(inClass->mCategory, inClass->mFamily, inClass->mRange) & Roles::kSiege) != 0;
+    return theSoldier ? Intel::kSoldier : Intel::kOther;
 }
 
 // The attack a unit of the memory is judged by: a building's when it shoots at the land (range from 1 to 30), a

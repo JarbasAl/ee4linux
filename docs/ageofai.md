@@ -69,8 +69,9 @@ boat, building, soldier) from its category, family and range, so a data mod's ne
 
 Nothing reads the memory yet: the modules that judge an enemy's strength, the defence of a place or the danger of a
 route ask it, and each arrives in its own change. A soldier is any unit of a military class: land, naval, air, heroes,
-priests and transports; not citizens, rams, animals, shots or buildings. Upstream's own test, an "army family" that
-includes naval buildings and leaves out its separate ship and aircraft kinds, is not copied.
+priests and transports; not siege weapons, citizens, rams, animals, shots or buildings. The memory counts siege weapons
+with the soldiers, as upstream's `intel.c` does. Upstream's own test, an "army family" that includes naval buildings
+and leaves out its separate ship and aircraft kinds, is not copied.
 
 The rest of this page describes the tool that finds, for each of the mod's hooks, the function, member or class that
 the hook changes here.
