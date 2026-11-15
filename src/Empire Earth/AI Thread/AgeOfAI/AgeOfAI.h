@@ -93,6 +93,8 @@ void Rebalance(EECPResourceManager* inResources);
 bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource);
 bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0);
 bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0);
+// An enemy army in the base: the defenders gather beyond it, then strike (MusterTick, every 3 game seconds)
+void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding);
 

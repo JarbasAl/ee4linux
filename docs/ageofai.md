@@ -161,6 +161,14 @@ holds it, and `SeenBy` (what the player knows of a unit, from the honest vision 
 `raid_held` (a town that holds against the raiders), `behind_walls` and `ship_reach_exact` (off by default), the danger map
 the route searches read, and the flight of an overrun base and the shelter in a fortress (they need `defence.c` and `bunker.c`).
 
+An enemy army in the base is met as one force. Every game three seconds, with `[ai_base] muster` on (the default), an
+Age of AI player counts the enemy soldiers within 22 tiles of its base against its own soldiers within 35 tiles and its towers
+within 22. With 8 or more enemies and the home side under half of their strength, every own soldier there walks to a rally
+point 18 tiles beyond the base, away from the enemy, and new soldiers join it. Once the soldiers at the rally point are 1.3
+times the enemy in the base, each attacks the nearest enemy soldier. The muster ends when fewer than 3 enemies are left,
+when soldiers and towers can hold the base again, or when the enemy follows to the rally point a third time; a new muster
+waits 30 or 60 seconds. The citizens' flight to the rally point and the fight estimate are not ported.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower
