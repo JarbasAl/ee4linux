@@ -83,6 +83,7 @@ tool exits 1 when a run fails, a seed does not agree, or a report is missing.
 | `--human-defeat` | lets the idle human player lose. By default the human stays in the game. |
 | `--report FILE` | the JSON report (default standard output) |
 | `--sync-trace FILE` | the trace file |
+| `--sync-exact` | the trace's unit hash also covers the bits of each unit's facing and position, so a float difference inside a tile shows |
 | `--autosave-ms N` | the game's autosave period in game milliseconds (default 0: none) |
 | `--port-offset N` | moves the game's TCP ports 33334 and 33335 by N (default from the process id) |
 | `--quiet` | no progress lines on standard error |

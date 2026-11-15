@@ -159,6 +159,7 @@ struct Options {
     bool mNoHumanDefeat = true;
     std::string mReport;                                 // the JSON report ("" or "-": stdout)
     std::string mSyncTrace;                              // one line per communications tick ("": none)
+    bool mSyncExact = false;                             // --sync-exact: the unit hash covers the location matrix bits
     long mPortOffset = -1;                               // -1: from the process id
     long mAutoSaveMs = 0;                                // the game's autosave period (0: none)
     bool mQuiet = false;
@@ -453,7 +454,9 @@ uint32_t Hash(uint32_t ioHash, uint32_t inValue)
 
 // The sync trace line: "<PT> <game ms> <seed> <stock hash> <units> <unit hash>". The stock hash covers every player's
 // resources; the unit hash is a sum of each unit's hash (owner, id, class, tile, hit points), so the order of the units
-// does not matter. Two runs of one seed part at the first line that differs.
+// does not matter. With --sync-exact a moving unit's hash also covers the bits of the top three rows of its location
+// matrix (facing and position), so a float difference inside a tile shows. Two runs of one seed part at the first line
+// that differs.
 void WriteSyncLine()
 {
     uint32_t theStock = 2166136261u;
@@ -473,6 +476,15 @@ void WriteSyncLine()
             theHash = Hash(theHash, (uint32_t)theUnit->mTileX);
             theHash = Hash(theHash, (uint32_t)theUnit->mTileY);
             theHash = Hash(theHash, (uint32_t)theUnit->mHitPoints);
+            if (sOptions.mSyncExact && theUnit->mComplexUnit != NULL) {
+                const GETransformation& theLocation = theUnit->mComplexUnit->mPhysicalModel.GetLocation();
+                for (int row = 0; row < 3; row++)
+                    for (int column = 0; column < 4; column++) {
+                        uint32_t theBits;
+                        memcpy(&theBits, &theLocation.mMatrix[row][column], sizeof(theBits));
+                        theHash = Hash(theHash, theBits);
+                    }
+            }
             theUnits += theHash;
             theCount++;
         }
@@ -1157,6 +1169,7 @@ const char* kUsage =
     "  --human-defeat         let the idle human be defeated (default: kept in)\n"
     "  --report FILE          the JSON report (default stdout)\n"
     "  --sync-trace FILE      one line per communications tick: PT, game ms, seed, stock hash, units, unit hash\n"
+    "  --sync-exact           the unit hash also covers the bits of each unit's facing and position\n"
     "  --autosave-ms N        the game's autosave period in game time (default 0: none)\n"
     "  --port-offset N        move the game's TCP ports 33334/33335 by N (default: from the process id)\n"
     "  --quiet                no progress on stderr\n";
@@ -1308,6 +1321,8 @@ int EESimMain(int argc, char** argv)
             sOptions.mReport = Absolute(value());
         else if (theOption == "--sync-trace")
             sOptions.mSyncTrace = Absolute(value());
+        else if (theOption == "--sync-exact")
+            sOptions.mSyncExact = true;
         else if (theOption == "--quiet")
             sOptions.mQuiet = true;
         else if (theOption == "--port-offset")
