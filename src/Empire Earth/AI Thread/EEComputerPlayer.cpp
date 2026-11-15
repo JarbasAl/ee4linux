@@ -4587,7 +4587,7 @@ void EEComputerPlayer::EnterEpoch(long inEpoch)
 {
     if (this->mTechnologies != NULL) {
         EETechTreeEpoch* theEpoch = dynamic_cast<EETechTreeEpoch*>(this->mTechnologies->Get(inEpoch));
-        if (theEpoch != NULL)
+        if (theEpoch != NULL && !(AgeOfAI::EngineOf(this->mPlayerID) == AgeOfAI::kEngineAgeOfAI && AgeOfAI::EpochUpgrades(this, theEpoch)))
             theEpoch->ResearchKind(7, true);
     }
     this->ChooseFavoriteLandType();
