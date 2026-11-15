@@ -31,6 +31,7 @@
 #include "ee/EETileCoordinate.h"
 #include "ee/EEAreaUtilities.h"
 #include "ee/EEPhysicsModel.h"
+#include "AgeOfAI/AgeOfAI.h"
 
 // 0x4428e8: a unit-local 1.0f (loaded from memory, never folded; Step1 and Step4 multiply by it) (provisional name)
 static const float kPMLandBrakeFactor = 1.0f;
@@ -207,7 +208,10 @@ void EEPMLand::Move(EEComplexUnit* inUnit)
 // ICF copies of 0x55e754 / 0x55be0e (identical bodies folded by LINK; no own address)
 void EEPMLand::Collide(EEComplexUnit* inUnit)
 {
+    if (AgeOfAI::LandCollide(inUnit))
+        return;
     EEPhysicsModel::Collide(inUnit);
+    AgeOfAI::LandRest(inUnit);
 }
 
 // Runs the base physics model's after-step work for the land unit

@@ -35,6 +35,11 @@ unsigned sClassicPlayers;
 
 }
 
+const Settings& LoadedSettings()
+{
+    return Loaded();
+}
+
 void SetClassicPlayers(unsigned inMask)
 {
     sClassicPlayers = inMask;

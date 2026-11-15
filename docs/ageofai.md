@@ -167,6 +167,18 @@ times the enemy in the base, each attacks the nearest enemy soldier. The muster 
 when soldiers and towers can hold the base again, or when the enemy follows to the rally point a third time; a new muster
 waits 30 or 60 seconds. The citizens' flight to the rally point and the fight estimate are not ported.
 
+## Land unit collision
+
+The game keeps land units apart by a contact list: a unit that touches a larger one is slowed and jumped back, and a small unit
+next to a big one never sees it. With `[general] land_collide` on (the default) every land unit, hovercraft included, is a circle as
+wide as the game's size for it. `EEPMLand::Collide` pushes it off each overlapping circle near it by half the overlap a step.
+A unit walking into another veers off to the right and slides past. A standing unit of the same player, or of an ally, steps
+aside by its share, weighed by its size and the units behind it. Two friendly units collide at `friendly_collision` (75%) of
+their radii. A unit at work (gathering or building) is passed by units not at the same work. A unit at rest drifts off the others
+at rest every fourth step. A contact with a gate or a building still goes through the game's own collision step. Both ends of
+a multiplayer game need the same setting. `land_collide=0` with `improved_unit_movement=file` gives the game's own collision.
+`ship_collide` is not ported.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

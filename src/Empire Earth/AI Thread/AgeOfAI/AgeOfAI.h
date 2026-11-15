@@ -74,6 +74,9 @@ void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool CanPlace(EEPlayer* inPlayer, long inType, long inX, long inY);
 // The drop sites by the forests (WoodDrops, called once a game second)
 void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow);
+// The collision of land units (EEPMLand::Collide): true when it replaced the game's own step
+bool LandCollide(EEComplexUnit* inUnit);
+void LandRest(EEComplexUnit* inUnit);
 // The settings the player's own fields take, once per player on its first update
 void ApplySettings(EEComputerPlayer* inPlayer);
 void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow);
