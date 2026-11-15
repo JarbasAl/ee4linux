@@ -125,6 +125,8 @@
 #include "ee/EEUnitClassIDs.h"
 #include "ee/EECPUnitManager.h"
 #include "ee/EECPBuildManager.h"
+#include "ee/EEEvent.h"
+#include "ee/EECPResearchManager.h"
 #include "ee/EECPResourceManager.h"
 #include "ee/EECPCivilizationManager.h"
 #include "AgeOfAI.h"
@@ -186,6 +188,26 @@ long Workforce(EECPResourceManager* inResources)
     for (int t = 0; t < 7; t++)
         theCount += (long)inResources->mGatherers[t].size();
     return theCount;
+}
+
+// Whether a tech's event raises how fast citizens gather (is_gather_tech in econ.c): an effect of kind 2 on the citizen
+// classes or on all, for an attribute between 0x1a and 0x21 but 0x1e
+bool IsGatherTech(EETechTreeNode* inNode)
+{
+    EEEvent* theEvent = EEEvent::Get(inNode->mData->mResearchedEvent);
+    if (theEvent == NULL)
+        return false;
+    for (unsigned long k = 0; k < theEvent->GetNumEffects() && k < 64; k++) {
+        if (theEvent->GetEffect(k) >= 2000)
+            continue;
+        EEEventEffect* theEffect = EEEvent::GetEventEffect(theEvent->GetEffect(k));
+        long theClass = theEffect->mUnitClass;
+        long theAttribute = theEffect->mAttribute;
+        if (theEffect->mKind == 2 && (theClass == 0x20 || theClass == 0x1e0 || theClass == -1) && theAttribute >= 0x1a
+            && theAttribute <= 0x21 && theAttribute != 0x1e)
+            return true;
+    }
+    return false;
 }
 
 // The wood of the next three queued buildings up to the player's epoch: a building it cannot pay for is no demand
@@ -319,6 +341,32 @@ void EconTargets(EECPResourceManager* inResources)
                        theCopperPlan, theSettings.food_floor, theTarget))
         for (int r = 2; r < 7; r++)
             inResources->mWantedGatherers[r] = theTarget[r];
+}
+
+// GATHERING RESEARCH (gather_research in econ.c, [ai_base] gather_research): every 15 s one available, unresearched
+// candidate with a gathering effect is scheduled through the research manager and taken out of the candidates
+void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (!SettingsOf(inPlayer).gather_research || (inNow >= sLast[idx] && inNow - sLast[idx] < 15000))
+        return;
+    sLast[idx] = inNow;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mResearchManager == NULL || theCivilization->mResourceManager == NULL
+        || Workforce(theCivilization->mResourceManager) < 10)
+        return;
+    EECPResearchManager* theResearch = theCivilization->mResearchManager;
+    std::vector<long>& theCandidates = theResearch->mCandidates;
+    for (size_t q = 0; theCandidates.size() < 500 && q < theCandidates.size(); q++) {
+        long theID = theCandidates[q];
+        EETechTreeNode* theNode = inPlayer->mTechnologies->Get(theID);
+        if (theNode == NULL || theNode->mIsResearched || !theNode->mIsAvailable || !IsGatherTech(theNode))
+            continue;
+        theCandidates.erase(theCandidates.begin() + q);
+        theResearch->Research(theID);
+        return;
+    }
 }
 
 }
