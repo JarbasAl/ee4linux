@@ -70,6 +70,7 @@ void EconTargets(EECPResourceManager* inResources);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 // An epoch's line upgrades (kind 7): false when the game researches them itself, true when they are scheduled for research
+void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool EpochUpgrades(EEComputerPlayer* inPlayer, EETechTreeEpoch* inEpoch);
 // The stone of the core towers still missing (EarlyTowers): the worker plan counts it
 long EarlyTowerStone(EEComputerPlayer* inPlayer);
