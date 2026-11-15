@@ -251,6 +251,7 @@ struct PlayerSample {
 };
 
 struct Sample {
+    long mOverlapPairs = 0, mOverlapDeepest = 0;   // land units that overlap by 0.1 tile or more, and the deepest overlap x 100
     long mGameMs = 0;
     unsigned long mPT = 0;
     double mWall = 0;
@@ -293,6 +294,46 @@ bool IsCounted(EEUnit* inUnit)
 }
 
 // under the world lock (the physics thread's, or the driver's read lock)
+// the land units (soldiers and citizens not at work, none held) whose circles, as wide as the game's size for them, overlap
+void MeasureOverlap(Sample& ioSample)
+{
+    struct Disc {
+        float mX, mY, mSize;
+    };
+    std::vector<Disc> theDiscs;
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+        EEPlayer* thePlayer = gWorld.GetPlayer(i);
+        if (thePlayer == NULL)
+            continue;
+        for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || theUnit->mTileX < 0 || theUnit->mComplexUnit == NULL)
+                continue;
+            unsigned long theCategory = theUnit->mUnitClass->mCategory;
+            if (theCategory != kUnitCategoryLand && theCategory != kUnitCategoryLandCitizen && theCategory != kUnitCategoryLand8
+                && theCategory != kUnitCategoryLand15)
+                continue;
+            EEComplexUnit* theComplex = theUnit->mComplexUnit;
+            if (theComplex->mHolder != NULL || theComplex->mCollisionRadius <= 0)
+                continue;
+            unsigned char theKind = theComplex->mGoalState != NULL ? theComplex->mGoalState->mKind : 0;
+            if (theComplex->mIsCitizen && (theKind == 6 || theKind == 4))
+                continue;
+            Disc theDisc = {theComplex->mPhysicalModel.GetLocation().GetX(), theComplex->mPhysicalModel.GetLocation().GetY(),
+                            theComplex->mCollisionRadius};
+            theDiscs.push_back(theDisc);
+        }
+    }
+    for (size_t a = 0; a < theDiscs.size() && a < 2000; a++)
+        for (size_t b = a + 1; b < theDiscs.size() && b < 2000; b++) {
+            float theDX = theDiscs[a].mX - theDiscs[b].mX, theDY = theDiscs[a].mY - theDiscs[b].mY;
+            float theOverlap = (theDiscs[a].mSize + theDiscs[b].mSize) * 0.5f - sqrtf(theDX * theDX + theDY * theDY);
+            if (theOverlap >= 0.1f)
+                ioSample.mOverlapPairs++;
+            if ((long)(theOverlap * 100) > ioSample.mOverlapDeepest)
+                ioSample.mOverlapDeepest = (long)(theOverlap * 100);
+        }
+}
+
 Sample TakeSample()
 {
     Sample theSample;
@@ -400,6 +441,7 @@ Sample TakeSample()
         }
         theSample.mPlayers.push_back(p);
     }
+    MeasureOverlap(theSample);
     return theSample;
 }
 
@@ -963,6 +1005,19 @@ void WriteReport(int inCode, const std::string& inError)
                  "  \"projectiles\": {\"fired\": %u, \"led\": %u, \"hit_unit\": %u, \"hit_ground\": %u},\n", (unsigned)theCounts.mFired,
                  (unsigned)theCounts.mLed, (unsigned)theCounts.mHitUnit, (unsigned)theCounts.mHitGround);
         j += theProjectiles;
+    }
+    {
+        long thePairs = 0, theDeepest = 0, theCount = 0;
+        for (const Sample& theSample : sSamples) {
+            thePairs += theSample.mOverlapPairs;
+            theCount++;
+            if (theSample.mOverlapDeepest > theDeepest)
+                theDeepest = theSample.mOverlapDeepest;
+        }
+        char theOverlap[200];
+        snprintf(theOverlap, sizeof(theOverlap), "  \"overlap\": {\"pairs_mean\": %.1f, \"deepest_x100\": %d, \"samples\": %d},\n",
+                 theCount ? (double)thePairs / (double)theCount : 0.0, (int)theDeepest, (int)theCount);
+        j += theOverlap;
     }
     j += "  \"players\": " + (theLast ? PlayersJson(*theLast) : std::string("[]")) + ",\n";
     // per world player, the game ms each epoch was first reached (index: the epoch; an epoch never reached is missing
