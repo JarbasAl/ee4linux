@@ -198,6 +198,23 @@ The classic combat manager takes free soldiers into its own attack groups within
 finds no free outdated units and the game does not change. It acts for a player whose army is larger than its groups
 take, as on the late-game save the rule was written for.
 
+## Counter-siege and the citizen militia
+
+Upstream's default turns `[ai_base] citizen_militia` and `counter_siege` on. The shipped `ageofai.ini` turns both off
+until the [benchmark](benchmark.md) rates them as the AI `aoai-militia`.
+
+Every two game seconds an Age of AI player looks for two kinds of threat. With `citizen_militia` on, its citizens attack enemy citizens who build a defence within 12 tiles of its buildings or citizens, and, up
+to the Bronze Age, enemy units that attack one of its units near its citizens. Only gathering or idle citizens within
+10 tiles go, at most 3 per enemy and against at most 6 enemies, and only when their hit points times attack are 3 times
+those of the enemies within 6 tiles. With `early_militia` (the default) they fight soldiers only next to their own
+soldiers or under their own towers, and only where the fight estimate has them win without the loss of a citizen.
+
+With `counter_siege` on, up to 5 soldiers within 20 tiles attack an enemy siege weapon or ram in reach of
+its buildings (its range plus 4 tiles), or an enemy defence going up within 12 tiles: the builders first, spread over
+them. They go only when they are at least twice the enemy soldiers within 8 tiles plus 3. Against a defence going up
+with too few soldiers, the citizens go at the builders. Counter-fire runs just before counter-siege, as
+upstream's `counter_siege` starts with it. The chat lines are not ported.
+
 ## The fight estimate
 
 `AgeOfAIStats.cpp` estimates how long each of two sides needs to destroy the other, from the game's own unit data, as
@@ -206,8 +223,8 @@ and the weapon table, less the target's armour, rounded and at least 1. A shot t
 A unit that cannot move never hits one that outranges it, and an outranged unit walks the difference under fire first.
 Artillery cannot hit a unit that has closed inside its minimum range, and area damage counts up to 2 neighbours of the
 target. The ratio of two sides is the square root of the time the enemy needs over the time the own side needs, so twice
-the units of one type give 2. The citizen militia uses it (`early_militia`), and so do muster and hold-the-town with
-`[ai_base] fight_estimate=1`. Counter-fire uses it too.
+the units of one type give 2. The citizen militia uses it (`early_militia`, `militia_estimate`, and `fight_estimate=1`),
+and so does counter-fire. Muster and hold-the-town do not use it yet.
 
 ## Counter-fire
 
@@ -222,7 +239,7 @@ on the target. If they cannot reach 1.5, nobody goes. Each soldier sent attacks 
 it for 45 seconds. The sim report's `intel` object counts the targets attacked (`counter_fire_sorties`), the soldiers
 sent (`counter_fire_sent`) and the targets left because the soldiers were too weak (`counter_fire_short`).
 
-Upstream calls counter-fire at the start of `counter_siege` (`defence.c`); the port calls it before muster. The
+Upstream calls counter-fire at the start of `counter_siege` (`defence.c`), and the port calls it just before counter-siege. The
 skirmish spotter that upstream holds back (`skirmish.c`) and the staging rules that read the commitment (`stage.c`) are
 not ported yet.
 

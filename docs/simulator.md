@@ -45,7 +45,9 @@ players' starting positions.
 
 The report of an Age of AI player has an `intel` object, its memory of its enemies ([Age of AI](ageofai.md)): `records`,
 `buildings`, `soldiers`, `seen_now`, `cells_looked` and `army`. It also holds the counters of the early game (`early_*`),
-of the outdated units' attack (`outdated_*`), of the food pull (`food_pulled`) and of counter-fire (`counter_fire_*`).
+of the outdated units' attack (`outdated_*`), of the food pull (`food_pulled`), of counter-fire (`counter_fire_*`), of
+the citizen militia (`militia_orders`, `militia_refused`, `militia_caught`) and of counter-siege (`counter_siege_orders`,
+`counter_siege_skipped`).
 
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.

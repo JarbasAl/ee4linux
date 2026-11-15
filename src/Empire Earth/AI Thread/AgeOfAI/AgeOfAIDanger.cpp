@@ -133,7 +133,9 @@
 #include "ee/EEUGBuildRepair.h"
 #include "ee/EEUGLocation.h"
 #include "ee/EEUGAttackUnit.h"
+#include "AgeOfAI/AgeOfAIStats.h"
 #include "AgeOfAI.h"
+#include "AgeOfAIDefence.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
 
@@ -751,6 +753,420 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             continue;
         if (theUnit->mHitPoints > 0 && theUnit->mTileX != -10000)
             MoveTo(theUnit->mComplexUnit, theMuster.mRX, theMuster.mRY);
+    }
+}
+
+
+// COUNTER-SIEGE and CITIZEN MILITIA (counter_siege, militia and militia_answer in defence.c; [ai_base] counter_siege,
+// citizen_militia, militia_estimate, militia_caught_share, early_militia). Every 2 s per AI, one scan of the map:
+// - the citizen militia: enemy citizens building a defence within 12 tiles of the AI's buildings or citizens (any epoch),
+//   and up to the Bronze Age enemy units attacking one of the AI's units within 10 tiles of its citizens, are attacked by
+//   the AI's gathering or idle citizens within 10 tiles - at most 3 per enemy and against at most 6 enemies, and only when
+//   the citizens' strength (hit points x attack) is 3 times that of the enemies within 6 tiles. With early_militia (on by
+//   default) the citizens fight soldiers only next to their own soldiers or under their own towers, and only where the
+//   fight estimate (AgeOfAIStats.h) has them win without the loss of a citizen;
+// - counter-siege: an enemy siege weapon or ram the AI sees within its range + 4 tiles of one of its buildings, or an
+//   enemy defence going up within 12 tiles of its buildings or citizens, is attacked by up to 5 of its soldiers within
+//   20 tiles (nearest first; idle, marching or fighting something more than 4 tiles away) - the builders first, spread
+//   over them - but only when those soldiers are at least 2 x + 3 the enemy soldiers within 8 tiles of it. Too few
+//   soldiers against a defence going up: the citizens go at the builders instead.
+// Not ported: counter_fire (counterfire.c, its own file), the chat lines, and the control pipe's defence switch.
+namespace {
+
+struct SiegeScan {
+    int mBuildings;
+    long mBX[256], mBY[256];
+    int mSoldiers;
+    EEUnit* mSoldier[128];
+    int mSiege;
+    EEUnit* mEnemySiege[16];
+    int mEnemySoldiers;
+    long mEX[256], mEY[256];
+    int mCitizens;
+    long mCX[128], mCY[128];
+    EEUnit* mCitizen[128];
+    int mEnemyUnits;
+    EEUnit* mEnemyUnit[128];
+    int mTowers;
+    EEUnit* mEnemyTower[16];
+};
+
+DefenceCounts sDefence[16];
+
+// is_enemy (players.c): the diplomatic stance towards the other player
+bool IsEnemy(EEPlayer* inPlayer, EEPlayer* inOther)
+{
+    return inOther != NULL && inOther != inPlayer && inOther->mPlayerID < 16 && inPlayer->mEnemies[inOther->mPlayerID] != 0;
+}
+
+// is_soldier (roles.c): an army class that is no siege weapon, ram or citizen
+bool IsSoldierUnit(EEUnit* inUnit)
+{
+    EEUnitClass* theClass = inUnit->mUnitClass;
+    return Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange);
+}
+
+// early_finished (early.c): the building is built
+bool IsBuilt(EEUnit* inUnit)
+{
+    return inUnit->mComplexUnit != NULL && inUnit->mComplexUnit->mIsBuilt;
+}
+
+long CurrentEpoch(EEPlayer* inPlayer)
+{
+    return inPlayer->mTechnologies != NULL ? inPlayer->mTechnologies->mCurrentEpoch : -1;
+}
+
+bool IsBuilding(EEUnit* inUnit)
+{
+    return inUnit->mUnitClass->mCategory == kUnitCategoryBuilding || inUnit->mUnitClass->mCategory == kUnitCategoryFortress;
+}
+
+EEUnitGoal* GoalOf(EEUnit* inUnit)
+{
+    return inUnit->mComplexUnit != NULL ? inUnit->mComplexUnit->mGoalState : NULL;
+}
+
+EEUnit* AttackTarget(EEUnitGoal* inGoal)
+{
+    EEUGAttackUnit* theAttack = dynamic_cast<EEUGAttackUnit*>(inGoal);
+    return theAttack != NULL ? theAttack->mTarget : NULL;
+}
+
+// field_site (econ.c): the outermost unit of a site's chain of parts, what a build goal holds
+EEUnit* FieldSite(EEUnit* inSite)
+{
+    EEUnit* theLast = inSite;
+    for (EEComplexUnit* thePart = inSite->mComplexUnit; thePart != NULL; thePart = thePart->mPreviousPart)
+        theLast = thePart;
+    return theLast;
+}
+
+long Box(long inA, long inB)
+{
+    return inA > inB ? inA - inB : inB - inA;
+}
+
+void ScanSiege(EEPlayer* inPlayer, SiegeScan& outScan)
+{
+    memset(&outScan, 0, sizeof(outScan));
+    for (unsigned long p = 0; p < gWorld.GetNumPlayers() && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(p);
+        if (theOwner == NULL)
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+                continue;
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            long theX = theUnit->mTileX, theY = theUnit->mTileY;
+            unsigned theRoles = Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange);
+            bool theCitizen = (theRoles & Roles::kCitizen) != 0;
+            if (theOwner == inPlayer) {
+                if (IsBuilding(theUnit) && outScan.mBuildings < 256) {
+                    outScan.mBX[outScan.mBuildings] = theX;
+                    outScan.mBY[outScan.mBuildings++] = theY;
+                } else if (IsSoldierUnit(theUnit) && outScan.mSoldiers < 128) {
+                    outScan.mSoldier[outScan.mSoldiers++] = theUnit;
+                } else if (theCitizen && outScan.mCitizens < 128) {
+                    outScan.mCitizen[outScan.mCitizens] = theUnit;
+                    outScan.mCX[outScan.mCitizens] = theX;
+                    outScan.mCY[outScan.mCitizens++] = theY;
+                }
+            } else if (IsEnemy(inPlayer, theOwner)) {
+                float theRange, theAttack;
+                if ((IsSoldierUnit(theUnit) || theCitizen) && outScan.mEnemyUnits < 128 && SeenBy(theUnit, inPlayer))
+                    outScan.mEnemyUnit[outScan.mEnemyUnits++] = theUnit;
+                if ((theRoles & (Roles::kSiege | Roles::kRam)) != 0 && outScan.mSiege < 16 && SeenBy(theUnit, inPlayer))
+                    outScan.mEnemySiege[outScan.mSiege++] = theUnit;
+                else if (IsBuilding(theUnit) && theUnit->mComplexUnit != NULL && !theUnit->mComplexUnit->mIsBuilt
+                         && outScan.mTowers < 16 && DefenceStats(theUnit, theRange, theAttack) && SeenBy(theUnit, inPlayer))
+                    outScan.mEnemyTower[outScan.mTowers++] = theUnit;
+                else if (IsSoldierUnit(theUnit) && outScan.mEnemySoldiers < 256) {
+                    outScan.mEX[outScan.mEnemySoldiers] = theX;
+                    outScan.mEY[outScan.mEnemySoldiers++] = theY;
+                }
+            }
+        }
+    }
+}
+
+// early_cover (early.c): an own finished building that shoots reaches x, y (its range - 0.5)
+bool EarlyCover(EEPlayer* inPlayer, long inX, long inY)
+{
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        float theRange, theAttack;
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || Box(theUnit->mTileX, inX) > 16 || Box(theUnit->mTileY, inY) > 16
+            || !DefenceStats(theUnit, theRange, theAttack) || !IsBuilt(theUnit))
+            continue;
+        long theDX = theUnit->mTileX - inX, theDY = theUnit->mTileY - inY;
+        if ((float)(theDX * theDX + theDY * theDY) <= (theRange - 0.5f) * (theRange - 0.5f))
+            return true;
+    }
+    return false;
+}
+
+Stats::Side sMilitiaOwn, sMilitiaFoe, sMilitiaSoldiers;
+
+// militia_answer: the AI's citizens near inTarget attack it; returns how many were ordered
+int MilitiaAnswer(EEPlayer* inPlayer, const SettingsAI& inSettings, SiegeScan& ioScan, EEUnit* inTarget, int& ioFree)
+{
+    const SettingsAI& theBase = Cfg(inPlayer->mPlayerID);
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    long theX = inTarget->mTileX, theY = inTarget->mTileY;
+    int theEnemies = 0, theOrdered = 0, theSoldiers = 0;
+    float theEnemyPower = 0, theCitizenPower = 0, theFastest = 1e9f, theCitizenSpeed = 0;
+    bool theEstimate = theBase.fight_estimate || theBase.militia_estimate || inSettings.early_militia;
+    if (theEstimate) {
+        Stats::Clear(sMilitiaOwn);
+        Stats::Clear(sMilitiaFoe);
+    }
+    for (int k = 0; k < ioScan.mEnemyUnits; k++) {
+        EEUnit* theEnemy = ioScan.mEnemyUnit[k];
+        if (theEnemy->mHitPoints <= 0 || Box(theEnemy->mTileX, theX) > 6 || Box(theEnemy->mTileY, theY) > 6)
+            continue;
+        theEnemies++;
+        theEnemyPower += UnitPower(theEnemy);
+        if (theEstimate)
+            Stats::Add(sMilitiaFoe, theEnemy);
+        if (IsSoldierUnit(theEnemy)) {
+            theSoldiers++;
+            if (Stats::Speed(theEnemy) < theFastest)
+                theFastest = Stats::Speed(theEnemy);
+        }
+    }
+    if (theEnemies < 1) {   // a foundation: no fight, only its hit points
+        theEnemies = 1;
+        theEnemyPower = UnitPower(inTarget);
+        if (theEstimate)
+            Stats::Add(sMilitiaFoe, inTarget);
+    }
+    if (theEnemies > DefenceRules::kMilitiaMostEnemies)
+        return 0;
+    for (int c = 0, n = 0; c < ioScan.mCitizens && n < DefenceRules::kMilitiaPerEnemy * theEnemies; c++)
+        if (ioScan.mCitizen[c] != NULL && Box(ioScan.mCX[c], theX) <= 10 && Box(ioScan.mCY[c], theY) <= 10) {
+            theCitizenPower += UnitPower(ioScan.mCitizen[c]);
+            n++;
+            if (theEstimate)
+                Stats::Add(sMilitiaOwn, ioScan.mCitizen[c]);
+            if (Stats::Speed(ioScan.mCitizen[c]) > theCitizenSpeed)
+                theCitizenSpeed = Stats::Speed(ioScan.mCitizen[c]);
+        }
+    // early militia: against soldiers, only next to own soldiers or under own towers, and only without a citizen lost
+    if (inSettings.early_militia && theSoldiers) {
+        bool theCover = EarlyCover(inPlayer, theX, theY);
+        for (int k = 0; k < ioScan.mSoldiers && !theCover; k++)
+            theCover = ioScan.mSoldier[k] != NULL && Box(ioScan.mSoldier[k]->mTileX, theX) <= 12 && Box(ioScan.mSoldier[k]->mTileY, theY) <= 12;
+        Stats::Result theResult;
+        if (theCover && sMilitiaOwn.mCount)
+            Stats::Estimate(sMilitiaOwn, sMilitiaFoe, theResult);
+        float theLost = theCover && sMilitiaOwn.mCount && theResult.mTime[0] < 1e9f
+                        ? DefenceRules::CitizensLost(theResult.mContactDps[1], theResult.mTime[0], sMilitiaOwn.mCount, sMilitiaOwn.mHP)
+                        : 99.0f;
+        if (theLost >= 1.0f) {
+            sDefence[thePI].mMilitiaRefused++;
+            return 0;
+        }
+    }
+    if (theBase.militia_estimate) {
+        if (!sMilitiaOwn.mCount)
+            return 0;
+        // soldiers near that win it on their own do the job instead
+        Stats::Clear(sMilitiaSoldiers);
+        for (int k = 0; k < ioScan.mSoldiers; k++)
+            if (ioScan.mSoldier[k] != NULL && Box(ioScan.mSoldier[k]->mTileX, theX) <= 12 && Box(ioScan.mSoldier[k]->mTileY, theY) <= 12)
+                Stats::Add(sMilitiaSoldiers, ioScan.mSoldier[k]);
+        if (sMilitiaSoldiers.mCount && Stats::Ratio(sMilitiaSoldiers, sMilitiaFoe) >= 1.0f)
+            return 0;
+        float theStand = Stats::Ratio(sMilitiaOwn, sMilitiaFoe);
+        if (!theSoldiers) {   // builders, a foundation
+            if (theStand < 1.0f)
+                return 0;
+        } else if (theStand < 1.5f) {   // caught: running is no way out - fight if the citizens still do some good
+            Stats::Result theResult;
+            Stats::Estimate(sMilitiaOwn, sMilitiaFoe, theResult);
+            float theShare = theResult.mTime[0] < 1e9f ? theResult.mTime[1] / (theResult.mTime[0] > 0.1f ? theResult.mTime[0] : 0.1f) : 0;
+            bool theAttacking = AttackTarget(GoalOf(inTarget)) != NULL;
+            if (!DefenceRules::CaughtFight(theAttacking, theFastest, theCitizenSpeed, theShare, theBase.militia_caught_share))
+                return 0;
+            sDefence[thePI].mMilitiaCaught++;
+        }
+    } else {
+        float theStand = theBase.fight_estimate ? Stats::Ratio(sMilitiaOwn, sMilitiaFoe)
+                                                : DefenceRules::PowerRatio(theCitizenPower, theEnemyPower);
+        if (theStand < DefenceRules::kMilitiaStand)
+            return 0;   // citizens beat clubmen and builders, not real soldiers
+    }
+    for (int c = 0; c < ioScan.mCitizens && theOrdered < DefenceRules::kMilitiaPerEnemy * theEnemies; c++) {
+        EEUnit* theCitizen = ioScan.mCitizen[c];
+        if (theCitizen == NULL || Box(ioScan.mCX[c], theX) > 10 || Box(ioScan.mCY[c], theY) > 10)
+            continue;
+        EEUnitGoal* theGoal = GoalOf(theCitizen);
+        if (dynamic_cast<EEUGAttackUnit*>(theGoal) != NULL) {   // already fighting
+            ioScan.mCitizen[c] = NULL;
+            continue;
+        }
+        if (theGoal != NULL && dynamic_cast<EEUGGather*>(theGoal) == NULL)
+            continue;   // building, walking: leave it
+        if (AttackUnit(theCitizen, inTarget))
+            theOrdered++;
+        ioScan.mCitizen[c] = NULL;   // one target per citizen per tick
+    }
+    ioFree -= theOrdered;
+    return theOrdered;
+}
+
+void Militia(EEPlayer* inPlayer, const SettingsAI& inSettings, SiegeScan& ioScan)
+{
+    const SettingsAI& theBase = Cfg(inPlayer->mPlayerID);
+    if (!theBase.citizen_militia || !ioScan.mCitizens || !ioScan.mEnemyUnits)
+        return;
+    bool theEarly = theBase.militia_estimate || CurrentEpoch(inPlayer) <= 3;
+    int theFree = ioScan.mCitizens, theTotal = 0;
+    for (int k = 0; k < ioScan.mEnemyUnits && theFree > 2; k++) {
+        EEUnit* theEnemy = ioScan.mEnemyUnit[k];
+        EEUnitGoal* theGoal = GoalOf(theEnemy);
+        if (theGoal == NULL || theEnemy->mHitPoints <= 0)
+            continue;
+        long theX = theEnemy->mTileX, theY = theEnemy->mTileY;
+        int theWhy = 0;
+        EEUGBuildRepair* theBuild = dynamic_cast<EEUGBuildRepair*>(theGoal);
+        if (theBuild != NULL) {
+            EEUnit* theSite = theBuild->mTarget;
+            float theRange, theAttack;
+            if (theSite != NULL && theSite->mPlayer != inPlayer && theSite->mComplexUnit != NULL && !theSite->mComplexUnit->mIsBuilt
+                && DefenceStats(theSite, theRange, theAttack))
+                theWhy = 1;   // a tower going up
+        } else if (theEarly) {
+            EEUnit* theTarget = AttackTarget(theGoal);
+            if (theTarget != NULL && theTarget->mPlayer == inPlayer)
+                theWhy = 2;   // attacking one of ours
+        }
+        if (!theWhy)
+            continue;
+        bool theClose = false;
+        for (int b = 0; theWhy == 1 && b < ioScan.mBuildings && !theClose; b++)
+            theClose = Box(ioScan.mBX[b], theX) <= 12 && Box(ioScan.mBY[b], theY) <= 12;
+        long theReach = theWhy == 1 ? 12 : 10;
+        for (int c = 0; c < ioScan.mCitizens && !theClose; c++)
+            theClose = Box(ioScan.mCX[c], theX) <= theReach && Box(ioScan.mCY[c], theY) <= theReach;
+        if (theClose)
+            theTotal += MilitiaAnswer(inPlayer, inSettings, ioScan, theEnemy, theFree);
+    }
+    sDefence[inPlayer->mPlayerID & 15].mMilitiaOrders += (unsigned long)theTotal;
+}
+
+}
+
+DefenceCounts DefenceCountsOf(unsigned long inPlayerID)
+{
+    return sDefence[inPlayerID & 15];
+}
+
+void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    static SiegeScan sScan;
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    const SettingsAI& theBase = Cfg(inPlayer->mPlayerID);
+    if (!theBase.counter_siege || (inNow >= sLast[thePI] && inNow - sLast[thePI] < 2000))
+        return;
+    sLast[thePI] = inNow;
+    const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
+    SiegeScan& s = sScan;
+    ScanSiege(inPlayer, s);
+    Militia(inPlayer, theSettings, s);
+    for (int i = 0; i < s.mSiege + s.mTowers; i++) {
+        bool theTower = i >= s.mSiege;   // an enemy defence going up near our buildings or citizens (counter-tower)
+        EEUnit* theEnemy = theTower ? s.mEnemyTower[i - s.mSiege] : s.mEnemySiege[i];
+        long theX = theEnemy->mTileX, theY = theEnemy->mTileY;
+        float theReach = theTower ? 12.0f : Stats::Range(theEnemy) + 4.0f;
+        bool theThreat = false;
+        for (int b = 0; b < s.mBuildings && !theThreat; b++) {
+            long theDX = s.mBX[b] - theX, theDY = s.mBY[b] - theY;
+            theThreat = (float)(theDX * theDX + theDY * theDY) <= theReach * theReach;
+        }
+        for (int c = 0; theTower && c < s.mCitizens && !theThreat; c++) {
+            long theDX = s.mCX[c] - theX, theDY = s.mCY[c] - theY;
+            theThreat = (float)(theDX * theDX + theDY * theDY) <= theReach * theReach;
+        }
+        if (!theThreat)
+            continue;
+        // a tower going up: its builders first (the foundation is harmless without them)
+        EEUnit* theBuilders[8];
+        EEUnit* theSite = theTower ? FieldSite(theEnemy) : NULL;
+        int theBuilderCount = 0;
+        for (int k = 0; theTower && k < s.mEnemyUnits && theBuilderCount < 8; k++) {
+            EEUGBuildRepair* theBuild = dynamic_cast<EEUGBuildRepair*>(GoalOf(s.mEnemyUnit[k]));
+            if (theBuild != NULL && s.mEnemyUnit[k]->mHitPoints > 0 && (theBuild->mTarget == theSite || theBuild->mTarget == theEnemy))
+                theBuilders[theBuilderCount++] = s.mEnemyUnit[k];
+        }
+        int theGuards = 0;
+        for (int k = 0; k < s.mEnemySoldiers; k++)
+            theGuards += Box(s.mEX[k], theX) <= 8 && Box(s.mEY[k], theY) <= 8;
+        // responders: nearest first, up to 5
+        int thePick[5], thePicked = 0, theAvailable = 0, theAlready = 0;
+        for (int k = 0; k < s.mSoldiers; k++) {
+            EEUnit* theUnit = s.mSoldier[k];
+            if (theUnit == NULL)
+                continue;   // already ordered this tick
+            long theDX = theUnit->mTileX - theX, theDY = theUnit->mTileY - theY, theD2 = theDX * theDX + theDY * theDY;
+            if (theD2 > 400)
+                continue;
+            EEUnitGoal* theGoal = GoalOf(theUnit);
+            if (dynamic_cast<EEUGAttackUnit*>(theGoal) != NULL) {
+                EEUnit* theTarget = AttackTarget(theGoal);
+                bool theMine = theTarget == theEnemy;
+                for (int b = 0; b < theBuilderCount && !theMine; b++)
+                    theMine = theTarget == theBuilders[b];
+                if (theMine) {
+                    theAlready++;
+                    s.mSoldier[k] = NULL;
+                    continue;
+                }
+                if (theTarget != NULL && Box(theTarget->mTileX, theUnit->mTileX) <= 4 && Box(theTarget->mTileY, theUnit->mTileY) <= 4)
+                    continue;   // busy fighting close by
+            }
+            theAvailable++;
+            if (thePicked < 5) {
+                thePick[thePicked++] = k;
+            } else {   // keep the 5 nearest
+                int theWorst = 0;
+                long theFarthest = -1;
+                for (int j = 0; j < 5; j++) {
+                    EEUnit* theOther = s.mSoldier[thePick[j]];
+                    long theVX = theOther->mTileX - theX, theVY = theOther->mTileY - theY;
+                    if (theVX * theVX + theVY * theVY > theFarthest) {
+                        theFarthest = theVX * theVX + theVY * theVY;
+                        theWorst = j;
+                    }
+                }
+                if (theD2 < theFarthest)
+                    thePick[theWorst] = k;
+            }
+        }
+        if (theAlready >= DefenceRules::kCounterSiegeMost)
+            continue;
+        if (!DefenceRules::SoldiersGo(theAvailable, theAlready, theGuards)) {
+            int theFree = s.mCitizens, theCount = 0;   // a tower going up and too few soldiers: the citizens go at the builders
+            for (int b = 0; theTower && theBase.citizen_militia && b < theBuilderCount && theFree > 2; b++)
+                theCount += MilitiaAnswer(inPlayer, theSettings, s, theBuilders[b], theFree);
+            if (theTower && theBase.citizen_militia && !theBuilderCount)
+                theCount += MilitiaAnswer(inPlayer, theSettings, s, theEnemy, theFree);   // nobody building: the foundation
+            if (theCount)
+                sDefence[thePI].mMilitiaOrders += (unsigned long)theCount;
+            else
+                sDefence[thePI].mCounterSiegeSkipped++;
+            continue;
+        }
+        int theOrdered = 0;
+        for (int j = 0; j < thePicked && theAlready + theOrdered < DefenceRules::kCounterSiegeMost; j++) {
+            EEUnit* theUnit = s.mSoldier[thePick[j]];
+            EEUnit* theTarget = theBuilderCount ? theBuilders[(theAlready + theOrdered) % theBuilderCount] : theEnemy;   // spread over the builders
+            if (AttackUnit(theUnit, theTarget))
+                theOrdered++;
+            s.mSoldier[thePick[j]] = NULL;   // one target per unit per tick
+        }
+        sDefence[thePI].mCounterSiegeOrders += (unsigned long)theOrdered;
     }
 }
 
