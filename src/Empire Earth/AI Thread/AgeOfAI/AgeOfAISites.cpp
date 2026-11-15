@@ -552,4 +552,28 @@ void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
             }
 }
 
+// The wild food (econ.c wild_food) the player has explored within site_max_distance tiles of its base: the forage bushes of its
+// resource centers
+long WildFood(EEComputerPlayer* inPlayer)
+{
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL)
+        return 0;
+    long theBaseX = theCivilization->mBuildManager->mTownCenterTile.mX, theBaseY = theCivilization->mBuildManager->mTownCenterTile.mY;
+    if (theBaseX == -10000)
+        return 0;
+    long theLimit = (long)SettingsOf(inPlayer).site_max_distance * (long)SettingsOf(inPlayer).site_max_distance, theTotal = 0;
+    for (unsigned long k = 0; k < inPlayer->GetNumResourceCenters(); k++) {
+        EECPResourceCenter* theZone = inPlayer->GetResourceCenter(k);
+        EEUnit* theSite = theZone != NULL ? theZone->FindResourceUnit(2) : NULL;
+        if (theSite == NULL || theSite->mUnitClass == NULL || (long)theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
+            continue;
+        long theDX = theSite->mTileX - theBaseX, theDY = theSite->mTileY - theBaseY;
+        if (theDX * theDX + theDY * theDY >= theLimit || !ExploredBy(theSite, inPlayer))
+            continue;
+        theTotal += theSite->mResourceAmount;
+    }
+    return theTotal;
+}
+
 }

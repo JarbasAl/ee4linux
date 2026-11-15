@@ -131,6 +131,7 @@
 #include "ee/EECPResourceManager.h"
 #include "ee/EECPCivilizationManager.h"
 #include "AgeOfAI.h"
+#include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
 #include "AgeOfAIWorkers.h"
 
@@ -238,13 +239,295 @@ long QueuedWood(EEComputerPlayer* inPlayer, EECPBuildManager* inBuild)
     return theWood;
 }
 
+// The military account and the income of a player since its first training request (g_bud in econ.c): the army spends
+// its account, the citizens the rest of the stock above the reserve
+struct Budget {
+    unsigned long mLast;
+    bool mInit;
+    float mMil[7];
+    long mIncome[7], mMilSpent[7];
+} sBudget[16];
+float sEpochAccount[16][7];   // copper_plan next_epoch: the next epoch's money, out of the citizens' reach
+long sEpochAccountEpoch[16];
+unsigned long sSaveSince[16];   // the game time a refused soldier began to wait for its price, 0: none
+bool sRecovering[16], sHadEconomy[16];
+
+// econ.c budget_reserve: what a unit order leaves of the stock for the next epoch. With the copper plan, before the Copper
+// Age, its cost; else the next epoch's cost faded in over the reserve window before the planned attempt. The pacing
+// follow (nothing held while no human is ahead) is not ported.
+void BudgetReserveFull(EEComputerPlayer* inPlayer, long outReserve[7])
+{
+    for (int r = 0; r < 7; r++)
+        outReserve[r] = 0;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (inPlayer->mTechnologies == NULL || theCivilization == NULL)
+        return;
+    long theNext = Epoch(inPlayer) + 1;
+    if (theNext > 13 || theNext > inPlayer->mTechnologies->mEndEpoch || inPlayer->mTechnologies->Get(theNext) == NULL)
+        return;
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (theSettings.copper_plan != 0 && theNext <= kFarmEpoch) {
+        BudgetReserve(inPlayer, theSettings.copper_plan, outReserve);
+        return;
+    }
+    long theWindow = (long)theSettings.reserve_window_min * 60000;
+    long theRemaining = (long)(theCivilization->mNextEpochAdvanceTime - gPhysics->mGameTime);
+    float theFraction = theRemaining <= 0 ? 1.0f : theRemaining >= theWindow ? 0.0f : 1.0f - (float)theRemaining / (float)theWindow;
+    for (int r = 2; r < 7; r++) {
+        long theCost = EpochCost(inPlayer, theNext, r);
+        outReserve[r] = theCost > 0 ? (long)((float)theCost * theFraction) : 0;
+    }
 }
 
-// An income of the player's, from EEComputerPlayer::AddResource
+// econ.c spend_reserve (reserve_plan, the default): from the Copper Age on, only what the income cannot bring in again
+// before the attempt, 80% of it
+void SpendReserve(EEComputerPlayer* inPlayer, long outReserve[7])
+{
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (!theSettings.reserve_plan) {
+        BudgetReserveFull(inPlayer, outReserve);
+        return;
+    }
+    for (int r = 0; r < 7; r++)
+        outReserve[r] = 0;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (inPlayer->mTechnologies == NULL || theCivilization == NULL)
+        return;
+    long theNext = Epoch(inPlayer) + 1;
+    if (theNext > 13 || theNext > inPlayer->mTechnologies->mEndEpoch || inPlayer->mTechnologies->Get(theNext) == NULL)
+        return;
+    if (theSettings.copper_plan != 0 && theNext <= kFarmEpoch) {
+        BudgetReserveFull(inPlayer, outReserve);
+        return;
+    }
+    long theRemaining = (long)(theCivilization->mNextEpochAdvanceTime - gPhysics->mGameTime);
+    if (theRemaining > 10 * 60000)
+        return;
+    float theUntil = theRemaining > 0 ? (float)theRemaining / 60000.0f : 0;
+    for (int r = 2; r < 7; r++)
+        outReserve[r] = EpochCost(inPlayer, theNext, r);
+    const Rates& theRates = sRates[inPlayer->mPlayerID & 15];
+    float theTime = 0;
+    for (int r = 2; r < 7; r++) {
+        long theMiss = outReserve[r] - inPlayer->mResourceCaps[r];
+        if (theMiss <= 0)
+            continue;
+        float theNeed = theRates.mRate[r] > 1.0f ? (float)theMiss / theRates.mRate[r] : 10.0f;
+        if (theNeed > theTime)
+            theTime = theNeed;
+    }
+    if (theTime > 10)
+        theTime = 10;
+    float theHorizon = theUntil > theTime ? theUntil : theTime;
+    for (int r = 2; r < 7; r++) {
+        long theKeep = outReserve[r] - (long)(0.8f * theRates.mRate[r] * theHorizon);
+        outReserve[r] = theKeep < 0 ? 0 : theKeep;
+    }
+}
+
+long UnitCost(EEComputerPlayer* inPlayer, long inClass, int inResource)
+{
+    if (inClass < 0 || inClass >= 871 || gUnitClassTable[inClass] == NULL)
+        return 0;
+    EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[inClass]->mTechnology);
+    return theNode != NULL ? inPlayer->ScaleCost(theNode->mData->mCosts[inResource]) : 0;
+}
+
+bool IsCitizenClass(long inClass)
+{
+    EEUnitClass* theClass = inClass >= 0 && inClass < 871 ? gUnitClassTable[inClass] : NULL;
+    return theClass != NULL && (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kCitizen) != 0;
+}
+
+// the requests the budget may replace: every military unit but the ships, the siege weapons and rams, and the citizens
+bool Substitutable(long inClass)
+{
+    EEUnitClass* theClass = inClass >= 0 && inClass < 871 ? gUnitClassTable[inClass] : NULL;
+    if (theClass == NULL)
+        return false;
+    unsigned long theCategory = theClass->mCategory;
+    if (theCategory == kUnitCategoryNaval || theCategory == kUnitCategorySubmergedNaval || theCategory == kUnitCategoryNavalTransport
+        || theCategory == kUnitCategoryNavalBuilding || theCategory == kUnitCategoryNavalCitizen)
+        return false;
+    return (Roles::RolesOf(theCategory, theClass->mFamily, theClass->mRange) & (Roles::kSiege | Roles::kRam | Roles::kCitizen)) == 0;
+}
+
+bool LandSoldier(long inClass)
+{
+    EEUnitClass* theClass = inClass >= 0 && inClass < 871 ? gUnitClassTable[inClass] : NULL;
+    if (theClass == NULL || theClass->mCategory != kUnitCategoryLand || inClass == kUnitTypePriest || inClass == kUnitTypeProphet)
+        return false;
+    return (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & (Roles::kSiege | Roles::kRam | Roles::kCitizen)) == 0;
+}
+
+long SoldierScore(long inClass)
+{
+    EEUnitClass* theClass = gUnitClassTable[inClass];
+    return theClass->mHitPoints * theClass->mAttack;
+}
+
+// econ.c substitute_soldier: the strongest researched land soldier (hit points times attack) that the stock pays for and the
+// game can train now; candidates refreshed every 30 s. With early_army the food-free ranged soldiers first.
+long SubstituteSoldier(EEComputerPlayer* inPlayer, const long inVisible[7], long inWant, long& outCount, bool inSpareFood)
+{
+    static struct Candidates {
+        EEPlayer* mPlayer;
+        unsigned long mTime;
+        int mCount;
+        long mClass[48];
+    } sCandidates[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    unsigned long theNow = gPhysics->mGameTime;
+    Candidates& theCandidates = sCandidates[idx];
+    if (theCandidates.mPlayer != inPlayer || theNow < theCandidates.mTime || theNow - theCandidates.mTime > 30000) {
+        theCandidates.mPlayer = inPlayer;
+        theCandidates.mTime = theNow;
+        theCandidates.mCount = 0;
+        for (long t = 0; t < 724; t++) {
+            if (!LandSoldier(t) || SoldierScore(t) <= 0)
+                continue;
+            EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[t]->mTechnology);
+            if (theNode == NULL || !theNode->mIsResearched)
+                continue;
+            int n = theCandidates.mCount, k = n < 48 ? n : 47;
+            while (k > 0 && SoldierScore(theCandidates.mClass[k - 1]) < SoldierScore(t)) {
+                if (k < 48)
+                    theCandidates.mClass[k] = theCandidates.mClass[k - 1];
+                k--;
+            }
+            if (k < 48)
+                theCandidates.mClass[k] = t;
+            if (n < 48)
+                theCandidates.mCount++;
+        }
+    }
+    long theBest = 0, theBestCount = 0;
+    float theBestScore = 0;
+    for (int i = 0; i < theCandidates.mCount; i++) {
+        long theClass = theCandidates.mClass[i], theCount = inWant;
+        bool thePaid = false;
+        for (int r = 2; r < 7; r++) {
+            long theCost = UnitCost(inPlayer, theClass, r);
+            if (theCost > 0) {
+                thePaid = true;
+                if (inVisible[r] / theCost < theCount)
+                    theCount = inVisible[r] / theCost;
+            }
+        }
+        if (!thePaid || theCount <= 0 || !inPlayer->CanProduceUnitType(theClass, 0x20, NULL))
+            continue;
+        if (!inSpareFood) {
+            outCount = theCount;
+            return theClass;
+        }
+        float theScore = (float)SoldierScore(theClass) * (gUnitClassTable[theClass]->mRange > 2.0f ? 2.0f : 1.0f)
+            * (UnitCost(inPlayer, theClass, 2) > 0 ? 0.25f : 1.0f);
+        if (theScore > theBestScore) {
+            theBestScore = theScore;
+            theBest = theClass;
+            theBestCount = theCount;
+        }
+    }
+    if (theBest != 0)
+        outCount = theBestCount;
+    return theBest;
+}
+
+// econ.c recovering (recover_economy): after the Copper Age a workforce under min_workforce gives the citizens the whole stock
+// and the army nothing, unless enemy soldiers are in the base (diplo.c is not ported: never)
+bool Recovering(EEComputerPlayer* inPlayer, long inWorkforce)
+{
+    unsigned idx = inPlayer->mPlayerID & 15;
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (!theSettings.recover_economy || Epoch(inPlayer) < kFarmEpoch)
+        return false;
+    bool theOn = sRecovering[idx] ? inWorkforce < theSettings.min_workforce + 5 : inWorkforce < theSettings.min_workforce;
+    if (inWorkforce >= theSettings.min_workforce + 5)
+        sHadEconomy[idx] = true;
+    if (!sHadEconomy[idx] && gPhysics->mGameTime < 1800000)
+        theOn = false;
+    sRecovering[idx] = theOn;
+    return theOn;
+}
+
+// a unit class whose first training counts for the next epoch (early_requirements)
+bool RequirementUnit(EEComputerPlayer* inPlayer, long inClass)
+{
+    if (!SettingsOf(inPlayer).early_requirements || inClass < 0 || inClass >= 871 || gUnitClassTable[inClass] == NULL)
+        return false;
+    long theNext = Epoch(inPlayer) + 1;
+    if (theNext > 13 || theNext > inPlayer->mTechnologies->mEndEpoch)
+        return false;
+    EETechTreeEpoch* theEpoch = static_cast<EETechTreeEpoch*>(inPlayer->mTechnologies->Get(theNext));
+    if (theEpoch == NULL || theEpoch->mRequiredSOL - theEpoch->mCurrentSOL < 1)
+        return false;
+    EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[inClass]->mTechnology);
+    return theNode != NULL && !theNode->mIsResearched && theNode->mData->mCountsTowardEpoch;
+}
+
+// the units a finished producer of the class takes before it holds depth units (the one in the making and its queue); -1:
+// no producer known, so the game decides
+long QueueRoom(EEComputerPlayer* inPlayer, EECPUnitManager* inUnits, long inClass, long inDepth)
+{
+    EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[inClass]->mTechnology);
+    if (theNode == NULL)
+        return -1;
+    long theRoom = 0;
+    bool theAny = false;
+    const std::vector<unsigned long>& theMakers = theNode->mData->mUnitClasses;
+    for (size_t m = 0; m < theMakers.size() && m < 16; m++) {
+        if (m > 0 && theMakers[m - 1] == theMakers[m])
+            continue;
+        std::deque<EEComplexUnit*>* theUnits = inUnits->GetUnits((long)theMakers[m]);
+        for (size_t j = 0; theUnits != NULL && j < theUnits->size() && j < 256; j++) {
+            EEComplexUnit* theBuilding = (*theUnits)[j];
+            if (theBuilding == NULL || !theBuilding->mIsBuilt)
+                continue;
+            long theCurrent = theBuilding->mCurrentResearch;
+            long theQueued = (theCurrent > 13 && theCurrent != 100000 ? 1 : 0) + (long)theBuilding->mBuildQueue.size();
+            theAny = true;
+            if (theQueued < inDepth)
+                theRoom += inDepth - theQueued;
+        }
+    }
+    return theAny ? theRoom : -1;
+}
+
+}
+
+// An income of the player's, from EEComputerPlayer::AddResource: counted, and from the army's share into its account
 void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount)
 {
-    if (inAmount > 0 && inResource >= 2 && inResource < 7)
-        sIncome[inPlayer->mPlayerID & 15][inResource] += inAmount;
+    if (inAmount <= 0 || inResource < 2 || inResource >= 7)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    sIncome[idx][inResource] += inAmount;
+    Budget& theBudget = sBudget[idx];
+    if (!theBudget.mInit)
+        return;
+    theBudget.mIncome[inResource] += inAmount;
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    long theEpoch = Epoch(inPlayer);
+    float theShare = theEpoch >= kFarmEpoch ? theSettings.military_income_share_farms : theSettings.military_income_share;
+    if (theSettings.early_army && theEpoch < kFarmEpoch) {
+        if (theEpoch == 0 && !theSettings.early_soldiers)
+            theShare = 0;
+        else if (inResource == 2)
+            theShare = theBudget.mMil[2] >= 300 ? 0 : theSettings.early_army_food_share;
+    }
+    theBudget.mMil[inResource] += (float)inAmount * theShare;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theSettings.copper_plan == 2 && theEpoch < kFarmEpoch && theCivilization != NULL && theCivilization->mResourceManager != NULL
+        && Workforce(theCivilization->mResourceManager) >= theSettings.min_workforce) {
+        if (sEpochAccountEpoch[idx] != theEpoch + 1) {
+            memset(sEpochAccount[idx], 0, sizeof sEpochAccount[idx]);
+            sEpochAccountEpoch[idx] = theEpoch + 1;
+        }
+        float theMissing = (float)EpochCost(inPlayer, theEpoch + 1, inResource) - sEpochAccount[idx][inResource];
+        float theAdd = (float)inAmount * theSettings.epoch_share;
+        if (theMissing > 0)
+            sEpochAccount[idx][inResource] += theAdd < theMissing ? theAdd : theMissing;
+    }
 }
 
 // The income rates, every 30 game seconds
@@ -437,6 +720,158 @@ void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow)
         if (!theListed && thePays)
             theResearch->Research(theID);
     }
+}
+
+// THE TRAINING BUDGET (train_budget, train_call and hook_train_units in econ.c): the game's training of a request (the unit
+// manager's StartProduction) goes through the budget first. A request the budget does not allow is refused and comes again;
+// a soldier it refuses but the game can train is saved for, and one it cannot pay is replaced by the strongest soldier it
+// can; a request is cut to what keeps each finished producer of the class at train_queue units.
+// The reserve is the epoch's (spend_reserve): the other rows of priority.c hold nothing yet (their files are not ported:
+// landing, outposts, fortresses, navy, the special orders, the fields' wood, the training reserve for forests, the upgrades).
+// Not ported: the fleet's mix and accounts (navy.c), metal_plan's value choice and workforce_plan's thrift (metal.c,
+// citizens.c), citizen_plan FIRST, the idle-citizen stop (idle_citizen_slack is off), the room for the mod's own orders (they
+// are not ported), diplo.c's base_threatened.
+bool TrainUnits(EECPUnitManager* inUnits, EECPUMRequest& inRequest, long& outMade)
+{
+    EEComputerPlayer* thePlayer = inUnits->mPlayer;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    unsigned idx = thePlayer->mPlayerID & 15;
+    EECPCivilizationManager* theCivilization = thePlayer->mCivilizationManager;
+    long theClass = (long)inRequest.mUnitClass;
+    if (!theSettings.budget || theCivilization == NULL || theCivilization->mResourceManager == NULL || thePlayer->mTechnologies == NULL
+        || theClass < 0 || theClass >= 871 || gUnitClassTable[theClass] == NULL)
+        return inUnits->StartProductionGame(inRequest, outMade);
+    long* theStock = thePlayer->mResourceCaps;
+    long theBefore[7];
+    for (int r = 0; r < 7; r++)
+        theBefore[r] = theStock[r];
+    unsigned long theNow = gPhysics->mGameTime;
+    Budget& theBudget = sBudget[idx];
+    if (theNow < theBudget.mLast)
+        theBudget.mInit = false;
+    theBudget.mLast = theNow;
+    long theReserve[7];
+    SpendReserve(thePlayer, theReserve);
+    if (!theBudget.mInit) {
+        memset(&theBudget, 0, sizeof theBudget);
+        theBudget.mInit = true;
+        theBudget.mLast = theNow;
+        for (int r = 2; r < 7; r++)
+            theBudget.mMil[r] = theStock[r] > theReserve[r] ? (float)(theStock[r] - theReserve[r]) * theSettings.military_start_share : 0;
+    }
+    bool theCitizen = IsCitizenClass(theClass);
+    bool theMilitary = !theCitizen;
+    bool theRequirement = theMilitary && RequirementUnit(thePlayer, theClass);
+    long theEpoch = Epoch(thePlayer);
+    long theWorkforce = Workforce(theCivilization->mResourceManager);
+    int theCopper = theSettings.copper_plan;
+    bool theEarly = theSettings.early_army && theEpoch < kFarmEpoch;
+    bool theNoArmy = theEarly && theMilitary && !theRequirement && theEpoch == 0 && !theSettings.early_soldiers;
+    bool theRecover = Recovering(thePlayer, theWorkforce);
+    long theVisible[7] = {0, 0, 0, 0, 0, 0, 0};
+    for (int r = 2; r < 7; r++) {
+        long theSeen = theRequirement ? theStock[r] : theStock[r] - theReserve[r];
+        if (theCitizen && theCopper == 1 && theEpoch < kFarmEpoch) {
+            if (r != 2 || theWorkforce < 10)
+                theSeen = theStock[r];
+            else if (theWorkforce < theSettings.min_workforce
+                     && theStock[2] + (long)((float)WildFood(thePlayer) * theSettings.wild_food_share) >= theReserve[2] + 500)
+                theSeen = theStock[2];
+        }
+        if (theCitizen && theCopper == 2 && theEpoch < kFarmEpoch) {
+            long theAccount = sEpochAccountEpoch[idx] == theEpoch + 1 ? (long)sEpochAccount[idx][r] : 0;
+            theSeen = theStock[r] - theAccount;
+            if (r == 2 && (long)((float)WildFood(thePlayer) * theSettings.wild_food_share) < EpochCost(thePlayer, theEpoch + 1, 2) - theAccount + 500)
+                theSeen = theStock[2] - EpochCost(thePlayer, theEpoch + 1, 2);
+        }
+        if (theCitizen && theEarly && theBudget.mMil[r] > 0)
+            theSeen -= (long)theBudget.mMil[r];
+        if (theMilitary && !theRequirement) {
+            long theAllowed = (long)theBudget.mMil[r];
+            long theExcess = theStock[r] - theReserve[r] - (r >= 4 ? theSettings.hoard_cap_mineral : theSettings.hoard_cap);
+            if (theExcess > theAllowed)
+                theAllowed = theExcess;
+            if (theEarly)
+                theSeen = theStock[r];
+            if (theSeen > theAllowed)
+                theSeen = theAllowed;
+        }
+        if (theRecover && theCitizen)
+            theSeen = theStock[r];
+        if (theRecover && theMilitary && !theRequirement)
+            theSeen = 0;
+        if (theNoArmy)
+            theSeen = 0;
+        if (theSeen < 0)
+            theSeen = 0;
+        if (theSeen > theStock[r])
+            theSeen = theStock[r];
+        theVisible[r] = theSeen;
+    }
+    long theWant = inRequest.mCount > 0 ? (long)inRequest.mCount : 1;
+    long theAfford = theWant;
+    for (int r = 2; r < 7; r++) {
+        long theCost = UnitCost(thePlayer, theClass, r);
+        if (theCost > 0 && theVisible[r] / theCost < theAfford)
+            theAfford = theVisible[r] / theCost;
+    }
+    bool theBlocked = theAfford <= 0;
+    long theSubstitute = 0;
+    if (!theNoArmy) {
+        bool theSubstitutable = theMilitary && theSettings.unit_substitution && Substitutable(theClass);
+        bool theTrainable = theSubstitutable && thePlayer->CanProduceUnitType(theClass, 0x20, NULL);
+        int theSub = theSubstitutable && (theBlocked || !theTrainable) ? 1 : 0;
+        bool theSpareFood = theSettings.early_army && theEpoch >= 1 && (theEpoch < kFarmEpoch || theWorkforce < theSettings.early_army_workers)
+            && theSubstitutable;
+        if (theSpareFood && UnitCost(thePlayer, theClass, 2) > 0)
+            theSub = 2;
+        if (theSub == 1 && theTrainable) {   // the budget refused a unit it can train: save for it first
+            if (!sSaveSince[idx] || theNow < sSaveSince[idx])
+                sSaveSince[idx] = theNow ? theNow : 1;
+            long theWait = theSettings.substitute_wait;
+            theSub = !theWait || theNow - sSaveSince[idx] >= (unsigned long)theWait * 1000u;
+        }
+        if (theSub) {
+            long theGot = 0;
+            long theAlternative = SubstituteSoldier(thePlayer, theVisible, theWant, theGot, theSpareFood);
+            if (theAlternative != 0) {
+                theSubstitute = theAlternative;
+                theAfford = theGot;
+                theBlocked = false;
+            }
+        }
+    }
+    bool theResult = false;
+    outMade = 0;
+    if (!theBlocked) {
+        EECPUMRequest theRequest = inRequest;
+        if (theSubstitute != 0)
+            theRequest.mUnitClass = (unsigned long)theSubstitute;
+        if (theAfford > 0 && (theAfford < (long)theRequest.mCount || theSubstitute != 0))
+            theRequest.mCount = (unsigned long)theAfford;
+        long theDepth = theCitizen ? 0 : theSettings.train_queue;
+        long theRoom = theDepth > 0 ? QueueRoom(thePlayer, inUnits, (long)theRequest.mUnitClass, theDepth) : -1;
+        long theAsked = theRequest.mCount > 0 ? (long)theRequest.mCount : 1;
+        if (theRoom >= 0 && theRoom < theAsked) {
+            if (theRoom > 0) {
+                theRequest.mCount = (unsigned long)theRoom;
+                theResult = inUnits->StartProductionGame(theRequest, outMade);
+            }
+        } else
+            theResult = inUnits->StartProductionGame(theRequest, outMade);
+    }
+    bool theSpent = false;
+    for (int r = 2; r < 7; r++) {
+        long theCost = theBefore[r] - theStock[r];
+        theSpent = theSpent || theCost > 0;
+        if (theMilitary && theCost > 0) {
+            theBudget.mMil[r] -= (float)theCost;
+            theBudget.mMilSpent[r] += theCost;
+        }
+    }
+    if (theMilitary && theSpent && theSubstitute == 0)
+        sSaveSince[idx] = 0;
+    return theResult;
 }
 
 // THE PLAYER'S OWN SETTINGS (settings_apply in settings.c), once per player and game, on its first update: the price it pays, whether
