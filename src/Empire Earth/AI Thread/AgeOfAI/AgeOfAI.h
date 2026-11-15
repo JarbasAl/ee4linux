@@ -83,6 +83,7 @@ bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource)
 bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0);
 bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0);
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding);
 
 // Clears inFlag for the scope's life when inClear, and gives it back its value after
 class ScenarioFlagScope {

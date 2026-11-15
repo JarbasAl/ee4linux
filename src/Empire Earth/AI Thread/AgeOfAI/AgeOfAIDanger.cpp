@@ -130,6 +130,8 @@
 #include "ee/EECPResourceManager.h"
 #include "ee/EECPCivilizationManager.h"
 #include "ee/EEUGGather.h"
+#include "ee/EEUGBuildRepair.h"
+#include "ee/EEUGLocation.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
@@ -435,8 +437,45 @@ bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource)
     return Cfg().avoid_towers_citizens && RouteCovered(inPlayer, theDX, theDY, theX, theY);
 }
 
-// every 4 seconds, before the citizen assignment (attack.c citizens_safety, the damage memory only): the enemy defences seen, and
-// each citizen's hit points against the last look, so the places where citizens were hurt are known. Not hunters: the animals hurt them.
+namespace {
+
+// An enemy building (not a wall) within r tiles of a tile: only goals at an enemy building are retargeted
+bool BuildingAt(EEPlayer* inPlayer, long inX, long inY, int inR)
+{
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(i);
+        if (theOwner == NULL || !IsEnemyOf(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mUnitClass == NULL || theUnit->mUnitClass->mCategory != kUnitCategoryBuilding
+                || (Roles::RolesOf(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily, theUnit->mUnitClass->mRange) & Roles::kWall))
+                continue;
+            long theDX = theUnit->mTileX - inX, theDY = theUnit->mTileY - inY;
+            if (theDX * theDX + theDY * theDY <= (long)inR * inR)
+                return true;
+        }
+    }
+    return false;
+}
+
+void MoveTo(EEComplexUnit* inUnit, float inX, float inY)
+{
+    EEUGLocation* theGoal = new EEUGLocation(GE2DPoint(inX, inY), true, true, false, 0.0f, false, 0);
+    inUnit->SetGoal(theGoal, false, 0);
+    inUnit->StartAction(kActionPrepareToMove);
+    inUnit->mUnitClass->ActionChanged(inUnit);
+}
+
+struct SafetyCounts {
+    unsigned mSent, mHeld, mRefusedRepairs, mRefusedSites, mStrays;
+} sSafety[16];
+
+}
+
+// every 4 seconds, before the citizen assignment (attack.c citizens_safety): the enemy defences seen; each citizen's hit points
+// against the last look (the places where citizens were hurt); the strays of an attack sent home; and the gatherers and builders
+// at a site near raiders or enemy towers, or where citizens were hurt, sent back to their drop site. Not hunters: the animals hurt
+// them. Not ported yet: the flight of an overrun base (muster_rally of defence.c), the shelter in a fortress (bunker.c), raid_held.
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sNext[16];
@@ -448,20 +487,80 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
         return;
     ThreatRefresh(inPlayer, inNow);
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
-    if (theCivilization == NULL || theCivilization->mResourceManager == NULL || !Cfg().citizen_threats)
+    if (theCivilization == NULL || theCivilization->mResourceManager == NULL)
         return;
+    int theSent = 0, theStray = 0;
     for (int r = 0; r < 7; r++) {
-        const std::deque<EEComplexUnit*>& theList = theCivilization->mResourceManager->mGatherers[r];
+        const std::deque<EEComplexUnit*> theList = theCivilization->mResourceManager->mGatherers[r];   // a copy: the orders below change the lists
         for (size_t k = 0; k < theList.size(); k++) {
             EEComplexUnit* theUnit = theList[k];
             if (theUnit == NULL || theUnit->mHitPoints <= 0)
                 continue;
-            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theUnit->mGoalState);
-            EEUnit* theSite = theGather != NULL ? theGather->mResource : NULL;
-            bool theMark = !(r == 2 && theSite != NULL && theSite->mUnitClass != NULL && theSite->mUnitClass->mCategory != kUnitCategoryBuilding);
-            HurtNote(inPlayer, thePI, theUnit, inNow, theMark);
+            EEUnitGoal* theGoal = theUnit->mGoalState;
+            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theGoal);
+            EEUGBuildRepair* theBuild = dynamic_cast<EEUGBuildRepair*>(theGoal);
+            if (Cfg().citizen_threats) {   // not hunters: the animals hurt them (a farm is a building)
+                EEUnit* theHuntSite = theGather != NULL ? theGather->mResource : NULL;
+                HurtNote(inPlayer, thePI, theUnit, inNow, !(r == 2 && theHuntSite != NULL && theHuntSite->mUnitClass != NULL
+                                                          && theHuntSite->mUnitClass->mCategory != kUnitCategoryBuilding));
+            }
+            EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theGoal);
+            if (r == 0 && theLocation != NULL) {   // a stray: an attack's leftover order, march to the target's Town Center
+                long theDX = (long)theLocation->mLocation.GetX(), theDY = (long)theLocation->mLocation.GetY(), theNX, theNY;
+                if (BuildingAt(inPlayer, theDX, theDY, 6)
+                    && (!NearestDrop(inPlayer, theDX, theDY, false, theNX, theNY) || (theNX - theDX) * (theNX - theDX) + (theNY - theDY) * (theNY - theDY) > 225)
+                    && NearestDrop(inPlayer, theUnit->mTileX, theUnit->mTileY, false, theNX, theNY)) {
+                    MoveTo(theUnit, (float)theNX + 0.5f, (float)theNY + 0.5f);
+                    theStray++;
+                    continue;
+                }
+            }
+            if (theGoal == NULL || (theBuild == NULL && theGather == NULL))
+                continue;
+            EEUnit* theSite = theBuild != NULL ? theBuild->mTarget : theGather->mResource;
+            long theDropX, theDropY;
+            if (theSite == NULL || !NearestDrop(inPlayer, theUnit->mTileX, theUnit->mTileY, r == 2, theDropX, theDropY))
+                continue;
+            bool theRaided = RaidersKnown(inPlayer, theSite->mTileX, theSite->mTileY, theBuild != NULL ? 8 : 6);
+            // builders near known towers only: only of fields (walls and towers at the front: the wall manager sends them again and again)
+            if (theBuild != NULL && !theRaided && theSite->mUnitClass->mUnitType != kUnitTypeFarm)
+                continue;
+            if (theBuild == NULL && !theRaided && HurtDanger(inPlayer, theSite->mTileX, theSite->mTileY, r))   // hurt there
+                theRaided = true;
+            if (!theRaided && (theBuild != NULL || !SiteDanger(inPlayer, theSite, r == 2, r)))
+                continue;
+            if (theRaided && labs(theDropX - theSite->mTileX) <= 3 && labs(theDropY - theSite->mTileY) <= 3)   // at home already
+                continue;
+            MoveTo(theUnit, (float)theDropX + 0.5f, (float)theDropY + 0.5f);
+            theSent++;
         }
     }
+    sSafety[thePI].mSent += (unsigned)theSent;
+    sSafety[thePI].mStrays += (unsigned)theStray;
+}
+
+// REPAIRS UNDER ATTACK: the repair round sends a citizen to each damaged building, also to the wall or dock an army is hitting that
+// moment. Its order is refused while enemy soldiers it knows stand within 8 tiles of the building (or their range + 3), and
+// with repair_one_walker when another of its citizens already holds a build goal on the building (one at a time: a foundation
+// far out drew a citizen every 31 s until one arrived). repair_safe_way (off by default) is not ported.
+bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding)
+{
+    if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || inBuilding == NULL)
+        return false;
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    if (Cfg().avoid_towers_citizens && RaidersKnown(inPlayer, inBuilding->mTileX, inBuilding->mTileY, 8)) {
+        sSafety[thePI].mRefusedRepairs++;
+        return true;
+    }
+    if (Cfg().repair_one_walker)
+        for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit == inCitizen || theUnit->mHitPoints <= 0 || theUnit->mComplexUnit == NULL)
+                continue;
+            EEUGBuildRepair* theGoal = dynamic_cast<EEUGBuildRepair*>(theUnit->mComplexUnit->mGoalState);
+            if (theGoal != NULL && theGoal->mTarget == inBuilding)
+                return true;
+        }
+    return false;
 }
 
 }

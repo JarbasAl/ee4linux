@@ -3,6 +3,7 @@
 // class). A computer player's civilization manager: 0x6e8d4..0x71c7f (the class-static key's guarded chain first;
 // EECPBuildManager.cpp's code ends at 0x6e8d4; the map/sort COMDATs close the unit, and 0x71c7f, the first function of
 // the next range, is a member of a small flag class called only from 0x76b9f).
+#include "AgeOfAI/AgeOfAI.h"
 #include <windows.h>
 #include <vector>
 #include <deque>
@@ -946,7 +947,11 @@ void EECPCivilizationManager::RepairBuildings()
             else
                 theTarget = theGate->GetLastLinked(theTarget);
         }
-        theRepairer->SetGoal(new EEUGBuildRepair(this->mPlayer, theTarget, true), 1, 0);
+        EEUGBuildRepair* theRepairGoal = new EEUGBuildRepair(this->mPlayer, theTarget, true);
+        if (AgeOfAI::RefuseRepair(this->mPlayer, theRepairer, theTarget))
+            delete theRepairGoal;   // the citizen keeps its work
+        else
+            theRepairer->SetGoal(theRepairGoal, 1, 0);
         theRepairer->GetUnitClass()->ActionChanged(theRepairer);
         std::vector<EEComplexUnit*>::iterator theFound = std::find(this->mRepairing.begin(), this->mRepairing.end(), theTarget);
         if (theFound != this->mRepairing.end())
