@@ -183,6 +183,12 @@ void BudgetReserve(EEComputerPlayer* inPlayer, int inCopperPlan, long outReserve
             outReserve[r] += EpochCost(inPlayer, e, r);
 }
 
+int Pct(float inShare)
+{
+    float theX = inShare * 100.0f;
+    return (int)(theX < 0 ? theX - 0.5f : theX + 0.5f);
+}
+
 long Workforce(EECPResourceManager* inResources)
 {
     long theCount = 0;
@@ -431,6 +437,70 @@ void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow)
         if (!theListed && thePays)
             theResearch->Research(theID);
     }
+}
+
+// THE PLAYER'S OWN SETTINGS (settings_apply in settings.c), once per player and game, on its first update: the price it pays, whether
+// it waits for the humans' epoch (every pacing but classic does not), the epoch timer's range, the attack interval, the
+// attack group's size and the chances of the attacks. The first attack's range, the citizen share, the attention activities
+// are not ported (their fields are not mapped; their defaults change nothing).
+void ApplySettings(EEComputerPlayer* inPlayer)
+{
+    static EEComputerPlayer* sDone[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (sDone[idx] == inPlayer)
+        return;
+    sDone[idx] = inPlayer;
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    int theDifficulty = (int)inPlayer->GetDifficulty();
+    const int kPacingClassic = 0;
+    int theCost = Pct(theSettings.cost_percent);
+    if (theCost > 0) {
+        inPlayer->SetIsCheating(theCost != 100);
+        if (theDifficulty == 0)
+            inPlayer->mUnitCostReductionEasy = theCost;
+        else if (theDifficulty == 2)
+            inPlayer->mUnitCostReductionHard = theCost;
+        else
+            inPlayer->mUnitCostMedium = (float)theCost;
+    }
+    inPlayer->mIgnoreOthers = theSettings.epoch_pacing != kPacingClassic;
+    long theEpochMin = theSettings.epoch_min, theEpochMax = theSettings.epoch_max < theEpochMin ? theEpochMin : theSettings.epoch_max;
+    if (theEpochMin > 0) {
+        inPlayer->mEpochFrequencyMin = theEpochMin;
+        inPlayer->mEpochFrequencyMax = theEpochMax;
+        EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+        unsigned long theNow = gPhysics->mGameTime;
+        if (theCivilization != NULL) {
+            unsigned long theTime = theCivilization->mNextEpochAdvanceTime;
+            unsigned long theLow = theNow + (unsigned long)theEpochMin * 60000ul, theHigh = theNow + (unsigned long)theEpochMax * 60000ul;
+            if (theTime < theLow || theTime > theHigh) {
+                long theSpan = theEpochMax - theEpochMin + 1;
+                theCivilization->mNextEpochAdvanceTime = theLow + (unsigned long)((idx * 7) % theSpan) * 60000ul;
+            }
+        }
+    }
+    long theAttackMin = theSettings.attack_interval_min, theAttackMax = theSettings.attack_interval_max < theAttackMin ? theAttackMin : theSettings.attack_interval_max;
+    if (theAttackMin > 0) {
+        inPlayer->mAttackFrequencyMin = theAttackMin;
+        inPlayer->mAttackFrequencyMax = theAttackMax;
+    }
+    int theGroup = Pct(theSettings.attack_group_percent);
+    if (theGroup > 0) {
+        if (theDifficulty == 0)
+            inPlayer->mAttackGroupModifierEasy = theGroup;
+        else if (theDifficulty == 2)
+            inPlayer->mAttackGroupModifierHard = theGroup;
+        else
+            inPlayer->mAttackGroupModifierMedium = theGroup;
+    }
+    if (Pct(theSettings.attack_on_contact) >= 0)
+        inPlayer->mAttackEnemyChance = Pct(theSettings.attack_on_contact);
+    if (Pct(theSettings.attack_for_resources) >= 0)
+        inPlayer->mAttackToClaimResourceChance = Pct(theSettings.attack_for_resources);
+    if (Pct(theSettings.attack_revenge) >= 0)
+        inPlayer->mAttackForRevengeChance = Pct(theSettings.attack_revenge);
+    if (theSettings.last_stand_buildings >= 0)
+        inPlayer->mBonzaiAttackLevel = theSettings.last_stand_buildings;
 }
 
 }

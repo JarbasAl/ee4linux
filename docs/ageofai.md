@@ -37,6 +37,13 @@ ageofai: ageofai.ini [general] bogus: no such setting (a misspelt key?) - ignore
 
 `tools/sim.py --ageofai FILE` gives every simulated game that file ([simulator](simulator.md)).
 
+An Age of AI player takes these keys into its own fields on its first update: `cost_percent` (the price it pays; the game's
+computer players pay a reduced price while the game's cheat flag is on, which it is by default, and `100%` is the real
+price), `epoch_pacing` (every value but `classic` makes it ignore the humans' epoch and population, so it never waits for
+them and its population limit is the game's), `epoch_min` and `epoch_max` (the epoch timer), `attack_interval_min` and
+`attack_interval_max`, `attack_group_percent`, `attack_on_contact`, `attack_for_resources`, `attack_revenge` and
+`last_stand_buildings`. `first_attack_min`, `citizen_share` and `attention_activities` are not applied yet.
+
 ## What an Age of AI player knows
 
 The classic AI sees every unit of the human everywhere: the game keeps, for each unit, how many units of each player
