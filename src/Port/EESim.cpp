@@ -164,6 +164,7 @@ struct Options {
     bool mQuiet = false;
     unsigned mClassicPlayers = 0;                        // --classic-players: bit n is player n
     std::vector<std::pair<std::string, long>> mArmies;   // --army NAME:COUNT: units of every computer player, sent at an enemy
+    double mArmyEvery = 0;                               // --army-every S: the armies appear again every S game seconds
     double mArmyAt = 120;                                // --army-at S: the game second they appear
     bool mArmyRaid = false;                              // --army-raid: the armies appear beside the enemy's base
     bool mArmySpot = false;                              // --army-spot X,Y: the armies appear at this tile, whatever the map
@@ -450,6 +451,8 @@ void Finish(const char* inOutcome)
 }
 
 bool sArmiesSpawned = false;
+long sNextArmies = -1;   // the game millisecond of the next armies
+
 
 std::string LowerCase(std::string inText)
 {
@@ -557,8 +560,12 @@ void AfterTick()
 {
     long theTime = gPhysics->mGameTime;
     unsigned long theCount = gWorld.GetNumPlayers();
-    if (!sOptions.mArmies.empty() && !sArmiesSpawned && theTime >= (long)(sOptions.mArmyAt * 1000))
+    if (sNextArmies < 0)
+        sNextArmies = (long)(sOptions.mArmyAt * 1000);
+    if (!sOptions.mArmies.empty() && theTime >= sNextArmies && (!sArmiesSpawned || sOptions.mArmyEvery > 0)) {
         SpawnArmies();
+        sNextArmies = theTime + (long)(sOptions.mArmyEvery * 1000);
+    }
     if (sSyncFile)
         WriteSyncLine();
     if (sResults.size() < theCount)
@@ -1082,6 +1089,7 @@ const char* kUsage =
     "  --army NAME:COUNT      at --army-at, each computer player gets COUNT units of the first land class with NAME\n"
     "                         in its name, six tiles from its buildings towards the next player, sent to attack\n"
     "                         that player's nearest building (repeat for more kinds)\n"
+    "  --army-every S         the armies appear again every S game seconds (a raid after raid)\n"
     "  --army-at S            the game second the armies appear (default 120)\n"
     "  --army-raid            the armies appear eight tiles from the enemy's base, on the side of their own\n"
     "  --army-spot X,Y        the armies appear at this tile, even off the map (a test of units put off it)\n"
@@ -1195,7 +1203,9 @@ int EESimMain(int argc, char** argv)
                 return 64;
             }
             sOptions.mArmies.push_back(std::make_pair(theText.substr(0, theColon), theCount));
-        } else if (theOption == "--army-raid")
+        } else if (theOption == "--army-every")
+            sOptions.mArmyEvery = atof(value().c_str());
+        else if (theOption == "--army-raid")
             sOptions.mArmyRaid = true;
         else if (theOption == "--army-spot") {
             if (sscanf(value().c_str(), "%ld,%ld", &sOptions.mArmySpotX, &sOptions.mArmySpotY) != 2) {
