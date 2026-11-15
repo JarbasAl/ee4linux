@@ -122,6 +122,18 @@ struct OutdatedCounts {
     unsigned long mSorties, mSent, mRefused, mNoGroup;   // groups made, units in them, launches the combat manager refused, accepted with no group
 };
 OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID);
+
+// Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
+// (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
+void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct DefenceCounts {
+    unsigned long mMilitiaOrders;       // citizens sent at enemies
+    unsigned long mMilitiaRefused;      // early militia: fights the citizens kept out of
+    unsigned long mMilitiaCaught;       // militia_estimate: fights of citizens caught by faster soldiers
+    unsigned long mCounterSiegeOrders;  // soldiers sent at siege weapons and towers going up
+    unsigned long mCounterSiegeSkipped; // threats left: too few soldiers and no citizens' answer
+};
+DefenceCounts DefenceCountsOf(unsigned long inPlayerID);
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding);
 // An attack goal for inUnit, as unit_goal with goal_attack (attack.c) gives it; false: refused (dead, off the map, a

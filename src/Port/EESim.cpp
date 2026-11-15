@@ -246,6 +246,7 @@ struct PlayerSample {
     long mOutdatedSorties = 0, mOutdatedSent = 0, mOutdatedRefused = 0, mOutdatedNoGroup = 0;
     long mFoodPulled = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
+    AgeOfAI::DefenceCounts mDefence = {};
     bool mHasGatherers = false;                          // a computer player: its gatherers and the gatherers it wants, food..iron
     long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
     long mDropSites[7] = {0, 0, 0, 0, 0, 0, 0};          // the player's drop-site buildings by the resource they take (0 and 1: all)
@@ -430,6 +431,7 @@ Sample TakeSample()
             p.mCounterFireSorties = (long)theCounterFire.mSorties;
             p.mCounterFireSent = (long)theCounterFire.mSent;
             p.mCounterFireShort = (long)theCounterFire.mShort;
+            p.mDefence = AgeOfAI::DefenceCountsOf(i);
         }
         for (long r = 0; r < 5; r++)
             p.mResources[r] = thePlayer->mResourceCaps[kResourceFood + r];
@@ -928,16 +930,20 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[768] = "";
+        char theIntel[1024] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
                      "\"cells_looked\": %ld, \"army\": %ld, \"early_towers_queued\": %ld, \"early_builders\": %ld, \"early_baits\": %ld, "
                      "\"outdated_sorties\": %ld, \"outdated_sent\": %ld, \"outdated_refused\": %ld, \"outdated_no_group\": %ld, \"food_pulled\": %ld, "
-                     "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld}",
+                     "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
+                     "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
+                     "\"counter_siege_skipped\": %u}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits, p.mOutdatedSorties, p.mOutdatedSent, p.mOutdatedRefused,
-                     p.mOutdatedNoGroup, p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort);
+                     p.mOutdatedNoGroup, p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
+                     (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
+                     (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped);
         char theGatherers[480] = "";
         if (p.mHasGatherers)
             snprintf(theGatherers, sizeof(theGatherers),
