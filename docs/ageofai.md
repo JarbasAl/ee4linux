@@ -102,6 +102,11 @@ that is still pending after five minutes is asked again. The `follow` pacing (wa
 the `timer` pacing are not ported.
 `AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the hooks.
 
+The game's research manager schedules gathering upgrades rarely. With `[ai_base] gather_research` on (the default) an Age of
+AI player with ten or more gatherers takes, every 15 game seconds, one available, unresearched tech from the manager's
+candidates whose event raises the gathering rate of citizens (or of all units) and schedules it as the game does for its
+own choice: it orders the building that researches it, if missing, and reserves the cost.
+
 ## Mines and the worker rebalance
 
 The game's assignment hands out idle citizens only and never takes a gatherer back, and its mine search takes the first
