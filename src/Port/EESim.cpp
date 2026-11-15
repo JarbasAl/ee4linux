@@ -165,6 +165,7 @@ struct Options {
     unsigned mClassicPlayers = 0;                        // --classic-players: bit n is player n
     std::vector<std::pair<std::string, long>> mArmies;   // --army NAME:COUNT: units of every computer player, sent at an enemy
     double mArmyAt = 120;                                // --army-at S: the game second they appear
+    bool mArmyRaid = false;                              // --army-raid: the armies appear beside the enemy's base
     bool mArmySpot = false;                              // --army-spot X,Y: the armies appear at this tile, whatever the map
     long mArmySpotX = 0, mArmySpotY = 0;
 };
@@ -520,6 +521,10 @@ void SpawnArmies()
         if (theTarget == NULL || theLength < 1)
             continue;
         long theFromX = theBaseX + (long)lround(theDX / theLength * 6), theFromY = theBaseY + (long)lround(theDY / theLength * 6);
+        if (sOptions.mArmyRaid) {
+            theFromX = theEnemyX - (long)lround(theDX / theLength * 8);
+            theFromY = theEnemyY - (long)lround(theDY / theLength * 8);
+        }
         if (sOptions.mArmySpot) {
             theFromX = sOptions.mArmySpotX;
             theFromY = sOptions.mArmySpotY;
@@ -1078,6 +1083,7 @@ const char* kUsage =
     "                         in its name, six tiles from its buildings towards the next player, sent to attack\n"
     "                         that player's nearest building (repeat for more kinds)\n"
     "  --army-at S            the game second the armies appear (default 120)\n"
+    "  --army-raid            the armies appear eight tiles from the enemy's base, on the side of their own\n"
     "  --army-spot X,Y        the armies appear at this tile, even off the map (a test of units put off it)\n"
     "  --classic-players L    player numbers, comma apart, that play the classic AI whatever ageofai.ini says\n"
     "  --lobby CONTROL=VALUE  any lobby combo of form 26 by line name or #index (e.g. 209=#2)\n"
@@ -1189,7 +1195,9 @@ int EESimMain(int argc, char** argv)
                 return 64;
             }
             sOptions.mArmies.push_back(std::make_pair(theText.substr(0, theColon), theCount));
-        } else if (theOption == "--army-spot") {
+        } else if (theOption == "--army-raid")
+            sOptions.mArmyRaid = true;
+        else if (theOption == "--army-spot") {
             if (sscanf(value().c_str(), "%ld,%ld", &sOptions.mArmySpotX, &sOptions.mArmySpotY) != 2) {
                 fprintf(stderr, "ee-aoc --sim: --army-spot takes X,Y\n");
                 return 64;
