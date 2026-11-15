@@ -27,9 +27,9 @@ unsigned RolesOf(unsigned long inCategory, unsigned long inFamily, float inRange
 // Any of the building categories: buildings, naval, mining, priest and space buildings, gates, fortresses
 bool IsBuildingCategory(unsigned long inCategory);
 
-// A soldier: a unit of the military classes (land, naval, air, heroes, priests, transports, spaceships; siege weapons
-// too). Not a building, a citizen, a ram, an animal, a shot or a resource.
-bool IsSoldier(unsigned long inCategory, unsigned long inFamily);
+// A soldier: a unit of the military classes (land, naval, air, heroes, priests, transports, spaceships). Not a siege
+// weapon (by RolesOf, so inRange counts), a building, a citizen, a ram, an animal, a shot or a resource.
+bool IsSoldier(unsigned long inCategory, unsigned long inFamily, float inRange);
 
 }
 }

@@ -363,7 +363,7 @@ void TowerBait(EEComputerPlayer* inPlayer, const SettingsAI& inSettings, unsigne
                     theCover[theCovers].mY = theUnit->mTileY;
                     theCover[theCovers++].mRange = theRange;
                 }
-            } else if (theEnemyCount < 64 && Roles::IsSoldier(theClass->mCategory, theClass->mFamily) && SeenBy(theUnit, inPlayer)) {
+            } else if (theEnemyCount < 64 && Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange) && SeenBy(theUnit, inPlayer)) {
                 EEUnitGoal* theGoal = theUnit->mComplexUnit != NULL ? theUnit->mComplexUnit->mGoalState : NULL;
                 theEnemies[theEnemyCount].mX = theUnit->mTileX;
                 theEnemies[theEnemyCount].mY = theUnit->mTileY;

@@ -630,7 +630,7 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                 theTowerPower += (float)theUnit->mHitPoints * theAttack;
                 continue;
             }
-            if (!Roles::IsSoldier(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily))
+            if (!Roles::IsSoldier(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily, theUnit->mUnitClass->mRange))
                 continue;
             if (thePlayer == inPlayer) {
                 if (theD2 > 35 * 35)

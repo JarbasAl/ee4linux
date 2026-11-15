@@ -53,27 +53,29 @@ static void TestBuildings()
 
 static void TestSoldiers()
 {
-    Check(IsSoldier(5, 2), "a land tank");
-    Check(IsSoldier(5, 0x1f), "a siege weapon counts as a soldier");
-    Check(IsSoldier(4, 9), "a ship");
-    Check(IsSoldier(3, 5), "an airplane");
-    Check(IsSoldier(7, 0x10), "a helicopter");
-    Check(IsSoldier(0x17, 8), "a hero");
-    Check(IsSoldier(0xd, 6), "a priest");
-    Check(IsSoldier(0x10, 0x1f), "a land transport");
-    Check(IsSoldier(0x12, 9), "a naval transport");
-    Check(IsSoldier(0xa, 7), "a submarine");
-    Check(!IsSoldier(5, 0x1e), "a ram is no soldier");
-    Check(!IsSoldier(6, 0x24), "a citizen is no soldier");
-    Check(!IsSoldier(0x16, 0x24), "a fishing boat is no soldier");
-    Check(!IsSoldier(2, 3), "a building is no soldier");
-    Check(!IsSoldier(0x15, 3), "a naval building is no soldier (upstream's test counts it)");
-    Check(!IsSoldier(0x19, 0x2c), "a gate is no soldier");
-    Check(!IsSoldier(0, 0x23), "an ambient unit is no soldier");
-    Check(!IsSoldier(1, 0), "a resource is no soldier");
-    Check(!IsSoldier(9, 0), "a shot is no soldier");
-    Check(!IsSoldier(0x1b, 0x12), "a sea animal is no soldier");
-    Check(!IsSoldier(5, 0x11), "a land animal (family animal) is no soldier");
+    Check(IsSoldier(5, 2, 1.0f), "a land tank");
+    Check(!IsSoldier(5, 0x1f, 3.0f), "a siege weapon is no soldier (upstream: is_soldier leaves out is_siege)");
+    Check(IsSoldier(5, 0x1f, 2.9f), "family siege at range 2.9 is no siege weapon (the Sampson): a soldier");
+    Check(!IsSoldier(5, 0xb, 12.0f), "land family machines at range 12 is a siege weapon: no soldier");
+    Check(IsSoldier(4, 9, 1.0f), "a ship");
+    Check(IsSoldier(3, 5, 1.0f), "an airplane");
+    Check(IsSoldier(7, 0x10, 1.0f), "a helicopter");
+    Check(IsSoldier(0x17, 8, 1.0f), "a hero");
+    Check(IsSoldier(0xd, 6, 1.0f), "a priest");
+    Check(IsSoldier(0x10, 0x1f, 1.0f), "a land transport");
+    Check(IsSoldier(0x12, 9, 1.0f), "a naval transport");
+    Check(IsSoldier(0xa, 7, 1.0f), "a submarine");
+    Check(!IsSoldier(5, 0x1e, 1.0f), "a ram is no soldier");
+    Check(!IsSoldier(6, 0x24, 1.0f), "a citizen is no soldier");
+    Check(!IsSoldier(0x16, 0x24, 1.0f), "a fishing boat is no soldier");
+    Check(!IsSoldier(2, 3, 1.0f), "a building is no soldier");
+    Check(!IsSoldier(0x15, 3, 1.0f), "a naval building is no soldier (upstream's test counts it)");
+    Check(!IsSoldier(0x19, 0x2c, 1.0f), "a gate is no soldier");
+    Check(!IsSoldier(0, 0x23, 1.0f), "an ambient unit is no soldier");
+    Check(!IsSoldier(1, 0, 1.0f), "a resource is no soldier");
+    Check(!IsSoldier(9, 0, 1.0f), "a shot is no soldier");
+    Check(!IsSoldier(0x1b, 0x12, 1.0f), "a sea animal is no soldier");
+    Check(!IsSoldier(5, 0x11, 1.0f), "a land animal (family animal) is no soldier");
 }
 
 int main()

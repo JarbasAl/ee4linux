@@ -37,7 +37,7 @@ bool IsBuildingCategory(unsigned long inCategory)
         || inCategory == kUnitCategoryBuildingPriest || inCategory == kUnitCategorySpaceBuilding;
 }
 
-bool IsSoldier(unsigned long inCategory, unsigned long inFamily)
+bool IsSoldier(unsigned long inCategory, unsigned long inFamily, float inRange)
 {
     if (IsBuildingCategory(inCategory))
         return false;
@@ -51,6 +51,8 @@ bool IsSoldier(unsigned long inCategory, unsigned long inFamily)
     case kUnitCategoryAirAnimal:
         return false;
     }
+    if (RolesOf(inCategory, inFamily, inRange) & kSiege)
+        return false;
     return inFamily != kUnitFamilyRam && inFamily != kUnitFamilyAnimal && inFamily != kUnitFamilyCitizen;
 }
 
