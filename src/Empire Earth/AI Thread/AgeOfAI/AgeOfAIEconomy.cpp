@@ -6,6 +6,7 @@
 // reserves (navy, landing, expansion), the field wood and the pull of gatherers to food.
 #include <windows.h>
 #include <unistd.h>
+#include <algorithm>
 #include <chrono>
 #include <cstdarg>
 #include <cstdint>
@@ -384,6 +385,52 @@ bool EpochUpgrades(EEComputerPlayer* inPlayer, EETechTreeEpoch* inEpoch)
             theCivilization->mResearchManager->Research(theTech->mData->mID);
     }
     return true;
+}
+
+// LOST UPGRADES (upgrades_retry in econ.c, paid_upgrades): the research manager hands each scheduled tech to a building
+// once and forgets it, and a building that leaves the map loses its queue. Every 30 s each available, unresearched line
+// upgrade of the player's epochs or earlier that is in no research list and no building's queue or production is scheduled
+// again, when the stock pays its price (a refused schedule adds the price to the resource demand). Not ported: the
+// tech that the game marked as not queueable, the army plan's UPGRADE bit, and the reserve of the price of four lines in use.
+void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (inNow < sLast[idx])
+        sLast[idx] = 0;
+    if (!SettingsOf(inPlayer).paid_upgrades || (sLast[idx] != 0 && inNow - sLast[idx] < 30000))
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mResearchManager == NULL || inPlayer->mTechnologies == NULL)
+        return;
+    EECPResearchManager* theResearch = theCivilization->mResearchManager;
+    std::vector<bool> theHeld(15000, false);
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mComplexUnit == NULL)
+            continue;
+        EEComplexUnit* theBuilding = theUnit->mComplexUnit;
+        if (theBuilding->mCurrentResearch >= 0 && theBuilding->mCurrentResearch < 15000)
+            theHeld[theBuilding->mCurrentResearch] = true;
+        for (size_t q = 0; q < theBuilding->mBuildQueue.size(); q++)
+            if (theBuilding->mBuildQueue[q].mTechnology >= 0 && theBuilding->mBuildQueue[q].mTechnology < 15000)
+                theHeld[theBuilding->mBuildQueue[q].mTechnology] = true;
+    }
+    for (long theID = 1000; theID < 15000; theID++) {
+        EETechTreeNode* theTech = inPlayer->mTechnologies->Get(theID);
+        if (theTech == NULL || theTech->mData == NULL || theTech->mData->mKind != 7 || theTech->mIsResearched || !theTech->mIsAvailable
+            || theTech->mEpoch > inPlayer->mTechnologies->mCurrentEpoch || !theTech->mData->mResearchedWithEpoch || theHeld[theID])
+            continue;
+        bool theListed = false;
+        for (int e = 0; e < 14 && !theListed; e++)
+            theListed = std::find(theResearch->mEpochIDs[e].begin(), theResearch->mEpochIDs[e].end(), theID) != theResearch->mEpochIDs[e].end();
+        bool thePays = true;
+        for (int r = 2; r < 7; r++)
+            if (inPlayer->mResourceCaps[r] < theTech->mData->mCosts[r])
+                thePays = false;
+        if (!theListed && thePays)
+            theResearch->Research(theID);
+    }
 }
 
 }
