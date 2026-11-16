@@ -169,9 +169,9 @@ struct CitizenHP {
     long mHitPoints;
 } sCitizenHP[16][512];
 
-const SettingsAI& Cfg()
+const SettingsAI& Cfg(unsigned long inPlayerID)
 {
-    return gSettingsAI[kDifficultyMedium];   // upstream reads these once, from [ai_base]
+    return SettingsAIOf(inPlayerID, kDifficultyMedium);   // upstream reads these once, from [ai_base]
 }
 
 }
@@ -275,7 +275,7 @@ bool RouteCovered(EEPlayer* inPlayer, long inFX, long inFY, long inTX, long inTY
 bool MemoryRaider(EEPlayer* inPlayer, long inX, long inY, int inR0, int inRMax)
 {
     unsigned thePI = inPlayer->mPlayerID & 15;
-    if (!Cfg().honest_vision || !Cfg().threat_memory)
+    if (!Cfg(inPlayer->mPlayerID).honest_vision || !Cfg(inPlayer->mPlayerID).threat_memory)
         return false;
     const Intel::Memory& theMemory = MemoryOf(thePI);
     for (size_t k = 0; k < theMemory.Records().size(); k++) {
@@ -309,7 +309,7 @@ bool MemoryRaider(EEPlayer* inPlayer, long inX, long inY, int inR0, int inRMax)
 // most the box). The first raider found answers (attack.c raiders_scan without the kinds; walled_out and ship_reach_exact are off by default)
 bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)
 {
-    int theMax = Cfg().citizen_threats ? kRaidFar : kRaidMax;
+    int theMax = Cfg(inPlayer->mPlayerID).citizen_threats ? kRaidFar : kRaidMax;
     int theR = inR0 > theMax ? inR0 : theMax;   // the search box; each unit then by its own reach
     for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
         EEPlayer* theOwner = gWorld.GetPlayer(i);
@@ -320,7 +320,7 @@ bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)
             if (theUnit->mHitPoints <= 0 || theClass == NULL || labs(theUnit->mTileX - inX) > theR || labs(theUnit->mTileY - inY) > theR)
                 continue;
             unsigned long theCategory = theClass->mCategory;
-            if ((theCategory != kUnitCategoryLand && theCategory != kUnitCategoryNaval && !(Cfg().citizen_threats && theCategory == kUnitCategorySubmergedNaval))
+            if ((theCategory != kUnitCategoryLand && theCategory != kUnitCategoryNaval && !(Cfg(inPlayer->mPlayerID).citizen_threats && theCategory == kUnitCategorySubmergedNaval))
                 || IsCitizen(theUnit) || theClass->mAttack <= 0)
                 continue;
             float theRange = theUnit->mStats != NULL ? theUnit->mStats->mRange : theClass->mRange;
@@ -341,14 +341,14 @@ bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)
 // raiders_near or one it remembers there (threat_memory): where a citizen is sent
 bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0)
 {
-    return RaidersNear(inPlayer, inX, inY, inR0) || MemoryRaider(inPlayer, inX, inY, inR0, Cfg().citizen_threats ? kRaidFar : kRaidMax);
+    return RaidersNear(inPlayer, inX, inY, inR0) || MemoryRaider(inPlayer, inX, inY, inR0, Cfg(inPlayer->mPlayerID).citizen_threats ? kRaidFar : kRaidMax);
 }
 
 namespace {
 
-bool HurtLive(const unsigned long inTime, bool inSeen, unsigned long inNow, unsigned long inMs)
+bool HurtLive(unsigned inPI, const unsigned long inTime, bool inSeen, unsigned long inNow, unsigned long inMs)
 {
-    return inTime != 0 && inNow >= inTime && inNow - inTime <= (inSeen && Cfg().hurt_seen_short ? kHurtSeenMs : inMs);
+    return inTime != 0 && inNow >= inTime && inNow - inTime <= (inSeen && Cfg(inPI).hurt_seen_short ? kHurtSeenMs : inMs);
 }
 
 // remembers a unit's hit points; a loss marks its spot (attack.c hurt_note)
@@ -365,7 +365,7 @@ void HurtNote(EEPlayer* inPlayer, unsigned inPI, EEUnit* inUnit, unsigned long i
                 theSpot.mX = inUnit->mTileX;
                 theSpot.mY = inUnit->mTileY;
                 theSpot.mTime = inNow ? inNow : 1;
-                theSpot.mSeen = Cfg().hurt_seen_short && RaidersNear(inPlayer, theSpot.mX, theSpot.mY, 6);
+                theSpot.mSeen = Cfg(inPlayer->mPlayerID).hurt_seen_short && RaidersNear(inPlayer, theSpot.mX, theSpot.mY, 6);
             }
             theEntry.mHitPoints = theHP;
             return;
@@ -386,7 +386,7 @@ int HurtNear(unsigned inPI, long inX, long inY)
     int theCount = 0;
     for (int k = 0; k < kHurtN; k++) {
         const auto& theSpot = sHurt[inPI].mSpots[k];
-        if (HurtLive(theSpot.mTime, theSpot.mSeen, theNow, 120000) && labs(theSpot.mX - inX) <= 6 && labs(theSpot.mY - inY) <= 6)
+        if (HurtLive(inPI, theSpot.mTime, theSpot.mSeen, theNow, 120000) && labs(theSpot.mX - inX) <= 6 && labs(theSpot.mY - inY) <= 6)
             theCount++;
     }
     return theCount;
@@ -395,7 +395,7 @@ int HurtNear(unsigned inPI, long inX, long inY)
 // res: 2 food, 3 wood, 4 stone, 5 gold, 6 iron, -1 unknown
 bool HurtDanger(EEPlayer* inPlayer, long inX, long inY, int inResource)
 {
-    if (!Cfg().citizen_threats)
+    if (!Cfg(inPlayer->mPlayerID).citizen_threats)
         return false;
     return HurtNear(inPlayer->mPlayerID & 15, inX, inY) >= (inResource >= 4 ? 3 : 1);
 }
@@ -431,7 +431,7 @@ bool NearestDrop(EEPlayer* inPlayer, long inX, long inY, bool inFood, long& outX
 // enemy defence's reach (the searches refuse such a site). raid_held (a town that holds against the raiders) is not ported yet.
 bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource)
 {
-    if (!Cfg().avoid_towers_citizens || inPlayer == NULL || inSite == NULL)
+    if (inPlayer == NULL || inSite == NULL || !Cfg(inPlayer->mPlayerID).avoid_towers_citizens)
         return false;
     long theX = inSite->mTileX, theY = inSite->mTileY;
     bool theRaided = RaidersNear(inPlayer, theX, theY, 6), theHurt = !theRaided && HurtDanger(inPlayer, theX, theY, inResource);
@@ -439,7 +439,7 @@ bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource)
         return true;
     long theDX = -10000, theDY = 0;
     NearestDrop(inPlayer, theX, theY, inFood, theDX, theDY);
-    return Cfg().avoid_towers_citizens && RouteCovered(inPlayer, theDX, theDY, theX, theY);
+    return Cfg(inPlayer->mPlayerID).avoid_towers_citizens && RouteCovered(inPlayer, theDX, theDY, theX, theY);
 }
 
 namespace {
@@ -488,7 +488,7 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     if (inNow < sNext[thePI] && sNext[thePI] - inNow <= 4000)
         return;
     sNext[thePI] = inNow + 4000;
-    if (!Cfg().avoid_towers_citizens)
+    if (!Cfg(inPlayer->mPlayerID).avoid_towers_citizens)
         return;
     ThreatRefresh(inPlayer, inNow);
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
@@ -504,7 +504,7 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             EEUnitGoal* theGoal = theUnit->mGoalState;
             EEUGGather* theGather = dynamic_cast<EEUGGather*>(theGoal);
             EEUGBuildRepair* theBuild = dynamic_cast<EEUGBuildRepair*>(theGoal);
-            if (Cfg().citizen_threats) {   // not hunters: the animals hurt them (a farm is a building)
+            if (Cfg(inPlayer->mPlayerID).citizen_threats) {   // not hunters: the animals hurt them (a farm is a building)
                 EEUnit* theHuntSite = theGather != NULL ? theGather->mResource : NULL;
                 HurtNote(inPlayer, thePI, theUnit, inNow, !(r == 2 && theHuntSite != NULL && theHuntSite->mUnitClass != NULL
                                                           && theHuntSite->mUnitClass->mCategory != kUnitCategoryBuilding));
@@ -553,11 +553,11 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
     if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || inBuilding == NULL)
         return false;
     unsigned thePI = inPlayer->mPlayerID & 15;
-    if (Cfg().avoid_towers_citizens && RaidersKnown(inPlayer, inBuilding->mTileX, inBuilding->mTileY, 8)) {
+    if (Cfg(inPlayer->mPlayerID).avoid_towers_citizens && RaidersKnown(inPlayer, inBuilding->mTileX, inBuilding->mTileY, 8)) {
         sSafety[thePI].mRefusedRepairs++;
         return true;
     }
-    if (Cfg().repair_one_walker)
+    if (Cfg(inPlayer->mPlayerID).repair_one_walker)
         for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
             if (theUnit == inCitizen || theUnit->mHitPoints <= 0 || theUnit->mComplexUnit == NULL)
                 continue;
@@ -608,7 +608,7 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16];
     unsigned idx = inPlayer->mPlayerID & 15;
-    if (!Cfg().muster || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
+    if (!Cfg(inPlayer->mPlayerID).muster || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
         return;
     sLast[idx] = inNow != 0 ? inNow : 1;
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;

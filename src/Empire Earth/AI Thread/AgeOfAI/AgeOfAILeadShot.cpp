@@ -172,10 +172,9 @@ ProjectileCounts& Projectiles()
     return sCounts;
 }
 
-bool LeadTargetsOn()
+bool LeadTargetsOn(unsigned long inPlayerID)
 {
-    EngineOf(1);                     // reads ageofai.ini once
-    return gSettings.lead_targets != 0;
+    return GeneralOf(inPlayerID).lead_targets != 0;
 }
 
 // A shot of a plain projectile (an arrow, a stone, a cannon ball; not a missile, which steers, nor a bomb) at a unit
@@ -186,7 +185,7 @@ void LeadShot(EEComplexUnit* inShooter, EEUnit* inTarget, GE3DPoint& ioAim)
     if (theProjectile == NULL || theProjectile->mCategory != kUnitCategoryProjectile)
         return;
     sCounts.mFired++;
-    if (!LeadTargetsOn() || inTarget == NULL || inTarget == inShooter || inTarget->mComplexUnit == NULL)
+    if (!LeadTargetsOn(inShooter->mPlayer->mPlayerID) || inTarget == NULL || inTarget == inShooter || inTarget->mComplexUnit == NULL)
         return;
     EEComplexUnit* theTarget = inTarget->mComplexUnit;
     float theSpeed = theTarget->mVelocity;
@@ -229,10 +228,9 @@ void LeadShot(EEComplexUnit* inShooter, EEUnit* inTarget, GE3DPoint& ioAim)
     sCounts.mLed++;
 }
 
-bool LobEachShotOn()
+bool LobEachShotOn(unsigned long inPlayerID)
 {
-    EngineOf(1);                     // reads ageofai.ini once
-    return gSettings.lob_each_shot != 0;
+    return GeneralOf(inPlayerID).lob_each_shot != 0;
 }
 
 // Before a shot of a unit that may lob over walls: it looks along the line to its target and fires high only when a wall

@@ -20,6 +20,7 @@ renderer, a wall-clock limit with SIGKILL after it (the game does not stop on SI
 """
 import argparse
 import concurrent.futures
+import fcntl
 import json
 import os
 import pathlib
@@ -186,6 +187,13 @@ def main():
     if args.ageofai and not args.ageofai.is_file():
         sys.exit(f"sim: no {args.ageofai}")
     args.out.mkdir(parents=True, exist_ok=True)
+    # one sim at a time per tree: a second one would empty the stages of the first while its games run
+    args.stage.mkdir(parents=True, exist_ok=True)
+    lock = open(args.stage.parent / "stage.lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.exit(f"sim: another sim uses {args.stage}; wait for it to end")
 
     runs = [(seed, n) for seed in parse_seeds(args.seeds) for n in range(1, args.repeat + 1)]
     results = []

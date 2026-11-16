@@ -18,11 +18,21 @@ class GE3DPoint;
 
 namespace AgeOfAI {
 
+struct Settings;
+struct SettingsAI;
+
 enum Engine { kEngineClassic, kEngineAgeOfAI };
 
 // The engine of the computer player with this player number (1..15). The first call reads ageofai.ini and writes its
 // mistakes to the standard error.
 Engine EngineOf(unsigned long inPlayerID);
+
+// A player's own settings file, read in full at once, in place of ageofai.ini (the simulator's --player-ini): a named
+// AI of the benchmark. GeneralOf and SettingsAIOf give a player's settings, its file's or the shared ones of ageofai.ini. A
+// difficulty above hard reads the medium table.
+void SetPlayerSettings(unsigned long inPlayerID, const char* inPath);
+const Settings& GeneralOf(unsigned long inPlayerID);
+const SettingsAI& SettingsAIOf(unsigned long inPlayerID, unsigned long inDifficulty);
 
 // Players that play the classic AI whatever ageofai.ini says: bit n is player n. A game then holds both engines, so
 // one game compares them (the simulator's --classic-players).
@@ -43,7 +53,7 @@ bool SeenBy(EEUnit* inUnit, EEPlayer* inViewer);   // attack.c seen_by: what the
 // Aiming ahead ([general] lead_targets; AgeOfAILead.h). LeadShot moves a plain projectile's aim to where its moving target
 // will be when it comes down; EEUnitClass::FireShot calls it. The counts are the shots of plain projectiles and how
 // many were led, and the projectiles that came down on a unit and on the ground (the simulator's report).
-bool LeadTargetsOn();
+bool LeadTargetsOn(unsigned long inPlayerID);   // the shooter's owner's [general] lead_targets
 void LeadShot(EEComplexUnit* inShooter, EEUnit* inTarget, GE3DPoint& ioAim);
 struct ProjectileCounts {
     unsigned long mFired, mLed, mHitUnit, mHitGround;
@@ -52,7 +62,7 @@ ProjectileCounts& Projectiles();
 
 // Lobbing shot by shot ([general] lob_each_shot; AgeOfAILob.h). EEUGAttackUnit calls LobBeforeShot at the start of each
 // attack of a unit that may fire over walls.
-bool LobEachShotOn();
+bool LobEachShotOn(unsigned long inPlayerID);   // the shooter's owner's [general] lob_each_shot
 void LobBeforeShot(EEComplexUnit* inShooter, EEUnit* inTarget);
 
 // The early game of an Age of AI player ([ai_base] early_towers, tower_bait): EEComputerPlayer::Update calls it.

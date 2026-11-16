@@ -1157,6 +1157,7 @@ const char* kUsage =
     "  --army-raid            the armies appear eight tiles from the enemy's base, on the side of their own\n"
     "  --army-spot X,Y        the armies appear at this tile, even off the map (a test of units put off it)\n"
     "  --classic-players L    player numbers, comma apart, that play the classic AI whatever ageofai.ini says\n"
+    "  --player-ini P=FILE    player P reads its Age of AI settings from FILE in full, not from ageofai.ini\n"
     "  --lobby CONTROL=VALUE  any lobby combo of form 26 by line name or #index (e.g. 209=#2)\n"
     "  --game-seconds S       stop at this game time (default 2700)\n"
     "  --sample-seconds S     report sample interval in game seconds (default 30)\n"
@@ -1291,6 +1292,16 @@ int EESimMain(int argc, char** argv)
                 p = *theEnd == ',' ? theEnd + 1 : theEnd;
             }
             AgeOfAI::SetClassicPlayers(sOptions.mClassicPlayers);
+        }
+        else if (theOption == "--player-ini") {
+            std::string theValue = value();
+            size_t theEqual = theValue.find('=');
+            long thePlayer = theEqual == std::string::npos ? 0 : atol(theValue.substr(0, theEqual).c_str());
+            if (thePlayer < 1 || thePlayer > 15) {
+                fprintf(stderr, "ee-aoc --sim: --player-ini P=FILE takes a player number 1..15\n");
+                return 64;
+            }
+            AgeOfAI::SetPlayerSettings((unsigned long)thePlayer, theValue.substr(theEqual + 1).c_str());
         }
         else if (theOption == "--lobby") {
             std::string theValue = value();

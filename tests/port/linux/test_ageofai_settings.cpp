@@ -204,6 +204,30 @@ int main()
                                     (const unsigned char*)&sDefaultsAI, true);
     Check(theDifference.empty(), "the shipped file's [ai_base] rows are their defaults; " + theDifference + " is not");
 
+    // a player's profile: read into its own tables, the shared ones untouched
+    static AgeOfAI::Settings sProfile;
+    static AgeOfAI::SettingsAI sProfileAI[3];
+    static AgeOfAI::Settings sShared;
+    static AgeOfAI::SettingsAI sSharedAI[3];
+    sShared = gSettings;
+    for (int d = 0; d < 3; d++)
+        sSharedAI[d] = gSettingsAI[d];
+    theLines = AgeOfAI::ReadSettings(Write("profile.ini", "[general]\nenabled=1\nlead_targets=0\n[ai_base]\nmuster=0\n"
+                                                          "outdated_attack=0\n[ai_hard]\nmuster=1\n").c_str(),
+                                     sProfile, sProfileAI);
+    Check(theLines.empty(), "the profile reads without a message");
+    Check(sProfile.enabled == 1 && sProfile.lead_targets == 0, "the profile's [general] rows land in its own table");
+    Check(sProfileAI[AgeOfAI::kDifficultyMedium].muster == 0 && sProfileAI[AgeOfAI::kDifficultyMedium].outdated_attack == 0,
+          "the profile's [ai_base] rows land in its medium table");
+    Check(sProfileAI[AgeOfAI::kDifficultyHard].muster == 1 && sProfileAI[AgeOfAI::kDifficultyHard].outdated_attack == 0,
+          "[ai_hard] overrides the hard table, the rest of it follows [ai_base]");
+    Check(sProfileAI[AgeOfAI::kDifficultyMedium].wood_drop == sDefaultsAI.wood_drop, "a row the profile leaves out takes its default");
+    Check(FirstDifference((const unsigned char*)&gSettings, (const unsigned char*)&sShared, false).empty(),
+          "reading a profile leaves the shared [general] table as it was");
+    for (int d = 0; d < 3; d++)
+        Check(FirstDifference((const unsigned char*)&gSettingsAI[d], (const unsigned char*)&sSharedAI[d], true).empty(),
+              "reading a profile leaves the shared table of difficulty " + std::to_string(d) + " as it was");
+
     // the scenario flag's scope
     bool theFlag = true;
     {

@@ -207,7 +207,7 @@ void OutdatedAttack(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16];
     unsigned idx = inPlayer->mPlayerID & 15;
-    if (!gSettingsAI[kDifficultyMedium].outdated_attack)   // upstream reads it once, from [ai_base]
+    if (!SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium).outdated_attack)   // upstream reads it once, from [ai_base]
         return;
     if (inNow < sLast[idx]) {   // a new game
         sLast[idx] = 0;

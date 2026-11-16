@@ -217,13 +217,13 @@ const Intel::Memory& MemoryOf(unsigned long inPlayerID)
 
 void TickIntel(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
-    unsigned long theDifficulty = inPlayer->GetDifficulty() > 2 ? 1 : inPlayer->GetDifficulty();
-    if (!gSettingsAI[theDifficulty].honest_vision)
+    const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
+    if (!theSettings.honest_vision)
         return;
     Intel::Memory& theMemory = sMemories[inPlayer->mPlayerID & 15];
     if (!theMemory.Due((unsigned)inNow))
         return;
-    theMemory.Update(ScanFor(inPlayer, (unsigned)inNow, gSettingsAI[theDifficulty].reveal_attackers != 0));
+    theMemory.Update(ScanFor(inPlayer, (unsigned)inNow, theSettings.reveal_attackers != 0));
 }
 
 // What player pl knows of unit u (attack.c seen_by). The count is how many of pl's (and its allies') units see u now, plus a
@@ -232,7 +232,7 @@ void TickIntel(EEComputerPlayer* inPlayer, unsigned long inNow)
 bool SeenBy(EEUnit* inUnit, EEPlayer* inViewer)
 {
     unsigned long theCount = inUnit->mTile != NULL ? inUnit->mTile->GetSightCount(inViewer->mPlayerID) : 0;
-    if (!gSettingsAI[kDifficultyMedium].honest_vision)
+    if (!SettingsAIOf(inViewer->mPlayerID, kDifficultyMedium).honest_vision)
         return theCount != 0;
     const Intel::Memory& theMemory = MemoryOf(inViewer->mPlayerID);
     unsigned long theOwner = inUnit->mPlayer != NULL ? inUnit->mPlayer->mPlayerID : 0;
