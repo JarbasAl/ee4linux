@@ -95,6 +95,17 @@ bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0);
 bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0);
 // An enemy army in the base: the defenders gather beyond it, then strike (MusterTick, every 3 game seconds)
 void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+// A building with a ground attack, and its range and attack (attack.c defence_stats); a player the stances make an enemy (is_enemy)
+bool DefenceStats(EEUnit* inUnit, float& outRange, float& outAttack);
+bool IsEnemyOf(EEPlayer* inPlayer, EEPlayer* inOther);
+
+// The outdated units' attack (army.c, AgeOfAIArmy.h): every 5 game minutes, 8 or more land units that no upgrade reaches any
+// more attack the enemy building nearest their middle as one of the game's attack groups. EEComputerPlayer::Update calls it.
+void OutdatedAttack(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct OutdatedCounts {
+    unsigned long mSorties, mSent, mRefused, mNoGroup;   // groups made, units in them, launches the combat manager refused, accepted with no group
+};
+OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID);
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding);
 

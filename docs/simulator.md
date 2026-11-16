@@ -44,7 +44,8 @@ engines and the scorecard compares them. A scorecard of one engine against itsel
 players' starting positions.
 
 The report of an Age of AI player has an `intel` object, its memory of its enemies ([Age of AI](ageofai.md)): `records`,
-`buildings`, `soldiers`, `seen_now`, `cells_looked` and `army`.
+`buildings`, `soldiers`, `seen_now`, `cells_looked` and `army`. It also holds the counters of the early game (`early_*`)
+and of the outdated units' attack (`outdated_*`).
 
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.

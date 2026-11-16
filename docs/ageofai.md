@@ -168,6 +168,22 @@ times the enemy in the base, each attacks the nearest enemy soldier. The muster 
 when soldiers and towers can hold the base again, or when the enemy follows to the rally point a third time; a new muster
 waits 30 or 60 seconds. The citizens' flight to the rally point is not ported.
 
+## Outdated units attack
+
+A unit type's tech has a last epoch. The game offers the type up to that epoch, and a line upgrade turns the units of a
+line into the next type. Units of a type whose last epoch is behind the player's epoch are units that no upgrade reaches
+again. With `[ai_base] outdated_attack` on (the default), an Age of AI player looks every 5 game minutes at its land units
+of class Land, citizens excluded. If 8 or more of them are outdated, are in none of its attack subgroups and are free for
+the combat manager, they attack as one of the game's own attack groups. The group is the one that the scenario effect
+"Create AI Military Group" makes. The target is the enemy building nearest the units' middle, walls excluded, and a
+tower or a fortress only when no other building is left. The units fight to the end: the staging, the falling back and
+the rally (`stage.c`, `cover.c`, `mass.c`) are not ported. The sim report counts the attacks, the units sent, the
+launches the combat manager refused and those it took with no group made (`intel.outdated_*`).
+
+The classic combat manager takes free soldiers into its own attack groups within a second, so in the sim games the rule
+finds no free outdated units and the game does not change. It acts for a player whose army is larger than its groups
+take, as on the late-game save the rule was written for.
+
 ## The fight estimate
 
 `AgeOfAIStats.cpp` estimates how long each of two sides needs to destroy the other, from the game's own unit data, as
