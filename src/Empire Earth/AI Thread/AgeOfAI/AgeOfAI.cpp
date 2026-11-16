@@ -33,6 +33,43 @@ const Settings& Loaded()
 
 unsigned sClassicPlayers;
 
+// A player's own settings: a profile file read in full, or the shared tables of ageofai.ini
+struct Profile {
+    bool mSet = false;
+    Settings mGeneral;
+    SettingsAI mAI[3];
+};
+Profile sProfiles[16];
+
+const Profile* ProfileOf(unsigned long inPlayerID)
+{
+    Loaded();
+    return inPlayerID < 16 && sProfiles[inPlayerID].mSet ? &sProfiles[inPlayerID] : NULL;
+}
+
+}
+
+void SetPlayerSettings(unsigned long inPlayerID, const char* inPath)
+{
+    if (inPlayerID >= 16)
+        return;
+    Profile& theProfile = sProfiles[inPlayerID];
+    theProfile.mSet = true;
+    for (const std::string& theLine : ReadSettings(inPath, theProfile.mGeneral, theProfile.mAI))
+        fprintf(stderr, "ageofai: player %lu (%s): %s\n", inPlayerID, inPath, theLine.c_str());
+}
+
+const Settings& GeneralOf(unsigned long inPlayerID)
+{
+    const Profile* theProfile = ProfileOf(inPlayerID);
+    return theProfile != NULL ? theProfile->mGeneral : gSettings;
+}
+
+const SettingsAI& SettingsAIOf(unsigned long inPlayerID, unsigned long inDifficulty)
+{
+    const Profile* theProfile = ProfileOf(inPlayerID);
+    unsigned long theDifficulty = inDifficulty > 2 ? kDifficultyMedium : inDifficulty;
+    return theProfile != NULL ? theProfile->mAI[theDifficulty] : gSettingsAI[theDifficulty];
 }
 
 void SetClassicPlayers(unsigned inMask)
@@ -43,12 +80,12 @@ void SetClassicPlayers(unsigned inMask)
 Engine EngineOf(unsigned long inPlayerID)
 {
     bool theClassic = inPlayerID < 16 && ((sClassicPlayers >> inPlayerID) & 1);
-    return Loaded().enabled && !theClassic ? kEngineAgeOfAI : kEngineClassic;
+    return GeneralOf(inPlayerID).enabled && !theClassic ? kEngineAgeOfAI : kEngineClassic;
 }
 
 bool ClearsScenarioFlag(unsigned long inPlayerID)
 {
-    return EngineOf(inPlayerID) == kEngineAgeOfAI && gSettings.scenario_ai;
+    return EngineOf(inPlayerID) == kEngineAgeOfAI && GeneralOf(inPlayerID).scenario_ai;
 }
 
 }

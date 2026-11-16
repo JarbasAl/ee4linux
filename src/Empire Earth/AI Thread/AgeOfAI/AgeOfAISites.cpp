@@ -160,7 +160,7 @@ struct Aim {
 
 const SettingsAI& SettingsOf(EEComputerPlayer* inPlayer)
 {
-    return gSettingsAI[inPlayer->GetDifficulty() > 2 ? 1 : inPlayer->GetDifficulty()];
+    return SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
 }
 
 bool IsCitizenUnit(EEUnit* inUnit)

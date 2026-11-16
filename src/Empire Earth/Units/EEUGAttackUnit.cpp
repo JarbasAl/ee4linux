@@ -292,7 +292,7 @@ void EEUGAttackUnit::Step(EEComplexUnit* inUnit)
         break;
     case kActionAttackEnemyUnit: {
             inUnit->SetCurrentPhysicsAction(1);
-            if (inUnit->mStats->mCanFireOverWalls && this->mTarget != NULL && AgeOfAI::LobEachShotOn())
+            if (inUnit->mStats->mCanFireOverWalls && this->mTarget != NULL && AgeOfAI::LobEachShotOn(inUnit->mPlayer->mPlayerID))
                 AgeOfAI::LobBeforeShot(inUnit, this->mTarget);
             long theSet = EEGetAttackFrameSet(inUnit);
             unsigned long theFrame = inUnit->GetModel()->mSound1Frames[theSet];

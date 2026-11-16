@@ -48,6 +48,8 @@ extern SettingsAI gSettingsAI[3];   // by difficulty; the medium AI plays [ai_ba
 // from [ai_easy] / [ai_hard] first), else its default. A missing file leaves every row at its default. Returns the
 // mistakes, the values out of their range, and the keys and sections that are no setting, one line each.
 std::vector<std::string> ReadSettings(const char* inPath);
+// The same into other tables: the settings of one player's profile (AgeOfAI.h SetPlayerSettings)
+std::vector<std::string> ReadSettings(const char* inPath, Settings& outGeneral, SettingsAI (&outAI)[3]);
 
 // A constant expression of an ini value: numbers, % (35% is 0.35), + - * / ( ), min, max, abs, round, floor, and the
 // bools true, false and comparisons. False and outWhy set when inText is none.

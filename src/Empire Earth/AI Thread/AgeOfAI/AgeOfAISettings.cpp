@@ -675,6 +675,11 @@ bool EvaluateConstant(const char* inText, double& outValue, bool& outIsBool, std
 
 std::vector<std::string> ReadSettings(const char* inPath)
 {
+    return ReadSettings(inPath, gSettings, gSettingsAI);
+}
+
+std::vector<std::string> ReadSettings(const char* inPath, Settings& outGeneral, SettingsAI (&outAI)[3])
+{
     Reader theReader;
     theReader.mFile.Read(inPath);
     bool theRead[kRowEnd][3] = {};   // a row was in the file, per difficulty
@@ -682,10 +687,10 @@ std::vector<std::string> ReadSettings(const char* inPath)
         const Row& theRow = kRows[i];
         if (theRow.mPerDifficulty) {
             for (int d = 0; d < 3; d++)
-                theRead[i][d] = theReader.Read(theRow, d, theRow.mKey, (unsigned char*)&gSettingsAI[d] + theRow.mOffset);
+                theRead[i][d] = theReader.Read(theRow, d, theRow.mKey, (unsigned char*)&outAI[d] + theRow.mOffset);
             continue;
         }
-        unsigned char* theAt = (unsigned char*)&gSettings + theRow.mOffset;
+        unsigned char* theAt = (unsigned char*)&outGeneral + theRow.mOffset;
         if (theRow.mKind != kStrP) {
             theRead[i][0] = theReader.Read(theRow, 0, theRow.mKey, theAt);
             continue;
@@ -700,12 +705,12 @@ std::vector<std::string> ReadSettings(const char* inPath)
         const Row& theRow = kRows[theMember.mRow];
         const Row& theMaster = kRows[theMember.mMaster];
         if (!theRow.mPerDifficulty) {
-            unsigned char* theBase = (unsigned char*)&gSettings;
+            unsigned char* theBase = (unsigned char*)&outGeneral;
             theReader.Member(theRow, *(int*)(theBase + theMaster.mOffset), theRead[theMember.mRow][0], theBase, theMaster.mKey);
             continue;
         }
         for (int d = 0; d < 3; d++) {
-            unsigned char* theBase = (unsigned char*)&gSettingsAI[d];
+            unsigned char* theBase = (unsigned char*)&outAI[d];
             theReader.Member(theRow, *(int*)(theBase + theMaster.mOffset), theRead[theMember.mRow][d], theBase, theMaster.mKey);
         }
     }

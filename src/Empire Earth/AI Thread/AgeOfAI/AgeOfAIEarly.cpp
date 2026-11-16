@@ -423,7 +423,7 @@ void TowerBait(EEComputerPlayer* inPlayer, const SettingsAI& inSettings, unsigne
 
 long EarlyTowerStone(EEComputerPlayer* inPlayer)
 {
-    const SettingsAI& theSettings = gSettingsAI[inPlayer->GetDifficulty() > 2 ? 1 : inPlayer->GetDifficulty()];
+    const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
     if (!theSettings.early_towers || Epoch(inPlayer) > 1 || inPlayer->mCivilizationManager == NULL ||
         inPlayer->mCivilizationManager->mBuildManager == NULL)
         return 0;
@@ -450,8 +450,7 @@ EarlyCounts EarlyCountsOf(unsigned long inPlayerID)
 // The first towers of the town and the bait under them, every update of an Age of AI player (docs/ageofai.md "The early game").
 void TickEarly(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
-    unsigned long theDifficulty = inPlayer->GetDifficulty() > 2 ? 1 : inPlayer->GetDifficulty();
-    const SettingsAI& theSettings = gSettingsAI[theDifficulty];
+    const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
     EarlyTowers(inPlayer, theSettings, inNow);
     TowerBait(inPlayer, theSettings, inNow);
 }

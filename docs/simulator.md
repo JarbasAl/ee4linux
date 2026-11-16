@@ -61,6 +61,9 @@ report and a trace and all of them match apart from the wall-clock times. It say
 `INCOMPLETE` when a run wrote no report or no trace. The last line gives the runs started and the reports read. The
 tool exits 1 when a run fails, a seed does not agree, or a report is missing.
 
+One `tools/sim.py` runs at a time in a checkout: its runs use the stage folders under `build/sim/stage`, and a
+second one refuses to start while the first holds them.
+
 ## The game options
 
 | `ee-aoc --sim` option | Effect |
@@ -76,6 +79,7 @@ tool exits 1 when a run fails, a seed does not agree, or a report is missing.
 | `--army-every S` | the armies appear again every S game seconds, a raid after raid, so an AI's spending on defence is tested against pressure that lasts |
 | `--army-raid` | the armies appear eight tiles from the enemy's base, on the side of their own, instead of beside their own: a raid on every base |
 | `--army-spot X,Y` | the armies appear at this tile, even off the map: a test of units put off it |
+| `--player-ini P=FILE` | player P reads its Age of AI settings from FILE in full, not from `ageofai.ini`: its engine, its AI rows and its units' shot rules ([Age of AI](ageofai.md)). Repeat it for more players. |
 | `--lobby CONTROL=VALUE` | any lobby list, by line name or `#index`, for example `209=#2` |
 | `--game-seconds S` | the game time at which the run stops (default 2700) |
 | `--sample-seconds S` | the game time between report samples (default 30) |

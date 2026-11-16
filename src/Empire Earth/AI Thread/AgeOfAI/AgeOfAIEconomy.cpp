@@ -157,7 +157,7 @@ long Epoch(EEPlayer* inPlayer)
 
 const SettingsAI& SettingsOf(EEComputerPlayer* inPlayer)
 {
-    return gSettingsAI[inPlayer->GetDifficulty() > 2 ? 1 : inPlayer->GetDifficulty()];
+    return SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
 }
 
 long EpochCost(EEPlayer* inPlayer, long inEpoch, long inResource)
