@@ -243,6 +243,20 @@ Upstream calls counter-fire at the start of `counter_siege` (`defence.c`), and t
 skirmish spotter that upstream holds back (`skirmish.c`) and the staging rules that read the commitment (`stage.c`) are
 not ported yet.
 
+## Idle citizens home
+
+The game sends a computer player's idle citizens to one base point for the whole empire. After a game is loaded, that
+point is where the first unit stood, which can be a ship at sea or a soldier far away. With `[ai_base] citizens_home` on,
+every 3 game seconds an Age of AI player checks this. A base point at sea, or with no finished town within 20 tiles,
+moves to the town with the most finished buildings within 20 tiles. A citizen idle on two checks in a row and more than
+15 tiles from its nearest finished town goes home. So does a citizen whose walk ends within 3 tiles of the base point
+while a town is 10 or more tiles nearer. It goes to the nearest finished Town Center, Capitol or Settlement on its land
+with no enemy soldiers in sight within 12 tiles, and stops 4 tiles from the town on its own side. With no such town, it
+stays. `AgeOfAIHome.h` holds the rules. Upstream's default turns `citizens_home` on. The shipped `ageofai.ini` turns it
+off until the [benchmark](benchmark.md) rates it as the AI `aoai-citizenshome`. Not ported: the citizens that a landing,
+an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`), and the removal of unfinished buildings stacked on
+one tile.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

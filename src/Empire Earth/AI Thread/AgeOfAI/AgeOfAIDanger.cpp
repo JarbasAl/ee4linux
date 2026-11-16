@@ -7,6 +7,7 @@
 // the danger map for routes, and the rest of citizens_safety (the citizens sent back, the strays, the flight, the shelter).
 #include <windows.h>
 #include <unistd.h>
+#include <algorithm>
 #include <chrono>
 #include <cstdarg>
 #include <cstdint>
@@ -133,9 +134,11 @@
 #include "ee/EEUGBuildRepair.h"
 #include "ee/EEUGLocation.h"
 #include "ee/EEUGAttackUnit.h"
+#include "ee/EEAIContinentManager.h"
 #include "AgeOfAI/AgeOfAIStats.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIDefence.h"
+#include "AgeOfAIHome.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
 
@@ -568,6 +571,138 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
                 return true;
         }
     return false;
+}
+
+// IDLE CITIZENS HOME (citizens_home in econ.c, [ai_base] citizens_home): the game keeps one point per AI, the build manager's base, for
+// its idle citizens, the overseas mine search and the ring of walls. Every 3 s: (1) a base at sea, or with none of the player's
+// finished towns within 20 tiles, moves to the town with the most finished buildings within 20 tiles; (2) a citizen with no
+// goal 15 or more tiles from its nearest finished town (idle on two passes in a row, between two jobs is not), or walking to
+// within 3 tiles of the base while a town is 10 tiles nearer, is sent to the nearest finished town on its land with no enemy
+// soldiers it sees within 12 tiles, none safe: it stays. Not ported: the exclusion of the citizens a landing, an outpost or a new
+// town holds (landing.c, expand.c, towns.c), and (3) the removal of unfinished buildings stacked on one tile.
+void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    static std::vector<EEUnit*> sWasIdle[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (!Cfg(inPlayer->mPlayerID).citizens_home || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL)
+        return;
+    EECPBuildManager* theBuild = theCivilization->mBuildManager;
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theBaseX == -10000)
+        return;
+    struct Town {
+        long mX, mY;
+    };
+    std::vector<Town> theTowns;
+    bool theHome = false;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL && theTowns.size() < 64; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL)
+            continue;
+        long theType = (long)theUnit->mUnitClass->mUnitType;
+        if ((theType != kUnitTypeTownCenter && theType != kUnitTypeCapitol && theType != kUnitTypeSettlement)
+            || theUnit->mComplexUnit->IsFoundation() || !theUnit->mComplexUnit->mIsBuilt)
+            continue;
+        Town theTown = {theUnit->mTileX, theUnit->mTileY};
+        theTowns.push_back(theTown);
+        long theDX = theTown.mX - theBaseX, theDY = theTown.mY - theBaseY;
+        if (theDX * theDX + theDY * theDY <= HomeRules::kTownReach * HomeRules::kTownReach)
+            theHome = true;
+    }
+    if (theTowns.empty())
+        return;
+    bool theSea = theBaseX < 0 || theBaseY < 0
+        || (gContinentManager.GetContinent(EETileCoordinate(theBaseX, theBaseY), 2) == 0
+            && gContinentManager.GetContinent(EETileCoordinate(theBaseX, theBaseY), 1) != 0);
+    if (!theHome || theSea) {
+        std::vector<int> theCount(theTowns.size(), 0);
+        for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL
+                || !Roles::IsBuildingCategory(theUnit->mUnitClass->mCategory)
+                || (Roles::RolesOf(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily, theUnit->mUnitClass->mRange) & Roles::kWall)
+                || theUnit->mComplexUnit->IsFoundation() || !theUnit->mComplexUnit->mIsBuilt)
+                continue;
+            for (size_t i = 0; i < theTowns.size(); i++) {
+                long theDX = theTowns[i].mX - theUnit->mTileX, theDY = theTowns[i].mY - theUnit->mTileY;
+                if (theDX * theDX + theDY * theDY <= HomeRules::kTownReach * HomeRules::kTownReach)
+                    theCount[i]++;
+            }
+        }
+        size_t theBest = 0;
+        for (size_t i = 1; i < theTowns.size(); i++)
+            if (theCount[i] > theCount[theBest])
+                theBest = i;
+        theBuild->mTownCenterTile.mX = theTowns[theBest].mX;
+        theBuild->mTownCenterTile.mY = theTowns[theBest].mY;
+        theBaseX = theTowns[theBest].mX;
+        theBaseY = theTowns[theBest].mY;
+    }
+    std::vector<unsigned> theLand(theTowns.size());
+    std::vector<int> theSafe(theTowns.size(), -1);
+    for (size_t i = 0; i < theTowns.size(); i++)
+        theLand[i] = gContinentManager.GetContinent(EETileCoordinate(theTowns[i].mX, theTowns[i].mY), 2);
+    std::vector<EEUnit*> theNowIdle;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL
+            || !(Roles::RolesOf(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily, theUnit->mUnitClass->mRange) & Roles::kCitizen))
+            continue;
+        EEUnitGoal* theGoal = theUnit->mComplexUnit->mGoalState;
+        EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theGoal);
+        long theDestX = theUnit->mTileX, theDestY = theUnit->mTileY;
+        int theWhy = 0;
+        if (theGoal == NULL)
+            theWhy = 1;
+        else if (theLocation != NULL) {
+            theDestX = (long)theLocation->mLocation.GetX();
+            theDestY = (long)theLocation->mLocation.GetY();
+            if (HomeRules::HeadingToBase(theDestX - theBaseX, theDestY - theBaseY))
+                theWhy = 2;
+        }
+        if (theWhy == 0)
+            continue;
+        long theNearest = 0x7FFFFFFF;
+        for (size_t i = 0; i < theTowns.size(); i++) {
+            long theD = (theTowns[i].mX - theDestX) * (theTowns[i].mX - theDestX) + (theTowns[i].mY - theDestY) * (theTowns[i].mY - theDestY);
+            if (theD < theNearest)
+                theNearest = theD;
+        }
+        if (theWhy == 1 && !HomeRules::IdleFar(theNearest))
+            continue;
+        if (theWhy == 1) {
+            if (theNowIdle.size() < 64)
+                theNowIdle.push_back(theUnit);
+            if (std::find(sWasIdle[idx].begin(), sWasIdle[idx].end(), theUnit) == sWasIdle[idx].end())
+                continue;
+        }
+        unsigned theContinent = gContinentManager.GetContinent(EETileCoordinate(theUnit->mTileX, theUnit->mTileY), 2);
+        long theTown = -1, theTownD = 0x7FFFFFFF;
+        for (size_t i = 0; i < theTowns.size(); i++) {
+            if (theLand[i] != theContinent)
+                continue;
+            if (theSafe[i] < 0)
+                theSafe[i] = RaidersNear(inPlayer, theTowns[i].mX, theTowns[i].mY, 12) ? 0 : 1;
+            long theD = (theTowns[i].mX - theUnit->mTileX) * (theTowns[i].mX - theUnit->mTileX)
+                + (theTowns[i].mY - theUnit->mTileY) * (theTowns[i].mY - theUnit->mTileY);
+            if (theSafe[i] && theD < theTownD) {
+                theTownD = theD;
+                theTown = (long)i;
+            }
+        }
+        if (theTown < 0)
+            continue;
+        float theFromBase = sqrtf((float)((theUnit->mTileX - theBaseX) * (theUnit->mTileX - theBaseX)
+                                          + (theUnit->mTileY - theBaseY) * (theUnit->mTileY - theBaseY)));
+        if (theWhy == 2 && !HomeRules::TownCloser(sqrtf((float)theTownD), theFromBase))   // the base's town is as near
+            continue;
+        float theX, theY;
+        HomeRules::Spot(theTowns[theTown].mX, theTowns[theTown].mY, theUnit->mTileX, theUnit->mTileY, theX, theY);
+        MoveTo(theUnit->mComplexUnit, theX, theY);
+    }
+    sWasIdle[idx] = theNowIdle;
 }
 
 // MUSTER (muster in defence.c, [ai_base] muster): an enemy army in the base got the defenders one by one. Every 3 s: enemy
