@@ -91,5 +91,19 @@ int Donor(const long inCount[7], const unsigned long inTarget[7], int inDry, int
     return theDonor;
 }
 
+int FoodDonor(const long inCount[7], const unsigned long inTarget[7], int inDry)
+{
+    int theDonor = -1;
+    long theBest = 1;
+    for (int t = 3; t <= kLast; t++) {
+        long theSurplus = inCount[t] - (long)inTarget[t];
+        if (!((inDry >> t) & 1) && theSurplus > theBest) {
+            theBest = theSurplus;
+            theDonor = t;
+        }
+    }
+    return theDonor;
+}
+
 }
 }
