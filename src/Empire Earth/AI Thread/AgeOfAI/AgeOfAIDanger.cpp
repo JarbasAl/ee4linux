@@ -174,6 +174,8 @@ const SettingsAI& Cfg()
     return gSettingsAI[kDifficultyMedium];   // upstream reads these once, from [ai_base]
 }
 
+}
+
 // A building with a ground attack (AA guns and missile towers only shoot at aircraft)
 bool DefenceStats(EEUnit* inUnit, float& outRange, float& outAttack)
 {
@@ -196,6 +198,8 @@ bool IsEnemyOf(EEPlayer* inPlayer, EEPlayer* inOther)
 {
     return inOther != NULL && !inPlayer->IsAlly(inOther);
 }
+
+namespace {
 
 bool IsCitizen(EEUnit* inUnit)
 {

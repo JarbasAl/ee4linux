@@ -5579,6 +5579,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::UpgradesRetry(this, inTime);
         AgeOfAI::WoodDrops(this, inTime);
         AgeOfAI::MusterTick(this, inTime);
+        AgeOfAI::OutdatedAttack(this, inTime);
     }
     UWideString theUnused1;
     UWideString theUnused2;
