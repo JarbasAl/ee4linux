@@ -461,4 +461,19 @@ bool CanPlace(EEPlayer* inPlayer, long inType, long inX, long inY)
     return PlacedOK(inPlayer, inType, inX, inY);
 }
 
+long NewestTowerOf(EEPlayer* inPlayer)
+{
+    return NewestTower(inPlayer);
+}
+
+bool TowerIsQueued(EECPBuildManager* inBuild)
+{
+    return TowerQueued(inBuild);
+}
+
+void TowerCounts(EEPlayer* inPlayer, long inX, long inY, long inRadius, int& outFinished, int& outAll)
+{
+    TowersAt(inPlayer, inX, inY, inRadius, outFinished, outAll);
+}
+
 }

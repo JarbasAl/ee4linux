@@ -257,6 +257,21 @@ off until the [benchmark](benchmark.md) rates it as the AI `aoai-citizenshome`. 
 an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`), and the removal of unfinished buildings stacked on
 one tile.
 
+## Extra towers
+
+The game's own plan asks for few towers. With `[ai_base] defence_towers` on, and with `defence_layout` and
+`defence_walls` on, every 20 game seconds an Age of AI player keeps a layout of tower slots. The layout has a front
+`defence_distance` tiles (10) out from the base towards each of its two nearest enemies, by their buildings it has seen,
+or towards the map's centre. On each front the slots are the middle, then 3 tiles to each side across the front, then 6
+tiles to each side. A spot 3 tiles out from each town 12 or more tiles from the base comes before the outer slots. With
+no tower in its build queue, the player queues the best tower of the line it can build at the first free slot, at most
+once a minute, when its stone pays the tower with 100 left. A slot is free with no tower within 2 tiles and no tower
+given there in the last 90 seconds, and a tile near it is used when the route from the base passes no known enemy
+defence, no enemy raiders are in sight within 10 tiles, and the tower fits. `AgeOfAITowers.h` holds the slot order. Upstream's
+default turns `defence_towers` on. The shipped `ageofai.ini` turns it off until the [benchmark](benchmark.md) rates it
+as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, the coast towers, and
+the slots that the game's own tower requests take.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower
