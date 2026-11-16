@@ -1,6 +1,7 @@
 """The AI benchmark: named AIs play complete games against each other in a set of scenarios, and get a rating.
 
-  python3 -I tools/ai_bench.py run --run GAME_FOLDER --out DIR [--ais a,b,c] [--scenarios s,t] [--seeds 1-10] [--jobs 8]
+  python3 -I tools/ai_bench.py run --run GAME_FOLDER --out DIR [--ais a,b,c] [--opponents a,b] [--scenarios s,t] [--seeds 1-10]
+      [--jobs 8]
   python3 -I tools/ai_bench.py table --out DIR [--anchor classic]
 
 An AI is a file in config/bench/ais/: the settings in which it differs from config/ageofai.ini, in the same sections.
@@ -8,9 +9,9 @@ The file name is the AI's name. The tool lays each file over config/ageofai.ini 
 full (ee-aoc --sim --player-ini). A scenario is a section of config/bench/scenarios.ini whose "options" line holds the
 ee-aoc --sim options of its games.
 
-"run" plays every pair of AIs in every scenario on every seed, once with each AI in slot 2, through tools/sim.py. Each
-game goes as one line into DIR/games.jsonl. A game already in that file is not played again, so a run can stop and
-continue, and a new AI plays only its own games. A game that reaches its scenario's game time without a winner is a
+"run" plays every pair of AIs (with --opponents, every pair that holds one of them) in every scenario on every seed,
+once with each AI in slot 2, through tools/sim.py. Each game goes as one line into DIR/games.jsonl. A game already in
+that file is not played again, so a run can stop and continue, and a new AI plays only its own games. A game that reaches its scenario's game time without a winner is a
 draw. A run the sim did not finish (a lobby that did not start, a crash) does not go into the file, and the next "run"
 plays it again.
 
@@ -131,6 +132,14 @@ def game_row(report, scenario, seed, seats):
     }
 
 
+def pairs(ais, opponents):
+    """The pairs of AIs that meet: every pair, or with opponents only the pairs that hold one of them."""
+    unknown = sorted(set(opponents or []) - set(ais))
+    if unknown:
+        sys.exit(f"ai_bench: opponents {', '.join(unknown)} are not among the AIs")
+    return [(a, b) for a, b in itertools.combinations(ais, 2) if not opponents or a in opponents or b in opponents]
+
+
 def play(args):
     ais, scenarios, seeds = load_ais(args.ais), load_scenarios(args.scenarios), parse_seeds(args.seeds)
     args.out.mkdir(parents=True, exist_ok=True)
@@ -143,7 +152,7 @@ def play(args):
     planned = played = 0
     with (args.out / "games.jsonl").open("a") as ledger:
         for scenario, options in scenarios.items():
-            for a, b in itertools.combinations(ais, 2):
+            for a, b in pairs(list(ais), args.opponents):
                 for first, second in ((a, b), (b, a)):
                     todo = [s for s in seeds if (scenario, s, first, second) not in done]
                     planned += len(todo)
@@ -267,6 +276,8 @@ def main():
     run.add_argument("--target", default="linux64")
     run.add_argument("--out", type=pathlib.Path, required=True)
     run.add_argument("--ais", type=lambda t: t.split(","), help="the AIs, comma apart (default all)")
+    run.add_argument("--opponents", type=lambda t: t.split(","),
+                     help="AIs, comma apart, that play every other AI; the others play only them (default: every pair)")
     run.add_argument("--scenarios", type=lambda t: t.split(","), help="the scenarios, comma apart (default all)")
     run.add_argument("--seeds", default="1-10")
     run.add_argument("--jobs", type=int, default=8)

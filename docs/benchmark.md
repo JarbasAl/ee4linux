@@ -16,8 +16,13 @@ where it stopped. A run that the sim did not finish, such as a lobby that did no
 next `run` plays it again. Give `--ais` or `--scenarios` (names, comma apart) to play part of the set. A new AI then plays only
 its own games against the others. `table` prints the ratings and the measures as markdown.
 
-A game takes 1 to 2 wall minutes on an 8-core box, so 8 jobs play about 4 games a minute. Ten AIs, ten scenarios and
-ten seeds, in both seat orders, give 9000 games, or about 45 hours.
+With `--opponents aoai,classic`, those two AIs play every other AI, and the other AIs play only them. Ten AIs then meet
+in 17 pairs instead of 45. The fit still rates every AI, because each one plays the same two opponents.
+
+A game against the classic AI takes 1 to 2 wall minutes on an 8-core box. A game between two Age of AI players lasts
+longer, often 3 to 8 game hours, and takes 5 to 8 wall minutes. The tool plays the seeds of one pair and seat order as
+one batch, so a seed count that is a multiple of `--jobs` keeps every job busy. Ten AIs against two opponents, ten
+scenarios, eight seeds and both seat orders give 2720 games.
 
 ## Named AIs
 
