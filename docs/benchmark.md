@@ -16,8 +16,8 @@ where it stopped. A run that the sim did not finish, such as a lobby that did no
 next `run` plays it again. Give `--ais` or `--scenarios` (names, comma apart) to play part of the set. A new AI then plays only
 its own games against the others. `table` prints the ratings and the measures as markdown.
 
-A game takes 1 to 2 wall minutes on an 8-core box, so 8 jobs play about 4 games a minute. Five AIs, ten scenarios and
-ten seeds, in both seat orders, give 2000 games, or about 8 hours.
+A game takes 1 to 2 wall minutes on an 8-core box, so 8 jobs play about 4 games a minute. Six AIs, ten scenarios and
+ten seeds, in both seat orders, give 3000 games, or about 12 hours.
 
 ## Named AIs
 
@@ -32,6 +32,7 @@ result to its player in full (`ee-aoc --sim --player-ini`), so each AI keeps its
 | `aoai-honest` | Age of AI at the price a human pays (`cost_percent=100%`) |
 | `aoai-sighted` | Age of AI with the vision the game gives a computer player (`honest_vision=0`) |
 | `aoai-plainshot` | Age of AI without aiming ahead or lobbing shot by shot |
+| `aoai-foodpull` | Age of AI with the food pull of `food.c` (`back_to_food`), as upstream's default has it |
 
 The game fixes of `[general]` act for the units of each player as that player's file sets them, so `classic` units
 also aim ahead, as they do in a normal game with `ageofai.ini`.

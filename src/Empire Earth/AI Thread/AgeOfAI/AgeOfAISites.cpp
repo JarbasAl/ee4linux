@@ -2,8 +2,8 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
-// Not ported yet: the danger test of attack.c (site_danger_res), the sites' flag, local_mines and town_work (off by default), the
-// overseas mines, the food, wood and field searches.
+// Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, local_mines and town_work (off by
+// default), the overseas mines, the wood and field searches, and food.c's animal search and its HUNT and NEAR rules (off by default).
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
@@ -550,6 +550,106 @@ void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
                 theCivilization->mBuildManager->StartBuilding(EECPBuildRequest(kUnitTypeSettlement, U2DPoint<long>(theX, theY)));
                 return;
             }
+}
+
+
+namespace {
+
+FoodCounts sFood[16];
+
+// food_bush (food.c): the free forage bush nearest to a drop site that takes food, within inMaxD2 of the base; NULL: none.
+// The checks of the game's own search: explored, under the gatherer cap, the unit's land, no enemy near, no known danger.
+EEUnit* FoodBush(EECPResourceManager* inResources, EEComplexUnit* inUnit, long inMaxD2)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
+    if (theBuild == NULL)
+        return NULL;
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theBaseX == -10000 || theBaseY == -10000)
+        return NULL;
+    unsigned thePI = thePlayer->mPlayerID & 15;
+    DropsCached(thePlayer);
+    unsigned long theCap = (unsigned long)gWorldTable.GetLongValue(0x16);
+    unsigned short theLand = inUnit != NULL ? gContinentManager.GetContinent(EETileCoordinate(inUnit->mTileX, inUnit->mTileY), 2) : 0;
+    EEUnit* theBest = NULL;
+    long theBestD = 0x7FFFFFFF;
+    for (unsigned long z = 0; z < thePlayer->GetNumResourceCenters() && z < 256; z++) {
+        EECPResourceCenter* theZone = thePlayer->GetResourceCenter(z);
+        if (theZone == NULL)
+            continue;
+        for (size_t k = 0; k < theZone->mUnits.size() && k < 4096; k++) {
+            EEUnit* theSite = theZone->mUnits[k];
+            if (theSite == NULL || theSite->mUnitClass == NULL || theSite->mResourceType != 2
+                || theSite->mUnitClass->mUnitType != kUnitTypeResForageBush || theSite->mResourceAmount <= 0)
+                continue;
+            if (theSite->mTile != NULL && theSite->mTile->mTerrainType == 1)
+                continue;
+            long theDX = theSite->mTileX - theBaseX, theDY = theSite->mTileY - theBaseY;
+            if (theDX * theDX + theDY * theDY >= inMaxD2)
+                continue;
+            long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, true, NULL);
+            if (theD >= theBestD)
+                continue;
+            if (!ExploredBy(theSite, thePlayer))
+                continue;
+            if (gWorld.GetResourceUsers(theSite) >= theCap)
+                continue;
+            if (inUnit != NULL && gContinentManager.GetContinent(EETileCoordinate(theSite->mTileX, theSite->mTileY), 2) != theLand)
+                continue;
+            if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY) || SiteDanger(thePlayer, theSite, true, 2))
+                continue;
+            theBest = theSite;
+            theBestD = theD;
+        }
+    }
+    return theBest;
+}
+
+}
+
+// FOOD PULL (food_plan back_to_food, on by default; after every assignment pass and the rebalance): while food is 2 or
+// more gatherers short of its target, up to 4 gatherers move to the nearest free forage bush, each from the resource
+// farthest above its target
+void FoodPull(EECPResourceManager* inResources)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI || !SettingsOf(thePlayer).food_plan.back_to_food)
+        return;
+    long theReach = thePlayer->GetDropOffDistance();
+    int theMoves = 0, theDry = 0;
+    while (theMoves < 4 && (long)inResources->mWantedGatherers[2] - (long)inResources->mGatherers[2].size() >= 2) {
+        long theCount[7];
+        unsigned long theTarget[7];
+        for (int t = 0; t < 7; t++) {
+            theCount[t] = (long)inResources->mGatherers[t].size();
+            theTarget[t] = inResources->mWantedGatherers[t];
+        }
+        int theDonor = Workers::FoodDonor(theCount, theTarget, theDry);
+        if (theDonor < 0)
+            break;
+        EEComplexUnit* theUnit = MovableGatherer(inResources, theDonor);
+        if (theUnit == NULL) {
+            theDry |= 1 << theDonor;
+            continue;
+        }
+        EEUnit* theSite = FoodBush(inResources, theUnit, theReach * theReach * 36);
+        if (theSite == NULL)
+            break;   // no free, safe food site in reach (fields: the fields pass)
+        size_t theBefore = inResources->mGatherers[2].size();
+        inResources->SendToGather(theUnit, theSite, NULL);
+        if (inResources->mGatherers[2].size() == theBefore) {
+            theDry |= 1 << theDonor;
+            continue;
+        }
+        sFood[thePlayer->mPlayerID & 15].mPulled++;
+        theMoves++;
+    }
+}
+
+FoodCounts FoodCountsOf(unsigned long inPlayerID)
+{
+    return sFood[inPlayerID & 15];
 }
 
 }

@@ -104,7 +104,7 @@ Copper Age costs (with `next_epoch` only the next epoch's); the stone of the fir
 on wood by the next three queued buildings. It gives the gatherers in proportion to the time each need takes to
 gather: the need divided by the income per worker, measured every 30 game seconds. A few stay on food and wood, and with
 `next_epoch` half the workers (up to `food_floor`) go to food. From the Copper Age on the game's targets stand. The
-military's reserves, the fields' wood, the pull of gatherers to food and the late rules wait for their files.
+military's reserves, the fields' wood and the late rules wait for their files.
 
 The game plans its attempt at the next epoch by a timer, often long after the player could pay. With the copper plan,
 before the Copper Age, and in every epoch with `epoch_pacing` `rush`, an Age of AI player moves the attempt to now as
@@ -138,8 +138,17 @@ search. A mine counts as full when the working gatherers or the AI's own citizen
 game counts only those that work. Every 10 seconds the citizens beyond the cap at a mine go to the nearest free mine of
 the kind, 20 at most. After each assignment pass the rebalance moves up to 2 gatherers (4 with `citizen_plan`
 `mine_slots`) from the resource with the most gatherers above its wanted count to a stone, gold or iron mine that is
-short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. Not ported yet: the danger test of
-`attack.c`, `local_mines`/`town_work` (off by default) and the overseas mines.
+short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. Not ported yet: the test of the
+mine's tile that upstream makes, `local_mines`/`town_work` (off by default) and the overseas mines.
+
+The game's assignment never moves a gatherer back to food either. With `food_plan` `back_to_food` (on in upstream's default, off in the shipped
+`ageofai.ini` until the [benchmark](benchmark.md) rates it as the AI `aoai-foodpull`), after
+each assignment pass and the rebalance, while food is 2 or more gatherers short of its wanted count, up to 4 gatherers
+move to food. Each comes from the resource of wood, stone, gold and iron with the most gatherers above its wanted count
+(2 or more), and goes to the free forage bush nearest to a drop site that takes food, within six times the player's
+drop-off distance of the base. The bush passes the game's own checks: explored, a free gatherer slot, the gatherer's
+land, no enemy near, no known danger. The sim report's `intel.food_pulled` counts the moves. Upstream's hunting
+(`hunt_near`) and the near-bush search (`forage_near`), both off by default, are not ported.
 
 The game puts no drop site by the forest its woodcutters work. With `[ai_base] wood_drop` on (the default), an Age of AI player
 looks every game minute for woodcutters whose tree is 15 or more tiles from a drop site. When 8 or more of them work within 8

@@ -39,6 +39,10 @@ bool Split(const long inNeed[7], const float inPerWorker[7], int inTotal, bool i
 // above it (a surplus of 2 stays as a margin). -1 for none. inCount is the gatherers on each resource.
 int Donor(const long inCount[7], const unsigned long inTarget[7], int inDry, int inFor);
 
+// The food pull (food.c food_pull): food is short by 2 or more, and the donor is the resource of wood, stone, gold and iron
+// (not food or the idle) not in the mask inDry with the most gatherers above its target, and at least 2 above it. -1 for none.
+int FoodDonor(const long inCount[7], const unsigned long inTarget[7], int inDry);
+
 }
 }
 

@@ -96,6 +96,12 @@ long EarlyTowerStone(EEComputerPlayer* inPlayer);
 EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, bool inBackwards);
 void MineCrowds(EECPResourceManager* inResources);
 void Rebalance(EECPResourceManager* inResources);
+// After the rebalance (food.c food_pull): gatherers move to forage bushes while food is 2 or more short of its target
+void FoodPull(EECPResourceManager* inResources);
+struct FoodCounts {
+    unsigned long mPulled;   // gatherers moved to food
+};
+FoodCounts FoodCountsOf(unsigned long inPlayerID);
 
 // What is dangerous for the citizens (attack.c): SiteDanger is what the mine, food and wood searches refuse; RaidersKnown is raiders in
 // sight or remembered; SafetyTick (every 4 seconds, from the resource manager's update) refreshes the defences seen and the places of

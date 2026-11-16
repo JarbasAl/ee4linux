@@ -96,9 +96,27 @@ static void TestDonor()
     Check(Donor(three, evenTarget, 0, 6) == 2, "a surplus of 3 gives: food");
 }
 
+static void TestFoodDonor()
+{
+    long count[7] = {0, 3, 1, 9, 4, 6, 2};
+    unsigned long target[7] = {0, 0, 12, 4, 4, 3, 2};
+    Check(FoodDonor(count, target, 0) == 3, "food short: wood gives (surplus 5 beats gold's 3)");
+    Check(FoodDonor(count, target, 1 << 3) == 5, "wood dry: gold (surplus 3)");
+    Check(FoodDonor(count, target, (1 << 3) | (1 << 5)) == -1, "wood and gold dry: stone and iron have no surplus");
+    long two[7] = {0, 9, 0, 6, 0, 0, 0};
+    unsigned long twoTarget[7] = {0, 0, 9, 4, 0, 0, 0};
+    Check(FoodDonor(two, twoTarget, 0) == 3, "a surplus of 2 gives: wood (the rebalance keeps 2 as a margin)");
+    long one[7] = {0, 9, 0, 5, 0, 0, 0};
+    Check(FoodDonor(one, twoTarget, 0) == -1, "a surplus of 1 stays; list 1 is no resource and never gives");
+    long tie[7] = {0, 0, 0, 7, 0, 0, 7};
+    unsigned long tieTarget[7] = {0, 0, 9, 4, 0, 0, 4};
+    Check(FoodDonor(tie, tieTarget, 0) == 3, "equal surpluses: the first, wood");
+}
+
 int main()
 {
     TestDonor();
+    TestFoodDonor();
     TestNeeds();
     TestSplit();
     printf("test_ageofai_workers.cpp: %d checks, %d failed\n", sChecks, sFailures);

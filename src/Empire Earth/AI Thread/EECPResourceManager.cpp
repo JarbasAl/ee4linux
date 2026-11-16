@@ -1517,6 +1517,7 @@ void EECPResourceManager::Update(unsigned long inTime)
                     AgeOfAI::SafetyTick(thePlayer, inTime);   // before the assignment
                 this->AssignGatherers();
                 AgeOfAI::Rebalance(this);
+                AgeOfAI::FoodPull(this);
             }
         this->mNextAssignGatherersTime = inTime + 10000;
     }
