@@ -139,6 +139,7 @@
 #include "AgeOfAI.h"
 #include "AgeOfAIDefence.h"
 #include "AgeOfAIHome.h"
+#include "AgeOfAITowers.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
 
@@ -1302,6 +1303,182 @@ void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow)
             s.mSoldier[thePick[j]] = NULL;   // one target per unit per tick
         }
         sDefence[thePI].mCounterSiegeOrders += (unsigned long)theOrdered;
+    }
+}
+
+
+// THE DEFENCE LAYOUT (def_refresh, def_slot, defence_spot and the extra towers of defence_tick in defence.c): the player's base,
+// its two nearest enemies seen (by their buildings; none seen: the map's centre) and, on the way to each, a front 10 tiles
+// (defence_distance) out; tower slots across each front (0, -1, +1, then two more), by each drop site beyond 12 tiles from the
+// base, and then the rest. Every 20 s (defence_layout, and defence_walls or enclose), with defence_towers and no tower queued, a tower of the line the player can build goes into the build
+// queue at the first free slot when the stone pays it with 100 left, at most once a minute. Not ported: the fronts' walls and
+// gates (the wall manager), the site forts and the enclosure (both off by default), the coast towers, and the slots the
+// game's own tower requests take (hook_place).
+namespace {
+
+using TowerRules::Front;
+struct Plan {
+    EEPlayer* mPlayer;
+    unsigned long mTime;
+    long mBX, mBY;
+    int mFronts, mOuts;
+    Front mFront[2];
+    long mOut[8][2];
+    struct {
+        long mX, mY;
+        unsigned long mTime;
+    } mPending[8];   // slots given out recently: the construction may not show yet
+} sPlan[16];
+
+void PlanRefresh(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    unsigned idx = inPlayer->mPlayerID & 15;
+    Plan& thePlan = sPlan[idx];
+    if (thePlan.mPlayer == inPlayer && inNow >= thePlan.mTime && inNow - thePlan.mTime < 30000)
+        return;
+    if (thePlan.mPlayer != inPlayer)
+        memset(&thePlan, 0, sizeof thePlan);
+    thePlan.mPlayer = inPlayer;
+    thePlan.mTime = inNow;
+    thePlan.mFronts = thePlan.mOuts = 0;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL || theCivilization->mBuildManager->mTownCenterTile.mX == -10000)
+        return;
+    thePlan.mBX = theCivilization->mBuildManager->mTownCenterTile.mX;
+    thePlan.mBY = theCivilization->mBuildManager->mTownCenterTile.mY;
+    long theD2[16], theX[16], theY[16];
+    for (int i = 0; i < 16; i++)
+        theD2[i] = 0x7FFFFFFF;
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* theOther = gWorld.mPlayers[p];
+        if (theOther == NULL || theOther == inPlayer || !IsEnemyOf(inPlayer, theOther))
+            continue;
+        for (EEUnit* theUnit = theOther->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL
+                || (theUnit->mUnitClass->mCategory != kUnitCategoryBuilding && theUnit->mUnitClass->mCategory != kUnitCategoryFortress)
+                || !SeenBy(theUnit, inPlayer))
+                continue;
+            long theDX = theUnit->mTileX - thePlan.mBX, theDY = theUnit->mTileY - thePlan.mBY, theDist = theDX * theDX + theDY * theDY;
+            unsigned thePI = theOther->mPlayerID & 15;
+            if (theDist < theD2[thePI]) {
+                theD2[thePI] = theDist;
+                theX[thePI] = theUnit->mTileX;
+                theY[thePI] = theUnit->mTileY;
+            }
+        }
+    }
+    int theFirst = -1;
+    for (int k = 0; k < 2; k++) {   // the two nearest enemies
+        int theBest = -1;
+        for (int i = 0; i < 16; i++)
+            if (theD2[i] != 0x7FFFFFFF && (theBest < 0 || theD2[i] < theD2[theBest]) && (k == 0 || i != theFirst))
+                theBest = i;
+        float theDX, theDY;
+        if (theBest >= 0) {
+            theDX = (float)(theX[theBest] - thePlan.mBX);
+            theDY = (float)(theY[theBest] - thePlan.mBY);
+        } else if (k == 0) {   // nothing seen yet: towards the map's centre
+            long theSize = gWorld.mMap != NULL ? (long)gWorld.mMap->mSize : 0;
+            theDX = (float)(theSize / 2 - thePlan.mBX);
+            theDY = (float)(theSize / 2 - thePlan.mBY);
+        } else
+            break;
+        float theLength = sqrtf(theDX * theDX + theDY * theDY);
+        if (theLength < 4.0f)
+            break;
+        if (k == 0)
+            theFirst = theBest;
+        Front& theFront = thePlan.mFront[thePlan.mFronts];
+        theFront.mDX = theDX / theLength;
+        theFront.mDY = theDY / theLength;
+        long theDistance = Cfg(inPlayer->mPlayerID).defence_distance;
+        theFront.mFX = thePlan.mBX + (long)lroundf(theFront.mDX * (float)theDistance);
+        theFront.mFY = thePlan.mBY + (long)lroundf(theFront.mDY * (float)theDistance);
+        thePlan.mFronts++;
+    }
+    std::vector<std::pair<long, long> > theDrops;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL && theDrops.size() < 64; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+            continue;
+        long theType = (long)theUnit->mUnitClass->mUnitType;
+        if (theType == kUnitTypeTownCenter || theType == kUnitTypeCapitol || theType == kUnitTypeSettlement)
+            theDrops.push_back(std::make_pair((long)theUnit->mTileX, (long)theUnit->mTileY));
+    }
+    for (size_t i = 0; i < theDrops.size() && thePlan.mOuts < 8; i++) {
+        long theDX = theDrops[i].first - thePlan.mBX, theDY = theDrops[i].second - thePlan.mBY;
+        if (theDX * theDX + theDY * theDY < 144 || !thePlan.mFronts)
+            continue;
+        thePlan.mOut[thePlan.mOuts][0] = theDrops[i].first + (long)lroundf(thePlan.mFront[0].mDX * 3.0f);
+        thePlan.mOut[thePlan.mOuts][1] = theDrops[i].second + (long)lroundf(thePlan.mFront[0].mDY * 3.0f);
+        thePlan.mOuts++;
+    }
+}
+
+bool DefenceSpot(EEComputerPlayer* inPlayer, long inType, unsigned long inNow, long& outX, long& outY)
+{
+    unsigned idx = inPlayer->mPlayerID & 15;
+    PlanRefresh(inPlayer, inNow);
+    Plan& thePlan = sPlan[idx];
+    ThreatRefresh(inPlayer, inNow);   // slots inside known enemy defences would cost the builders
+    long theX, theY;
+    for (int i = 0; TowerRules::Slot(thePlan.mFront, thePlan.mFronts, thePlan.mOut, thePlan.mOuts, i, theX, theY); i++) {
+        int theFinished, theAll;
+        TowerCounts(inPlayer, theX, theY, 2, theFinished, theAll);
+        bool theTaken = theAll > 0;
+        for (int t = 0; t < 8 && !theTaken; t++)
+            theTaken = thePlan.mPending[t].mTime != 0 && inNow - thePlan.mPending[t].mTime < 90000 && labs(thePlan.mPending[t].mX - theX) <= 2
+                && labs(thePlan.mPending[t].mY - theY) <= 2;
+        if (theTaken)
+            continue;
+        for (int r = 0; r <= 2; r++)
+            for (int ax = -r; ax <= r; ax++)
+                for (int ay = -r; ay <= r; ay++) {
+                    if ((abs(ax) != r && abs(ay) != r) || RouteCovered(inPlayer, thePlan.mBX, thePlan.mBY, theX + ax, theY + ay)
+                        || RaidersNear(inPlayer, theX + ax, theY + ay, 10) || !CanPlace(inPlayer, inType, theX + ax, theY + ay))
+                        continue;
+                    outX = theX + ax;
+                    outY = theY + ay;
+                    int theOldest = 0;
+                    for (int t = 1; t < 8; t++)
+                        if (thePlan.mPending[t].mTime < thePlan.mPending[theOldest].mTime)
+                            theOldest = t;
+                    thePlan.mPending[theOldest].mX = outX;
+                    thePlan.mPending[theOldest].mY = outY;
+                    thePlan.mPending[theOldest].mTime = inNow != 0 ? inNow : 1;
+                    return true;
+                }
+    }
+    return false;
+}
+
+}
+
+void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16], sLastTower[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    const SettingsAI& theBase = Cfg(inPlayer->mPlayerID);
+    if (!theBase.defence_layout || (!theBase.defence_walls && !theBase.enclose)
+        || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 20000))
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL || inPlayer->mTechnologies == NULL)
+        return;
+    PlanRefresh(inPlayer, inNow);
+    if (!theBase.defence_towers || (sLastTower[idx] != 0 && inNow >= sLastTower[idx] && inNow - sLastTower[idx] < 60000))
+        return;
+    EECPBuildManager* theBuild = theCivilization->mBuildManager;
+    long theType = NewestTowerOf(inPlayer);
+    long theEpoch = inPlayer->mTechnologies->mCurrentEpoch;
+    if (theType == 0 || TowerIsQueued(theBuild) || theEpoch < 0 || theEpoch >= 14)
+        return;
+    EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[theType]->mTechnology);
+    long theCost = theNode != NULL ? theNode->GetCost(kResourceStone, theType, 1.0f) : 0;
+    long theX, theY;
+    if (inPlayer->mResourceCaps[kResourceStone] >= theCost + 100 && DefenceSpot(inPlayer, theType, inNow, theX, theY)) {
+        theBuild->QueueBuildingAt(theType, theX, theY);
+        sLastTower[idx] = inNow != 0 ? inNow : 1;
     }
 }
 

@@ -8,6 +8,7 @@
 
 #include "AgeOfAIIntel.h"
 
+class EECPBuildManager;
 class EEComputerPlayer;
 class EETechTreeEpoch;
 class EEPlayer;
@@ -77,6 +78,13 @@ EarlyCounts EarlyCountsOf(unsigned long inPlayerID);
 void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount);
 void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow);
 void EconTargets(EECPResourceManager* inResources);
+// The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's
+// towers within a square around a tile
+long NewestTowerOf(EEPlayer* inPlayer);
+bool TowerIsQueued(EECPBuildManager* inBuild);
+void TowerCounts(EEPlayer* inPlayer, long inX, long inY, long inRadius, int& outFinished, int& outAll);
+// The defence layout's extra towers (DefenceTick, every 20 game seconds)
+void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 // An epoch's line upgrades (kind 7): false when the game researches them itself, true when they are scheduled for research
