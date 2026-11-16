@@ -109,6 +109,8 @@ FoodCounts FoodCountsOf(unsigned long inPlayerID);
 bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource);
 bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0);
 bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0);
+// Idle citizens far from the towns walk to the nearest safe one; the base follows the towns (CitizensHome, every 3 game seconds)
+void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow);
 // An enemy army in the base: the defenders gather beyond it, then strike (MusterTick, every 3 game seconds)
 void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 // A building with a ground attack, and its range and attack (attack.c defence_stats); a player the stances make an enemy (is_enemy)

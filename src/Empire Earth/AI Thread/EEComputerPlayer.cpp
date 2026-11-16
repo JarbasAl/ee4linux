@@ -5578,6 +5578,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::GatherResearch(this, inTime);
         AgeOfAI::UpgradesRetry(this, inTime);
         AgeOfAI::WoodDrops(this, inTime);
+        AgeOfAI::CitizensHome(this, inTime);
         AgeOfAI::CounterFire(this, inTime);
         AgeOfAI::CounterSiege(this, inTime);
         AgeOfAI::MusterTick(this, inTime);
