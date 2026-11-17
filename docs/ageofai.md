@@ -258,10 +258,11 @@ moves to the town with the most finished buildings within 20 tiles. A citizen id
 15 tiles from its nearest finished town goes home. So does a citizen whose walk ends within 3 tiles of the base point
 while a town is 10 or more tiles nearer. It goes to the nearest finished Town Center, Capitol or Settlement on its land
 with no enemy soldiers in sight within 12 tiles, and stops 4 tiles from the town on its own side. With no such town, it
-stays. `AgeOfAIHome.h` holds the rules. Upstream's default turns `citizens_home` on. The shipped `ageofai.ini` turns it
-off until the [benchmark](benchmark.md) rates it as the AI `aoai-citizenshome`. Not ported: the citizens that a landing,
-an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`), and the removal of unfinished buildings stacked on
-one tile.
+stays. `AgeOfAIHome.h` holds the rules, and the sim report's `intel` object counts the citizens sent home
+(`home_sent`) and the base points that moved to a town (`home_base_moved`). Upstream's default turns `citizens_home` on.
+The shipped `ageofai.ini` turns it off until the [benchmark](benchmark.md) rates it as the AI `aoai-citizenshome`. Not
+ported: the citizens that a landing, an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`), and the
+removal of unfinished buildings stacked on one tile.
 
 ## Extra towers
 
@@ -273,9 +274,10 @@ tiles to each side. A spot 3 tiles out from each town 12 or more tiles from the 
 no tower in its build queue, the player queues the best tower of the line it can build at the first free slot, at most
 once a minute, when its stone pays the tower with 100 left. A slot is free with no tower within 2 tiles and no tower
 given there in the last 90 seconds, and a tile near it is used when the route from the base passes no known enemy
-defence, no enemy raiders are in sight within 10 tiles, and the tower fits. `AgeOfAITowers.h` holds the slot order. Upstream's
-default turns `defence_towers` on. The shipped `ageofai.ini` turns it off until the [benchmark](benchmark.md) rates it
-as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, the coast towers, and
+defence, no enemy raiders are in sight within 10 tiles, and the tower fits. `AgeOfAITowers.h` holds the slot order, and
+the sim report's `intel` object counts the towers queued (`towers_queued`) and the looks that queued none
+(`towers_skipped`). Upstream's default turns `defence_towers` on. The shipped `ageofai.ini` turns it off until the
+[benchmark](benchmark.md) rates it as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, the coast towers, and
 the slots that the game's own tower requests take.
 
 ## Game fixes

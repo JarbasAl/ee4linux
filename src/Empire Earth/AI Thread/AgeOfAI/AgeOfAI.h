@@ -144,6 +144,18 @@ struct DefenceCounts {
     unsigned long mCounterSiegeSkipped; // threats left: too few soldiers and no citizens' answer
 };
 DefenceCounts DefenceCountsOf(unsigned long inPlayerID);
+// Idle citizens home (econ.c citizens_home, AgeOfAIHome.h; CitizensHome above)
+struct HomeCounts {
+    unsigned long mSent;        // idle citizens sent to a town
+    unsigned long mBaseMoved;   // base points moved to a town
+};
+HomeCounts HomeCountsOf(unsigned long inPlayerID);
+// The extra towers of the defence layout (defence.c, AgeOfAITowers.h; DefenceTick above)
+struct TowerLayoutCounts {
+    unsigned long mQueued;      // towers queued
+    unsigned long mSkipped;     // looks that queued none: nothing to build, one already queued, or no spot the player can pay for
+};
+TowerLayoutCounts TowerLayoutCountsOf(unsigned long inPlayerID);
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding);
 // An attack goal for inUnit, as unit_goal with goal_attack (attack.c) gives it; false: refused (dead, off the map, a

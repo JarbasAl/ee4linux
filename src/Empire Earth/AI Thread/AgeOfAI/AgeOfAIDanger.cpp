@@ -581,6 +581,17 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
 // within 3 tiles of the base while a town is 10 tiles nearer, is sent to the nearest finished town on its land with no enemy
 // soldiers it sees within 12 tiles, none safe: it stays. Not ported: the exclusion of the citizens a landing, an outpost or a new
 // town holds (landing.c, expand.c, towns.c), and (3) the removal of unfinished buildings stacked on one tile.
+namespace {
+
+// what the module does, for the sim report (docs/simulator.md): citizens sent to a town, base points that moved there,
+// towers the layout queued, and its looks that queued none
+unsigned long sHomeSent[16];
+unsigned long sHomeBaseMoved[16];
+unsigned long sTowersQueued[16];
+unsigned long sTowersSkipped[16];
+
+}
+
 void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16];
@@ -641,6 +652,7 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
         theBuild->mTownCenterTile.mY = theTowns[theBest].mY;
         theBaseX = theTowns[theBest].mX;
         theBaseY = theTowns[theBest].mY;
+        sHomeBaseMoved[idx]++;
     }
     std::vector<unsigned> theLand(theTowns.size());
     std::vector<int> theSafe(theTowns.size(), -1);
@@ -702,6 +714,7 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
         float theX, theY;
         HomeRules::Spot(theTowns[theTown].mX, theTowns[theTown].mY, theUnit->mTileX, theUnit->mTileY, theX, theY);
         MoveTo(theUnit->mComplexUnit, theX, theY);
+        sHomeSent[idx]++;
     }
     sWasIdle[idx] = theNowIdle;
 }
@@ -1476,15 +1489,32 @@ void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     EECPBuildManager* theBuild = theCivilization->mBuildManager;
     long theType = NewestTowerOf(inPlayer);
     long theEpoch = inPlayer->mTechnologies->mCurrentEpoch;
-    if (theType == 0 || TowerIsQueued(theBuild) || theEpoch < 0 || theEpoch >= 14)
+    if (theType == 0 || TowerIsQueued(theBuild) || theEpoch < 0 || theEpoch >= 14) {
+        sTowersSkipped[idx]++;
         return;
+    }
     EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[theType]->mTechnology);
     long theCost = theNode != NULL ? theNode->GetCost(kResourceStone, theType, 1.0f) : 0;
     long theX, theY;
     if (inPlayer->mResourceCaps[kResourceStone] >= theCost + 100 && DefenceSpot(inPlayer, theType, inNow, theX, theY)) {
         theBuild->QueueBuildingAt(theType, theX, theY);
         sLastTower[idx] = inNow != 0 ? inNow : 1;
+        sTowersQueued[idx]++;
+    } else {
+        sTowersSkipped[idx]++;
     }
+}
+
+HomeCounts HomeCountsOf(unsigned long inPlayerID)
+{
+    unsigned idx = inPlayerID & 15;
+    return HomeCounts{sHomeSent[idx], sHomeBaseMoved[idx]};
+}
+
+TowerLayoutCounts TowerLayoutCountsOf(unsigned long inPlayerID)
+{
+    unsigned idx = inPlayerID & 15;
+    return TowerLayoutCounts{sTowersQueued[idx], sTowersSkipped[idx]};
 }
 
 }

@@ -247,6 +247,8 @@ struct PlayerSample {
     long mFoodPulled = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
+    long mHomeSent = 0, mHomeBaseMoved = 0;
+    long mTowersQueued = 0, mTowersSkipped = 0;
     bool mHasGatherers = false;                          // a computer player: its gatherers and the gatherers it wants, food..iron
     long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
     long mDropSites[7] = {0, 0, 0, 0, 0, 0, 0};          // the player's drop-site buildings by the resource they take (0 and 1: all)
@@ -432,6 +434,12 @@ Sample TakeSample()
             p.mCounterFireSent = (long)theCounterFire.mSent;
             p.mCounterFireShort = (long)theCounterFire.mShort;
             p.mDefence = AgeOfAI::DefenceCountsOf(i);
+            AgeOfAI::HomeCounts theHome = AgeOfAI::HomeCountsOf(i);
+            p.mHomeSent = (long)theHome.mSent;
+            p.mHomeBaseMoved = (long)theHome.mBaseMoved;
+            AgeOfAI::TowerLayoutCounts theTowers = AgeOfAI::TowerLayoutCountsOf(i);
+            p.mTowersQueued = (long)theTowers.mQueued;
+            p.mTowersSkipped = (long)theTowers.mSkipped;
         }
         for (long r = 0; r < 5; r++)
             p.mResources[r] = thePlayer->mResourceCaps[kResourceFood + r];
@@ -944,12 +952,14 @@ std::string PlayersJson(const Sample& inSample)
                      "\"outdated_sorties\": %ld, \"outdated_sent\": %ld, \"outdated_refused\": %ld, \"outdated_no_group\": %ld, \"food_pulled\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
-                     "\"counter_siege_skipped\": %u}",
+                     "\"counter_siege_skipped\": %u, \"home_sent\": %ld, \"home_base_moved\": %ld, "
+                     "\"towers_queued\": %ld, \"towers_skipped\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits, p.mOutdatedSorties, p.mOutdatedSent, p.mOutdatedRefused,
                      p.mOutdatedNoGroup, p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
-                     (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped);
+                     (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,
+                     p.mHomeSent, p.mHomeBaseMoved, p.mTowersQueued, p.mTowersSkipped);
         char theGatherers[480] = "";
         if (p.mHasGatherers)
             snprintf(theGatherers, sizeof(theGatherers),
