@@ -46,9 +46,12 @@ profile that cannot be read is reported on the standard error, and the player is
 setting.
 
 An Age of AI player takes these keys into its own fields on its first update: `cost_percent` (the price it pays; `0%`, the default, leaves the game's own setting, whose cheat flag gives computer players a reduced price; `100%` is the real price, which makes the player weaker than the classic AI until the defence, army and budget modules are ported), `epoch_pacing` (every value but `classic` makes it ignore the humans' epoch and population, so it never waits for
-them and its population limit is the game's), `epoch_min` and `epoch_max` (the epoch timer), `attack_interval_min` and
-`attack_interval_max`, `attack_group_percent`, `attack_on_contact`, `attack_for_resources`, `attack_revenge` and
-`last_stand_buildings`. `first_attack_min`, `citizen_share` and `attention_activities` are not applied yet.
+them and its population limit is the game's), `epoch_min` and `epoch_max` (the epoch timer), `first_attack_min` and
+`first_attack_max` (minutes until the first attack, a range the game draws from; a timer the game already drew is drawn
+again inside the new range while the player has not attacked yet), `attack_interval_min` and
+`attack_interval_max`, `attack_group_percent`, `attack_on_contact`, `attack_for_resources`, `attack_revenge`,
+`last_stand_buildings` and `citizen_share` (the citizens' share of the population cap; the game's own when it is 0 or
+1). `attention_activities` is not applied yet: its field is not mapped in this tree.
 
 ## What an Age of AI player knows
 

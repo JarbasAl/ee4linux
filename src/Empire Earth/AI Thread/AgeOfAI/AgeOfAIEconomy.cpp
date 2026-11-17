@@ -440,9 +440,9 @@ void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow)
 }
 
 // THE PLAYER'S OWN SETTINGS (settings_apply in settings.c), once per player and game, on its first update: the price it pays, whether
-// it waits for the humans' epoch (every pacing but classic does not), the epoch timer's range, the attack interval, the
-// attack group's size and the chances of the attacks. The first attack's range, the citizen share, the attention activities
-// are not ported (their fields are not mapped; their defaults change nothing).
+// it waits for the humans' epoch (every pacing but classic does not), the epoch timer's range, the first attack's range,
+// the attack interval, the attack group's size, the chances of the attacks and the citizens' share of the population cap.
+// attention_activities is not ported: its field is not mapped in this tree.
 void ApplySettings(EEComputerPlayer* inPlayer)
 {
     static EEComputerPlayer* sDone[16];
@@ -501,6 +501,22 @@ void ApplySettings(EEComputerPlayer* inPlayer)
         inPlayer->mAttackForRevengeChance = Pct(theSettings.attack_revenge);
     if (theSettings.last_stand_buildings >= 0)
         inPlayer->mBonzaiAttackLevel = theSettings.last_stand_buildings;
+    // The first attack comes from a range of minutes the game draws from these two fields while the player has not
+    // started attacking (SetNextAttackTime). A timer the game already drew is drawn again inside the new range, with
+    // upstream's spread by player index.
+    long theFirstMin = theSettings.first_attack_min;
+    long theFirstMax = theSettings.first_attack_max < theFirstMin ? theFirstMin : theSettings.first_attack_max;
+    if (theFirstMin > 0) {
+        inPlayer->mInitialAttackDelayMin = theFirstMin;
+        inPlayer->mInitialAttackDelayMax = theFirstMax;
+        if (!inPlayer->mIsStarted) {
+            long theSpan = theFirstMax - theFirstMin + 1;
+            inPlayer->mNextAttackTime = gPhysics->mGameTime
+                + (unsigned long)((theFirstMin + (long)inPlayer->mPlayerID * 5 % theSpan) * 60000);
+        }
+    }
+    if (theSettings.citizen_share > 0.0f && theSettings.citizen_share < 1.0f)
+        inPlayer->mCitizenPercentage = theSettings.citizen_share;
 }
 
 }
