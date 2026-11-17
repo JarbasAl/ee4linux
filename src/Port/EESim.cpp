@@ -582,8 +582,14 @@ void SpawnArmies()
             continue;
         long theFromX = theBaseX + (long)lround(theDX / theLength * 6), theFromY = theBaseY + (long)lround(theDY / theLength * 6);
         if (sOptions.mArmyRaid) {
-            theFromX = theEnemyX - (long)lround(theDX / theLength * 8);
-            theFromY = theEnemyY - (long)lround(theDY / theLength * 8);
+            // Eight tiles from the building the army attacks, on the side of its own base: the distance to the target
+            // is the same for both sides, so neither raid lands closer to what it came for.
+            double theHomeX = theBaseX - theTarget->mTileX, theHomeY = theBaseY - theTarget->mTileY;
+            double theHomeLength = sqrt(theHomeX * theHomeX + theHomeY * theHomeY);
+            if (theHomeLength < 1)
+                continue;
+            theFromX = theTarget->mTileX + (long)lround(theHomeX / theHomeLength * 8);
+            theFromY = theTarget->mTileY + (long)lround(theHomeY / theHomeLength * 8);
         }
         if (sOptions.mArmySpot) {
             theFromX = sOptions.mArmySpotX;
