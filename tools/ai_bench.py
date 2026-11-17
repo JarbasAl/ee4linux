@@ -321,6 +321,22 @@ def interval(rows, anchor, fits=BOOTSTRAP_FITS):
     return {n: (sorted(v)[int(0.025 * len(v))], sorted(v)[int(0.975 * len(v)) - 1]) for n, v in samples.items()}
 
 
+def seat_shares(rows):
+    """Per scenario, the decided games and the ones the first seat (player 2) won.
+
+    Both seat orders are played, so a scenario whose games go to the first seat whatever AI plays it is decided by the
+    starting position: its games carry no information about the AIs.
+    """
+    shares = {}
+    for r in rows:
+        counts = shares.setdefault(r["scenario"], [0, 0])
+        if r["winner"] is None:
+            continue
+        counts[0] += 1
+        counts[1] += r["winner"] == r["seats"]["2"]
+    return shares
+
+
 def table(args):
     rows = read_games(args.out)
     if not rows:
@@ -341,6 +357,14 @@ def table(args):
     per = {s: fit(scored([r for r in rows if r["scenario"] == s]), args.anchor) for s in scenarios}
     for n in order:
         print(f"| {n} | " + " | ".join(f"{per[s][n]:.0f}" if n in per[s] else "" for s in scenarios) + " |")
+    shares = seat_shares(rows)
+    print("\n| Scenario | Decided | First seat won | Share | |")
+    print("| --- | ---: | ---: | ---: | --- |")
+    for s in scenarios:
+        decided, first = shares[s]
+        share = first / decided if decided else 0.0
+        seat = "the seat decides" if decided >= 10 and abs(share - 0.5) > 0.15 else ""
+        print(f"| {s} | {decided} | {first} | {share:.0%} | {seat} |")
     print("\n| Scenario | AI | Games | Win rate | Time to win (h) | " + " | ".join(MEASURES) + " |")
     print("| --- | --- | ---: | ---: | ---: |" + " ---: |" * len(MEASURES))
     for s in scenarios:

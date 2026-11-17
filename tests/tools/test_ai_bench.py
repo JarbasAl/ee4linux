@@ -138,6 +138,27 @@ class Budget(unittest.TestCase):
         self.assertFalse(waited.is_alive(), "and go when a call ends")
 
 
+class SeatShares(unittest.TestCase):
+    def test_a_scenario_whose_games_go_to_one_seat_says_so(self):
+        # the same map and AI order, twice: the first seat wins both, so the seat decided them
+        rows = [{"scenario": "raids", "seats": {"2": "a", "3": "b"}, "winner": "a"},
+                {"scenario": "raids", "seats": {"2": "b", "3": "a"}, "winner": "b"}]
+        self.assertEqual(ai_bench.seat_shares(rows), {"raids": [2, 2]})
+
+    def test_it_counts_the_first_seat_by_its_number(self):
+        rows = [{"scenario": "tiny", "seats": {"2": "a", "3": "b"}, "winner": "b"},
+                {"scenario": "tiny", "seats": {"2": "a", "3": "b"}, "winner": "a"}]
+        self.assertEqual(ai_bench.seat_shares(rows), {"tiny": [2, 1]})
+
+    def test_a_draw_is_not_a_decided_game(self):
+        rows = [{"scenario": "poor", "seats": {"2": "a", "3": "b"}, "winner": None}]
+        self.assertEqual(ai_bench.seat_shares(rows), {"poor": [0, 0]})
+
+    def test_every_scenario_has_a_row(self):
+        rows = [{"scenario": s, "seats": {"2": "a", "3": "b"}, "winner": "a"} for s in ("tiny", "raids")]
+        self.assertEqual(sorted(ai_bench.seat_shares(rows)), ["raids", "tiny"])
+
+
 class SeatEngines(unittest.TestCase):
     def row(self, first_engine, second_engine):
         report = {"winner": 2, "outcome": "last-computer-standing", "game_ms": 60000,

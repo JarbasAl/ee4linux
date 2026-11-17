@@ -70,6 +70,10 @@ line names of the lobby's own lists.
 Each pair of AIs plays each scenario on the same seeds twice, once with each AI as player 2. The slot advantage
 therefore cancels. A game that reaches 8 game hours is a draw.
 
+`table` also gives, per scenario, how many of its decided games the first seat (player 2) won. Both seat orders are
+played, so a scenario whose games go to one seat whatever AI plays it is decided by the starting position and rates
+nothing; the table marks one that is more than 15 points from half over ten or more decided games.
+
 The rating is a Bradley-Terry fit of all games at once, on the Elo scale. 400 points mean odds of ten to one, and
 `classic` is fixed at 1000. A draw counts half a win for each side. Each AI also has one virtual draw against
 `classic`, so an AI that won or lost every game still has a finite rating. The interval is the 95 % range of 200 fits
