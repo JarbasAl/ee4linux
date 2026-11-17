@@ -20,8 +20,10 @@ A game is in the ledger only when both players ran the engine their own settings
 cannot be read runs the classic AI, so the tool names that seat on the standard error and plays the game again on the
 next `run`, rather than log a game of two AIs that was not one.
 
-A game takes 1 to 2 wall minutes on an 8-core box, so 8 jobs play about 4 games a minute. Ten AIs, ten scenarios and
-ten seeds, in both seat orders, give 9000 games, or about 45 hours.
+A game takes 1 to 2 wall minutes on an 8-core box. `--jobs` is the games played at once: a pair fills one slot per
+seed, and the pairs its seeds cannot fill play side by side, each in a stage folder of its own under `DIR/stages`. With
+ten seeds one pair fills the eight slots; with two seeds four pairs do. Ten AIs, ten scenarios and ten seeds, in both
+seat orders, give 9000 games.
 
 ## Named AIs
 

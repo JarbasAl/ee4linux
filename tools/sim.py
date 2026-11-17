@@ -184,6 +184,9 @@ def main():
     ap.add_argument("--jobs", type=int, default=1, help="runs at once (default 1)")
     ap.add_argument("--wall-timeout", type=int, default=3600, help="wall seconds per run (default 3600)")
     ap.add_argument("--out", type=pathlib.Path, help="the output folder (default build/sim/<time>)")
+    ap.add_argument("--stage", type=pathlib.Path,
+                    help="the folder of a run's linked copy (default build/sim/stage); a stage of its own lets two "
+                         "sims of one tree run side by side")
     ap.add_argument("--ageofai", type=pathlib.Path, help="the ageofai.ini of every run (default the run folder's)")
     ap.add_argument("--preset", choices=sorted(PRESETS), help="options of a kind of game, before the options after -- "
                     "(fights: three computer players on a Tiny map, started in a later age with many resources)")
@@ -195,7 +198,7 @@ def main():
     args.run = (args.run or build / "run").resolve()
     args.bin = (args.bin or build / "bin").resolve()
     args.out = (args.out or ROOT / "build" / "sim" / time.strftime("%Y%m%d-%H%M%S")).resolve()
-    args.stage = ROOT / "build" / "sim" / "stage"
+    args.stage = (args.stage or ROOT / "build" / "sim" / "stage").resolve()
     if not (args.bin / "ee-aoc").exists():
         sys.exit(f"sim: no {args.bin / 'ee-aoc'}; run tools/build_port.py --target {args.target} --link first")
     if not args.run.is_dir():
@@ -203,9 +206,9 @@ def main():
     if args.ageofai and not args.ageofai.is_file():
         sys.exit(f"sim: no {args.ageofai}")
     args.out.mkdir(parents=True, exist_ok=True)
-    # one sim at a time per tree: a second one would empty the stages of the first while its games run
+    # one sim at a time per stage folder: a second one would empty the slots of the first while its games run
     args.stage.mkdir(parents=True, exist_ok=True)
-    lock = open(args.stage.parent / "stage.lock", "w")
+    lock = open(f"{args.stage}.lock", "w")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:

@@ -29,6 +29,7 @@ The options before `--` belong to the tool, and the options after it go to `ee-a
 | `--jobs N` | runs at once (default 1) |
 | `--wall-timeout S` | wall seconds per run (default 3600). The tool kills a run 60 seconds after that. |
 | `--out DIR` | the output folder (default `build/sim/<time>`) |
+| `--stage DIR` | the folder of a run's linked copy (default `build/sim/stage`). A stage of its own lets two sims of one tree run side by side; `<stage>.lock` keeps two off the same one. |
 | `--ageofai FILE` | the `ageofai.ini` of every run, which selects the AI engine ([Age of AI](ageofai.md)). Without it, a run uses the run folder's file. |
 | `--preset fights` | three computer players on a Tiny map, started in a later age (lobby control 183 at line 8) with many resources (control 181 at line 4), for 3600 game seconds. The options after `--` come last and win. |
 

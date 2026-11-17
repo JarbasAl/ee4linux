@@ -5,6 +5,7 @@
 import math
 import pathlib
 import sys
+import threading
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "tools"))
@@ -112,6 +113,29 @@ class Engines(unittest.TestCase):
     def test_a_value_it_cannot_read_is_an_error_not_a_guess(self):
         with self.assertRaises(SystemExit):
             ai_bench.engine_of("[general]\nenabled=maybe\n")
+
+
+class Budget(unittest.TestCase):
+    def test_slots_go_back_when_a_call_ends(self):
+        budget = ai_bench.Budget(8)
+        budget.take(2)
+        budget.take(2)
+        budget.give(2)
+        budget.take(2)
+        self.assertEqual(budget.mUsed, 4)
+
+    def test_a_call_waits_while_the_slots_are_taken(self):
+        # two seeds with eight slots: the fifth call has to wait for one to end
+        budget = ai_bench.Budget(8)
+        for _ in range(4):
+            budget.take(2)
+        waited = threading.Thread(target=budget.take, args=(2,))
+        waited.start()
+        waited.join(0.2)
+        self.assertTrue(waited.is_alive(), "a fifth call must wait")
+        budget.give(2)
+        waited.join(2)
+        self.assertFalse(waited.is_alive(), "and go when a call ends")
 
 
 class SeatEngines(unittest.TestCase):
