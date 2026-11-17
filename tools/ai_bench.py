@@ -26,6 +26,7 @@ import argparse
 import collections
 import concurrent.futures
 import configparser
+import fcntl
 import itertools
 import json
 import math
@@ -234,6 +235,13 @@ def play(args):
         settings = merged_ini(base, overlay)
         (profiles / f"{name}.ini").write_text(settings)
         engines[name] = engine_of(settings)
+    # one run at a time per ledger: two would play the same games and write the same line twice. The lock names the
+    # folder, and lives as long as the run.
+    lock = open(args.out / "games.lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.exit(f"ai_bench: another run uses {args.out}; wait for it to end")
     done = {(g["scenario"], g["seed"], g["seats"]["2"], g["seats"]["3"]) for g in read_games(args.out)}
     tasks = []
     for scenario, options in scenarios.items():
