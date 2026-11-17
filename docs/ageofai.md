@@ -40,7 +40,10 @@ ageofai: ageofai.ini [general] bogus: no such setting (a misspelt key?) - ignore
 A computer player can also have a settings file of its own: the simulator's `--player-ini P=FILE` gives player P that
 file in full, in place of `ageofai.ini`. The player's engine (`[general] enabled`), its `[ai_base]`, `[ai_easy]` and
 `[ai_hard]` rows, and the shot rules of its units (`lead_targets`, `lob_each_shot`) then come from that file. Every
-other player keeps `ageofai.ini`. The [AI benchmark](benchmark.md) uses this to make two named AIs play each other.
+other player keeps `ageofai.ini`. The [AI benchmark](benchmark.md) uses this to make two named AIs play each other. A
+profile that cannot be read is reported on the standard error, and the player is left on the defaults, whose
+`enabled` is 0: the classic AI. Unlike `ageofai.ini`, a profile is named, so a missing one is a mistake and not a
+setting.
 
 An Age of AI player takes these keys into its own fields on its first update: `cost_percent` (the price it pays; `0%`, the default, leaves the game's own setting, whose cheat flag gives computer players a reduced price; `100%` is the real price, which makes the player weaker than the classic AI until the defence, army and budget modules are ported), `epoch_pacing` (every value but `classic` makes it ignore the humans' epoch and population, so it never waits for
 them and its population limit is the game's), `epoch_min` and `epoch_max` (the epoch timer), `attack_interval_min` and

@@ -55,7 +55,7 @@ void SetPlayerSettings(unsigned long inPlayerID, const char* inPath)
         return;
     Profile& theProfile = sProfiles[inPlayerID];
     theProfile.mSet = true;
-    for (const std::string& theLine : ReadSettings(inPath, theProfile.mGeneral, theProfile.mAI))
+    for (const std::string& theLine : ReadSettings(inPath, theProfile.mGeneral, theProfile.mAI, true))
         fprintf(stderr, "ageofai: player %lu (%s): %s\n", inPlayerID, inPath, theLine.c_str());
 }
 
