@@ -92,5 +92,47 @@ class Ledger(unittest.TestCase):
         self.assertIsNone(ai_bench.game_row(report, "standard", 6, {2: "aoai", 3: "classic"}))
 
 
+class Engines(unittest.TestCase):
+    def test_the_shipped_profile_selects_the_classic_ai(self):
+        self.assertEqual(ai_bench.engine_of(ai_bench.merged_ini(ai_bench.BASE_INI.read_text(), "[ai_base]\nmuster=1\n")),
+                         "classic")
+
+    def test_an_ai_profile_selects_age_of_ai(self):
+        self.assertEqual(ai_bench.engine_of(ai_bench.merged_ini(ai_bench.BASE_INI.read_text(),
+                                                                "[general]\nenabled=1\n")), "ageofai")
+
+    def test_a_name_for_a_flag_reads_like_the_number(self):
+        self.assertEqual(ai_bench.engine_of("[general]\nenabled=true\n"), "ageofai")
+        self.assertEqual(ai_bench.engine_of("[general]\nenabled=off\n"), "classic")
+
+    def test_enabled_in_another_section_selects_nothing(self):
+        # [ai_base] has a member row named like the general flag: only [general] says which engine a player runs
+        self.assertEqual(ai_bench.engine_of("[ai_base]\nenabled=1\n"), "classic")
+
+    def test_a_value_it_cannot_read_is_an_error_not_a_guess(self):
+        with self.assertRaises(SystemExit):
+            ai_bench.engine_of("[general]\nenabled=maybe\n")
+
+
+class SeatEngines(unittest.TestCase):
+    def row(self, first_engine, second_engine):
+        report = {"winner": 2, "outcome": "last-computer-standing", "game_ms": 60000,
+                  "samples": [{"players": [{"index": 2, "engine": first_engine},
+                                           {"index": 3, "engine": second_engine}]}]}
+        return ai_bench.game_row(report, "standard", 1, {2: "aoai", 3: "classic"})
+
+    def test_a_game_of_the_profiles_it_claims_is_kept(self):
+        self.assertEqual(ai_bench.wrong_engines(self.row("ageofai", "classic"), {"aoai": "ageofai", "classic": "classic"}), {})
+
+    def test_an_ai_that_ran_the_classic_one_names_itself(self):
+        # the profile path did not resolve: the player read no file and took the classic engine
+        self.assertEqual(ai_bench.wrong_engines(self.row("classic", "classic"), {"aoai": "ageofai", "classic": "classic"}),
+                         {"aoai": "classic"})
+
+    def test_a_player_with_no_engine_names_itself(self):
+        self.assertEqual(ai_bench.wrong_engines(self.row(None, "classic"), {"aoai": "ageofai", "classic": "classic"}),
+                         {"aoai": None})
+
+
 if __name__ == "__main__":
     unittest.main()

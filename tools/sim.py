@@ -158,6 +158,22 @@ def summary(result):
 PRESETS = {"fights": ["--ai", "3", "--map-size", "Tiny", "--lobby", "183=#8", "--lobby", "181=#4", "--game-seconds", "3600"]}
 
 
+def absolute_profiles(options):
+    """Sim options with each --player-ini file named in full.
+
+    A run plays in a stage folder of its own, so a settings file the caller named relative to their own folder would
+    name nothing there: the game reads an empty file and the player quietly runs the classic AI.
+    """
+    out = list(options)
+    for i in range(len(out) - 1):
+        if out[i] != "--player-ini":
+            continue
+        player, _, path = out[i + 1].partition("=")
+        if path:
+            out[i + 1] = f"{player}={pathlib.Path(path).resolve()}"
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--target", default="linux64", choices=["linux", "linux64"])
@@ -173,7 +189,7 @@ def main():
                     "(fights: three computer players on a Tiny map, started in a later age with many resources)")
     ap.add_argument("sim_options", nargs="*", help="after --: options of ee-aoc --sim (--ai, --game-seconds, ...)")
     args = ap.parse_args()
-    args.sim_options = PRESETS.get(args.preset, []) + args.sim_options
+    args.sim_options = absolute_profiles(PRESETS.get(args.preset, []) + args.sim_options)
 
     build = ROOT / "build" / f"port-{args.target}"
     args.run = (args.run or build / "run").resolve()

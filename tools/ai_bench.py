@@ -131,14 +131,42 @@ def game_row(report, scenario, seed, seats):
     }
 
 
+def engine_of(settings):
+    """The engine a merged settings file selects: "ageofai" when its [general] enabled is on, else "classic"."""
+    parser = configparser.ConfigParser(interpolation=None, strict=False)
+    parser.optionxform = str
+    parser.read_string(settings)
+    value = parser.get("general", "enabled", fallback="").strip().lower()
+    if value in ("1", "true", "yes", "on"):
+        return "ageofai"
+    if value in ("", "0", "false", "no", "off"):
+        return "classic"
+    sys.exit(f"ai_bench: [general] enabled={value} is not a setting: the engine of an AI cannot be told")
+
+
+def wrong_engines(row, engines):
+    """The seats of a finished game that ran an engine their own settings file does not select, by AI name.
+
+    A game runs in a stage folder of the sim's own, so a player's settings file is named in full, and the report says
+    which engine each player ran. A seat that ran another engine read no file, and a game of two AIs that were not
+    those AIs must not reach the ledger.
+    """
+    return {ai: end.get("engine") for ai, end in row["end"].items() if end.get("engine") != engines[ai]}
+
+
 def play(args):
     ais, scenarios, seeds = load_ais(args.ais), load_scenarios(args.scenarios), parse_seeds(args.seeds)
+    args.out = args.out.resolve()
+    args.run = args.run.resolve()
     args.out.mkdir(parents=True, exist_ok=True)
     profiles = args.out / "ais"
     profiles.mkdir(exist_ok=True)
     base = BASE_INI.read_text()
+    engines = {}
     for name, overlay in ais.items():
-        (profiles / f"{name}.ini").write_text(merged_ini(base, overlay))
+        settings = merged_ini(base, overlay)
+        (profiles / f"{name}.ini").write_text(settings)
+        engines[name] = engine_of(settings)
     done = {(g["scenario"], g["seed"], g["seats"]["2"], g["seats"]["3"]) for g in read_games(args.out)}
     planned = played = 0
     with (args.out / "games.jsonl").open("a") as ledger:
@@ -167,6 +195,13 @@ def play(args):
                         if row is None:
                             print(f"ai_bench: {scenario} seed {seed} {first} against {second}: not finished: "
                                   f"{result.get('error')}", file=sys.stderr)
+                            continue
+                        wrong = wrong_engines(row, engines)
+                        if wrong:
+                            ran = "; ".join(f"{ai} ran {engine}, its settings file selects {engines[ai]}"
+                                            for ai, engine in sorted(wrong.items()))
+                            print(f"ai_bench: {scenario} seed {seed} {first} against {second}: {ran}: the file was "
+                                  f"not read", file=sys.stderr)
                             continue
                         ledger.write(json.dumps(row) + "\n")
                         ledger.flush()

@@ -16,6 +16,10 @@ where it stopped. A run that the sim did not finish, such as a lobby that did no
 next `run` plays it again. Give `--ais` or `--scenarios` (names, comma apart) to play part of the set. A new AI then plays only
 its own games against the others. `table` prints the ratings and the measures as markdown.
 
+A game is in the ledger only when both players ran the engine their own settings file selects. A player whose file
+cannot be read runs the classic AI, so the tool names that seat on the standard error and plays the game again on the
+next `run`, rather than log a game of two AIs that was not one.
+
 A game takes 1 to 2 wall minutes on an 8-core box, so 8 jobs play about 4 games a minute. Ten AIs, ten scenarios and
 ten seeds, in both seat orders, give 9000 games, or about 45 hours.
 
