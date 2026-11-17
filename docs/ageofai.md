@@ -236,11 +236,14 @@ turns it off until the [benchmark](benchmark.md) rates it as the AI `aoai-counte
 seconds an Age of AI player looks for enemy shooters: enemies it sees that attack one of its units or buildings from beyond
 that victim's reach (further off than its range plus 1 tile), with a range of 5 tiles at least. Shooters within 6 tiles
 of each other are one target. Its soldiers within 24 tiles join, nearest first: those on the shooter's land (helicopters
-anywhere), able to hurt it, not inside a building or transport, and not fighting an enemy within 4 tiles. They join four
-at a time until the fight estimate against the enemy fighters within 10 tiles of the target gives 1.5, with at most 60
-on the target. If they cannot reach 1.5, nobody goes. Each soldier sent attacks one of the shooters and is committed to
-it for 45 seconds. The sim report's `intel` object counts the targets attacked (`counter_fire_sorties`), the soldiers
-sent (`counter_fire_sent`) and the targets left because the soldiers were too weak (`counter_fire_short`).
+anywhere), able to hurt it, not inside a building or transport, and not fighting an enemy within 4 tiles. A unit whose
+class's AI script has no attack action of its own is left out even when its damage says it can hurt the target, as a
+Prophet's is: the goal's start would leave the unit without a command, and the game's own step reads that command. They
+join four at a time until the fight estimate against the enemy fighters within 10 tiles of the target gives 1.5, with
+at most 60 on the target. If they cannot reach 1.5, nobody goes. Each soldier sent attacks one of the shooters and is
+committed to it for 45 seconds. The sim report's `intel` object counts the targets attacked
+(`counter_fire_sorties`), the soldiers sent (`counter_fire_sent`) and the targets left because the soldiers were too
+weak (`counter_fire_short`).
 
 Upstream calls counter-fire at the start of `counter_siege` (`defence.c`), and the port calls it just before counter-siege. The
 skirmish spotter that upstream holds back (`skirmish.c`) and the staging rules that read the commitment (`stage.c`) are

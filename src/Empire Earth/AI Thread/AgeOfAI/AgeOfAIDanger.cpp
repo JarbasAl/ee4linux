@@ -736,6 +736,11 @@ bool AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
 {
     if (inUnit->mHitPoints <= 0 || inUnit->mTileX == -10000 || inUnit->mComplexUnit == NULL || inUnit->mComplexUnit->mIsDisabled)
         return false;
+    // A class whose AI script has no InitialAttackState cannot take an attack goal: EEUGAttackUnit::Start would leave
+    // the unit with no command, and EEComplexUnit::AIStep then evaluates that command. A Prophet passes a "can hurt"
+    // test on its damage number but has no attack of its own to start.
+    if (inUnit->mUnitClass == NULL || inUnit->mUnitClass->FindAction(kActionInitialAttackState) == NULL)
+        return false;
     EEUGAttackUnit* theGoal = new EEUGAttackUnit(inUnit->mComplexUnit, inTarget, true, false);
     inUnit->mComplexUnit->SetGoal(theGoal, false, 0);
     inUnit->mComplexUnit->StartAction(kActionPrepareToMove);
