@@ -2,8 +2,8 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
-// Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, local_mines and town_work (off by
-// default), the overseas mines, the wood and field searches, and food.c's animal search and its HUNT and NEAR rules (off by default).
+// Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, town_work (off by default), the
+// overseas mines, the wood and field searches, and food.c's animal search and its HUNT and NEAR rules (off by default).
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
@@ -101,6 +101,7 @@
 #include "ee/EETechTreeTechID.h"
 #include "ee/EEPlayer.h"
 #include "ee/EEPhysics.h"
+#include "AgeOfAISites.h"
 #include "lle/GE2DPoint.h"
 #include "lle/GE3DPoint.h"
 #include "lle/GEVector.h"
@@ -297,8 +298,12 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
         AimCount(thePlayer);
     unsigned long theCap = thePlayer->mMiningLimit;
     long theRegion = inUnit != NULL ? (long)gContinentManager.GetContinentID(inUnit) : 0;
+    // LOCAL MINES ([ai_base] local_mines): a mine whose drop site is far from the citizen is another town's, and the
+    // game's own assignment sent citizens a long way for it; one its own town can reach comes first
+    const bool theLocal = theSettings.local_mines && inUnit != NULL;
     EEUnit* theBest = NULL;
     long theBestD = 0x7FFFFFFF;
+    int theBestLocal = 0;
     for (unsigned long k = 0; k < thePlayer->GetNumResourceCenters(); k++) {
         EECPResourceCenter* theZone = thePlayer->GetResourceCenter(k);
         if (theZone == NULL || !theZone->mIsActive)
@@ -308,7 +313,16 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
             continue;
         int theIndex = -1;
         long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, false, &theIndex);   // nearest drop site for all resources
-        if (theIndex < 0 || theD >= theBestD)
+        if (theIndex < 0)
+            continue;
+        const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
+        int theIsLocal = 0;
+        if (theLocal) {
+            theIsLocal = SitesRules::MineLocal(theDrop.mX, theDrop.mY, inUnit->mTileX, inUnit->mTileY);
+            if (theIsLocal < 0)
+                continue;
+        }
+        if (theIsLocal < theBestLocal || (theIsLocal == theBestLocal && theD >= theBestD))
             continue;
         if (!ExploredBy(theSite, thePlayer))
             continue;
@@ -323,11 +337,11 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
             continue;
         if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY))
             continue;
-        const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
         if (!RouteSafe(theBuild, theDrop.mX, theDrop.mY, theSite->mTileX, theSite->mTileY) || SiteDanger(thePlayer, theSite, false, (int)inType))
             continue;
         theBest = theSite;
         theBestD = theD;
+        theBestLocal = theIsLocal;
     }
     if (theBest != NULL && theSettings.mine_crowds)
         AimAdd(thePI, theBest);

@@ -144,8 +144,11 @@ search. A mine counts as full when the working gatherers or the AI's own citizen
 game counts only those that work. Every 10 seconds the citizens beyond the cap at a mine go to the nearest free mine of
 the kind, 20 at most. After each assignment pass the rebalance moves up to 2 gatherers (4 with `citizen_plan`
 `mine_slots`) from the resource with the most gatherers above its wanted count to a stone, gold or iron mine that is
-short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. Not ported yet: the test of the
-mine's tile that upstream makes, `local_mines`/`town_work` (off by default) and the overseas mines.
+short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. With `[ai_base] local_mines` (off in
+the shipped file) a mine whose drop site is more than 60 tiles from the citizen is another town's and is refused, and one
+within 40 tiles comes before the rest: the game's assignment otherwise sends citizens across the map and back.
+`AgeOfAISites.h` holds those two distances. Not ported yet: the test of the mine's tile that upstream makes, `town_work`
+(off by default) and the overseas mines.
 
 The game's assignment never moves a gatherer back to food either. With `food_plan` `back_to_food` (on in upstream's default, off in the shipped
 `ageofai.ini` until the [benchmark](benchmark.md) rates it as the AI `aoai-foodpull`), after
