@@ -1725,8 +1725,12 @@ void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                     EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theUnit->mComplexUnit->mGoalState);
                     if (theLocation != NULL) {
                         float theGX = theLocation->mLocation.GetX() - (float)theBaseX, theGY = theLocation->mLocation.GetY() - (float)theBaseY;
-                        if (theGX * theGX + theGY * theGY > 35.0f * 35.0f)
+                        if (theGX * theGX + theGY * theGY > 35.0f * 35.0f) {
+                            EEUnitBehavior* theAggressiveMarch = EEUnitBehavior::sTable.size() > 5 ? EEUnitBehavior::sTable[5] : NULL;
+                            if (theAggressiveMarch != NULL)
+                                theUnit->mComplexUnit->mBehavior = theAggressiveMarch;
                             continue;   // marching out
+                        }
                     }
                 }
                 if (theOwn.size() < 256)
