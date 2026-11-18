@@ -1493,6 +1493,18 @@ void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow)
                 sDefence[thePI].mCounterSiegeSkipped++;
             continue;
         }
+        for (int a = 1; a < thePicked; a++)   // nearest responders first
+            for (int b = a; b > 0; b--) {
+                EEUnit* theA = s.mSoldier[thePick[b]];
+                EEUnit* theB = s.mSoldier[thePick[b - 1]];
+                long theAX = theA->mTileX - theX, theAY = theA->mTileY - theY;
+                long theBX = theB->mTileX - theX, theBY = theB->mTileY - theY;
+                if (theAX * theAX + theAY * theAY >= theBX * theBX + theBY * theBY)
+                    break;
+                int theSwap = thePick[b];
+                thePick[b] = thePick[b - 1];
+                thePick[b - 1] = theSwap;
+            }
         int theOrdered = 0;
         for (int j = 0; j < thePicked && theAlready + theOrdered < DefenceRules::kCounterSiegeMost; j++) {
             EEUnit* theUnit = s.mSoldier[thePick[j]];
