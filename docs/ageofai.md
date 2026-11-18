@@ -90,7 +90,7 @@ the hook changes here.
 ## The early game
 
 An Age of AI player (with `[ai_base] early_towers` and `tower_bait`, both on) plays the playtester's opening. In the
-first two epochs it queues two guard towers by the town centre, four tiles out: one towards the map's centre, one on
+first two epochs it queues two guard towers by the town centre, four tiles out: one towards the nearest seen enemy building (or the map's centre when none is seen), one on
 the side where its citizens work. It adds up to two builders to every unfinished tower within 20 tiles of the town
 centre, every 10 game seconds. Up to the Bronze Age, a citizen that has an enemy soldier within five tiles, or one
 attacking it, and stands outside its towers' reach, walks to the nearest finished tower within 25 tiles and stands 1.5
