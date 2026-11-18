@@ -104,6 +104,9 @@ long EarlyTowerStone(EEComputerPlayer* inPlayer);
 EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, bool inBackwards);
 void MineCrowds(EECPResourceManager* inResources);
 void Rebalance(EECPResourceManager* inResources);
+// Before the assignment (food.c food_hunt, food_plan hunt_near): idle citizens hunt animals near a drop site while the
+// player is in the Stone Age. Off by default.
+void FoodHunt(EECPResourceManager* inResources);
 // After the rebalance (food.c food_pull): gatherers move to forage bushes while food is 2 or more short of its target
 void FoodPull(EECPResourceManager* inResources);
 struct FoodCounts {

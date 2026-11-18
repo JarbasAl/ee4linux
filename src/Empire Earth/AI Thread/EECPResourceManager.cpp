@@ -1521,6 +1521,7 @@ void EECPResourceManager::Update(unsigned long inTime)
             {
                 if (AgeOfAI::EngineOf(thePlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
                     AgeOfAI::SafetyTick(thePlayer, inTime);   // before the assignment
+                AgeOfAI::FoodHunt(this);
                 this->AssignGatherers();
                 AgeOfAI::Rebalance(this);
                 AgeOfAI::FoodPull(this);

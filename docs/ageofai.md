@@ -161,8 +161,13 @@ land, no enemy near, no known danger. The sim report's `intel.food_pulled` count
 With `food_plan` `forage_near` (off in the shipped file) the game's own bush search takes the free bush nearest a drop
 site that takes food, within two times the player's drop-off distance of the town centre for the pass that names a
 citizen and six times for the far one, where the game takes the first bush in centre order. The reach of the two passes
-is the game's own; only the choice of bush changes. `AgeOfAISites.h` holds the two multiples. Upstream's hunting
-(`hunt_near`, off by default) is not ported.
+is the game's own; only the choice of bush changes. `AgeOfAISites.h` holds the two multiples.
+
+With `food_plan` `hunt_near` (off in the shipped file), before each assignment in the Stone Age idle citizens hunt
+animals within `[ai_base] food_hunt_range` tiles (15 by default) of a Town Center, Capitol or Settlement. The animal is
+the free one nearest to such a drop site: food, an animal, fewer than three gatherers, on the citizen's land, with no
+enemy near and not a dangerous site. Upstream leaves tiger and wolf alone; this port does not resolve those type names,
+so the danger and enemy-near checks are the guard.
 
 The game puts no drop site by the forest its woodcutters work. With `[ai_base] wood_drop` on (the default), an Age of AI player
 looks every game minute for woodcutters whose tree is 15 or more tiles from a drop site. When 8 or more of them work within 8

@@ -3,7 +3,7 @@
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
 // Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, town_work (off by default), the
-// overseas mines, the wood and field searches, and food.c's animal search and its HUNT rule (off by default).
+// overseas mines, the wood and field searches, and the fields/settlement food rules (off by default).
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
@@ -131,6 +131,7 @@
 #include "ee/EECPCivilizationManager.h"
 #include "ee/EEUGGather.h"
 #include "ee/EEAIContinentManager.h"
+#include "ee/EEAreaUtilities.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
@@ -672,6 +673,120 @@ EEUnit* FoodBush(EECPResourceManager* inResources, EEComplexUnit* inUnit, long i
     return theBest;
 }
 
+}
+
+
+// HUNT NEAR (food_plan hunt_near, off in the shipped file; before the assignment): idle citizens hunt animals near a
+// drop site that takes hunters (Town Center, Capitol, Settlement), within [ai_base] food_hunt_range tiles, before farms.
+// The animal is the free one nearest to a drop site: food, an animal, gatherers below 3, the citizen's land, no enemy
+// near, not a dangerous site. Upstream's food_hunt and food_animal (food.c). Upstream leaves tiger and wolf alone; this
+// port does not resolve their type names, so the site's danger and the enemy-near checks stand in for that guard.
+void FoodHunt(EECPResourceManager* inResources)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    if (!theSettings.food_plan.hunt_near)
+        return;
+    long theEpoch = thePlayer->mTechnologies != NULL ? thePlayer->mTechnologies->mCurrentEpoch : -1;
+    if (theEpoch >= kFarmEpoch)
+        return;
+    if (inResources->mWantedGatherers[kResourceFood] <= inResources->mGatherers[kResourceFood].size())
+        return;
+
+    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
+    if (theBuild == NULL)
+        return;
+    unsigned thePI = thePlayer->mPlayerID & 15;
+    DropsCached(thePlayer);
+    const std::vector<Drop>& theDrops = sDrops[thePI].mDrops;
+    long theRange = gSettingsAI[thePlayer->GetDifficulty()].food_hunt_range;
+    if (theRange <= 0)
+        theRange = 15;
+
+    // the idle citizens, as AssignGatherers collects them: no build queue, on the map, with no goal or a waiting gather
+    std::vector<EEComplexUnit*> theIdle;
+    for (int j = 0; j < 7; j++) {
+        std::deque<EEComplexUnit*>& theList = inResources->mGatherers[j];
+        for (std::deque<EEComplexUnit*>::iterator it = theList.begin(); it != theList.end(); ++it) {
+            EEComplexUnit* theUnit = *it;
+            if (theUnit == NULL || theUnit->GetIsDisabled() || theUnit->mIsDetachedFromAI)
+                continue;
+            if (theUnit->GetUnitClass() == NULL || theUnit->GetUnitClass()->GetCategory() == kUnitCategoryNavalCitizen)
+                continue;
+            EEUnitGoal* theGoal = theUnit->GetLoadGoal();
+            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theGoal);
+            if (theUnit->mCitizenBuildQueue.size() == 0 && theUnit->GetHitPoints() > 0 && theUnit->GetTileX() != -10000
+                && theUnit->GetTileY() != -10000
+                && (theGoal == NULL || (theGather != NULL && theGather->mWaiting && theUnit->mCurrentPhysicsAction != 0))) {
+                // a citizen (not every complex unit that can gather)
+                EEUnitClass* theClass = theUnit->GetUnitClass();
+                if (theClass != NULL && IsCitizenUnit(theUnit))
+                    theIdle.push_back(theUnit);
+            }
+        }
+    }
+    if (theIdle.empty())
+        return;
+
+    for (size_t n = 0; n < theIdle.size(); n++) {
+        unsigned long theWanted = inResources->mWantedGatherers[kResourceFood];
+        unsigned long theHave = inResources->mGatherers[kResourceFood].size();
+        if (theWanted <= theHave)
+            break;
+        EEComplexUnit* theUnit = theIdle[n];
+        if (theUnit == NULL)
+            continue;
+        // the unit may already have been moved by an earlier iteration (defensive)
+        EEUGGather* theGoal = dynamic_cast<EEUGGather*>(theUnit->GetLoadGoal());
+        if (!(theUnit->GetLoadGoal() == NULL || (theGoal != NULL && theGoal->mWaiting)))
+            continue;
+
+        long theRegion = (long)gContinentManager.GetContinentID(theUnit);
+        EEUnit* theBest = NULL;
+        long theBestD = theRange * theRange + 1;
+        std::vector<EEUnit*> theNear;
+        for (size_t i = 0; i < theDrops.size(); i++) {
+            const Drop& theDrop = theDrops[i];
+            if (theDrop.mFood)   // granaries do not take hunters
+                continue;
+            theNear.clear();
+            GE2DPoint theCenter((float)theDrop.mX, (float)theDrop.mY);
+            EEGetUnitsInRadius(theCenter, (float)theRange, theNear);
+            for (size_t u = 0; u < theNear.size(); u++) {
+                EEUnit* theAnimal = theNear[u];
+                if (theAnimal == NULL || theAnimal->mUnitClass == NULL)
+                    continue;
+                if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
+                    continue;
+                if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal)
+                    continue;
+                // predators are not excluded by type name in this port; the danger and enemy-near checks guard the citizen
+                long theAX = theAnimal->mTileX, theAY = theAnimal->mTileY;
+                long theDX = theAX - theDrop.mX, theDY = theAY - theDrop.mY;
+                long theD2 = theDX * theDX + theDY * theDY;
+                if (theD2 >= theBestD)
+                    continue;
+                if ((unsigned long)gWorld.GetResourceUsers(theAnimal) >= 3)
+                    continue;
+                if ((long)gContinentManager.GetContinentID(theAnimal) != theRegion)
+                    continue;
+                if (theBuild->HasEnemyNear(theAX, theAY))
+                    continue;
+                if (SiteDanger(thePlayer, theAnimal, true, 2))
+                    continue;
+                theBest = theAnimal;
+                theBestD = theD2;
+            }
+        }
+        if (theBest == NULL)
+            continue;
+        unsigned long theBefore = inResources->mGatherers[kResourceFood].size();
+        inResources->SendToGather(theUnit, theBest, NULL);
+        if (inResources->mGatherers[kResourceFood].size() == theBefore)
+            break;
+    }
 }
 
 // FOOD PULL (food_plan back_to_food, on by default; after every assignment pass and the rebalance): while food is 2 or
