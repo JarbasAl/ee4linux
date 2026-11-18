@@ -884,8 +884,8 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
 // ones join as they are trained. Once the soldiers at the rally point are 1.3 times the enemy in the base, each attacks the
 // nearest enemy soldier. The muster ends when the enemy is gone (fewer than 3), when soldiers and towers can stand up to
 // it again, or when the enemy follows to the rally point a third time (then it fights where it is); a new muster waits
-// 30 s or 60 s. Not ported: the fight estimate (stats.c, off by default), the chat line, and the exceptions of unit_goal for
-// shore guns and garrisons (bunker.c, towns.c).
+// 30 s or 60 s. With fight_estimate, the sides are compared with the fight estimate instead of raw hit points x attack.
+// Not ported: the chat line, and the exceptions of unit_goal for shore guns and garrisons (bunker.c, towns.c).
 
 bool AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
 {
@@ -906,6 +906,7 @@ bool AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
 void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16];
+    static Stats::Side sMusterOwn, sMusterFoe, sMusterRally;
     unsigned idx = inPlayer->mPlayerID & 15;
     if (!Cfg(inPlayer->mPlayerID).muster || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
         return;
@@ -920,6 +921,11 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     std::vector<EEUnit*> theOwn, theEnemy;
     float theEnemyPower = 0, theOwnPower = 0, theTowerPower = 0, theEX = 0, theEY = 0;
     int theEnemies = 0;
+    bool theFightEstimate = Cfg(inPlayer->mPlayerID).fight_estimate;
+    if (theFightEstimate) {
+        Stats::Clear(sMusterOwn);
+        Stats::Clear(sMusterFoe);
+    }
     for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
         EEPlayer* thePlayer = gWorld.mPlayers[p];
         if (thePlayer == NULL)
@@ -931,6 +937,8 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             float theRange, theAttack;
             if (thePlayer == inPlayer && theD2 <= 22 * 22 && DefenceStats(theUnit, theRange, theAttack)) {
                 theTowerPower += (float)theUnit->mHitPoints * theAttack;
+                if (theFightEstimate)
+                    Stats::Add(sMusterOwn, theUnit);
                 continue;
             }
             if (!Roles::IsSoldier(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily, theUnit->mUnitClass->mRange))
@@ -941,6 +949,8 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                 if (theOwn.size() < 256)
                     theOwn.push_back(theUnit);
                 theOwnPower += UnitPower(theUnit);
+                if (theFightEstimate)
+                    Stats::Add(sMusterOwn, theUnit);
             } else if (thePlayer->mPlayerID > 0 && IsEnemyOf(inPlayer, thePlayer) && theD2 <= 22 * 22) {
                 float thePower = UnitPower(theUnit);
                 theEnemyPower += thePower;
@@ -949,10 +959,13 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                 theEnemies++;
                 if (theEnemy.size() < 128)
                     theEnemy.push_back(theUnit);
+                if (theFightEstimate)
+                    Stats::Add(sMusterFoe, theUnit);
             }
         }
     }
-    float theStand = theEnemyPower > 0 ? (theOwnPower + theTowerPower) / theEnemyPower : 1e6f;
+    float theStand = theFightEstimate ? Stats::Ratio(sMusterOwn, sMusterFoe)
+        : (theEnemyPower > 0 ? (theOwnPower + theTowerPower) / theEnemyPower : 1e6f);
     struct Local {
         static void Rally(Muster& ioMuster, long inBX, long inBY, float inEnemyPower, float inEX, float inEY)
         {
@@ -1003,12 +1016,18 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             return;
         }
         float theRallyPower = 0;
+        if (theFightEstimate)
+            Stats::Clear(sMusterRally);
         for (size_t k = 0; k < theOwn.size(); k++) {
             float theDX = (float)theOwn[k]->mTileX - theMuster.mRX, theDY = (float)theOwn[k]->mTileY - theMuster.mRY;
-            if (theDX * theDX + theDY * theDY <= 100)
+            if (theDX * theDX + theDY * theDY <= 100) {
                 theRallyPower += UnitPower(theOwn[k]);
+                if (theFightEstimate)
+                    Stats::Add(sMusterRally, theOwn[k]);
+            }
         }
-        float theGathered = theEnemyPower > 0 ? theRallyPower / theEnemyPower : 1e6f;
+        float theGathered = theFightEstimate ? Stats::Ratio(sMusterRally, sMusterFoe)
+            : (theEnemyPower > 0 ? theRallyPower / theEnemyPower : 1e6f);
         if (theGathered >= 1.3f) {   // strike
             for (size_t k = 0; k < theOwn.size(); k++) {
                 EEUnit* theTarget = Local::Nearest(theEnemy, theOwn[k]);
