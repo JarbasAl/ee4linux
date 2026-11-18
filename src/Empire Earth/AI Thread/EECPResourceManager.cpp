@@ -939,6 +939,8 @@ EEUnit* EECPResourceManager::FindForestTarget(long inCount, EEComplexUnit* inUni
     theTile.mY = 0;
     U2DPoint<long> theCenter;
     theCenter = U2DPoint<long>(this->mManager->mBuildManager->mTownCenterTile.mX, this->mManager->mBuildManager->mTownCenterTile.mY);
+    EEComputerPlayer* thePlayer = this->mManager->mPlayer;
+    const bool theAgeOfAI = thePlayer != NULL && AgeOfAI::EngineOf(thePlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI;
     EEUnit* theResult = NULL;
     if (theCenter.mX == -10000 || theCenter.mY == -10000)
         return theResult;
@@ -961,7 +963,8 @@ EEUnit* EECPResourceManager::FindForestTarget(long inCount, EEComplexUnit* inUni
                 if (theMapTile != NULL) {
                     for (RTSTileUnitNode* theNode = theMapTile->mUnits; theNode != NULL && theResult == NULL; theNode = theNode->mNext) {
                         EEUnit* theUnit = theNode->mUnit;
-                        if (theUnit != NULL && theUnit->GetUnitClass()->mResourceType == kResourceWood)
+                        if (theUnit != NULL && theUnit->GetUnitClass()->mResourceType == kResourceWood
+                            && !(theAgeOfAI && AgeOfAI::SiteDanger(thePlayer, theUnit, false, 3)))
                             theResult = theUnit;
                     }
                     if (theResult != NULL)
@@ -979,7 +982,8 @@ EEUnit* EECPResourceManager::FindForestTarget(long inCount, EEComplexUnit* inUni
             continue;
         for (RTSTileUnitNode* theNode = theMapTile->mUnits; theNode != NULL && theResult == NULL; theNode = theNode->mNext) {
             EEUnit* theUnit = theNode->mUnit;
-            if (theUnit != NULL && theUnit->GetUnitClass()->mResourceType == kResourceWood)
+            if (theUnit != NULL && theUnit->GetUnitClass()->mResourceType == kResourceWood
+                && !(theAgeOfAI && AgeOfAI::SiteDanger(thePlayer, theUnit, false, 3)))
                 theResult = theUnit;
         }
     }
