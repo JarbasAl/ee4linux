@@ -156,8 +156,13 @@ each assignment pass and the rebalance, while food is 2 or more gatherers short 
 move to food. Each comes from the resource of wood, stone, gold and iron with the most gatherers above its wanted count
 (2 or more), and goes to the free forage bush nearest to a drop site that takes food, within six times the player's
 drop-off distance of the base. The bush passes the game's own checks: explored, a free gatherer slot, the gatherer's
-land, no enemy near, no known danger. The sim report's `intel.food_pulled` counts the moves. Upstream's hunting
-(`hunt_near`) and the near-bush search (`forage_near`), both off by default, are not ported.
+land, no enemy near, no known danger. The sim report's `intel.food_pulled` counts the moves.
+
+With `food_plan` `forage_near` (off in the shipped file) the game's own bush search takes the free bush nearest a drop
+site that takes food, within two times the player's drop-off distance of the town centre for the pass that names a
+citizen and six times for the far one, where the game takes the first bush in centre order. The reach of the two passes
+is the game's own; only the choice of bush changes. `AgeOfAISites.h` holds the two multiples. Upstream's hunting
+(`hunt_near`, off by default) is not ported.
 
 The game puts no drop site by the forest its woodcutters work. With `[ai_base] wood_drop` on (the default), an Age of AI player
 looks every game minute for woodcutters whose tree is 15 or more tiles from a drop site. When 8 or more of them work within 8

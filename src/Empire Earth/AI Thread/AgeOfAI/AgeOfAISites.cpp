@@ -3,7 +3,7 @@
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
 // Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, town_work (off by default), the
-// overseas mines, the wood and field searches, and food.c's animal search and its HUNT and NEAR rules (off by default).
+// overseas mines, the wood and field searches, and food.c's animal search and its HUNT rule (off by default).
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
@@ -348,6 +348,58 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
     return theBest;
 }
 
+}
+
+// FORAGE NEAR ([ai_base] food_plan forage_near, off in the shipped file): the food search takes the free bush nearest to a
+// drop site that takes food, within the reach of the pass - two times the player's drop-off distance for the pass that
+// names a citizen, six for the one that does not - with the game's own checks. Upstream's food_bush and food_near_pick.
+// Called from EECPResourceManager::FindFarm, the game's own first-bush-in-centre-order search.
+EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit* inUnit)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
+    if (theBuild == NULL || !SettingsOf(thePlayer).food_plan.forage_near)
+        return NULL;
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theBaseX == -10000 || theBaseY == -10000)
+        return NULL;
+    unsigned thePI = thePlayer->mPlayerID & 15;
+    DropsCached(thePlayer);
+    unsigned long theCap = thePlayer->mMiningLimit;
+    long theReach2 = SitesRules::ForageReach2(thePlayer->GetDropOffDistance(), inNear);
+    long theRegion = inUnit != NULL ? (long)gContinentManager.GetContinentID(inUnit) : 0;
+    EEUnit* theBest = NULL;
+    long theBestD = 0x7FFFFFFF;
+    for (unsigned long k = 0; k < thePlayer->GetNumResourceCenters(); k++) {
+        EECPResourceCenter* theZone = thePlayer->GetResourceCenter(k);
+        if (theZone == NULL || !theZone->mIsActive)
+            continue;
+        EEUnit* theSite = theZone->FindResourceUnit(kResourceFood);
+        if (theSite == NULL || theSite->mResourceAmount <= 0 || theSite->mUnitClass == NULL)
+            continue;
+        if ((long)theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
+            continue;
+        long theDX = theSite->mTileX - theBaseX, theDY = theSite->mTileY - theBaseY;
+        if (theDX * theDX + theDY * theDY >= theReach2)
+            continue;
+        int theIndex = -1;
+        long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, true, &theIndex);   // a drop site that takes food
+        if (theIndex < 0 || theD >= theBestD)
+            continue;
+        if (!ExploredBy(theSite, thePlayer))
+            continue;
+        if ((unsigned long)gWorld.GetResourceUsers(theSite) >= theCap)
+            continue;
+        if (inUnit != NULL && (long)gContinentManager.GetContinentID(theSite) != theRegion)
+            continue;
+        if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY))
+            continue;
+        if (SiteDanger(thePlayer, theSite, true, 2))
+            continue;
+        theBest = theSite;
+        theBestD = theD;
+    }
+    return theBest;
 }
 
 // The mine search of an Age of AI player (EECPResourceManager::FindResourceTarget): with mine_choice the free mine nearest to a

@@ -43,11 +43,21 @@ static void TestTheCitizensTile()
     Check(MineLocal(200, 100, 130, 100) == -1, "70 tiles from that citizen: another town's");
 }
 
+static void TestForageReach()
+{
+    // upstream's food.c: near = 2 x the drop-off distance, far = 6 x, compared squared
+    Check(ForageReach2(10, true) == 400, "a drop-off distance of 10: the near pass reaches 20 tiles (400 squared)");
+    Check(ForageReach2(10, false) == 3600, "and the far pass 60 tiles (3600 squared)");
+    Check(ForageReach2(0, true) == 0, "no drop-off distance: nothing in reach");
+    Check(ForageReach2(14, false) == 7056, "14 tiles: 84 squared, 7056");
+}
+
 int main()
 {
     TestOwnTown();
     TestAnotherTown();
     TestTheCitizensTile();
+    TestForageReach();
     printf("%d checks, %d failed\n", sChecks, sFailures);
     return sFailures ? 1 : 0;
 }

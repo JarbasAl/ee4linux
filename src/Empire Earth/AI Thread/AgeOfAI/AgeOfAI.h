@@ -145,6 +145,9 @@ struct DefenceCounts {
 };
 DefenceCounts DefenceCountsOf(unsigned long inPlayerID);
 // Idle citizens home (econ.c citizens_home, AgeOfAIHome.h; CitizensHome above)
+// Forage near (food_plan forage_near, food.c): the free bush nearest a drop site that takes food, within the reach of
+// the pass, or NULL (EECPResourceManager::FindFarm takes it before the game's first bush in centre order)
+EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit* inUnit);
 struct HomeCounts {
     unsigned long mSent;        // idle citizens sent to a town
     unsigned long mBaseMoved;   // base points moved to a town

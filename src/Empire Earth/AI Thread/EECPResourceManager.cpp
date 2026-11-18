@@ -803,6 +803,12 @@ void EECPResourceManager::FindMines(unsigned long inCount, bool inNear, std::vec
 // of the town center; bushes not visible are skipped
 EEUnit* EECPResourceManager::FindFarm(bool inNeedsDropSite, bool inNear, EEComplexUnit* inUnit)
 {
+    // an Age of AI player with food_plan forage_near takes the bush nearest a food drop site (AgeOfAI::FindForage)
+    if (AgeOfAI::EngineOf(this->mManager->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI) {
+        EEUnit* theNear = AgeOfAI::FindForage(this, inNear, inUnit);
+        if (theNear != NULL)
+            return theNear;
+    }
     EETileDistanceLess theTile(0, 0);
     EEComputerPlayer* thePlayer = this->mManager->mPlayer;
     long theRadius = thePlayer->mDropOffDistance;

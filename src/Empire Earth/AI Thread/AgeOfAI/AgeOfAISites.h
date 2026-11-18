@@ -12,6 +12,15 @@ namespace SitesRules {
 const long kLocalMineTiles = 40;   // a mine whose drop site is this near the citizen is its own town's
 const long kLocalMineFar = 60;     // and past this, the mine is another town's: refused while local_mines is on
 
+const long kForageNear = 2;    // x the drop-off distance: the reach of the food pass that names a citizen
+const long kForageFar = 6;     // x it: the reach of the pass that does not
+// The squared reach of a food pass around the base, from the player's drop-off distance.
+inline long ForageReach2(long inDropOff, bool inNear)
+{
+    long theReach = inDropOff * (inNear ? kForageNear : kForageFar);
+    return theReach * theReach;
+}
+
 // The class of the mine next to inDropX/Y for a citizen at inAtX/Y, by the squared-free distances upstream compares:
 // -1 another town's mine (refused), 0 a mine out of reach of the citizen's town, 1 its own town's (taken first).
 inline int MineLocal(long inDropX, long inDropY, long inAtX, long inAtY)
