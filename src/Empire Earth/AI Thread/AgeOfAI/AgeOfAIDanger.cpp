@@ -3,7 +3,7 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/attack.c (threat_refresh,
 // route_covered, raiders_scan, hurt_note, site_danger_res, the damage memory of citizens_safety) and dll/ai/cover.c (cv_mem_raider)
-// at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. Not ported yet: raid_held (defence.c), walled_out and ship_reach_exact (off by default),
+// at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. Not ported yet: raid_held (defence.c), walled_out/behind_walls (off by default),
 // the danger map for routes, and the rest of citizens_safety (the citizens sent back, the strays, the flight, the shelter).
 #include <windows.h>
 #include <unistd.h>
@@ -303,8 +303,15 @@ bool MemoryRaider(EEPlayer* inPlayer, long inX, long inY, int inR0, int inRMax)
             theReach = inRMax;
         if (theReach < inR0)
             theReach = inR0;
-        if (labs(theRecord.mX - inX) <= theReach && labs(theRecord.mY - inY) <= theReach)
-            return true;
+        if (labs(theRecord.mX - inX) > theReach || labs(theRecord.mY - inY) > theReach)
+            continue;
+        if (Cfg(inPlayer->mPlayerID).ship_reach_exact && (theClass->mCategory == kUnitCategoryNaval || theClass->mCategory == kUnitCategorySubmergedNaval)) {
+            float theShip = theRange + 1.0f;   // SHIP_SLACK: a ship counts within its own reach, round
+            long theDX = theRecord.mX - inX, theDY = theRecord.mY - inY;
+            if ((float)(theDX * theDX + theDY * theDY) > theShip * theShip)
+                continue;
+        }
+        return true;
     }
     return false;
 }
@@ -312,7 +319,7 @@ bool MemoryRaider(EEPlayer* inPlayer, long inX, long inY, int inR0, int inRMax)
 }
 
 // Enemy soldiers that this player sees within reach of a tile: each by its own reach (its range + RAID_MARGIN, at least r0, at
-// most the box). The first raider found answers (attack.c raiders_scan without the kinds; walled_out and ship_reach_exact are off by default)
+// most the box). The first raider found answers (attack.c raiders_scan without the kinds; walled_out/behind_walls is off by default)
 bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)
 {
     int theMax = Cfg(inPlayer->mPlayerID).citizen_threats ? kRaidFar : kRaidMax;
@@ -337,6 +344,12 @@ bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)
                 theReach = inR0;
             if (labs(theUnit->mTileX - inX) > theReach || labs(theUnit->mTileY - inY) > theReach)
                 continue;
+            if (Cfg(inPlayer->mPlayerID).ship_reach_exact && (theCategory == kUnitCategoryNaval || theCategory == kUnitCategorySubmergedNaval)) {
+                float theShip = theRange + 1.0f;   // SHIP_SLACK: a ship counts within its own reach, round
+                long theDX = theUnit->mTileX - inX, theDY = theUnit->mTileY - inY;
+                if ((float)(theDX * theDX + theDY * theDY) > theShip * theShip)
+                    continue;
+            }
             if (SeenBy(theUnit, inPlayer))
                 return true;
         }

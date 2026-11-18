@@ -195,9 +195,11 @@ an attack (unassigned citizens marching to an enemy building), and sends gathere
 site has raiders near, citizens hurt near it, or lies behind a known enemy defence; builders only at fields, since the wall
 manager sends the builders of walls and towers again and again. The repair round's order for a building is refused while enemy soldiers it
 knows stand within 8 tiles, and (`repair_one_walker`) while another of its citizens already holds a build goal on the building. `AgeOfAIDanger.cpp`
-holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. Not ported yet:
-`raid_held` (a town that holds against the raiders), `behind_walls` and `ship_reach_exact` (off by default), the danger map
-the route searches read, and the flight of an overrun base and the shelter in a fortress (they need `defence.c` and `bunker.c`).
+holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. With
+`ship_reach_exact` (off by default), a naval or submerged raider counts only within its own range plus one tile, in a
+round distance. Not ported yet: `raid_held` (a town that holds against the raiders), `behind_walls` (off by default),
+the danger map the route searches read, and the flight of an overrun base and the shelter in a fortress (they need
+`defence.c` and `bunker.c`).
 
 An enemy army in the base is met as one force. Every game three seconds, with `[ai_base] muster` on (the default), an
 Age of AI player counts the enemy soldiers within 22 tiles of its base against its own soldiers within 35 tiles and its towers
