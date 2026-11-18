@@ -812,7 +812,7 @@ void FoodHunt(EECPResourceManager* inResources)
         unsigned long theBefore = inResources->mGatherers[kResourceFood].size();
         inResources->SendToGather(theUnit, theBest, NULL);
         if (inResources->mGatherers[kResourceFood].size() == theBefore)
-            break;
+            continue;
     }
 }
 
