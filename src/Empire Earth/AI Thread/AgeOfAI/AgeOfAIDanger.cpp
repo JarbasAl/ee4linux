@@ -1267,15 +1267,20 @@ int MilitiaAnswer(EEPlayer* inPlayer, const SettingsAI& inSettings, SiegeScan& i
     }
     if (theEnemies > DefenceRules::kMilitiaMostEnemies)
         return 0;
-    for (int c = 0, n = 0; c < ioScan.mCitizens && n < DefenceRules::kMilitiaPerEnemy * theEnemies; c++)
-        if (ioScan.mCitizen[c] != NULL && Box(ioScan.mCX[c], theX) <= 10 && Box(ioScan.mCY[c], theY) <= 10) {
-            theCitizenPower += UnitPower(ioScan.mCitizen[c]);
-            n++;
-            if (theEstimate)
-                Stats::Add(sMilitiaOwn, ioScan.mCitizen[c]);
-            if (Stats::Speed(ioScan.mCitizen[c]) > theCitizenSpeed)
-                theCitizenSpeed = Stats::Speed(ioScan.mCitizen[c]);
-        }
+    for (int c = 0, n = 0; c < ioScan.mCitizens && n < DefenceRules::kMilitiaPerEnemy * theEnemies; c++) {
+        EEUnit* theCitizen = ioScan.mCitizen[c];
+        if (theCitizen == NULL || Box(ioScan.mCX[c], theX) > 10 || Box(ioScan.mCY[c], theY) > 10)
+            continue;
+        EEUnitGoal* theGoal = GoalOf(theCitizen);
+        if (theGoal != NULL && dynamic_cast<EEUGGather*>(theGoal) == NULL)
+            continue;   // only gathering or idle citizens go
+        theCitizenPower += UnitPower(theCitizen);
+        n++;
+        if (theEstimate)
+            Stats::Add(sMilitiaOwn, theCitizen);
+        if (Stats::Speed(theCitizen) > theCitizenSpeed)
+            theCitizenSpeed = Stats::Speed(theCitizen);
+    }
     // early militia: against soldiers, only next to own soldiers or under own towers, and only without a citizen lost
     if (inSettings.early_militia && theSoldiers) {
         bool theCover = EarlyCover(inPlayer, theX, theY);
