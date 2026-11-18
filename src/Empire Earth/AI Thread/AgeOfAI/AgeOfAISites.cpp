@@ -791,6 +791,8 @@ void FoodHunt(EECPResourceManager* inResources)
                     continue;
                 if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal)
                     continue;
+                if (!ExploredBy(theAnimal, thePlayer))
+                    continue;
                 // predators are not excluded by type name in this port; the danger and enemy-near checks guard the citizen
                 long theAX = theAnimal->mTileX, theAY = theAnimal->mTileY;
                 long theDX = theAX - theDrop.mX, theDY = theAY - theDrop.mY;
@@ -883,6 +885,8 @@ void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow)
             if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
                 continue;
             if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal)
+                continue;
+            if (!ExploredBy(theAnimal, inPlayer))
                 continue;
             Food theItem = {theAnimal->mTileX, theAnimal->mTileY, theAnimal->mResourceAmount};
             theFood.push_back(theItem);
