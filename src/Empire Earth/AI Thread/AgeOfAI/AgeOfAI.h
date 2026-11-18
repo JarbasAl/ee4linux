@@ -126,6 +126,8 @@ bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0);
 void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow);
 // An enemy army in the base: the defenders gather beyond it, then strike (MusterTick, every 3 game seconds)
 void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+// Hold the town ([ai_base] hold_town, off by default): keep home soldiers from trickling out, sortie when strong, hold/retreat when weak
+void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 // A building with a ground attack, and its range and attack (attack.c defence_stats); a player the stances make an enemy (is_enemy)
 bool DefenceStats(EEUnit* inUnit, float& outRange, float& outAttack);
 bool IsEnemyOf(EEPlayer* inPlayer, EEPlayer* inOther);

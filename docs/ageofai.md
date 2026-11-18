@@ -208,6 +208,8 @@ times the enemy in the base, each attacks the nearest enemy soldier. The muster 
 when soldiers and towers can hold the base again, or when the enemy follows to the rally point a third time; a new muster
 waits 30 or 60 seconds. While the base is mustering, citizens in danger flee to the rally point instead of working through the overrun. The shelter in a fortress is not ported.
 
+With `[ai_base] hold_town` on (off by default), home soldiers within 35 tiles of the base hold the town against seen enemies (soldiers and siege) instead of trickling out. When no enemy is near they are freed; when strong enough they sortie together; when weak they retreat to a guard point and hold. While mustering, hold-the-town does not interfere. Attack-subgroup, landing, and garrison exceptions are not ported.
+
 ## Outdated units attack
 
 A unit type's tech has a last epoch. The game offers the type up to that epoch, and a line upgrade turns the units of a
@@ -250,7 +252,7 @@ A unit that cannot move never hits one that outranges it, and an outranged unit 
 Artillery cannot hit a unit that has closed inside its minimum range, and area damage counts up to 2 neighbours of the
 target. The ratio of two sides is the square root of the time the enemy needs over the time the own side needs, so twice
 the units of one type give 2. The citizen militia uses it (`early_militia`, `militia_estimate`, and `fight_estimate=1`),
-and so does counter-fire. Muster and hold-the-town do not use it yet.
+and so do counter-fire, muster, and hold-the-town when `fight_estimate` is on.
 
 ## Counter-fire
 

@@ -135,6 +135,7 @@
 #include "ee/EEUGLocation.h"
 #include "ee/EEUGAttackUnit.h"
 #include "ee/EEAIContinentManager.h"
+#include "ee/EEUnitBehavior.h"
 #include "AgeOfAI/AgeOfAIStats.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIDefence.h"
@@ -560,6 +561,11 @@ struct Muster {
     float mRX, mRY;
     unsigned long mSince, mCool, mCoolLength;
 } sMuster[16];
+
+struct HoldTown {
+    bool mHolding;
+    unsigned long mSortieTime;
+} sHoldTown[16];
 
 }
 
@@ -1676,6 +1682,138 @@ TowerLayoutCounts TowerLayoutCountsOf(unsigned long inPlayerID)
 {
     unsigned idx = inPlayerID & 15;
     return TowerLayoutCounts{sTowersQueued[idx], sTowersSkipped[idx]};
+}
+
+void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    static Stats::Side sHoldOwn, sHoldFoe;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.hold_town || sMuster[idx].mOn || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    HoldTown& theHold = sHoldTown[idx];
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL || theCivilization->mBuildManager->mTownCenterTile.mX == -10000) {
+        theHold.mHolding = false;
+        return;
+    }
+    long theBaseX = theCivilization->mBuildManager->mTownCenterTile.mX, theBaseY = theCivilization->mBuildManager->mTownCenterTile.mY;
+    std::vector<EEUnit*> theOwn, theEnemy;
+    float theEnemyPower = 0, theOwnPower = 0, theEX = 0, theEY = 0;
+    bool theFightEstimate = theSettings.fight_estimate;
+    if (theFightEstimate) {
+        Stats::Clear(sHoldOwn);
+        Stats::Clear(sHoldFoe);
+    }
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* thePlayer = gWorld.mPlayers[p];
+        if (thePlayer == NULL)
+            continue;
+        for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || theUnit->mTileX == -10000)
+                continue;
+            long theDX = theUnit->mTileX - theBaseX, theDY = theUnit->mTileY - theBaseY, theD2 = theDX * theDX + theDY * theDY;
+            unsigned long theCategory = theUnit->mUnitClass->mCategory;
+            unsigned long theFamily = theUnit->mUnitClass->mFamily;
+            float theRange = theUnit->mUnitClass->mRange;
+            if (thePlayer == inPlayer) {
+                if (theD2 > 35 * 35 || !Roles::IsSoldier(theCategory, theFamily, theRange))
+                    continue;
+                if (theUnit->mComplexUnit != NULL) {
+                    EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theUnit->mComplexUnit->mGoalState);
+                    if (theLocation != NULL) {
+                        float theGX = theLocation->mLocation.GetX() - (float)theBaseX, theGY = theLocation->mLocation.GetY() - (float)theBaseY;
+                        if (theGX * theGX + theGY * theGY > 35.0f * 35.0f)
+                            continue;   // marching out
+                    }
+                }
+                if (theOwn.size() < 256)
+                    theOwn.push_back(theUnit);
+                theOwnPower += UnitPower(theUnit);
+                if (theFightEstimate)
+                    Stats::Add(sHoldOwn, theUnit);
+            } else if (thePlayer->mPlayerID > 0 && IsEnemyOf(inPlayer, thePlayer) && theD2 <= 35 * 35) {
+                unsigned theRoles = Roles::RolesOf(theCategory, theFamily, theRange);
+                bool theThreat = Roles::IsSoldier(theCategory, theFamily, theRange) || (theRoles & Roles::kSiege);
+                if (!theThreat || !SeenBy(theUnit, inPlayer))
+                    continue;
+                float thePower = UnitPower(theUnit);
+                theEnemyPower += thePower;
+                theEX += (float)theUnit->mTileX * thePower;
+                theEY += (float)theUnit->mTileY * thePower;
+                if (theEnemy.size() < 128)
+                    theEnemy.push_back(theUnit);
+                if (theFightEstimate)
+                    Stats::Add(sHoldFoe, theUnit);
+            }
+        }
+    }
+    EEUnitBehavior* theAggressive = EEUnitBehavior::sTable.size() > 5 ? EEUnitBehavior::sTable[5] : NULL;
+    EEUnitBehavior* theGuard = EEUnitBehavior::sTable.size() > 2 ? EEUnitBehavior::sTable[2] : NULL;
+    if (theEnemy.empty()) {
+        for (size_t k = 0; k < theOwn.size(); k++) {
+            EEComplexUnit* theComplex = theOwn[k]->mComplexUnit;
+            if (theAggressive != NULL && theComplex != NULL)
+                theComplex->mBehavior = theAggressive;
+        }
+        theHold.mHolding = false;
+        return;
+    }
+    float theStand = theFightEstimate ? Stats::Ratio(sHoldOwn, sHoldFoe)
+        : (theEnemyPower > 0 ? theOwnPower / theEnemyPower : 1e6f);
+    if (theStand >= 1.3f && (theHold.mSortieTime == 0 || inNow < theHold.mSortieTime || inNow - theHold.mSortieTime >= 60000)) {
+        for (size_t k = 0; k < theOwn.size(); k++) {
+            EEUnit* theUnit = theOwn[k];
+            EEComplexUnit* theComplex = theUnit->mComplexUnit;
+            if (theAggressive != NULL && theComplex != NULL)
+                theComplex->mBehavior = theAggressive;
+            EEUnit* theBest = NULL;
+            long theBestD = 0x7FFFFFFF;
+            for (size_t j = 0; j < theEnemy.size(); j++) {
+                EEUnit* theTarget = theEnemy[j];
+                if (theTarget->mHitPoints <= 0)
+                    continue;
+                long theTX = theTarget->mTileX - theUnit->mTileX, theTY = theTarget->mTileY - theUnit->mTileY, theD = theTX * theTX + theTY * theTY;
+                if (theD < theBestD) {
+                    theBestD = theD;
+                    theBest = theTarget;
+                }
+            }
+            if (theBest != NULL)
+                AttackUnit(theUnit, theBest);
+        }
+        theHold.mSortieTime = inNow != 0 ? inNow : 1;
+        theHold.mHolding = false;
+        return;
+    }
+    if (theStand < 1.2f) {
+        float theCX = theEnemyPower > 0 ? theEX / theEnemyPower : (float)theBaseX + 1.0f;
+        float theCY = theEnemyPower > 0 ? theEY / theEnemyPower : (float)theBaseY;
+        float theDX = (float)theBaseX - theCX, theDY = (float)theBaseY - theCY, theLength = sqrtf(theDX * theDX + theDY * theDY);
+        if (theLength < 1.0f) {
+            theDX = 1.0f;
+            theDY = 0.0f;
+            theLength = 1.0f;
+        }
+        float theHX = (float)theBaseX + 0.5f + theDX / theLength * 6.0f, theHY = (float)theBaseY + 0.5f + theDY / theLength * 6.0f;
+        for (size_t k = 0; k < theOwn.size(); k++) {
+            EEUnit* theUnit = theOwn[k];
+            EEComplexUnit* theComplex = theUnit->mComplexUnit;
+            if (theGuard != NULL && theComplex != NULL)
+                theComplex->mBehavior = theGuard;
+            float theUX = (float)theUnit->mTileX - theHX, theUY = (float)theUnit->mTileY - theHY;
+            if (theUX * theUX + theUY * theUY <= 16.0f)
+                continue;
+            EEUGLocation* theLocation = theUnit->mComplexUnit != NULL ? dynamic_cast<EEUGLocation*>(theUnit->mComplexUnit->mGoalState) : NULL;
+            if (theLocation != NULL && fabsf(theLocation->mLocation.GetX() - theHX) < 2.0f && fabsf(theLocation->mLocation.GetY() - theHY) < 2.0f)
+                continue;
+            if (theUnit->mComplexUnit != NULL)
+                MoveTo(theUnit->mComplexUnit, theHX + (float)(k % 5) - 2.0f, theHY + (float)(k / 5 % 5) - 2.0f);
+        }
+        theHold.mHolding = true;
+    }
 }
 
 }
