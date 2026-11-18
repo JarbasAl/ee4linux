@@ -968,8 +968,10 @@ std::string PlayersJson(const Sample& inSample)
                      (int)p.mWanted[1], (int)p.mWanted[2], (int)p.mWanted[3], (int)p.mWanted[4], (int)p.mDropSites[0], (int)p.mDropSites[1],
                      (int)p.mDropSites[2], (int)p.mDropSites[3], (int)p.mDropSites[4], (int)p.mDropSites[5], (int)p.mDropSites[6],
                      (int)p.mDropDistance[0], (int)p.mDropDistance[1], (int)p.mDropDistance[2], (int)p.mDropDistance[3], (int)p.mDropDistance[4], (int)p.mTechs);
-        char theText[1024];
-        snprintf(theText, sizeof(theText),
+        // The record grows with the empire (a long game's intel and gatherer lines are long), so the room it gets is
+        // the room its parts took, not a fixed one a large sample would be cut in the middle of.
+        std::string theText(sizeof theIntel + sizeof theGatherers + 512, '\0');
+        int theLength = snprintf(&theText[0], theText.size(),
                  "%s{\"index\": %lu, \"engine\": \"%s\", \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "
                  "\"victory_units\": %ld, \"citizens\": %ld, \"army\": %ld, \"buildings\": %ld, \"strength\": %ld, "
                  "\"value\": %ld, \"resources\": {\"food\": %ld, \"wood\": %ld, \"stone\": %ld, \"gold\": %ld, "
@@ -981,6 +983,7 @@ std::string PlayersJson(const Sample& inSample)
                  p.mHuman ? "true" : "false", p.mResult, p.mEpoch, p.mPopulation,
                  p.mVictoryUnits, p.mCitizens, p.mArmy, p.mBuildings, p.mStrength, p.mValue, p.mResources[0],
                  p.mResources[1], p.mResources[2], p.mResources[3], p.mResources[4], theIntel, theGatherers);
+        theText.resize(theLength > 0 ? (size_t)theLength : 0);
         theOut += theText;
     }
     return theOut + "]";
