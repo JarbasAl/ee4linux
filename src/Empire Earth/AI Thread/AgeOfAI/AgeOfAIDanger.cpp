@@ -730,8 +730,10 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
             if (theUnit == inCitizen || theUnit->mHitPoints <= 0 || theUnit->mComplexUnit == NULL)
                 continue;
             EEUGBuildRepair* theGoal = dynamic_cast<EEUGBuildRepair*>(theUnit->mComplexUnit->mGoalState);
-            if (theGoal != NULL && theGoal->mTarget == inBuilding)
+            if (theGoal != NULL && theGoal->mTarget == inBuilding) {
+                sSafety[thePI].mRefusedRepairs++;
                 return true;
+            }
         }
     if (Cfg(inPlayer->mPlayerID).repair_safe_way && inCitizen != NULL
         && (PathRaided(inPlayer, inCitizen->mTileX, inCitizen->mTileY, inBuilding->mTileX, inBuilding->mTileY)
