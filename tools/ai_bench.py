@@ -165,12 +165,23 @@ class Budget:
     def __init__(self, games):
         self.mGames = games
         self.mUsed = 0
+        self.mStopped = False
         self.mCondition = threading.Condition()
+
+    def stop(self):
+        """Wake every call that waits for slots, and fail it: the run is ending."""
+        with self.mCondition:
+            self.mStopped = True
+            self.mCondition.notify_all()
 
     def take(self, games):
         with self.mCondition:
             while self.mUsed + games > self.mGames:
+                if self.mStopped:
+                    raise concurrent.futures.CancelledError("the run is ending")
                 self.mCondition.wait()
+            if self.mStopped:
+                raise concurrent.futures.CancelledError("the run is ending")
             self.mUsed += games
 
     def give(self, games):
@@ -204,7 +215,11 @@ def play_task(args, budget, options, profiles, engines, scenario, first, second,
             if not report.exists():
                 problems.append(f"{scenario} seed {seed} {first} against {second}: no report")
                 continue
-            result = json.loads(report.read_text())
+            try:
+                result = json.loads(report.read_text())
+            except ValueError:
+                problems.append(f"{scenario} seed {seed} {first} against {second}: the report cannot be read")
+                continue
             row = game_row(result, scenario, seed, seats)
             if row is None:
                 problems.append(f"{scenario} seed {seed} {first} against {second}: not finished: {result.get('error')}")
@@ -259,14 +274,19 @@ def play(args):
             futures = [pool.submit(play_task, args, budget, options, profiles, engines, scenario, first, second,
                                    todo, node)
                        for node, (scenario, options, first, second, todo) in enumerate(tasks)]
-            for future in concurrent.futures.as_completed(futures):
-                rows, problems = future.result()
-                for problem in problems:
-                    print(f"ai_bench: {problem}", file=sys.stderr)
-                for row in rows:
-                    ledger.write(json.dumps(row) + "\n")
-                ledger.flush()
-                played += len(rows)
+            try:
+                for future in concurrent.futures.as_completed(futures):
+                    rows, problems = future.result()
+                    for problem in problems:
+                        print(f"ai_bench: {problem}", file=sys.stderr)
+                    for row in rows:
+                        ledger.write(json.dumps(row) + "\n")
+                    ledger.flush()
+                    played += len(rows)
+            except BaseException:
+                # the calls still waiting for slots would wait for ever, and the pool would never close
+                budget.stop()
+                raise
     print(f"games: {planned} in, {played} out; ledger {args.out / 'games.jsonl'}")
     return 0 if played == planned else 1
 

@@ -3,6 +3,7 @@
   python3 -I tests/tools/test_ai_bench.py
 """
 import math
+import concurrent.futures
 import pathlib
 import sys
 import threading
@@ -123,6 +124,30 @@ class Budget(unittest.TestCase):
         budget.give(2)
         budget.take(2)
         self.assertEqual(budget.mUsed, 4)
+
+    def test_a_stopped_run_fails_the_calls_that_wait(self):
+        # a run that ends must not leave a worker waiting for slots for ever: the pool would never close
+        budget = ai_bench.Budget(2)
+        budget.take(2)
+        budget.stop()
+        with self.assertRaises(concurrent.futures.CancelledError):
+            budget.take(1)
+
+    def test_stop_wakes_a_call_that_already_waits(self):
+        budget = ai_bench.Budget(1)
+        budget.take(1)
+        waited = []
+        def waiting():
+            try:
+                budget.take(1)
+            except concurrent.futures.CancelledError:
+                waited.append(True)
+        thread = threading.Thread(target=waiting)
+        thread.start()
+        thread.join(0.2)
+        budget.stop()
+        thread.join(2)
+        self.assertEqual(waited, [True])
 
     def test_a_call_waits_while_the_slots_are_taken(self):
         # two seeds with eight slots: the fifth call has to wait for one to end

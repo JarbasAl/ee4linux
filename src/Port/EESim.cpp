@@ -1084,7 +1084,10 @@ void WriteReport(int inCode, const std::string& inError)
         fflush(stdout);
         return;
     }
-    std::string theTemporary = sOptions.mReport + ".tmp";
+    // The report goes beside its name and is renamed into place, so a reader never sees half of one. The temporary
+    // name carries this process: two sims told to write one report each write their own, and the last rename wins with
+    // a whole file, where a shared temporary left the two halves of a report mixed together.
+    std::string theTemporary = sOptions.mReport + ".tmp." + std::to_string((long)getpid());
     if (FILE* theFile = fopen(theTemporary.c_str(), "wb")) {
         fwrite(j.data(), 1, j.size(), theFile);
         fclose(theFile);
