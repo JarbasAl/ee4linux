@@ -197,7 +197,7 @@ knows stand within 8 tiles, and (`repair_one_walker`) while another of its citiz
 `repair_safe_way` (off by default), it is also refused when known enemy soldiers stand on the way or known enemy towers cover the route.
 `AgeOfAIDanger.cpp` holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. With
 `ship_reach_exact` (off by default), a naval or submerged raider counts only within its own range plus one tile, in a
-round distance. Not ported yet: `raid_held` (a town that holds against the raiders), `behind_walls` (off by default),
+round distance. With `raid_held` (ported, set to `0` in the shipped config to preserve default behaviour and benchmark-ledger comparability until re-rated), a raided or hurt site the town holds on the fight estimate is not treated as dangerous. Not ported yet: `behind_walls` (off by default),
 the danger map the route searches read, and the flight of an overrun base and the shelter in a fortress (they need
 `defence.c` and `bunker.c`).
 

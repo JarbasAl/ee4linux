@@ -3,8 +3,8 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/attack.c (threat_refresh,
 // route_covered, raiders_scan, hurt_note, site_danger_res, the damage memory of citizens_safety) and dll/ai/cover.c (cv_mem_raider)
-// at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. Not ported yet: raid_held (defence.c), walled_out/behind_walls (off by default),
-// the danger map for routes, and the rest of citizens_safety (the citizens sent back, the strays, the flight, the shelter).
+// at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. Not ported yet: walled_out/behind_walls (off by default),
+// the danger map for routes, and the rest of citizens_safety (the flight of an overrun base, the shelter in a fortress).
 #include <windows.h>
 #include <unistd.h>
 #include <algorithm>
@@ -446,15 +446,75 @@ bool NearestDrop(EEPlayer* inPlayer, long inX, long inY, bool inFood, long& outX
 
 }
 
+namespace {
+
+struct RaidHeldCell {
+    int mCX, mCY;
+    unsigned long mTime;
+    bool mHeld;
+} sRaidHeld[16][32];
+Stats::Side sRaidOwn, sRaidFoe;
+
+}
+
+// A town holds a raid there: its soldiers within 10 tiles and its towers covering it beat the raiders it sees within 12 tiles
+// on the fight estimate (raid_held, 0 = off). Cached per 4 x 4 tile cell for 4 seconds.
+bool RaidHeld(EEPlayer* inPlayer, long inX, long inY)
+{
+    const SettingsAI& theCfg = SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium);
+    if (theCfg.raid_held <= 0 || inPlayer == NULL)
+        return false;
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    unsigned long theNow = gPhysics->mGameTime;
+    int theCX = (int)(inX >> 2), theCY = (int)(inY >> 2);
+    RaidHeldCell& theCell = sRaidHeld[thePI][(unsigned)(theCX * 31 + theCY) & 31];
+    if (theCell.mTime != 0 && theCell.mCX == theCX && theCell.mCY == theCY && theNow >= theCell.mTime && theNow - theCell.mTime < 4000)
+        return theCell.mHeld;
+    long thePX = theCX * 4 + 2, thePY = theCY * 4 + 2;
+    Stats::Clear(sRaidOwn);
+    Stats::Clear(sRaidFoe);
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(i);
+        if (theOwner == NULL)
+            continue;
+        bool theOwn = theOwner == inPlayer, theEnemy = IsEnemyOf(inPlayer, theOwner);
+        if (!theOwn && !theEnemy)
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+                continue;
+            long theDX = theUnit->mTileX - thePX, theDY = theUnit->mTileY - thePY;
+            long theD = labs(theDX) > labs(theDY) ? labs(theDX) : labs(theDY);
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theOwn) {
+                float theRange, theAttack;
+                if ((theClass->mCategory == kUnitCategoryBuilding || theClass->mCategory == kUnitCategoryFortress)
+                    && DefenceStats(theUnit, theRange, theAttack) && (float)theD <= theRange + 1.0f)
+                    Stats::Add(sRaidOwn, theUnit);
+                else if (Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange) && theD <= 10)
+                    Stats::Add(sRaidOwn, theUnit);
+            } else if (theD <= 12 && (theClass->mCategory == kUnitCategoryLand || theClass->mCategory == kUnitCategoryNaval)
+                       && theClass->mAttack > 0 && (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kCitizen) == 0
+                       && SeenBy(theUnit, inPlayer))
+                Stats::Add(sRaidFoe, theUnit);
+        }
+    }
+    theCell.mCX = theCX;
+    theCell.mCY = theCY;
+    theCell.mTime = theNow ? theNow : 1;
+    theCell.mHeld = sRaidFoe.mCount > 0 && Stats::Ratio(sRaidOwn, sRaidFoe) >= theCfg.raid_held / 100.0f;
+    return theCell.mHeld;
+}
+
 // A site is dangerous when raiders or hurt citizens are near it, or the straight way from the nearest drop site to it crosses a known
-// enemy defence's reach (the searches refuse such a site). raid_held (a town that holds against the raiders) is not ported yet.
+// enemy defence's reach (the searches refuse such a site). With raid_held, a raided or hurt site the town holds is not dangerous.
 bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource)
 {
     if (inPlayer == NULL || inSite == NULL || !Cfg(inPlayer->mPlayerID).avoid_towers_citizens)
         return false;
     long theX = inSite->mTileX, theY = inSite->mTileY;
     bool theRaided = RaidersNear(inPlayer, theX, theY, 6), theHurt = !theRaided && HurtDanger(inPlayer, theX, theY, inResource);
-    if (theRaided || theHurt)
+    if ((theRaided || theHurt) && !RaidHeld(inPlayer, theX, theY))
         return true;
     long theDX = -10000, theDY = 0;
     NearestDrop(inPlayer, theX, theY, inFood, theDX, theDY);
@@ -499,7 +559,7 @@ struct SafetyCounts {
 // every 4 seconds, before the citizen assignment (attack.c citizens_safety): the enemy defences seen; each citizen's hit points
 // against the last look (the places where citizens were hurt); the strays of an attack sent home; and the gatherers and builders
 // at a site near raiders or enemy towers, or where citizens were hurt, sent back to their drop site. Not hunters: the animals hurt
-// them. Not ported yet: the flight of an overrun base (muster_rally of defence.c), the shelter in a fortress (bunker.c), raid_held.
+// them. Not ported yet: the flight of an overrun base (muster_rally of defence.c), the shelter in a fortress (bunker.c).
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sNext[16];
@@ -553,6 +613,10 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                 theRaided = true;
             if (!theRaided && (theBuild != NULL || !SiteDanger(inPlayer, theSite, r == 2, r)))
                 continue;
+            if (theRaided && RaidHeld(inPlayer, theSite->mTileX, theSite->mTileY)) {   // the town holds: kept at work
+                sSafety[thePI].mHeld++;
+                continue;
+            }
             if (theRaided && labs(theDropX - theSite->mTileX) <= 3 && labs(theDropY - theSite->mTileY) <= 3)   // at home already
                 continue;
             MoveTo(theUnit, (float)theDropX + 0.5f, (float)theDropY + 0.5f);

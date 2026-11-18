@@ -246,7 +246,7 @@
     D(NUM,   early_army_workers,            60, 0, 0) \
     D(FLAG,  early_soldiers,                0, 0, 0) \
     D(FLAG,  citizen_threats,               1, 0, 0) \
-    D(SHARE, raid_held,                     150, 0, 500) \
+    D(SHARE, raid_held,                     0, 0, 500) \
     D(FLAG,  hurt_seen_short,               1, 0, 0) \
     D(FLAG,  behind_walls,                  0, 0, 0) \
     D(FLAG,  ship_reach_exact,              0, 0, 0) \
