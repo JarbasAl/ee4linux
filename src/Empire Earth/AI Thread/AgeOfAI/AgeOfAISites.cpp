@@ -409,13 +409,26 @@ EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* i
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
     const SettingsAI& theSettings = SettingsOf(thePlayer);
-    EEUnit* theResult = theSettings.mine_choice && inType >= 4 && inType < 7 ? SelectMineNearDrop(inResources, inType, inUnit, -1) : NULL;
-    if (theResult != NULL)
-        return theResult;
-    theResult = inResources->FindResourceTargetGame(inType, inUnit, inBackwards);
+    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
+    const bool theMineResource = inType >= 4 && inType < 7;
+    // OVERSEAS MINES: a search with no citizen (the ferry/island-expansion pass) wants a mine on another continent than the
+    // base, not a home-island mine that would strand citizens on a useless crossing (upstream hook_find_mine, mine_site 5)
+    long theOverseasHome = -1;
+    if (gSettings.overseas_mines && theMineResource && inUnit == NULL && theBuild != NULL) {
+        long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+        if (theBaseX != -10000 && theBaseY != -10000)
+            theOverseasHome = (long)gContinentManager.GetContinentID(theBaseX, theBaseY);
+    }
+    EEUnit* theResult = NULL;
+    if (theSettings.mine_choice && theMineResource)
+        theResult = SelectMineNearDrop(inResources, inType, inUnit, theOverseasHome >= 0 ? theOverseasHome : -1);
+    if (theResult == NULL)
+        theResult = inResources->FindResourceTargetGame(inType, inUnit, inBackwards);
     if (theResult != NULL && SiteDanger(thePlayer, theResult, inType == 2, (int)inType))   // the searches refuse a dangerous site
         theResult = NULL;
-    if (theResult != NULL && inUnit != NULL && inType >= 4 && inType < 7 && theSettings.local_mines) {
+    if (theOverseasHome >= 0 && theResult != NULL && (long)gContinentManager.GetContinentID(theResult) == theOverseasHome)
+        theResult = NULL;   // overseas_mines: no home-island mine for a crossing
+    if (theResult != NULL && inUnit != NULL && theMineResource && theSettings.local_mines) {
         unsigned thePI = thePlayer->mPlayerID & 15;
         DropsCached(thePlayer);
         int theIndex = -1;
@@ -428,7 +441,7 @@ EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* i
                 theResult = NULL;
         }
     }
-    if (theResult != NULL && theSettings.mine_crowds && inType >= 4 && inType < 7) {
+    if (theResult != NULL && theSettings.mine_crowds && theMineResource) {
         unsigned thePI = thePlayer->mPlayerID & 15;
         AimCount(thePlayer);
         if (AimOf(thePI, theResult) >= thePlayer->mMiningLimit)

@@ -147,8 +147,7 @@ the kind, 20 at most. After each assignment pass the rebalance moves up to 2 gat
 short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. With `[ai_base] local_mines` (off in
 the shipped file) a mine whose drop site is more than 60 tiles from the citizen is another town's and is refused, and one
 within 40 tiles comes before the rest: the game's assignment otherwise sends citizens across the map and back.
-`AgeOfAISites.h` holds those two distances. Not ported yet: the test of the mine's tile that upstream makes, `town_work`
-(off by default) and the overseas mines.
+`AgeOfAISites.h` holds those two distances. For the ferry/island-expansion search with no citizen, `[patches] overseas_mines` (on by default) prefers a mine on another continent than the base so citizens are not ferried to a home-island mine. Not ported yet: the test of the mine's tile that upstream makes and `town_work` (off by default).
 
 The game's assignment never moves a gatherer back to food either. With `food_plan` `back_to_food` (on in upstream's default, off in the shipped
 `ageofai.ini` until the [benchmark](benchmark.md) rates it as the AI `aoai-foodpull`), after
