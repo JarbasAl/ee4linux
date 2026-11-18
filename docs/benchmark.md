@@ -25,6 +25,15 @@ seed, and the pairs its seeds cannot fill play side by side, each in a stage fol
 ten seeds one pair fills the eight slots; with two seeds four pairs do. Ten AIs, ten scenarios and ten seeds, in both
 seat orders, give 9000 games.
 
+## Deciding a setting
+
+`config/ageofai.ini` ships the settings of `defence.c`, `counterfire.c`, `econ.c` and `food.c` off until the benchmark
+rates them, and each one has a named AI that turns only its bit on. The question is one pair of games: that AI against
+`aoai`, whose file is the shipped one plus `enabled=1`. The pair plays every scenario on every seed in both seat orders,
+and the head-to-head table gives its wins; a setting goes on when its AI wins more than half of them and its rating
+stands above `aoai`'s, and stays off when it loses them or the games only place it within its own interval. The comment
+of a switched-off setting in `config/ageofai.ini` names the AI that rates it.
+
 ## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
