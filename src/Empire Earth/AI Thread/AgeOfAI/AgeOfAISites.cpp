@@ -972,8 +972,10 @@ void FoodPull(EECPResourceManager* inResources)
             continue;
         }
         EEUnit* theSite = FoodBush(inResources, theUnit, theReach * theReach * 36);
-        if (theSite == NULL)
-            break;   // no free, safe food site in reach (fields: the fields pass)
+        if (theSite == NULL) {   // no free, safe bush for this donor: try another
+            theDry |= 1 << theDonor;
+            continue;
+        }
         size_t theBefore = inResources->mGatherers[2].size();
         inResources->SendToGather(theUnit, theSite, NULL);
         if (inResources->mGatherers[2].size() == theBefore) {
