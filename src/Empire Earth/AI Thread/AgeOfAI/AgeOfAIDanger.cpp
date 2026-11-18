@@ -136,6 +136,10 @@
 #include "ee/EEUGAttackUnit.h"
 #include "ee/EEAIContinentManager.h"
 #include "ee/EEUnitBehavior.h"
+#include "ee/EECPCombatManager.h"
+#include "ee/EECPAttackCommander.h"
+#include "ee/EECPAttackGroup.h"
+#include "ee/EECPAttackSubGroup.h"
 #include "AgeOfAI/AgeOfAIStats.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIDefence.h"
@@ -1700,6 +1704,24 @@ void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
         return;
     }
     long theBaseX = theCivilization->mBuildManager->mTownCenterTile.mX, theBaseY = theCivilization->mBuildManager->mTownCenterTile.mY;
+    EEUnitBehavior* theAggressive = EEUnitBehavior::sTable.size() > 5 ? EEUnitBehavior::sTable[5] : NULL;
+    if (theAggressive != NULL && inPlayer->GetCombatManager() != NULL && inPlayer->GetCombatManager()->GetAttackCommander() != NULL) {
+        EECPAttackCommander* theAttackCommander = inPlayer->GetCombatManager()->GetAttackCommander();
+        std::vector<EEComplexUnit*> theGrouped;
+        for (size_t g = 0; g < theAttackCommander->mGroups.size(); g++) {
+            EECPAttackGroup* theGroup = theAttackCommander->mGroups[g];
+            if (theGroup != NULL)
+                theGroup->CollectUnits(theGrouped);
+        }
+        for (size_t g = 0; g < theGrouped.size(); g++) {
+            EEComplexUnit* theGroupedUnit = theGrouped[g];
+            if (theGroupedUnit == NULL || theGroupedUnit->mHitPoints <= 0 || theGroupedUnit->mTileX == -10000)
+                continue;
+            long theDX = theGroupedUnit->mTileX - theBaseX, theDY = theGroupedUnit->mTileY - theBaseY;
+            if (theDX * theDX + theDY * theDY > 35 * 35)
+                theGroupedUnit->mBehavior = theAggressive;
+        }
+    }
     std::vector<EEUnit*> theOwn, theEnemy;
     float theEnemyPower = 0, theOwnPower = 0, theEX = 0, theEY = 0;
     bool theFightEstimate = theSettings.fight_estimate;
@@ -1754,7 +1776,6 @@ void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             }
         }
     }
-    EEUnitBehavior* theAggressive = EEUnitBehavior::sTable.size() > 5 ? EEUnitBehavior::sTable[5] : NULL;
     EEUnitBehavior* theGuard = EEUnitBehavior::sTable.size() > 2 ? EEUnitBehavior::sTable[2] : NULL;
     if (theEnemy.empty()) {
         for (size_t k = 0; k < theOwn.size(); k++) {

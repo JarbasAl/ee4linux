@@ -208,7 +208,7 @@ times the enemy in the base, each attacks the nearest enemy soldier. The muster 
 when soldiers and towers can hold the base again, or when the enemy follows to the rally point a third time; a new muster
 waits 30 or 60 seconds. While the base is mustering, citizens in danger flee to the rally point instead of working through the overrun. The shelter in a fortress is not ported.
 
-With `[ai_base] hold_town` on (off by default), home soldiers within 35 tiles of the base hold the town against seen enemies (soldiers and siege) instead of trickling out. When no enemy is near they are freed; when strong enough they sortie together; when weak they retreat to a guard point and hold. While mustering, hold-the-town does not interfere. Attack-subgroup, landing, and garrison exceptions are not ported.
+With `[ai_base] hold_town` on (off by default), home soldiers within 35 tiles of the base hold the town against seen enemies (soldiers and siege) instead of trickling out. When no enemy is near they are freed; when strong enough they sortie together; when weak they retreat to a guard point and hold. Soldiers in attack groups beyond 35 tiles are freed as in upstream. While mustering, hold-the-town does not interfere. Landing and garrison exceptions are not ported.
 
 ## Outdated units attack
 
