@@ -34,6 +34,10 @@ and the head-to-head table gives its wins; a setting goes on when its AI wins mo
 stands above `aoai`'s, and stays off when it loses them or the games only place it within its own interval. The comment
 of a switched-off setting in `config/ageofai.ini` names the AI that rates it.
 
+The focused set rates those five over `standard`, `poor` and `raids`, 5 seeds, both seat orders (30 games each against
+`aoai`): `aoai-foodpull` 15-12-3, `aoai-counterfire` 13-12-5, `aoai-militia` 14-15-1, `aoai-citizenshome` 12-17-1,
+`aoai-towers` 12-16-2. None wins more than half and none stands above `aoai`, so each stays off in `config/ageofai.ini`.
+
 ## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
