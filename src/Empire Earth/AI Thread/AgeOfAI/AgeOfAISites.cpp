@@ -2,8 +2,9 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
-// Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, town_work (off by default), the
-// overseas mines, the wood and field searches, and no_fields_wild (off by default).
+// Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, town_work (off by default),
+// overseas-mine preference in other searches, the wood and field searches, and no_fields_wild (off by default). Ferry/no-citizen
+// mine searches prefer an overseas mine when [patches] overseas_mines is on.
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
