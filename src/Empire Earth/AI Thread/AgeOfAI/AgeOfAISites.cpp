@@ -377,7 +377,7 @@ EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit*
         if (theZone == NULL || !theZone->mIsActive)
             continue;
         EEUnit* theSite = theZone->FindResourceUnit(kResourceFood);
-        if (theSite == NULL || theSite->mResourceAmount <= 0 || theSite->mUnitClass == NULL)
+        if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mResourceAmount <= 0 || theSite->mUnitClass == NULL)
             continue;
         if ((long)theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
             continue;
@@ -674,7 +674,7 @@ EEUnit* FoodBush(EECPResourceManager* inResources, EEComplexUnit* inUnit, long i
             continue;
         for (size_t k = 0; k < theZone->mUnits.size() && k < 4096; k++) {
             EEUnit* theSite = theZone->mUnits[k];
-            if (theSite == NULL || theSite->mUnitClass == NULL || theSite->mResourceType != 2
+            if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mUnitClass == NULL || theSite->mResourceType != 2
                 || theSite->mUnitClass->mUnitType != kUnitTypeResForageBush || theSite->mResourceAmount <= 0)
                 continue;
             if (theSite->mTile != NULL && theSite->mTile->mTerrainType == 1)
@@ -783,7 +783,7 @@ void FoodHunt(EECPResourceManager* inResources)
             EEGetUnitsInRadius(theCenter, (float)theRange, theNear);
             for (size_t u = 0; u < theNear.size(); u++) {
                 EEUnit* theAnimal = theNear[u];
-                if (theAnimal == NULL || theAnimal->mUnitClass == NULL)
+                if (theAnimal == NULL || theAnimal->mHitPoints <= 0 || theAnimal->mUnitClass == NULL)
                     continue;
                 if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
                     continue;
@@ -876,7 +876,7 @@ void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow)
         EEGetUnitsInRadius(theCenter, 30.0f, theNear);
         for (size_t i = 0; i < theNear.size() && theFood.size() < 512; i++) {
             EEUnit* theAnimal = theNear[i];
-            if (theAnimal == NULL || theAnimal->mUnitClass == NULL)
+            if (theAnimal == NULL || theAnimal->mHitPoints <= 0 || theAnimal->mUnitClass == NULL)
                 continue;
             if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
                 continue;
@@ -893,7 +893,7 @@ void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow)
             continue;
         for (size_t k = 0; k < theZone->mUnits.size() && theFood.size() < 512; k++) {
             EEUnit* theSite = theZone->mUnits[k];
-            if (theSite == NULL || theSite->mUnitClass == NULL || theSite->mResourceAmount <= 0)
+            if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mUnitClass == NULL || theSite->mResourceAmount <= 0)
                 continue;
             if ((long)theSite->mResourceType != kResourceFood || theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
                 continue;
