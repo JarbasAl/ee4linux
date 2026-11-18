@@ -169,6 +169,12 @@ the free one nearest to such a drop site: food, an animal, fewer than three gath
 enemy near and not a dangerous site. Upstream leaves tiger and wolf alone; this port does not resolve those type names,
 so the danger and enemy-near checks are the guard.
 
+With `food_plan` `wild_settlement` (off in the shipped file), before the Copper Age an Age of AI player may place a
+Settlement by rich wild food far from its drop sites, at most twice in a game and no more than once every two minutes.
+Bushes and animals within 30 tiles of the base count as wild food; a spot 10 or more tiles from every food drop site
+with 1500 or more food within 6 tiles gets a Settlement placed 2 to 4 tiles from it, with no enemy near and no raiders
+near. Upstream excludes tiger and wolf by type; this port does not resolve those type names.
+
 The game puts no drop site by the forest its woodcutters work. With `[ai_base] wood_drop` on (the default), an Age of AI player
 looks every game minute for woodcutters whose tree is 15 or more tiles from a drop site. When 8 or more of them work within 8
 tiles of one tree, and no Settlement is going up and the player can build one, it lays a Settlement at the placeable spot

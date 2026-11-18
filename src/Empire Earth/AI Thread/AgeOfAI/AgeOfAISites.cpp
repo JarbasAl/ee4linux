@@ -3,7 +3,7 @@
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
 // Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, town_work (off by default), the
-// overseas mines, the wood and field searches, and the fields/settlement food rules (off by default).
+// overseas mines, the wood and field searches, and no_fields_wild (off by default).
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
@@ -786,6 +786,136 @@ void FoodHunt(EECPResourceManager* inResources)
         inResources->SendToGather(theUnit, theBest, NULL);
         if (inResources->mGatherers[kResourceFood].size() == theBefore)
             break;
+    }
+}
+
+// WILD SETTLEMENT (food_plan wild_settlement, off in the shipped file; before farms): a Settlement by the richest wild
+// food the town's drop sites are far from - every 2 minutes while none is queued or going up and the player can build
+// one, at most 2 a game. Bushes and animals within 30 tiles of the base count as wild food; a spot 10 or more tiles
+// from every food drop site with 1500 or more food within 6 tiles gets a Settlement placed 2-4 tiles from it. Upstream's
+// food_camp (food.c). Upstream excludes tiger and wolf by type; this port does not resolve those type names.
+void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    static int sCount[16];
+    unsigned theIdx = inPlayer->mPlayerID & 15;
+    if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
+    if (!theSettings.food_plan.wild_settlement)
+        return;
+    long theEpoch = inPlayer->mTechnologies != NULL ? inPlayer->mTechnologies->mCurrentEpoch : -1;
+    if (theEpoch >= kFarmEpoch)
+        return;
+    // a new game resets the per-player state (time goes backwards)
+    if (inNow < sLast[theIdx])
+        sLast[theIdx] = 0, sCount[theIdx] = 0;
+    if (sCount[theIdx] >= 2 || (sLast[theIdx] != 0 && inNow - sLast[theIdx] < 120000))
+        return;
+    sLast[theIdx] = inNow != 0 ? inNow : 1;
+
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL || theCivilization->mResourceManager == NULL)
+        return;
+    EECPBuildManager* theBuild = theCivilization->mBuildManager;
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theBaseX == -10000)
+        return;
+    if (gUnitClassTable[kUnitTypeSettlement] == NULL)
+        return;
+    if (theBuild->IsQueued(kUnitTypeSettlement))
+        return;
+    // any Settlement going up: wait for it
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+            continue;
+        if ((long)theUnit->mUnitClass->mUnitType != kUnitTypeSettlement)
+            continue;
+        if (theUnit->mComplexUnit == NULL || theUnit->mComplexUnit->IsFoundation() || !theUnit->mComplexUnit->mIsBuilt)
+            return;
+    }
+    if (!inPlayer->CanProduceUnitType(kUnitTypeSettlement, 0x20, NULL))
+        return;
+
+    DropsCached(inPlayer);
+
+    struct Food { long mX, mY, mAmount; };
+    std::vector<Food> theFood;
+
+    // animals within 30 tiles of the base
+    {
+        std::vector<EEUnit*> theNear;
+        GE2DPoint theCenter((float)theBaseX, (float)theBaseY);
+        EEGetUnitsInRadius(theCenter, 30.0f, theNear);
+        for (size_t i = 0; i < theNear.size() && theFood.size() < 512; i++) {
+            EEUnit* theAnimal = theNear[i];
+            if (theAnimal == NULL || theAnimal->mUnitClass == NULL)
+                continue;
+            if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
+                continue;
+            if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal)
+                continue;
+            Food theItem = {theAnimal->mTileX, theAnimal->mTileY, theAnimal->mResourceAmount};
+            theFood.push_back(theItem);
+        }
+    }
+    // forage bushes within 30 tiles of the base
+    for (unsigned long z = 0; z < inPlayer->GetNumResourceCenters() && theFood.size() < 512; z++) {
+        EECPResourceCenter* theZone = inPlayer->GetResourceCenter(z);
+        if (theZone == NULL)
+            continue;
+        for (size_t k = 0; k < theZone->mUnits.size() && theFood.size() < 512; k++) {
+            EEUnit* theSite = theZone->mUnits[k];
+            if (theSite == NULL || theSite->mUnitClass == NULL || theSite->mResourceAmount <= 0)
+                continue;
+            if ((long)theSite->mResourceType != kResourceFood || theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
+                continue;
+            long theDX = theSite->mTileX - theBaseX, theDY = theSite->mTileY - theBaseY;
+            if (theDX * theDX + theDY * theDY > 900)
+                continue;
+            if (!ExploredBy(theSite, inPlayer))
+                continue;
+            Food theItem = {theSite->mTileX, theSite->mTileY, theSite->mResourceAmount};
+            theFood.push_back(theItem);
+        }
+    }
+
+    // the richest wild food 10 or more tiles from every food drop site, with no enemy near
+    int theBest = -1;
+    long theBestFood = 1499;
+    for (size_t i = 0; i < theFood.size(); i++) {
+        if (DropNearest(theIdx, theFood[i].mX, theFood[i].mY, true, NULL) < 100)
+            continue;
+        if (theBuild->HasEnemyNear(theFood[i].mX, theFood[i].mY))
+            continue;
+        long theSum = 0;
+        for (size_t j = 0; j < theFood.size(); j++) {
+            long theDX = theFood[j].mX - theFood[i].mX, theDY = theFood[j].mY - theFood[i].mY;
+            if (theDX * theDX + theDY * theDY <= 36)
+                theSum += theFood[j].mAmount;
+        }
+        if (theSum > theBestFood) {
+            theBestFood = theSum;
+            theBest = (int)i;
+        }
+    }
+    if (theBest < 0)
+        return;
+
+    // a placeable spot 2-4 tiles from it, without raiders near
+    for (int r = 2; r <= 4; r++) {
+        for (int ax = -r; ax <= r; ax++) {
+            for (int ay = -r; ay <= r; ay++) {
+                if (ax != -r && ax != r && ay != -r && ay != r)
+                    continue;
+                long theX = theFood[theBest].mX + ax, theY = theFood[theBest].mY + ay;
+                if (!CanPlace(inPlayer, kUnitTypeSettlement, theX, theY) || RaidersNear(inPlayer, theX, theY, 12))
+                    continue;
+                theCivilization->mBuildManager->StartBuilding(EECPBuildRequest(kUnitTypeSettlement, U2DPoint<long>(theX, theY)));
+                sCount[theIdx]++;
+                return;
+            }
+        }
     }
 }
 

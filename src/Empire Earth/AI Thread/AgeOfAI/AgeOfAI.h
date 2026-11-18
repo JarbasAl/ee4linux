@@ -109,6 +109,8 @@ void Rebalance(EECPResourceManager* inResources);
 void FoodHunt(EECPResourceManager* inResources);
 // After the rebalance (food.c food_pull): gatherers move to forage bushes while food is 2 or more short of its target
 void FoodPull(EECPResourceManager* inResources);
+// WILD SETTLEMENT (food_plan wild_settlement, off in the shipped file): a Settlement by rich wild food far from the town
+void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow);
 struct FoodCounts {
     unsigned long mPulled;   // gatherers moved to food
 };

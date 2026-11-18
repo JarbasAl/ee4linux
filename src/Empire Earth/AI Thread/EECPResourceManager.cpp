@@ -1525,6 +1525,7 @@ void EECPResourceManager::Update(unsigned long inTime)
                 this->AssignGatherers();
                 AgeOfAI::Rebalance(this);
                 AgeOfAI::FoodPull(this);
+                AgeOfAI::FoodCamp(thePlayer, inTime);
             }
         this->mNextAssignGatherersTime = inTime + 10000;
     }
