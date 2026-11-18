@@ -163,6 +163,21 @@ class Budget(unittest.TestCase):
         self.assertFalse(waited.is_alive(), "and go when a call ends")
 
 
+class HeadToHead(unittest.TestCase):
+    def test_a_pair_counts_both_seat_orders(self):
+        rows = [{"scenario": "s", "seats": {"2": "a", "3": "b"}, "winner": "a"},
+                {"scenario": "s", "seats": {"2": "b", "3": "a"}, "winner": "a"}]
+        self.assertEqual(ai_bench.head_to_head(rows), {("a", "b"): [2, 2, 0]})
+
+    def test_the_pair_is_named_with_the_lower_name_first(self):
+        rows = [{"scenario": "s", "seats": {"2": "b", "3": "a"}, "winner": "b"}]
+        self.assertEqual(ai_bench.head_to_head(rows), {("a", "b"): [1, 0, 0]})
+
+    def test_a_draw_is_a_game_without_a_win(self):
+        rows = [{"scenario": "s", "seats": {"2": "a", "3": "b"}, "winner": None}]
+        self.assertEqual(ai_bench.head_to_head(rows), {("a", "b"): [1, 0, 1]})
+
+
 class SeatShares(unittest.TestCase):
     def test_a_scenario_whose_games_go_to_one_seat_says_so(self):
         # the same map and AI order, twice: the first seat wins both, so the seat decided them

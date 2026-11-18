@@ -70,6 +70,9 @@ line names of the lobby's own lists.
 Each pair of AIs plays each scenario on the same seeds twice, once with each AI as player 2. The slot advantage
 therefore cancels. A game that reaches 8 game hours is a draw.
 
+`table` also gives the games of each pair of AIs and the row AI's wins in them, which is the direct
+"does this setting help against that AI" answer that a rating only summarises.
+
 `table` also gives, per scenario, how many of its decided games the first seat (player 2) won. Both seat orders are
 played, so a scenario whose games go to one seat whatever AI plays it is decided by the starting position and rates
 nothing; the table marks one that is more than 15 points from half over ten or more decided games.

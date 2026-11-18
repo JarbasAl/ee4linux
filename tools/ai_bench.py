@@ -357,6 +357,23 @@ def seat_shares(rows):
     return shares
 
 
+def head_to_head(rows):
+    """The games each pair of AIs played against each other, and the wins of the first of the two.
+
+    Keyed by (a, b) with a < b: [games, wins of a, draws]. A pair never plays itself.
+    """
+    pairs = {}
+    for r in rows:
+        a, b = sorted(r["seats"].values())
+        counts = pairs.setdefault((a, b), [0, 0, 0])
+        counts[0] += 1
+        if r["winner"] is None:
+            counts[2] += 1
+        elif r["winner"] == a:
+            counts[1] += 1
+    return pairs
+
+
 def table(args):
     rows = read_games(args.out)
     if not rows:
@@ -377,6 +394,24 @@ def table(args):
     per = {s: fit(scored([r for r in rows if r["scenario"] == s]), args.anchor) for s in scenarios}
     for n in order:
         print(f"| {n} | " + " | ".join(f"{per[s][n]:.0f}" if n in per[s] else "" for s in scenarios) + " |")
+    pairs = head_to_head(rows)
+    print("\n| AI | " + " | ".join(order) + " |")
+    print("| --- |" + " --- |" * len(order))
+    for a in order:
+        cells = []
+        for b in order:
+            if a == b:
+                cells.append("")
+                continue
+            games, wins, _ = pairs.get(tuple(sorted((a, b))), [0, 0, 0])
+            if not games:
+                cells.append("")
+                continue
+            mine = wins if a < b else games - wins
+            cells.append(f"{mine}/{games}")
+        print(f"| {a} | " + " | ".join(cells) + " |")
+    print("\nWins out of the games played, from the row AI's side (both seat orders).")
+
     shares = seat_shares(rows)
     print("\n| Scenario | Decided | First seat won | Share | |")
     print("| --- | ---: | ---: | ---: | --- |")
