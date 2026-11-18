@@ -1398,13 +1398,16 @@ void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow)
     static SiegeScan sScan;
     unsigned thePI = inPlayer->mPlayerID & 15;
     const SettingsAI& theBase = Cfg(inPlayer->mPlayerID);
-    if (!theBase.counter_siege || (inNow >= sLast[thePI] && inNow - sLast[thePI] < 2000))
+    if ((!theBase.counter_siege && !theBase.citizen_militia) || (inNow >= sLast[thePI] && inNow - sLast[thePI] < 2000))
         return;
     sLast[thePI] = inNow;
     const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
     SiegeScan& s = sScan;
     ScanSiege(inPlayer, s);
-    Militia(inPlayer, theSettings, s);
+    if (theBase.citizen_militia)
+        Militia(inPlayer, theSettings, s);
+    if (!theBase.counter_siege)
+        return;
     for (int i = 0; i < s.mSiege + s.mTowers; i++) {
         bool theTower = i >= s.mSiege;   // an enemy defence going up near our buildings or citizens (counter-tower)
         EEUnit* theEnemy = theTower ? s.mEnemyTower[i - s.mSiege] : s.mEnemySiege[i];
