@@ -376,30 +376,32 @@ EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit*
         EECPResourceCenter* theZone = thePlayer->GetResourceCenter(k);
         if (theZone == NULL || !theZone->mIsActive)
             continue;
-        EEUnit* theSite = theZone->FindResourceUnit(kResourceFood);
-        if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mResourceAmount <= 0 || theSite->mUnitClass == NULL)
-            continue;
-        if ((long)theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
-            continue;
-        long theDX = theSite->mTileX - theBaseX, theDY = theSite->mTileY - theBaseY;
-        if (theDX * theDX + theDY * theDY >= theReach2)
-            continue;
-        int theIndex = -1;
-        long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, true, &theIndex);   // a drop site that takes food
-        if (theIndex < 0 || theD >= theBestD)
-            continue;
-        if (!ExploredBy(theSite, thePlayer))
-            continue;
-        if ((unsigned long)gWorld.GetResourceUsers(theSite) >= theCap)
-            continue;
-        if (inUnit != NULL && (long)gContinentManager.GetContinentID(theSite) != theRegion)
-            continue;
-        if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY))
-            continue;
-        if (SiteDanger(thePlayer, theSite, true, 2))
-            continue;
-        theBest = theSite;
-        theBestD = theD;
+        for (size_t z = 0; z < theZone->mUnits.size() && z < 4096; z++) {
+            EEUnit* theSite = theZone->mUnits[z];
+            if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mResourceAmount <= 0 || theSite->mUnitClass == NULL)
+                continue;
+            if ((long)theSite->mResourceType != kResourceFood || (long)theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
+                continue;
+            long theDX = theSite->mTileX - theBaseX, theDY = theSite->mTileY - theBaseY;
+            if (theDX * theDX + theDY * theDY >= theReach2)
+                continue;
+            int theIndex = -1;
+            long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, true, &theIndex);   // a drop site that takes food
+            if (theIndex < 0 || theD >= theBestD)
+                continue;
+            if (!ExploredBy(theSite, thePlayer))
+                continue;
+            if ((unsigned long)gWorld.GetResourceUsers(theSite) >= theCap)
+                continue;
+            if (inUnit != NULL && (long)gContinentManager.GetContinentID(theSite) != theRegion)
+                continue;
+            if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY))
+                continue;
+            if (SiteDanger(thePlayer, theSite, true, 2))
+                continue;
+            theBest = theSite;
+            theBestD = theD;
+        }
     }
     return theBest;
 }
