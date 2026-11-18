@@ -360,7 +360,8 @@ EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit*
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
     EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
-    if (theBuild == NULL || !SettingsOf(thePlayer).food_plan.forage_near)
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    if (theBuild == NULL || !theSettings.food_plan.forage_near)
         return NULL;
     long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
     if (theBaseX == -10000 || theBaseY == -10000)
@@ -392,6 +393,8 @@ EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit*
             continue;
         if ((unsigned long)gWorld.GetResourceUsers(theSite) >= theCap)
             continue;
+        if (theSettings.mine_crowds && AimOf(thePI, theSite) >= theCap)   // the citizens on their way or waiting there count
+            continue;
         if (inUnit != NULL && (long)gContinentManager.GetContinentID(theSite) != theRegion)
             continue;
         if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY))
@@ -401,6 +404,8 @@ EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit*
         theBest = theSite;
         theBestD = theD;
     }
+    if (theBest != NULL && theSettings.mine_crowds)
+        AimAdd(thePI, theBest);
     return theBest;
 }
 
