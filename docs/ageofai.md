@@ -198,8 +198,7 @@ knows stand within 8 tiles, and (`repair_one_walker`) while another of its citiz
 `AgeOfAIDanger.cpp` holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. With
 `ship_reach_exact` (off by default), a naval or submerged raider counts only within its own range plus one tile, in a
 round distance. With `raid_held` (ported, set to `0` in the shipped config to preserve default behaviour and benchmark-ledger comparability until re-rated), a raided or hurt site the town holds on the fight estimate is not treated as dangerous. Not ported yet: `behind_walls` (off by default),
-the danger map the route searches read, and the flight of an overrun base and the shelter in a fortress (they need
-`defence.c` and `bunker.c`).
+the danger map the route searches read, and the shelter in a fortress (`bunker.c`).
 
 An enemy army in the base is met as one force. Every game three seconds, with `[ai_base] muster` on (the default), an
 Age of AI player counts the enemy soldiers within 22 tiles of its base against its own soldiers within 35 tiles and its towers
@@ -207,7 +206,7 @@ within 22. With 8 or more enemies and the home side under half of their strength
 point 18 tiles beyond the base, away from the enemy, and new soldiers join it. Once the soldiers at the rally point are 1.3
 times the enemy in the base, each attacks the nearest enemy soldier. The muster ends when fewer than 3 enemies are left,
 when soldiers and towers can hold the base again, or when the enemy follows to the rally point a third time; a new muster
-waits 30 or 60 seconds. The citizens' flight to the rally point is not ported.
+waits 30 or 60 seconds. While the base is mustering, citizens in danger flee to the rally point instead of working through the overrun. The shelter in a fortress is not ported.
 
 ## Outdated units attack
 

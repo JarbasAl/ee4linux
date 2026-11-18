@@ -4,7 +4,7 @@
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/attack.c (threat_refresh,
 // route_covered, raiders_scan, hurt_note, site_danger_res, the damage memory of citizens_safety) and dll/ai/cover.c (cv_mem_raider)
 // at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. Not ported yet: walled_out/behind_walls (off by default),
-// the danger map for routes, and the rest of citizens_safety (the flight of an overrun base, the shelter in a fortress).
+// the danger map for routes, and the shelter in a fortress (bunker.c).
 #include <windows.h>
 #include <unistd.h>
 #include <algorithm>
@@ -551,15 +551,50 @@ void MoveTo(EEComplexUnit* inUnit, float inX, float inY)
 }
 
 struct SafetyCounts {
-    unsigned mSent, mHeld, mRefusedRepairs, mRefusedSites, mStrays;
+    unsigned mSent, mHeld, mRefusedRepairs, mRefusedSites, mStrays, mFled, mFledAside;
 } sSafety[16];
 
+struct Muster {
+    bool mOn;
+    int mMoves;
+    float mRX, mRY;
+    unsigned long mSince, mCool, mCoolLength;
+} sMuster[16];
+
+}
+
+float UnitPower(EEUnit* inUnit)
+{
+    float theAttack = inUnit->mStats != NULL ? inUnit->mStats->mAttack : (float)inUnit->mUnitClass->mAttack;
+    return (float)inUnit->mHitPoints * (theAttack > 0 ? theAttack : 0);
 }
 
 // every 4 seconds, before the citizen assignment (attack.c citizens_safety): the enemy defences seen; each citizen's hit points
 // against the last look (the places where citizens were hurt); the strays of an attack sent home; and the gatherers and builders
 // at a site near raiders or enemy towers, or where citizens were hurt, sent back to their drop site. Not hunters: the animals hurt
-// them. Not ported yet: the flight of an overrun base (muster_rally of defence.c), the shelter in a fortress (bunker.c).
+// them. With muster on, citizens in danger at an overrun base flee to the muster rally point. Not ported yet: the shelter in a
+// fortress (bunker.c).
+static bool PathRaided(EEPlayer* inPlayer, long inX0, long inY0, long inX1, long inY1);
+
+static void FleePoint(EEPlayer* inPlayer, long inX, long inY, float inRX, float inRY, float& outX, float& outY)
+{
+    outX = inRX;
+    outY = inRY;
+    if (!PathRaided(inPlayer, inX, inY, (long)inRX, (long)inRY))
+        return;
+    float theBest = 1e9f;
+    static const float sDir[8][2] = {{1, 0}, {0.7071f, 0.7071f}, {0, 1}, {-0.7071f, 0.7071f}, {-1, 0}, {-0.7071f, -0.7071f}, {0, -1}, {0.7071f, -0.7071f}};
+    for (int k = 0; k < 8; k++) {
+        float thePX = (float)inX + sDir[k][0] * 12.0f, thePY = (float)inY + sDir[k][1] * 12.0f;
+        float theDX = thePX - inRX, theDY = thePY - inRY, theD = theDX * theDX + theDY * theDY;
+        if (theD >= theBest || PathRaided(inPlayer, inX, inY, (long)thePX, (long)thePY))
+            continue;
+        theBest = theD;
+        outX = thePX;
+        outY = thePY;
+    }
+}
+
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sNext[16];
@@ -573,7 +608,9 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
     if (theCivilization == NULL || theCivilization->mResourceManager == NULL)
         return;
-    int theSent = 0, theStray = 0;
+    int theSent = 0, theStray = 0, theFled = 0, theAside = 0;
+    bool theMuster = sMuster[thePI].mOn;
+    float theRX = sMuster[thePI].mRX, theRY = sMuster[thePI].mRY;
     for (int r = 0; r < 7; r++) {
         const std::deque<EEComplexUnit*> theList = theCivilization->mResourceManager->mGatherers[r];   // a copy: the orders below change the lists
         for (size_t k = 0; k < theList.size(); k++) {
@@ -591,13 +628,36 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theGoal);
             if (r == 0 && theLocation != NULL) {   // a stray: an attack's leftover order, march to the target's Town Center
                 long theDX = (long)theLocation->mLocation.GetX(), theDY = (long)theLocation->mLocation.GetY(), theNX, theNY;
-                if (BuildingAt(inPlayer, theDX, theDY, 6)
+                bool theToRally = theMuster && fabsf(theLocation->mLocation.GetX() - theRX) < 2.0f && fabsf(theLocation->mLocation.GetY() - theRY) < 2.0f;
+                if (!theToRally && BuildingAt(inPlayer, theDX, theDY, 6)
                     && (!NearestDrop(inPlayer, theDX, theDY, false, theNX, theNY) || (theNX - theDX) * (theNX - theDX) + (theNY - theDY) * (theNY - theDY) > 225)
                     && NearestDrop(inPlayer, theUnit->mTileX, theUnit->mTileY, false, theNX, theNY)) {
                     MoveTo(theUnit, (float)theNX + 0.5f, (float)theNY + 0.5f);
                     theStray++;
                     continue;
                 }
+            }
+            if (theMuster) {   // the base is overrun: citizens in danger flee to the rally point
+                float theDistRX = (float)theUnit->mTileX - theRX, theDistRY = (float)theUnit->mTileY - theRY;
+                if (theDistRX * theDistRX + theDistRY * theDistRY > 36.0f) {
+                    EEUnit* theWork = theBuild != NULL ? theBuild->mTarget : (theGather != NULL ? theGather->mResource : NULL);
+                    bool theWalk = theLocation != NULL;
+                    bool theDanger = theWalk
+                        ? PathRaided(inPlayer, theUnit->mTileX, theUnit->mTileY, (long)theLocation->mLocation.GetX(), (long)theLocation->mLocation.GetY())
+                        : (RaidersNear(inPlayer, theUnit->mTileX, theUnit->mTileY, 8)
+                           || (theWork != NULL && RaidersNear(inPlayer, theWork->mTileX, theWork->mTileY, 8)));
+                    if (theDanger) {
+                        float theFX, theFY;
+                        FleePoint(inPlayer, theUnit->mTileX, theUnit->mTileY, theRX, theRY, theFX, theFY);
+                        if (!(theWalk && fabsf(theLocation->mLocation.GetX() - theFX) < 2.0f && fabsf(theLocation->mLocation.GetY() - theFY) < 2.0f)) {
+                            MoveTo(theUnit, theFX, theFY);
+                            theFled++;
+                            if (theFX != theRX || theFY != theRY)
+                                theAside++;
+                        }
+                    }
+                }
+                continue;
             }
             if (theGoal == NULL || (theBuild == NULL && theGather == NULL))
                 continue;
@@ -625,6 +685,8 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     }
     sSafety[thePI].mSent += (unsigned)theSent;
     sSafety[thePI].mStrays += (unsigned)theStray;
+    sSafety[thePI].mFled += (unsigned)theFled;
+    sSafety[thePI].mFledAside += (unsigned)theAside;
 }
 
 // enemy soldiers on the way from (inX0,inY0) to (inX1,inY1): every 4 tiles from the 5th, within 4, and within 6 of the end
@@ -822,24 +884,8 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
 // ones join as they are trained. Once the soldiers at the rally point are 1.3 times the enemy in the base, each attacks the
 // nearest enemy soldier. The muster ends when the enemy is gone (fewer than 3), when soldiers and towers can stand up to
 // it again, or when the enemy follows to the rally point a third time (then it fights where it is); a new muster waits
-// 30 s or 60 s. Not ported: the fight estimate (stats.c, off by default), the chat line, the exceptions of unit_goal for
-// shore guns and garrisons (bunker.c, towns.c), and the citizens' flight to the rally point (SafetyTick).
-namespace {
-
-struct Muster {
-    bool mOn;
-    int mMoves;
-    float mRX, mRY;
-    unsigned long mSince, mCool, mCoolLength;
-} sMuster[16];
-
-float UnitPower(EEUnit* inUnit)
-{
-    float theAttack = inUnit->mStats != NULL ? inUnit->mStats->mAttack : (float)inUnit->mUnitClass->mAttack;
-    return (float)inUnit->mHitPoints * (theAttack > 0 ? theAttack : 0);
-}
-
-}
+// 30 s or 60 s. Not ported: the fight estimate (stats.c, off by default), the chat line, and the exceptions of unit_goal for
+// shore guns and garrisons (bunker.c, towns.c).
 
 bool AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
 {
