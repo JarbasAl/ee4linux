@@ -415,6 +415,19 @@ EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* i
     theResult = inResources->FindResourceTargetGame(inType, inUnit, inBackwards);
     if (theResult != NULL && SiteDanger(thePlayer, theResult, inType == 2, (int)inType))   // the searches refuse a dangerous site
         theResult = NULL;
+    if (theResult != NULL && inUnit != NULL && inType >= 4 && inType < 7 && theSettings.local_mines) {
+        unsigned thePI = thePlayer->mPlayerID & 15;
+        DropsCached(thePlayer);
+        int theIndex = -1;
+        if (DropNearest(thePI, theResult->mTileX, theResult->mTileY, false, &theIndex) == 0x7FFFFFFF)
+            theResult = NULL;
+        else {
+            const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
+            long theDX = theDrop.mX - inUnit->mTileX, theDY = theDrop.mY - inUnit->mTileY;
+            if (theDX * theDX + theDY * theDY > SitesRules::kLocalMineFar * SitesRules::kLocalMineFar)   // the game's pick is another town's mine: refused
+                theResult = NULL;
+        }
+    }
     if (theResult != NULL && theSettings.mine_crowds && inType >= 4 && inType < 7) {
         unsigned thePI = thePlayer->mPlayerID & 15;
         AimCount(thePlayer);
