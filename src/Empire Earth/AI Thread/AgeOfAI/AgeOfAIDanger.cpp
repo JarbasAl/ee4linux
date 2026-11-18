@@ -1715,7 +1715,7 @@ void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
         }
         for (size_t g = 0; g < theGrouped.size(); g++) {
             EEComplexUnit* theGroupedUnit = theGrouped[g];
-            if (theGroupedUnit == NULL || theGroupedUnit->mHitPoints <= 0 || theGroupedUnit->mTileX == -10000)
+            if (theGroupedUnit == NULL || theGroupedUnit->mHitPoints <= 0 || theGroupedUnit->mTileX == -10000 || theGroupedUnit->mContainer != NULL)
                 continue;
             long theDX = theGroupedUnit->mTileX - theBaseX, theDY = theGroupedUnit->mTileY - theBaseY;
             if (theDX * theDX + theDY * theDY > 35 * 35)
@@ -1741,18 +1741,17 @@ void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             unsigned long theFamily = theUnit->mUnitClass->mFamily;
             float theRange = theUnit->mUnitClass->mRange;
             if (thePlayer == inPlayer) {
-                if (theD2 > 35 * 35 || !Roles::IsSoldier(theCategory, theFamily, theRange))
+                if (theD2 > 35 * 35 || !Roles::IsSoldier(theCategory, theFamily, theRange) || theUnit->mComplexUnit == NULL
+                    || theUnit->mComplexUnit->mContainer != NULL)
                     continue;
-                if (theUnit->mComplexUnit != NULL) {
-                    EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theUnit->mComplexUnit->mGoalState);
-                    if (theLocation != NULL) {
-                        float theGX = theLocation->mLocation.GetX() - (float)theBaseX, theGY = theLocation->mLocation.GetY() - (float)theBaseY;
-                        if (theGX * theGX + theGY * theGY > 35.0f * 35.0f) {
-                            EEUnitBehavior* theAggressiveMarch = EEUnitBehavior::sTable.size() > 5 ? EEUnitBehavior::sTable[5] : NULL;
-                            if (theAggressiveMarch != NULL)
-                                theUnit->mComplexUnit->mBehavior = theAggressiveMarch;
-                            continue;   // marching out
-                        }
+                EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theUnit->mComplexUnit->mGoalState);
+                if (theLocation != NULL) {
+                    float theGX = theLocation->mLocation.GetX() - (float)theBaseX, theGY = theLocation->mLocation.GetY() - (float)theBaseY;
+                    if (theGX * theGX + theGY * theGY > 35.0f * 35.0f) {
+                        EEUnitBehavior* theAggressiveMarch = EEUnitBehavior::sTable.size() > 5 ? EEUnitBehavior::sTable[5] : NULL;
+                        if (theAggressiveMarch != NULL)
+                            theUnit->mComplexUnit->mBehavior = theAggressiveMarch;
+                        continue;   // marching out
                     }
                 }
                 if (theOwn.size() < 256)
