@@ -193,8 +193,9 @@ defences it has seen, compares each citizen's hit points with the last look to m
 an attack (unassigned citizens marching to an enemy building), and sends gatherers and builders back to their drop site when their
 site has raiders near, citizens hurt near it, or lies behind a known enemy defence; builders only at fields, since the wall
 manager sends the builders of walls and towers again and again. The repair round's order for a building is refused while enemy soldiers it
-knows stand within 8 tiles, and (`repair_one_walker`) while another of its citizens already holds a build goal on the building. `AgeOfAIDanger.cpp`
-holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. With
+knows stand within 8 tiles, and (`repair_one_walker`) while another of its citizens already holds a build goal on the building. With
+`repair_safe_way` (off by default), it is also refused when known enemy soldiers stand on the way or known enemy towers cover the route.
+`AgeOfAIDanger.cpp` holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. With
 `ship_reach_exact` (off by default), a naval or submerged raider counts only within its own range plus one tile, in a
 round distance. Not ported yet: `raid_held` (a town that holds against the raiders), `behind_walls` (off by default),
 the danger map the route searches read, and the flight of an overrun base and the shelter in a fortress (they need

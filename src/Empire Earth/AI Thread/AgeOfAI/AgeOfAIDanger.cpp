@@ -563,10 +563,23 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     sSafety[thePI].mStrays += (unsigned)theStray;
 }
 
+// enemy soldiers on the way from (inX0,inY0) to (inX1,inY1): every 4 tiles from the 5th, within 4, and within 6 of the end
+static bool PathRaided(EEPlayer* inPlayer, long inX0, long inY0, long inX1, long inY1)
+{
+    float theDX = (float)(inX1 - inX0), theDY = (float)(inY1 - inY0), theLength = sqrtf(theDX * theDX + theDY * theDY);
+    if (theLength <= 0.0f)
+        return RaidersKnown(inPlayer, inX1, inY1, 6);
+    for (float t = 5.0f; t < theLength; t += 4.0f)
+        if (RaidersKnown(inPlayer, inX0 + (long)(theDX / theLength * t), inY0 + (long)(theDY / theLength * t), 4))
+            return true;
+    return RaidersKnown(inPlayer, inX1, inY1, 6);
+}
+
 // REPAIRS UNDER ATTACK: the repair round sends a citizen to each damaged building, also to the wall or dock an army is hitting that
 // moment. Its order is refused while enemy soldiers it knows stand within 8 tiles of the building (or their range + 3), and
 // with repair_one_walker when another of its citizens already holds a build goal on the building (one at a time: a foundation
-// far out drew a citizen every 31 s until one arrived). repair_safe_way (off by default) is not ported.
+// far out drew a citizen every 31 s until one arrived). With repair_safe_way (off by default), it is refused when known enemy
+// soldiers stand on the way or known enemy towers cover the route.
 bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding)
 {
     if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || inBuilding == NULL)
@@ -584,6 +597,12 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
             if (theGoal != NULL && theGoal->mTarget == inBuilding)
                 return true;
         }
+    if (Cfg(inPlayer->mPlayerID).repair_safe_way && inCitizen != NULL
+        && (PathRaided(inPlayer, inCitizen->mTileX, inCitizen->mTileY, inBuilding->mTileX, inBuilding->mTileY)
+            || RouteCovered(inPlayer, inCitizen->mTileX, inCitizen->mTileY, inBuilding->mTileX, inBuilding->mTileY))) {
+        sSafety[thePI].mRefusedRepairs++;
+        return true;
+    }
     return false;
 }
 
