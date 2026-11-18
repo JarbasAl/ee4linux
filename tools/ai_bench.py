@@ -206,7 +206,9 @@ def play_task(args, budget, options, profiles, engines, scenario, first, second,
                "--seeds", ",".join(map(str, todo)), "--repeat", "1", "--jobs", str(at_once),
                "--wall-timeout", str(args.wall_timeout), "--ageofai", str(BASE_INI), "--out", str(games),
                "--stage", str(stage), "--",
-               "--game-seconds", str(GAME_SECONDS), *options,
+               # the rating reads each game's last sample, and a report is two megabytes at the sim's 30-second samples:
+               # two minutes is a quarter of that, and nine thousand games stay well under 5 GB
+               "--game-seconds", str(GAME_SECONDS), "--sample-seconds", "120", *options,
                *[x for s, ai in seats.items() for x in ("--player-ini", f"{s}={profiles / (ai + '.ini')}")]]
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         rows, problems = [], []
@@ -257,6 +259,8 @@ def play(args):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         sys.exit(f"ai_bench: another run uses {args.out}; wait for it to end")
+    # the stage folders of a run that was killed are ours and dead: this run takes them back
+    shutil.rmtree(args.out / "stages", ignore_errors=True)
     done = {(g["scenario"], g["seed"], g["seats"]["2"], g["seats"]["3"]) for g in read_games(args.out)}
     tasks = []
     for scenario, options in scenarios.items():
