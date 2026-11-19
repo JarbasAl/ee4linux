@@ -78,6 +78,10 @@ EarlyCounts EarlyCountsOf(unsigned long inPlayerID);
 void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount);
 void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow);
 void EconTargets(EECPResourceManager* inResources);
+// The slot tallies of the mines near a drop site (all, and the home continent's), for the fill pass
+void MineSlots(EEComputerPlayer* inPlayer, unsigned long inNow, long outSlots[7], long outHomeSlots[7]);
+// FILL THE MINES (mines.c mine_fill, off in the shipped file): turn spare wood- and food-gatherers toward metal mines
+void MineFill(EECPResourceManager* inResources, unsigned long inNow);
 // The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's
 // towers within a square around a tile
 long NewestTowerOf(EEPlayer* inPlayer);

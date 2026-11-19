@@ -1517,6 +1517,7 @@ void EECPResourceManager::Update(unsigned long inTime)
         if (this->mNextWantedGatherersTime > 0) {
             this->UpdateWantedGatherers();
             AgeOfAI::EconTargets(this);
+            AgeOfAI::MineFill(this, inTime);
         }
         this->mNextWantedGatherersTime = inTime + 5000;
     }

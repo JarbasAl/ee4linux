@@ -193,7 +193,16 @@ AI player may place a Settlement by a far mine. From the Copper Age on, with 30 
 it queues a Settlement 3 to 6 tiles from the free far mine on the home continent: a stone, gold or iron mine more than 12
 tiles from every drop site, explored, active, with no enemy near and not a dangerous site. At most six are queued in a
 game, and none while another Settlement is queued or going up; the player must be able to build and pay for one. Only the
-far mine is read; the mine-slot tally of the fill pass is not ported.
+far mine is read for this Settlement pass; the fill pass reads the mine-slot tally described below.
+
+With `[ai_base] mine_fill` `fill_slots` (off in the shipped file), an Age of AI player sends spare woodcutters and farmers to
+metal mines that have a free slot near a drop site. From the Copper Age on, after three game minutes and with 30 or more
+gatherers, it counts the stone, gold and iron mines within 12 tiles of a drop site. Each mine adds the game's mine-capacity
+value to the tally of its resource. While the population cap is under 120, only mines on the home continent count. A metal
+whose stock is more than 1500 above the cost held back for the next epoch gets no workers. The player takes workers first
+from wood above a floor of four plus a share held for the wood demand, then from food above three fifths of its target.
+`mine_fill` `mines_first` also takes from wood above a fifth and food above a third of all gatherers. The pass changes the
+wanted-gatherer targets, and the game's own assignment moves the citizens.
 
 ## What is dangerous for the citizens
 

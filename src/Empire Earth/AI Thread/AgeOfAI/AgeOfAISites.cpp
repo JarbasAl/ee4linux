@@ -657,26 +657,28 @@ void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
 
 namespace {
 
-// MINE DROP (mines.c mine_drops, mine_fill mine_settlement or citizen_plan mine_settlement, both off in the shipped file).
-// From the Copper Age on, with 30 or more gatherers, every two game minutes a Settlement is queued 3 to 6 tiles from the
-// home continent's far mine: the mine nearest a drop site that lies more than 12 tiles from every drop site, explored,
-// active, with no enemy near and not dangerous. At most six are queued in a game. The slot tally of the fill pass is not
-// ported: the DROP reads only the far mine.
-struct MineDropState {
+// MINE SCAN (mines.c mf_scan), cached 10 seconds and shared by the fill pass and the DROP. It tallies the slots of the
+// stone, gold and iron mines near a drop site (all, and the home continent's), and finds the far mine of the home
+// continent nearest a drop site: a mine more than 12 tiles from every drop site, explored, active, with no enemy near
+// and not dangerous. Both passes are off in the shipped file.
+struct MineState {
     unsigned long mTime;          // the last scan, cached for 10 seconds
     unsigned long mDropTime;      // the last DROP decision, at most one every two minutes
     int mDropsQueued;
     long mFarX, mFarY, mFarResource;
+    long mSlots[7], mHomeSlots[7];
 };
-MineDropState sMineDrop[16];
+MineState sMine[16];
 
 void MineScan(EEComputerPlayer* inPlayer, unsigned inPI, unsigned long inNow)
 {
-    MineDropState& theState = sMineDrop[inPI];
+    MineState& theState = sMine[inPI];
     if (theState.mTime != 0 && inNow >= theState.mTime && inNow - theState.mTime < 10000)
         return;
     theState.mTime = inNow ? inNow : 1;
     theState.mFarResource = 0;
+    memset(theState.mSlots, 0, sizeof theState.mSlots);
+    memset(theState.mHomeSlots, 0, sizeof theState.mHomeSlots);
     EECPCivilizationManager* theCiv = inPlayer->mCivilizationManager;
     EECPBuildManager* theBuild = theCiv != NULL ? theCiv->mBuildManager : NULL;
     if (theBuild == NULL)
@@ -685,23 +687,36 @@ void MineScan(EEComputerPlayer* inPlayer, unsigned inPI, unsigned long inNow)
     if (theBaseX == -10000 || theBaseY == -10000)
         return;
     unsigned short theHome = gContinentManager.GetContinent(EETileCoordinate(theBaseX, theBaseY), 2);
+    long theCap = (long)gWorldTable.GetLongValue(0x16);
     DropsCached(inPlayer);
     long theBest = 0x7FFFFFFF;
+    std::vector<EEUnit*> theSeen;
     for (unsigned long z = 0; z < inPlayer->GetNumResourceCenters() && z < 256; z++) {
         EECPResourceCenter* theZone = inPlayer->GetResourceCenter(z);
-        if (theZone == NULL || !theZone->mIsActive)
+        if (theZone == NULL)
             continue;
-        for (size_t k = 0; k < theZone->mUnits.size() && k < 4096; k++) {
+        for (size_t k = 0; k < theZone->mUnits.size() && k < 4096 && theSeen.size() < 1024; k++) {
             EEUnit* theSite = theZone->mUnits[k];
             if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mUnitClass == NULL || theSite->mResourceAmount <= 0)
                 continue;
             long theResource = (long)theSite->mResourceType;
             if (theResource < 4 || theResource > 6)
                 continue;
-            long theD = DropNearest(inPI, theSite->mTileX, theSite->mTileY, false, NULL);
-            if (theD <= 12 * 12 || theD >= theBest)   // near a drop site already, or farther than the far mine so far
+            bool theSeenAlready = false;
+            for (size_t s = 0; s < theSeen.size(); s++)
+                if (theSeen[s] == theSite) { theSeenAlready = true; break; }
+            if (theSeenAlready)
                 continue;
-            if (gContinentManager.GetContinent(EETileCoordinate(theSite->mTileX, theSite->mTileY), 2) != theHome)
+            theSeen.push_back(theSite);
+            long theD = DropNearest(inPI, theSite->mTileX, theSite->mTileY, false, NULL);
+            bool theHomeMine = gContinentManager.GetContinent(EETileCoordinate(theSite->mTileX, theSite->mTileY), 2) == theHome;
+            if (theD <= 12 * 12) {   // near a drop site: it counts as a slot, not as a far mine
+                theState.mSlots[theResource] += theCap;
+                if (theHomeMine)
+                    theState.mHomeSlots[theResource] += theCap;
+                continue;
+            }
+            if (!theHomeMine || theD >= theBest || !theZone->mIsActive)
                 continue;
             if (!ExploredBy(theSite, inPlayer))
                 continue;
@@ -717,12 +732,24 @@ void MineScan(EEComputerPlayer* inPlayer, unsigned inPI, unsigned long inNow)
 
 }
 
+void MineSlots(EEComputerPlayer* inPlayer, unsigned long inNow, long outSlots[7], long outHomeSlots[7])
+{
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    if (inNow < sMine[thePI].mTime)   // a new game
+        sMine[thePI] = MineState();
+    MineScan(inPlayer, thePI, inNow);
+    for (int r = 0; r < 7; r++) {
+        outSlots[r] = sMine[thePI].mSlots[r];
+        outHomeSlots[r] = sMine[thePI].mHomeSlots[r];
+    }
+}
+
 void MineDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     unsigned thePI = inPlayer->mPlayerID & 15;
-    MineDropState& theState = sMineDrop[thePI];
+    MineState& theState = sMine[thePI];
     if (inNow < theState.mTime)   // a new game
-        theState = MineDropState();
+        theState = MineState();
     const SettingsAI& theSettings = SettingsOf(inPlayer);
     if (!theSettings.mine_fill.mine_settlement && !theSettings.citizen_plan.mine_settlement)
         return;

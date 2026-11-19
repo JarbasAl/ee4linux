@@ -395,6 +395,122 @@ void EconTargets(EECPResourceManager* inResources)
             inResources->mWantedGatherers[r] = theTarget[r];
 }
 
+// The next epoch's cost held back near its scheduled attempt (econ.c budget_reserve, the plain path). The port's
+// BudgetReserve stops at the Copper Age and is the copper-plan variant; the fill pass needs the timer-scaled cost of the
+// next epoch even later in the game. With epoch_pacing=follow nothing is held while the AI may advance at any time.
+void MineReserve(EEComputerPlayer* inPlayer, unsigned long inNow, long outReserve[7])
+{
+    for (int r = 0; r < 7; r++)
+        outReserve[r] = 0;
+    if (FollowHeld(inPlayer))
+        return;
+    long theNext = Epoch(inPlayer) + 1;
+    if (theNext > 13 || theNext < 0 || inPlayer->mCivilizationManager == NULL)
+        return;
+    long theRemaining = (long)inPlayer->mCivilizationManager->mNextEpochAdvanceTime - (long)inNow;
+    float theWindow = (float)SettingsOf(inPlayer).reserve_window_min * 60000.0f;
+    float theFraction = theRemaining <= 0 ? 1.0f : theRemaining >= theWindow ? 0.0f
+                        : 1.0f - (float)theRemaining / theWindow;
+    for (int r = 2; r < 7; r++) {
+        long theCost = EpochCost(inPlayer, theNext, r);
+        outReserve[r] = theCost > 0 ? (long)(theCost * theFraction) : 0;
+    }
+}
+
+// FILL THE MINES (mines.c mine_fill, [ai_base] mine_fill fill_slots and mines_first, both off in the shipped file): from
+// the Copper Age on, once the game has run three minutes and the workforce reaches 30, turn spare wood- and
+// food-gatherers toward metal mines that have a free slot near a drop site (the home continent's alone while the
+// population cap is under 120). A metal already piling up above its epoch reserve gets no workers. mines_first also
+// draws below a fifth of the workers on wood and a third on food. The added workers change the wanted-gatherer targets;
+// the game's own assignment then moves the citizens.
+void MineFill(EECPResourceManager* inResources, unsigned long inNow)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    if (!theSettings.mine_fill.fill_slots)
+        return;
+    unsigned idx = thePlayer->mPlayerID & 15;
+    if (Epoch(thePlayer) < kFarmEpoch || inNow < 180000 || Workforce(inResources) < 30)
+        return;
+
+    long theSlots[7], theHomeSlots[7];
+    MineSlots(thePlayer, inNow, theSlots, theHomeSlots);
+
+    long theStock[7], theDemand[7], theReserve[7];
+    for (int r = 0; r < 7; r++) {
+        theStock[r] = thePlayer->mResourceCaps[r];
+        theDemand[r] = inResources->mNeeds[r];
+    }
+    MineReserve(thePlayer, inNow, theReserve);
+
+    bool theLow = thePlayer->mPopulationCap < 120;
+    long theWant[7] = {0};
+    long theGap = 0;
+    for (int r = 4; r < 7; r++) {
+        theWant[r] = theLow ? theHomeSlots[r] : theSlots[r];
+        if (theStock[r] - theReserve[r] > 1500)
+            theWant[r] = 0;
+        if ((long)inResources->mWantedGatherers[r] < theWant[r])
+            theGap += theWant[r] - (long)inResources->mWantedGatherers[r];
+    }
+    if (theGap <= 0)
+        return;
+
+    long theTotal = 0, theSum = 0;
+    for (int r = 0; r < 7; r++)
+        theTotal += (long)inResources->mGatherers[r].size();
+    for (int r = 2; r < 7; r++)
+        theSum += (long)inResources->mWantedGatherers[r];
+    long theFree = theSum < theTotal ? theTotal - theSum : 0;
+    long theWoodNeed = theDemand[3] > theReserve[3] ? theDemand[3] : theReserve[3];
+    if (theWoodNeed > 3000)
+        theWoodNeed = 3000;
+    long theWoodSpare = theStock[3] - theWoodNeed - 500;
+    long theFoodSpare = theStock[2] - theReserve[2] - 1000;
+    long theWoodFloor = 4, theFoodFloor = (long)inResources->mWantedGatherers[2] * 3 / 5;
+    long theTaken = theFree < theGap ? theFree : theGap;
+
+    if (theWoodSpare > 0) {
+        float thePerWorker = sRates[idx].mPerWorker[3];
+        long theKeep = (long)((float)(theWoodNeed > theStock[3] ? theWoodNeed - theStock[3] : 0)
+                              / (2.0f * (thePerWorker > 2.0f ? thePerWorker : 2.0f))) + 2;
+        if (theKeep > theWoodFloor)
+            theWoodFloor = theKeep;
+        while (theTaken < theGap && (long)inResources->mWantedGatherers[3] > theWoodFloor) {
+            inResources->mWantedGatherers[3]--;
+            theTaken++;
+        }
+    }
+    if (theFoodSpare > 0)
+        while (theTaken < theGap && (long)inResources->mWantedGatherers[2] > theFoodFloor) {
+            inResources->mWantedGatherers[2]--;
+            theTaken++;
+        }
+    if (theSettings.mine_fill.mines_first) {
+        long theWoodFirst = theTotal / 5 > 4 ? theTotal / 5 : 4;
+        long theFoodFirst = theTotal / 3 > 6 ? theTotal / 3 : 6;
+        while (theTaken < theGap && ((long)inResources->mWantedGatherers[3] > theWoodFirst
+                                     || (long)inResources->mWantedGatherers[2] > theFoodFirst)) {
+            if ((long)inResources->mWantedGatherers[3] - theWoodFirst >= (long)inResources->mWantedGatherers[2] - theFoodFirst)
+                inResources->mWantedGatherers[3]--;
+            else
+                inResources->mWantedGatherers[2]--;
+            theTaken++;
+        }
+    }
+    for (int r = 4; r < 7 && theTaken > 0; r++) {
+        long theNeed = theWant[r] - (long)inResources->mWantedGatherers[r];
+        if (theNeed <= 0)
+            continue;
+        if (theNeed > theTaken)
+            theNeed = theTaken;
+        inResources->mWantedGatherers[r] += theNeed;
+        theTaken -= theNeed;
+    }
+}
+
 // GATHERING RESEARCH (gather_research in econ.c, [ai_base] gather_research): every 15 s one available, unresearched
 // candidate with a gathering effect is scheduled through the research manager and taken out of the candidates
 void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow)
