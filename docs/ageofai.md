@@ -96,8 +96,10 @@ centre, every 10 game seconds. Up to the Bronze Age, a citizen that has an enemy
 attacking it, and stands outside its towers' reach, walks to the nearest finished tower within 25 tiles and stands 1.5
 tiles behind it from the enemy: the raiders that follow come under the tower. `AgeOfAIEarly.cpp` is the module and
 `AgeOfAIEarlyGeometry.cpp` holds the places. The report of a simulated game gives the player `early_towers_queued`,
-`early_builders` and `early_baits`. The first army (`early_army`), the militia (`early_militia`) and the stone of the
-core towers in the worker plan wait for the files that hold them.
+`early_builders` and `early_baits`. With `[ai_base] early_army` on (off in the shipped file), from the Stone Age to the
+Bronze Age the player asks for one Archery Range a minute when none stands or goes up and none is queued, so the
+food-free ranged soldiers have a place to train. The army's training budget, the militia (`early_militia`) and the
+stone of the core towers in the worker plan wait for the files that hold them.
 
 ## The economy before farms
 

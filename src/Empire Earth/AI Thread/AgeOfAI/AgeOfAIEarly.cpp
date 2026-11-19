@@ -2,8 +2,9 @@
 // them (AgeOfAIEarlyGeometry.h for the places).
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/early.c
-// (early_towers_tick, early_bait, early_core_spot) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. The mod's
-// raiders_near is not ported yet: no raider memory. The front is the nearest seen enemy building, else the map's centre.
+// (early_towers_tick, early_bait, early_core_spot, early_range) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
+// The mod's raiders_near is not ported yet: no raider memory. The front is the nearest seen enemy building, else the
+// map's centre.
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
@@ -140,7 +141,7 @@ namespace AgeOfAI {
 namespace {
 
 struct EarlyState {
-    unsigned long mTowerTime, mBaitTime;
+    unsigned long mTowerTime, mBaitTime, mRangeTime;
     struct { int mX, mY; unsigned long mTime; } mPending[Early::kCoreTowers];   // core spots handed out recently
     unsigned long mQueued, mPlaced, mBuilders, mBaits;
 } sEarly[16];
@@ -441,6 +442,32 @@ void TowerBait(EEComputerPlayer* inPlayer, const SettingsAI& inSettings, unsigne
     theState.mBaits += theSent;
 }
 
+// The first army's home: from the Stone to the Bronze Age, ask for one Archery Range every minute when none stands or
+// goes up and none is queued, so the food-free ranged soldiers have a place to train. Upstream calls this at the end of
+// its early tick; it only logs the number it asks for, which the port does not carry.
+void EarlyRange(EEComputerPlayer* inPlayer, const SettingsAI& inSettings, unsigned long inNow)
+{
+    EarlyState& theState = sEarly[inPlayer->mPlayerID & 15];
+    long theEpoch = Epoch(inPlayer);
+    if (!inSettings.early_army || theEpoch < kTechEpochStone || theEpoch > kTechEpochBronze
+        || (theState.mRangeTime != 0 && inNow >= theState.mRangeTime && inNow - theState.mRangeTime < 60000))
+        return;
+    theState.mRangeTime = inNow ? inNow : 1;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL || theCivilization->mUnitManager == NULL
+        || gUnitClassTable[kUnitTypeArcheryRange] == NULL)
+        return;
+    std::deque<EEComplexUnit*>* theRanges = theCivilization->mUnitManager->GetUnits(kUnitTypeArcheryRange);
+    if (theRanges != NULL)
+        for (size_t i = 0; i < theRanges->size(); i++)
+            if ((*theRanges)[i] != NULL && (*theRanges)[i]->mHitPoints > 0)
+                return;
+    EECPBuildManager* theBuild = theCivilization->mBuildManager;
+    if (theBuild->IsQueued(kUnitTypeArcheryRange))
+        return;
+    theBuild->QueueBuilding(kUnitTypeArcheryRange, false, false);
+}
+
 }
 
 long EarlyTowerStone(EEComputerPlayer* inPlayer)
@@ -475,6 +502,7 @@ void TickEarly(EEComputerPlayer* inPlayer, unsigned long inNow)
     const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
     EarlyTowers(inPlayer, theSettings, inNow);
     TowerBait(inPlayer, theSettings, inNow);
+    EarlyRange(inPlayer, theSettings, inNow);
 }
 
 
