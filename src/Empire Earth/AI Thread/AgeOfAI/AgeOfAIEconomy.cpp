@@ -1,7 +1,7 @@
 // The economy of an Age of AI player: the income rates and the worker plan before farms (AgeOfAIWorkers.h).
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/econ.c
-// (rates_update, budget_reserve, econ_targets) and dll/ai/food.c (food_plan_needs) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07,
+// (rates_update, budget_reserve, econ_targets, follow_held) and dll/ai/food.c (food_plan_needs) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07,
 // GPL-3.0. From the Copper Age on the game's own targets stand (the late rules are not ported yet), and so do the military's
 // reserves (navy, landing, expansion), the field wood and the pull of gatherers to food.
 #include <windows.h>
@@ -138,7 +138,8 @@ namespace AgeOfAI {
 
 namespace {
 
-const int kFarmEpoch = 2;   // farms and granaries come with the Copper Age
+const int kFarmEpoch = 2;       // farms and granaries come with the Copper Age
+const int kPacingFollow = 3;    // epoch_pacing choice: classic, timer, rush, follow, independent
 
 // The income of each resource since the game began, and its rate: per minute in total and per worker-minute (with 2 or
 // more workers on it; the defaults until then), measured every 30 seconds and smoothed over about 2 minutes
@@ -160,6 +161,32 @@ const SettingsAI& SettingsOf(EEComputerPlayer* inPlayer)
     return SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
 }
 
+// The highest epoch a human player has reached, or -1 with no human in the game.
+long HighestHumanEpoch()
+{
+    long theHighest = -1;
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* theOther = gWorld.mPlayers[p];
+        if (theOther == NULL || theOther->mHumanPlayer == NULL || theOther->mTechnologies == NULL)
+            continue;
+        long theOtherEpoch = theOther->mTechnologies->mCurrentEpoch;
+        if (theOtherEpoch > theHighest)
+            theHighest = theOtherEpoch;
+    }
+    return theHighest;
+}
+
+// epoch_pacing=follow: the AI keeps level with the highest human epoch. While no human is ahead it holds its next
+// epoch's attempt a minute off and reserves nothing for it, but still asks for its requirements. With no human in
+// the game the timer alone counts.
+bool FollowHeld(EEComputerPlayer* inPlayer)
+{
+    if (SettingsOf(inPlayer).epoch_pacing != kPacingFollow || inPlayer->mTechnologies == NULL)
+        return false;
+    long theHighest = HighestHumanEpoch();
+    return theHighest >= 0 && theHighest <= Epoch(inPlayer);
+}
+
 long EpochCost(EEPlayer* inPlayer, long inEpoch, long inResource)
 {
     if (inEpoch < 0 || inEpoch > 13 || inPlayer->mTechnologies == NULL)
@@ -175,6 +202,8 @@ void BudgetReserve(EEComputerPlayer* inPlayer, int inCopperPlan, long outReserve
 {
     for (int r = 0; r < 7; r++)
         outReserve[r] = 0;
+    if (FollowHeld(inPlayer))
+        return;
     long theNext = Epoch(inPlayer) + 1;
     if (theNext > 13 || theNext > kFarmEpoch)
         return;
@@ -278,8 +307,8 @@ void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow)
 // The attempt at the next epoch, pulled forward: the game plans it by a timer, often long after the player could pay. Before
 // the Copper Age with the copper plan, and in every epoch with epoch_pacing rush, the attempt moves to now as soon as the
 // stock pays the next epoch (the research of the requirements the game then asks for first). A request for them still
-// pending after five minutes is asked again. The follow pacing (waiting for the humans) and the timer pacing's catch-up
-// are not ported.
+// pending after five minutes is asked again. With follow, while no human is ahead, the attempt is kept a minute off;
+// once a human is ahead it moves up like rush. The timer pacing's catch-up is not ported.
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sPending[16];
@@ -287,9 +316,16 @@ void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow)
     long theEpoch = Epoch(inPlayer);
     const int kPacingRush = 2;
     bool theRush = theSettings.epoch_pacing == kPacingRush;
-    if (!((theSettings.copper_plan != 0 && theEpoch < kFarmEpoch) || theRush))
-        return;
+    bool theFollow = theSettings.epoch_pacing == kPacingFollow;
+    long theHighest = theFollow ? HighestHumanEpoch() : -1;
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theFollow && theHighest >= 0 && theHighest <= theEpoch) {
+        if (theCivilization != NULL && theCivilization->mNextEpochAdvanceTime < inNow + 60000)
+            theCivilization->mNextEpochAdvanceTime = inNow + 60000;
+        return;
+    }
+    if (!((theSettings.copper_plan != 0 && theEpoch < kFarmEpoch) || theRush || (theFollow && theHighest >= 0)))
+        return;
     if (theCivilization == NULL || theEpoch < 0 || theEpoch >= 13 || inPlayer->mTechnologies->Get(theEpoch + 1) == NULL)
         return;
     unsigned idx = inPlayer->mPlayerID & 15;

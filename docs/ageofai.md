@@ -117,8 +117,10 @@ military's reserves, the fields' wood and the late rules wait for their files.
 The game plans its attempt at the next epoch by a timer, often long after the player could pay. With the copper plan,
 before the Copper Age, and in every epoch with `epoch_pacing` `rush`, an Age of AI player moves the attempt to now as
 soon as its stock pays the next epoch (the game then researches the requirements it asks for first). A request for them
-that is still pending after five minutes is asked again. The `follow` pacing (waiting for the humans) and the catch-up of
-the `timer` pacing are not ported.
+that is still pending after five minutes is asked again. With `epoch_pacing` `follow`, while no human is ahead the attempt is kept a
+minute off and no resources are held back for the next epoch, though its requirements are still asked for; once a
+human is ahead it moves up as soon as the epoch can be paid. With no human in the game the timer alone counts. The
+catch-up of the `timer` pacing is not ported.
 `AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the hooks.
 
 The game's research manager schedules gathering upgrades rarely. With `[ai_base] gather_research` on (the default) an Age of
