@@ -173,6 +173,8 @@ With `food_plan` `hunt_near` (off in the shipped file), before each assignment i
 animals within `[ai_base] food_hunt_range` tiles (15 by default) of a Town Center, Capitol or Settlement. The animal is
 the free one nearest to such a drop site: food, an animal, fewer than three gatherers, on the citizen's land, with no
 enemy near and not a dangerous site. As upstream, a tiger or a wolf is left alone; the port resolves it by its name string.
+With `food_plan` `back_to_food` also on, before farms, a gatherer pulled back to food goes to a free animal first and
+takes a forage bush only when none is in reach.
 
 With `food_plan` `wild_settlement` (off in the shipped file), before the Copper Age an Age of AI player may place a
 Settlement by rich wild food far from its drop sites, at most twice in a game and no more than once every two minutes.

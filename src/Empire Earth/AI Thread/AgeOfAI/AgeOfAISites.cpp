@@ -712,10 +712,69 @@ EEUnit* FoodBush(EECPResourceManager* inResources, EEComplexUnit* inUnit, long i
 }
 
 
+// A free animal to hunt for a citizen, nearest to a drop site that takes hunters: food, an animal, fewer than three
+// gatherers, explored, the citizen's land, no enemy near, not a dangerous site, within [ai_base] food_hunt_range tiles.
+// Upstream's food_animal (food.c). A tiger or a wolf is left alone.
+EEUnit* FoodAnimal(EECPResourceManager* inResources, EEComplexUnit* inUnit)
+{
+    if (inUnit == NULL)
+        return NULL;
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
+    if (theBuild == NULL)
+        return NULL;
+    unsigned thePI = thePlayer->mPlayerID & 15;
+    DropsCached(thePlayer);
+    const std::vector<Drop>& theDrops = sDrops[thePI].mDrops;
+    long theRange = gSettingsAI[thePlayer->GetDifficulty()].food_hunt_range;
+    if (theRange <= 0)
+        theRange = 15;
+    long theRegion = (long)gContinentManager.GetContinentID(inUnit);
+    EEUnit* theBest = NULL;
+    long theBestD = theRange * theRange + 1;
+    std::vector<EEUnit*> theNear;
+    for (size_t i = 0; i < theDrops.size(); i++) {
+        const Drop& theDrop = theDrops[i];
+        if (theDrop.mFood)   // granaries do not take hunters
+            continue;
+        theNear.clear();
+        GE2DPoint theCenter((float)theDrop.mX, (float)theDrop.mY);
+        EEGetUnitsInRadius(theCenter, (float)theRange, theNear);
+        for (size_t u = 0; u < theNear.size(); u++) {
+            EEUnit* theAnimal = theNear[u];
+            if (theAnimal == NULL || theAnimal->mHitPoints <= 0 || theAnimal->mUnitClass == NULL)
+                continue;
+            if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
+                continue;
+            if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal)
+                continue;
+            if (!ExploredBy(theAnimal, thePlayer))
+                continue;
+            if (IsFierceAnimal(theAnimal->mUnitClass))
+                continue;
+            long theAX = theAnimal->mTileX, theAY = theAnimal->mTileY;
+            long theDX = theAX - theDrop.mX, theDY = theAY - theDrop.mY;
+            long theD2 = theDX * theDX + theDY * theDY;
+            if (theD2 >= theBestD)
+                continue;
+            if ((unsigned long)gWorld.GetResourceUsers(theAnimal) >= 3)
+                continue;
+            if ((long)gContinentManager.GetContinentID(theAnimal) != theRegion)
+                continue;
+            if (theBuild->HasEnemyNear(theAX, theAY))
+                continue;
+            if (SiteDanger(thePlayer, theAnimal, true, 2))
+                continue;
+            theBest = theAnimal;
+            theBestD = theD2;
+        }
+    }
+    return theBest;
+}
+
 // HUNT NEAR (food_plan hunt_near, off in the shipped file; before the assignment): idle citizens hunt animals near a
 // drop site that takes hunters (Town Center, Capitol, Settlement), within [ai_base] food_hunt_range tiles, before farms.
-// The animal is the free one nearest to a drop site: food, an animal, gatherers below 3, the citizen's land, no enemy
-// near, not a dangerous site. Upstream's food_hunt and food_animal (food.c). A tiger or a wolf is left alone.
+// The animal is the free one nearest to a drop site. Upstream's food_hunt (food.c).
 void FoodHunt(EECPResourceManager* inResources)
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
@@ -730,15 +789,8 @@ void FoodHunt(EECPResourceManager* inResources)
     if (inResources->mWantedGatherers[kResourceFood] <= inResources->mGatherers[kResourceFood].size())
         return;
 
-    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
-    if (theBuild == NULL)
+    if (inResources->mManager->mBuildManager == NULL)
         return;
-    unsigned thePI = thePlayer->mPlayerID & 15;
-    DropsCached(thePlayer);
-    const std::vector<Drop>& theDrops = sDrops[thePI].mDrops;
-    long theRange = gSettingsAI[thePlayer->GetDifficulty()].food_hunt_range;
-    if (theRange <= 0)
-        theRange = 15;
 
     // the idle citizens, as AssignGatherers collects them: no build queue, on the map, with no goal or a waiting gather
     std::vector<EEComplexUnit*> theIdle;
@@ -778,46 +830,7 @@ void FoodHunt(EECPResourceManager* inResources)
         if (!(theUnit->GetLoadGoal() == NULL || (theGoal != NULL && theGoal->mWaiting)))
             continue;
 
-        long theRegion = (long)gContinentManager.GetContinentID(theUnit);
-        EEUnit* theBest = NULL;
-        long theBestD = theRange * theRange + 1;
-        std::vector<EEUnit*> theNear;
-        for (size_t i = 0; i < theDrops.size(); i++) {
-            const Drop& theDrop = theDrops[i];
-            if (theDrop.mFood)   // granaries do not take hunters
-                continue;
-            theNear.clear();
-            GE2DPoint theCenter((float)theDrop.mX, (float)theDrop.mY);
-            EEGetUnitsInRadius(theCenter, (float)theRange, theNear);
-            for (size_t u = 0; u < theNear.size(); u++) {
-                EEUnit* theAnimal = theNear[u];
-                if (theAnimal == NULL || theAnimal->mHitPoints <= 0 || theAnimal->mUnitClass == NULL)
-                    continue;
-                if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
-                    continue;
-                if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal)
-                    continue;
-                if (!ExploredBy(theAnimal, thePlayer))
-                    continue;
-                if (IsFierceAnimal(theAnimal->mUnitClass))
-                    continue;
-                long theAX = theAnimal->mTileX, theAY = theAnimal->mTileY;
-                long theDX = theAX - theDrop.mX, theDY = theAY - theDrop.mY;
-                long theD2 = theDX * theDX + theDY * theDY;
-                if (theD2 >= theBestD)
-                    continue;
-                if ((unsigned long)gWorld.GetResourceUsers(theAnimal) >= 3)
-                    continue;
-                if ((long)gContinentManager.GetContinentID(theAnimal) != theRegion)
-                    continue;
-                if (theBuild->HasEnemyNear(theAX, theAY))
-                    continue;
-                if (SiteDanger(thePlayer, theAnimal, true, 2))
-                    continue;
-                theBest = theAnimal;
-                theBestD = theD2;
-            }
-        }
+        EEUnit* theBest = FoodAnimal(inResources, theUnit);
         if (theBest == NULL)
             continue;
         unsigned long theBefore = inResources->mGatherers[kResourceFood].size();
@@ -961,12 +974,17 @@ void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow)
 
 // FOOD PULL (food_plan back_to_food, on by default; after every assignment pass and the rebalance): while food is 2 or
 // more gatherers short of its target, up to 4 gatherers move to the nearest free forage bush, each from the resource
-// farthest above its target
+// farthest above its target. With food_plan hunt_near, before farms, a free animal comes first.
 void FoodPull(EECPResourceManager* inResources)
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
-    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI || !SettingsOf(thePlayer).food_plan.back_to_food)
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
         return;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    if (!theSettings.food_plan.back_to_food)
+        return;
+    long theEpoch = thePlayer->mTechnologies != NULL ? thePlayer->mTechnologies->mCurrentEpoch : -1;
+    bool theHunt = theSettings.food_plan.hunt_near && theEpoch < kFarmEpoch;
     long theReach = thePlayer->GetDropOffDistance();
     int theMoves = 0, theDry = 0;
     while (theMoves < 4 && (long)inResources->mWantedGatherers[2] - (long)inResources->mGatherers[2].size() >= 2) {
@@ -984,8 +1002,10 @@ void FoodPull(EECPResourceManager* inResources)
             theDry |= 1 << theDonor;
             continue;
         }
-        EEUnit* theSite = FoodBush(inResources, theUnit, theReach * theReach * 36);
-        if (theSite == NULL) {   // no free, safe bush for this donor: try another
+        EEUnit* theSite = theHunt ? FoodAnimal(inResources, theUnit) : NULL;
+        if (theSite == NULL)
+            theSite = FoodBush(inResources, theUnit, theReach * theReach * 36);
+        if (theSite == NULL) {   // no free, safe animal or bush for this donor: try another
             theDry |= 1 << theDonor;
             continue;
         }
