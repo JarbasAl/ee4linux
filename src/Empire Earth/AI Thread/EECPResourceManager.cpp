@@ -1518,6 +1518,7 @@ void EECPResourceManager::Update(unsigned long inTime)
             this->UpdateWantedGatherers();
             AgeOfAI::EconTargets(this);
             AgeOfAI::MineFill(this, inTime);
+            AgeOfAI::LateFoodTargets(this, inTime);
         }
         this->mNextWantedGatherersTime = inTime + 5000;
     }

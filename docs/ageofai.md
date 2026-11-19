@@ -204,6 +204,14 @@ from wood above a floor of four plus a share held for the wood demand, then from
 `mine_fill` `mines_first` also takes from wood above a fifth and food above a third of all gatherers. The pass changes the
 wanted-gatherer targets, and the game's own assignment moves the citizens.
 
+With `[ai_base] late_targets` `food_to_metals` (off in the shipped file), from the Copper Age on an Age of AI player trims
+the farmers' wanted count while food piles up. Every 10 game seconds, with at least six gatherers wanted in all, the count
+falls by 2 when the food stock is more than 4000 above the cost held back for the next epoch, and rises by 6 when it is
+under 2000. Under 500 the count returns to the fields plus 2. No more than half the fields stand idle. The wanted workers
+taken from food go to stone, gold and iron by their demand beyond stock, with a small share for each metal, and the game's
+own assignment moves the citizens. The other bits of `late_targets` are not ported: the wood gap and the army's refusal
+pull need the unported training budget.
+
 ## What is dangerous for the citizens
 
 The game's searches send citizens through the enemy's defences, to sites raiders stand at, and to places where citizens

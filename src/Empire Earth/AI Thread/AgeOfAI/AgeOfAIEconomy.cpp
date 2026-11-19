@@ -2,8 +2,9 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/econ.c
 // (rates_update, budget_reserve, econ_targets, follow_held) and dll/ai/food.c (food_plan_needs) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07,
-// GPL-3.0. From the Copper Age on the game's own targets stand (the late rules are not ported yet), and so do the military's
-// reserves (navy, landing, expansion), the field wood and the pull of gatherers to food.
+// GPL-3.0. From the Copper Age on the game's own targets stand, apart from the food pile of late_targets food_to_metals
+// (off in the shipped file). The other late rules are not ported, nor are the military's reserves (navy, landing,
+// expansion), the field wood and the pull of gatherers to food.
 #include <windows.h>
 #include <unistd.h>
 #include <algorithm>
@@ -509,6 +510,74 @@ void MineFill(EECPResourceManager* inResources, unsigned long inNow)
         inResources->mWantedGatherers[r] += theNeed;
         theTaken -= theNeed;
     }
+}
+
+// LATE FOOD TARGET (econ.c late_targets bit 8 food_to_metals, off in the shipped file): from the Copper Age on, while food
+// lies far above the epoch reserve, lower the farmers' wanted count a little at a time and give those workers to the
+// metals by their demand beyond stock. A food stock under the reserve + 500 restores the target up to the fields + 2;
+// no more than half the fields stand idle. Not ported from the same setting: the wood-floor pass (bits 1 and 2) and the
+// army-refusal metal pull (bit 16), which need the unported training budget and refusal counters.
+void LateFoodTargets(EECPResourceManager* inResources, unsigned long inNow)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    if (!theSettings.late_targets.food_to_metals || Epoch(thePlayer) < kFarmEpoch)
+        return;
+    unsigned idx = thePlayer->mPlayerID & 15;
+    long theTotal = 0;
+    for (int r = 2; r < 7; r++)
+        theTotal += (long)inResources->mWantedGatherers[r];
+    if (theTotal < 6)
+        return;
+
+    static long sCap[16];
+    static unsigned long sCapTime[16];
+    if (inNow < sCapTime[idx])   // a new game
+        sCap[idx] = 0;
+    long theFields = 0;
+    EECPCivilizationManager* theCivilization = thePlayer->mCivilizationManager;
+    if (theCivilization != NULL && theCivilization->mUnitManager != NULL)
+        theFields = (long)theCivilization->mUnitManager->GetCount(kUnitTypeFarm);
+    long theReserve[7];
+    MineReserve(thePlayer, inNow, theReserve);
+    long theSpare = thePlayer->mResourceCaps[2] - theReserve[2];
+    long theCap = sCap[idx] != 0 ? sCap[idx] : (long)inResources->mWantedGatherers[2];
+    long theTop = theFields + 2 > 6 ? theFields + 2 : 6;
+    if (inNow < sCapTime[idx] || inNow - sCapTime[idx] >= 10000) {
+        sCapTime[idx] = inNow != 0 ? inNow : 1;
+        theCap += theSpare > 4000 ? -2 : theSpare < 2000 ? 6 : 0;
+    }
+    if (theSpare < 500)
+        theCap = theTop;
+    long theLow = theFields / 2 > 6 ? theFields / 2 : 6;
+    theCap = theCap < theLow ? theLow : theCap > theTop ? theTop : theCap;
+    sCap[idx] = theCap;
+    long theExtra = (long)inResources->mWantedGatherers[2] - theCap;
+    if (theExtra <= 0)
+        return;
+
+    float theWeight[7] = {0};
+    float theSum = 0;
+    for (int r = 4; r < 7; r++) {
+        long theGap = inResources->mNeeds[r] - thePlayer->mResourceCaps[r];
+        theWeight[r] = (float)(theGap < 0 ? 0 : theGap > 3000 ? 3000 : theGap) + 100.0f;
+        theSum += theWeight[r];
+    }
+    if (theSum <= 0)
+        return;
+    long theGiven = 0;
+    for (int r = 4; r < 7; r++) {
+        long theCount = (long)((float)theExtra * theWeight[r] / theSum);
+        inResources->mWantedGatherers[r] += theCount;
+        theGiven += theCount;
+    }
+    for (int r = 5; theGiven < theExtra; r = r == 6 ? 5 : r + 1) {
+        inResources->mWantedGatherers[r]++;
+        theGiven++;
+    }
+    inResources->mWantedGatherers[2] = (unsigned long)theCap;
 }
 
 // GATHERING RESEARCH (gather_research in econ.c, [ai_base] gather_research): every 15 s one available, unresearched

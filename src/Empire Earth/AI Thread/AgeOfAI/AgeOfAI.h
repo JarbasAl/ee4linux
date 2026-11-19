@@ -82,6 +82,8 @@ void EconTargets(EECPResourceManager* inResources);
 void MineSlots(EEComputerPlayer* inPlayer, unsigned long inNow, long outSlots[7], long outHomeSlots[7]);
 // FILL THE MINES (mines.c mine_fill, off in the shipped file): turn spare wood- and food-gatherers toward metal mines
 void MineFill(EECPResourceManager* inResources, unsigned long inNow);
+// LATE FOOD TARGET (econ.c late_targets food_to_metals, off in the shipped file): cap the farmers' target while food piles up
+void LateFoodTargets(EECPResourceManager* inResources, unsigned long inNow);
 // The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's
 // towers within a square around a tile
 long NewestTowerOf(EEPlayer* inPlayer);
