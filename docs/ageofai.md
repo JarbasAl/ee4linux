@@ -233,8 +233,8 @@ until the [benchmark](benchmark.md) rates them as the AI `aoai-militia`.
 
 Every two game seconds an Age of AI player looks for two kinds of threat. With `citizen_militia` on, its citizens attack enemy citizens who build a defence within 12 tiles of its buildings or citizens, and, up
 to the Bronze Age, enemy units that attack one of its units near its citizens. Only gathering or idle citizens within
-10 tiles go, at most 3 per enemy and against at most 6 enemies, and only when their hit points times attack are 3 times
-those of the enemies within 6 tiles. With `early_militia` (the default) they fight soldiers only next to their own
+10 tiles go, at most 3 per enemy and against at most 6 enemies, and only when the hit points times attack of every
+citizen within 10 tiles (idle, gathering or busy) are 3 times those of the enemies within 6 tiles. With `early_militia` (the default) they fight soldiers only next to their own
 soldiers or under their own towers, and only where the fight estimate has them win without the loss of a citizen.
 
 With `counter_siege` on, up to 5 soldiers within 20 tiles attack an enemy siege weapon or ram in reach of

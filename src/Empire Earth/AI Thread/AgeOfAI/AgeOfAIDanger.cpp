@@ -1273,10 +1273,7 @@ int MilitiaAnswer(EEPlayer* inPlayer, const SettingsAI& inSettings, SiegeScan& i
         EEUnit* theCitizen = ioScan.mCitizen[c];
         if (theCitizen == NULL || Box(ioScan.mCX[c], theX) > 10 || Box(ioScan.mCY[c], theY) > 10)
             continue;
-        EEUnitGoal* theGoal = GoalOf(theCitizen);
-        if (theGoal != NULL && dynamic_cast<EEUGGather*>(theGoal) == NULL)
-            continue;   // only gathering or idle citizens go
-        theCitizenPower += UnitPower(theCitizen);
+        theCitizenPower += UnitPower(theCitizen);   // every citizen near counts, as upstream; only gathering or idle ones are ordered below
         n++;
         if (theEstimate)
             Stats::Add(sMilitiaOwn, theCitizen);
