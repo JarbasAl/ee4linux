@@ -1051,6 +1051,8 @@ bool EEComputerPlayer::CanAfford(EETechnology* inTechnology, long inUnitType, lo
 // When another player is in a later epoch, pulls the AI's next epoch advance forward to a random catch-up time
 void EEComputerPlayer::CatchUpEpoch(EEPlayer* inPlayer)
 {
+    if (AgeOfAI::EpochCatchUpSkipped(this))
+        return;
     unsigned long theNext = this->mCivilizationManager->mNextEpochAdvanceTime;
     unsigned long theNow = gPhysics->mGameTime;
     long theMinimum;

@@ -119,9 +119,10 @@ before the Copper Age, and in every epoch with `epoch_pacing` `rush`, an Age of 
 soon as its stock pays the next epoch (the game then researches the requirements it asks for first). A request for them
 that is still pending after five minutes is asked again. With `epoch_pacing` `follow`, while no human is ahead the attempt is kept a
 minute off and no resources are held back for the next epoch, though its requirements are still asked for; once a
-human is ahead it moves up as soon as the epoch can be paid. With no human in the game the timer alone counts. The
-catch-up of the `timer` pacing is not ported.
-`AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the hooks.
+human is ahead it moves up as soon as the epoch can be paid. With no human in the game the timer alone counts. With
+`epoch_pacing` `timer` an Age of AI player ignores the game's catch-up when a human reaches an epoch, so the timer alone
+counts; every other pacing keeps the catch-up. `AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the
+hooks.
 
 The game's research manager schedules gathering upgrades rarely. With `[ai_base] gather_research` on (the default) an Age of
 AI player with ten or more gatherers takes, every 15 game seconds, one available, unresearched tech from the manager's

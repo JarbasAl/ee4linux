@@ -139,7 +139,8 @@ namespace AgeOfAI {
 namespace {
 
 const int kFarmEpoch = 2;       // farms and granaries come with the Copper Age
-const int kPacingFollow = 3;    // epoch_pacing choice: classic, timer, rush, follow, independent
+const int kPacingTimer = 1;     // epoch_pacing choice: classic, timer, rush, follow, independent
+const int kPacingFollow = 3;
 
 // The income of each resource since the game began, and its rate: per minute in total and per worker-minute (with 2 or
 // more workers on it; the defaults until then), measured every 30 seconds and smoothed over about 2 minutes
@@ -269,6 +270,14 @@ long QueuedWood(EEComputerPlayer* inPlayer, EECPBuildManager* inBuild)
 
 }
 
+// The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. With timer pacing it goes without
+// that catch-up: the timer alone counts. Every other pacing keeps the catch-up, and so does the game's own AI.
+bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer)
+{
+    return EngineOf(inPlayer->mPlayerID) == kEngineAgeOfAI
+        && SettingsOf(inPlayer).epoch_pacing == kPacingTimer;
+}
+
 // An income of the player's, from EEComputerPlayer::AddResource
 void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount)
 {
@@ -308,7 +317,7 @@ void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow)
 // the Copper Age with the copper plan, and in every epoch with epoch_pacing rush, the attempt moves to now as soon as the
 // stock pays the next epoch (the research of the requirements the game then asks for first). A request for them still
 // pending after five minutes is asked again. With follow, while no human is ahead, the attempt is kept a minute off;
-// once a human is ahead it moves up like rush. The timer pacing's catch-up is not ported.
+// once a human is ahead it moves up like rush. With timer it ignores the game's catch-up (EpochCatchUpSkipped).
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sPending[16];

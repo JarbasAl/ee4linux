@@ -86,6 +86,8 @@ void TowerCounts(EEPlayer* inPlayer, long inX, long inY, long inRadius, int& out
 // The defence layout's extra towers (DefenceTick, every 20 game seconds)
 void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
+// The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
+bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);
 void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 // An epoch's line upgrades (kind 7): false when the game researches them itself, true when they are scheduled for research
 // The game's placement test of a building type on every tile of its footprint, inside the map's border
