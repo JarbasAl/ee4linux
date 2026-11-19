@@ -1713,11 +1713,13 @@ void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     static Stats::Side sHoldOwn, sHoldFoe;
     unsigned idx = inPlayer->mPlayerID & 15;
     const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
-    if (!theSettings.hold_town || sMuster[idx].mOn || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
+    if (!theSettings.hold_town || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
         return;
     if (inNow < sLast[idx])   // a new game
         sHoldTown[idx] = HoldTown();
     sLast[idx] = inNow != 0 ? inNow : 1;
+    if (sMuster[idx].mOn)   // the muster has them; upstream checks this after the new-game reset
+        return;
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
     HoldTown& theHold = sHoldTown[idx];
     if (theCivilization == NULL || theCivilization->mBuildManager == NULL || theCivilization->mBuildManager->mTownCenterTile.mX == -10000) {
