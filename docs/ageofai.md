@@ -286,8 +286,8 @@ with no enemy soldiers in sight within 12 tiles, and stops 4 tiles from the town
 stays. `AgeOfAIHome.h` holds the rules, and the sim report's `intel` object counts the citizens sent home
 (`home_sent`) and the base points that moved to a town (`home_base_moved`). Upstream's default turns `citizens_home` on.
 The shipped `ageofai.ini` turns it off until the [benchmark](benchmark.md) rates it as the AI `aoai-citizenshome`. Not
-ported: the citizens that a landing, an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`), and the
-removal of unfinished buildings stacked on one tile.
+ported: the citizens that a landing, an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`). It also removes
+duplicate unfinished buildings stacked on one tile, keeping the first of each type and tile and destroying the rest.
 
 ## Extra towers
 

@@ -750,7 +750,7 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
 // goal 15 or more tiles from its nearest finished town (idle on two passes in a row, between two jobs is not), or walking to
 // within 3 tiles of the base while a town is 10 tiles nearer, is sent to the nearest finished town on its land with no enemy
 // soldiers it sees within 12 tiles, none safe: it stays. Not ported: the exclusion of the citizens a landing, an outpost or a new
-// town holds (landing.c, expand.c, towns.c), and (3) the removal of unfinished buildings stacked on one tile.
+// town holds (landing.c, expand.c, towns.c).
 namespace {
 
 // what the module does, for the sim report (docs/simulator.md): citizens sent to a town, base points that moved there,
@@ -887,6 +887,44 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
         sHomeSent[idx]++;
     }
     sWasIdle[idx] = theNowIdle;
+    // (3) destroy duplicate unfinished buildings stacked on one tile. Collect first: destroying one changes the unit list
+    // we walk. Keep walls and finished buildings. Upstream dedupes by (tile, unit type) with a 256/512 cap and logs the
+    // count; the port keeps the cap and skips the log line.
+    {
+        struct Seen {
+            long mX, mY, mType;
+        };
+        std::vector<Seen> theSeen;
+        theSeen.reserve(256);
+        std::vector<EEUnit*> theExtra;
+        theExtra.reserve(512);
+        for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL
+                || theUnit->mUnitClass->mCategory != kUnitCategoryBuilding
+                || (Roles::RolesOf(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily, theUnit->mUnitClass->mRange) & Roles::kWall)
+                || theUnit->mComplexUnit->mIsBuilt)
+                continue;
+            long theType = (long)theUnit->mUnitClass->mUnitType;
+            bool theDuplicate = false;
+            for (size_t i = 0; i < theSeen.size(); i++) {
+                if (theSeen[i].mX == theUnit->mTileX && theSeen[i].mY == theUnit->mTileY && theSeen[i].mType == theType) {
+                    theDuplicate = true;
+                    break;
+                }
+            }
+            if (theDuplicate) {
+                if (theExtra.size() < 512)
+                    theExtra.push_back(theUnit);
+                continue;
+            }
+            if (theSeen.size() < 256) {
+                Seen theEntry = {theUnit->mTileX, theUnit->mTileY, theType};
+                theSeen.push_back(theEntry);
+            }
+        }
+        for (size_t i = 0; i < theExtra.size(); i++)
+            theExtra[i]->Kill(0, 0, 0);
+    }
 }
 
 // MUSTER (muster in defence.c, [ai_base] muster): an enemy army in the base got the defenders one by one. Every 3 s: enemy
