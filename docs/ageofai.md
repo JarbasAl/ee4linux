@@ -188,6 +188,13 @@ tiles of one tree, and no Settlement is going up and the player can build one, i
 nearest the middle of their trees (2 to 12 tiles away), with no enemy building or soldiers near. The cost reserve that holds
 the Settlement's price back from training waits for the training budget.
 
+With `[ai_base] mine_fill` `mine_settlement` or `citizen_plan` `mine_settlement` (both off in the shipped file), an Age of
+AI player may place a Settlement by a far mine. From the Copper Age on, with 30 or more gatherers, every two game minutes
+it queues a Settlement 3 to 6 tiles from the free far mine on the home continent: a stone, gold or iron mine more than 12
+tiles from every drop site, explored, active, with no enemy near and not a dangerous site. At most six are queued in a
+game, and none while another Settlement is queued or going up; the player must be able to build and pay for one. Only the
+far mine is read; the mine-slot tally of the fill pass is not ported.
+
 ## What is dangerous for the citizens
 
 The game's searches send citizens through the enemy's defences, to sites raiders stand at, and to places where citizens

@@ -94,6 +94,9 @@ void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool CanPlace(EEPlayer* inPlayer, long inType, long inX, long inY);
 // The drop sites by the forests (WoodDrops, called once a game second)
 void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow);
+// The drop site by the home continent's far mine (mines.c mine_drops, mine_fill mine_settlement or citizen_plan
+// mine_settlement, both off in the shipped file), called once a game second
+void MineDrops(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The settings the player's own fields take, once per player on its first update
 void ApplySettings(EEComputerPlayer* inPlayer);
 void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow);

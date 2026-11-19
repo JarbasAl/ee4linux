@@ -655,6 +655,119 @@ void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
             }
 }
 
+namespace {
+
+// MINE DROP (mines.c mine_drops, mine_fill mine_settlement or citizen_plan mine_settlement, both off in the shipped file).
+// From the Copper Age on, with 30 or more gatherers, every two game minutes a Settlement is queued 3 to 6 tiles from the
+// home continent's far mine: the mine nearest a drop site that lies more than 12 tiles from every drop site, explored,
+// active, with no enemy near and not dangerous. At most six are queued in a game. The slot tally of the fill pass is not
+// ported: the DROP reads only the far mine.
+struct MineDropState {
+    unsigned long mTime;          // the last scan, cached for 10 seconds
+    unsigned long mDropTime;      // the last DROP decision, at most one every two minutes
+    int mDropsQueued;
+    long mFarX, mFarY, mFarResource;
+};
+MineDropState sMineDrop[16];
+
+void MineScan(EEComputerPlayer* inPlayer, unsigned inPI, unsigned long inNow)
+{
+    MineDropState& theState = sMineDrop[inPI];
+    if (theState.mTime != 0 && inNow >= theState.mTime && inNow - theState.mTime < 10000)
+        return;
+    theState.mTime = inNow ? inNow : 1;
+    theState.mFarResource = 0;
+    EECPCivilizationManager* theCiv = inPlayer->mCivilizationManager;
+    EECPBuildManager* theBuild = theCiv != NULL ? theCiv->mBuildManager : NULL;
+    if (theBuild == NULL)
+        return;
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theBaseX == -10000 || theBaseY == -10000)
+        return;
+    unsigned short theHome = gContinentManager.GetContinent(EETileCoordinate(theBaseX, theBaseY), 2);
+    DropsCached(inPlayer);
+    long theBest = 0x7FFFFFFF;
+    for (unsigned long z = 0; z < inPlayer->GetNumResourceCenters() && z < 256; z++) {
+        EECPResourceCenter* theZone = inPlayer->GetResourceCenter(z);
+        if (theZone == NULL || !theZone->mIsActive)
+            continue;
+        for (size_t k = 0; k < theZone->mUnits.size() && k < 4096; k++) {
+            EEUnit* theSite = theZone->mUnits[k];
+            if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mUnitClass == NULL || theSite->mResourceAmount <= 0)
+                continue;
+            long theResource = (long)theSite->mResourceType;
+            if (theResource < 4 || theResource > 6)
+                continue;
+            long theD = DropNearest(inPI, theSite->mTileX, theSite->mTileY, false, NULL);
+            if (theD <= 12 * 12 || theD >= theBest)   // near a drop site already, or farther than the far mine so far
+                continue;
+            if (gContinentManager.GetContinent(EETileCoordinate(theSite->mTileX, theSite->mTileY), 2) != theHome)
+                continue;
+            if (!ExploredBy(theSite, inPlayer))
+                continue;
+            if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY) || SiteDanger(inPlayer, theSite, false, (int)theResource))
+                continue;
+            theBest = theD;
+            theState.mFarX = theSite->mTileX;
+            theState.mFarY = theSite->mTileY;
+            theState.mFarResource = theResource;
+        }
+    }
+}
+
+}
+
+void MineDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    MineDropState& theState = sMineDrop[thePI];
+    if (inNow < theState.mTime)   // a new game
+        theState = MineDropState();
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (!theSettings.mine_fill.mine_settlement && !theSettings.citizen_plan.mine_settlement)
+        return;
+    long theEpoch = inPlayer->mTechnologies != NULL ? inPlayer->mTechnologies->mCurrentEpoch : -1;
+    EECPCivilizationManager* theCiv = inPlayer->mCivilizationManager;
+    EECPResourceManager* theResources = theCiv != NULL ? theCiv->mResourceManager : NULL;
+    long theWorkers = 0;
+    if (theResources != NULL)
+        for (int t = 0; t < 7; t++)
+            theWorkers += (long)theResources->mGatherers[t].size();
+    if (theEpoch < kFarmEpoch || inNow < 180000 || theWorkers < 30)
+        return;
+    if (theState.mDropsQueued >= 6)
+        return;
+    if (theState.mDropTime != 0 && inNow >= theState.mDropTime && inNow - theState.mDropTime < 120000)
+        return;
+    theState.mDropTime = inNow ? inNow : 1;
+    MineScan(inPlayer, thePI, inNow);
+    if (theState.mFarResource == 0)
+        return;
+    EECPBuildManager* theBuild = theCiv->mBuildManager;
+    if (theBuild == NULL || gUnitClassTable[kUnitTypeSettlement] == NULL || theEpoch >= 14)
+        return;
+    if (theBuild->IsQueued(kUnitTypeSettlement))   // the queue's own Settlements count too
+        return;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext))
+        if (theUnit->mHitPoints > 0 && theUnit->mUnitClass != NULL && (long)theUnit->mUnitClass->mUnitType == kUnitTypeSettlement
+            && (theUnit->mComplexUnit == NULL || theUnit->mComplexUnit->IsFoundation() || !theUnit->mComplexUnit->mIsBuilt))
+            return;   // one going up: wait for it
+    if (!inPlayer->CanProduceUnitType(kUnitTypeSettlement, 0x20, NULL))
+        return;
+    for (int r = 3; r <= 6; r++)
+        for (int ax = -r; ax <= r; ax++)
+            for (int ay = -r; ay <= r; ay++) {
+                if (abs(ax) != r && abs(ay) != r)
+                    continue;
+                long theX = theState.mFarX + ax, theY = theState.mFarY + ay;
+                if (!CanPlace(inPlayer, kUnitTypeSettlement, theX, theY) || RaidersNear(inPlayer, theX, theY, 12))
+                    continue;
+                theBuild->QueueBuildingAt(kUnitTypeSettlement, theX, theY);
+                theState.mDropsQueued++;
+                return;
+            }
+}
+
 
 namespace {
 
