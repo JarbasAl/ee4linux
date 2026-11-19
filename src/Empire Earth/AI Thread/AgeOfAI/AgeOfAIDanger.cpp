@@ -1715,6 +1715,8 @@ void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
     if (!theSettings.hold_town || sMuster[idx].mOn || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
         return;
+    if (inNow < sLast[idx])   // a new game
+        sHoldTown[idx] = HoldTown();
     sLast[idx] = inNow != 0 ? inNow : 1;
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
     HoldTown& theHold = sHoldTown[idx];
