@@ -166,6 +166,13 @@ const SettingsAI& SettingsOf(EEComputerPlayer* inPlayer)
     return SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
 }
 
+// A tiger or a wolf is food but fights back; upstream leaves it alone (food.c food_fierce). The class's name string
+// identifies it: dbobjects' tiger and wolf carry these names.
+bool IsFierceAnimal(EEUnitClass* inClass)
+{
+    return inClass != NULL && (inClass->mNameStringID == IDS_UNIT_TIGER || inClass->mNameStringID == IDS_UNIT_WOLF);
+}
+
 bool IsCitizenUnit(EEUnit* inUnit)
 {
     EEUnitClass* theClass = inUnit->mUnitClass;
@@ -708,8 +715,7 @@ EEUnit* FoodBush(EECPResourceManager* inResources, EEComplexUnit* inUnit, long i
 // HUNT NEAR (food_plan hunt_near, off in the shipped file; before the assignment): idle citizens hunt animals near a
 // drop site that takes hunters (Town Center, Capitol, Settlement), within [ai_base] food_hunt_range tiles, before farms.
 // The animal is the free one nearest to a drop site: food, an animal, gatherers below 3, the citizen's land, no enemy
-// near, not a dangerous site. Upstream's food_hunt and food_animal (food.c). Upstream leaves tiger and wolf alone; this
-// port does not resolve their type names, so the site's danger and the enemy-near checks stand in for that guard.
+// near, not a dangerous site. Upstream's food_hunt and food_animal (food.c). A tiger or a wolf is left alone.
 void FoodHunt(EECPResourceManager* inResources)
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
@@ -793,7 +799,8 @@ void FoodHunt(EECPResourceManager* inResources)
                     continue;
                 if (!ExploredBy(theAnimal, thePlayer))
                     continue;
-                // predators are not excluded by type name in this port; the danger and enemy-near checks guard the citizen
+                if (IsFierceAnimal(theAnimal->mUnitClass))
+                    continue;
                 long theAX = theAnimal->mTileX, theAY = theAnimal->mTileY;
                 long theDX = theAX - theDrop.mX, theDY = theAY - theDrop.mY;
                 long theD2 = theDX * theDX + theDY * theDY;
@@ -824,7 +831,7 @@ void FoodHunt(EECPResourceManager* inResources)
 // food the town's drop sites are far from - every 2 minutes while none is queued or going up and the player can build
 // one, at most 2 a game. Bushes and animals within 30 tiles of the base count as wild food; a spot 10 or more tiles
 // from every food drop site with 1500 or more food within 6 tiles gets a Settlement placed 2-4 tiles from it. Upstream's
-// food_camp (food.c). Upstream excludes tiger and wolf by type; this port does not resolve those type names.
+// food_camp (food.c). A tiger or a wolf is excluded.
 void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16];
@@ -884,7 +891,7 @@ void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow)
                 continue;
             if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
                 continue;
-            if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal)
+            if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal || IsFierceAnimal(theAnimal->mUnitClass))
                 continue;
             if (!ExploredBy(theAnimal, inPlayer))
                 continue;
