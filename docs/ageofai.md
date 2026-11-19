@@ -130,12 +130,14 @@ own choice: it orders the building that researches it, if missing, and reserves 
 
 The game gives a computer player the line upgrades of an epoch (the techs of kind 7) the moment it enters the epoch, with no
 cost, building or time. With `[ai_base] paid_upgrades` on (the default) an Age of AI player schedules them with its
-research manager instead, so they are researched at their buildings and paid for, as a human player does. The army plan's
-`upgrade` bit, which holds back lines the player does not use, and the upgrade reserve are not ported.
+research manager instead, so they are researched at their buildings and paid for, as a human player does. With the army
+plan's `used_lines` bit a line the player neither has nor is asked for waits until it comes into use; the upgrade reserve
+is not ported.
 
 A building that leaves the map loses its research queue, and the research manager does not ask again. Every 30 game seconds an
 Age of AI player schedules again each available, unresearched line upgrade that is in no research list and no building's
-queue or production, when its stock pays the price. The upgrade that the game marked as not queueable is not handled.
+queue or production, when its stock pays the price. With `used_lines` a line still out of use stays back. The upgrade that
+the game marked as not queueable is not handled.
 
 ## Mines and the worker rebalance
 

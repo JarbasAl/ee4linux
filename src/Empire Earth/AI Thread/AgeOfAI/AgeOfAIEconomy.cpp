@@ -412,19 +412,87 @@ void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow)
     }
 }
 
+// LINE UPGRADES IN USE (the army plan's used_lines bit, army.c ap_owned/ap_upg_line): a line upgrade waits until the
+// player has or the game asks for a unit of the old or the new type. The unit types of the player's units (0..767) and
+// the game's 14 request lists make up the set, refreshed at most every 5 s.
+bool sOwnedLines[16][768];
+unsigned long sOwnedLinesTime[16];
+
+void OwnedLines(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    if (sOwnedLinesTime[thePI] != 0 && inNow >= sOwnedLinesTime[thePI] && inNow - sOwnedLinesTime[thePI] < 5000)
+        return;
+    sOwnedLinesTime[thePI] = inNow != 0 ? inNow : 1;
+    memset(sOwnedLines[thePI], 0, sizeof(sOwnedLines[thePI]));
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+            continue;
+        long theType = (long)theUnit->mUnitClass->mUnitType;
+        if (theType >= 0 && theType < 768)
+            sOwnedLines[thePI][theType] = true;
+    }
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    EECPUnitManager* theUnits = theCivilization != NULL ? theCivilization->mUnitManager : NULL;
+    if (theUnits == NULL)
+        return;
+    for (int e = 0; e < 14; e++) {
+        const std::deque<EECPUMRequest>& theRequests = theUnits->mRequests[e];
+        for (std::deque<EECPUMRequest>::const_iterator it = theRequests.begin(); it != theRequests.end(); ++it) {
+            long theType = (long)it->mUnitClass;
+            if (it->mCount > 0 && theType >= 0 && theType < 768)
+                sOwnedLines[thePI][theType] = true;
+        }
+    }
+}
+
+// Whether a tech's line upgrade should wait: it has a kind-0x13 effect whose old or new type is neither owned nor asked
+// for (ap_upgrade_waits in army.c). False for any other tech, so the gate leaves them alone.
+bool LineUpgradeWaits(EEComputerPlayer* inPlayer, EETechTreeNode* inNode, unsigned long inNow)
+{
+    EEEvent* theEvent = EEEvent::Get(inNode->mData->mResearchedEvent);
+    if (theEvent == NULL)
+        return false;
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    bool theLine = false, theUsed = false;
+    for (unsigned long k = 0; k < theEvent->GetNumEffects() && k < 64; k++) {
+        long theEffectID = theEvent->GetEffect(k);
+        if (theEffectID < 0 || theEffectID >= 2000)
+            continue;
+        EEEventEffect* theEffect = EEEvent::GetEventEffect((unsigned long)theEffectID);
+        if (theEffect == NULL || theEffect->mKind != 0x13)
+            continue;
+        if (!theLine) {
+            theLine = true;
+            OwnedLines(inPlayer, inNow);
+        }
+        long theOld = theEffect->mUnitClass, theNew = theEffect->mNewUnitClass;
+        if ((theOld >= 0 && theOld < 768 && sOwnedLines[thePI][theOld])
+            || (theNew >= 0 && theNew < 768 && sOwnedLines[thePI][theNew]))
+            theUsed = true;
+    }
+    return theLine && !theUsed;
+}
+
 // PAID UPGRADES (epoch_upgrades in econ.c, [ai_base] paid_upgrades): the game researches the kind-7 techs of an epoch (the
 // unit and building line upgrades) for a computer player on the spot, without cost, building or time. An Age of AI
 // player schedules each with its research manager instead: it is researched at its building and paid like a human's.
-// The army plan's UPGRADE bit (a line it does not use yet waits) is not ported; it is off by default.
+// With the army plan's used_lines bit a line the player does not use yet waits for a later retry.
 bool EpochUpgrades(EEComputerPlayer* inPlayer, EETechTreeEpoch* inEpoch)
 {
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
-    if (!SettingsOf(inPlayer).paid_upgrades || theCivilization == NULL || theCivilization->mResearchManager == NULL)
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (!theSettings.paid_upgrades || theCivilization == NULL || theCivilization->mResearchManager == NULL)
         return false;
+    const bool theWaitLines = theSettings.army_plan.used_lines != 0;
+    const unsigned long theNow = gPhysics->mGameTime;
     for (std::map<long, EETechTreeNode*>::iterator theNode = inEpoch->mNodes.begin(); theNode != inEpoch->mNodes.end(); ++theNode) {
         EETechTreeNode* theTech = theNode->second;
-        if (theTech->mData->mKind == 7 && theTech->mData->mResearchedWithEpoch && !theTech->mIsResearched)
+        if (theTech->mData->mKind == 7 && theTech->mData->mResearchedWithEpoch && !theTech->mIsResearched) {
+            if (theWaitLines && LineUpgradeWaits(inPlayer, theTech, theNow))
+                continue;
             theCivilization->mResearchManager->Research(theTech->mData->mID);
+        }
     }
     return true;
 }
@@ -432,17 +500,20 @@ bool EpochUpgrades(EEComputerPlayer* inPlayer, EETechTreeEpoch* inEpoch)
 // LOST UPGRADES (upgrades_retry in econ.c, paid_upgrades): the research manager hands each scheduled tech to a building
 // once and forgets it, and a building that leaves the map loses its queue. Every 30 s each available, unresearched line
 // upgrade of the player's epochs or earlier that is in no research list and no building's queue or production is scheduled
-// again, when the stock pays its price (a refused schedule adds the price to the resource demand). Not ported: the
-// tech that the game marked as not queueable, the army plan's UPGRADE bit, and the reserve of the price of four lines in use.
+// again, when the stock pays its price (a refused schedule adds the price to the resource demand). With the army plan's
+// used_lines bit a line still out of use stays back. Not ported: the tech that the game marked as not queueable and the
+// reserve of the price of four lines in use.
 void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16];
     unsigned idx = inPlayer->mPlayerID & 15;
     if (inNow < sLast[idx])
         sLast[idx] = 0;
-    if (!SettingsOf(inPlayer).paid_upgrades || (sLast[idx] != 0 && inNow - sLast[idx] < 30000))
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (!theSettings.paid_upgrades || (sLast[idx] != 0 && inNow - sLast[idx] < 30000))
         return;
     sLast[idx] = inNow != 0 ? inNow : 1;
+    const bool theWaitLines = theSettings.army_plan.used_lines != 0;
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
     if (theCivilization == NULL || theCivilization->mResearchManager == NULL || inPlayer->mTechnologies == NULL)
         return;
@@ -462,6 +533,8 @@ void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow)
         EETechTreeNode* theTech = inPlayer->mTechnologies->Get(theID);
         if (theTech == NULL || theTech->mData == NULL || theTech->mData->mKind != 7 || theTech->mIsResearched || !theTech->mIsAvailable
             || theTech->mEpoch > inPlayer->mTechnologies->mCurrentEpoch || !theTech->mData->mResearchedWithEpoch || theHeld[theID])
+            continue;
+        if (theWaitLines && LineUpgradeWaits(inPlayer, theTech, inNow))
             continue;
         bool theListed = false;
         for (int e = 0; e < 14 && !theListed; e++)
