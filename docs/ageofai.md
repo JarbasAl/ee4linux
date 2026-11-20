@@ -351,6 +351,11 @@ a unit looks along the line to its target before each shot: a wall in the way ge
 After the game's own flat shot hit a wall, the unit lobs four more shots before it looks again. In a multiplayer game
 every player needs the same setting.
 
+`[ai_base] production_sync` (off in the shipped file) repairs the AI's in-production count after a game load. A save
+keeps the buildings' production queues but not that count, so an AI can count training room it does not have. Every
+10 game seconds the port counts the units queued or in the making in the player's buildings and sets the count to that
+number when the two differ. The game subtracts this count from the population limit before it asks for more citizens.
+
 ## The hook-site index
 
 ```

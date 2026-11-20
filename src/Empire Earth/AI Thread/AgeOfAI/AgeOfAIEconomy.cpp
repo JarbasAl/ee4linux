@@ -1,7 +1,7 @@
 // The economy of an Age of AI player: the income rates and the worker plan before farms (AgeOfAIWorkers.h).
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/econ.c
-// (rates_update, budget_reserve, econ_targets, follow_held) and dll/ai/food.c (food_plan_needs) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07,
+// (rates_update, budget_reserve, econ_targets, follow_held, prod_sync) and dll/ai/food.c (food_plan_needs) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07,
 // GPL-3.0. From the Copper Age on the game's own targets stand, apart from the food pile of late_targets food_to_metals
 // (off in the shipped file). The other late rules are not ported, nor are the military's reserves (navy, landing,
 // expansion), the field wood and the pull of gatherers to food.
@@ -578,6 +578,44 @@ void LateFoodTargets(EECPResourceManager* inResources, unsigned long inNow)
         theGiven++;
     }
     inResources->mWantedGatherers[2] = (unsigned long)theCap;
+}
+
+// PRODUCTION SYNC (econ.c prod_sync, [ai_base] production_sync, off in the shipped file): a loaded game keeps the
+// buildings' queues but not the unit manager's in-production count, so the AI counts room it does not have and trains
+// past its population cap. Every 10 s set that count to the units queued or in the making in its buildings.
+void ProductionSync(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mUnitManager == NULL || inPlayer->mTechnologies == NULL)
+        return;
+
+    if (!SettingsOf(inPlayer).production_sync)
+        return;
+    static unsigned long sLast[16];
+    if (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 10000)
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    long theQueued = 0;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mComplexUnit == NULL)
+            continue;
+        EEComplexUnit* theBuilding = theUnit->mComplexUnit;
+        for (int q = -1; q < (int)theBuilding->mBuildQueue.size(); q++) {
+            long theTech = q < 0 ? theBuilding->mCurrentResearch : theBuilding->mBuildQueue[q].mTechnology;
+            if (theTech <= 13 || theTech == 100000)
+                continue;
+            EETechTreeNode* theNode = inPlayer->mTechnologies->Get(theTech);
+            if (theNode != NULL && theNode->mData != NULL && theNode->mData->mMakesUnit)
+                theQueued++;
+        }
+    }
+    long theWas = theCivilization->mUnitManager->mNumInProduction;
+    if (theQueued == theWas)
+        return;
+    theCivilization->mUnitManager->mNumInProduction = theQueued;
 }
 
 // GATHERING RESEARCH (gather_research in econ.c, [ai_base] gather_research): every 15 s one available, unresearched
