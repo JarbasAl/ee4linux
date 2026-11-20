@@ -178,6 +178,15 @@ bool GameWallsOn(unsigned long inPlayerID);   // [ai_base] game_walls for this p
 void NoteWallUpdate(unsigned long inPlayerID, bool inSkipped);
 WallCounts WallCountsOf(unsigned long inPlayerID);
 
+// Retargeting ([ai_base] attack_retarget, off in the shipped file): an attack group whose target has left the game or
+// stopped being an enemy picks the enemy building nearest the group, and the group and its subgroups take that player
+// as their new target. EEComputerPlayer::Update calls the scan every game tick; it acts every 10 seconds.
+void RetargetTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct RetargetCounts {
+    unsigned long mScans, mPicked, mSubGroups;   // scans made, groups retargeted, subgroups re-pointed
+};
+RetargetCounts RetargetCountsOf(unsigned long inPlayerID);
+
 // A wave's goal (stage.c wave_focus, [ai_base] wave_focus off in the shipped file): every land route of an attack group
 // goes to one enemy building at a time, on the same land as the route, until that building dies or the land changes.
 // EECPASGLand::RequestPath calls it before the game costs the route. ioTo carries the goal tile back to the caller.

@@ -5590,6 +5590,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::HoldTownTick(this, inTime);
         AgeOfAI::OutdatedAttack(this, inTime);
         AgeOfAI::CitizenAttackScan(this, inTime);
+        AgeOfAI::RetargetTick(this, inTime);
     }
     UWideString theUnused1;
     UWideString theUnused2;

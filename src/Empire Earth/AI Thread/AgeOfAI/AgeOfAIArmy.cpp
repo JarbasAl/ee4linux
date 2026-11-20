@@ -151,6 +151,9 @@ OutdatedCounts sCounts[16];
 
 CitizenAttackCounts sCitizen[16];
 
+RetargetCounts sRetarget[16];
+unsigned long sRetargetLast[16];
+
 WaveFocusCounts sWaveCounts[16];
 unsigned long sWaveLast[16];
 
@@ -384,6 +387,91 @@ void CitizenAttackScan(EEComputerPlayer* inPlayer, unsigned long inNow)
 CitizenAttackCounts CitizenAttackCountsOf(unsigned long inPlayerID)
 {
     return sCitizen[inPlayerID & 15];
+}
+
+// Upstream's wave_retarget (attack.c). Every 10 game seconds a group whose target left the game or stopped being an
+// enemy takes the enemy building nearest the group's middle as its new target. Upstream writes the target player of
+// the group and of each subgroup still naming the old one; the subgroups plan their next move from the new player.
+// Not saved: a loaded game scans again on its first tick.
+void RetargetTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (!SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium).attack_retarget)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (inNow < sRetargetLast[idx]) {
+        sRetargetLast[idx] = 0;
+        sRetarget[idx] = RetargetCounts();
+    }
+    if (sRetargetLast[idx] != 0 && inNow - sRetargetLast[idx] < ArmyRules::kRetargetEvery)
+        return;
+    sRetargetLast[idx] = inNow != 0 ? inNow : 1;
+    EECPCombatManager* theCombat = inPlayer->mCombatManager;
+    if (theCombat == NULL || theCombat->mAttackCommander == NULL)
+        return;
+    RetargetCounts& theCounts = sRetarget[idx];
+    theCounts.mScans++;
+    for (size_t g = 0; g < theCombat->mAttackCommander->mGroups.size() && g < (size_t)ArmyRules::kGroupsMost; g++) {
+        EECPAttackGroup* theGroup = theCombat->mAttackCommander->mGroups[g];
+        if (theGroup == NULL)
+            continue;
+        EEPlayer* theOld = theGroup->mTask.mPlayer;
+        if (theOld == NULL || (!theOld->mObserverMode && IsEnemyOf(inPlayer, theOld)))
+            continue;   // still fighting a player who is in the game
+        long theSumX = 0, theSumY = 0, theN = 0;
+        for (EECPAttackSubGroup* theSubGroup : theGroup->mSubGroups) {
+            if (theSubGroup == NULL)
+                continue;
+            for (EECPAttackSubGroupUnit* theRecord : theSubGroup->mUnits) {
+                EEUnit* theUnit = theRecord != NULL ? theRecord->mUnit : NULL;
+                if (theUnit == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0)
+                    continue;
+                theSumX += theUnit->mTileX;
+                theSumY += theUnit->mTileY;
+                theN++;
+            }
+        }
+        if (theN == 0)
+            continue;
+        long theMidX = theSumX / theN, theMidY = theSumY / theN;
+        EEUnit* theBest = NULL;
+        long theBestD2 = 0;
+        for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+            EEPlayer* theOwner = gWorld.mPlayers[p];
+            if (theOwner == NULL || theOwner == inPlayer || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner))
+                continue;
+            for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mTile == NULL
+                    || (theClass->mCategory != kUnitCategoryBuilding && theClass->mCategory != kUnitCategoryFortress)
+                    || theUnit->mTile->GetVisibility(inPlayer->mPlayerID) == 0)
+                    continue;
+                long theDX = theUnit->mTileX - theMidX, theDY = theUnit->mTileY - theMidY;
+                long theD2 = theDX * theDX + theDY * theDY;
+                if (theBest == NULL || theD2 < theBestD2) {
+                    theBest = theUnit;
+                    theBestD2 = theD2;
+                }
+            }
+        }
+        if (theBest == NULL || theBest->mPlayer == NULL)
+            continue;
+        EEPlayer* theNew = theBest->mPlayer;
+        theGroup->mTask.mPlayer = theNew;
+        long theChanged = 0;
+        for (EECPAttackSubGroup* theSubGroup : theGroup->mSubGroups) {
+            if (theSubGroup != NULL && theSubGroup->mTask.mPlayer == theOld) {
+                theSubGroup->mTask.mPlayer = theNew;
+                theChanged++;
+            }
+        }
+        theCounts.mPicked++;
+        theCounts.mSubGroups += theChanged;
+    }
+}
+
+RetargetCounts RetargetCountsOf(unsigned long inPlayerID)
+{
+    return sRetarget[inPlayerID & 15];
 }
 
 void WaveFocusRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY)

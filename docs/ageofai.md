@@ -280,6 +280,16 @@ manager would have sent to wall segments stay on other work, so population and a
 from 3920 to 4020 value. Setting 1 restores the old trace exactly. The sim report counts the wall updates skipped and
 run in `intel.wall_skipped` and `intel.wall_ran`.
 
+## Retargeting an attack group
+
+With `[ai_base] attack_retarget` on (off in the shipped file), every ten game seconds the AI checks its attack groups.
+A group whose target player has left the game or is no longer an enemy takes the enemy building nearest to the group's
+middle as its new target, provided it has seen that building. The group and each subgroup still pointed at the old
+player take the new one, so their next march and aim use it. Groups that still fight an active enemy are left alone.
+This is upstream's `wave_retarget`; the sim report counts the scans, the groups retargeted and the subgroups re-pointed
+in `intel.retarget_scans`, `intel.retarget_picked` and `intel.retarget_groups`. Normal games form no group with a dead
+target, so the scan runs but does not change play there; the counter proves it is active when the gate is on.
+
 ## A wave's goal
 
 With `[ai_base] wave_focus` on (off in the shipped file), the land routes of an attack group use one goal. When a subgroup asks for a route, the first route request sends it to an enemy building of the target player that the AI has seen. The building is the nearest one on the land mass of the route: nearest to the route's start at first, then nearest to the last goal after a building falls. A return mission keeps its own goal. The group holds the building until it dies, the route moves to another land mass, or three minutes pass with no route for the group. The AI then picks a new building, or leaves the game's own goal when it knows no enemy building. The sim report counts the routes seen, the goals chosen, the goals changed, the routes already at the goal and the routes with no goal found (`intel.wave_*`).
