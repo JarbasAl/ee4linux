@@ -7,9 +7,9 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/army.c
 // (outdated_attack, ou_members, ou_outdated) and dll/ai/attack.c (ag_launch) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07,
-// GPL-3.0. Not ported: the list of the units sent and ou_sortie, which only stage.c, cover.c and mass.c read (they keep a
-// sortie's units from their staging, falling back and rallying); those files are not ported, so the units fight to the end
-// as upstream intends. The log lines are not ported.
+// GPL-3.0. The wave goal of stage.c is ported below; the rest of stage.c (staging, falling back and rallying), cover.c and
+// mass.c are not, so a sortie's units are not held back and the units fight to the end as upstream intends. The list of the
+// units sent and ou_sortie are not ported either. The log lines are not ported.
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
@@ -129,6 +129,8 @@
 #include "ee/EEUnitClassIDs.h"
 #include "ee/EECPILocation.h"
 #include "ee/EECPAGTask.h"
+#include "ee/EEAIContinentManager.h"
+#include "ee/EEAIKindIDs.h"
 #include "ee/EECPUnitRequirement.h"
 #include "ee/EECPCombatStrategy.h"
 #include "ee/EECPCombatManager.h"
@@ -146,6 +148,54 @@ namespace AgeOfAI {
 namespace {
 
 OutdatedCounts sCounts[16];
+
+WaveFocusCounts sWaveCounts[16];
+unsigned long sWaveLast[16];
+
+// One goal per attack group: the group, the tile, the unit id and the time of the last route that used it. A group pointer
+// may be reused, so a record lapses three minutes after its last route.
+struct WaveRecord {
+    EECPAttackGroup* mGroup;
+    long mX, mY;
+    unsigned long mID, mTime;
+};
+const unsigned long kWaveLapse = 180000;
+const int kWavesMost = 24;
+WaveRecord sWaves[16][kWavesMost];
+
+bool WaveGoalStanding(EEPlayer* inTarget, long inX, long inY, unsigned long inID)
+{
+    for (EEUnit* theUnit = inTarget->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext))
+        if (theUnit->mUnitID == inID && theUnit->mHitPoints > 0 && theUnit->mTileX == inX && theUnit->mTileY == inY)
+            return true;
+    return false;
+}
+
+// The enemy building on the route's land mass nearest the last goal (or the route's start), as upstream's wv_pick_unit.
+EEUnit* WaveGoalPick(EEPlayer* inPlayer, EEPlayer* inTarget, long inFromX, long inFromY, unsigned short inArea)
+{
+    EEUnit* theBest = NULL;
+    long theBestD2 = 0;
+    for (EEUnit* theUnit = inTarget->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        EEUnitClass* theClass = theUnit->mUnitClass;
+        if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mPlayer != inTarget)
+            continue;
+        if ((theClass->mCategory != kUnitCategoryBuilding && theClass->mCategory != kUnitCategoryFortress)
+            || (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kWall))
+            continue;
+        if (theUnit->mTile == NULL || theUnit->mTile->GetVisibility(inPlayer->mPlayerID) == 0)
+            continue;
+        if (gContinentManager.GetContinent(theUnit, kAIPathLandMass) != inArea)
+            continue;
+        long theDX = theUnit->mTileX - inFromX, theDY = theUnit->mTileY - inFromY;
+        long theD2 = theDX * theDX + theDY * theDY;
+        if (theBest == NULL || theD2 < theBestD2) {
+            theBest = theUnit;
+            theBestD2 = theD2;
+        }
+    }
+    return theBest;
+}
 
 bool IsCitizenClass(EEUnitClass* inClass)
 {
@@ -277,6 +327,78 @@ void OutdatedAttack(EEComputerPlayer* inPlayer, unsigned long inNow)
 OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID)
 {
     return sCounts[inPlayerID & 15];
+}
+
+void WaveFocusRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY)
+{
+    if (inSubGroup == NULL || inSubGroup->mPlayer == NULL)
+        return;
+    EEComputerPlayer* thePlayer = inSubGroup->mPlayer;
+    unsigned long thePID = thePlayer->mPlayerID;
+    if (!SettingsAIOf(thePID, kDifficultyMedium).wave_focus)
+        return;
+    EEPlayer* theTarget = inSubGroup->mTask.mPlayer;
+    if (inSubGroup->mTask.mType == kAGTaskReturn || theTarget == NULL || inSubGroup->mGroup == NULL
+        || !IsEnemyOf(thePlayer, theTarget))
+        return;
+    unsigned thePI = thePID & 15;
+    unsigned long theNow = gPhysics->mGameTime;
+    if (theNow < sWaveLast[thePI]) {
+        memset(sWaves, 0, sizeof(sWaves));
+        memset(sWaveCounts, 0, sizeof(sWaveCounts));
+    }
+    sWaveLast[thePI] = theNow;
+    WaveFocusCounts& theCounts = sWaveCounts[thePI];
+    theCounts.mCalls++;
+
+    WaveRecord* theWave = NULL;
+    WaveRecord* theOldest = &sWaves[thePI][0];
+    for (int k = 0; k < kWavesMost && theWave == NULL; k++) {
+        WaveRecord* theEntry = &sWaves[thePI][k];
+        if (theEntry->mGroup != NULL && theNow - theEntry->mTime > kWaveLapse)
+            theEntry->mGroup = NULL;
+        if (theEntry->mGroup == inSubGroup->mGroup)
+            theWave = theEntry;
+        else if (!theEntry->mGroup && theOldest->mGroup)
+            theOldest = theEntry;
+        else if (theEntry->mGroup && theOldest->mGroup && theEntry->mTime < theOldest->mTime)
+            theOldest = theEntry;
+    }
+
+    unsigned short theArea = gContinentManager.GetContinent(EETileLocation(ioToX, ioToY), kAIPathLandMass);
+    bool theSameArea = theWave != NULL
+        && gContinentManager.GetContinent(EETileLocation(theWave->mX, theWave->mY), kAIPathLandMass) == theArea;
+    if (theWave == NULL || !WaveGoalStanding(theTarget, theWave->mX, theWave->mY, theWave->mID) || !theSameArea) {
+        long theFromX = theWave != NULL ? theWave->mX : inFromX;
+        long theFromY = theWave != NULL ? theWave->mY : inFromY;
+        EEUnit* theBest = WaveGoalPick(thePlayer, theTarget, theFromX, theFromY, theArea);
+        if (theBest == NULL) {
+            theCounts.mNone++;
+            return;
+        }
+        if (theWave == NULL)
+            theWave = theOldest;
+        theWave->mGroup = inSubGroup->mGroup;
+        theWave->mX = theBest->mTileX;
+        theWave->mY = theBest->mTileY;
+        theWave->mID = theBest->mUnitID;
+        theCounts.mSet++;
+    }
+
+    theWave->mTime = theNow;
+    if (theWave->mX == ioToX && theWave->mY == ioToY) {
+        theCounts.mKept++;
+        return;
+    }
+    ioToX = theWave->mX;
+    ioToY = theWave->mY;
+    inSubGroup->mTask.mLocation.mTile.SetXY(ioToX, ioToY);
+    theCounts.mMoved++;
+}
+
+WaveFocusCounts WaveFocusCountsOf(unsigned long inPlayerID)
+{
+    return sWaveCounts[inPlayerID & 15];
 }
 
 }

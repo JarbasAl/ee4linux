@@ -244,6 +244,7 @@ struct PlayerSample {
     long mIntelRecords = 0, mIntelBuildings = 0, mIntelSoldiers = 0, mIntelSeenNow = 0, mIntelCells = 0, mIntelArmy = 0;
     long mEarlyQueued = 0, mEarlyBuilders = 0, mEarlyBaits = 0;
     long mOutdatedSorties = 0, mOutdatedSent = 0, mOutdatedRefused = 0, mOutdatedNoGroup = 0;
+    long mWaveCalls = 0, mWaveSet = 0, mWaveMoved = 0, mWaveKept = 0, mWaveNone = 0;
     long mFoodPulled = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
@@ -428,6 +429,12 @@ Sample TakeSample()
             p.mOutdatedSent = (long)theOutdated.mSent;
             p.mOutdatedRefused = (long)theOutdated.mRefused;
             p.mOutdatedNoGroup = (long)theOutdated.mNoGroup;
+            AgeOfAI::WaveFocusCounts theWave = AgeOfAI::WaveFocusCountsOf(i);
+            p.mWaveCalls = (long)theWave.mCalls;
+            p.mWaveSet = (long)theWave.mSet;
+            p.mWaveMoved = (long)theWave.mMoved;
+            p.mWaveKept = (long)theWave.mKept;
+            p.mWaveNone = (long)theWave.mNone;
             p.mFoodPulled = (long)AgeOfAI::FoodCountsOf(i).mPulled;
             AgeOfAI::CounterFireCounts theCounterFire = AgeOfAI::CounterFireCountsOf(i);
             p.mCounterFireSorties = (long)theCounterFire.mSorties;
@@ -949,14 +956,17 @@ std::string PlayersJson(const Sample& inSample)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
                      "\"cells_looked\": %ld, \"army\": %ld, \"early_towers_queued\": %ld, \"early_builders\": %ld, \"early_baits\": %ld, "
-                     "\"outdated_sorties\": %ld, \"outdated_sent\": %ld, \"outdated_refused\": %ld, \"outdated_no_group\": %ld, \"food_pulled\": %ld, "
+                     "\"outdated_sorties\": %ld, \"outdated_sent\": %ld, \"outdated_refused\": %ld, \"outdated_no_group\": %ld, "
+                     "\"wave_calls\": %ld, \"wave_set\": %ld, \"wave_moved\": %ld, \"wave_kept\": %ld, \"wave_none\": %ld, "
+                     "\"food_pulled\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
                      "\"counter_siege_skipped\": %u, \"home_sent\": %ld, \"home_base_moved\": %ld, "
                      "\"towers_queued\": %ld, \"towers_skipped\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits, p.mOutdatedSorties, p.mOutdatedSent, p.mOutdatedRefused,
-                     p.mOutdatedNoGroup, p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
+                     p.mOutdatedNoGroup, p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
+                     p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
                      (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,
                      p.mHomeSent, p.mHomeBaseMoved, p.mTowersQueued, p.mTowersSkipped);

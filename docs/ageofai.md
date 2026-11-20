@@ -258,6 +258,12 @@ The classic combat manager takes free soldiers into its own attack groups within
 finds no free outdated units and the game does not change. It acts for a player whose army is larger than its groups
 take, as on the late-game save the rule was written for.
 
+## A wave's goal
+
+With `[ai_base] wave_focus` on (off in the shipped file), the land routes of an attack group use one goal. When a subgroup asks for a route, the first route request sends it to an enemy building of the target player that the AI has seen. The building is the nearest one on the land mass of the route: nearest to the route's start at first, then nearest to the last goal after a building falls. A return mission keeps its own goal. The group holds the building until it dies, the route moves to another land mass, or three minutes pass with no route for the group. The AI then picks a new building, or leaves the game's own goal when it knows no enemy building. The sim report counts the routes seen, the goals chosen, the goals changed, the routes already at the goal and the routes with no goal found (`intel.wave_*`).
+
+The rest of `stage.c` is not ported. There is no staging point, no falling back and no rally. A weak spot found for a route does not become the wave's goal.
+
 ## Counter-siege and the citizen militia
 
 Upstream's default turns `[ai_base] citizen_militia` and `counter_siege` on. The shipped `ageofai.ini` turns both off

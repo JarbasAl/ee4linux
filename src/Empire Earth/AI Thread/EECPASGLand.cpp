@@ -38,6 +38,7 @@
 #include "ee/EECPAttackSubGroup.h"
 #include "ee/EECPAttackSubGroupUnit.h"
 #include "ee/EEAIContinentManager.h"
+#include "AgeOfAI/AgeOfAI.h"
 #include "lle/U2DSparseArray.h"
 #include "lle/U2DPolygon.h"
 #include "ee/AStarGraphableObjectBase.h"
@@ -2191,9 +2192,17 @@ bool EECPASGLand::ChooseSpaceUnloadPoint()
 
 // FUNCTION: EXE 0x44b3c7
 // Requests a new route: opens the terrain the cost weights allow (water, space, cliff, forest, walls, gates),
-// clears the old path and asks the path manager with a land route-planner modifier
+// clears the old path and asks the path manager with a land route-planner modifier. An Age of AI player may first
+// turn the goal into its wave's goal (stage.c wave_focus), as the mod's hook_asg_route does before this function.
 void EECPASGLand::RequestPath(void* inFrom, void* inTo)
 {
+    EETileCoordinate* theFrom = static_cast<EETileCoordinate*>(inFrom);
+    EETileCoordinate* theTo = static_cast<EETileCoordinate*>(inTo);
+    if (this->mPlayer != NULL && AgeOfAI::EngineOf(this->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI) {
+        long theToX = theTo->GetX(), theToY = theTo->GetY();
+        AgeOfAI::WaveFocusRoute(this, theFrom->GetX(), theFrom->GetY(), theToX, theToY);
+        theTo->SetXY(theToX, theToY);
+    }
     EECPASGFlags theFlags;
     memcpy(theFlags.mFlags, this->mFlags.mFlags, sizeof(theFlags.mFlags));
     EECPASGWeights theWeights;
@@ -2217,8 +2226,6 @@ void EECPASGLand::RequestPath(void* inFrom, void* inTo)
         theFlags.mFlags[kAITileForest] = true;
     this->mPath.clear();
     this->CancelPath();
-    EETileCoordinate* theFrom = static_cast<EETileCoordinate*>(inFrom);
-    EETileCoordinate* theTo = static_cast<EETileCoordinate*>(inTo);
     EEAIGPGModifierLandAttackSubGroupRoutePlanner* theModifier = new EEAIGPGModifierLandAttackSubGroupRoutePlanner(
         this, gContinentManager.GetContinentID(theFrom->GetX(), theFrom->GetY()),
         gContinentManager.GetContinentID(theTo->GetX(), theTo->GetY()), theWeights.mValues[5] == 0.0f, theWeights);

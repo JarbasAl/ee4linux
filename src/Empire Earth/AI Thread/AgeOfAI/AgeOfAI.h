@@ -13,6 +13,7 @@ class EEComputerPlayer;
 class EETechTreeEpoch;
 class EEPlayer;
 class EECPResourceManager;
+class EECPAttackSubGroup;
 class EEComplexUnit;
 class EEUnit;
 class GE3DPoint;
@@ -152,6 +153,15 @@ struct OutdatedCounts {
     unsigned long mSorties, mSent, mRefused, mNoGroup;   // groups made, units in them, launches the combat manager refused, accepted with no group
 };
 OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID);
+
+// A wave's goal (stage.c wave_focus, [ai_base] wave_focus off in the shipped file): every land route of an attack group
+// goes to one enemy building at a time, on the same land as the route, until that building dies or the land changes.
+// EECPASGLand::RequestPath calls it before the game costs the route. ioTo carries the goal tile back to the caller.
+void WaveFocusRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY);
+struct WaveFocusCounts {
+    unsigned long mCalls, mSet, mMoved, mKept, mNone;   // routes seen, goals chosen, goals changed, goals already reached, no goal found
+};
+WaveFocusCounts WaveFocusCountsOf(unsigned long inPlayerID);
 
 // Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
 // (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
