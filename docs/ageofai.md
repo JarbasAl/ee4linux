@@ -351,6 +351,13 @@ down. Before, the aim was the place the target stood when the shot was fired, an
 everything that walked across its line of fire. The flight time comes from the game's own arc solver. Missiles steer
 by themselves and are left alone. In a multiplayer game every player needs the same setting.
 
+`[general] lead_missiles` (off in the shipped `ageofai.ini`) makes a homing missile steer to where its moving target will
+be when the missile gets there, instead of trailing the target in a curve. The missile measures the target's speed from
+its position changes between steps and aims at the point where it can arrive at the same time as the target, up to ten
+seconds away. A target that stands still or moves faster than twenty tiles a second is left to the game's own pursuit.
+The sim report counts the steps that led a missile in `projectiles.missiles_led`. As with `lead_targets`, the setting
+reads each player's own rows, so every player needs the same setting in a multiplayer game.
+
 `[general] lob_each_shot` (on) changes how archers, slingers, the pilum and the trebuchet fire over walls. The game lets
 them shoot flat until one shot hits a wall, then lobs every later shot until they get a new order, wall gone or not. Now
 a unit looks along the line to its target before each shot: a wall in the way gets the high arc, else the shot is flat.

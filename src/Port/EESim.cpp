@@ -1053,8 +1053,8 @@ void WriteReport(int inCode, const std::string& inError)
         const AgeOfAI::ProjectileCounts& theCounts = AgeOfAI::Projectiles();
         char theProjectiles[200];
         snprintf(theProjectiles, sizeof(theProjectiles),
-                 "  \"projectiles\": {\"fired\": %u, \"led\": %u, \"hit_unit\": %u, \"hit_ground\": %u},\n", (unsigned)theCounts.mFired,
-                 (unsigned)theCounts.mLed, (unsigned)theCounts.mHitUnit, (unsigned)theCounts.mHitGround);
+                 "  \"projectiles\": {\"fired\": %u, \"led\": %u, \"hit_unit\": %u, \"hit_ground\": %u, \"missiles_led\": %u},\n", (unsigned)theCounts.mFired,
+                 (unsigned)theCounts.mLed, (unsigned)theCounts.mHitUnit, (unsigned)theCounts.mHitGround, (unsigned)theCounts.mMissilesLed);
         j += theProjectiles;
     }
     {

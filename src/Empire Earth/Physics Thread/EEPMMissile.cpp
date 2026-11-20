@@ -25,6 +25,7 @@
 #include "ee/EEDatabaseTables.h"
 #include "lle/GEQuaternion.h"
 #include "ee/EEPhysicsModel.h"
+#include "AgeOfAI/AgeOfAI.h"
 
 // 1/pi is the shared literal __real@4@3ffda2f9830000000000 (0x4428f4; EEPMNaval/EEPMSubmergedNaval Virtual34 use it too)
 static const float kMissileMinimumFactor = 0.25f;    // 0x4428f0 (unit-local const; provisional name)
@@ -82,6 +83,7 @@ void EEPMMissile::Home(EEComplexUnit* inUnit)
     float theTurn = theStats->GetMaxAngularVelocity() * theStep;
     EEUnit* theDropTarget;
     EEFindDropLocation(inUnit, &theDropTarget, &theTarget, NULL);
+    AgeOfAI::LeadMissile(inUnit, theDropTarget, theTarget);
     theDirection.mX = theTarget.GetX() - inUnit->mPhysicalModel.GetLocation().GetX();
     theDirection.mY = theTarget.GetY() - inUnit->mPhysicalModel.GetLocation().GetY();
     theDirection.mZ = theTarget.GetZ() - inUnit->mPhysicalModel.GetLocation().GetZ();

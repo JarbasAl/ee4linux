@@ -57,8 +57,12 @@ bool SeenBy(EEUnit* inUnit, EEPlayer* inViewer);   // attack.c seen_by: what the
 // many were led, and the projectiles that came down on a unit and on the ground (the simulator's report).
 bool LeadTargetsOn(unsigned long inPlayerID);   // the shooter's owner's [general] lead_targets
 void LeadShot(EEComplexUnit* inShooter, EEUnit* inTarget, GE3DPoint& ioAim);
+// Homing missiles ([general] lead_missiles, off in the shipped file). LeadMissile moves a missile's steering point to
+// where its moving target will be when the missile gets there. EEPMMissile::Home calls it after it finds the drop target.
+bool LeadMissilesOn(unsigned long inPlayerID);
+void LeadMissile(EEComplexUnit* inMissile, EEUnit* inTarget, GE3DPoint& ioAim);
 struct ProjectileCounts {
-    unsigned long mFired, mLed, mHitUnit, mHitGround;
+    unsigned long mFired, mLed, mHitUnit, mHitGround, mMissilesLed;
 };
 ProjectileCounts& Projectiles();
 
