@@ -258,6 +258,16 @@ The classic combat manager takes free soldiers into its own attack groups within
 finds no free outdated units and the game does not change. It acts for a player whose army is larger than its groups
 take, as on the late-game save the rule was written for.
 
+## Citizen attacks
+
+`[ai_base] citizen_attacks` follows upstream's meaning: 1 allows the original citizen attack, 0 calls it off. The shipped
+file sets 0, so every five game seconds the AI looks at its attack groups and sends any group made at least half of
+citizens home. The game hands those units back and disbands the group. This gate is inverted: the shipped 0 enables the
+scan, while 1 leaves citizen groups alone. Upstream also calls citizen attacks off at 0, and the port had no such
+call-off before, so this change brings the port in line with upstream at the shipped setting. Normal sim games form no
+citizen attack groups, so the scan has no effect on play there. The sim report counts the scans and the groups sent home
+in `intel.citizen_calls` and `intel.citizen_called`.
+
 ## A wave's goal
 
 With `[ai_base] wave_focus` on (off in the shipped file), the land routes of an attack group use one goal. When a subgroup asks for a route, the first route request sends it to an enemy building of the target player that the AI has seen. The building is the nearest one on the land mass of the route: nearest to the route's start at first, then nearest to the last goal after a building falls. A return mission keeps its own goal. The group holds the building until it dies, the route moves to another land mass, or three minutes pass with no route for the group. The AI then picks a new building, or leaves the game's own goal when it knows no enemy building. The sim report counts the routes seen, the goals chosen, the goals changed, the routes already at the goal and the routes with no goal found (`intel.wave_*`).

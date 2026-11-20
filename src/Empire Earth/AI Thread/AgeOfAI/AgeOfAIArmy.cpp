@@ -149,6 +149,8 @@ namespace {
 
 OutdatedCounts sCounts[16];
 
+CitizenAttackCounts sCitizen[16];
+
 WaveFocusCounts sWaveCounts[16];
 unsigned long sWaveLast[16];
 
@@ -327,6 +329,61 @@ void OutdatedAttack(EEComputerPlayer* inPlayer, unsigned long inNow)
 OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID)
 {
     return sCounts[inPlayerID & 15];
+}
+
+// Upstream's citizen_attack_scan (attack.c). The shipped setting 0 calls off any attack group made at least half of
+// citizens: the game sends its subgroups home and disbands the group. Setting 1 allows the original citizen attack.
+// Snapshot the groups first: the call-off clears their subgroups while we walk them. Not saved: a loaded game scans again.
+void CitizenAttackScan(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium).citizen_attacks)   // upstream reads it once, from [ai_base]
+        return;
+    if (inNow < sLast[idx]) {   // a new game
+        sLast[idx] = 0;
+        sCitizen[idx] = CitizenAttackCounts();
+    }
+    if (sLast[idx] != 0 && inNow - sLast[idx] < ArmyRules::kCitizenEvery)
+        return;
+    EECPCombatManager* theCombat = inPlayer->mCombatManager;
+    if (theCombat == NULL || theCombat->mAttackCommander == NULL)
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    CitizenAttackCounts& theCounts = sCitizen[idx];
+    theCounts.mCalls++;
+    std::vector<std::pair<EECPAttackGroup*, EEPlayer*> > theGroups;
+    for (EECPAttackGroup* theGroup : theCombat->mAttackCommander->mGroups)
+        if (theGroup != NULL && theGroup->mTask.mPlayer != NULL)
+            theGroups.push_back(std::make_pair(theGroup, theGroup->mTask.mPlayer));
+    for (size_t g = 0; g < theGroups.size() && g < (size_t)ArmyRules::kGroupsMost; g++) {
+        EECPAttackGroup* theGroup = theGroups[g].first;
+        long theN = 0, theCit = 0;
+        for (EECPAttackSubGroup* theSubGroup : theGroup->mSubGroups) {
+            if (theSubGroup == NULL)
+                continue;
+            for (EECPAttackSubGroupUnit* theRecord : theSubGroup->mUnits) {
+                if (theN >= ArmyRules::kCitizenMembersMost || theRecord == NULL || theRecord->mUnit == NULL)
+                    continue;
+                EEUnit* theUnit = theRecord->mUnit;
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                if (theClass == NULL || theUnit->mHitPoints <= 0)
+                    continue;
+                theN++;
+                if (IsCitizenClass(theClass))
+                    theCit++;
+            }
+        }
+        if (theN != 0 && theCit * 2 >= theN) {
+            theCombat->TargetPlayerNotice(theGroups[g].second, true);
+            theCounts.mCalled++;
+        }
+    }
+}
+
+CitizenAttackCounts CitizenAttackCountsOf(unsigned long inPlayerID)
+{
+    return sCitizen[inPlayerID & 15];
 }
 
 void WaveFocusRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY)

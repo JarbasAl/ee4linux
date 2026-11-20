@@ -158,6 +158,16 @@ struct OutdatedCounts {
 };
 OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID);
 
+// Citizen attacks ([ai_base] citizen_attacks): at the shipped 0 the mod calls off an attack group made at least half of
+// citizens, as upstream's citizen_attack_scan; the setting's 1 allows the original citizen attack. EEComputerPlayer::Update
+// calls the scan every 5 game seconds. Unlike the other parsed-but-inert rows, this one is ACTIVE at the shipped 0: porting
+// it is a deliberate re-rating, since the port had no call-off at all and upstream's shipped setting calls one off.
+void CitizenAttackScan(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct CitizenAttackCounts {
+    unsigned long mCalls, mCalled;   // scans made, citizen groups sent home and disbanded
+};
+CitizenAttackCounts CitizenAttackCountsOf(unsigned long inPlayerID);
+
 // A wave's goal (stage.c wave_focus, [ai_base] wave_focus off in the shipped file): every land route of an attack group
 // goes to one enemy building at a time, on the same land as the route, until that building dies or the land changes.
 // EECPASGLand::RequestPath calls it before the game costs the route. ioTo carries the goal tile back to the caller.
