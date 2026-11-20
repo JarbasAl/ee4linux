@@ -305,7 +305,7 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
     DropsCached(thePlayer);
     if (theSettings.mine_crowds)
         AimCount(thePlayer);
-    unsigned long theCap = thePlayer->mMiningLimit;
+    unsigned long theCap = (unsigned long)gWorldTable.GetLongValue(0x16);   // upstream's table_value(0x16), not the civ-power cap
     long theRegion = inUnit != NULL ? (long)gContinentManager.GetContinentID(inUnit) : 0;
     // LOCAL MINES ([ai_base] local_mines): a mine whose drop site is far from the citizen is another town's, and the
     // game's own assignment sent citizens a long way for it; one its own town can reach comes first
@@ -374,7 +374,7 @@ EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit*
         return NULL;
     unsigned thePI = thePlayer->mPlayerID & 15;
     DropsCached(thePlayer);
-    unsigned long theCap = thePlayer->mMiningLimit;
+    unsigned long theCap = (unsigned long)gWorldTable.GetLongValue(0x16);   // upstream's table_value(0x16)
     long theReach2 = SitesRules::ForageReach2(thePlayer->GetDropOffDistance(), inNear);
     long theRegion = inUnit != NULL ? (long)gContinentManager.GetContinentID(inUnit) : 0;
     EEUnit* theBest = NULL;
@@ -454,7 +454,7 @@ EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* i
     if (theResult != NULL && theSettings.mine_crowds && theMineResource) {
         unsigned thePI = thePlayer->mPlayerID & 15;
         AimCount(thePlayer);
-        if (AimOf(thePI, theResult) >= thePlayer->mMiningLimit)
+        if (AimOf(thePI, theResult) >= (unsigned long)gWorldTable.GetLongValue(0x16))
             return NULL;
         AimAdd(thePI, theResult);
     }
@@ -477,7 +477,7 @@ void MineCrowds(EECPResourceManager* inResources)
     sLast[thePI] = theNow ? theNow : 1;
     sAim[thePI].mTime = 0;
     AimCount(thePlayer);
-    unsigned long theCap = thePlayer->mMiningLimit;
+    unsigned long theCap = (unsigned long)gWorldTable.GetLongValue(0x16);   // upstream's table_value(0x16)
     int theMoved = 0;
     Aim& theAim = sAim[thePI];
     for (size_t k = 0; k < theAim.mSites.size() && theMoved < 20; k++) {

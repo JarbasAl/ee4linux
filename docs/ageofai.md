@@ -148,8 +148,10 @@ all on) searches differently for stone, gold and iron: the free mine nearest to 
 Capitol, Settlement), with the game's checks (an active resource center, explored, a free gatherer slot, no enemy near,
 the citizen's continent) and no known enemy on the straight way from that drop site; with nothing found, the game's own
 search. A mine counts as full when the working gatherers or the AI's own citizens aiming at it reach the cap, since the
-game counts only those that work. Every 10 seconds the citizens beyond the cap at a mine go to the nearest free mine of
-the kind, 20 at most. After each assignment pass the rebalance moves up to 2 gatherers (4 with `citizen_plan`
+game counts only those that work. The cap is the game table's gatherer limit, the same value upstream reads; it does not
+follow a civilization power or scenario effect that changes the player's own mining limit. Every 10 seconds the citizens
+beyond the cap at a mine go to the nearest free mine of the kind, 20 at most. After each assignment pass the rebalance
+moves up to 2 gatherers (4 with `citizen_plan`
 `mine_slots`) from the resource with the most gatherers above its wanted count to a stone, gold or iron mine that is
 short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. With `[ai_base] local_mines` (off in
 the shipped file) a mine whose drop site is more than 60 tiles from the citizen is another town's and is refused, and one
