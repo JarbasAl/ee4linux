@@ -268,6 +268,18 @@ call-off before, so this change brings the port in line with upstream at the shi
 citizen attack groups, so the scan has no effect on play there. The sim report counts the scans and the groups sent home
 in `intel.citizen_calls` and `intel.citizen_called`.
 
+## The game's walls
+
+`[ai_base] game_walls` has the same inverted meaning as upstream: 1 leaves the game's automatic wall manager running for
+the AI, 0 turns it off. The shipped file sets 0, so an Age of AI player does not build the game's ring of wall segments;
+the mod's own defences come from `defence_layout` instead, which builds through the wall builder directly. Classic AI
+players keep the game's walls either way. This is another parsed row whose shipped value turns a rule on here: upstream
+also turns the game's walls off at 0, and the port had no such switch before, so this change brings the port in line with
+upstream at the shipped setting. In the default benchmark game the change is visible: citizens that the game's wall
+manager would have sent to wall segments stay on other work, so population and army rise a little and the score moves
+from 3920 to 4020 value. Setting 1 restores the old trace exactly. The sim report counts the wall updates skipped and
+run in `intel.wall_skipped` and `intel.wall_ran`.
+
 ## A wave's goal
 
 With `[ai_base] wave_focus` on (off in the shipped file), the land routes of an attack group use one goal. When a subgroup asks for a route, the first route request sends it to an enemy building of the target player that the AI has seen. The building is the nearest one on the land mass of the route: nearest to the route's start at first, then nearest to the last goal after a building falls. A return mission keeps its own goal. The group holds the building until it dies, the route moves to another land mass, or three minutes pass with no route for the group. The AI then picks a new building, or leaves the game's own goal when it knows no enemy building. The sim report counts the routes seen, the goals chosen, the goals changed, the routes already at the goal and the routes with no goal found (`intel.wave_*`).

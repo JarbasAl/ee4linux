@@ -168,6 +168,16 @@ struct CitizenAttackCounts {
 };
 CitizenAttackCounts CitizenAttackCountsOf(unsigned long inPlayerID);
 
+// The game's walls ([ai_base] game_walls): the shipped 0 skips the game's automatic wall ring for an Age of AI player;
+// the mod's own walls come through defence_layout's build_wall, not that update. A 1 leaves the game's update running.
+// EECPWallManager::Update reads the gate on every call and counts the calls it skips and the calls it runs.
+struct WallCounts {
+    unsigned long mSkipped, mRan;
+};
+bool GameWallsOn(unsigned long inPlayerID);   // [ai_base] game_walls for this player's settings
+void NoteWallUpdate(unsigned long inPlayerID, bool inSkipped);
+WallCounts WallCountsOf(unsigned long inPlayerID);
+
 // A wave's goal (stage.c wave_focus, [ai_base] wave_focus off in the shipped file): every land route of an attack group
 // goes to one enemy building at a time, on the same land as the route, until that building dies or the land changes.
 // EECPASGLand::RequestPath calls it before the game costs the route. ioTo carries the goal tile back to the caller.

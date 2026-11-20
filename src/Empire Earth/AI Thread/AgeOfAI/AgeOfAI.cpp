@@ -77,6 +77,31 @@ void SetClassicPlayers(unsigned inMask)
     sClassicPlayers = inMask;
 }
 
+namespace {
+WallCounts sWalls[16];
+}
+
+bool GameWallsOn(unsigned long inPlayerID)
+{
+    return SettingsAIOf(inPlayerID, kDifficultyMedium).game_walls != 0;
+}
+
+void NoteWallUpdate(unsigned long inPlayerID, bool inSkipped)
+{
+    if (inPlayerID >= 16)
+        return;
+    WallCounts& theCounts = sWalls[inPlayerID];
+    if (inSkipped)
+        theCounts.mSkipped++;
+    else
+        theCounts.mRan++;
+}
+
+WallCounts WallCountsOf(unsigned long inPlayerID)
+{
+    return inPlayerID < 16 ? sWalls[inPlayerID] : WallCounts();
+}
+
 Engine EngineOf(unsigned long inPlayerID)
 {
     bool theClassic = inPlayerID < 16 && ((sClassicPlayers >> inPlayerID) & 1);
