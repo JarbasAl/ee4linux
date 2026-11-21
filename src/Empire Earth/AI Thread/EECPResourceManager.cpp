@@ -1516,7 +1516,7 @@ void EECPResourceManager::Update(unsigned long inTime)
     if (inTime >= this->mNextWantedGatherersTime) {
         if (this->mNextWantedGatherersTime > 0) {
             this->UpdateWantedGatherers();
-            AgeOfAI::EconTargets(this);
+            AgeOfAI::EconTargets(this, inTime);
             AgeOfAI::MoreGranaries(this, inTime);
             AgeOfAI::MineFill(this, inTime);
             AgeOfAI::LateFoodTargets(this, inTime);

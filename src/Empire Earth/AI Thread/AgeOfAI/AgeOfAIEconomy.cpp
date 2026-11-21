@@ -3,8 +3,8 @@
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/econ.c
 // (rates_update, budget_reserve, econ_targets, follow_held, prod_sync) and dll/ai/food.c (food_plan_needs) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07,
 // GPL-3.0. From the Copper Age on the game's own targets stand, apart from the food pile of late_targets food_to_metals
-// (off in the shipped file). The other late rules are not ported, nor are the military's reserves (navy, landing,
-// expansion), the field wood and the pull of gatherers to food.
+// (off in the shipped file) and the worker split of recover_economy. The other late rules are not ported, nor are the
+// military's reserves (navy, landing, expansion), the field wood and the pull of gatherers to food.
 #include <windows.h>
 #include <unistd.h>
 #include <algorithm>
@@ -402,18 +402,89 @@ void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow)
         theCivilization->mNextEpochAdvanceTime = inNow;
 }
 
+// Upstream econ.c recovering and the worker split of econ_targets. The other two recovery effects - spending the
+// whole stock and refusing soldier training while the economy is low - need the port's missing budget and training
+// layers. The two latches follow upstream: reaching min_workforce + 5 records a working economy at any time; without
+// that, recovery starts only from minute 30, so a late-epoch start is not read as a collapse.
+namespace {
+struct RecoverState {
+    RecoverCounts mCounts;
+    bool mOn = false, mHadEconomy = false;
+};
+RecoverState sRecover[16];
+
+void RecoverTargets(EECPResourceManager* inResources, const SettingsAI& inSettings, unsigned long inNow,
+                    unsigned inIndex)
+{
+    RecoverState& theState = sRecover[inIndex];
+    RecoverCounts& theCounts = theState.mCounts;
+    theCounts.mChecks++;
+    long theWorkforce = Workforce(inResources);
+    bool theOn = theState.mOn ? theWorkforce < inSettings.min_workforce + 5
+                              : theWorkforce < inSettings.min_workforce;
+    if (theWorkforce >= inSettings.min_workforce + 5)
+        theState.mHadEconomy = true;
+    if (!theState.mHadEconomy && inNow < 1800000)
+        theOn = false;
+    if (theOn != theState.mOn) {
+        theState.mOn = theOn;
+        if (theOn)
+            theCounts.mStarts++;
+        else
+            theCounts.mEnds++;
+    }
+    if (!theOn)
+        return;
+    long theTarget[7], theTotal = 0;
+    for (int r = 0; r < 7; r++)
+        theTarget[r] = (long)inResources->mWantedGatherers[r];
+    for (int r = 2; r < 7; r++)
+        theTotal += theTarget[r];
+    long theWant = theTotal * 2 / 3;
+    while (theTarget[2] < theWant) {
+        int theFrom = -1;
+        for (int r = 3; r < 7; r++)
+            if (theTarget[r] > 1 && (theFrom < 0 || theTarget[r] > theTarget[theFrom]))
+                theFrom = r;
+        if (theFrom < 0)
+            break;
+        theTarget[theFrom]--;
+        theTarget[2]++;
+        theCounts.mMoves++;
+    }
+    for (int r = 2; r < 7; r++)
+        inResources->mWantedGatherers[r] = (unsigned long)theTarget[r];
+}
+}
+
+RecoverCounts RecoverCountsOf(unsigned long inPlayerID)
+{
+    if (inPlayerID >= 16)
+        return RecoverCounts();
+    RecoverCounts theCounts = sRecover[inPlayerID].mCounts;
+    theCounts.mOn = sRecover[inPlayerID].mOn ? 1 : 0;
+    theCounts.mHadEconomy = sRecover[inPlayerID].mHadEconomy ? 1 : 0;
+    return theCounts;
+}
+
 // The gatherers wanted of each resource, after the game's own count (EECPResourceManager::Update, every 5 seconds):
-// before the Copper Age the plan of AgeOfAIWorkers.h replaces it
-void EconTargets(EECPResourceManager* inResources)
+// before the Copper Age the plan of AgeOfAIWorkers.h replaces it; after it only the recovery split changes the
+// game's targets here.
+void EconTargets(EECPResourceManager* inResources, unsigned long inNow)
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
     if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
         return;
     const SettingsAI& theSettings = SettingsOf(thePlayer);
     int theCopperPlan = theSettings.copper_plan;
-    if (theCopperPlan == 0 || Epoch(thePlayer) >= kFarmEpoch)
-        return;
     unsigned idx = thePlayer->mPlayerID & 15;
+    if (Epoch(thePlayer) >= kFarmEpoch) {
+        if (theSettings.recover_economy && theCopperPlan != 0 && theSettings.late_targets.wood_gap)
+            RecoverTargets(inResources, theSettings, inNow, idx);
+        return;
+    }
+    if (theCopperPlan == 0)
+        return;
     long theTotal = 0;
     for (int r = 2; r < 7; r++)
         theTotal += (long)inResources->mWantedGatherers[r];

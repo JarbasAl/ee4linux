@@ -120,6 +120,29 @@ gather: the need divided by the income per worker, measured every 30 game second
 `next_epoch` half the workers (up to `food_floor`) go to food. From the Copper Age on the game's targets stand. The
 military's reserves, the fields' wood and the late rules wait for their files.
 
+## Recovery after the Copper Age
+
+`[ai_base] recover_economy` is on in the shipped file, as upstream, and is now active. From the Copper Age on, while the
+player has fewer than `min_workforce` gatherers (40 in the shipped file), an Age of AI player puts two thirds of its
+wanted gatherers on food. It moves workers one at a time from the largest other wanted target, among wood, stone, gold
+and iron. The rule starts with five workers of slack once it has engaged, so it does not flicker at the threshold. A
+player that once reached `min_workforce + 5` stays eligible at any later size. A player that never did stays off until
+game minute 30, so a start in a late epoch is not read as a collapse.
+
+This ports upstream's worker split only. Upstream also lets citizens spend the whole stock and stops soldier training
+while the economy is low; those two effects wait for the port's budget and training layers. The split runs after the
+game's count of wanted gatherers, every five game seconds, in `AgeOfAIEconomy.cpp`. EESim reports gated passes, starts
+and ends, and workers moved to food as `intel.recover_checks`, `recover_starts`, `recover_ends` and `recover_moves`.
+`recover_on` and `recover_had_economy` show the two latches at the end of a sample.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it. It leaves the
+300-second benchmark unchanged: the two Age of AI players stay in the second epoch, the trace is byte-identical to the
+earlier 3705 baseline, and the score stays 3705. With the shipped settings a 30-minute Tiny map game also keeps the
+same trace with the setting on and off, although one player that never grew past six citizens turns the latch on in
+that time. To exercise the rule, a paired 35-minute probe set `min_workforce=200` in both inis so the guard let it
+start after minute 30. Recovery scored 7196.3 against 7424.0 with it off; the traces first differ at game millisecond
+1803375, the first target pass after the guard. The on run moved 1566 and 1513 workers to food for two players.
+
 The game plans its attempt at the next epoch by a timer, often long after the player could pay. With the copper plan,
 before the Copper Age, and in every epoch with `epoch_pacing` `rush`, an Age of AI player moves the attempt to now as
 soon as its stock pays the next epoch (the game then researches the requirements it asks for first). A request for them

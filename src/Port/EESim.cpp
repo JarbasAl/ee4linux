@@ -252,6 +252,8 @@ struct PlayerSample {
     long mWeakCalls = 0, mWeakThreatened = 0, mWeakPicked = 0;
     long mBreachCalls = 0, mBreachCrossed = 0, mBreachPicked = 0, mBreachWalls = 0;
     long mBuildAttempts = 0, mBuildFails = 0, mBuildDropped = 0, mBuildTopType = 0, mBuildTopFails = 0;
+    long mRecoverChecks = 0, mRecoverStarts = 0, mRecoverEnds = 0, mRecoverMoves = 0;
+    long mRecoverOn = 0, mRecoverHadEconomy = 0;
     long mAvoidCalls = 0, mAvoidPenalised = 0, mAvoidCost = 0;
     long mRamCalls = 0, mRamWaits = 0;
     long mAirCalls = 0, mAirSkipped = 0;
@@ -514,6 +516,13 @@ Sample TakeSample()
             p.mBuildDropped = (long)theBuildFix.mDropped;
             p.mBuildTopType = (long)theBuildFix.mTopType;
             p.mBuildTopFails = (long)theBuildFix.mTopFails;
+            AgeOfAI::RecoverCounts theRecover = AgeOfAI::RecoverCountsOf(i);
+            p.mRecoverChecks = (long)theRecover.mChecks;
+            p.mRecoverStarts = (long)theRecover.mStarts;
+            p.mRecoverEnds = (long)theRecover.mEnds;
+            p.mRecoverMoves = (long)theRecover.mMoves;
+            p.mRecoverOn = (long)theRecover.mOn;
+            p.mRecoverHadEconomy = (long)theRecover.mHadEconomy;
             p.mFoodPulled = (long)AgeOfAI::FoodCountsOf(i).mPulled;
             AgeOfAI::CounterFireCounts theCounterFire = AgeOfAI::CounterFireCountsOf(i);
             p.mCounterFireSorties = (long)theCounterFire.mSorties;
@@ -1049,7 +1058,7 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[3072] = "";
+        char theIntel[3456] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
@@ -1072,6 +1081,8 @@ std::string PlayersJson(const Sample& inSample)
                      "\"weak_calls\": %ld, \"weak_threatened\": %ld, \"weak_picked\": %ld, "
                      "\"breach_calls\": %ld, \"breach_crossed\": %ld, \"breach_picked\": %ld, \"breach_walls\": %ld, "
                      "\"build_attempts\": %ld, \"build_fails\": %ld, \"build_dropped\": %ld, \"build_top_type\": %ld, \"build_top_fails\": %ld, "
+                     "\"recover_checks\": %ld, \"recover_starts\": %ld, \"recover_ends\": %ld, \"recover_moves\": %ld, "
+                     "\"recover_on\": %ld, \"recover_had_economy\": %ld, "
                      "\"food_pulled\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
@@ -1094,6 +1105,8 @@ std::string PlayersJson(const Sample& inSample)
                      p.mWeakCalls, p.mWeakThreatened, p.mWeakPicked,
                      p.mBreachCalls, p.mBreachCrossed, p.mBreachPicked, p.mBreachWalls,
                      p.mBuildAttempts, p.mBuildFails, p.mBuildDropped, p.mBuildTopType, p.mBuildTopFails,
+                     p.mRecoverChecks, p.mRecoverStarts, p.mRecoverEnds, p.mRecoverMoves,
+                     p.mRecoverOn, p.mRecoverHadEconomy,
                      p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
                      (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,

@@ -94,7 +94,16 @@ EarlyCounts EarlyCountsOf(unsigned long inPlayerID);
 // from its update, EconTargets from EECPResourceManager::Update after the game's count of wanted gatherers.
 void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount);
 void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow);
-void EconTargets(EECPResourceManager* inResources);
+void EconTargets(EECPResourceManager* inResources, unsigned long inNow);
+// RECOVERY (econ.c recovering, [ai_base] recover_economy, on in the shipped file): after the Copper Age, while the
+// workforce is under min_workforce, put two thirds of the wanted gatherers on food by draining the largest non-food
+// targets. This is the worker split only; the stock and soldier-training parts of upstream's recovery wait for the
+// budget and training layers. EECPResourceManager::Update calls it with the other target passes, every 5 game seconds.
+struct RecoverCounts {
+    unsigned long mChecks, mStarts, mEnds, mMoves;   // gated passes, recovery starts and ends, workers moved to food
+    unsigned long mOn, mHadEconomy;                  // latest state of the two latches, for the report
+};
+RecoverCounts RecoverCountsOf(unsigned long inPlayerID);
 // The slot tallies of the mines near a drop site (all, and the home continent's), for the fill pass
 void MineSlots(EEComputerPlayer* inPlayer, unsigned long inNow, long outSlots[7], long outHomeSlots[7]);
 // FILL THE MINES (mines.c mine_fill, off in the shipped file): turn spare wood- and food-gatherers toward metal mines
