@@ -2193,7 +2193,8 @@ bool EECPASGLand::ChooseSpaceUnloadPoint()
 // FUNCTION: EXE 0x44b3c7
 // Requests a new route: opens the terrain the cost weights allow (water, space, cliff, forest, walls, gates),
 // clears the old path and asks the path manager with a land route-planner modifier. An Age of AI player may first
-// turn the goal into its wave's goal (stage.c wave_focus), as the mod's hook_asg_route does before this function.
+// turn the goal into its wave's goal (stage.c wave_focus) and then into a weak building near a threatened goal
+// (attack.c find_weak_spot), as the mod's hook_asg_route does before this function.
 void EECPASGLand::RequestPath(void* inFrom, void* inTo)
 {
     EETileCoordinate* theFrom = static_cast<EETileCoordinate*>(inFrom);
@@ -2201,6 +2202,7 @@ void EECPASGLand::RequestPath(void* inFrom, void* inTo)
     if (this->mPlayer != NULL && AgeOfAI::EngineOf(this->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI) {
         long theToX = theTo->GetX(), theToY = theTo->GetY();
         AgeOfAI::WaveFocusRoute(this, theFrom->GetX(), theFrom->GetY(), theToX, theToY);
+        AgeOfAI::WeakSpotRoute(this, theFrom->GetX(), theFrom->GetY(), theToX, theToY);
         theTo->SetXY(theToX, theToY);
     }
     EECPASGFlags theFlags;

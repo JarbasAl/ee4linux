@@ -224,6 +224,15 @@ struct WaveFocusCounts {
 };
 WaveFocusCounts WaveFocusCountsOf(unsigned long inPlayerID);
 
+// A weak building near a threatened goal (attack.c find_weak_spot, [ai_base] attack_weak_spots on by default): when a
+// land route's goal is an enemy building under known defences, the route goes to a seen enemy building of the same land
+// mass within attack_weak_spot_radius that no known defence covers. EECPILocation::SetUnit records the new goal.
+void WeakSpotRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY);
+struct WeakSpotCounts {
+    unsigned long mCalls, mThreatened, mPicked;   // routes seen, goals under known defences, goals changed
+};
+WeakSpotCounts WeakSpotCountsOf(unsigned long inPlayerID);
+
 // The route cost of known enemy defences (attack.c avoid_towers, [ai_base] avoid_towers on by default): a land
 // attack route pays extra for each subsector inside their reach. The port costs a subsector where upstream costs a
 // tile; the margin and the weight come from the settings. EEAIGPGModifierLandAttackSubGroupRoutePlanner::GetCost

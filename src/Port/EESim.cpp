@@ -249,6 +249,7 @@ struct PlayerSample {
     long mWallSkipped = 0, mWallRan = 0;
     long mRetargetScans = 0, mRetargetPicked = 0, mRetargetGroups = 0;
     long mWaveCalls = 0, mWaveSet = 0, mWaveMoved = 0, mWaveKept = 0, mWaveNone = 0;
+    long mWeakCalls = 0, mWeakThreatened = 0, mWeakPicked = 0;
     long mAvoidCalls = 0, mAvoidPenalised = 0, mAvoidCost = 0;
     long mRamCalls = 0, mRamWaits = 0;
     long mAirCalls = 0, mAirSkipped = 0;
@@ -476,6 +477,10 @@ Sample TakeSample()
             p.mWaveMoved = (long)theWave.mMoved;
             p.mWaveKept = (long)theWave.mKept;
             p.mWaveNone = (long)theWave.mNone;
+            AgeOfAI::WeakSpotCounts theWeak = AgeOfAI::WeakSpotCountsOf(i);
+            p.mWeakCalls = (long)theWeak.mCalls;
+            p.mWeakThreatened = (long)theWeak.mThreatened;
+            p.mWeakPicked = (long)theWeak.mPicked;
             p.mFoodPulled = (long)AgeOfAI::FoodCountsOf(i).mPulled;
             AgeOfAI::CounterFireCounts theCounterFire = AgeOfAI::CounterFireCountsOf(i);
             p.mCounterFireSorties = (long)theCounterFire.mSorties;
@@ -1027,6 +1032,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"granary_checks\": %ld, \"granary_requested\": %ld, "
                      "\"fish_calls\": %ld, \"fish_picked\": %ld, \"fish_changed\": %ld, \"fish_class\": %ld, "
                      "\"wave_calls\": %ld, \"wave_set\": %ld, \"wave_moved\": %ld, \"wave_kept\": %ld, \"wave_none\": %ld, "
+                     "\"weak_calls\": %ld, \"weak_threatened\": %ld, \"weak_picked\": %ld, "
                      "\"food_pulled\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
@@ -1042,6 +1048,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mGranChecks, p.mGranRequested,
                      p.mFishCalls, p.mFishPicked, p.mFishChanged, p.mFishClass,
                      p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
+                     p.mWeakCalls, p.mWeakThreatened, p.mWeakPicked,
                      p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
                      (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,

@@ -330,7 +330,13 @@ target, so the scan runs but does not change play there; the counter proves it i
 
 With `[ai_base] wave_focus` on (off in the shipped file), the land routes of an attack group use one goal. When a subgroup asks for a route, the first route request sends it to an enemy building of the target player that the AI has seen. The building is the nearest one on the land mass of the route: nearest to the route's start at first, then nearest to the last goal after a building falls. A return mission keeps its own goal. The group holds the building until it dies, the route moves to another land mass, or three minutes pass with no route for the group. The AI then picks a new building, or leaves the game's own goal when it knows no enemy building. The sim report counts the routes seen, the goals chosen, the goals changed, the routes already at the goal and the routes with no goal found (`intel.wave_*`).
 
-The rest of `stage.c` is not ported. There is no staging point, no falling back and no rally. A weak spot found for a route does not become the wave's goal.
+The rest of `stage.c` is not ported. There is no staging point, no falling back and no rally.
+
+## Weak spots
+
+`[ai_base] attack_weak_spots` is on in the shipped file, as upstream, and is now active. When a land route's goal is an enemy building under known defences, the AI looks for a weaker enemy building within `attack_weak_spot_radius` tiles (60 by default). The building must be one the AI has seen, on the same land mass as the route, and outside every known defence's range. Walls do not count. The AI picks the building nearest the route's start and goal, sends the route there and records it as the subgroup's goal. A weak spot also becomes the wave's goal when `wave_focus` is on. Upstream searches a grid box around the goal and compares the map areas of the start and the candidate; the port scans the enemy players' buildings and compares their land mass. The score and the goal write are the same.
+
+The shipped 1 is a deliberate behaviour change: the earlier port read the setting but never used it, so an attack kept its goal behind the defences. Setting 0 restores those routes. The 300-second benchmark makes six route checks and finds no threatened goal, so its trace stays byte-identical and its score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on changed two goals for one player and six for another and scored 7000.3; gate off changed none and scored 6154.7, with a different trace that is byte-identical to the earlier baseline. The sim report counts the routes seen, the threatened goals and the goals changed in `intel.weak_calls`, `intel.weak_threatened` and `intel.weak_picked`.
 
 ## Attack routing
 

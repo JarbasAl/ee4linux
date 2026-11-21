@@ -13,6 +13,7 @@
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
+#include <cmath>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -544,6 +545,110 @@ void WaveFocusRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, 
 WaveFocusCounts WaveFocusCountsOf(unsigned long inPlayerID)
 {
     return sWaveCounts[inPlayerID & 15];
+}
+
+// Upstream's wave_focus_weak (stage.c): a weak spot becomes this group's goal too, so the next route keeps it.
+static void WaveFocusWeak(EECPAttackSubGroup* inSubGroup, long inX, long inY, unsigned long inID)
+{
+    if (inSubGroup == NULL || inSubGroup->mGroup == NULL || inSubGroup->mPlayer == NULL)
+        return;
+    unsigned thePI = inSubGroup->mPlayer->mPlayerID & 15;
+    for (int k = 0; k < kWavesMost; k++) {
+        WaveRecord* theEntry = &sWaves[thePI][k];
+        if (theEntry->mGroup == inSubGroup->mGroup) {
+            theEntry->mX = inX;
+            theEntry->mY = inY;
+            theEntry->mID = inID;
+            return;
+        }
+    }
+}
+
+WeakSpotCounts sWeak[16];
+
+// An enemy building that is not a wall within inR tiles of a tile (attack.c building_at).
+static bool GoalBuildingAt(EEComputerPlayer* inPlayer, long inX, long inY, long inR)
+{
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.mPlayers[p];
+        if (theOwner == NULL || !IsEnemyOf(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0
+                || theClass->mCategory != kUnitCategoryBuilding
+                || (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kWall))
+                continue;
+            long theDX = theUnit->mTileX - inX, theDY = theUnit->mTileY - inY;
+            if (theDX * theDX + theDY * theDY <= inR * inR)
+                return true;
+        }
+    }
+    return false;
+}
+
+// The port of attack.c's find_weak_spot, called from EECPASGLand::RequestPath after the wave goal. Upstream searches
+// the goal's neighbourhood with a grid iterator and keeps the buildings in the same map area as the route's start.
+// The game has no such iterator here, so the port scans the enemy players' units and compares their land mass. The
+// score and the goal write are the same.
+void WeakSpotRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY)
+{
+    if (inSubGroup == NULL || inSubGroup->mPlayer == NULL)
+        return;
+    EEComputerPlayer* thePlayer = inSubGroup->mPlayer;
+    unsigned long thePID = thePlayer->mPlayerID;
+    if (!SettingsAIOf(thePID, kDifficultyMedium).attack_weak_spots)
+        return;
+    unsigned thePI = thePID & 15;
+    WeakSpotCounts& theCounts = sWeak[thePI];
+    theCounts.mCalls++;
+    if (!(ThreatAt(thePI, ioToX, ioToY) > 0.0f) || !GoalBuildingAt(thePlayer, ioToX, ioToY, 4))
+        return;
+    theCounts.mThreatened++;
+    long theRadius = SettingsAIOf(thePID, kDifficultyMedium).attack_weak_spot_radius;
+    if (theRadius <= 0)
+        return;
+    long theR2 = theRadius * theRadius;
+    unsigned short theArea = gContinentManager.GetContinent(EETileLocation(inFromX, inFromY), kAIPathLandMass);
+    EEUnit* theBest = NULL;
+    float theBestScore = 0.0f;
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.mPlayers[p];
+        if (theOwner == NULL || !IsEnemyOf(thePlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mTile == NULL
+                || theClass->mCategory != kUnitCategoryBuilding
+                || (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kWall)
+                || !SeenBy(theUnit, thePlayer))
+                continue;
+            long theDX = theUnit->mTileX - ioToX, theDY = theUnit->mTileY - ioToY;
+            long theD2 = theDX * theDX + theDY * theDY;
+            if (theD2 > theR2 || ThreatAt(thePI, theUnit->mTileX, theUnit->mTileY) > 0.0f)
+                continue;
+            if (gContinentManager.GetContinent(theUnit, kAIPathLandMass) != theArea)
+                continue;
+            long theFX = theUnit->mTileX - inFromX, theFY = theUnit->mTileY - inFromY;
+            float theScore = sqrtf((float)(theFX * theFX + theFY * theFY)) + 0.5f * sqrtf((float)theD2);
+            if (theBest == NULL || theScore < theBestScore) {
+                theBest = theUnit;
+                theBestScore = theScore;
+            }
+        }
+    }
+    if (theBest == NULL)
+        return;
+    theCounts.mPicked++;
+    ioToX = theBest->mTileX;
+    ioToY = theBest->mTileY;
+    inSubGroup->mTask.mLocation.SetUnit(theBest);
+    WaveFocusWeak(inSubGroup, ioToX, ioToY, theBest->mUnitID);
+}
+
+WeakSpotCounts WeakSpotCountsOf(unsigned long inPlayerID)
+{
+    return sWeak[inPlayerID & 15];
 }
 
 }
