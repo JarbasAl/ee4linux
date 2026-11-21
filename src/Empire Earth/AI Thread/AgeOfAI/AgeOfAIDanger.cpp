@@ -456,6 +456,54 @@ LeashCounts LeashCountsOf(unsigned long inPlayerID)
     return sLeash[inPlayerID & 15];
 }
 
+// Upstream mass.c mass_tether, [ai_base] army_mass=tether (bit 16, default off). A member of an out land subgroup picks
+// no target more than army_mass_tether tiles from the pack unless it is within its own range + 2 tiles of it. Upstream
+// builds the pack from the subgroup's members away from base; here it is the middle of the subgroup's own members.
+// only_buildings (bit 128) limits the rule to enemy buildings and forts.
+static TetherCounts sTether[16];
+
+bool TetherSkipsTarget(EEPlayer* inPlayer, EECPAttackSubGroup* inGroup, EEComplexUnit* inScorer, EEComplexUnit* inTarget)
+{
+    if (inPlayer == NULL || inGroup == NULL || inScorer == NULL || inTarget == NULL || inTarget->mUnitClass == NULL
+        || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return false;
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.army_mass.tether)
+        return false;
+    TetherCounts& theCounts = sTether[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    if (theSettings.army_mass.only_buildings
+        && !Roles::IsBuildingCategory(inTarget->mUnitClass->mCategory))
+        return false;
+    long theX = 0, theY = 0, theN = 0;
+    for (unsigned long i = 0; i < inGroup->GetNumUnits() && i < 256; i++) {
+        EEComplexUnit* theMember = inGroup->GetUnitUnit(i);
+        if (theMember == NULL || theMember->mHitPoints <= 0)
+            continue;
+        theX += theMember->mTileX;
+        theY += theMember->mTileY;
+        theN++;
+    }
+    if (theN < 2)
+        return false;
+    long theDX = inTarget->mTileX - theX / theN, theDY = inTarget->mTileY - theY / theN;
+    long theTether = theSettings.army_mass_tether;
+    if (theDX * theDX + theDY * theDY <= theTether * theTether)
+        return false;
+    float theRange = (inScorer->mStats != NULL ? inScorer->mStats->GetRange() : inScorer->mUnitClass->mRange) + 2.0f;
+    theDX = inTarget->mTileX - inScorer->mTileX;
+    theDY = inTarget->mTileY - inScorer->mTileY;
+    if ((float)(theDX * theDX + theDY * theDY) <= theRange * theRange)
+        return false;
+    theCounts.mSkipped++;
+    return true;
+}
+
+TetherCounts TetherCountsOf(unsigned long inPlayerID)
+{
+    return sTether[inPlayerID & 15];
+}
+
 // Enemy soldiers that this player sees within reach of a tile: each by its own reach (its range + RAID_MARGIN, at least r0, at
 // most the box). The first raider found answers (attack.c raiders_scan without the kinds; walled_out/behind_walls is off by default)
 bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)

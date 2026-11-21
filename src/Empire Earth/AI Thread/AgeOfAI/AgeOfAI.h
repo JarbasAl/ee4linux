@@ -281,6 +281,16 @@ struct LeashCounts {
 };
 LeashCounts LeashCountsOf(unsigned long inPlayerID);
 
+// A land soldier does not pick a target more than army_mass_tether tiles from its subgroup's pack unless the target is
+// within its own range + 2 tiles (mass.c mass_tether, [ai_base] army_mass=tether; default off). The pack is the middle
+// of the subgroup's own members; upstream uses the members away from base. only_buildings limits the rule to enemy
+// buildings and forts. EEAIGPG calls this with the subgroup, the scorer and the target.
+bool TetherSkipsTarget(EEPlayer* inPlayer, EECPAttackSubGroup* inGroup, EEComplexUnit* inScorer, EEComplexUnit* inTarget);
+struct TetherCounts {
+    unsigned long mCalls, mSkipped;   // tether tests, targets refused as too far from the pack
+};
+TetherCounts TetherCountsOf(unsigned long inPlayerID);
+
 // Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
 // (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
 void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow);

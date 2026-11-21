@@ -444,6 +444,13 @@ float EECPAttackSubGroupUnit::ScoreTarget(EECPASTargetUnit* inTarget)
         if (AgeOfAI::LeashSkipsTarget(thePlayer, theUnit->mTileX, theUnit->mTileY, theGoal.mX, theGoal.mY))
             return 0.0f;
     }
+    // A target far from the subgroup's pack is not chosen (mass.c mass_tether, army_mass=tether, default off).
+    if (theScore != 0.0f && this->mSubGroup != NULL && this->mUnit != NULL && theUnit != NULL
+        && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+        if (AgeOfAI::TetherSkipsTarget(thePlayer, this->mSubGroup, this->mUnit, theUnit))
+            return 0.0f;
+    }
     float theDistance = this->mUnit->DistanceSquaredTo(theUnit);
     return theScore;
 }

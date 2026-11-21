@@ -47,7 +47,8 @@ players' starting positions.
 The report of an Age of AI player has an `intel` object, its memory of its enemies ([Age of AI](ageofai.md)): `records`,
 `buildings`, `soldiers`, `seen_now`, `cells_looked` and `army`. It also holds the counters of the early game (`early_*`),
 of the outdated units' attack (`outdated_*`), of the food pull (`food_pulled`), of counter-fire (`counter_fire_*`), of
-the mine cap (`mine_calls`, `mine_capped`, `mine_mines`, `mine_cap`), the citizen militia (`militia_orders`,
+the mine cap (`mine_calls`, `mine_capped`, `mine_mines`, `mine_cap`), the army tether (`tether_calls`, `tether_skipped`),
+the citizen militia (`militia_orders`,
 `militia_refused`, `militia_caught`), of counter-siege (`counter_siege_orders`,
 `counter_siege_skipped`), of the idle citizens home (`home_sent`, `home_base_moved`) and of the defence layout's towers
 (`towers_queued`, `towers_skipped`).

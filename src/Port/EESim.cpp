@@ -254,6 +254,7 @@ struct PlayerSample {
     long mRamCalls = 0, mRamWaits = 0;
     long mAirCalls = 0, mAirSkipped = 0;
     long mLeashCalls = 0, mLeashSkipped = 0;
+    long mTetherCalls = 0, mTetherSkipped = 0;
     long mGranChecks = 0, mGranRequested = 0;
     long mFishCalls = 0, mFishPicked = 0, mFishChanged = 0, mFishClass = 0;
     long mMineCalls = 0, mMineCapped = 0, mMineMines = 0, mMineCap = 0;
@@ -464,6 +465,9 @@ Sample TakeSample()
             AgeOfAI::LeashCounts theLeash = AgeOfAI::LeashCountsOf(i);
             p.mLeashCalls = (long)theLeash.mCalls;
             p.mLeashSkipped = (long)theLeash.mSkipped;
+            AgeOfAI::TetherCounts theTether = AgeOfAI::TetherCountsOf(i);
+            p.mTetherCalls = (long)theTether.mCalls;
+            p.mTetherSkipped = (long)theTether.mSkipped;
             AgeOfAI::GranaryCounts theGran = AgeOfAI::GranaryCountsOf(i);
             p.mGranChecks = (long)theGran.mChecks;
             p.mGranRequested = (long)theGran.mRequested;
@@ -1022,7 +1026,7 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[2432] = "";
+        char theIntel[2560] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
@@ -1035,6 +1039,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"ram_calls\": %ld, \"ram_waits\": %ld, "
                      "\"air_calls\": %ld, \"air_skipped\": %ld, "
                      "\"leash_calls\": %ld, \"leash_skipped\": %ld, "
+                     "\"tether_calls\": %ld, \"tether_skipped\": %ld, "
                      "\"granary_checks\": %ld, \"granary_requested\": %ld, "
                      "\"fish_calls\": %ld, \"fish_picked\": %ld, \"fish_changed\": %ld, \"fish_class\": %ld, "
                      "\"mine_calls\": %ld, \"mine_capped\": %ld, \"mine_mines\": %ld, \"mine_cap\": %ld, "
@@ -1052,6 +1057,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mRamCalls, p.mRamWaits,
                      p.mAirCalls, p.mAirSkipped,
                      p.mLeashCalls, p.mLeashSkipped,
+                     p.mTetherCalls, p.mTetherSkipped,
                      p.mGranChecks, p.mGranRequested,
                      p.mFishCalls, p.mFishPicked, p.mFishChanged, p.mFishClass,
                      p.mMineCalls, p.mMineCapped, p.mMineMines, p.mMineCap,
