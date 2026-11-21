@@ -2241,6 +2241,246 @@ void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     }
 }
 
+// ANTI-AIR (defence.c anti_air with aa_ahead, [ai_base] anti_air and aa_ahead on in the shipped file). Every 5 game
+// seconds an Age of AI player counts the enemy aircraft it sees within 25 tiles of a drop site and anywhere on the map,
+// and remembers the largest count for 5 and 10 minutes. From World War I it also prepares ahead when an enemy reaches
+// that age: the first drop sites nearest the base without an AA building within 7 tiles each want one before aircraft
+// come. The port queues the newest AA building the player can build, at most one at a time a minute, in the ring 3 to 7
+// tiles around the drop site and away from raiders. Upstream also trains AA units from a special reserve; that needs the
+// missing budget layer and is not ported.
+namespace {
+
+const unsigned long kAntiAirEvery = 5000;
+const unsigned long kAntiAirBuildEvery = 60000;
+const unsigned long kAntiAirNearKeep = 300000;
+const unsigned long kAntiAirAheadKeep = 600000;
+const long kAntiAirNear2 = 625;
+
+struct AntiAirState {
+    unsigned long mLast, mSeen, mBuild, mAllSeen;
+    long mAir, mAX, mAY, mAll;
+    long mBX[16], mBY[16];
+    int mNB;
+};
+static AntiAirState sAntiAir[16];
+static AntiAirCounts sAntiAirCounts[16];
+
+bool AntiAirBuildable(EEPlayer* inPlayer, long inType)
+{
+    if (inType < 0 || inType >= 871 || gUnitClassTable[inType] == NULL || inPlayer->mTechnologies == NULL)
+        return false;
+    EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[inType]->mTechnology);
+    return theNode != NULL && theNode->GetIsAvailable();
+}
+
+}
+
+void AntiAirTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.anti_air || inPlayer->mTechnologies == NULL)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    AntiAirState& theState = sAntiAir[idx];
+    if (inNow < theState.mLast) {
+        std::memset(&theState, 0, sizeof(theState));
+        sAntiAirCounts[idx] = AntiAirCounts();
+    }
+    if (theState.mLast != 0 && inNow >= theState.mLast && inNow - theState.mLast < kAntiAirEvery)
+        return;
+    theState.mLast = inNow != 0 ? inNow : 1;
+    long theEpoch = inPlayer->mTechnologies->mCurrentEpoch;
+    if (theEpoch < kTechEpochAtomicWW1)
+        return;
+    sAntiAirCounts[idx].mChecks++;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    EECPBuildManager* theBuild = theCivilization != NULL ? theCivilization->mBuildManager : NULL;
+    if (theBuild == NULL)
+        return;
+
+    long theDrops[64][2];
+    int theDropCount = 0;
+    int theHaveB = 0;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+            continue;
+        long theType = (long)theUnit->mUnitClass->mUnitType;
+        if (theType == kUnitTypeAA10Gun88mm || theType == kUnitTypeAA13MissileTower) {
+            if (theHaveB < 16) {
+                theState.mBX[theHaveB] = theUnit->mTileX;
+                theState.mBY[theHaveB] = theUnit->mTileY;
+            }
+            theHaveB++;
+            continue;
+        }
+        if ((theType == kUnitTypeTownCenter || theType == kUnitTypeCapitol || theType == kUnitTypeSettlement)
+            && theDropCount < 64) {
+            theDrops[theDropCount][0] = theUnit->mTileX;
+            theDrops[theDropCount][1] = theUnit->mTileY;
+            theDropCount++;
+        }
+    }
+    theState.mNB = theHaveB < 16 ? theHaveB : 16;
+
+    long theNear = 0, theAXS = 0, theAYS = 0, theAny = 0;
+    for (unsigned long p = 1; p < gWorld.GetNumPlayers(); p++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(p);
+        if (theOwner == NULL || theOwner->mPlayerID <= 0 || !IsEnemy(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || !SeenBy(theUnit, inPlayer))
+                continue;
+            unsigned long theCategory = theUnit->mUnitClass->mCategory;
+            if (theCategory != kUnitCategoryAirplane && theCategory != kUnitCategoryHelicopter
+                && theCategory != kUnitCategoryHelicopterTransport)
+                continue;
+            theAny++;
+            long theDropX = 0, theDropY = 0;
+            long theDX = theUnit->mTileX, theDY = theUnit->mTileY;
+            if (!NearestDrop(inPlayer, theUnit->mTileX, theUnit->mTileY, false, theDropX, theDropY))
+                continue;
+            theDX -= theDropX;
+            theDY -= theDropY;
+            if (theDX * theDX + theDY * theDY > kAntiAirNear2)
+                continue;
+            theNear++;
+            theAXS += theUnit->mTileX;
+            theAYS += theUnit->mTileY;
+        }
+    }
+    if (theNear > 0) {
+        sAntiAirCounts[idx].mNear++;
+        if (theNear >= theState.mAir || theState.mSeen == 0 || inNow - theState.mSeen > kAntiAirNearKeep)
+            theState.mAir = theNear;
+        theState.mSeen = inNow != 0 ? inNow : 1;
+        theState.mAX = theAXS / theNear;
+        theState.mAY = theAYS / theNear;
+    } else if (theState.mSeen != 0 && inNow >= theState.mSeen
+               && inNow - theState.mSeen > (theSettings.aa_ahead ? kAntiAirAheadKeep : kAntiAirNearKeep))
+        theState.mAir = 0;
+    if (theAny > 0) {
+        sAntiAirCounts[idx].mAny++;
+        if (theAny >= theState.mAll || theState.mAllSeen == 0 || inNow - theState.mAllSeen > kAntiAirAheadKeep) {
+            theState.mAll = theAny;
+            theState.mAllSeen = inNow != 0 ? inNow : 1;
+        }
+    } else if (theState.mAllSeen != 0 && inNow >= theState.mAllSeen
+               && inNow - theState.mAllSeen > kAntiAirAheadKeep)
+        theState.mAll = 0;
+
+    bool theAhead = false;
+    long theAir = theState.mAir;
+    if (theSettings.aa_ahead) {
+        if (theState.mAll / 2 > theAir)
+            theAir = theState.mAll / 2;
+        for (unsigned long p = 1; p < gWorld.GetNumPlayers(); p++) {
+            EEPlayer* theOwner = gWorld.GetPlayer(p);
+            if (theOwner == NULL || theOwner == inPlayer || !IsEnemy(inPlayer, theOwner)
+                || theOwner->mTechnologies == NULL || theOwner->mTechnologies->mCurrentEpoch < kTechEpochAtomicWW1)
+                continue;
+            theAhead = true;
+            break;
+        }
+        if (!theAhead && theAir == 0)
+            return;
+    } else if (theAir == 0)
+        return;
+    if (theAhead)
+        sAntiAirCounts[idx].mAhead++;
+
+    long theWant = 2 + (theAir + 1) / 2;
+    if (theWant > 16)
+        theWant = 16;
+    long theWantB = theAir != 0 ? 1 + theWant / 4 : 0;
+    if (theWantB > 4)
+        theWantB = 4;
+    long theCoverX = 0, theCoverY = 0;
+    long theUncovered = 0;
+    if (theAhead) {
+        int theUsed[64] = {0};
+        long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+        int theSites = theSettings.aa_ahead_buildings;
+        if (theSites < 0)
+            theSites = 0;
+        if (theSites > 64)
+            theSites = 64;
+        for (int pick = 0; pick < theSites; pick++) {
+            int thePick = -1;
+            long thePickD = 0x7FFFFFFF;
+            for (int i = 0; i < theDropCount; i++) {
+                long theDX = theDrops[i][0] - theBaseX, theDY = theDrops[i][1] - theBaseY;
+                long theD = theDX * theDX + theDY * theDY;
+                if (!theUsed[i] && theD < thePickD) {
+                    thePickD = theD;
+                    thePick = i;
+                }
+            }
+            if (thePick < 0)
+                break;
+            theUsed[thePick] = 1;
+            bool theCovered = false;
+            for (int k = 0; k < theState.mNB && !theCovered; k++)
+                theCovered = labs(theState.mBX[k] - theDrops[thePick][0]) <= 7
+                    && labs(theState.mBY[k] - theDrops[thePick][1]) <= 7;
+            if (!theCovered) {
+                if (theUncovered == 0) {
+                    theCoverX = theDrops[thePick][0];
+                    theCoverY = theDrops[thePick][1];
+                }
+                theUncovered++;
+            }
+        }
+        theWantB = theHaveB + theUncovered;
+        long theCap = 4 + theSites;
+        if (theWantB > theCap)
+            theWantB = theCap;
+        if (theWant < 2 + theWantB)
+            theWant = 2 + theWantB;
+    }
+    if (theHaveB >= theWantB || theBuild->IsQueued(kUnitTypeAA10Gun88mm)
+        || theBuild->IsQueued(kUnitTypeAA13MissileTower))
+        return;
+    if (theState.mBuild != 0 && inNow >= theState.mBuild && inNow - theState.mBuild < kAntiAirBuildEvery)
+        return;
+
+    bool theUseCover = theUncovered > 0 && theState.mAir == 0;
+    long theTargetX = theUseCover ? theCoverX : 0;
+    long theTargetY = theUseCover ? theCoverY : 0;
+    if (!theUseCover && !NearestDrop(inPlayer, theState.mAX, theState.mAY, false, theTargetX, theTargetY)) {
+        sAntiAirCounts[idx].mSkipped++;
+        return;
+    }
+    long theType = 0;
+    if (AntiAirBuildable(inPlayer, kUnitTypeAA13MissileTower))
+        theType = kUnitTypeAA13MissileTower;
+    else if (AntiAirBuildable(inPlayer, kUnitTypeAA10Gun88mm))
+        theType = kUnitTypeAA10Gun88mm;
+    if (theType == 0) {
+        sAntiAirCounts[idx].mSkipped++;
+        return;
+    }
+    for (long r = 3; r <= 7; r++) {
+        for (long ax = -r; ax <= r; ax++) {
+            for (long ay = -r; ay <= r; ay++) {
+                if ((labs(ax) != r && labs(ay) != r) || !CanPlace(inPlayer, theType, theTargetX + ax, theTargetY + ay)
+                    || RaidersNear(inPlayer, theTargetX + ax, theTargetY + ay, 8))
+                    continue;
+                theBuild->QueueBuildingAt(theType, theTargetX + ax, theTargetY + ay);
+                theState.mBuild = inNow != 0 ? inNow : 1;
+                sAntiAirCounts[idx].mQueued++;
+                return;
+            }
+        }
+    }
+    theState.mBuild = inNow != 0 ? inNow : 1;   // no room: try again in a minute
+    sAntiAirCounts[idx].mSkipped++;
+}
+
+AntiAirCounts AntiAirCountsOf(unsigned long inPlayerID)
+{
+    return inPlayerID < 16 ? sAntiAirCounts[inPlayerID] : AntiAirCounts();
+}
+
 HomeCounts HomeCountsOf(unsigned long inPlayerID)
 {
     unsigned idx = inPlayerID & 15;

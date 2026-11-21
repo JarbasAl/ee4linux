@@ -144,6 +144,14 @@ bool TowerIsQueued(EECPBuildManager* inBuild);
 void TowerCounts(EEPlayer* inPlayer, long inX, long inY, long inRadius, int& outFinished, int& outAll);
 // The defence layout's extra towers (DefenceTick, every 20 game seconds)
 void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+// Anti-air buildings (defence.c anti_air with aa_ahead, shipped on in [ai_base]): every 5 game seconds an Age of AI
+// player counts the enemy aircraft it sees by its drop sites. From World War I it also prepares ahead when an enemy
+// reaches that age. The port queues the newest AA building it can build; AA unit training needs the missing budget layer.
+void AntiAirTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct AntiAirCounts {
+    unsigned long mChecks, mNear, mAny, mAhead, mQueued, mSkipped;
+};
+AntiAirCounts AntiAirCountsOf(unsigned long inPlayerID);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
 bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);

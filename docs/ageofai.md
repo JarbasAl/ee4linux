@@ -518,6 +518,29 @@ the sim report's `intel` object counts the towers queued (`towers_queued`) and t
 [benchmark](benchmark.md) rates it as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, the coast towers, and
 the slots that the game's own tower requests take.
 
+## Anti-air buildings
+
+`[ai_base] anti_air` and `aa_ahead` are on in the shipped file, as upstream, and are now active. From the Atomic Age - WW1
+on, every 5 game seconds an Age of AI player counts the enemy aircraft it sees within 25 tiles of a town and anywhere on
+the map. It keeps the largest near count for 5 minutes and the largest overall count for 10 minutes. With `aa_ahead`
+on, an enemy that has reached the same age prepares the defence before any aircraft arrive: the first
+`aa_ahead_buildings` (3) drop sites nearest the base that have no AA building within 7 tiles each want one. When
+aircraft are near, the player uses the drop site nearest the last seen aircraft instead. With no AA building already
+queued, the player queues the newest AA building it can build in the ring 3 to 7 tiles around that site, at most once a
+minute, away from enemy raiders. It checks both the 88 mm gun and the missile tower so one type does not duplicate the
+other.
+
+This is a reduced port. Upstream also trains AA units from a special reserve; that needs the budget and training layer
+that this port does not have. The sim report's `intel` object counts the 5-second checks (`anti_air_checks`), the checks
+that saw aircraft near a town or anywhere (`anti_air_near`, `anti_air_any`), the ahead-mode checks (`anti_air_ahead`),
+the buildings queued and the looks that queued none (`anti_air_queued`, `anti_air_skipped`). In the 300-second benchmark
+the rule makes no order and keeps the trace byte-identical at 3705. In a paired 30-minute Tiny-map probe with seed 2,
+three AI players and 12 aircraft from minute 2 repeated every 3 minutes, the setting on scored 21075.7 against 21525.0
+with it off. Each player made 320 or 321 checks, saw aircraft near a town 269 to 281 times and anywhere 272 to 286
+times, stayed in ahead mode on every check, and queued one AA building. The gate-off report has zero for every counter,
+and the traces first differ at game millisecond 84875. Set `anti_air=0` to turn the rule off. Set `aa_ahead=0` to keep
+the reaction to aircraft but drop the advance build.
+
 ## Build queue fix
 
 `[ai_base] build_fix` is on in the shipped file, as upstream, and is now active. Every three seconds the game's build

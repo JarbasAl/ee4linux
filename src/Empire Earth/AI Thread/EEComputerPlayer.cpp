@@ -5587,6 +5587,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::DefenceTick(this, inTime);
         AgeOfAI::CounterFire(this, inTime);
         AgeOfAI::CounterSiege(this, inTime);
+        AgeOfAI::AntiAirTick(this, inTime);
         AgeOfAI::MusterTick(this, inTime);
         AgeOfAI::HoldTownTick(this, inTime);
         AgeOfAI::OutdatedAttack(this, inTime);
