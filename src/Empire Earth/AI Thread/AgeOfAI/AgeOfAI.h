@@ -187,6 +187,12 @@ struct CoverCounts {
 };
 CoverCounts CoverCountsOf(unsigned long inPlayerID);
 bool CoverHeld(EEUnit* inUnit);
+// Coast towers (defence.c coast_spot, [ai_base] coast_towers, off by default): where citizens work near the sea, the
+// defence layout puts its towers first. Upstream also requires navy_islands; the port uses the coastal-work test alone.
+struct CoastCounts {
+    unsigned long mChecks, mSites, mCells, mSea, mPlaced;
+};
+CoastCounts CoastCountsOf(unsigned long inPlayerID);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
 bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);

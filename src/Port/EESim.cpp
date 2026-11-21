@@ -303,6 +303,7 @@ struct PlayerSample {
     long mSurrenderCanTrain = 0, mSurrenderAtWar = 0, mSurrenderResigned = 0;
     long mHospitalChecks = 0, mHospitals = 0, mHospitalSent = 0, mHospitalHolds = 0, mHospitalDone = 0;
     long mCoverChecks = 0, mCoverNear = 0, mCoverFights = 0, mCoverSent = 0, mCoverHolds = 0, mCoverBack = 0;
+    long mCoastChecks = 0, mCoastSites = 0, mCoastCells = 0, mCoastSea = 0, mCoastPlaced = 0;
     long mTightBuildCalls = 0, mTightBuildSites = 0;
     long mLostChecks = 0, mLostSkipped = 0, mLostInReach = 0;
     long mLostRefreshes = 0, mLostCells = 0, mLostZones = 0;
@@ -611,6 +612,12 @@ Sample TakeSample()
             p.mCoverSent = (long)theCover.mSent;
             p.mCoverHolds = (long)theCover.mHolds;
             p.mCoverBack = (long)theCover.mBack;
+            AgeOfAI::CoastCounts theCoast = AgeOfAI::CoastCountsOf(i);
+            p.mCoastChecks = (long)theCoast.mChecks;
+            p.mCoastSites = (long)theCoast.mSites;
+            p.mCoastCells = (long)theCoast.mCells;
+            p.mCoastSea = (long)theCoast.mSea;
+            p.mCoastPlaced = (long)theCoast.mPlaced;
             AgeOfAI::TightBuildCounts theTightBuild = AgeOfAI::TightBuildCountsOf(i);
             p.mTightBuildCalls = (long)theTightBuild.mCalls;
             p.mTightBuildSites = (long)theTightBuild.mSites;
@@ -1282,6 +1289,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"surrender_can_train\": %ld, \"surrender_at_war\": %ld, \"surrender_resigned\": %ld, "
                      "\"hospital_checks\": %ld, \"hospitals\": %ld, \"hospital_sent\": %ld, \"hospital_holds\": %ld, \"hospital_done\": %ld, "
                      "\"cover_checks\": %ld, \"cover_near\": %ld, \"cover_fights\": %ld, \"cover_sent\": %ld, \"cover_holds\": %ld, \"cover_back\": %ld, "
+                     "\"coast_checks\": %ld, \"coast_sites\": %ld, \"coast_cells\": %ld, \"coast_sea\": %ld, \"coast_placed\": %ld, "
                      "\"tight_build_calls\": %ld, \"tight_build_sites\": %ld, "
                      "\"lost_checks\": %ld, \"lost_skipped\": %ld, \"lost_in_reach\": %ld, "
                      "\"lost_refreshes\": %ld, \"lost_cells\": %ld, \"lost_zones\": %ld, "
@@ -1320,6 +1328,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mSurrenderCanTrain, p.mSurrenderAtWar, p.mSurrenderResigned,
                      p.mHospitalChecks, p.mHospitals, p.mHospitalSent, p.mHospitalHolds, p.mHospitalDone,
                      p.mCoverChecks, p.mCoverNear, p.mCoverFights, p.mCoverSent, p.mCoverHolds, p.mCoverBack,
+                     p.mCoastChecks, p.mCoastSites, p.mCoastCells, p.mCoastSea, p.mCoastPlaced,
                      p.mTightBuildCalls, p.mTightBuildSites,
                      p.mLostChecks, p.mLostSkipped, p.mLostInReach,
                      p.mLostRefreshes, p.mLostCells, p.mLostZones,

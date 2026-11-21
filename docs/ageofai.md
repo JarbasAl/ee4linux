@@ -515,8 +515,32 @@ given there in the last 90 seconds, and a tile near it is used when the route fr
 defence, no enemy raiders are in sight within 10 tiles, and the tower fits. `AgeOfAITowers.h` holds the slot order, and
 the sim report's `intel` object counts the towers queued (`towers_queued`) and the looks that queued none
 (`towers_skipped`). Upstream's default turns `defence_towers` on. The shipped `ageofai.ini` turns it off until the
-[benchmark](benchmark.md) rates it as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, the coast towers, and
+[benchmark](benchmark.md) rates it as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, and
 the slots that the game's own tower requests take.
+
+## Coast towers
+
+`[ai_base] coast_towers` is off in the shipped file, as upstream, and is now active when set to 1 or more. On a coast,
+the defence layout puts towers first where citizens work within a ship's reach of the sea. The port reads the resource
+sites that land gatherers work, from food through iron, and skips fishing boats. It groups the sites into 6-tile cells
+and picks the cell with the most workers that no own tower covers. A tower ordered in the last 90 seconds also counts
+as cover, and the setting's value sets how many towers a cell may have before the port skips it. The cell's first work
+site is its representative. The tower stands 2 tiles in from the nearest ocean on the way from that site, at that point
+or on the first ring of tiles out to radius 2 where no enemy raiders are within 10 tiles and the tower fits. A cell with
+no ocean within 9 tiles is skipped.
+
+This is a reduced port of Grille's `defence.c` `coast_spot`. Upstream fires only on an islands map, when `navy_islands`
+says every enemy is across the water. The port has no navy map layer, so it uses the coastal-work and sea test alone;
+on a land map the sea test can still hold near a coast, so the rule may fire there. The arithmetic is in
+`AgeOfAICoastRules.h` and is covered by `test_ageofai_coast.cpp`. The sim report counts the checks (`coast_checks`), the
+work sites seen (`coast_sites`), the cells judged (`coast_cells`), the cells with sea in reach (`coast_sea`) and the
+towers placed (`coast_placed`).
+
+A 30-minute, single-seed Medium Small Islands probe with `defence_towers` on in both games made the rule fire. With
+`coast_towers=1` the two computer players made 49 and 31 checks, saw 920 and 371 work sites, judged 184 and 91 cells,
+found sea near two and four cells and placed two and three towers; with `coast_towers=0` every counter was zero. The
+traces first differ at game millisecond 1080625. That run scored 19301.5 with the rule on and 16946.0 with it off, one
+seed only; the setting stays off until a benchmark rates it.
 
 ## Anti-air buildings
 

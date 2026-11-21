@@ -146,6 +146,7 @@
 #include "AgeOfAI/AgeOfAIStats.h"
 #include "AgeOfAI/AgeOfAIAvoidLostRules.h"
 #include "AgeOfAI/AgeOfAIFightMemoryRules.h"
+#include "AgeOfAI/AgeOfAICoastRules.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIDefence.h"
 #include "AgeOfAIHome.h"
@@ -2457,12 +2458,130 @@ void PlanRefresh(EEComputerPlayer* inPlayer, unsigned long inNow)
     }
 }
 
+// COAST TOWERS (defence.c coast_spot, [ai_base] coast_towers, off by default): on a coast, the towers go first where
+// citizens work within a ship's reach of the sea. Work sites group into CT_CELL cells; the cell with the most workers
+// that no tower covers gets one, CT_IN tiles in from the nearest sea. Upstream also needs navy_islands (every enemy
+// across water); here the coastal-work test stands in for it. A cell the sea cannot reach is skipped, as upstream.
+long sCoastAt[16][8][2];
+unsigned long sCoastTime[16][8], sCoastLast[16];
+CoastCounts sCoastCounts[16];
+
+bool CoastSpot(EEComputerPlayer* inPlayer, long inType, unsigned long inNow, long& outX, long& outY)
+{
+    using namespace CoastRules;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (inNow < sCoastLast[idx]) {
+        memset(sCoastAt[idx], 0, sizeof(sCoastAt[idx]));
+        memset(sCoastTime[idx], 0, sizeof(sCoastTime[idx]));
+        memset(&sCoastCounts[idx], 0, sizeof(sCoastCounts[idx]));
+    }
+    sCoastLast[idx] = inNow;
+    long theWanted = SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium).coast_towers;
+    if (theWanted <= 0)
+        return false;
+    struct Work { long mCX, mCY, mX, mY; unsigned long mCount; };
+    Work theWork[64];
+    int theSites = 0;
+    // The sites land gatherers work, not fishing boats (defence.c skips CLS_NAVAL_CITIZEN). A cell's first site is
+    // its representative, as upstream: the sea search and the inset start from that exact tile, not the cell centre.
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL
+            || theUnit->mUnitClass->mCategory == kUnitCategoryNavalCitizen)
+            continue;
+        EEUGGather* theGoal = dynamic_cast<EEUGGather*>(theUnit->mComplexUnit->mGoalState);
+        if (theGoal == NULL || theGoal->mResource == NULL)
+            continue;
+        EEUnit* theSite = theGoal->mResource;
+        long theResource = (long)theSite->mResourceType;
+        if (theResource < kResourceFood || theResource > kResourceIron)
+            continue;
+        long theCX = CellKey(theSite->mTileX), theCY = CellKey(theSite->mTileY);
+        int theSlot = -1;
+        for (int k = 0; k < theSites; k++)
+            if (theWork[k].mCX == theCX && theWork[k].mCY == theCY) { theSlot = k; break; }
+        if (theSlot < 0) {
+            if (theSites >= (int)(sizeof(theWork) / sizeof(theWork[0])))
+                continue;
+            theSlot = theSites++;
+            theWork[theSlot].mCX = theCX;
+            theWork[theSlot].mCY = theCY;
+            theWork[theSlot].mX = theSite->mTileX;
+            theWork[theSlot].mY = theSite->mTileY;
+            theWork[theSlot].mCount = 0;
+        }
+        theWork[theSlot].mCount++;
+        sCoastCounts[idx].mSites++;
+    }
+    sCoastCounts[idx].mChecks++;
+
+    for (;;) {
+        int theBest = -1;
+        for (int k = 0; k < theSites; k++)
+            if (theWork[k].mCount > 0 && (theBest < 0 || theWork[k].mCount > theWork[theBest].mCount))
+                theBest = k;
+        if (theBest < 0)
+            return false;
+        long theWX = theWork[theBest].mX, theWY = theWork[theBest].mY;
+        theWork[theBest].mCount = 0;
+        sCoastCounts[idx].mCells++;
+
+        int theCovered = 0, theFinished = 0, theAll = 0;
+        TowerCounts(inPlayer, theWX, theWY, kCover, theFinished, theAll);
+        theCovered += theAll;
+        for (int k = 0; k < 8; k++)
+            if (sCoastTime[idx][k] != 0 && inNow >= sCoastTime[idx][k] && inNow - sCoastTime[idx][k] < 90000
+                && CoastRules::TowerCovers(sCoastAt[idx][k][0], sCoastAt[idx][k][1], theWX, theWY))
+                theCovered++;
+        if (theCovered >= theWanted)
+            continue;
+
+        long theSX = 0, theSY = 0, theBestD = 0x7FFFFFFF;
+        for (long dx = -kSea; dx <= kSea; dx++)
+            for (long dy = -kSea; dy <= kSea; dy++) {
+                long theD = dx * dx + dy * dy;
+                if (!WithinSea(dx, dy) || theD >= theBestD
+                    || gContinentManager.GetContinent(EETileCoordinate(theWX + dx, theWY + dy), 1) == 0)
+                    continue;
+                theBestD = theD;
+                theSX = theWX + dx;
+                theSY = theWY + dy;
+            }
+        if (theBestD == 0x7FFFFFFF)
+            continue;
+        sCoastCounts[idx].mSea++;
+
+        long theTX = 0, theTY = 0;
+        Inset(theWX, theWY, theSX, theSY, theTX, theTY);
+        for (long r = 0; r <= 2; r++)
+            for (long ax = -r; ax <= r; ax++)
+                for (long ay = -r; ay <= r; ay++) {
+                    if (!OnRing(ax, ay, r)
+                        || RaidersNear(inPlayer, theTX + ax, theTY + ay, 10)
+                        || !CanPlace(inPlayer, inType, theTX + ax, theTY + ay))
+                        continue;
+                    outX = theTX + ax;
+                    outY = theTY + ay;
+                    int theOldest = 0;
+                    for (int k = 1; k < 8; k++)
+                        if (sCoastTime[idx][k] < sCoastTime[idx][theOldest])
+                            theOldest = k;
+                    sCoastAt[idx][theOldest][0] = outX;
+                    sCoastAt[idx][theOldest][1] = outY;
+                    sCoastTime[idx][theOldest] = inNow != 0 ? inNow : 1;
+                    sCoastCounts[idx].mPlaced++;
+                    return true;
+                }
+    }
+}
+
 bool DefenceSpot(EEComputerPlayer* inPlayer, long inType, unsigned long inNow, long& outX, long& outY)
 {
     unsigned idx = inPlayer->mPlayerID & 15;
     PlanRefresh(inPlayer, inNow);
     Plan& thePlan = sPlan[idx];
     ThreatRefresh(inPlayer, inNow);   // slots inside known enemy defences would cost the builders
+    if (CoastSpot(inPlayer, inType, inNow, outX, outY))
+        return true;
     long theX, theY;
     for (int i = 0; TowerRules::Slot(thePlan.mFront, thePlan.mFronts, thePlan.mOut, thePlan.mOuts, i, theX, theY); i++) {
         int theFinished, theAll;
@@ -2494,6 +2613,11 @@ bool DefenceSpot(EEComputerPlayer* inPlayer, long inType, unsigned long inNow, l
     return false;
 }
 
+}
+
+CoastCounts CoastCountsOf(unsigned long inPlayerID)
+{
+    return sCoastCounts[inPlayerID & 15];
 }
 
 void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow)
