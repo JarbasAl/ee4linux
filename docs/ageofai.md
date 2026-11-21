@@ -470,6 +470,25 @@ the sim report's `intel` object counts the towers queued (`towers_queued`) and t
 [benchmark](benchmark.md) rates it as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, the coast towers, and
 the slots that the game's own tower requests take.
 
+## Build queue fix
+
+`[ai_base] build_fix` is on in the shipped file, as upstream, and is now active. Every three seconds the game's build
+manager takes the first request of the first epoch it can afford, tries to place it and stops for that round. A request
+it cannot place goes back into its queue, so one stuck on a blocked spot can stay there a long time. With the fix, three
+failed placements in a row drop the request: the build manager consumes its reserved cost and moves on, and the building
+planner queues the request again within 30 seconds, often on a new site. This is upstream's `econ.c build_fix`
+three-strike rule. Upstream also remaps its type 395 single player settlement to a normal settlement (type 43). The
+port's build lists never contain type 395, so that part has nothing to change here.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it. It shortens the
+300-second benchmark: the two Age of AI players finish with 18 buildings and score 3705, against 25 buildings and 4020
+with the setting off. The paired benchmark inis differ only in `build_fix`, and the off trace is byte-identical to the
+earlier baseline. In a 30-minute Tiny map game with three Age of AI players the fix helps: on scores 7359.0, off scores
+7319.3. Guard towers and a temple were the requests that failed most. `EECPBuildManager::Update` owns the hook;
+`AgeOfAI::BuildFixResult` keeps the per-player, per-type strike count and reads the setting. EESim reports attempts,
+failures, drops and the type that failed most in `intel.build_attempts`, `build_fails`, `build_dropped`,
+`build_top_type` and `build_top_fails`.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

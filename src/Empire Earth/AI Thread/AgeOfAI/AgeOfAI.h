@@ -259,6 +259,17 @@ struct BreachCounts {
 };
 BreachCounts BreachCountsOf(unsigned long inPlayerID);
 
+// A build request the build manager cannot place three rounds running leaves the queue, so a request stuck on a
+// blocked spot cannot hold up the later epoch queues (econ.c build_fix, [ai_base], on by default). The build manager
+// calls BuildFixResult after each placement attempt; the return says this failure used up its three strikes. The
+// upstream 395 -> 43 settlement remap is not needed here: the port's build lists never contain type 395.
+bool BuildFixResult(unsigned long inPlayerID, unsigned long inType, bool inPlaced);
+struct BuildFixCounts {
+    unsigned long mAttempts, mFails, mDropped;   // placement rounds, rounds with no placement, requests dropped
+    unsigned long mTopType, mTopFails;           // unit class that failed most, and its failure count
+};
+BuildFixCounts BuildFixCountsOf(unsigned long inPlayerID);
+
 // The route cost of known enemy defences (attack.c avoid_towers, [ai_base] avoid_towers on by default): a land
 // attack route pays extra for each subsector inside their reach. The port costs a subsector where upstream costs a
 // tile; the margin and the weight come from the settings. EEAIGPGModifierLandAttackSubGroupRoutePlanner::GetCost

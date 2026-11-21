@@ -59,6 +59,7 @@
 #include "ee/EECPUnitManager.h"
 #include "ee/EECPIntelligence.h"
 #include "ee/EEUnitCollector.h"
+#include "AgeOfAI/AgeOfAI.h"
 
 // the class key (0x4e5d00, guard 0x4e5cf8 bit 1)
 const UString EECPBuildManager::sData("EECPBuildManager-Data");
@@ -1649,7 +1650,12 @@ void EECPBuildManager::Update(unsigned long inTime)
         if (theNode == NULL || !theNode->GetIsObsolete()) {
             if (this->mPlayer->CanProduceUnitType(theRequest.first, 0x20, NULL)) {
                 this->mQueues[i].pop_front();
-                if (this->StartBuilding(theRequest)) {
+                bool thePlaced = this->StartBuilding(theRequest);
+                bool theAge = this->mPlayer != NULL
+                    && AgeOfAI::EngineOf(this->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI;
+                bool theDrop = theAge
+                    && AgeOfAI::BuildFixResult(this->mPlayer->mPlayerID, theRequest.first, thePlaced);
+                if (thePlaced || theDrop) {
                     long theID2 = gUnitClassTable[theRequest.first] != NULL
                         ? gUnitClassTable[theRequest.first]->mTechnology : 100000;
                     EETechTreeNode* theNode2 = theTechTree->Get(theID2);

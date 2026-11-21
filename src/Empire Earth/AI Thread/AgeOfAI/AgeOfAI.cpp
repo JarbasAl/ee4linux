@@ -102,6 +102,49 @@ WallCounts WallCountsOf(unsigned long inPlayerID)
     return inPlayerID < 16 ? sWalls[inPlayerID] : WallCounts();
 }
 
+namespace {
+struct BuildFixState {
+    BuildFixCounts mCounts;
+    unsigned short mStreak[871];
+    unsigned long mFailsByType[871];
+};
+BuildFixState sBuildFix[16];
+}
+
+bool BuildFixResult(unsigned long inPlayerID, unsigned long inType, bool inPlaced)
+{
+    if (inPlayerID >= 16)
+        return false;
+    BuildFixState& theState = sBuildFix[inPlayerID];
+    theState.mCounts.mAttempts++;
+    if (inPlaced) {
+        if (inType < 871)
+            theState.mStreak[inType] = 0;
+        return false;
+    }
+    theState.mCounts.mFails++;
+    if (inType >= 871)
+        return false;
+    unsigned short& theStreak = theState.mStreak[inType];
+    if (theStreak < 3)
+        theStreak++;
+    theState.mFailsByType[inType]++;
+    if (theState.mFailsByType[inType] > theState.mCounts.mTopFails) {
+        theState.mCounts.mTopFails = theState.mFailsByType[inType];
+        theState.mCounts.mTopType = inType;
+    }
+    if (theStreak < 3 || !SettingsAIOf(inPlayerID, kDifficultyMedium).build_fix)
+        return false;
+    theStreak = 0;
+    theState.mCounts.mDropped++;
+    return true;
+}
+
+BuildFixCounts BuildFixCountsOf(unsigned long inPlayerID)
+{
+    return inPlayerID < 16 ? sBuildFix[inPlayerID].mCounts : BuildFixCounts();
+}
+
 Engine EngineOf(unsigned long inPlayerID)
 {
     bool theClassic = inPlayerID < 16 && ((sClassicPlayers >> inPlayerID) & 1);

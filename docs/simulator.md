@@ -50,8 +50,9 @@ of the outdated units' attack (`outdated_*`), of the food pull (`food_pulled`), 
 the mine cap (`mine_calls`, `mine_capped`, `mine_mines`, `mine_cap`), the army tether (`tether_calls`, `tether_skipped`),
 the army's wait for a stronger moment (`mass_checks`, `mass_waits`, `mass_goes`, `mass_waited`, with `mass_waited`
 adding five per 20-second extension as upstream counts it), the catch-up for other AIs' epochs (`catch_checks`,
-`catch_calls`), the wall breach (`breach_calls`, `breach_crossed`, `breach_picked`, `breach_walls`), the citizen
-militia (`militia_orders`,
+`catch_calls`), the wall breach (`breach_calls`, `breach_crossed`, `breach_picked`, `breach_walls`), the build queue fix
+(`build_attempts`, `build_fails`, `build_dropped`, `build_top_type`, `build_top_fails`), the citizen militia
+(`militia_orders`,
 `militia_refused`, `militia_caught`), of counter-siege (`counter_siege_orders`,
 `counter_siege_skipped`), of the idle citizens home (`home_sent`, `home_base_moved`) and of the defence layout's towers
 (`towers_queued`, `towers_skipped`).
