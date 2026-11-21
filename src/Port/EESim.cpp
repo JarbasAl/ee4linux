@@ -181,6 +181,8 @@ struct Options {
     bool mArmySpot = false;                              // --army-spot X,Y: the armies appear at this tile, whatever the map
     long mArmySpotX = 0, mArmySpotY = 0;
     std::vector<StanceChange> mStances;                  // --stance SECOND,FROM,TO,VALUE: timed diplomatic stance changes
+    double mWallAt = -1;                                 // --wall SECOND[,COUNT]: defender-owned wall line near each attacker
+    long mWallCount = 9;                                 // the number of wall segments in each line
 };
 
 Options sOptions;
@@ -656,6 +658,7 @@ void Finish(const char* inOutcome)
 
 bool sArmiesSpawned = false;
 long sNextArmies = -1;   // the game millisecond of the next armies
+bool sWallsSpawned = false;
 
 
 std::string LowerCase(std::string inText)
@@ -783,6 +786,54 @@ void SpawnArmies()
     }
 }
 
+// The first wall class of the game's data (the family of walls, not the AI's own notion of a fortification)
+EEUnitClass* FindWallClass()
+{
+    for (unsigned long i = 0; i < 871; i++) {
+        EEUnitClass* theClass = gUnitClassTable[i];
+        if (theClass != NULL && theClass->mFamily == kUnitFamilyWalls)
+            return theClass;
+    }
+    return NULL;
+}
+
+// --wall: at the given second each defender gets a line of wall segments three tiles from the next attacker's base,
+// laid across the direction to that attacker's enemy. The attacker sees them beside its own base and its land attack
+// routes cross them, so Age of AI's attack_breach rule can be exercised in a real game.
+void SpawnWalls()
+{
+    sWallsSpawned = true;
+    EEUnitClass* theWall = FindWallClass();
+    if (theWall == NULL)
+        return;
+    std::vector<unsigned long> thePlayers;
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++)
+        if ((long)i != gWorld.mCurrentPlayer && gWorld.GetPlayer(i) != NULL && gWorld.GetPlayer(i)->mFirstUnit != NULL)
+            thePlayers.push_back(i);
+    for (size_t k = 0; k < thePlayers.size() && thePlayers.size() > 1; k++) {
+        EEPlayer* theAttacker = gWorld.GetPlayer(thePlayers[k]);
+        EEPlayer* theDefender = gWorld.GetPlayer(thePlayers[(k + 1) % thePlayers.size()]);
+        long theAX, theAY, theEX, theEY;
+        if (!BaseOf(theAttacker, theAX, theAY) || !BaseOf(theDefender, theEX, theEY))
+            continue;
+        double theDirX = theEX - theAX, theDirY = theEY - theAY;
+        double theLength = sqrt(theDirX * theDirX + theDirY * theDirY);
+        if (theLength < 1)
+            continue;
+        double theUX = theDirX / theLength, theUY = theDirY / theLength;
+        long theMade = 0;
+        for (long n = 0; n < sOptions.mWallCount; n++) {
+            long theOffset = n - (sOptions.mWallCount - 1) / 2;
+            long theX = theAX + (long)lround(theUX * 3.0 - theUY * theOffset);
+            long theY = theAY + (long)lround(theUY * 3.0 + theUX * theOffset);
+            if (theWall->CreateUnit(theX, theY, (long)theDefender->mPlayerID, false, NULL) != NULL)
+                theMade++;
+        }
+        Note("WALL player %u: %d segments owned by player %u near %d,%d", (unsigned)theAttacker->mPlayerID, (int)theMade,
+             (unsigned)theDefender->mPlayerID, (int)theAX, (int)theAY);
+    }
+}
+
 // the physics thread, after each communications tick, under the physics lock
 void AfterTick()
 {
@@ -795,6 +846,8 @@ void AfterTick()
         SpawnArmies();
         sNextArmies = theTime + (long)(sOptions.mArmyEvery * 1000);
     }
+    if (sOptions.mWallAt >= 0 && !sWallsSpawned && theTime >= (long)(sOptions.mWallAt * 1000))
+        SpawnWalls();
     for (StanceChange& theChange : sOptions.mStances) {
         if (theChange.mDone || theTime < (long)(theChange.mAt * 1000))
             continue;
@@ -1418,6 +1471,8 @@ const char* kUsage =
     "  --player-ini P=FILE    player P reads its Age of AI settings from FILE in full, not from ageofai.ini\n"
     "  --lobby CONTROL=VALUE  any lobby combo of form 26 by line name or #index (e.g. 209=#2)\n"
     "  --stance S,F,T,V        at game second S set player F's stance toward T: V 0 ally, 1 enemy (repeatable)\n"
+    "  --wall S[,N]           at game second S each defender gets N wall segments near the next attacker's base\n"
+    "                         (default 9), so its land attack routes cross a wall it can see; exercises attack_breach\n"
     "  --game-seconds S       stop at this game time (default 2700)\n"
     "  --sample-seconds S     report sample interval in game seconds (default 30)\n"
     "  --wall-timeout S       give up after this wall time (default 3600)\n"
@@ -1585,6 +1640,16 @@ int EESimMain(int argc, char** argv)
                 return 64;
             }
             sOptions.mStances.push_back(theChange);
+        } else if (theOption == "--wall") {
+            std::string theValue = value();
+            long theCount = 9;
+            double theAt = -1;
+            if (sscanf(theValue.c_str(), "%lf,%ld", &theAt, &theCount) < 1 || theAt < 0 || theCount < 1 || theCount > 40) {
+                fprintf(stderr, "ee-aoc --sim: --wall takes SECOND[,COUNT] with COUNT 1 to 40\n");
+                return 64;
+            }
+            sOptions.mWallAt = theAt;
+            sOptions.mWallCount = theCount;
         } else if (theOption == "--game-seconds")
             sOptions.mGameSeconds = atof(value().c_str());
         else if (theOption == "--sample-seconds")

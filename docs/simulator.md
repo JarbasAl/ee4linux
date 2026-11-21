@@ -99,6 +99,7 @@ second one refuses to start while the first holds them.
 | `--player-ini P=FILE` | player P reads its Age of AI settings from FILE in full, not from `ageofai.ini`: its engine, its AI rows and its units' shot rules ([Age of AI](ageofai.md)). Repeat it for more players. |
 | `--lobby CONTROL=VALUE` | any lobby list, by line name or `#index`, for example `209=#2` |
 | `--stance S,F,T,V` | at game second S, player F's stance toward player T becomes V: 0 ally, 1 enemy. Repeat it for more changes. This drives the diplomacy rule the way a player's declaration does ([Age of AI](ageofai.md)). |
+| `--wall S[,N]` | at game second S each defender gets N wall segments (default 9) three tiles from the next attacker's base, laid across the direction to that attacker's enemy. The attacker sees them and its land routes cross them, which exercises the breach rule ([Age of AI](ageofai.md)). |
 | `--game-seconds S` | the game time at which the run stops (default 2700) |
 | `--sample-seconds S` | the game time between report samples (default 30) |
 | `--wall-timeout S` | the wall time after which the run gives up (default 3600) |
@@ -167,6 +168,14 @@ computer players allies and then declare war for one of them with
 `--stance 1,2,3,0 --stance 1,3,2,0 --stance 60,2,3,1`. Player 3 then answers player 2's declaration, and its
 `intel.answer_war_transitions` and `intel.answer_war_answers` become 1 where a run with `answer_war=0` stays at 0.
 Use a 600-second game: the two scores and traces separate after the answer, not at the declaration.
+
+## Walls
+
+`--wall 60` gives each defender a line of nine wall segments three tiles from the next attacker's base, laid across the
+direction to that attacker's enemy. The attacker sees the walls beside its own base, and its land attack routes cross
+them. With `--preset fights --wall 60 --game-seconds 1200`, a run with `attack_breach=1` records crossings and chosen
+segments in `intel.breach_crossed` and `intel.breach_picked`; the same run with `attack_breach=0` records none. The
+segments and sightings are in `intel.breach_walls` and the route checks in `intel.breach_calls`.
 
 The report of every computer player has `gatherers` and `wanted`: the citizens on food, wood, stone, gold and iron, and
 the number the player's worker plan wants on each. A large gap, as with iron at 33 wanted and 11 working, means the
