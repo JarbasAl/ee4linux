@@ -651,4 +651,131 @@ WeakSpotCounts WeakSpotCountsOf(unsigned long inPlayerID)
     return sWeak[inPlayerID & 15];
 }
 
+// Upstream attack.c find_breach, [ai_base] attack_breach (on in the shipped file). The port has no unit grid, so it
+// collects the player's known enemy wall buildings once per route and looks tiles up in that list.
+static BreachCounts sBreach[16];
+
+static void CollectEnemyWalls(EEComputerPlayer* inPlayer, std::vector<EEUnit*>& outWalls)
+{
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.mPlayers[p];
+        if (theOwner == NULL || !IsEnemyOf(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mTile == NULL
+                || theClass->mCategory != kUnitCategoryBuilding
+                || !(Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kWall)
+                || !SeenBy(theUnit, inPlayer))
+                continue;
+            outWalls.push_back(theUnit);
+        }
+    }
+}
+
+static EEUnit* WallAt(const std::vector<EEUnit*>& inWalls, long inX, long inY)
+{
+    for (std::vector<EEUnit*>::const_iterator it = inWalls.begin(); it != inWalls.end(); ++it) {
+        EEUnit* theWall = *it;
+        if (theWall->mTileX == inX && theWall->mTileY == inY)
+            return theWall;
+    }
+    return NULL;
+}
+
+// First known enemy wall on the half-tile line from the route's start to its goal.
+static EEUnit* WallCrossing(const std::vector<EEUnit*>& inWalls, long inFromX, long inFromY, long inToX, long inToY)
+{
+    long theDX = inToX - inFromX, theDY = inToY - inFromY;
+    long theAbsX = theDX >= 0 ? theDX : -theDX, theAbsY = theDY >= 0 ? theDY : -theDY;
+    long theN = 2 * (theAbsX > theAbsY ? theAbsX : theAbsY);
+    if (theN <= 0)
+        return NULL;
+    long theHalf = theN / 2;
+    for (long i = 1; i < theN; i++) {
+        long theX = inFromX + (theDX * i + (theDX >= 0 ? theHalf : -theHalf)) / theN;
+        long theY = inFromY + (theDY * i + (theDY >= 0 ? theHalf : -theHalf)) / theN;
+        EEUnit* theWall = WallAt(inWalls, theX, theY);
+        if (theWall != NULL)
+            return theWall;
+    }
+    return NULL;
+}
+
+// Follows the crossed wall (8-connected tiles up to 60 tiles away) and returns the segment outside known tower range
+// with the shortest start -> wall -> goal detour. The queue and dedup mirror upstream's bounded 8-connected flood.
+static EEUnit* FindBreach(unsigned long inPID, const std::vector<EEUnit*>& inWalls,
+                          long inFromX, long inFromY, long inToX, long inToY, EEUnit* inCross)
+{
+    enum { kMaxQ = 512 };
+    long theQX[kMaxQ], theQY[kMaxQ];
+    long theHead = 0, theTail = 0;
+    long theCX = inCross->mTileX, theCY = inCross->mTileY;
+    theQX[theTail] = theCX; theQY[theTail++] = theCY;
+    EEUnit* theBest = NULL;
+    float theBestScore = 1e30f;
+    while (theHead < theTail) {
+        long theX = theQX[theHead], theY = theQY[theHead++];
+        EEUnit* theWall = WallAt(inWalls, theX, theY);
+        if (theWall == NULL)
+            continue;
+        if (!(ThreatAt(inPID, theX, theY) > 0.0f)) {
+            float theAX = (float)(theX - inFromX), theAY = (float)(theY - inFromY);
+            float theBX = (float)(inToX - theX), theBY = (float)(inToY - theY);
+            float theScore = sqrtf(theAX * theAX + theAY * theAY) + sqrtf(theBX * theBX + theBY * theBY);
+            if (theScore < theBestScore) {
+                theBestScore = theScore;
+                theBest = theWall;
+            }
+        }
+        for (long theDX = -1; theDX <= 1; theDX++)
+            for (long theDY = -1; theDY <= 1; theDY++) {
+                long theNX = theX + theDX, theNY = theY + theDY;
+                long theWX = theNX - theCX, theWY = theNY - theCY;
+                if (theWX * theWX + theWY * theWY > 60 * 60 || theTail >= kMaxQ)
+                    continue;
+                bool theSeen = false;
+                for (long k = 0; k < theTail && !theSeen; k++)
+                    theSeen = theQX[k] == theNX && theQY[k] == theNY;
+                if (!theSeen && WallAt(inWalls, theNX, theNY) != NULL) {
+                    theQX[theTail] = theNX; theQY[theTail++] = theNY;
+                }
+            }
+    }
+    return theBest;
+}
+
+void BreachRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY)
+{
+    if (inSubGroup == NULL || inSubGroup->mPlayer == NULL)
+        return;
+    EEComputerPlayer* thePlayer = inSubGroup->mPlayer;
+    unsigned long thePID = thePlayer->mPlayerID;
+    if (!SettingsAIOf(thePID, kDifficultyMedium).attack_breach)
+        return;
+    BreachCounts& theCounts = sBreach[thePID & 15];
+    theCounts.mCalls++;
+    std::vector<EEUnit*> theWalls;
+    CollectEnemyWalls(thePlayer, theWalls);
+    theCounts.mWalls += theWalls.size();
+    if (theWalls.empty())
+        return;
+    EEUnit* theCross = WallCrossing(theWalls, inFromX, inFromY, ioToX, ioToY);
+    if (theCross == NULL)
+        return;
+    theCounts.mCrossed++;
+    EEUnit* theWall = FindBreach(thePID, theWalls, inFromX, inFromY, ioToX, ioToY, theCross);
+    if (theWall == NULL)
+        return;
+    theCounts.mPicked++;
+    ioToX = theWall->mTileX;
+    ioToY = theWall->mTileY;
+    inSubGroup->mTask.mLocation.SetUnit(theWall);
+}
+
+BreachCounts BreachCountsOf(unsigned long inPlayerID)
+{
+    return sBreach[inPlayerID & 15];
+}
+
 }

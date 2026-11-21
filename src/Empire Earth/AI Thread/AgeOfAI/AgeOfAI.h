@@ -249,6 +249,16 @@ struct WeakSpotCounts {
 };
 WeakSpotCounts WeakSpotCountsOf(unsigned long inPlayerID);
 
+// When a land route crosses a known enemy wall, break through it away from known tower range instead of piling up in
+// front of it (attack.c find_breach, [ai_base] attack_breach on by default). The route follows the wall up to 60 tiles
+// and targets the segment with the shortest start -> wall -> goal detour that no known defence covers. EECPASGLand::
+// RequestPath calls it after the weak spot rule. ioTo carries the wall tile back to the caller.
+void BreachRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY);
+struct BreachCounts {
+    unsigned long mCalls, mCrossed, mPicked, mWalls;   // routes seen, routes crossing a known wall, walls chosen, walls seen
+};
+BreachCounts BreachCountsOf(unsigned long inPlayerID);
+
 // The route cost of known enemy defences (attack.c avoid_towers, [ai_base] avoid_towers on by default): a land
 // attack route pays extra for each subsector inside their reach. The port costs a subsector where upstream costs a
 // tile; the margin and the weight come from the settings. EEAIGPGModifierLandAttackSubGroupRoutePlanner::GetCost

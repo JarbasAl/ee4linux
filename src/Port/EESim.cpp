@@ -250,6 +250,7 @@ struct PlayerSample {
     long mRetargetScans = 0, mRetargetPicked = 0, mRetargetGroups = 0;
     long mWaveCalls = 0, mWaveSet = 0, mWaveMoved = 0, mWaveKept = 0, mWaveNone = 0;
     long mWeakCalls = 0, mWeakThreatened = 0, mWeakPicked = 0;
+    long mBreachCalls = 0, mBreachCrossed = 0, mBreachPicked = 0, mBreachWalls = 0;
     long mAvoidCalls = 0, mAvoidPenalised = 0, mAvoidCost = 0;
     long mRamCalls = 0, mRamWaits = 0;
     long mAirCalls = 0, mAirSkipped = 0;
@@ -501,6 +502,11 @@ Sample TakeSample()
             p.mWeakCalls = (long)theWeak.mCalls;
             p.mWeakThreatened = (long)theWeak.mThreatened;
             p.mWeakPicked = (long)theWeak.mPicked;
+            AgeOfAI::BreachCounts theBreach = AgeOfAI::BreachCountsOf(i);
+            p.mBreachCalls = (long)theBreach.mCalls;
+            p.mBreachCrossed = (long)theBreach.mCrossed;
+            p.mBreachPicked = (long)theBreach.mPicked;
+            p.mBreachWalls = (long)theBreach.mWalls;
             p.mFoodPulled = (long)AgeOfAI::FoodCountsOf(i).mPulled;
             AgeOfAI::CounterFireCounts theCounterFire = AgeOfAI::CounterFireCountsOf(i);
             p.mCounterFireSorties = (long)theCounterFire.mSorties;
@@ -1036,7 +1042,7 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[2760] = "";
+        char theIntel[2944] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
@@ -1057,6 +1063,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"mine_calls\": %ld, \"mine_capped\": %ld, \"mine_mines\": %ld, \"mine_cap\": %ld, "
                      "\"wave_calls\": %ld, \"wave_set\": %ld, \"wave_moved\": %ld, \"wave_kept\": %ld, \"wave_none\": %ld, "
                      "\"weak_calls\": %ld, \"weak_threatened\": %ld, \"weak_picked\": %ld, "
+                     "\"breach_calls\": %ld, \"breach_crossed\": %ld, \"breach_picked\": %ld, \"breach_walls\": %ld, "
                      "\"food_pulled\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
@@ -1077,6 +1084,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mMineCalls, p.mMineCapped, p.mMineMines, p.mMineCap,
                      p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
                      p.mWeakCalls, p.mWeakThreatened, p.mWeakPicked,
+                     p.mBreachCalls, p.mBreachCrossed, p.mBreachPicked, p.mBreachWalls,
                      p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
                      (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,
