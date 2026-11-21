@@ -79,6 +79,7 @@ second one refuses to start while the first holds them.
 | `--difficulty NAME` | the lobby's difficulty line (default `Hard`) |
 | `--classic-players LIST` | player numbers, comma apart, that play the classic AI whatever `ageofai.ini` says |
 | `--army NAME:COUNT` | at `--army-at`, each computer player gets COUNT units of the first land class whose name has NAME in it (without case), six tiles from its buildings towards the next computer player, each sent to attack that player's nearest building. Repeat it for more kinds. Every player gets the same units, so any map gives a fair fight. |
+| `--army-air NAME:COUNT` | the same with the first flying class whose name has NAME in it. Use it with `--army` to put aircraft among land soldiers in a probe. |
 | `--army-at S` | the game second the armies appear (default 120) |
 | `--army-every S` | the armies appear again every S game seconds, a raid after raid, so an AI's spending on defence is tested against pressure that lasts |
 | `--army-raid` | the armies appear eight tiles from the building each one attacks, on the side of its own base, instead of beside their own: a raid on every base, at the same distance from what it came for |

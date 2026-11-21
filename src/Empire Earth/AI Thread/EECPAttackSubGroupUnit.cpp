@@ -429,6 +429,13 @@ float EECPAttackSubGroupUnit::ScoreTarget(EECPASTargetUnit* inTarget)
                 return 0.0f;
         }
     }
+    // Aircraft out of a land soldier's reach are not targets (attack.c hook_asgu_score, attack_ignore_air).
+    if (this->mSubGroup != NULL && this->mUnit != NULL && theUnit != NULL
+        && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+        if (AgeOfAI::AirTargetOutOfReach(thePlayer, theUnit, this->mUnit))
+            return 0.0f;
+    }
     // An enemy in known tower range is not a target while the attack's goal is outside that range
     // (attack.c hook_asgu_score, [ai_base] attack_leash).
     if (theScore != 0.0f && this->mSubGroup != NULL && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {

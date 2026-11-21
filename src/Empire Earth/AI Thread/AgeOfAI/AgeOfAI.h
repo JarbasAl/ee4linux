@@ -243,6 +243,14 @@ struct RamWaitCounts {
 };
 RamWaitCounts RamWaitCountsOf(unsigned long inPlayerID);
 
+// Enemy aircraft beyond a land soldier's reach (attack.c hook_asgu_score, [ai_base] attack_ignore_air): the scorer
+// refuses them so an attack does not chase planes circling over their own town. In reach they stay targets.
+bool AirTargetOutOfReach(EEPlayer* inPlayer, EEComplexUnit* inTarget, EEComplexUnit* inScorer);
+struct AirSkipCounts {
+    unsigned long mCalls, mSkipped;   // aircraft targets scored, targets refused as out of reach
+};
+AirSkipCounts AirSkipCountsOf(unsigned long inPlayerID);
+
 // The sum of known defences covering a tile (attack.c threat_at, [ai_base] avoid_towers_margin): the number the
 // route cost and the attack leash use. Unlike AvoidTowerRouteCost this is not gated by avoid_towers.
 float ThreatAt(unsigned long inPlayerID, long inX, long inY);

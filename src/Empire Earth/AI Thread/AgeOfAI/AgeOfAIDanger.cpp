@@ -405,6 +405,37 @@ RamWaitCounts RamWaitCountsOf(unsigned long inPlayerID)
     return sRamWait[inPlayerID & 15];
 }
 
+// Enemy aircraft out of reach are not targets for a land attack (attack.c hook_asgu_score, attack_ignore_air). Upstream
+// gives them a free shot only while the scorer is farther than its range + 3 tiles, so aircraft that can be shot at
+// still draw the soldiers. The player's own goal and the staging rules are upstream's, not this rule's business.
+static AirSkipCounts sAirSkip[16];
+
+bool AirTargetOutOfReach(EEPlayer* inPlayer, EEComplexUnit* inTarget, EEComplexUnit* inScorer)
+{
+    if (inPlayer == NULL || inTarget == NULL || inScorer == NULL || inTarget->mUnitClass == NULL
+        || inScorer->mUnitClass == NULL)
+        return false;
+    unsigned long theCategory = inTarget->mUnitClass->mCategory;
+    if (theCategory != kUnitCategoryAirplane && theCategory != kUnitCategoryHelicopter
+        && theCategory != kUnitCategoryHelicopterTransport)
+        return false;
+    AirSkipCounts& theCounts = sAirSkip[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || !Cfg(inPlayer->mPlayerID).attack_ignore_air)
+        return false;
+    float theRange = inScorer->mUnitClass->mRange + 3.0f;
+    long theDX = inTarget->mTileX - inScorer->mTileX, theDY = inTarget->mTileY - inScorer->mTileY;
+    if ((float)(theDX * theDX + theDY * theDY) <= theRange * theRange)
+        return false;
+    theCounts.mSkipped++;
+    return true;
+}
+
+AirSkipCounts AirSkipCountsOf(unsigned long inPlayerID)
+{
+    return sAirSkip[inPlayerID & 15];
+}
+
 // Soldiers on a land attack do not take on an enemy inside known tower range unless the attack's goal lies there too
 // (attack.c hook_asgu_score). The staging rules upstream checks before this are not ported, so they do not hold it back.
 bool LeashSkipsTarget(EEPlayer* inPlayer, long inX, long inY, long inGoalX, long inGoalY)

@@ -164,6 +164,7 @@ struct Options {
     bool mQuiet = false;
     unsigned mClassicPlayers = 0;                        // --classic-players: bit n is player n
     std::vector<std::pair<std::string, long>> mArmies;   // --army NAME:COUNT: units of every computer player, sent at an enemy
+    std::vector<std::pair<std::string, long>> mAirArmies; // --army-air NAME:COUNT: the same with aircraft
     double mArmyEvery = 0;                               // --army-every S: the armies appear again every S game seconds
     double mArmyAt = 120;                                // --army-at S: the game second they appear
     bool mArmyRaid = false;                              // --army-raid: the armies appear beside the enemy's base
@@ -250,6 +251,7 @@ struct PlayerSample {
     long mWaveCalls = 0, mWaveSet = 0, mWaveMoved = 0, mWaveKept = 0, mWaveNone = 0;
     long mAvoidCalls = 0, mAvoidPenalised = 0, mAvoidCost = 0;
     long mRamCalls = 0, mRamWaits = 0;
+    long mAirCalls = 0, mAirSkipped = 0;
     long mLeashCalls = 0, mLeashSkipped = 0;
     long mGranChecks = 0, mGranRequested = 0;
     long mFishCalls = 0, mFishPicked = 0, mFishChanged = 0, mFishClass = 0;
@@ -454,6 +456,9 @@ Sample TakeSample()
             AgeOfAI::RamWaitCounts theRam = AgeOfAI::RamWaitCountsOf(i);
             p.mRamCalls = (long)theRam.mCalls;
             p.mRamWaits = (long)theRam.mWaits;
+            AgeOfAI::AirSkipCounts theAir = AgeOfAI::AirSkipCountsOf(i);
+            p.mAirCalls = (long)theAir.mCalls;
+            p.mAirSkipped = (long)theAir.mSkipped;
             AgeOfAI::LeashCounts theLeash = AgeOfAI::LeashCountsOf(i);
             p.mLeashCalls = (long)theLeash.mCalls;
             p.mLeashSkipped = (long)theLeash.mSkipped;
@@ -569,12 +574,18 @@ std::string LowerCase(std::string inText)
     return inText;
 }
 
-// The first land unit class whose name has inName in it (without case), or NULL
-EEUnitClass* FindUnitClass(const std::string& inName)
+// The first unit class whose name has inName in it (without case), land or flying as asked, or NULL
+EEUnitClass* FindUnitClass(const std::string& inName, bool inAir)
 {
     for (unsigned long i = 0; i < 871; i++) {
         EEUnitClass* theClass = gUnitClassTable[i];
-        if (theClass == NULL || theClass->mCategory != kUnitCategoryLand)
+        if (theClass == NULL)
+            continue;
+        if (inAir) {
+            if (theClass->mCategory != kUnitCategoryAirplane && theClass->mCategory != kUnitCategoryHelicopter
+                && theClass->mCategory != kUnitCategoryHelicopterTransport)
+                continue;
+        } else if (theClass->mCategory != kUnitCategoryLand)
             continue;
         if (LowerCase((const char*)theClass->GetName()).find(LowerCase(inName)) != std::string::npos)
             return theClass;
@@ -600,9 +611,31 @@ bool BaseOf(EEPlayer* inPlayer, long& outX, long& outY)
     return true;
 }
 
-// --army: at the given game second, each computer player gets the armies of the options, a block of units six tiles from
-// its buildings towards the next computer player, each sent to attack that player's nearest building. The units come
-// from the first land class of that name, the same for every player: a fair fight on any map.
+// Spawn one block of units of a class, in rows of 12 tiles from the given tile, and send them at the target.
+long SpawnUnits(EEUnitClass* inClass, long inCount, unsigned long inOwner, EEUnit* inTarget,
+                long inFromX, long inFromY, long& ioSlot)
+{
+    if (inClass == NULL)
+        return 0;
+    long theMade = 0;
+    for (long n = 0; n < inCount; ioSlot++) {
+        if (ioSlot > 4000)
+            break;
+        long theX = inFromX + (ioSlot % 12) - 6, theY = inFromY + (ioSlot / 12);
+        EEUnit* theUnit = inClass->CreateUnit(theX, theY, (long)inOwner, false, NULL);
+        if (theUnit == NULL || theUnit->mComplexUnit == NULL)
+            continue;
+        theUnit->mComplexUnit->SetGoal(new EEUGAttackUnit(theUnit->mComplexUnit, inTarget, false, false), false, 0);
+        n++;
+        theMade++;
+    }
+    return theMade;
+}
+
+// --army and --army-air: at the given game second, each computer player gets the armies of the options, a block of
+// units six tiles from its buildings towards the next computer player, each sent to attack that player's nearest
+// building. The units come from the first class of that name, land or flying as asked, the same for every player: a
+// fair fight on any map.
 void SpawnArmies()
 {
     sArmiesSpawned = true;
@@ -647,22 +680,12 @@ void SpawnArmies()
             theFromY = sOptions.mArmySpotY;
         }
         long theMade = 0, theSlot = 0;
-        for (const std::pair<std::string, long>& theArmy : sOptions.mArmies) {
-            EEUnitClass* theClass = FindUnitClass(theArmy.first);
-            if (theClass == NULL)
-                continue;
-            for (long n = 0; n < theArmy.second; theSlot++) {
-                if (theSlot > 4000)
-                    break;
-                long theX = theFromX + (theSlot % 12) - 6, theY = theFromY + (theSlot / 12);   // rows of 12 tiles
-                EEUnit* theUnit = theClass->CreateUnit(theX, theY, (long)thePlayers[k], false, NULL);
-                if (theUnit == NULL || theUnit->mComplexUnit == NULL)
-                    continue;
-                theUnit->mComplexUnit->SetGoal(new EEUGAttackUnit(theUnit->mComplexUnit, theTarget, false, false), false, 0);
-                n++;
-                theMade++;
-            }
-        }
+        for (const std::pair<std::string, long>& theArmy : sOptions.mArmies)
+            theMade += SpawnUnits(FindUnitClass(theArmy.first, false), theArmy.second, thePlayers[k], theTarget,
+                                  theFromX, theFromY, theSlot);
+        for (const std::pair<std::string, long>& theArmy : sOptions.mAirArmies)
+            theMade += SpawnUnits(FindUnitClass(theArmy.first, true), theArmy.second, thePlayers[k], theTarget,
+                                  theFromX, theFromY, theSlot);
         Note("ARMY player %u: %d units at %d,%d, to attack player %u's building at %d,%d", (unsigned)thePlayers[k], (int)theMade,
              (int)theFromX, (int)theFromY, (unsigned)thePlayers[(k + 1) % thePlayers.size()], (int)theTarget->mTileX,
              (int)theTarget->mTileY);
@@ -676,7 +699,8 @@ void AfterTick()
     unsigned long theCount = gWorld.GetNumPlayers();
     if (sNextArmies < 0)
         sNextArmies = (long)(sOptions.mArmyAt * 1000);
-    if (!sOptions.mArmies.empty() && theTime >= sNextArmies && (!sArmiesSpawned || sOptions.mArmyEvery > 0)) {
+    if ((!sOptions.mArmies.empty() || !sOptions.mAirArmies.empty()) && theTime >= sNextArmies
+        && (!sArmiesSpawned || sOptions.mArmyEvery > 0)) {
         SpawnArmies();
         sNextArmies = theTime + (long)(sOptions.mArmyEvery * 1000);
     }
@@ -987,7 +1011,7 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[2048] = "";
+        char theIntel[2176] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
@@ -998,6 +1022,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"retarget_scans\": %ld, \"retarget_picked\": %ld, \"retarget_groups\": %ld, "
                      "\"avoid_calls\": %ld, \"avoid_penalised\": %ld, \"avoid_cost\": %ld, "
                      "\"ram_calls\": %ld, \"ram_waits\": %ld, "
+                     "\"air_calls\": %ld, \"air_skipped\": %ld, "
                      "\"leash_calls\": %ld, \"leash_skipped\": %ld, "
                      "\"granary_checks\": %ld, \"granary_requested\": %ld, "
                      "\"fish_calls\": %ld, \"fish_picked\": %ld, \"fish_changed\": %ld, \"fish_class\": %ld, "
@@ -1012,6 +1037,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mOutdatedNoGroup, p.mCitizenCalls, p.mCitizenCalled, p.mWallSkipped, p.mWallRan, p.mRetargetScans, p.mRetargetPicked, p.mRetargetGroups,
                      p.mAvoidCalls, p.mAvoidPenalised, p.mAvoidCost,
                      p.mRamCalls, p.mRamWaits,
+                     p.mAirCalls, p.mAirSkipped,
                      p.mLeashCalls, p.mLeashSkipped,
                      p.mGranChecks, p.mGranRequested,
                      p.mFishCalls, p.mFishPicked, p.mFishChanged, p.mFishClass,
@@ -1251,6 +1277,7 @@ const char* kUsage =
     "  --army NAME:COUNT      at --army-at, each computer player gets COUNT units of the first land class with NAME\n"
     "                         in its name, six tiles from its buildings towards the next player, sent to attack\n"
     "                         that player's nearest building (repeat for more kinds)\n"
+    "  --army-air NAME:COUNT  the same with the first flying class with NAME in its name (a test of air targets)\n"
     "  --army-every S         the armies appear again every S game seconds (a raid after raid)\n"
     "  --army-at S            the game second the armies appear (default 120)\n"
     "  --army-raid            the armies appear eight tiles from the enemy's base, on the side of their own\n"
@@ -1357,15 +1384,18 @@ int EESimMain(int argc, char** argv)
             sOptions.mMapType = value();
         else if (theOption == "--difficulty")
             sOptions.mDifficulty = value();
-        else if (theOption == "--army") {
+        else if (theOption == "--army" || theOption == "--army-air") {
+            bool theAir = theOption == "--army-air";
             std::string theText = value();
             size_t theColon = theText.rfind(':');
             long theCount = theColon == std::string::npos ? 0 : atol(theText.c_str() + theColon + 1);
-            if (theCount < 1) {
-                fprintf(stderr, "ee-aoc --sim: --army takes NAME:COUNT, a part of a land unit's name and how many\n");
+            if (theCount < 1 || theColon == 0) {
+                fprintf(stderr, "ee-aoc --sim: %s takes NAME:COUNT, a part of a %s unit's name and how many\n",
+                        theOption.c_str(), theAir ? "flying" : "land");
                 return 64;
             }
-            sOptions.mArmies.push_back(std::make_pair(theText.substr(0, theColon), theCount));
+            (theAir ? sOptions.mAirArmies : sOptions.mArmies).push_back(
+                std::make_pair(theText.substr(0, theColon), theCount));
         } else if (theOption == "--army-every")
             sOptions.mArmyEvery = atof(value().c_str());
         else if (theOption == "--army-raid")
