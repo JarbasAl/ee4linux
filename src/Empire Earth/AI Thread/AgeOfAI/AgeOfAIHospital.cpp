@@ -1,8 +1,8 @@
 // FALL BACK, hospital bit ([ai_base] fall_back=hospital, shipped on). Grille's cover.c sends an expensive land unit
 // below fall_back_hp of its hit points to the nearest own Hospital on its land, and holds it there until it heals to
-// 90%. The game's own hospital regeneration does the healing; this rule only walks the unit there and back. The other
-// fall_back bits (tower_cover, fleet_cover, give_up) need the fight estimate, landing and attack-group layers this port
-// does not have, so only the hospital bit is ported.
+// 90%. The game's own hospital regeneration does the healing; this rule only walks the unit there and back. The tower
+// bit is in AgeOfAICover.cpp. Fleet cover and giving an attack up need the landing and attack-group layers this port
+// does not have.
 #include <windows.h>
 #include <unistd.h>
 #include <algorithm>
@@ -282,7 +282,7 @@ void HospitalTick(EEComputerPlayer* inPlayer, unsigned long inNow)
         if (u->mHitPoints <= 0 || u->mUnitClass == NULL || u->mUnitClass->mCategory != kUnitCategoryLand
             || u->mUnitClass->mAttack <= 0 || u->mTileX < 0 || u->mComplexUnit == NULL)
             continue;
-        if (Held(u, theState))
+        if (Held(u, theState) || CoverHeld(u))
             continue;
         long theMax = u->mStats != NULL ? u->mStats->mMaxHitPoints : 0;
         if (!HospitalRules::NeedsHospital(u->mHitPoints, theMax, theSettings.fall_back_hp))
@@ -322,6 +322,16 @@ void HospitalTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 HospitalCounts HospitalCountsOf(unsigned long inPlayerID)
 {
     return inPlayerID < 16 ? sHospitalCounts[inPlayerID] : HospitalCounts();
+}
+
+bool HospitalHeld(EEUnit* inUnit)
+{
+    if (inUnit == NULL)
+        return false;
+    for (unsigned thePI = 0; thePI < 16; thePI++)
+        if (Held(inUnit, sHospital[thePI]))
+            return true;
+    return false;
 }
 
 }  // namespace AgeOfAI

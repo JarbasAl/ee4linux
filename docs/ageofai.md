@@ -565,28 +565,50 @@ records no transition or answer. The on run scores 4218.3 and the off run 4806.7
 millisecond 153125. Ordinary games without `--stance` still record checks but no transition, so the 300-second
 benchmark stays at 3705 with a byte-identical trace.
 
-## Falling back to a hospital
+## Falling back to cover
 
-`[ai_base] fall_back` keeps its shipped value, `hospital, tower_cover, fleet_cover`. Only the hospital bit is active in
-this port. Every two game seconds an Age of AI player looks at its own land fighters. A fighter worth at least
-`fall_back_value` (100 resources, food through iron at their base cost) and below `fall_back_hp` (40%) of its maximum
-hit points walks to the nearest finished Hospital on the same land within `fall_back_dist` (60) tiles, provided no enemy
-soldier the player sees is near that Hospital. It stops two tiles from the Hospital on the side it came from and waits
-for the game to heal it. It goes back to fighting at 90% hit points, when no Hospital stands near the stop, or after
-four minutes. A unit that dies or changes owner also leaves the hold. This uses the game's own hospital regeneration;
-the port adds no healing of its own.
+`[ai_base] fall_back` keeps its shipped value, `hospital, tower_cover, fleet_cover`. The hospital and tower-cover bits
+are active. The fleet-cover bit stays parsed but inert. Both active bits run every two game seconds over the player's
+own land fighters. A unit held by one bit is not sent again by the other.
 
-This is a reduced port. Upstream's `fall_back` also sends a unit to tower cover when a fight estimate says it is
-losing, moves a fleet under towers or into a dock, and can give an attack up. Those need the fight estimate, landing
-and attack-group layers this port does not have, so those three flags stay parsed but inert. The sim report's `intel`
-object counts the per-player checks (`hospital_checks`), the finished Hospitals seen (`hospitals`), the units sent
-(`hospital_sent`), the move orders held (`hospital_holds`) and the units released once healed (`hospital_done`).
+### Hospital bit
 
-The shipped one-hour `fights` probe exercises the rule: with the gate on one player saw a Hospital on 174 checks, sent
-2 units and reissued 21 move orders; with it off every counter was zero. That player's score rose from 8323.7 off to
-9158.3 on, and the traces first differ at game millisecond 53732. The 300-second benchmark stays at 3705 with a
-byte-identical trace because no Hospital is built there. Set `fall_back=tower_cover, fleet_cover` to turn the hospital
-bit off.
+A fighter worth at least `fall_back_value` (100 resources, food through iron at their base cost) and below
+`fall_back_hp` (40%) of its maximum hit points walks to the nearest finished Hospital on the same land within
+`fall_back_dist` (60) tiles, provided no enemy soldier the player sees is near that Hospital. It stops two tiles from
+the Hospital on the side it came from and waits for the game to heal it. It goes back to fighting at 90% hit points,
+when no Hospital stands near the stop, or after four minutes. A unit that dies or changes owner also leaves the hold.
+This uses the game's own hospital regeneration; the port adds no healing of its own.
+
+### Tower-cover bit
+
+A fighter with an enemy it sees in its own eight-tile cell or one around it gets a fight estimate at its tile. The
+estimate counts its own and allied fighters within ten tiles, the defences whose guns reach the tile, and the enemies
+it sees or remembers with `fight_memory`. An estimate below `fall_back_ratio` (50%) sends the fighter to cover. It
+picks the nearest finished own tower or fortress on its land within `fall_back_dist` (60) tiles that no known enemy
+defence covers, and stops two tiles from it on the base's side. It then tries a finished Hospital, then the base. A
+fighter already within four tiles of the stop fights there. It rests for twenty seconds after arrival, then goes back
+to fighting, at the latest ninety seconds after it left. A unit that dies or changes owner also leaves the hold.
+
+This is a reduced port. Upstream also refuses the attack group's orders to a held unit, can end an attack when enough
+units give up (bit 8, off in the shipped file), and moves fleets under towers or into a dock. The attack-group and
+landing layers are missing here. The remembered enemies use the shorter form already in the lost-fight rule; upstream
+also searches for long-range remembered guns. The sim report's `intel` object counts the hospital checks
+(`hospital_checks`), the finished Hospitals seen (`hospitals`), the units sent (`hospital_sent`), the move orders held
+(`hospital_holds`) and the units released once healed (`hospital_done`). For tower cover it counts the checks
+(`cover_checks`), the fighters with enemies near (`cover_near`), the estimates made (`cover_fights`), the units sent
+(`cover_sent`), the orders held (`cover_holds`) and the units released (`cover_back`).
+
+An earlier one-hour `fights` probe of the hospital bit alone found one player that saw a Hospital on 174 checks, sent
+2 units and reissued 21 move orders; with that bit off every hospital counter was zero. That player's score rose from
+8323.7 off to 9158.3 on, and the traces first differ at game millisecond 53732. Set `fall_back=tower_cover,
+fleet_cover` to turn the hospital bit off.
+
+A one-hour `fights` probe with tower cover on made 49 cover trips for one player, held 664 orders and released 38
+units; with tower cover off every cover counter was zero. That player's mean score rose from 6655.7 to 6673.7, and the
+traces first differ at game millisecond 174125. The off trace is byte-identical to the earlier fight-memory baseline,
+so the new gate leaves the old behavior alone. The 300-second benchmark stays at 4084.5, but one player sends one unit
+to cover and holds it once, so its trace differs in 116 lines. Set `fall_back=hospital` to turn tower cover off.
 
 ## Build queue fix
 

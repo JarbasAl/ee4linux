@@ -302,6 +302,7 @@ struct PlayerSample {
     long mSurrenderChecks = 0, mSurrenderCitizens = 0, mSurrenderNoCitizen = 0;
     long mSurrenderCanTrain = 0, mSurrenderAtWar = 0, mSurrenderResigned = 0;
     long mHospitalChecks = 0, mHospitals = 0, mHospitalSent = 0, mHospitalHolds = 0, mHospitalDone = 0;
+    long mCoverChecks = 0, mCoverNear = 0, mCoverFights = 0, mCoverSent = 0, mCoverHolds = 0, mCoverBack = 0;
     long mTightBuildCalls = 0, mTightBuildSites = 0;
     long mLostChecks = 0, mLostSkipped = 0, mLostInReach = 0;
     long mLostRefreshes = 0, mLostCells = 0, mLostZones = 0;
@@ -603,6 +604,13 @@ Sample TakeSample()
             p.mHospitalSent = (long)theHospital.mSent;
             p.mHospitalHolds = (long)theHospital.mHolds;
             p.mHospitalDone = (long)theHospital.mDone;
+            AgeOfAI::CoverCounts theCover = AgeOfAI::CoverCountsOf(i);
+            p.mCoverChecks = (long)theCover.mChecks;
+            p.mCoverNear = (long)theCover.mNear;
+            p.mCoverFights = (long)theCover.mFights;
+            p.mCoverSent = (long)theCover.mSent;
+            p.mCoverHolds = (long)theCover.mHolds;
+            p.mCoverBack = (long)theCover.mBack;
             AgeOfAI::TightBuildCounts theTightBuild = AgeOfAI::TightBuildCountsOf(i);
             p.mTightBuildCalls = (long)theTightBuild.mCalls;
             p.mTightBuildSites = (long)theTightBuild.mSites;
@@ -1273,6 +1281,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"surrender_checks\": %ld, \"surrender_citizens\": %ld, \"surrender_no_citizen\": %ld, "
                      "\"surrender_can_train\": %ld, \"surrender_at_war\": %ld, \"surrender_resigned\": %ld, "
                      "\"hospital_checks\": %ld, \"hospitals\": %ld, \"hospital_sent\": %ld, \"hospital_holds\": %ld, \"hospital_done\": %ld, "
+                     "\"cover_checks\": %ld, \"cover_near\": %ld, \"cover_fights\": %ld, \"cover_sent\": %ld, \"cover_holds\": %ld, \"cover_back\": %ld, "
                      "\"tight_build_calls\": %ld, \"tight_build_sites\": %ld, "
                      "\"lost_checks\": %ld, \"lost_skipped\": %ld, \"lost_in_reach\": %ld, "
                      "\"lost_refreshes\": %ld, \"lost_cells\": %ld, \"lost_zones\": %ld, "
@@ -1310,6 +1319,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mSurrenderChecks, p.mSurrenderCitizens, p.mSurrenderNoCitizen,
                      p.mSurrenderCanTrain, p.mSurrenderAtWar, p.mSurrenderResigned,
                      p.mHospitalChecks, p.mHospitals, p.mHospitalSent, p.mHospitalHolds, p.mHospitalDone,
+                     p.mCoverChecks, p.mCoverNear, p.mCoverFights, p.mCoverSent, p.mCoverHolds, p.mCoverBack,
                      p.mTightBuildCalls, p.mTightBuildSites,
                      p.mLostChecks, p.mLostSkipped, p.mLostInReach,
                      p.mLostRefreshes, p.mLostCells, p.mLostZones,

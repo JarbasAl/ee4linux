@@ -5591,6 +5591,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::AnswerWarTick(this, inTime);
         AgeOfAI::SurrenderTick(this, inTime);
         AgeOfAI::HospitalTick(this, inTime);
+        AgeOfAI::CoverTick(this, inTime);
         AgeOfAI::TightBuildTick(this, inTime);
         AgeOfAI::MusterTick(this, inTime);
         AgeOfAI::HoldTownTick(this, inTime);

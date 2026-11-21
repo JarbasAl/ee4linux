@@ -171,12 +171,22 @@ struct SurrenderCounts {
 };
 SurrenderCounts SurrenderCountsOf(unsigned long inPlayerID);
 // Fall back's hospital bit (cover.c, shipped on): a damaged, expensive land unit walks to its nearest own Hospital and
-// stays until it heals. The other fall_back bits wait for the fight estimate, landing and attack-group layers.
+// stays until it heals. Fleet cover and giving an attack up need the landing and attack-group layers.
 void HospitalTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 struct HospitalCounts {
     unsigned long mChecks, mHospitals, mSent, mHolds, mDone;
 };
 HospitalCounts HospitalCountsOf(unsigned long inPlayerID);
+bool HospitalHeld(EEUnit* inUnit);
+// Fall back's tower-cover bit (cover.c, shipped on): a land unit losing a fight with enemies near walks to the nearest
+// own defence under no known enemy gun, then a Hospital, then the base, and rests there. Upstream's END and SEA bits
+// (giving an attack up, fleets under cover) are not ported.
+void CoverTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct CoverCounts {
+    unsigned long mChecks, mNear, mFights, mSent, mHolds, mBack;
+};
+CoverCounts CoverCountsOf(unsigned long inPlayerID);
+bool CoverHeld(EEUnit* inUnit);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
 bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);
