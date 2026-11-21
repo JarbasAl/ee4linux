@@ -303,7 +303,8 @@ bool EECPBuildManager::StartBuilding(EECPBuildRequest inRequest)
         this->mManager->mUnitManager->GetIdleCitizens(theWorkers);
         if (theWorkers.size() > 0) {
             EEComplexUnit* theWorker = NULL;
-            if (theHasTile || this->FindSite(theClassID, theTile)) {
+            if (theHasTile || AgeOfAI::TightBuildSite(this, theClassID, theTile)
+                || this->FindSite(theClassID, theTile)) {
                 EECPUnitManager* theManager = theThis->mManager->mUnitManager;
                 theWorker = theManager->FindBuilderForTile(theTile, theClassID);
             }

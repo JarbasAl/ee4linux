@@ -607,6 +607,28 @@ earlier baseline. In a 30-minute Tiny map game with three Age of AI players the 
 failures, drops and the type that failed most in `intel.build_attempts`, `build_fails`, `build_dropped`,
 `build_top_type` and `build_top_fails`.
 
+## Packed buildings
+
+`[ai_base] tight_build` is on in the shipped file, as upstream, and is now active. When the build manager places a
+production building (barracks, archery range, stable, siege factory, tank factory or cyber factory), it first looks for a
+free spot near the town centre that touches the most of the player's own production buildings. It scores each spot by
+touching tiles times eight, minus the ring distance from the base, and keeps the best spot up to eight rings further
+out. A house, an airport and every other building keep the game's own search, which gives them their own spacing.
+
+This is a reduced port of upstream's `packing.c`. The game's `CanBuildAt` in strict mode validates every spot: the
+footprint is free, the tiles round it leave one unbroken walkable arc at least a citizen wide, and the spot is not on a
+choke point, a hill, a town centre or a gate. Upstream also clears drop sites, mines, trees, gates and raiders and caps
+the row length and the continent; those checks are left to `CanBuildAt` or omitted here. The chosen spot is still a
+real free build tile that the game's builder can reach.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it. In the 300-second
+benchmark the two Age of AI players now place 16 and 17 buildings and score 3517.5, against 17 and 19 buildings and 3705
+with the setting off. The paired inis differ only in `tight_build`, and the off trace is byte-identical to the earlier
+baseline; the traces first differ at game millisecond 875. On records four placement searches and four chosen spots for
+each player, off records none. In a 15-minute game the gap narrows: on scores 6275.0, off 6472.5, with 39.5 and 38.0
+population and 28.0 and 27.5 buildings. `EECPBuildManager::StartBuilding` calls `AgeOfAI::TightBuildSite` before
+`FindSite`. EESim reports the searches and the chosen spots in `intel.tight_build_calls` and `intel.tight_build_sites`.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

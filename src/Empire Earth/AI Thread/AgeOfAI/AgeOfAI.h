@@ -8,6 +8,9 @@
 
 #include "AgeOfAIIntel.h"
 
+template <class T> class U2DPoint;
+typedef U2DPoint<long> EETileCoordinate;
+
 class EECPBuildManager;
 class EEComputerPlayer;
 class EETechTreeEpoch;
@@ -309,6 +312,18 @@ struct BuildFixCounts {
     unsigned long mTopType, mTopFails;           // unit class that failed most, and its failure count
 };
 BuildFixCounts BuildFixCountsOf(unsigned long inPlayerID);
+
+// Packed buildings (packing.c, [ai_base] tight_build on by default): a production building goes to a free spot near
+// the base that touches the most of the player's own production buildings, instead of the game's spread-out search.
+// EECPBuildManager::StartBuilding calls TightBuildSite before FindSite; the game's CanBuildAt validates each spot, so
+// the reduced port leaves upstream's drop-site, mine, tree, gate and raider clearance to that check. TightBuildTick
+// resets the counters when a game restarts in the same process.
+bool TightBuildSite(EECPBuildManager* inManager, long inUnitClass, EETileCoordinate& outTile);
+void TightBuildTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct TightBuildCounts {
+    unsigned long mCalls, mSites;   // packed placement attempts, attempts that found a spot
+};
+TightBuildCounts TightBuildCountsOf(unsigned long inPlayerID);
 
 // The route cost of known enemy defences (attack.c avoid_towers, [ai_base] avoid_towers on by default): a land
 // attack route pays extra for each subsector inside their reach. The port costs a subsector where upstream costs a

@@ -60,7 +60,8 @@ adding five per 20-second extension as upstream counts it), the catch-up for oth
 anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_air_ahead`, `anti_air_queued`,
 `anti_air_skipped`), of the answer-war stance rule (`answer_war_checks`, `answer_war_transitions`,
 `answer_war_scheduled`, `answer_war_answers`, `answer_war_cancelled`), of the hospital fall-back bit
-(`hospital_checks`, `hospitals`, `hospital_sent`, `hospital_holds`, `hospital_done`) and of the defence layout's towers
+(`hospital_checks`, `hospitals`, `hospital_sent`, `hospital_holds`, `hospital_done`), of the packed-building search
+(`tight_build_calls`, `tight_build_sites`) and of the defence layout's towers
 (`towers_queued`, `towers_skipped`).
 
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
