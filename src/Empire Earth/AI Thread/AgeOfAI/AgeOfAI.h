@@ -117,6 +117,15 @@ struct FishingCounts {
     long mLastClass;                           // the class last returned
 };
 FishingCounts FishingCountsOf(unsigned long inPlayerID);
+// MINE CAP (citizens.c cz_mine_cap, [ai_base] citizen_mine_cap on by default): the citizens wanted cannot exceed the
+// seen mines times the gatherer slots per mine (table 0x16) and a half, nor half the population cap. From the Copper
+// Age on, the count is refreshed every 30 game seconds. EECPUnitManager::GetWantedCitizens calls it for Age of AI players.
+long MineCapWantedCitizens(EEComputerPlayer* inPlayer, long inCount);
+struct MineCapCounts {
+    unsigned long mCalls, mCapped, mTime;   // queries seen, queries the cap reduced, last refresh
+    long mMines, mCap;                      // last count of seen mines, last cap
+};
+MineCapCounts MineCapCountsOf(unsigned long inPlayerID);
 // PRODUCTION SYNC (econ.c prod_sync, off in the shipped file): repair the in-production count after a game load
 void ProductionSync(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's

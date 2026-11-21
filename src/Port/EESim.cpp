@@ -256,6 +256,7 @@ struct PlayerSample {
     long mLeashCalls = 0, mLeashSkipped = 0;
     long mGranChecks = 0, mGranRequested = 0;
     long mFishCalls = 0, mFishPicked = 0, mFishChanged = 0, mFishClass = 0;
+    long mMineCalls = 0, mMineCapped = 0, mMineMines = 0, mMineCap = 0;
     long mFoodPulled = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
@@ -471,6 +472,11 @@ Sample TakeSample()
             p.mFishPicked = (long)theFishing.mPicked;
             p.mFishChanged = (long)theFishing.mChanged;
             p.mFishClass = theFishing.mLastClass;
+            AgeOfAI::MineCapCounts theMine = AgeOfAI::MineCapCountsOf(i);
+            p.mMineCalls = (long)theMine.mCalls;
+            p.mMineCapped = (long)theMine.mCapped;
+            p.mMineMines = theMine.mMines;
+            p.mMineCap = theMine.mCap;
             AgeOfAI::WaveFocusCounts theWave = AgeOfAI::WaveFocusCountsOf(i);
             p.mWaveCalls = (long)theWave.mCalls;
             p.mWaveSet = (long)theWave.mSet;
@@ -1016,7 +1022,7 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[2176] = "";
+        char theIntel[2432] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
@@ -1031,6 +1037,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"leash_calls\": %ld, \"leash_skipped\": %ld, "
                      "\"granary_checks\": %ld, \"granary_requested\": %ld, "
                      "\"fish_calls\": %ld, \"fish_picked\": %ld, \"fish_changed\": %ld, \"fish_class\": %ld, "
+                     "\"mine_calls\": %ld, \"mine_capped\": %ld, \"mine_mines\": %ld, \"mine_cap\": %ld, "
                      "\"wave_calls\": %ld, \"wave_set\": %ld, \"wave_moved\": %ld, \"wave_kept\": %ld, \"wave_none\": %ld, "
                      "\"weak_calls\": %ld, \"weak_threatened\": %ld, \"weak_picked\": %ld, "
                      "\"food_pulled\": %ld, "
@@ -1047,6 +1054,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mLeashCalls, p.mLeashSkipped,
                      p.mGranChecks, p.mGranRequested,
                      p.mFishCalls, p.mFishPicked, p.mFishChanged, p.mFishClass,
+                     p.mMineCalls, p.mMineCapped, p.mMineMines, p.mMineCap,
                      p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
                      p.mWeakCalls, p.mWeakThreatened, p.mWeakPicked,
                      p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,

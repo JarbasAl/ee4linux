@@ -248,6 +248,21 @@ Modern boat (class 211) on all 127 calls and scored 15504.7 with a population of
 byte-identical to the earlier baseline and the gate-on trace differs. The sim report counts calls, newest-boat picks,
 changed picks and the last class in `intel.fish_calls`, `intel.fish_picked`, `intel.fish_changed` and `intel.fish_class`.
 
+## Mine cap
+
+`[ai_base] citizen_mine_cap` is on in the shipped file and is now active. The game asks for the population cap times the
+citizen share. From the Copper Age on the port refreshes a cap every 30 game seconds: it counts the stone, gold and iron
+mines the player knows, allows the game's gatherers per mine (table value 0x16, six) times 1.5, and limits the result to
+half the population cap. A request above the cap is reduced to it. This is upstream's `cz_mine_cap`; the setting was
+parsed but inert before this change. Setting 0 restores the game's own count.
+
+The shipped 1 changes behaviour from the Copper Age on. The 300-second benchmark reaches the Copper Age but its cap
+stays at 200 and does not bind, so its trace stays byte-identical and its score stays at 4020. In a 30-minute Tiny map
+game with three Age of AI players the cap counted 11 mines and limited the count to 99: 49 of 53 requests, 3 of 7 and
+5 of 9 were reduced in the three players. Gate on scored 7089.3; gate off logged no reductions and scored 7000.3, with
+a trace byte-identical to the earlier baseline. The sim report counts queries, reductions, the last mine count and the
+last cap in `intel.mine_calls`, `intel.mine_capped`, `intel.mine_mines` and `intel.mine_cap`.
+
 ## What is dangerous for the citizens
 
 The game's searches send citizens through the enemy's defences, to sites raiders stand at, and to places where citizens

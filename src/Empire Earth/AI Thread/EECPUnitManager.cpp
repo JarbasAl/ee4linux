@@ -57,6 +57,7 @@
 #include "ee/EECPCombatManager.h"
 #include "ee/EECPUMGatherUnitsScreenBase.h"
 #include "ee/EECPUnitManager.h"
+#include "AgeOfAI/AgeOfAI.h"
 #include "ee/EEAIFOUnitsToKillScoringBase.h"
 #include "ee/EEAIFOSubGroupFilter.h"
 #include <EEAIFunctionObjects.h>
@@ -219,11 +220,15 @@ done:
 
 // NEAR: the original multiplies with fimul (float loaded first, the long counted from memory); ours fild + fmul (90.5)
 // FUNCTION: EXE 0x493aee
-// Returns the citizen target: the population limit times the player's citizen percentage
+// Returns the citizen target: the population limit times the player's citizen percentage, or Age of AI's mine cap
+// (citizens.c cz_mine_cap) when that engine plays this player.
 long EECPUnitManager::GetWantedCitizens()
 {
+    if (this->mPlayer == NULL)
+        return 0;
     long theCount = this->mPlayer->GetPopulationLimit(0);
-    return UMFloatToLong(theCount * this->mPlayer->GetCitizenPercentage());
+    long theWanted = UMFloatToLong(theCount * this->mPlayer->GetCitizenPercentage());
+    return AgeOfAI::MineCapWantedCitizens(this->mPlayer, theWanted);
 }
 
 // FUNCTION: EXE 0x493b20

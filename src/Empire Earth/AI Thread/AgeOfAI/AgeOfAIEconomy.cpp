@@ -131,6 +131,8 @@
 #include "ee/EECPResearchManager.h"
 #include "ee/EECPResourceManager.h"
 #include "ee/EECPCivilizationManager.h"
+#include "ee/EECPResourceCenter.h"
+#include "ee/EEResourceType.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
@@ -981,6 +983,68 @@ void ApplySettings(EEComputerPlayer* inPlayer)
     }
     if (theSettings.citizen_share > 0.0f && theSettings.citizen_share < 1.0f)
         inPlayer->mCitizenPercentage = theSettings.citizen_share;
+}
+
+// Upstream citizens.c cz_mine_cap, [ai_base] citizen_mine_cap on by default. The game asks for the population cap
+// times the citizen share, so a player with few mines asks for more citizens than its mines can hold. From the Copper
+// Age on, the cap refreshes every 30 game seconds: it counts the unique mine sites the player knows (stone, gold and
+// iron), allows table 0x16 gatherers per mine times 1.5, and limits the result to half the population cap. The cap
+// applies to the citizen count the unit manager asks for, not to the gatherer split. EESim reports the queries, the
+// reductions, the last mine count and the last cap.
+MineCapCounts sMineCap[16];
+
+long MineCapWantedCitizens(EEComputerPlayer* inPlayer, long inCount)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return inCount;
+    const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium);
+    if (!theSettings.citizen_mine_cap || Epoch(inPlayer) < kFarmEpoch)
+        return inCount;
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    MineCapCounts& theCounts = sMineCap[thePI];
+    theCounts.mCalls++;
+    unsigned long theNow = gPhysics != NULL ? gPhysics->mGameTime : 0;
+    if (theCounts.mTime == 0 || theNow < theCounts.mTime || theNow - theCounts.mTime >= 30000) {
+        theCounts.mTime = theNow ? theNow : 1;
+        long theMines = 0;
+        std::vector<EEUnit*> theSeen;
+        for (unsigned long z = 0; z < inPlayer->GetNumResourceCenters() && z < 256; z++) {
+            EECPResourceCenter* theZone = inPlayer->GetResourceCenter(z);
+            if (theZone == NULL)
+                continue;
+            for (size_t k = 0; k < theZone->mUnits.size() && k < 4096 && theSeen.size() < 4096; k++) {
+                EEUnit* theSite = theZone->mUnits[k];
+                if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mResourceAmount <= 0)
+                    continue;
+                long theResource = (long)theSite->mResourceType;
+                if (theResource < kResourceStone || theResource > kResourceIron)
+                    continue;
+                bool theKnown = false;
+                for (size_t s = 0; s < theSeen.size(); s++)
+                    if (theSeen[s] == theSite) { theKnown = true; break; }
+                if (theKnown)
+                    continue;
+                theSeen.push_back(theSite);
+                theMines++;
+            }
+        }
+        long theCap = theMines * (long)gWorldTable.GetLongValue(0x16) * 3 / 2;
+        long theHalf = inPlayer->GetPopulationLimit(0) / 2;
+        if (theCap > theHalf)
+            theCap = theHalf;
+        theCounts.mMines = theMines;
+        theCounts.mCap = theCap;
+    }
+    if (inCount > theCounts.mCap) {
+        theCounts.mCapped++;
+        return theCounts.mCap;
+    }
+    return inCount;
+}
+
+MineCapCounts MineCapCountsOf(unsigned long inPlayerID)
+{
+    return sMineCap[inPlayerID & 15];
 }
 
 }
