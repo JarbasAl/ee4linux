@@ -541,6 +541,24 @@ times, stayed in ahead mode on every check, and queued one AA building. The gate
 and the traces first differ at game millisecond 84875. Set `anti_air=0` to turn the rule off. Set `aa_ahead=0` to keep
 the reaction to aircraft but drop the advance build.
 
+## Answering a declaration of war
+
+`[ai_base] answer_war` is on in the shipped file, as upstream, and is now active. On every tick the player notes the
+stance of each other player towards it. The first look only records a baseline: a war already under way when the player
+starts is not answered. Later, when a player that was an ally turns enemy while the player still sees it as an ally, the
+player schedules its own enemy stance 3 to 6 game seconds later, a delay fixed by the two player numbers. When the timer
+ends, the player answers only if that player is still an enemy, it has not answered already, and neither player has been
+defeated. It then sets its own enemy stance with the game's diplomacy call.
+
+This is a reduced port. Upstream's diplomacy also tracks opinion, persona and history, prints a stance line, sends a
+revenge attack and a taunt, and handles tribute, peace and surrender. Those need a diplomacy state engine this port does
+not have, so only the stance answer is ported. The sim report's `intel` object counts the per-player stance checks
+(`answer_war_checks`), the new enemy stances seen (`answer_war_transitions`), the answers scheduled and given
+(`answer_war_scheduled`, `answer_war_answers`) and the timers cancelled because peace returned or an answer was already
+given (`answer_war_cancelled`). No sim option forces a stance change, so ordinary games record checks but no transition
+or answer; the paired probe with the gate on and off is byte-identical. The delay and both stance decisions are covered
+by `test_ageofai_diplomacy.cpp`. Set `answer_war=0` to turn the rule off.
+
 ## Build queue fix
 
 `[ai_base] build_fix` is on in the shipped file, as upstream, and is now active. Every three seconds the game's build

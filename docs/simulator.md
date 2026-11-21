@@ -58,7 +58,9 @@ adding five per 20-second extension as upstream counts it), the catch-up for oth
 `counter_siege_skipped`), of the idle citizens home (`home_sent`, `home_base_moved`), of the settlement upgrades
 (`garrison_checks`, `garrison_orders`, `garrison_citizens`, `garrison_idle`, `garrison_wood`, `garrison_holds`), of
 anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_air_ahead`, `anti_air_queued`,
-`anti_air_skipped`) and of the defence layout's towers (`towers_queued`, `towers_skipped`).
+`anti_air_skipped`), of the answer-war stance rule (`answer_war_checks`, `answer_war_transitions`,
+`answer_war_scheduled`, `answer_war_answers`, `answer_war_cancelled`) and of the defence layout's towers
+(`towers_queued`, `towers_skipped`).
 
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.

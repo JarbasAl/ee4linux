@@ -152,6 +152,13 @@ struct AntiAirCounts {
     unsigned long mChecks, mNear, mAny, mAhead, mQueued, mSkipped;
 };
 AntiAirCounts AntiAirCountsOf(unsigned long inPlayerID);
+// Answer war (diplo.c, shipped on in [ai_base]): when a player that was at peace declares war on an Age of AI player,
+// the player answers with its own enemy stance a few seconds later. Opinion, history, chat lines and revenge are not ported.
+void AnswerWarTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct AnswerWarCounts {
+    unsigned long mChecks, mTransitions, mScheduled, mAnswers, mCancelled;
+};
+AnswerWarCounts AnswerWarCountsOf(unsigned long inPlayerID);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
 bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);
