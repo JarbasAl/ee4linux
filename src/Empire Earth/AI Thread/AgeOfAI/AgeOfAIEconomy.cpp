@@ -132,6 +132,7 @@
 #include "ee/EECPResourceManager.h"
 #include "ee/EECPCivilizationManager.h"
 #include "AgeOfAI.h"
+#include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
 #include "AgeOfAIWorkers.h"
 
@@ -655,6 +656,51 @@ void MoreGranaries(EECPResourceManager* inResources, unsigned long inNow)
 GranaryCounts GranaryCountsOf(unsigned long inPlayerID)
 {
     return sGran[inPlayerID & 15];
+}
+
+// FISHING BOAT (navy.c hook_fish_type, [ai_base] fishing_boat): the game's pick by epoch alone reaches the Modern
+// boat at the World War I age and then asks for a boat it cannot train, so fishing stops. Walk the class table for the
+// newest boat the player can build now; an upgraded line's old class has no available tech and drops out. With no boat
+// available, keep the game's pick. The caller gates the engine; this gate is the setting.
+static FishingCounts sFishing[16];
+
+long PickFishingBoat(EEPlayer* inPlayer, long inGameClass)
+{
+    FishingCounts& theCounts = sFishing[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium);
+    if (!theSettings.fishing_boat || inPlayer->mTechnologies == NULL) {
+        theCounts.mLastClass = inGameClass;
+        return inGameClass;
+    }
+    long theBest = 0, theBestTech = 0;
+    for (long c = 1; c < 871; c++) {
+        EEUnitClass* theClass = gUnitClassTable[c];
+        if (theClass == NULL || !(Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kFishingBoat))
+            continue;
+        long theTech = theClass->mTechnology;
+        if (theTech <= theBestTech)
+            continue;
+        EETechTreeNode* theNode = inPlayer->mTechnologies->Get(theTech);
+        if (theNode == NULL || !theNode->GetIsAvailable())
+            continue;
+        theBestTech = theTech;
+        theBest = c;
+    }
+    if (theBest == 0) {
+        theCounts.mLastClass = inGameClass;
+        return inGameClass;
+    }
+    if (theBest != inGameClass)
+        theCounts.mChanged++;
+    theCounts.mPicked++;
+    theCounts.mLastClass = theBest;
+    return theBest;
+}
+
+FishingCounts FishingCountsOf(unsigned long inPlayerID)
+{
+    return sFishing[inPlayerID & 15];
 }
 
 // PRODUCTION SYNC (econ.c prod_sync, [ai_base] production_sync, off in the shipped file): a loaded game keeps the

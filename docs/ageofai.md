@@ -231,6 +231,23 @@ score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, 
 and scored 6154.7; gate off logged none and scored 6779.3. The traces differ. The sim report counts the passes and the
 requests in `intel.granary_checks` and `intel.granary_requested`.
 
+## Fishing boats
+
+`[ai_base] fishing_boat` is on in the shipped file and is now active. The game picks a fishing boat from the epoch alone:
+the Stone boat before the Bronze Age, the Bronze boat until the World War I age and the Modern boat after that. From the
+World War I age the Modern boat cannot be trained yet, so the game asks for a boat it cannot build and fishing stops.
+For an Age of AI player the port walks the class table and returns the newest fishing boat class the player can build
+now. An upgraded line's old class has no available tech and drops out. When no boat is available, the game's pick
+stands. Setting 0 restores that pick; the setting was parsed but inert before this change.
+
+The shipped 1 changes behaviour on water maps from the World War I age on. The 300-second benchmark is a land game
+whose two fishing-boat calls both pick the Stone boat, so its trace stays byte-identical and its score stays at 4020.
+In a 30-minute Small Islands game with three Age of AI players, gate on picked the Imperial boat (class 365) on all
+104 calls, and every pick differed from the game's; it scored 15750.7 with a population of 111.0. Gate off kept the
+Modern boat (class 211) on all 127 calls and scored 15504.7 with a population of 100.3. The gate-off trace is
+byte-identical to the earlier baseline and the gate-on trace differs. The sim report counts calls, newest-boat picks,
+changed picks and the last class in `intel.fish_calls`, `intel.fish_picked`, `intel.fish_changed` and `intel.fish_class`.
+
 ## What is dangerous for the citizens
 
 The game's searches send citizens through the enemy's defences, to sites raiders stand at, and to places where citizens

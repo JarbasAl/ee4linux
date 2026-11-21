@@ -108,6 +108,15 @@ struct GranaryCounts {
     unsigned long mChecks, mRequested;   // passes run, granary requests made
 };
 GranaryCounts GranaryCountsOf(unsigned long inPlayerID);
+// FISHING BOAT (navy.c hook_fish_type, [ai_base] fishing_boat): the game picks a boat by epoch alone and from the World
+// War I age on asks for one it cannot train. PickFishingBoat returns the newest available fishing boat class instead.
+// EECPCivilizationManager::GetFishingBoatClass calls it for Age of AI players only.
+long PickFishingBoat(EEPlayer* inPlayer, long inGameClass);
+struct FishingCounts {
+    unsigned long mCalls, mPicked, mChanged;   // gate calls, newest-boat picks, picks that differ from the game's
+    long mLastClass;                           // the class last returned
+};
+FishingCounts FishingCountsOf(unsigned long inPlayerID);
 // PRODUCTION SYNC (econ.c prod_sync, off in the shipped file): repair the in-production count after a game load
 void ProductionSync(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's
