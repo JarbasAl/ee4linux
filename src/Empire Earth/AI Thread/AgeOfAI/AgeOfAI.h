@@ -138,6 +138,13 @@ void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
 bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);
+// Another AI reaching a new epoch pulls this AI's attempt forward too (econ.c catch_up_ais, on in the shipped file).
+// Checked every two game seconds; the first sighting of a player records its epoch without a catch-up call.
+void CatchUpAIsTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct CatchUpAIsCounts {
+    unsigned long mChecks, mCalls;   // two-second checks, catch-up calls made for a newer AI
+};
+CatchUpAIsCounts CatchUpAIsCountsOf(unsigned long inPlayerID);
 void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 // An epoch's line upgrades (kind 7): false when the game researches them itself, true when they are scheduled for research
 // The game's placement test of a building type on every tile of its footprint, inside the map's border

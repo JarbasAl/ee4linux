@@ -101,6 +101,12 @@ Bronze Age the player asks for one Archery Range a minute when none stands or go
 food-free ranged soldiers have a place to train. The army's training budget, the militia (`early_militia`) and the
 stone of the core towers in the worker plan wait for the files that hold them.
 
+## Catching up with other AIs
+
+The game pulls an AI's next epoch attempt forward when a human reaches a new epoch. With `[ai_base] catch_up_ais` on (on in the shipped file), an Age of AI player also checks the other computer players every two game seconds. The first sighting of a player only records its epoch. When another AI has since reached a newer epoch, this player calls the game's own epoch catch-up and draws a new attempt time in the usual range. `epoch_pacing=timer` keeps the game's own skip, so the attempt stays on the timer. Humans keep the game's own call. `AgeOfAIEconomy.cpp` owns the rule and its counters; `EEComputerPlayer::Update` calls it once per tick.
+
+The 300-second benchmark has no epoch change, so its trace stays byte-identical at 4020 and the rule makes about 150 checks but no calls. In a 30-minute Tiny map game with three Age of AI players, gate on made one, two and no catch-up calls in the three players and scored 7319.3 against 7089.3 with the gate off; the traces differ. The paired inis differ only in `catch_up_ais`, and the gate-off trace is byte-identical to the earlier baseline. The sim report counts the checks and the calls in `intel.catch_checks` and `intel.catch_calls`.
+
 ## The economy before farms
 
 The game gives each resource gatherers by its demand, and its food demand is a phantom. An Age of AI player with

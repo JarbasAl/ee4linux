@@ -282,6 +282,50 @@ bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer)
         && SettingsOf(inPlayer).epoch_pacing == kPacingTimer;
 }
 
+// Upstream econ.c catch_up_ais, on in the shipped file. The game itself calls the epoch catch-up only when a human
+// reaches an epoch. Every two game seconds this rule also checks the other computer players. The first sighting of a
+// player only records its epoch; a later rise pulls this AI's next attempt forward through its own CatchUpEpoch, which
+// keeps the timer-pacing and Atomic-WW1 rules. Humans stay with the game's own call.
+struct CatchUpAIsState {
+    long mSeen[16];
+    unsigned long mLast;
+};
+static CatchUpAIsState sCatchUpAIs[16];
+static CatchUpAIsCounts sCatchUpAIsCounts[16];
+
+void CatchUpAIsTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || inPlayer->mTechnologies == NULL
+        || !SettingsOf(inPlayer).catch_up_ais)
+        return;
+    const unsigned long theIndex = inPlayer->mPlayerID & 15;
+    CatchUpAIsState& theState = sCatchUpAIs[theIndex];
+    if (theState.mLast == 0 || inNow < theState.mLast)
+        std::fill(theState.mSeen, theState.mSeen + 16, -1);   // the first look of a game, or a new game
+    if (theState.mLast != 0 && inNow >= theState.mLast && inNow - theState.mLast < 2000)
+        return;
+    theState.mLast = inNow != 0 ? inNow : 1;
+    CatchUpAIsCounts& theCounts = sCatchUpAIsCounts[theIndex];
+    theCounts.mChecks++;
+    for (unsigned long p = 1; p < gWorld.GetNumPlayers() && p < 16; p++) {
+        EEPlayer* theOther = gWorld.GetPlayer(p);
+        if (theOther == NULL || theOther == inPlayer || theOther->IsHuman() || theOther->mTechnologies == NULL)
+            continue;
+        long theEpoch = theOther->mTechnologies->mCurrentEpoch;
+        long theSeen = theState.mSeen[p];
+        theState.mSeen[p] = theEpoch;
+        if (theSeen < 0 || theEpoch <= theSeen || inPlayer->mTechnologies->mCurrentEpoch >= theEpoch)
+            continue;
+        theCounts.mCalls++;
+        inPlayer->CatchUpEpoch(theOther);
+    }
+}
+
+CatchUpAIsCounts CatchUpAIsCountsOf(unsigned long inPlayerID)
+{
+    return sCatchUpAIsCounts[inPlayerID & 15];
+}
+
 // An income of the player's, from EEComputerPlayer::AddResource
 void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount)
 {
