@@ -63,8 +63,9 @@ anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_ai
 (`hospital_checks`, `hospitals`, `hospital_sent`, `hospital_holds`, `hospital_done`), of the packed-building search
 (`tight_build_calls`, `tight_build_sites`), of the surrender rule (`surrender_checks`, `surrender_citizens`,
 `surrender_no_citizen`, `surrender_can_train`, `surrender_at_war`, `surrender_resigned`), of the lost-fight rule
-(`lost_checks`, `lost_skipped`, `lost_in_reach`, `lost_refreshes`, `lost_cells`, `lost_zones`) and of the defence
-layout's towers (`towers_queued`, `towers_skipped`).
+(`lost_checks`, `lost_skipped`, `lost_in_reach`, `lost_refreshes`, `lost_cells`, `lost_zones`), of the remembered foes
+in that rule (`lost_mem_cells`, `lost_mem_foes`) and of the defence layout's towers (`towers_queued`,
+`towers_skipped`).
 
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.

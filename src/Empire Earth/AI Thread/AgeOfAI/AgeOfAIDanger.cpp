@@ -145,6 +145,7 @@
 #include "ee/EECPAttackSubGroup.h"
 #include "AgeOfAI/AgeOfAIStats.h"
 #include "AgeOfAI/AgeOfAIAvoidLostRules.h"
+#include "AgeOfAI/AgeOfAIFightMemoryRules.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIDefence.h"
 #include "AgeOfAIHome.h"
@@ -480,8 +481,9 @@ LeashCounts LeashCountsOf(unsigned long inPlayerID)
 // an enemy fighter in sight: the enemy it sees there against its own and allied fighters out to the zone's edge, and a
 // cell it is not winning becomes a lost fight. attack.c then refuses a target inside such a cell beyond the scorer's
 // range + 2, so soldiers stop running one by one into a standing army. The port keeps the cells as a list instead of a
-// bitmap; the refresh and the target test are the same. Upstream's staging and landing checks, and the remembered
-// enemies of fight_memory, stay unported: only enemies in sight now mark a cell.
+// bitmap; the refresh and the target test are the same. Upstream's staging and landing checks stay unported. With
+// [ai_base] fight_memory on, remembered enemies mark cells and join a cell's foe side too; at the shipped settings the
+// effect is a reduced cv_mark_mem / cv_foe_mem, without upstream's extended search for long-range remembered guns.
 namespace {
 
 bool AvoidLostOn(EEPlayer* inPlayer)
@@ -490,6 +492,28 @@ bool AvoidLostOn(EEPlayer* inPlayer)
         return false;
     const SettingsAI& theCfg = Cfg(inPlayer->mPlayerID);
     return theCfg.avoid_lost_fights && theCfg.danger_routes && theCfg.honest_vision;
+}
+
+// The remembered foes of fight_memory join only the lost-fight judgement, so this gate is read inside AvoidLostTick.
+bool FightMemoryOn(EEPlayer* inPlayer)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return false;
+    const SettingsAI& theCfg = Cfg(inPlayer->mPlayerID);
+    return theCfg.fight_memory && theCfg.honest_vision;
+}
+
+// A remembered unit's class counts as a fighter (cover.c cv_mil): a land unit or a warship with a gun. Upstream counts
+// siege and rams here, so Roles::IsSoldier, which leaves both out, is not the right test. Citizens, aircraft, transports
+// and buildings do not count; the intel scan keeps some of them as kSoldier records.
+bool FightMemoryFighter(EEUnitClass* inClass)
+{
+    if (inClass == NULL || !(inClass->mAttack > 0.0f) || inClass->mFamily == kUnitFamilyCitizen)
+        return false;
+    unsigned long theCategory = inClass->mCategory;
+    return theCategory == kUnitCategoryLand || theCategory == kUnitCategoryLand8
+           || theCategory == kUnitCategoryLand15 || theCategory == kUnitCategoryLandMilitaryHero
+           || theCategory == kUnitCategoryNaval || theCategory == kUnitCategorySubmergedNaval;
 }
 
 // Whether a unit is the kind that can be judged: a soldier, or a building with a ground attack. The cell walk asks this
@@ -566,6 +590,35 @@ void AvoidLostTick(EEComputerPlayer* inPlayer, unsigned long inNow)
         }
     }
 
+    // cover.c cv_mark_mem: a fresh remembered enemy soldier marks its cell even when no eye sees it now.
+    const Intel::Memory* theMemory = NULL;
+    unsigned long theMemNow = 0, theMemLast = 0;
+    if (FightMemoryOn(inPlayer)) {
+        theMemory = &MemoryOf(thePI);
+        theMemNow = theMemory->Now();
+        theMemLast = theMemory->Last();
+        for (size_t k = 0; k < theMemory->Records().size(); k++) {
+            const Intel::Record& theRecord = theMemory->Records()[k];
+            if (theRecord.mKind != Intel::kSoldier || theRecord.mX < 0 || theRecord.mOwner <= 0
+                || !FightMemoryRules::Fresh(theMemNow, theRecord.mTime, theMemLast))
+                continue;
+            EEPlayer* theOwner = gWorld.GetPlayer((unsigned long)theRecord.mOwner);
+            if (theOwner == NULL || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner))
+                continue;
+            long theCX = (theRecord.mX / kCell) * kCell + kCell / 2;
+            long theCY = (theRecord.mY / kCell) * kCell + kCell / 2;
+            bool theNew = true;
+            for (int c = 0; c < theNum && theNew; c++)
+                theNew = theCentres[c * 2] != theCX || theCentres[c * 2 + 1] != theCY;
+            if (!theNew || theNum >= (int)(sizeof(theCentres) / (2 * sizeof(long))))
+                continue;
+            theCentres[theNum * 2] = theCX;
+            theCentres[theNum * 2 + 1] = theCY;
+            theNum++;
+            theCounts.mMemCells++;
+        }
+    }
+
     for (int c = 0; c < theNum; c++) {
         long theCX = theCentres[c * 2], theCY = theCentres[c * 2 + 1];
         Stats::Side theOwn, theFoe;
@@ -591,6 +644,35 @@ void AvoidLostTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                 if (theRange > theReach && theRange < 30.0f)
                     theReach = theRange;
                 Stats::Add(theFoe, theUnit);
+            }
+        }
+        // cover.c cv_foe_mem with the lost-fight caller's r = CV_ZONE_FOE and reach = 0: a remembered enemy within
+        // ten tiles of the cell's middle joins the foe side, and its range widens the zone unless it is 30 tiles or more.
+        if (theMemory != NULL) {
+            for (size_t k = 0; k < theMemory->Records().size(); k++) {
+                const Intel::Record& theRecord = theMemory->Records()[k];
+                if (theRecord.mKind != Intel::kSoldier || theRecord.mX < 0 || theRecord.mOwner <= 0
+                    || !FightMemoryRules::Fresh(theMemNow, theRecord.mTime, theMemLast))
+                    continue;
+                long theDX = theRecord.mX - theCX, theDY = theRecord.mY - theCY;
+                if ((float)(theDX * theDX + theDY * theDY) > (float)(kFoe * kFoe))
+                    continue;
+                EEPlayer* theOwner = gWorld.GetPlayer((unsigned long)theRecord.mOwner);
+                if (theOwner == NULL || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner)
+                    || theRecord.mType < 0 || theRecord.mType >= 871)
+                    continue;
+                EEUnitClass* theClass = gUnitClassTable[theRecord.mType];
+                if (!FightMemoryFighter(theClass))
+                    continue;
+                EEUnitClassUpgrade* theStats = theOwner->mUnitClassUpgrades[theRecord.mType];
+                float theRange = theStats != NULL ? theStats->mRange : theClass->mRange;
+                float theMemReach = FightMemoryRules::Reach(theRange);
+                if (Stats::AddRecord(theFoe, theRecord.mType, theRecord.mOwner, theRecord.mHitPoints,
+                                     theRecord.mX, theRecord.mY)) {
+                    theCounts.mMemFoes++;
+                    if (theMemReach > theReach)
+                        theReach = theMemReach;
+                }
             }
         }
         if (theFoe.mCount == 0)

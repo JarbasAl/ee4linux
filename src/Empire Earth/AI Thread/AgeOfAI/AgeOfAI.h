@@ -375,8 +375,9 @@ LeashCounts LeashCountsOf(unsigned long inPlayerID);
 // Lost fights (cover.c cv_zones and attack.c hook_asgu_score, [ai_base] avoid_lost_fights with danger_routes): a cell
 // where the player's side loses the fight is a zone, and a land soldier does not pick a target inside it beyond its own
 // range + 2. AvoidLostTick refreshes the zones every four game seconds; EEAIGPG calls LostZoneSkipsTarget for a target.
-// Upstream's danger map is held here as a small list of cells. The staging, landing and remembered-foe checks are not
-// ported, so this skips only targets whose losing side is in sight now.
+// Upstream's danger map is held here as a small list of cells. The staging and landing checks are not ported. With
+// [ai_base] fight_memory on, fresh remembered enemy soldiers mark cells and join the foe side (cover.c cv_mark_mem,
+// cv_foe_mem); the extended search for long-range remembered guns is not ported.
 void AvoidLostTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool LostZoneSkipsTarget(EEPlayer* inPlayer, EEComplexUnit* inScorer, EEComplexUnit* inTarget);
 struct AvoidLostCounts {
@@ -385,6 +386,7 @@ struct AvoidLostCounts {
 AvoidLostCounts AvoidLostCountsOf(unsigned long inPlayerID);
 struct AvoidLostZoneCounts {
     unsigned long mRefreshes, mCells, mZones;    // refreshes, cells with a fight seen, cells marked lost (capped)
+    unsigned long mMemCells, mMemFoes;          // cells marked from memory, remembered foes added to a cell's foe side
 };
 AvoidLostZoneCounts AvoidLostZoneCountsOf(unsigned long inPlayerID);
 

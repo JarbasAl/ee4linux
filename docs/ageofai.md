@@ -672,11 +672,28 @@ player is not winning, at a ratio below one, becomes a lost-fight zone. A land s
 such a zone when the target lies beyond the soldier's own weapon range plus two tiles. A target the soldier can reach
 stays a target, so a group that gathers at the edge still closes in once it would win the fight.
 
-This is a reduced port of Grille's `cover.c` and `attack.c`. Upstream holds the lost cells in a danger-map bitmap,
-remembers enemies seen up to three minutes ago through `fight_memory`, and holds the rule back while an attack is
-staged or landing. This port keeps the cells as a short list that is rebuilt on each refresh, and only enemies in
-sight now mark a cell. The staging and landing checks are not ported, so they do not hold the rule back. The decision
-arithmetic is in `AgeOfAIAvoidLostRules.h` and is covered by `test_ageofai_avoid_lost.cpp`.
+This is a reduced port of Grille's `cover.c` and `attack.c`. Upstream holds the lost cells in a danger-map bitmap and
+holds the rule back while an attack is staged or landing. This port keeps the cells as a short list that is rebuilt on
+each refresh. The staging and landing checks are not ported, so they do not hold the rule back. The decision arithmetic
+is in `AgeOfAIAvoidLostRules.h` and is covered by `test_ageofai_avoid_lost.cpp`.
+
+## Remembered enemies in lost fights
+
+`[ai_base] fight_memory` is on in the shipped file, as upstream. It now joins the lost-fight judgement when
+`avoid_lost_fights` is on, and needs `honest_vision` as upstream does. A soldier the player saw in the last three game
+minutes stays in its memory at the tile where it was seen. On each four-second refresh such a soldier marks its
+eight-tile cell even when no eye sees it now, and counts in the foe side when it lies within ten tiles of a cell's
+middle. Its weapon range adds to the zone unless the range is 30 tiles or more. A record from the last scan is left
+out: that unit is counted from the live sighting instead. The memory rules are in `AgeOfAIFightMemoryRules.h` and are
+covered by `test_ageofai_fight_memory.cpp`. This is a reduced `cv_mark_mem` / `cv_foe_mem`: upstream also searches up to
+20 tiles for a remembered long-range gun, which this port leaves out.
+
+The shipped 1 is a behaviour change: earlier ports parsed `fight_memory` but never used it. The 300-second benchmark
+still scores 4084.5, but the trace differs from the earlier baseline in 44 lines and one player marks 33 cells and adds
+97 remembered foes. In the paired 30-minute `fights` probe, the gate on marked 548 to 662 cells and added 1591 to 2509
+remembered foes per player, and scored 6655.7; with `fight_memory=0` every memory counter was zero, the trace was
+byte-identical to the earlier `avoid_lost_fights`-on baseline, and the score was 7165.0. The two probe inis differ only
+in `fight_memory`.
 
 The shipped 1 is a behaviour change: earlier ports parsed the setting but never used it. The 300-second benchmark now
 fires the rule: one player runs 26 target checks with one refusal and the other 30 checks with eleven refusals, while
@@ -688,7 +705,9 @@ differ only in `avoid_lost_fights`.
 
 EESim reports the target tests, the refused targets and the targets inside a zone but within range in
 `intel.lost_checks`, `intel.lost_skipped` and `intel.lost_in_reach`, and the zone refreshes, the cells with a fight
-seen and the cells marked lost in `intel.lost_refreshes`, `intel.lost_cells` and `intel.lost_zones`.
+seen and the cells marked lost in `intel.lost_refreshes`, `intel.lost_cells` and `intel.lost_zones`. The cells marked
+from memory and the remembered foes added to a cell's foe side are in `intel.lost_mem_cells` and
+`intel.lost_mem_foes`.
 `EEComputerPlayer::Update` calls `AgeOfAI::AvoidLostTick`, and `EECPAttackSubGroupUnit::ScoreTarget` calls
 `AgeOfAI::LostZoneSkipsTarget`.
 
