@@ -580,6 +580,83 @@ void LateFoodTargets(EECPResourceManager* inResources, unsigned long inNow)
     inResources->mWantedGatherers[2] = (unsigned long)theCap;
 }
 
+// MORE GRANARIES (econ.c more_granaries, [ai_base] more_granaries): a granary feeds eight fields. The game's build
+// list places one, but on the random maps the plan never adds another when the food target outgrows the fields. Once a
+// minute, when no field waits to be built or worked and no granary is going up, ask for one if the food target is far
+// enough above the food workers, or, with farm_first, while the first two are still missing. Upstream also tries its
+// own granary spot 50 seconds after an unproductive request; that fallback needs the port's missing placement and
+// raider searches, so it is left out and the ordinary request is repeated. The engine gate, the setting and the
+// counters live here; EECPResourceManager::Update calls this after its gatherer targets are set.
+static unsigned long sGranNext[16];
+static GranaryCounts sGran[16];
+
+void MoreGranaries(EECPResourceManager* inResources, unsigned long inNow)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager != NULL ? inResources->mManager->mPlayer : NULL;
+    if (thePlayer == NULL || EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = SettingsAIOf(thePlayer->mPlayerID, kDifficultyMedium);
+    if (!theSettings.more_granaries || Epoch(thePlayer) < kFarmEpoch || gUnitClassTable[kUnitTypeGranary] == NULL)
+        return;
+    unsigned idx = thePlayer->mPlayerID & 15;
+    if (inNow < sGranNext[idx] && sGranNext[idx] - inNow <= 60000)
+        return;
+    sGranNext[idx] = inNow + 60000;
+
+    std::vector<EEComplexUnit*> theFarms;
+    inResources->GetUnfinishedFarms(16, theFarms);
+    if (!theFarms.empty())
+        return;
+    inResources->GetIdleFarms(16, theFarms);
+    if (!theFarms.empty())
+        return;
+
+    GranaryCounts& theCounts = sGran[idx];
+    theCounts.mChecks++;
+    EECPCivilizationManager* theCivilization = thePlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mUnitManager == NULL || theCivilization->mBuildManager == NULL)
+        return;
+
+    long theGranaries = 0;
+    bool theBuilding = false;
+    std::deque<EEComplexUnit*>* theList = theCivilization->mUnitManager->GetUnits(kUnitTypeGranary);
+    if (theList != NULL) {
+        for (std::deque<EEComplexUnit*>::iterator it = theList->begin(); it != theList->end(); ++it) {
+            EEComplexUnit* theGranary = *it;
+            if (theGranary == NULL || theGranary->mHitPoints <= 0)
+                continue;
+            if (!theGranary->mIsBuilt) {
+                theBuilding = true;
+                break;
+            }
+            theGranaries++;
+        }
+    }
+    if (theBuilding)
+        return;
+
+    long theWant = (long)inResources->mWantedGatherers[2];
+    long theHave = (long)inResources->mGatherers[2].size();
+    bool theFarmFirst = theSettings.farm_first && theGranaries < 2;
+    if (!theFarmFirst && theWant < theHave + (theGranaries != 0 ? 6 : 2))
+        return;
+    long theCap = 1 + theWant / 8;
+    if (theFarmFirst && theCap < 2)
+        theCap = 2;
+    if (theCap > 8)
+        theCap = 8;
+    if (theGranaries >= theCap || theCivilization->mBuildManager->IsQueued(kUnitTypeGranary))
+        return;
+
+    theCivilization->mBuildManager->QueueBuilding(kUnitTypeGranary, true, false);
+    theCounts.mRequested++;
+}
+
+GranaryCounts GranaryCountsOf(unsigned long inPlayerID)
+{
+    return sGran[inPlayerID & 15];
+}
+
 // PRODUCTION SYNC (econ.c prod_sync, [ai_base] production_sync, off in the shipped file): a loaded game keeps the
 // buildings' queues but not the unit manager's in-production count, so the AI counts room it does not have and trains
 // past its population cap. Every 10 s set that count to the units queued or in the making in its buildings.

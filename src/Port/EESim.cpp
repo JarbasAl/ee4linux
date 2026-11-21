@@ -251,6 +251,7 @@ struct PlayerSample {
     long mAvoidCalls = 0, mAvoidPenalised = 0, mAvoidCost = 0;
     long mRamCalls = 0, mRamWaits = 0;
     long mLeashCalls = 0, mLeashSkipped = 0;
+    long mGranChecks = 0, mGranRequested = 0;
     long mFoodPulled = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
@@ -455,6 +456,9 @@ Sample TakeSample()
             AgeOfAI::LeashCounts theLeash = AgeOfAI::LeashCountsOf(i);
             p.mLeashCalls = (long)theLeash.mCalls;
             p.mLeashSkipped = (long)theLeash.mSkipped;
+            AgeOfAI::GranaryCounts theGran = AgeOfAI::GranaryCountsOf(i);
+            p.mGranChecks = (long)theGran.mChecks;
+            p.mGranRequested = (long)theGran.mRequested;
             AgeOfAI::WaveFocusCounts theWave = AgeOfAI::WaveFocusCountsOf(i);
             p.mWaveCalls = (long)theWave.mCalls;
             p.mWaveSet = (long)theWave.mSet;
@@ -977,7 +981,7 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[1536] = "";
+        char theIntel[1792] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
@@ -989,6 +993,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"avoid_calls\": %ld, \"avoid_penalised\": %ld, \"avoid_cost\": %ld, "
                      "\"ram_calls\": %ld, \"ram_waits\": %ld, "
                      "\"leash_calls\": %ld, \"leash_skipped\": %ld, "
+                     "\"granary_checks\": %ld, \"granary_requested\": %ld, "
                      "\"wave_calls\": %ld, \"wave_set\": %ld, \"wave_moved\": %ld, \"wave_kept\": %ld, \"wave_none\": %ld, "
                      "\"food_pulled\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
@@ -1001,6 +1006,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mAvoidCalls, p.mAvoidPenalised, p.mAvoidCost,
                      p.mRamCalls, p.mRamWaits,
                      p.mLeashCalls, p.mLeashSkipped,
+                     p.mGranChecks, p.mGranRequested,
                      p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
                      p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,

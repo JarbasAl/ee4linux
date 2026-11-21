@@ -101,6 +101,13 @@ void MineSlots(EEComputerPlayer* inPlayer, unsigned long inNow, long outSlots[7]
 void MineFill(EECPResourceManager* inResources, unsigned long inNow);
 // LATE FOOD TARGET (econ.c late_targets food_to_metals, off in the shipped file): cap the farmers' target while food piles up
 void LateFoodTargets(EECPResourceManager* inResources, unsigned long inNow);
+// MORE GRANARIES (econ.c more_granaries, [ai_base] more_granaries): ask the build manager for a granary when the food
+// target and the finished farms call for one. Called from EECPResourceManager::Update.
+void MoreGranaries(EECPResourceManager* inResources, unsigned long inNow);
+struct GranaryCounts {
+    unsigned long mChecks, mRequested;   // passes run, granary requests made
+};
+GranaryCounts GranaryCountsOf(unsigned long inPlayerID);
 // PRODUCTION SYNC (econ.c prod_sync, off in the shipped file): repair the in-production count after a game load
 void ProductionSync(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's

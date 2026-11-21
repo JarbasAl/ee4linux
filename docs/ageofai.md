@@ -214,6 +214,23 @@ taken from food go to stone, gold and iron by their demand beyond stock, with a 
 own assignment moves the citizens. The other bits of `late_targets` are not ported: the wood gap and the army's refusal
 pull need the unported training budget.
 
+## Granaries
+
+`[ai_base] more_granaries` is on in the shipped file and is now active. A granary feeds eight fields. Once a game minute,
+from the Copper Age on, an Age of AI player asks the build manager for a granary when no farm waits to be built or worked
+and no granary is going up. Without `farm_first` it asks when the food target exceeds the food workers by 2 with no
+granary, or by 6 with at least one. With `farm_first`, also on in the shipped file, it asks for the first two granaries
+whatever the food target. After that it asks for one per eight food workers wanted, plus one, up to eight granaries. The
+build manager's queued check stops repeated requests. Upstream also tries a granary spot of its own 50 seconds after a
+request that brought nothing; that fallback needs the port's missing placement and raider searches, so the ordinary
+request is repeated instead.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never asked for another granary.
+Setting 0 restores that. The 300-second benchmark runs one check and makes no request, so its trace stays the same and its
+score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on logged 33 checks and 10 requests
+and scored 6154.7; gate off logged none and scored 6779.3. The traces differ. The sim report counts the passes and the
+requests in `intel.granary_checks` and `intel.granary_requested`.
+
 ## What is dangerous for the citizens
 
 The game's searches send citizens through the enemy's defences, to sites raiders stand at, and to places where citizens
