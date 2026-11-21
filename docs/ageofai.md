@@ -661,6 +661,37 @@ war and the resignations in `intel.surrender_checks`, `surrender_citizens`, `sur
 `surrender_can_train`, `surrender_at_war` and `surrender_resigned`. `EEComputerPlayer::Update` calls
 `AgeOfAI::SurrenderTick`.
 
+## Lost fights
+
+`[ai_base] avoid_lost_fights` is on in the shipped file, as upstream, and works together with `danger_routes` and
+`honest_vision`, both on by default. It is now active. Every four game seconds the player judges each eight-tile cell
+that holds an enemy soldier it can see. The enemy fighters within ten tiles of the cell's middle are measured against
+the player's and its allies' fighters out to the edge of the cell's zone: the enemy's longest weapon reach, capped at
+fifteen tiles, is added to the ten tiles, and four more tiles of own fighters count outside that edge. A cell the
+player is not winning, at a ratio below one, becomes a lost-fight zone. A land soldier then refuses a target inside
+such a zone when the target lies beyond the soldier's own weapon range plus two tiles. A target the soldier can reach
+stays a target, so a group that gathers at the edge still closes in once it would win the fight.
+
+This is a reduced port of Grille's `cover.c` and `attack.c`. Upstream holds the lost cells in a danger-map bitmap,
+remembers enemies seen up to three minutes ago through `fight_memory`, and holds the rule back while an attack is
+staged or landing. This port keeps the cells as a short list that is rebuilt on each refresh, and only enemies in
+sight now mark a cell. The staging and landing checks are not ported, so they do not hold the rule back. The decision
+arithmetic is in `AgeOfAIAvoidLostRules.h` and is covered by `test_ageofai_avoid_lost.cpp`.
+
+The shipped 1 is a behaviour change: earlier ports parsed the setting but never used it. The 300-second benchmark now
+fires the rule: one player runs 26 target checks with one refusal and the other 30 checks with eleven refusals, while
+the score stays at 4084.5. The trace differs from a run with `avoid_lost_fights=0` in 22 lines; with the gate off every
+`lost_*` counter is zero and the trace is byte-identical to the earlier baseline. In a paired 30-minute `fights` probe
+on a Tiny map with three Age of AI players, the gate on refused 3415 of 9434 target checks for one player and scored
+7165.0, while the gate off recorded no `lost_*` counter and scored 6996.0 with a different trace. The two probe inis
+differ only in `avoid_lost_fights`.
+
+EESim reports the target tests, the refused targets and the targets inside a zone but within range in
+`intel.lost_checks`, `intel.lost_skipped` and `intel.lost_in_reach`, and the zone refreshes, the cells with a fight
+seen and the cells marked lost in `intel.lost_refreshes`, `intel.lost_cells` and `intel.lost_zones`.
+`EEComputerPlayer::Update` calls `AgeOfAI::AvoidLostTick`, and `EECPAttackSubGroupUnit::ScoreTarget` calls
+`AgeOfAI::LostZoneSkipsTarget`.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

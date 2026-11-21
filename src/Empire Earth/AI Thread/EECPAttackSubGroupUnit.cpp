@@ -444,6 +444,13 @@ float EECPAttackSubGroupUnit::ScoreTarget(EECPASTargetUnit* inTarget)
         if (AgeOfAI::LeashSkipsTarget(thePlayer, theUnit->mTileX, theUnit->mTileY, theGoal.mX, theGoal.mY))
             return 0.0f;
     }
+    // A target in a lost fight is not chosen beyond the scorer's reach (attack.c hook_asgu_score, avoid_lost_fights).
+    if (theScore != 0.0f && this->mSubGroup != NULL && this->mUnit != NULL && theUnit != NULL
+        && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+        if (AgeOfAI::LostZoneSkipsTarget(thePlayer, this->mUnit, theUnit))
+            return 0.0f;
+    }
     // A target far from the subgroup's pack is not chosen (mass.c mass_tether, army_mass=tether, default off).
     if (theScore != 0.0f && this->mSubGroup != NULL && this->mUnit != NULL && theUnit != NULL
         && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {

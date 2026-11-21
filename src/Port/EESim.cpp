@@ -303,6 +303,8 @@ struct PlayerSample {
     long mSurrenderCanTrain = 0, mSurrenderAtWar = 0, mSurrenderResigned = 0;
     long mHospitalChecks = 0, mHospitals = 0, mHospitalSent = 0, mHospitalHolds = 0, mHospitalDone = 0;
     long mTightBuildCalls = 0, mTightBuildSites = 0;
+    long mLostChecks = 0, mLostSkipped = 0, mLostInReach = 0;
+    long mLostRefreshes = 0, mLostCells = 0, mLostZones = 0;
     long mTowersQueued = 0, mTowersSkipped = 0;
     bool mHasGatherers = false;                          // a computer player: its gatherers and the gatherers it wants, food..iron
     long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
@@ -603,6 +605,14 @@ Sample TakeSample()
             AgeOfAI::TightBuildCounts theTightBuild = AgeOfAI::TightBuildCountsOf(i);
             p.mTightBuildCalls = (long)theTightBuild.mCalls;
             p.mTightBuildSites = (long)theTightBuild.mSites;
+            AgeOfAI::AvoidLostCounts theLost = AgeOfAI::AvoidLostCountsOf(i);
+            p.mLostChecks = (long)theLost.mChecks;
+            p.mLostSkipped = (long)theLost.mSkipped;
+            p.mLostInReach = (long)theLost.mInReach;
+            AgeOfAI::AvoidLostZoneCounts theLostZones = AgeOfAI::AvoidLostZoneCountsOf(i);
+            p.mLostRefreshes = (long)theLostZones.mRefreshes;
+            p.mLostCells = (long)theLostZones.mCells;
+            p.mLostZones = (long)theLostZones.mZones;
             AgeOfAI::TowerLayoutCounts theTowers = AgeOfAI::TowerLayoutCountsOf(i);
             p.mTowersQueued = (long)theTowers.mQueued;
             p.mTowersSkipped = (long)theTowers.mSkipped;
@@ -1261,6 +1271,8 @@ std::string PlayersJson(const Sample& inSample)
                      "\"surrender_can_train\": %ld, \"surrender_at_war\": %ld, \"surrender_resigned\": %ld, "
                      "\"hospital_checks\": %ld, \"hospitals\": %ld, \"hospital_sent\": %ld, \"hospital_holds\": %ld, \"hospital_done\": %ld, "
                      "\"tight_build_calls\": %ld, \"tight_build_sites\": %ld, "
+                     "\"lost_checks\": %ld, \"lost_skipped\": %ld, \"lost_in_reach\": %ld, "
+                     "\"lost_refreshes\": %ld, \"lost_cells\": %ld, \"lost_zones\": %ld, "
                      "\"towers_queued\": %ld, \"towers_skipped\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits, p.mOutdatedSorties, p.mOutdatedSent, p.mOutdatedRefused,
@@ -1295,6 +1307,8 @@ std::string PlayersJson(const Sample& inSample)
                      p.mSurrenderCanTrain, p.mSurrenderAtWar, p.mSurrenderResigned,
                      p.mHospitalChecks, p.mHospitals, p.mHospitalSent, p.mHospitalHolds, p.mHospitalDone,
                      p.mTightBuildCalls, p.mTightBuildSites,
+                     p.mLostChecks, p.mLostSkipped, p.mLostInReach,
+                     p.mLostRefreshes, p.mLostCells, p.mLostZones,
                      p.mTowersQueued, p.mTowersSkipped);
         char theGatherers[480] = "";
         if (p.mHasGatherers)

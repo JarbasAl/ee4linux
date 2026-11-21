@@ -144,6 +144,7 @@
 #include "ee/EECPAttackGroup.h"
 #include "ee/EECPAttackSubGroup.h"
 #include "AgeOfAI/AgeOfAIStats.h"
+#include "AgeOfAI/AgeOfAIAvoidLostRules.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIDefence.h"
 #include "AgeOfAIHome.h"
@@ -177,6 +178,22 @@ struct Threats {
 AvoidTowerCounts sAvoid[16];
 RamWaitCounts sRamWait[16];
 LeashCounts sLeash[16];
+AvoidLostCounts sAvoidLost[16];
+AvoidLostZoneCounts sAvoidLostZones[16];
+
+// A lost fight is a cell the player's side is not winning (cover.c cv_zones). The port keeps the cells as a list
+// instead of a danger-map bitmap: each refresh starts again, so a cell an eye no longer sees drops out on its own.
+const int kMaxLostZones = 64;
+struct LostZone {
+    long mX, mY;                 // the cell's middle
+    float mR2;                   // the zone's radius squared
+};
+struct LostZoneSet {
+    LostZone mZones[kMaxLostZones];
+    int mCount;
+    unsigned long mRefreshed;
+};
+LostZoneSet sLostZones[16];
 
 struct Hurt {
     unsigned mAt;
@@ -457,6 +474,196 @@ bool LeashSkipsTarget(EEPlayer* inPlayer, long inX, long inY, long inGoalX, long
 LeashCounts LeashCountsOf(unsigned long inPlayerID)
 {
     return sLeash[inPlayerID & 15];
+}
+
+// LOST FIGHTS ([ai_base] avoid_lost_fights with danger_routes, both shipped on). cover.c judges each 8-tile cell with
+// an enemy fighter in sight: the enemy it sees there against its own and allied fighters out to the zone's edge, and a
+// cell it is not winning becomes a lost fight. attack.c then refuses a target inside such a cell beyond the scorer's
+// range + 2, so soldiers stop running one by one into a standing army. The port keeps the cells as a list instead of a
+// bitmap; the refresh and the target test are the same. Upstream's staging and landing checks, and the remembered
+// enemies of fight_memory, stay unported: only enemies in sight now mark a cell.
+namespace {
+
+bool AvoidLostOn(EEPlayer* inPlayer)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return false;
+    const SettingsAI& theCfg = Cfg(inPlayer->mPlayerID);
+    return theCfg.avoid_lost_fights && theCfg.danger_routes && theCfg.honest_vision;
+}
+
+// Whether a unit is the kind that can be judged: a soldier, or a building with a ground attack. The cell walk asks this
+// before it picks a cell, so it must not depend on where the unit stands.
+bool AvoidLostFighterType(EEUnit* inUnit)
+{
+    if (inUnit == NULL || inUnit->mHitPoints <= 0 || inUnit->mUnitClass == NULL)
+        return false;
+    EEUnitClass* theClass = inUnit->mUnitClass;
+    if (Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+        return true;
+    float theRange = 0.0f, theAttack = 0.0f;
+    return (theClass->mCategory == kUnitCategoryBuilding || theClass->mCategory == kUnitCategoryFortress)
+           && DefenceStats(inUnit, theRange, theAttack) && theAttack > 0.0f;
+}
+
+// A fighter that can be judged in a cell: a soldier, or a finished building with a ground attack. The building counts
+// where its range reaches the cell's middle; the soldier by the tile it stands on.
+bool AvoidLostFighter(EEUnit* inUnit, long inX, long inY, float& outRange)
+{
+    if (inUnit == NULL || inUnit->mHitPoints <= 0 || inUnit->mUnitClass == NULL)
+        return false;
+    EEUnitClass* theClass = inUnit->mUnitClass;
+    float theAttack = 0.0f;
+    outRange = 0.0f;
+    if ((theClass->mCategory == kUnitCategoryBuilding || theClass->mCategory == kUnitCategoryFortress)
+        && DefenceStats(inUnit, outRange, theAttack) && theAttack > 0.0f) {
+        long theDX = inUnit->mTileX - inX, theDY = inUnit->mTileY - inY;
+        return (float)(theDX * theDX + theDY * theDY) <= (outRange + 1.0f) * (outRange + 1.0f);
+    }
+    if (!Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+        return false;
+    outRange = theClass->mRange;
+    return true;
+}
+
+}
+
+void AvoidLostTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (!AvoidLostOn(inPlayer))
+        return;
+    unsigned long thePI = inPlayer->mPlayerID & 15;
+    LostZoneSet& theSet = sLostZones[thePI];
+    if (theSet.mRefreshed != 0 && (inNow < theSet.mRefreshed
+                                   || inNow - theSet.mRefreshed < AvoidLostRules::kRefreshMs))
+        return;
+    theSet.mRefreshed = inNow != 0 ? inNow : 1;
+    theSet.mCount = 0;
+    AvoidLostZoneCounts& theCounts = sAvoidLostZones[thePI];
+    theCounts.mRefreshes++;
+
+    const int kCell = AvoidLostRules::kCell;
+    const int kFoe = AvoidLostRules::kFoe;
+    long theCentres[128];
+    int theNum = 0;
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(i);
+        if (theOwner == NULL || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (!SeenBy(theUnit, inPlayer) || !AvoidLostFighterType(theUnit))
+                continue;
+            long theCX = (theUnit->mTileX / kCell) * kCell + kCell / 2;
+            long theCY = (theUnit->mTileY / kCell) * kCell + kCell / 2;
+            bool theNew = true;
+            for (int c = 0; c < theNum && theNew; c++)
+                theNew = theCentres[c * 2] != theCX || theCentres[c * 2 + 1] != theCY;
+            if (theNew && theNum < (int)(sizeof(theCentres) / (2 * sizeof(long)))) {
+                theCentres[theNum * 2] = theCX;
+                theCentres[theNum * 2 + 1] = theCY;
+                theNum++;
+            }
+        }
+    }
+
+    for (int c = 0; c < theNum; c++) {
+        long theCX = theCentres[c * 2], theCY = theCentres[c * 2 + 1];
+        Stats::Side theOwn, theFoe;
+        Stats::Clear(theOwn);
+        Stats::Clear(theFoe);
+        float theReach = 0.0f;
+        for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+            EEPlayer* theOwner = gWorld.GetPlayer(i);
+            if (theOwner == NULL || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner))
+                continue;
+            for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+                if (!SeenBy(theUnit, inPlayer))
+                    continue;
+                float theRange = 0.0f;
+                long theDX = theUnit->mTileX - theCX, theDY = theUnit->mTileY - theCY;
+                if (!AvoidLostFighter(theUnit, theCX, theCY, theRange))
+                    continue;
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                bool theBuilding = theClass->mCategory == kUnitCategoryBuilding
+                                   || theClass->mCategory == kUnitCategoryFortress;
+                if (!theBuilding && (float)(theDX * theDX + theDY * theDY) > (float)(kFoe * kFoe))
+                    continue;
+                if (theRange > theReach && theRange < 30.0f)
+                    theReach = theRange;
+                Stats::Add(theFoe, theUnit);
+            }
+        }
+        if (theFoe.mCount == 0)
+            continue;
+        theCounts.mCells++;
+        const float theRadius = AvoidLostRules::ZoneRadius(theReach);
+        const float theOwnR = AvoidLostRules::OwnRadius(theRadius);
+        for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+            EEPlayer* theOwner = gWorld.GetPlayer(i);
+            if (theOwner == NULL || theOwner->mObserverMode || IsEnemyOf(inPlayer, theOwner))
+                continue;
+            for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+                float theRange = 0.0f;
+                if (!AvoidLostFighter(theUnit, theCX, theCY, theRange))
+                    continue;
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                bool theBuilding = theClass->mCategory == kUnitCategoryBuilding
+                                   || theClass->mCategory == kUnitCategoryFortress;
+                if (!theBuilding) {
+                    long theDX = theUnit->mTileX - theCX, theDY = theUnit->mTileY - theCY;
+                    if ((float)(theDX * theDX + theDY * theDY) > theOwnR * theOwnR)
+                        continue;
+                }
+                Stats::Add(theOwn, theUnit);
+            }
+        }
+        if (!AvoidLostRules::IsLost(Stats::Ratio(theOwn, theFoe)))
+            continue;
+        if (theSet.mCount >= kMaxLostZones)
+            continue;
+        LostZone& theZone = theSet.mZones[theSet.mCount++];
+        theZone.mX = theCX;
+        theZone.mY = theCY;
+        theZone.mR2 = theRadius * theRadius;
+        theCounts.mZones++;
+    }
+}
+
+AvoidLostCounts AvoidLostCountsOf(unsigned long inPlayerID)
+{
+    return sAvoidLost[inPlayerID & 15];
+}
+
+AvoidLostZoneCounts AvoidLostZoneCountsOf(unsigned long inPlayerID)
+{
+    return sAvoidLostZones[inPlayerID & 15];
+}
+
+bool LostZoneSkipsTarget(EEPlayer* inPlayer, EEComplexUnit* inScorer, EEComplexUnit* inTarget)
+{
+    if (!AvoidLostOn(inPlayer) || inScorer == NULL || inTarget == NULL || inTarget->mUnitClass == NULL)
+        return false;
+    AvoidLostCounts& theCounts = sAvoidLost[inPlayer->mPlayerID & 15];
+    theCounts.mChecks++;
+    const LostZoneSet& theSet = sLostZones[inPlayer->mPlayerID & 15];
+    const float theRange = Stats::Range(inScorer) + AvoidLostRules::kReachSlack;
+    const float theReach2 = theRange * theRange;
+    bool theInside = false;
+    for (int z = 0; z < theSet.mCount; z++) {
+        const LostZone& theZone = theSet.mZones[z];
+        long theDX = inTarget->mTileX - theZone.mX, theDY = inTarget->mTileY - theZone.mY;
+        if ((float)(theDX * theDX + theDY * theDY) > theZone.mR2)
+            continue;
+        theInside = true;
+        long theSX = inScorer->mTileX - inTarget->mTileX, theSY = inScorer->mTileY - inTarget->mTileY;
+        if ((float)(theSX * theSX + theSY * theSY) > theReach2) {
+            theCounts.mSkipped++;
+            return true;
+        }
+    }
+    if (theInside)
+        theCounts.mInReach++;
+    return false;
 }
 
 // Upstream mass.c mass_tether, [ai_base] army_mass=tether (bit 16, default off). A member of an out land subgroup picks

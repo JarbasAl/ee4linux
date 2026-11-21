@@ -372,6 +372,22 @@ struct LeashCounts {
 };
 LeashCounts LeashCountsOf(unsigned long inPlayerID);
 
+// Lost fights (cover.c cv_zones and attack.c hook_asgu_score, [ai_base] avoid_lost_fights with danger_routes): a cell
+// where the player's side loses the fight is a zone, and a land soldier does not pick a target inside it beyond its own
+// range + 2. AvoidLostTick refreshes the zones every four game seconds; EEAIGPG calls LostZoneSkipsTarget for a target.
+// Upstream's danger map is held here as a small list of cells. The staging, landing and remembered-foe checks are not
+// ported, so this skips only targets whose losing side is in sight now.
+void AvoidLostTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+bool LostZoneSkipsTarget(EEPlayer* inPlayer, EEComplexUnit* inScorer, EEComplexUnit* inTarget);
+struct AvoidLostCounts {
+    unsigned long mChecks, mSkipped, mInReach;   // target tests, targets refused, targets inside a zone but in reach
+};
+AvoidLostCounts AvoidLostCountsOf(unsigned long inPlayerID);
+struct AvoidLostZoneCounts {
+    unsigned long mRefreshes, mCells, mZones;    // refreshes, cells with a fight seen, cells marked lost (capped)
+};
+AvoidLostZoneCounts AvoidLostZoneCountsOf(unsigned long inPlayerID);
+
 // A land soldier does not pick a target more than army_mass_tether tiles from its subgroup's pack unless the target is
 // within its own range + 2 tiles (mass.c mass_tether, [ai_base] army_mass=tether; default off). The pack is the middle
 // of the subgroup's own members; upstream uses the members away from base. only_buildings limits the rule to enemy
