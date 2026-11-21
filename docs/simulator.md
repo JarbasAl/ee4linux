@@ -61,8 +61,9 @@ anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_ai
 `anti_air_skipped`), of the answer-war stance rule (`answer_war_checks`, `answer_war_transitions`,
 `answer_war_scheduled`, `answer_war_answers`, `answer_war_cancelled`), of the hospital fall-back bit
 (`hospital_checks`, `hospitals`, `hospital_sent`, `hospital_holds`, `hospital_done`), of the packed-building search
-(`tight_build_calls`, `tight_build_sites`) and of the defence layout's towers
-(`towers_queued`, `towers_skipped`).
+(`tight_build_calls`, `tight_build_sites`), of the surrender rule (`surrender_checks`, `surrender_citizens`,
+`surrender_no_citizen`, `surrender_can_train`, `surrender_at_war`, `surrender_resigned`) and of the defence layout's
+towers (`towers_queued`, `towers_skipped`).
 
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.
@@ -101,6 +102,9 @@ second one refuses to start while the first holds them.
 | `--lobby CONTROL=VALUE` | any lobby list, by line name or `#index`, for example `209=#2` |
 | `--stance S,F,T,V` | at game second S, player F's stance toward player T becomes V: 0 ally, 1 enemy. Repeat it for more changes. This drives the diplomacy rule the way a player's declaration does ([Age of AI](ageofai.md)). |
 | `--wall S[,N]` | at game second S each defender gets N wall segments (default 9) three tiles from the next attacker's base, laid across the direction to that attacker's enemy. The attacker sees them and its land routes cross them, which exercises the breach rule ([Age of AI](ageofai.md)). |
+| `--starve P,S` | at game second S kill every citizen of player P, the way a lost town does. Repeat it for more times. This drives the surrender rule ([Age of AI](ageofai.md)). |
+| `--raze P,S` | as `--starve`, and also kill P's Town Centers, Capitols and Settlements so it cannot train a citizen. Use `--keep-alive` with it so the game does not end when the last centre falls. |
+| `--keep-alive P` | keep P in the game when its last Town Center falls, so the surrender rule's own timer can run. Repeat it for more players. |
 | `--game-seconds S` | the game time at which the run stops (default 2700) |
 | `--sample-seconds S` | the game time between report samples (default 30) |
 | `--wall-timeout S` | the wall time after which the run gives up (default 3600) |
@@ -177,6 +181,19 @@ direction to that attacker's enemy. The attacker sees the walls beside its own b
 them. With `--preset fights --wall 60 --game-seconds 1200`, a run with `attack_breach=1` records crossings and chosen
 segments in `intel.breach_crossed` and `intel.breach_picked`; the same run with `attack_breach=0` records none. The
 segments and sightings are in `intel.breach_walls` and the route checks in `intel.breach_calls`.
+
+## Surrender
+
+`--starve P,S` kills player P's citizens at a game second, and `--raze P,S` also kills its Town Centers, Capitols and
+Settlements so it cannot train more. An AI that retrains between strikes resets the surrender timer, so `--raze` is the
+way to reach the 60-second no-centre rule. The game ends as soon as a player loses its last Town Center, so add
+`--keep-alive P` to hold that player in until the surrender rule's own result ends it.
+
+With `--lobby 183=#2 --map-size Tiny --game-seconds 300 --raze 2,30 --keep-alive 2`, a run whose `ageofai.ini` has
+`surrender=1` records `intel.surrender_no_citizen=61`, `surrender_at_war=61` and `surrender_resigned=1` for player 2,
+and the game ends at millisecond 91875. The same run with `surrender=0` records zero for every `surrender_*` counter
+and plays to the time cap. The traces match until the resign. In an ordinary game the rule never fires, so the setting
+changes nothing in the default benchmark.
 
 The report of every computer player has `gatherers` and `wanted`: the citizens on food, wood, stone, gold and iron, and
 the number the player's worker plan wants on each. A large gap, as with iron at 33 wanted and 11 working, means the

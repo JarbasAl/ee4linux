@@ -31,6 +31,9 @@ LLE_API extern uint32_t gPlatSimSeed;
 // player) and EEPlayer::SetGameResult(2) on the local player do nothing, and count a hit
 LLE_API extern int gPlatSimNoHumanDefeat;
 LLE_API extern volatile long gPlatSimNoHumanDefeatHits;
+// bit n keeps player n in the game when its last Town Centre falls (EEWorld::CheckGameOver). The Age of AI surrender
+// rule's own SetGameResult(2) still ends those players, so a probe can reach the rule's no-centre timer.
+LLE_API extern uint32_t gPlatSimKeepAliveMask;
 // added to the TCP protocol's fixed ports 33334/33335 (0 in the game), so simulations on one machine do not share them
 LLE_API extern int gPlatSimPortOffset;
 

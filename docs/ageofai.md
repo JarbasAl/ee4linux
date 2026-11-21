@@ -629,6 +629,38 @@ each player, off records none. In a 15-minute game the gap narrows: on scores 62
 population and 28.0 and 27.5 buildings. `EECPBuildManager::StartBuilding` calls `AgeOfAI::TightBuildSite` before
 `FindSite`. EESim reports the searches and the chosen spots in `intel.tight_build_calls` and `intel.tight_build_sites`.
 
+## Surrender
+
+`[ai_base] surrender` is on in the shipped file, as upstream, and is now active. An AI that loses all its citizens
+cannot rebuild. Every tick the player counts its land and naval citizens. When the count is zero it starts a timer.
+If it has no finished Town Center, Capitol or Settlement that could train a citizen, it gives up after 60 game
+seconds. If it still has such a building, it gives up after three minutes, but only while it is at war with someone.
+An AI at peace with everyone is left alone while it can still train its own people. A citizen appearing at any time
+resets the timer. The decision arithmetic is in `AgeOfAISurrenderRules.h` and is covered by
+`test_ageofai_surrender.cpp`.
+
+This is a reduced port of Grille's `diplo.c`. Upstream also picks the player that destroyed the most of the AI in the
+last twenty minutes, avoids surrender while its army is still half as strong as its strongest enemy, and resigns
+instead of joining a side in a block split. This port has no diplomacy or army-power state for those checks. It ends
+the game with `EEPlayer::SetGameResult(2)`, the same loss upstream's deferred resign produces. It also leaves out
+upstream's test for whether the stock can pay for a citizen: a finished town centre alone counts as able to train.
+Upstream skips the rule in scenarios and campaigns; this port reads the real `mIsScenarioGame` flag, which the AoA tick
+leaves set in a scenario with `scenario_ai` off.
+
+The shipped 1 is a behaviour change: earlier ports parsed the setting but never used it. In the 300-second benchmark
+this rule never fires. Both Age of AI players keep their citizens, record
+`intel.surrender_no_citizen=0` and `surrender_resigned=0`, and score 4084.5; the trace is byte-identical to a run with
+`surrender=0`. To see the rule fire, use the simulator's forced loss of citizens and town centres
+([Simulator](simulator.md)): with `--raze 2,30 --keep-alive 2`, player 2 loses its last town centre at game second 30
+but stays in the game, and resigns 60 seconds later at game millisecond 91875. The on run records
+`surrender_no_citizen=61`, `surrender_at_war=61` and `surrender_resigned=1`; the off run records zero for every
+`surrender_*` counter and never ends the game. The two traces match line for line until the resign.
+
+EESim reports the checks, the ticks with citizens, the ticks without, the ticks that could still train, the ticks at
+war and the resignations in `intel.surrender_checks`, `surrender_citizens`, `surrender_no_citizen`,
+`surrender_can_train`, `surrender_at_war` and `surrender_resigned`. `EEComputerPlayer::Update` calls
+`AgeOfAI::SurrenderTick`.
+
 ## Game fixes
 
 `[general] lead_targets` (on in the shipped `ageofai.ini`, for every player and every AI engine) makes a unit or tower

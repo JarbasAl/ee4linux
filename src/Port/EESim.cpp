@@ -155,6 +155,16 @@ struct StanceChange {
     bool mDone = false;
 };
 
+// --starve PLAYER,SECOND: at a game second, every citizen of that player is killed. It forces the no-citizen state the
+// surrender rule needs, the way a lost town forces it in a real game. --raze also kills the player's town centres, so
+// it cannot train another citizen and the rule's shorter no-centre timer applies. Both are repeatable.
+struct Starve {
+    double mAt;
+    int mPlayer;
+    bool mRaze = false;
+    bool mDone = false;
+};
+
 struct Options {
     unsigned long mSeed = 2;
     long mComputers = 2;
@@ -167,6 +177,7 @@ struct Options {
     double mWallTimeout = 3600;
     long mPTRate = 40;
     bool mNoHumanDefeat = true;
+    unsigned mKeepAliveMask = 0;                         // --keep-alive P: P stays in after losing its last town centre
     std::string mReport;                                 // the JSON report ("" or "-": stdout)
     std::string mSyncTrace;                              // one line per communications tick ("": none)
     long mPortOffset = -1;                               // -1: from the process id
@@ -181,6 +192,7 @@ struct Options {
     bool mArmySpot = false;                              // --army-spot X,Y: the armies appear at this tile, whatever the map
     long mArmySpotX = 0, mArmySpotY = 0;
     std::vector<StanceChange> mStances;                  // --stance SECOND,FROM,TO,VALUE: timed diplomatic stance changes
+    std::vector<Starve> mStarves;                        // --starve/--raze PLAYER,SECOND: forced loss of that player's citizens
     double mWallAt = -1;                                 // --wall SECOND[,COUNT]: defender-owned wall line near each attacker
     long mWallCount = 9;                                 // the number of wall segments in each line
 };
@@ -287,6 +299,8 @@ struct PlayerSample {
     long mAntiAirAhead = 0, mAntiAirQueued = 0, mAntiAirSkipped = 0;
     long mAnswerWarChecks = 0, mAnswerWarTransitions = 0, mAnswerWarScheduled = 0;
     long mAnswerWarAnswers = 0, mAnswerWarCancelled = 0;
+    long mSurrenderChecks = 0, mSurrenderCitizens = 0, mSurrenderNoCitizen = 0;
+    long mSurrenderCanTrain = 0, mSurrenderAtWar = 0, mSurrenderResigned = 0;
     long mHospitalChecks = 0, mHospitals = 0, mHospitalSent = 0, mHospitalHolds = 0, mHospitalDone = 0;
     long mTightBuildCalls = 0, mTightBuildSites = 0;
     long mTowersQueued = 0, mTowersSkipped = 0;
@@ -573,6 +587,13 @@ Sample TakeSample()
             p.mAnswerWarScheduled = (long)theAnswerWar.mScheduled;
             p.mAnswerWarAnswers = (long)theAnswerWar.mAnswers;
             p.mAnswerWarCancelled = (long)theAnswerWar.mCancelled;
+            AgeOfAI::SurrenderCounts theSurrender = AgeOfAI::SurrenderCountsOf(i);
+            p.mSurrenderChecks = (long)theSurrender.mChecks;
+            p.mSurrenderCitizens = (long)theSurrender.mCitizens;
+            p.mSurrenderNoCitizen = (long)theSurrender.mNoCitizen;
+            p.mSurrenderCanTrain = (long)theSurrender.mCanTrain;
+            p.mSurrenderAtWar = (long)theSurrender.mAtWar;
+            p.mSurrenderResigned = (long)theSurrender.mResigned;
             AgeOfAI::HospitalCounts theHospital = AgeOfAI::HospitalCountsOf(i);
             p.mHospitalChecks = (long)theHospital.mChecks;
             p.mHospitals = (long)theHospital.mHospitals;
@@ -838,6 +859,36 @@ void SpawnWalls()
     }
 }
 
+// Kill a player's citizens, the way an overrun town loses its workers. Collect them first: Kill unlinks a unit from
+// its owner's list, so killing while walking that list would skip the next one.
+void StarvePlayer(Starve& inStarve)
+{
+    inStarve.mDone = true;
+    EEPlayer* thePlayer = inStarve.mPlayer >= 0 && inStarve.mPlayer < (long)gWorld.GetNumPlayers()
+        ? gWorld.GetPlayer((unsigned long)inStarve.mPlayer) : NULL;
+    if (thePlayer == NULL)
+        return;
+    std::vector<EEUnit*> theCitizens, theCentres;
+    for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mUnitClass == NULL)
+            continue;
+        unsigned long theCategory = theUnit->mUnitClass->mCategory;
+        if (theCategory == kUnitCategoryLandCitizen || theCategory == kUnitCategoryNavalCitizen)
+            theCitizens.push_back(theUnit);
+        else if (inStarve.mRaze && (theUnit->mUnitClass->mUnitType == kUnitTypeTownCenter
+                 || theUnit->mUnitClass->mUnitType == kUnitTypeCapitol
+                 || theUnit->mUnitClass->mUnitType == kUnitTypeSettlement))
+            theCentres.push_back(theUnit);
+    }
+    for (EEUnit* theUnit : theCitizens)
+        theUnit->Kill(0, 0, 0);
+    for (EEUnit* theUnit : theCentres)
+        theUnit->Kill(0, 0, 0);
+    Note("%s player %ld at game ms %ld: %zu citizens, %zu town centres killed",
+         inStarve.mRaze ? "RAZE" : "STARVE", inStarve.mPlayer, gPhysics->mGameTime,
+         theCitizens.size(), theCentres.size());
+}
+
 // the physics thread, after each communications tick, under the physics lock
 void AfterTick()
 {
@@ -852,6 +903,10 @@ void AfterTick()
     }
     if (sOptions.mWallAt >= 0 && !sWallsSpawned && theTime >= (long)(sOptions.mWallAt * 1000))
         SpawnWalls();
+    for (Starve& theStarve : sOptions.mStarves) {
+        if (!theStarve.mDone && theTime >= (long)(theStarve.mAt * 1000))
+            StarvePlayer(theStarve);
+    }
     for (StanceChange& theChange : sOptions.mStances) {
         if (theChange.mDone || theTime < (long)(theChange.mAt * 1000))
             continue;
@@ -1202,6 +1257,8 @@ std::string PlayersJson(const Sample& inSample)
                      "\"anti_air_ahead\": %ld, \"anti_air_queued\": %ld, \"anti_air_skipped\": %ld, "
                      "\"answer_war_checks\": %ld, \"answer_war_transitions\": %ld, \"answer_war_scheduled\": %ld, "
                      "\"answer_war_answers\": %ld, \"answer_war_cancelled\": %ld, "
+                     "\"surrender_checks\": %ld, \"surrender_citizens\": %ld, \"surrender_no_citizen\": %ld, "
+                     "\"surrender_can_train\": %ld, \"surrender_at_war\": %ld, \"surrender_resigned\": %ld, "
                      "\"hospital_checks\": %ld, \"hospitals\": %ld, \"hospital_sent\": %ld, \"hospital_holds\": %ld, \"hospital_done\": %ld, "
                      "\"tight_build_calls\": %ld, \"tight_build_sites\": %ld, "
                      "\"towers_queued\": %ld, \"towers_skipped\": %ld}",
@@ -1234,6 +1291,8 @@ std::string PlayersJson(const Sample& inSample)
                      p.mAntiAirAhead, p.mAntiAirQueued, p.mAntiAirSkipped,
                      p.mAnswerWarChecks, p.mAnswerWarTransitions, p.mAnswerWarScheduled,
                      p.mAnswerWarAnswers, p.mAnswerWarCancelled,
+                     p.mSurrenderChecks, p.mSurrenderCitizens, p.mSurrenderNoCitizen,
+                     p.mSurrenderCanTrain, p.mSurrenderAtWar, p.mSurrenderResigned,
                      p.mHospitalChecks, p.mHospitals, p.mHospitalSent, p.mHospitalHolds, p.mHospitalDone,
                      p.mTightBuildCalls, p.mTightBuildSites,
                      p.mTowersQueued, p.mTowersSkipped);
@@ -1479,6 +1538,9 @@ const char* kUsage =
     "  --stance S,F,T,V        at game second S set player F's stance toward T: V 0 ally, 1 enemy (repeatable)\n"
     "  --wall S[,N]           at game second S each defender gets N wall segments near the next attacker's base\n"
     "                         (default 9), so its land attack routes cross a wall it can see; exercises attack_breach\n"
+    "  --starve P,S           at game second S kill every citizen of player P; exercises the surrender rule\n"
+    "  --raze P,S             the same, and also kill P's Town Centres/Capitols/Settlements so it cannot retrain\n"
+    "  --keep-alive P         keep P in the game after losing its last town centre, so its 60 s surrender timer can run\n"
     "  --game-seconds S       stop at this game time (default 2700)\n"
     "  --sample-seconds S     report sample interval in game seconds (default 30)\n"
     "  --wall-timeout S       give up after this wall time (default 3600)\n"
@@ -1646,6 +1708,15 @@ int EESimMain(int argc, char** argv)
                 return 64;
             }
             sOptions.mStances.push_back(theChange);
+        } else if (theOption == "--starve" || theOption == "--raze") {
+            Starve theStarve;
+            theStarve.mRaze = theOption == "--raze";
+            if (sscanf(value().c_str(), "%d,%lf", &theStarve.mPlayer, &theStarve.mAt) != 2
+                || theStarve.mPlayer < 1 || theStarve.mPlayer > 15 || theStarve.mAt < 0) {
+                fprintf(stderr, "ee-aoc --sim: %s takes PLAYER,SECOND; PLAYER 1..15\n", theOption.c_str());
+                return 64;
+            }
+            sOptions.mStarves.push_back(theStarve);
         } else if (theOption == "--wall") {
             std::string theValue = value();
             long theCount = 9;
@@ -1668,6 +1739,14 @@ int EESimMain(int argc, char** argv)
             sOptions.mNoHumanDefeat = false;
         else if (theOption == "--no-human-defeat")
             sOptions.mNoHumanDefeat = true;
+        else if (theOption == "--keep-alive") {
+            long thePlayer = atol(value().c_str());
+            if (thePlayer < 1 || thePlayer > 31) {
+                fprintf(stderr, "ee-aoc --sim: --keep-alive takes a player 1..31\n");
+                return 64;
+            }
+            sOptions.mKeepAliveMask |= 1u << thePlayer;
+        }
         else if (theOption == "--report")
             sOptions.mReport = Absolute(value());
         else if (theOption == "--sync-trace")
@@ -1699,6 +1778,7 @@ int EESimMain(int argc, char** argv)
     gPlatSimSeedSet = 1;
     gPlatSimSeed = (uint32_t)sOptions.mSeed;
     gPlatSimNoHumanDefeat = sOptions.mNoHumanDefeat ? 1 : 0;
+    gPlatSimKeepAliveMask = sOptions.mKeepAliveMask;
     gPlatSimPortOffset = sOptions.mPortOffset >= 0 ? (int)sOptions.mPortOffset : 2000 + 2 * (int)(getpid() % 8000);
     InstallFaultHandler();
     Note("EE-SIM seed %lu, %ld computers, cap %.0f game s, ports %d/%d", sOptions.mSeed, sOptions.mComputers,
