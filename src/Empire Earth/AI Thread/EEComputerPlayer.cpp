@@ -5591,6 +5591,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::OutdatedAttack(this, inTime);
         AgeOfAI::CitizenAttackScan(this, inTime);
         AgeOfAI::RetargetTick(this, inTime);
+        AgeOfAI::MassWaitTick(this, inTime);
     }
     UWideString theUnused1;
     UWideString theUnused2;

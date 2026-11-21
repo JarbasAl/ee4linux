@@ -291,6 +291,15 @@ struct TetherCounts {
 };
 TetherCounts TetherCountsOf(unsigned long inPlayerID);
 
+// While the known enemy armies are stronger than army_mass_ratio percent of the player's land army, an attack due soon
+// waits, up to army_mass_wait minutes (mass.c ms_wait, [ai_base] army_mass=wait_stronger; default off). The game's next
+// attack time is pushed out 20 seconds at a time. EEAIGPG calls this once per AI tick.
+void MassWaitTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct MassWaitCounts {
+    unsigned long mChecks, mWaits, mGoes, mWaited;   // due-time checks, new waits, releases, extensions (5 per push, as upstream)
+};
+MassWaitCounts MassWaitCountsOf(unsigned long inPlayerID);
+
 // Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
 // (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
 void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow);

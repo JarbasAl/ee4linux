@@ -375,6 +375,10 @@ The shipped 1 is a deliberate behaviour change: the earlier port parsed the sett
 
 Setting the flag on is an opt-in from the shipped off state; setting it off keeps the game's own target choice. The 300-second benchmark has no `army_mass` flag, so its trace stays byte-identical and its score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on skipped 220 of 543, 1480 of 4529 and 7595 of 12413 target tests in the three players and scored 6795.3; gate off skipped none and scored 7089.3, with a trace byte-identical to the earlier baseline. The traces differ. The sim report counts the tests and the refusals in `intel.tether_calls` and `intel.tether_skipped`.
 
+`[ai_base] army_mass=wait_stronger` is upstream's mass rule 2 and is off in the shipped file. When an attack is due within 15 seconds, the AI compares the hit points times attack of its own land soldiers with the strongest enemy army it has seen in the last 10 minutes. If that enemy army is stronger than `army_mass_ratio` percent (130 by default), the AI pushes the next attack time out 20 seconds. It checks again every five seconds and holds the attack for at most `army_mass_wait` minutes (10 by default). A game-launched or rescheduled attack ends an active wait. `AgeOfAIDanger.cpp` owns the rule and its counters; `EEComputerPlayer::Update` calls it once per tick.
+
+This is an opt-in from the shipped off state, so no default rating changes. The 300-second benchmark has no attack due in its window and its trace stays byte-identical at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on held the first attacks and scored 3210.7 against 7089.3 with the gate off; the traces differ. Gate on counted 1601, 1601 and 1600 due-time checks, three new waits and two or three releases per player. Gate off counted none. The sim report counts checks, new waits, releases and extensions in `intel.mass_checks`, `intel.mass_waits`, `intel.mass_goes` and `intel.mass_waited`.
+
 ## Counter-siege and the citizen militia
 
 Upstream's default turns `[ai_base] citizen_militia` and `counter_siege` on. The shipped `ageofai.ini` turns both off

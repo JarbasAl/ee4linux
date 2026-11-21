@@ -504,6 +504,83 @@ TetherCounts TetherCountsOf(unsigned long inPlayerID)
     return sTether[inPlayerID & 15];
 }
 
+float UnitPower(EEUnit* inUnit);
+
+// Upstream mass.c ms_wait, [ai_base] army_mass=wait_stronger (default off). When an attack is due within 15 seconds,
+// compare the player's known land army against the strongest known enemy army. While that enemy is stronger than
+// army_mass_ratio percent, push the game's next attack time out 20 seconds at a time, for at most army_mass_wait minutes.
+// Upstream reads its own army from the unit grid and enemy armies from intel records; here the own army comes from the
+// player's unit list and intel from MemoryOf. A game reschedule or launch of the attack ends an active wait.
+struct MassWait {
+    unsigned long mSince, mUntil;   // wait start, last next-attack time written by this rule
+};
+static MassWait sMassWait[16];
+static MassWaitCounts sMassWaitCounts[16];
+
+void MassWaitTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.army_mass.wait_stronger)
+        return;
+    MassWaitCounts& theCounts = sMassWaitCounts[inPlayer->mPlayerID & 15];
+    MassWait& theWait = sMassWait[inPlayer->mPlayerID & 15];
+    theCounts.mChecks++;
+    unsigned long theDue = inPlayer->mNextAttackTime;
+    if (theWait.mSince != 0 && theDue != theWait.mUntil)
+        theWait.mSince = 0;
+    if (theDue > inNow + 15000 && theWait.mSince == 0)
+        return;
+    if (theWait.mSince != 0 && theDue > inNow + 15000)
+        return;
+    float theOwn = 0.0f;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        EEUnitClass* theClass = theUnit->mUnitClass;
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theClass == NULL || theClass->mCategory != kUnitCategoryLand
+            || !Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+            continue;
+        theOwn += UnitPower(theUnit);
+    }
+    float theFoe[16] = {};
+    const Intel::Memory& theMemory = MemoryOf(inPlayer->mPlayerID);
+    for (const Intel::Record& theRecord : theMemory.Records()) {
+        if (theRecord.mKind != Intel::kSoldier || theMemory.Now() - theRecord.mTime > Intel::kSoldierForgottenAfter
+            || theRecord.mOwner <= 0 || theRecord.mOwner >= 16)
+            continue;
+        theFoe[theRecord.mOwner] += (float)theRecord.mHitPoints * theRecord.mAttack;
+    }
+    float theTop = 0.0f;
+    for (unsigned long p = 1; p < gWorld.GetNumPlayers() && p < 16; p++) {
+        EEPlayer* theOther = gWorld.GetPlayer(p);
+        if (theOther == NULL || theOther == inPlayer || !IsEnemyOf(inPlayer, theOther))
+            continue;
+        if (theFoe[p] > theTop)
+            theTop = theFoe[p];
+    }
+    if (theWait.mSince == 0)
+        theWait.mSince = inNow != 0 ? inNow : 1;
+    unsigned long theElapsed = inNow >= theWait.mSince ? inNow - theWait.mSince : 0;
+    long theRatio = (long)(theSettings.army_mass_ratio * 100.0f + 0.5f);
+    unsigned long theLimit = (unsigned long)theSettings.army_mass_wait * 60000ul;
+    if (theTop <= 0.0f || theOwn * 100.0f >= theTop * (float)theRatio || theElapsed >= theLimit) {
+        if (theElapsed >= 20000)
+            theCounts.mGoes++;
+        theWait.mSince = 0;
+        return;
+    }
+    if (theElapsed < 1000)
+        theCounts.mWaits++;
+    theCounts.mWaited += 5;
+    theWait.mUntil = inNow + 20000;
+    inPlayer->mNextAttackTime = theWait.mUntil;
+}
+
+MassWaitCounts MassWaitCountsOf(unsigned long inPlayerID)
+{
+    return sMassWaitCounts[inPlayerID & 15];
+}
+
 // Enemy soldiers that this player sees within reach of a tile: each by its own reach (its range + RAID_MARGIN, at least r0, at
 // most the box). The first raider found answers (attack.c raiders_scan without the kinds; walled_out/behind_walls is off by default)
 bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)
