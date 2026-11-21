@@ -208,6 +208,16 @@ struct WaveFocusCounts {
 };
 WaveFocusCounts WaveFocusCountsOf(unsigned long inPlayerID);
 
+// The route cost of known enemy defences (attack.c avoid_towers, [ai_base] avoid_towers on by default): a land
+// attack route pays extra for each subsector inside their reach. The port costs a subsector where upstream costs a
+// tile; the margin and the weight come from the settings. EEAIGPGModifierLandAttackSubGroupRoutePlanner::GetCost
+// calls this for an Age of AI player only.
+long AvoidTowerRouteCost(unsigned long inPlayerID, long inX, long inY);
+struct AvoidTowerCounts {
+    unsigned long mCalls, mPenalised, mCost;   // route steps seen, steps in range, cost added
+};
+AvoidTowerCounts AvoidTowerCountsOf(unsigned long inPlayerID);
+
 // Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
 // (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
 void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow);

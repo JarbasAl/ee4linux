@@ -68,6 +68,7 @@
 #include "ee/EEAIContinentManager.h"
 #include "ee/EEAIPathGoalModifiers.h"
 #include "ee/EEUnitUtilities.h"
+#include "AgeOfAI/AgeOfAI.h"
 
 // 0x248e06 (cdecl): the tile inDistance steps from (inX, inY) in direction inDirection (0..7) (provisional name)
 
@@ -540,6 +541,9 @@ long EEAIGPGModifierLandAttackSubGroupRoutePlanner::GetCost(EEAIAStarGraphNode* 
     float theInfluence = (float)this->GetInfluenceCost(inFrom, inTo, false);
     if (theInfluence != 0.0f)
         theCost += UMFloatToLong(this->mWeights.mValues[4] * (theInfluence * 1.85f));
+    long theTowerCost = AgeOfAI::AvoidTowerRouteCost(this->mPlayerID, inTo->mLocation.mX, inTo->mLocation.mY);
+    if (theTowerCost > 0)
+        theCost += theTowerCost;
 
     inTo->GetLinks(theFrom->mID, theLinks);
     for (long i = theLinks.size() - 1; i >= 0; i--) {

@@ -248,6 +248,7 @@ struct PlayerSample {
     long mWallSkipped = 0, mWallRan = 0;
     long mRetargetScans = 0, mRetargetPicked = 0, mRetargetGroups = 0;
     long mWaveCalls = 0, mWaveSet = 0, mWaveMoved = 0, mWaveKept = 0, mWaveNone = 0;
+    long mAvoidCalls = 0, mAvoidPenalised = 0, mAvoidCost = 0;
     long mFoodPulled = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
@@ -442,6 +443,10 @@ Sample TakeSample()
             p.mRetargetScans = (long)theRetarget.mScans;
             p.mRetargetPicked = (long)theRetarget.mPicked;
             p.mRetargetGroups = (long)theRetarget.mSubGroups;
+            AgeOfAI::AvoidTowerCounts theAvoid = AgeOfAI::AvoidTowerCountsOf(i);
+            p.mAvoidCalls = (long)theAvoid.mCalls;
+            p.mAvoidPenalised = (long)theAvoid.mPenalised;
+            p.mAvoidCost = (long)theAvoid.mCost;
             AgeOfAI::WaveFocusCounts theWave = AgeOfAI::WaveFocusCountsOf(i);
             p.mWaveCalls = (long)theWave.mCalls;
             p.mWaveSet = (long)theWave.mSet;
@@ -973,6 +978,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"citizen_calls\": %ld, \"citizen_called\": %ld, "
                      "\"wall_skipped\": %ld, \"wall_ran\": %ld, "
                      "\"retarget_scans\": %ld, \"retarget_picked\": %ld, \"retarget_groups\": %ld, "
+                     "\"avoid_calls\": %ld, \"avoid_penalised\": %ld, \"avoid_cost\": %ld, "
                      "\"wave_calls\": %ld, \"wave_set\": %ld, \"wave_moved\": %ld, \"wave_kept\": %ld, \"wave_none\": %ld, "
                      "\"food_pulled\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
@@ -981,7 +987,9 @@ std::string PlayersJson(const Sample& inSample)
                      "\"towers_queued\": %ld, \"towers_skipped\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits, p.mOutdatedSorties, p.mOutdatedSent, p.mOutdatedRefused,
-                     p.mOutdatedNoGroup, p.mCitizenCalls, p.mCitizenCalled, p.mWallSkipped, p.mWallRan, p.mRetargetScans, p.mRetargetPicked, p.mRetargetGroups, p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
+                     p.mOutdatedNoGroup, p.mCitizenCalls, p.mCitizenCalled, p.mWallSkipped, p.mWallRan, p.mRetargetScans, p.mRetargetPicked, p.mRetargetGroups,
+                     p.mAvoidCalls, p.mAvoidPenalised, p.mAvoidCost,
+                     p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
                      p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
                      (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,

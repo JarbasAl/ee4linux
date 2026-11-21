@@ -171,6 +171,8 @@ struct Threats {
     unsigned long mRefreshed;
 } sThreat[16];
 
+AvoidTowerCounts sAvoid[16];
+
 struct Hurt {
     unsigned mAt;
     struct { long mX, mY; unsigned long mTime; bool mSeen; } mSpots[kHurtN];
@@ -321,6 +323,44 @@ bool MemoryRaider(EEPlayer* inPlayer, long inX, long inY, int inR0, int inRMax)
     return false;
 }
 
+}
+
+// Sum of the known defences covering tile (x, y), each weighted by its attack (a guard tower is 1), times the
+// route weight (attack.c threat_at and hook_route_cost). The game's route planner works on subsectors, so the
+// port charges one step at the subsector's centre instead of one per tile.
+long AvoidTowerRouteCost(unsigned long inPlayerID, long inX, long inY)
+{
+    if (EngineOf(inPlayerID) != kEngineAgeOfAI)
+        return 0;
+    const SettingsAI& theSettings = Cfg(inPlayerID);
+    if (!theSettings.avoid_towers)
+        return 0;
+    EEPlayer* thePlayer = gWorld.GetPlayer(inPlayerID);
+    if (thePlayer == NULL)
+        return 0;
+    unsigned thePI = inPlayerID & 15;
+    AvoidTowerCounts& theCounts = sAvoid[thePI];
+    theCounts.mCalls++;
+    ThreatRefresh(thePlayer, gPhysics->mGameTime);
+    const Threats& theThreats = sThreat[thePI];
+    float theThreat = 0.0f;
+    for (int k = 0; k < theThreats.mCount; k++) {
+        float theRange = theThreats.mDefences[k].mRange + (float)theSettings.avoid_towers_margin;
+        float theDX = (float)inX - (float)theThreats.mDefences[k].mX, theDY = (float)inY - (float)theThreats.mDefences[k].mY;
+        if (theDX * theDX + theDY * theDY <= theRange * theRange)
+            theThreat += theThreats.mDefences[k].mAttack / 50.0f;
+    }
+    if (theThreat <= 0.0f)
+        return 0;
+    theCounts.mPenalised++;
+    long theCost = (long)(theThreat * (float)theSettings.avoid_towers_weight);
+    theCounts.mCost += (unsigned long)theCost;
+    return theCost;
+}
+
+AvoidTowerCounts AvoidTowerCountsOf(unsigned long inPlayerID)
+{
+    return sAvoid[inPlayerID & 15];
 }
 
 // Enemy soldiers that this player sees within reach of a tile: each by its own reach (its range + RAID_MARGIN, at least r0, at

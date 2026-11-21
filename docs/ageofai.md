@@ -298,6 +298,12 @@ With `[ai_base] wave_focus` on (off in the shipped file), the land routes of an 
 
 The rest of `stage.c` is not ported. There is no staging point, no falling back and no rally. A weak spot found for a route does not become the wave's goal.
 
+## Attack routing
+
+`[ai_base] avoid_towers` is on in the shipped file, as upstream. A land attack route pays a cost for each known enemy defence that covers the subsector the route enters. The cost is the defence's attack divided by 50, times `avoid_towers_weight` (2000); `avoid_towers_margin` adds 6 tiles to the defence's reach. Only defences the player has seen count, as in the citizen danger test. Upstream charges this for every tile of its route planner. The game's planner works on subsectors, so the port charges one step at the subsector's centre. `AgeOfAIDanger.cpp` computes the cost and the land attack route planner adds it for Age of AI players only.
+
+The shipped 1 is a deliberate behaviour change: the earlier port read the setting but never used it, so an attack marched through known tower range. Setting 0 restores those original routes. The 300-second benchmark game has no covered subsector on its routes, so its trace and score stay as before. In a 30-minute Tiny map game with three Age of AI players, the gate-on run paid the extra cost on 408 route steps and finished at 7273 value; the gate-off run paid none and finished at 7701. The two traces differ. The sim report counts the route steps seen, the steps in range and the cost added in `intel.avoid_calls`, `intel.avoid_penalised` and `intel.avoid_cost`.
+
 ## Counter-siege and the citizen militia
 
 Upstream's default turns `[ai_base] citizen_militia` and `counter_siege` on. The shipped `ageofai.ini` turns both off
