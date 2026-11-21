@@ -555,9 +555,15 @@ revenge attack and a taunt, and handles tribute, peace and surrender. Those need
 not have, so only the stance answer is ported. The sim report's `intel` object counts the per-player stance checks
 (`answer_war_checks`), the new enemy stances seen (`answer_war_transitions`), the answers scheduled and given
 (`answer_war_scheduled`, `answer_war_answers`) and the timers cancelled because peace returned or an answer was already
-given (`answer_war_cancelled`). No sim option forces a stance change, so ordinary games record checks but no transition
-or answer; the paired probe with the gate on and off is byte-identical. The delay and both stance decisions are covered
-by `test_ageofai_diplomacy.cpp`. Set `answer_war=0` to turn the rule off.
+given (`answer_war_cancelled`). The delay and both stance decisions are covered by `test_ageofai_diplomacy.cpp`.
+Set `answer_war=0` to turn the rule off.
+
+The simulator's `--stance` option forces a stance change at a game second, so the rule can be exercised end to end.
+A 600-second probe makes players 2 and 3 allies at second 1, then has player 2 declare war at second 60. With the gate
+on, player 3 sees one transition, schedules one answer and sets its own enemy stance; with it off the same player
+records no transition or answer. The on run scores 4218.3 and the off run 4806.7, and the traces first differ at game
+millisecond 153125. Ordinary games without `--stance` still record checks but no transition, so the 300-second
+benchmark stays at 3705 with a byte-identical trace.
 
 ## Falling back to a hospital
 

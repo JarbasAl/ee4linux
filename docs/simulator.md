@@ -98,6 +98,7 @@ second one refuses to start while the first holds them.
 | `--army-spot X,Y` | the armies appear at this tile, even off the map: a test of units put off it |
 | `--player-ini P=FILE` | player P reads its Age of AI settings from FILE in full, not from `ageofai.ini`: its engine, its AI rows and its units' shot rules ([Age of AI](ageofai.md)). Repeat it for more players. |
 | `--lobby CONTROL=VALUE` | any lobby list, by line name or `#index`, for example `209=#2` |
+| `--stance S,F,T,V` | at game second S, player F's stance toward player T becomes V: 0 ally, 1 enemy. Repeat it for more changes. This drives the diplomacy rule the way a player's declaration does ([Age of AI](ageofai.md)). |
 | `--game-seconds S` | the game time at which the run stops (default 2700) |
 | `--sample-seconds S` | the game time between report samples (default 30) |
 | `--wall-timeout S` | the wall time after which the run gives up (default 3600) |
@@ -158,6 +159,14 @@ units of each kind on every computer player at game second 60, and they fight at
 to 7 within ten game minutes. The report has a `projectiles` object: the shots of plain projectiles (`fired`), how many
 the aim-ahead fix led (`led`), and the projectiles that came down on a unit (`hit_unit`) and on the ground (`hit_ground`).
 A change to aiming or combat shows as a change of the share `hit_unit / (hit_unit + hit_ground)`.
+
+## Diplomacy
+
+Ordinary games set no stance change, so `answer_war` records checks but never a transition. To exercise it, make two
+computer players allies and then declare war for one of them with
+`--stance 1,2,3,0 --stance 1,3,2,0 --stance 60,2,3,1`. Player 3 then answers player 2's declaration, and its
+`intel.answer_war_transitions` and `intel.answer_war_answers` become 1 where a run with `answer_war=0` stays at 0.
+Use a 600-second game: the two scores and traces separate after the answer, not at the declaration.
 
 The report of every computer player has `gatherers` and `wanted`: the citizens on food, wood, stone, gold and iron, and
 the number the player's worker plan wants on each. A large gap, as with iron at 33 wanted and 11 working, means the

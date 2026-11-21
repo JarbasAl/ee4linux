@@ -145,6 +145,16 @@ namespace {
 
 // ------------------------------------------------------------------------------------------------ options
 
+// --stance SECOND,FROM,TO,VALUE: at a game second, one player's diplomatic stance toward another becomes 0 (ally)
+// or 1 (enemy). Repeatable. It drives the diplomacy rule the way a player's declaration drives it in a real game.
+struct StanceChange {
+    double mAt;
+    long mFrom;
+    long mTo;
+    long mValue;
+    bool mDone = false;
+};
+
 struct Options {
     unsigned long mSeed = 2;
     long mComputers = 2;
@@ -170,6 +180,7 @@ struct Options {
     bool mArmyRaid = false;                              // --army-raid: the armies appear beside the enemy's base
     bool mArmySpot = false;                              // --army-spot X,Y: the armies appear at this tile, whatever the map
     long mArmySpotX = 0, mArmySpotY = 0;
+    std::vector<StanceChange> mStances;                  // --stance SECOND,FROM,TO,VALUE: timed diplomatic stance changes
 };
 
 Options sOptions;
@@ -783,6 +794,14 @@ void AfterTick()
         && (!sArmiesSpawned || sOptions.mArmyEvery > 0)) {
         SpawnArmies();
         sNextArmies = theTime + (long)(sOptions.mArmyEvery * 1000);
+    }
+    for (StanceChange& theChange : sOptions.mStances) {
+        if (theChange.mDone || theTime < (long)(theChange.mAt * 1000))
+            continue;
+        theChange.mDone = true;
+        gWorld.SetDiplomaticStance((unsigned long)theChange.mFrom, theChange.mTo, theChange.mValue);
+        Note("STANCE at game ms %ld: player %ld toward player %ld = %ld", theTime, theChange.mFrom, theChange.mTo,
+             theChange.mValue);
     }
     if (sSyncFile)
         WriteSyncLine();
@@ -1398,6 +1417,7 @@ const char* kUsage =
     "  --classic-players L    player numbers, comma apart, that play the classic AI whatever ageofai.ini says\n"
     "  --player-ini P=FILE    player P reads its Age of AI settings from FILE in full, not from ageofai.ini\n"
     "  --lobby CONTROL=VALUE  any lobby combo of form 26 by line name or #index (e.g. 209=#2)\n"
+    "  --stance S,F,T,V        at game second S set player F's stance toward T: V 0 ally, 1 enemy (repeatable)\n"
     "  --game-seconds S       stop at this game time (default 2700)\n"
     "  --sample-seconds S     report sample interval in game seconds (default 30)\n"
     "  --wall-timeout S       give up after this wall time (default 3600)\n"
@@ -1553,6 +1573,18 @@ int EESimMain(int argc, char** argv)
                 return 64;
             }
             sOptions.mLobby.push_back({atol(theValue.substr(0, theEqual).c_str()), theValue.substr(theEqual + 1)});
+        } else if (theOption == "--stance") {
+            std::string theValue = value();
+            StanceChange theChange;
+            if (sscanf(theValue.c_str(), "%lf,%ld,%ld,%ld", &theChange.mAt, &theChange.mFrom, &theChange.mTo,
+                       &theChange.mValue) != 4
+                || theChange.mAt < 0 || theChange.mFrom < 1 || theChange.mFrom > 15 || theChange.mTo < 1
+                || theChange.mTo > 15 || theChange.mFrom == theChange.mTo
+                || (theChange.mValue != 0 && theChange.mValue != 1)) {
+                fprintf(stderr, "ee-aoc --sim: --stance takes SECOND,FROM,TO,VALUE; VALUE 0 ally, 1 enemy\n");
+                return 64;
+            }
+            sOptions.mStances.push_back(theChange);
         } else if (theOption == "--game-seconds")
             sOptions.mGameSeconds = atof(value().c_str());
         else if (theOption == "--sample-seconds")
