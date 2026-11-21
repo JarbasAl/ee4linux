@@ -195,6 +195,15 @@ bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0);
 bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0);
 // Idle citizens far from the towns walk to the nearest safe one; the base follows the towns (CitizensHome, every 3 game seconds)
 void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow);
+// Settlement upgrades (garrison.c garrison_tick, [ai_base] garrison_upgrades on in the shipped file): every 20 game seconds a
+// built town with garrison room, metal mines in reach and no raiders nearby takes spare citizens on its land. The port uses
+// idle citizens once the AI trains no more, and woodcutters while the wood stock is over 5000; upstream's food-income
+// branch waits for the food-rate layer. The game's own town and capitol upgrade timers are held while no citizen is spare.
+void GarrisonTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct GarrisonCounts {
+    unsigned long mChecks, mOrders, mCitizens, mIdle, mWood, mHolds;
+};
+GarrisonCounts GarrisonCountsOf(unsigned long inPlayerID);
 // An enemy army in the base: the defenders gather beyond it, then strike (MusterTick, every 3 game seconds)
 void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 // Hold the town ([ai_base] hold_town, off by default): keep home soldiers from trickling out, sortie when strong, hold/retreat when weak

@@ -477,6 +477,31 @@ The shipped `ageofai.ini` turns it off until the [benchmark](benchmark.md) rates
 ported: the citizens that a landing, an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`). It also removes
 duplicate unfinished buildings stacked on one tile, keeping the first of each type and tile and destroying the rest.
 
+## Settlement upgrades
+
+`[ai_base] garrison_upgrades` is on in the shipped file, as upstream, and is now active. Every 20 game seconds an Age of
+AI player looks at its finished Settlements, Town Centers and Capitols. A town qualifies when it has garrison room, no
+garrison walk already in progress, stone, gold or iron mines within 4.5 tiles, and no enemy soldier the player sees
+within 12 tiles. A Settlement wins over the other kinds. Among the rest, the town with the most metal mines and miners
+in reach wins. The town takes at most ten citizens from its own land, nearest first. Idle citizens go first when the AI
+has reached its citizen target; woodcutters go next while the wood stock is over 5000. Each citizen walks into the town
+and is used up. Five in a Settlement make a Town Center, and ten more in a Town Center make a Capitol. Metal gathered
+near a fuller town gives the player more stone, gold and iron.
+
+While the AI still wants citizens, the rule holds the game's own Settlement and Capitol upgrade timers 40 game seconds
+ahead, so the game does not use a citizen the AI needs elsewhere. The port uses idle citizens and the wood-surplus rule.
+Upstream also lets a high food income make idle citizens spare; that branch waits for the port's food-rate layer. The
+citizen checks for frozen, held and busy units, and the exclusions for landings, outposts and new towns, are not ported.
+The sim report's `intel` object counts the 20-second checks (`garrison_checks`), the walks ordered (`garrison_orders`),
+the citizens sent (`garrison_citizens`), how many of them were idle or woodcutters (`garrison_idle`, `garrison_wood`),
+and the timer holds (`garrison_holds`).
+
+In the 300-second benchmark the rule makes no order and keeps the trace byte-identical at 3705. In a paired one-hour
+Tiny-map probe with three AI players, the setting on scored 7458.7 against 9299.3 with it off. Each player made 178
+checks and 167 timer holds; two made 5 and 3 orders and sent 18 and 8 woodcutters, with no idle citizens. The traces
+first differ at game millisecond 284375. The lower score shows that this reduced rule trades wood workers for the
+settlement bonus in that probe. Set `garrison_upgrades=0` in `[ai_base]` to turn it off.
+
 ## Extra towers
 
 The game's own plan asks for few towers. With `[ai_base] defence_towers` on, and with `defence_layout` and

@@ -128,9 +128,12 @@
 #include "ee/EEUnit.h"
 #include "ee/EEUnitClassIDs.h"
 #include "ee/EECPBuildManager.h"
+#include "ee/EECPUnitManager.h"
 #include "ee/EECPResourceManager.h"
 #include "ee/EECPCivilizationManager.h"
 #include "ee/EEUGGather.h"
+#include "ee/EEUGLoadGarrison.h"
+#include "ee/EEResourceType.h"
 #include "ee/EEUGBuildRepair.h"
 #include "ee/EEUGLocation.h"
 #include "ee/EEUGAttackUnit.h"
@@ -1183,6 +1186,253 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
         for (size_t i = 0; i < theExtra.size(); i++)
             theExtra[i]->Kill(0, 0, 0);
     }
+}
+
+// SETTLEMENT UPGRADES (garrison.c garrison_tick, [ai_base] garrison_upgrades on in the shipped file). Every 20 game seconds
+// a finished town with free garrison space, metal mines in reach and no enemy soldiers it sees nearby takes spare citizens
+// from its land: idle ones once the AI trains no more, then woodcutters while the wood stock is over 5000. The citizens
+// walk into the town and are used up; five in a Settlement make a Town Center, ten more in a Town Center make a Capitol,
+// and each one raises the metal gathered near that town. Upstream also lets a high food income make idle citizens spare;
+// that half waits for the port's food-rate layer. The game's own town and capitol timers are held back while no citizen
+// is spare, as upstream does, so the game does not fill a town first with a citizen the AI still needs elsewhere.
+namespace {
+
+const unsigned long kGarrisonEvery = 20000;
+const unsigned long kGarrisonHold = 40000;
+const int kGarrisonWood = 5000;
+const int kGarrisonBatch = 10;
+const int kGarrisonSafe = 12;
+const long kGarrisonReach2 = 20;
+
+struct GarrisonState {
+    unsigned long mLast;
+    GarrisonCounts mCounts;
+    long mSentKey[32];
+    unsigned long mSentTime[32];
+    int mSentCount;
+};
+static GarrisonState sGarrison[16];
+
+struct GarrisonMine {
+    long mX, mY, mScore;   // the tile, and one plus the gatherers on the mine
+};
+
+bool GarrisonTown(EEUnitClass* inClass, int& outKind)
+{
+    if (inClass == NULL)
+        return false;
+    long theType = (long)inClass->mUnitType;
+    if (theType == kUnitTypeSettlement)
+        outKind = 1;
+    else if (theType == kUnitTypeTownCenter)
+        outKind = 2;
+    else if (theType == kUnitTypeCapitol)
+        outKind = 3;
+    else
+        return false;
+    return true;
+}
+
+bool GarrisonRecent(const GarrisonState& inState, long inKey, unsigned long inNow)
+{
+    for (int i = 0; i < inState.mSentCount; i++)
+        if (inState.mSentKey[i] == inKey && inNow - inState.mSentTime[i] < 60000)
+            return true;
+    return false;
+}
+
+void GarrisonNote(GarrisonState& ioState, long inKey, unsigned long inNow)
+{
+    int theSlot = ioState.mSentCount;
+    if (theSlot < 32)
+        ioState.mSentCount++;
+    else {
+        theSlot = 0;
+        for (int i = 1; i < 32; i++)
+            if (ioState.mSentTime[i] < ioState.mSentTime[theSlot])
+                theSlot = i;
+    }
+    ioState.mSentKey[theSlot] = inKey;
+    ioState.mSentTime[theSlot] = inNow;
+}
+
+struct GarrisonCandidate {
+    EEUnit* mUnit;
+    long mDist;
+    bool mIdle;
+};
+
+}
+
+void GarrisonTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (!Cfg(inPlayer->mPlayerID).garrison_upgrades)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    GarrisonState& theState = sGarrison[idx];
+    if (inNow < theState.mLast) {
+        theState.mLast = 0;
+        theState.mCounts = GarrisonCounts();
+        std::memset(theState.mSentKey, 0, sizeof(theState.mSentKey));
+        std::memset(theState.mSentTime, 0, sizeof(theState.mSentTime));
+        theState.mSentCount = 0;
+    }
+    if (theState.mLast != 0 && inNow >= theState.mLast && inNow - theState.mLast < kGarrisonEvery)
+        return;
+    theState.mLast = inNow != 0 ? inNow : 1;
+    theState.mCounts.mChecks++;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL)
+        return;
+    EECPUnitManager* theUnits = theCivilization->mUnitManager;
+    long theCitizens = 0;
+    std::vector<GarrisonMine> theMines;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL)
+            continue;
+        if (IsCitizen(theUnit))
+            theCitizens++;
+        unsigned long theResource = theUnit->GetResourceType();
+        if (theResource >= kResourceStone && theResource <= kResourceIron && theUnit->GetResourceAmount() > 0) {
+            GarrisonMine theMine = {theUnit->mTileX, theUnit->mTileY, 1 + (long)gWorld.GetResourceUsers(theUnit)};
+            theMines.push_back(theMine);
+        }
+    }
+    bool theIdleSpare = theUnits != NULL && theCitizens >= theUnits->GetWantedCitizens();
+    bool theWoodSpare = inPlayer->GetResource(kResourceWood) > kGarrisonWood;
+    if (!theIdleSpare) {
+        if (theCivilization->mNextGarrisonTime != 0
+            && (long)(theCivilization->mNextGarrisonTime - inNow) < (long)kGarrisonHold) {
+            theCivilization->mNextGarrisonTime = inNow + kGarrisonHold;
+            theState.mCounts.mHolds++;
+        }
+        if (theCivilization->mNextFortressTime != 0
+            && (long)(theCivilization->mNextFortressTime - inNow) < (long)kGarrisonHold) {
+            theCivilization->mNextFortressTime = inNow + kGarrisonHold;
+            theState.mCounts.mHolds++;
+        }
+    }
+    if (!theIdleSpare && !theWoodSpare)
+        return;
+    EEUnit* theBest = NULL;
+    int theBestKind = 0, theBestKey = 0;
+    long theBestScore = 0;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL)
+            continue;
+        int theKind = 0;
+        if (!GarrisonTown(theUnit->mUnitClass, theKind) || theUnit->mComplexUnit->IsFoundation()
+            || !theUnit->mComplexUnit->mIsBuilt)
+            continue;
+        if (theUnit->mUnitClass->mGarrisonCapacity <= theUnit->mComplexUnit->mGarrisonCount)
+            continue;
+        if (theUnit->mComplexUnit->GetLoadGoal() != NULL)
+            continue;
+        long theKey = theUnit->mTileX * 4096 + theUnit->mTileY;
+        if (GarrisonRecent(theState, theKey, inNow))
+            continue;
+        if (RaidersNear(inPlayer, theUnit->mTileX, theUnit->mTileY, kGarrisonSafe))
+            continue;
+        long theScore = 0;
+        for (size_t m = 0; m < theMines.size(); m++) {
+            long theDX = theMines[m].mX - theUnit->mTileX, theDY = theMines[m].mY - theUnit->mTileY;
+            if (theDX * theDX + theDY * theDY <= kGarrisonReach2)
+                theScore += theMines[m].mScore;
+        }
+        if (theScore <= 0)
+            continue;
+        bool theBetter = theBest == NULL || (theKind == 1 && theBestKind != 1)
+            || ((theKind == 1) == (theBestKind == 1) && theScore > theBestScore);
+        if (theBetter) {
+            theBest = theUnit;
+            theBestKind = theKind;
+            theBestScore = theScore;
+            theBestKey = theKey;
+        }
+    }
+    if (theBest == NULL)
+        return;
+    int theRoom = (int)(theBest->mUnitClass->mGarrisonCapacity - theBest->mComplexUnit->mGarrisonCount);
+    int theWant = theRoom < kGarrisonBatch ? theRoom : kGarrisonBatch;
+    unsigned long theLand = gContinentManager.GetContinent(EETileCoordinate(theBest->mTileX, theBest->mTileY), 2);
+    std::vector<GarrisonCandidate> theCandidates;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL && theCandidates.size() < 4096;
+         theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL
+            || !IsCitizen(theUnit) || theUnit->mComplexUnit->mContainer != NULL)
+            continue;
+        bool theIdle = false;
+        if (theUnit->mComplexUnit->mGoalState == NULL) {
+            if (!theIdleSpare)
+                continue;
+            theIdle = true;
+        } else {
+            if (!theWoodSpare)
+                continue;
+            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theUnit->mComplexUnit->mGoalState);
+            if (theGather == NULL || theGather->mResource == NULL
+                || theGather->mResource->GetResourceType() != kResourceWood)
+                continue;
+        }
+        if (gContinentManager.GetContinent(EETileCoordinate(theUnit->mTileX, theUnit->mTileY), 2) != theLand)
+            continue;
+        long theDX = theUnit->mTileX - theBest->mTileX, theDY = theUnit->mTileY - theBest->mTileY;
+        GarrisonCandidate theCandidate = {theUnit, theDX * theDX + theDY * theDY, theIdle};
+        theCandidates.push_back(theCandidate);
+    }
+    if (theCandidates.empty())
+        return;
+    int theCount = theWant < (int)theCandidates.size() ? theWant : (int)theCandidates.size();
+    for (int i = 0; i < theCount; i++) {
+        int thePick = i;
+        long thePickDist = theCandidates[thePick].mIdle ? theCandidates[thePick].mDist - 1000000 : theCandidates[thePick].mDist;
+        for (int k = i + 1; k < (int)theCandidates.size(); k++) {
+            long theDist = theCandidates[k].mIdle ? theCandidates[k].mDist - 1000000 : theCandidates[k].mDist;
+            if (theDist < thePickDist) {
+                thePick = k;
+                thePickDist = theDist;
+            }
+        }
+        std::swap(theCandidates[i], theCandidates[thePick]);
+    }
+    EEComplexUnit* theHolder = theBest->mComplexUnit;
+    EEUGLoadGarrison* theGoal = dynamic_cast<EEUGLoadGarrison*>(theHolder->GetLoadGoal());
+    bool theNew = theGoal == NULL;
+    if (theNew) {
+        std::vector<EEComplexUnit*> theFirst;
+        theFirst.push_back(theCandidates[0].mUnit->mComplexUnit);
+        theGoal = new EEUGLoadGarrison(theHolder, theFirst, true);
+        if (!theGoal->mIsValid) {
+            delete theGoal;
+            return;
+        }
+        theHolder->SetGoal(theGoal, 0, 0);
+        theHolder->StartAction(kActionWaitForGarrisonCost);
+        theBest->mUnitClass->ActionChanged(theHolder);
+    } else if (!theGoal->mIsValid)
+        return;
+    long theIdleCount = 0;
+    for (int i = 0; i < theCount; i++) {
+        if (i > 0 || !theNew)
+            theGoal->AddUnit(theCandidates[i].mUnit->mComplexUnit);
+        EEComplexUnit* theCitizen = theCandidates[i].mUnit->mComplexUnit;
+        theCitizen->ClearGoalQueue(0);
+        theCitizen->SetGoal(theGoal->Clone(), 0, 0);
+        theCitizen->StartAction(kActionPrepareToMove);
+        theCandidates[i].mUnit->mUnitClass->ActionChanged(theCitizen);
+        if (theCandidates[i].mIdle)
+            theIdleCount++;
+    }
+    GarrisonNote(theState, theBestKey, inNow);
+    theState.mCounts.mOrders++;
+    theState.mCounts.mCitizens += (unsigned long)theCount;
+    theState.mCounts.mIdle += (unsigned long)theIdleCount;
+    theState.mCounts.mWood += (unsigned long)(theCount - theIdleCount);
+}
+
+GarrisonCounts GarrisonCountsOf(unsigned long inPlayerID)
+{
+    return inPlayerID < 16 ? sGarrison[inPlayerID].mCounts : GarrisonCounts();
 }
 
 // MUSTER (muster in defence.c, [ai_base] muster): an enemy army in the base got the defenders one by one. Every 3 s: enemy

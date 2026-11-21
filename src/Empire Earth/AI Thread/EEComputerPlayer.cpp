@@ -5583,6 +5583,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::WoodDrops(this, inTime);
         AgeOfAI::MineDrops(this, inTime);
         AgeOfAI::CitizensHome(this, inTime);
+        AgeOfAI::GarrisonTick(this, inTime);
         AgeOfAI::DefenceTick(this, inTime);
         AgeOfAI::CounterFire(this, inTime);
         AgeOfAI::CounterSiege(this, inTime);

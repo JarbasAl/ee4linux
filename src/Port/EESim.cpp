@@ -268,6 +268,8 @@ struct PlayerSample {
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
     long mHomeSent = 0, mHomeBaseMoved = 0;
+    long mGarrisonChecks = 0, mGarrisonOrders = 0, mGarrisonCitizens = 0;
+    long mGarrisonIdle = 0, mGarrisonWood = 0, mGarrisonHolds = 0;
     long mTowersQueued = 0, mTowersSkipped = 0;
     bool mHasGatherers = false;                          // a computer player: its gatherers and the gatherers it wants, food..iron
     long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
@@ -532,6 +534,13 @@ Sample TakeSample()
             AgeOfAI::HomeCounts theHome = AgeOfAI::HomeCountsOf(i);
             p.mHomeSent = (long)theHome.mSent;
             p.mHomeBaseMoved = (long)theHome.mBaseMoved;
+            AgeOfAI::GarrisonCounts theGarrison = AgeOfAI::GarrisonCountsOf(i);
+            p.mGarrisonChecks = (long)theGarrison.mChecks;
+            p.mGarrisonOrders = (long)theGarrison.mOrders;
+            p.mGarrisonCitizens = (long)theGarrison.mCitizens;
+            p.mGarrisonIdle = (long)theGarrison.mIdle;
+            p.mGarrisonWood = (long)theGarrison.mWood;
+            p.mGarrisonHolds = (long)theGarrison.mHolds;
             AgeOfAI::TowerLayoutCounts theTowers = AgeOfAI::TowerLayoutCountsOf(i);
             p.mTowersQueued = (long)theTowers.mQueued;
             p.mTowersSkipped = (long)theTowers.mSkipped;
@@ -1058,7 +1067,7 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[3456] = "";
+        char theIntel[3584] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
@@ -1087,6 +1096,8 @@ std::string PlayersJson(const Sample& inSample)
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
                      "\"counter_siege_skipped\": %u, \"home_sent\": %ld, \"home_base_moved\": %ld, "
+                     "\"garrison_checks\": %ld, \"garrison_orders\": %ld, \"garrison_citizens\": %ld, "
+                     "\"garrison_idle\": %ld, \"garrison_wood\": %ld, \"garrison_holds\": %ld, "
                      "\"towers_queued\": %ld, \"towers_skipped\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits, p.mOutdatedSorties, p.mOutdatedSent, p.mOutdatedRefused,
@@ -1110,7 +1121,10 @@ std::string PlayersJson(const Sample& inSample)
                      p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
                      (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,
-                     p.mHomeSent, p.mHomeBaseMoved, p.mTowersQueued, p.mTowersSkipped);
+                     p.mHomeSent, p.mHomeBaseMoved,
+                     p.mGarrisonChecks, p.mGarrisonOrders, p.mGarrisonCitizens,
+                     p.mGarrisonIdle, p.mGarrisonWood, p.mGarrisonHolds,
+                     p.mTowersQueued, p.mTowersSkipped);
         char theGatherers[480] = "";
         if (p.mHasGatherers)
             snprintf(theGatherers, sizeof(theGatherers),
