@@ -159,6 +159,13 @@ struct AnswerWarCounts {
     unsigned long mChecks, mTransitions, mScheduled, mAnswers, mCancelled;
 };
 AnswerWarCounts AnswerWarCountsOf(unsigned long inPlayerID);
+// Fall back's hospital bit (cover.c, shipped on): a damaged, expensive land unit walks to its nearest own Hospital and
+// stays until it heals. The other fall_back bits wait for the fight estimate, landing and attack-group layers.
+void HospitalTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct HospitalCounts {
+    unsigned long mChecks, mHospitals, mSent, mHolds, mDone;
+};
+HospitalCounts HospitalCountsOf(unsigned long inPlayerID);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
 bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);

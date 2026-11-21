@@ -274,6 +274,7 @@ struct PlayerSample {
     long mAntiAirAhead = 0, mAntiAirQueued = 0, mAntiAirSkipped = 0;
     long mAnswerWarChecks = 0, mAnswerWarTransitions = 0, mAnswerWarScheduled = 0;
     long mAnswerWarAnswers = 0, mAnswerWarCancelled = 0;
+    long mHospitalChecks = 0, mHospitals = 0, mHospitalSent = 0, mHospitalHolds = 0, mHospitalDone = 0;
     long mTowersQueued = 0, mTowersSkipped = 0;
     bool mHasGatherers = false;                          // a computer player: its gatherers and the gatherers it wants, food..iron
     long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
@@ -558,6 +559,12 @@ Sample TakeSample()
             p.mAnswerWarScheduled = (long)theAnswerWar.mScheduled;
             p.mAnswerWarAnswers = (long)theAnswerWar.mAnswers;
             p.mAnswerWarCancelled = (long)theAnswerWar.mCancelled;
+            AgeOfAI::HospitalCounts theHospital = AgeOfAI::HospitalCountsOf(i);
+            p.mHospitalChecks = (long)theHospital.mChecks;
+            p.mHospitals = (long)theHospital.mHospitals;
+            p.mHospitalSent = (long)theHospital.mSent;
+            p.mHospitalHolds = (long)theHospital.mHolds;
+            p.mHospitalDone = (long)theHospital.mDone;
             AgeOfAI::TowerLayoutCounts theTowers = AgeOfAI::TowerLayoutCountsOf(i);
             p.mTowersQueued = (long)theTowers.mQueued;
             p.mTowersSkipped = (long)theTowers.mSkipped;
@@ -1084,7 +1091,7 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[3840] = "";
+        char theIntel[4096] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
@@ -1119,6 +1126,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"anti_air_ahead\": %ld, \"anti_air_queued\": %ld, \"anti_air_skipped\": %ld, "
                      "\"answer_war_checks\": %ld, \"answer_war_transitions\": %ld, \"answer_war_scheduled\": %ld, "
                      "\"answer_war_answers\": %ld, \"answer_war_cancelled\": %ld, "
+                     "\"hospital_checks\": %ld, \"hospitals\": %ld, \"hospital_sent\": %ld, \"hospital_holds\": %ld, \"hospital_done\": %ld, "
                      "\"towers_queued\": %ld, \"towers_skipped\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits, p.mOutdatedSorties, p.mOutdatedSent, p.mOutdatedRefused,
@@ -1149,6 +1157,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mAntiAirAhead, p.mAntiAirQueued, p.mAntiAirSkipped,
                      p.mAnswerWarChecks, p.mAnswerWarTransitions, p.mAnswerWarScheduled,
                      p.mAnswerWarAnswers, p.mAnswerWarCancelled,
+                     p.mHospitalChecks, p.mHospitals, p.mHospitalSent, p.mHospitalHolds, p.mHospitalDone,
                      p.mTowersQueued, p.mTowersSkipped);
         char theGatherers[480] = "";
         if (p.mHasGatherers)

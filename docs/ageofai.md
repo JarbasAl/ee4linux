@@ -559,6 +559,29 @@ given (`answer_war_cancelled`). No sim option forces a stance change, so ordinar
 or answer; the paired probe with the gate on and off is byte-identical. The delay and both stance decisions are covered
 by `test_ageofai_diplomacy.cpp`. Set `answer_war=0` to turn the rule off.
 
+## Falling back to a hospital
+
+`[ai_base] fall_back` keeps its shipped value, `hospital, tower_cover, fleet_cover`. Only the hospital bit is active in
+this port. Every two game seconds an Age of AI player looks at its own land fighters. A fighter worth at least
+`fall_back_value` (100 resources, food through iron at their base cost) and below `fall_back_hp` (40%) of its maximum
+hit points walks to the nearest finished Hospital on the same land within `fall_back_dist` (60) tiles, provided no enemy
+soldier the player sees is near that Hospital. It stops two tiles from the Hospital on the side it came from and waits
+for the game to heal it. It goes back to fighting at 90% hit points, when no Hospital stands near the stop, or after
+four minutes. A unit that dies or changes owner also leaves the hold. This uses the game's own hospital regeneration;
+the port adds no healing of its own.
+
+This is a reduced port. Upstream's `fall_back` also sends a unit to tower cover when a fight estimate says it is
+losing, moves a fleet under towers or into a dock, and can give an attack up. Those need the fight estimate, landing
+and attack-group layers this port does not have, so those three flags stay parsed but inert. The sim report's `intel`
+object counts the per-player checks (`hospital_checks`), the finished Hospitals seen (`hospitals`), the units sent
+(`hospital_sent`), the move orders held (`hospital_holds`) and the units released once healed (`hospital_done`).
+
+The shipped one-hour `fights` probe exercises the rule: with the gate on one player saw a Hospital on 174 checks, sent
+2 units and reissued 21 move orders; with it off every counter was zero. That player's score rose from 8323.7 off to
+9158.3 on, and the traces first differ at game millisecond 53732. The 300-second benchmark stays at 3705 with a
+byte-identical trace because no Hospital is built there. Set `fall_back=tower_cover, fleet_cover` to turn the hospital
+bit off.
+
 ## Build queue fix
 
 `[ai_base] build_fix` is on in the shipped file, as upstream, and is now active. Every three seconds the game's build
