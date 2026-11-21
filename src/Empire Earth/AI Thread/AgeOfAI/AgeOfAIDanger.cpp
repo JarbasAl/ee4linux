@@ -173,6 +173,7 @@ struct Threats {
 
 AvoidTowerCounts sAvoid[16];
 RamWaitCounts sRamWait[16];
+LeashCounts sLeash[16];
 
 struct Hurt {
     unsigned mAt;
@@ -326,9 +327,28 @@ bool MemoryRaider(EEPlayer* inPlayer, long inX, long inY, int inR0, int inRMax)
 
 }
 
-// Sum of the known defences covering tile (x, y), each weighted by its attack (a guard tower is 1), times the
-// route weight (attack.c threat_at and hook_route_cost). The game's route planner works on subsectors, so the
-// port charges one step at the subsector's centre instead of one per tile.
+// Sum of the known defences covering tile (x, y), each weighted by its attack (a guard tower is 1)
+// (attack.c threat_at). The margin setting adds tiles to each defence's reach.
+float ThreatAt(unsigned long inPlayerID, long inX, long inY)
+{
+    EEPlayer* thePlayer = gWorld.GetPlayer(inPlayerID);
+    if (thePlayer == NULL)
+        return 0.0f;
+    ThreatRefresh(thePlayer, gPhysics->mGameTime);
+    const Threats& theThreats = sThreat[inPlayerID & 15];
+    float theMargin = (float)Cfg(inPlayerID).avoid_towers_margin;
+    float theThreat = 0.0f;
+    for (int k = 0; k < theThreats.mCount; k++) {
+        float theRange = theThreats.mDefences[k].mRange + theMargin;
+        float theDX = (float)inX - (float)theThreats.mDefences[k].mX, theDY = (float)inY - (float)theThreats.mDefences[k].mY;
+        if (theDX * theDX + theDY * theDY <= theRange * theRange)
+            theThreat += theThreats.mDefences[k].mAttack / 50.0f;
+    }
+    return theThreat;
+}
+
+// The threat sum times the route weight (attack.c hook_route_cost). The game's route planner works on subsectors, so
+// the port charges one step at the subsector's centre instead of one per tile.
 long AvoidTowerRouteCost(unsigned long inPlayerID, long inX, long inY)
 {
     if (EngineOf(inPlayerID) != kEngineAgeOfAI)
@@ -336,21 +356,10 @@ long AvoidTowerRouteCost(unsigned long inPlayerID, long inX, long inY)
     const SettingsAI& theSettings = Cfg(inPlayerID);
     if (!theSettings.avoid_towers)
         return 0;
-    EEPlayer* thePlayer = gWorld.GetPlayer(inPlayerID);
-    if (thePlayer == NULL)
-        return 0;
     unsigned thePI = inPlayerID & 15;
     AvoidTowerCounts& theCounts = sAvoid[thePI];
     theCounts.mCalls++;
-    ThreatRefresh(thePlayer, gPhysics->mGameTime);
-    const Threats& theThreats = sThreat[thePI];
-    float theThreat = 0.0f;
-    for (int k = 0; k < theThreats.mCount; k++) {
-        float theRange = theThreats.mDefences[k].mRange + (float)theSettings.avoid_towers_margin;
-        float theDX = (float)inX - (float)theThreats.mDefences[k].mX, theDY = (float)inY - (float)theThreats.mDefences[k].mY;
-        if (theDX * theDX + theDY * theDY <= theRange * theRange)
-            theThreat += theThreats.mDefences[k].mAttack / 50.0f;
-    }
+    float theThreat = ThreatAt(inPlayerID, inX, inY);
     if (theThreat <= 0.0f)
         return 0;
     theCounts.mPenalised++;
@@ -394,6 +403,26 @@ bool RamTargetGuarded(EEPlayer* inPlayer, long inX, long inY)
 RamWaitCounts RamWaitCountsOf(unsigned long inPlayerID)
 {
     return sRamWait[inPlayerID & 15];
+}
+
+// Soldiers on a land attack do not take on an enemy inside known tower range unless the attack's goal lies there too
+// (attack.c hook_asgu_score). The staging rules upstream checks before this are not ported, so they do not hold it back.
+bool LeashSkipsTarget(EEPlayer* inPlayer, long inX, long inY, long inGoalX, long inGoalY)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || !Cfg(inPlayer->mPlayerID).attack_leash)
+        return false;
+    LeashCounts& theCounts = sLeash[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    if (!(ThreatAt(inPlayer->mPlayerID, inX, inY) > 0.0f)
+        || ThreatAt(inPlayer->mPlayerID, inGoalX, inGoalY) > 0.0f)
+        return false;
+    theCounts.mSkipped++;
+    return true;
+}
+
+LeashCounts LeashCountsOf(unsigned long inPlayerID)
+{
+    return sLeash[inPlayerID & 15];
 }
 
 // Enemy soldiers that this player sees within reach of a tile: each by its own reach (its range + RAID_MARGIN, at least r0, at

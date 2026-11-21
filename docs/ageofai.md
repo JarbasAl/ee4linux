@@ -308,6 +308,10 @@ The shipped 1 is a deliberate behaviour change: the earlier port read the settin
 
 The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it, so rams attacked guarded targets. Setting 0 restores those attacks. The 300-second benchmark game has no ram, so its trace stays the same and its score stays at 4020. In a 300-second Tiny map probe with six rams per Age of AI player at 120 s, gate on refused 18 of 407 ram target tests and scored 3197.5; gate off refused none and scored 3006.0. The traces differ. The sim report counts the guarded tests and the refusals in `intel.ram_calls` and `intel.ram_waits`.
 
+`[ai_base] attack_leash` is on in the shipped file and is now active. A land attack skips an enemy standing in known enemy defence range when the attack's own goal tile lies outside that range. The range is a defence's range plus `avoid_towers_margin`; the leash reads the same known defences as the route cost, even when `avoid_towers` is off. The staging rules upstream checks first are not ported, so they do not hold the leash back. `AgeOfAIDanger.cpp` owns the engine gate and the counters; `EECPAttackSubGroupUnit::ScoreTarget` passes the target and the subgroup goal tiles.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it, so soldiers chased defenders into known tower range. Setting 0 restores those attacks. The 300-second benchmark game runs 21 leash tests but skips no target, so its trace stays the same and its score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on skipped 724 of 18597 tests and scored 6779.3; gate off skipped none and scored 7272.7. The traces differ. The sim report counts the tests and the refusals in `intel.leash_calls` and `intel.leash_skipped`.
+
 ## Counter-siege and the citizen militia
 
 Upstream's default turns `[ai_base] citizen_militia` and `counter_siege` on. The shipped `ageofai.ini` turns both off

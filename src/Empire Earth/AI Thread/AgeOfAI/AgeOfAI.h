@@ -227,6 +227,18 @@ struct RamWaitCounts {
 };
 RamWaitCounts RamWaitCountsOf(unsigned long inPlayerID);
 
+// The sum of known defences covering a tile (attack.c threat_at, [ai_base] avoid_towers_margin): the number the
+// route cost and the attack leash use. Unlike AvoidTowerRouteCost this is not gated by avoid_towers.
+float ThreatAt(unsigned long inPlayerID, long inX, long inY);
+
+// A land attack does not chase an enemy standing in known tower range unless its own goal is there (attack.c
+// hook_asgu_score, [ai_base] attack_leash). EEAIGPG calls this with the target and the subgroup goal tiles.
+bool LeashSkipsTarget(EEPlayer* inPlayer, long inX, long inY, long inGoalX, long inGoalY);
+struct LeashCounts {
+    unsigned long mCalls, mSkipped;   // leash tests, enemies left alone
+};
+LeashCounts LeashCountsOf(unsigned long inPlayerID);
+
 // Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
 // (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
 void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow);

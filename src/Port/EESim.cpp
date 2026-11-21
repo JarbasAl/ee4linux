@@ -250,6 +250,7 @@ struct PlayerSample {
     long mWaveCalls = 0, mWaveSet = 0, mWaveMoved = 0, mWaveKept = 0, mWaveNone = 0;
     long mAvoidCalls = 0, mAvoidPenalised = 0, mAvoidCost = 0;
     long mRamCalls = 0, mRamWaits = 0;
+    long mLeashCalls = 0, mLeashSkipped = 0;
     long mFoodPulled = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
@@ -451,6 +452,9 @@ Sample TakeSample()
             AgeOfAI::RamWaitCounts theRam = AgeOfAI::RamWaitCountsOf(i);
             p.mRamCalls = (long)theRam.mCalls;
             p.mRamWaits = (long)theRam.mWaits;
+            AgeOfAI::LeashCounts theLeash = AgeOfAI::LeashCountsOf(i);
+            p.mLeashCalls = (long)theLeash.mCalls;
+            p.mLeashSkipped = (long)theLeash.mSkipped;
             AgeOfAI::WaveFocusCounts theWave = AgeOfAI::WaveFocusCountsOf(i);
             p.mWaveCalls = (long)theWave.mCalls;
             p.mWaveSet = (long)theWave.mSet;
@@ -984,6 +988,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"retarget_scans\": %ld, \"retarget_picked\": %ld, \"retarget_groups\": %ld, "
                      "\"avoid_calls\": %ld, \"avoid_penalised\": %ld, \"avoid_cost\": %ld, "
                      "\"ram_calls\": %ld, \"ram_waits\": %ld, "
+                     "\"leash_calls\": %ld, \"leash_skipped\": %ld, "
                      "\"wave_calls\": %ld, \"wave_set\": %ld, \"wave_moved\": %ld, \"wave_kept\": %ld, \"wave_none\": %ld, "
                      "\"food_pulled\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
@@ -995,6 +1000,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mOutdatedNoGroup, p.mCitizenCalls, p.mCitizenCalled, p.mWallSkipped, p.mWallRan, p.mRetargetScans, p.mRetargetPicked, p.mRetargetGroups,
                      p.mAvoidCalls, p.mAvoidPenalised, p.mAvoidCost,
                      p.mRamCalls, p.mRamWaits,
+                     p.mLeashCalls, p.mLeashSkipped,
                      p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
                      p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
