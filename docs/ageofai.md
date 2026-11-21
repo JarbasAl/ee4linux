@@ -392,6 +392,15 @@ seconds away. A target that stands still or moves faster than twenty tiles a sec
 The sim report counts the steps that led a missile in `projectiles.missiles_led`. As with `lead_targets`, the setting
 reads each player's own rows, so every player needs the same setting in a multiplayer game.
 
+`[general] spread_missiles` (on in the shipped `ageofai.ini`) stops several missile launchers from wasting their shots on
+one target. Each launcher picks its own target, so a group of anti-air towers can all fire at the same aircraft and most
+of the missiles hit a wreck. Every launched missile is counted with the damage its launcher will do to its target. Before
+a launcher fires, if the missiles already on the way cover the target's hit points, the shot is held or sent at the
+nearest other enemy of the same family in range that the launcher's owner can see and that is not covered yet. A missile
+that misses frees its share again when it stops steering. Like `lead_missiles`, this setting reads each player's own
+rows, so every player needs the same value in a multiplayer game. The sim report counts launches, held shots and
+switched shots in `projectiles.spread_launched`, `spread_held` and `spread_switched`.
+
 `[general] lob_each_shot` (on) changes how archers, slingers, the pilum and the trebuchet fire over walls. The game lets
 them shoot flat until one shot hits a wall, then lobs every later shot until they get a new order, wall gone or not. Now
 a unit looks along the line to its target before each shot: a wall in the way gets the high arc, else the shot is flat.

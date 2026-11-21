@@ -1067,10 +1067,13 @@ void WriteReport(int inCode, const std::string& inError)
     j += "],\n";
     {
         const AgeOfAI::ProjectileCounts& theCounts = AgeOfAI::Projectiles();
-        char theProjectiles[200];
+        const AgeOfAI::SpreadCounts& theSpread = AgeOfAI::MissileSpreadCounts();
+        char theProjectiles[256];
         snprintf(theProjectiles, sizeof(theProjectiles),
-                 "  \"projectiles\": {\"fired\": %u, \"led\": %u, \"hit_unit\": %u, \"hit_ground\": %u, \"missiles_led\": %u},\n", (unsigned)theCounts.mFired,
-                 (unsigned)theCounts.mLed, (unsigned)theCounts.mHitUnit, (unsigned)theCounts.mHitGround, (unsigned)theCounts.mMissilesLed);
+                 "  \"projectiles\": {\"fired\": %u, \"led\": %u, \"hit_unit\": %u, \"hit_ground\": %u, \"missiles_led\": %u, "
+                 "\"spread_launched\": %u, \"spread_held\": %u, \"spread_switched\": %u},\n", (unsigned)theCounts.mFired,
+                 (unsigned)theCounts.mLed, (unsigned)theCounts.mHitUnit, (unsigned)theCounts.mHitGround, (unsigned)theCounts.mMissilesLed,
+                 (unsigned)theSpread.mLaunched, (unsigned)theSpread.mHeld, (unsigned)theSpread.mSwitched);
         j += theProjectiles;
     }
     {

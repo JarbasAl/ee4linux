@@ -33,6 +33,7 @@
 #include "ee/EEGameSound.h"
 #include "ee/EEMiniMap.h"
 #include "ee/EmpireEarth.h"
+#include "AgeOfAI/AgeOfAI.h"
 
 // Actual original pooled words 0x447230/0x447234; values verified independently of code references.
 static const float kMissileHeightOffset = 0.3f;
@@ -245,6 +246,7 @@ bool EEUCMissile::LaunchProjectile(EEComplexUnit* inUnit, const GE3DPoint& inLoc
     inUnit->SetFlightTime(theClass->mMissileDelayTime);
     inUnit->mCloaked = 300000;
     inUnit->SetVelocity(0.0f);
+    AgeOfAI::NoteMissileLaunch(inUnit);
     return true;
 }
 

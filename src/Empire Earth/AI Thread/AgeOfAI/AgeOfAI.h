@@ -66,6 +66,18 @@ struct ProjectileCounts {
 };
 ProjectileCounts& Projectiles();
 
+// Spreading missiles ([general] spread_missiles, on in the shipped file). A launcher whose target is already covered by
+// missiles in flight holds its shot or sends it at another enemy of the same family. EEUCMissile::LaunchProjectile and
+// EEPMMissile::Home keep the in-flight shares, EEUnitClass::FireShot asks before it finds the drop location.
+bool SpreadMissilesOn(unsigned long inPlayerID);
+void NoteMissileLaunch(EEComplexUnit* inMissile);
+void NoteMissileStep(EEComplexUnit* inMissile, EEUnit* inTarget);
+EEUnit* SpreadBeforeFire(EEComplexUnit* inShooter, bool& outHold);   // alternate target, or outHold: keep the shot
+struct SpreadCounts {
+    unsigned long mLaunched, mHeld, mSwitched;
+};
+SpreadCounts MissileSpreadCounts();   // the simulator's report
+
 // Lobbing shot by shot ([general] lob_each_shot; AgeOfAILob.h). EEUGAttackUnit calls LobBeforeShot at the start of each
 // attack of a unit that may fire over walls.
 bool LobEachShotOn(unsigned long inPlayerID);   // the shooter's owner's [general] lob_each_shot

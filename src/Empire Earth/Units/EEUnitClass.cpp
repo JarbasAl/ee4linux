@@ -1018,6 +1018,10 @@ void EEUnitClass::ApplyHit(EEComplexUnit* inUnit, EEUnit* inTarget)
 // tag point
 void EEUnitClass::FireShot(EEComplexUnit* inUnit)
 {
+    bool theHold = false;
+    EEUnit* theSpread = AgeOfAI::SpreadBeforeFire(inUnit, theHold);
+    if (theHold)
+        return;
     GE3DPoint thePoint;
     EEUnit* theBlocker = NULL;
     EEModel* theModel = inUnit->GetModel();
@@ -1036,7 +1040,7 @@ void EEUnitClass::FireShot(EEComplexUnit* inUnit)
     if (inUnit->mStats->mCanFireOverWalls && inUnit->mIsFiringHigh)
         inUnit->Fn1FEA22(UMFloatToLong(inUnit->mReloadTimer * 1.5f));
     EEUnit* theTarget;
-    EEFindDropLocation(inUnit, &theTarget, &thePoint, NULL);
+    EEFindDropLocation(inUnit, &theTarget, &thePoint, theSpread);
     if (this->mProjectileClass != NULL && theTarget != NULL && !inUnit->mIsSpecialAttack)
         AgeOfAI::LeadShot(inUnit, theTarget, thePoint);
     if (this->mProjectileClass == NULL) {
