@@ -172,6 +172,7 @@ struct Threats {
 } sThreat[16];
 
 AvoidTowerCounts sAvoid[16];
+RamWaitCounts sRamWait[16];
 
 struct Hurt {
     unsigned mAt;
@@ -361,6 +362,38 @@ long AvoidTowerRouteCost(unsigned long inPlayerID, long inX, long inY)
 AvoidTowerCounts AvoidTowerCountsOf(unsigned long inPlayerID)
 {
     return sAvoid[inPlayerID & 15];
+}
+
+// Enemy land soldiers (not citizens, rams or siege weapons) within 5 tiles of a target (attack.c guarded). Upstream
+// reads all units on the map; it does not ask whether the player sees them, so this reads their unit records too.
+bool RamTargetGuarded(EEPlayer* inPlayer, long inX, long inY)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || !Cfg(inPlayer->mPlayerID).attack_siege)
+        return false;
+    RamWaitCounts& theCounts = sRamWait[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    for (unsigned long p = 1; p < gWorld.GetNumPlayers() && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(p);
+        if (theOwner == NULL || theOwner == inPlayer || inPlayer->mEnemies[p] == 0)
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theUnit->mHitPoints <= 0 || theClass == NULL || theClass->mCategory != kUnitCategoryLand
+                || !Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+                continue;
+            long theDX = theUnit->mTileX - inX, theDY = theUnit->mTileY - inY;
+            if (theDX * theDX + theDY * theDY <= 25) {
+                theCounts.mWaits++;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+RamWaitCounts RamWaitCountsOf(unsigned long inPlayerID)
+{
+    return sRamWait[inPlayerID & 15];
 }
 
 // Enemy soldiers that this player sees within reach of a tile: each by its own reach (its range + RAID_MARGIN, at least r0, at

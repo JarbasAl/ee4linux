@@ -218,6 +218,15 @@ struct AvoidTowerCounts {
 };
 AvoidTowerCounts AvoidTowerCountsOf(unsigned long inPlayerID);
 
+// A ram's target is guarded (attack.c guarded and hook_asgu_score, [ai_base] attack_siege): enemy land soldiers within
+// 5 tiles of it make the ram wait instead of scoring the target. EECPAttackSubGroupUnit::ScoreTarget calls this for a
+// land ram only; AgeOfAIDanger.cpp owns the setting, the engine gate and the counters.
+bool RamTargetGuarded(EEPlayer* inPlayer, long inX, long inY);
+struct RamWaitCounts {
+    unsigned long mCalls, mWaits;   // guarded tests, targets refused
+};
+RamWaitCounts RamWaitCountsOf(unsigned long inPlayerID);
+
 // Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
 // (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
 void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow);

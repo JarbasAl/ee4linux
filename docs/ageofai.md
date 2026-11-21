@@ -304,6 +304,10 @@ The rest of `stage.c` is not ported. There is no staging point, no falling back 
 
 The shipped 1 is a deliberate behaviour change: the earlier port read the setting but never used it, so an attack marched through known tower range. Setting 0 restores those original routes. The 300-second benchmark game has no covered subsector on its routes, so its trace and score stay as before. In a 30-minute Tiny map game with three Age of AI players, the gate-on run paid the extra cost on 408 route steps and finished at 7273 value; the gate-off run paid none and finished at 7701. The two traces differ. The sim report counts the route steps seen, the steps in range and the cost added in `intel.avoid_calls`, `intel.avoid_penalised` and `intel.avoid_cost`.
 
+`[ai_base] attack_siege` is on in the shipped file. Its ram rule is now active. A land ram that would score a guarded target gives the target a score of zero and waits with the army. An enemy land soldier within 5 tiles of the target counts as a guard. Citizens, rams and siege weapons do not count. The test reads all enemy land soldiers, seen or not, as upstream does. `AgeOfAIDanger.cpp` owns the engine gate and the counters; `EECPAttackSubGroupUnit::ScoreTarget` calls it for land rams only.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it, so rams attacked guarded targets. Setting 0 restores those attacks. The 300-second benchmark game has no ram, so its trace stays the same and its score stays at 4020. In a 300-second Tiny map probe with six rams per Age of AI player at 120 s, gate on refused 18 of 407 ram target tests and scored 3197.5; gate off refused none and scored 3006.0. The traces differ. The sim report counts the guarded tests and the refusals in `intel.ram_calls` and `intel.ram_waits`.
+
 ## Counter-siege and the citizen militia
 
 Upstream's default turns `[ai_base] citizen_militia` and `counter_siege` on. The shipped `ageofai.ini` turns both off

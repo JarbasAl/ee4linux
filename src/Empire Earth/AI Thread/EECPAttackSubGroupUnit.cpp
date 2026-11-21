@@ -62,6 +62,8 @@
 #include "ee/EECPAttackSubGroupUnit.h"
 #include "ee/EECPASTargetUnit.h"
 #include "ee/EEAIUnitTargetingTable.h"
+#include "AgeOfAI/AgeOfAI.h"
+#include "AgeOfAI/AgeOfAIRoles.h"
 
 // The flee screeners (EEFleeFromLocationScreenBase > ..CheckPathAreaID): ee/EEFleeFromLocationScreenBase.h.
 #include "ee/EEFleeFromLocationScreenBase.h"
@@ -415,6 +417,16 @@ float EECPAttackSubGroupUnit::ScoreTarget(EECPASTargetUnit* inTarget)
             theScore *= theScore > 0.0f ? 1.0f - theCrowd : theCrowd + 1.0f;
             if (theScore == 0.0f)
                 theScore = 1.0f;
+        }
+    }
+    // A land ram waits while enemy soldiers guard its target (attack.c hook_asgu_score, [ai_base] attack_siege).
+    if (theScore != 0.0f && this->mSubGroup != NULL && this->mUnit != NULL && this->mUnit->mUnitClass != NULL
+        && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEUnitClass* theScorer = this->mUnit->mUnitClass;
+        if ((AgeOfAI::Roles::RolesOf(theScorer->mCategory, theScorer->mFamily, theScorer->mRange) & AgeOfAI::Roles::kRam) != 0) {
+            EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+            if (AgeOfAI::RamTargetGuarded(thePlayer, theUnit->mTileX, theUnit->mTileY))
+                return 0.0f;
         }
     }
     float theDistance = this->mUnit->DistanceSquaredTo(theUnit);
