@@ -204,6 +204,14 @@ void SiteFortsTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool SiteFortsBusy(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The danger memory's near test, exposed for the site-fort exposure bonus.
 int HurtNearAt(unsigned inPlayerIndex, long inX, long inY);
+// Population cap (econ.c hook_pop_cap, [ai_base] pop_follow_human, off for the shipped medium and hard): with the game
+// following the humans, 0 gives the AI its own game limit. Inert while the AI ignores the other players. The last
+// weighted cap and the last resulting cap are those of the most recent override.
+struct PopCapCounts {
+    unsigned long mChecks, mOverrides, mWeighted, mCap;
+};
+PopCapCounts PopCapCountsOf(unsigned long inPlayerID);
+void ApplyPopCap(EEComputerPlayer* inPlayer, long inGameLimit);
 // Scouting unseen land (towns.c scout, [ai_base] towns=scout, off by default): the fastest idle soldier near the base
 // walks to the nearest cell it has never looked at on its land, behind the front its known enemy buildings hold. It
 // turns back when raiders come in sight or a known defence covers it. The town planner and its site search are absent.

@@ -244,6 +244,9 @@ void EEComputerPlayer::WorkOutPopulation()
             this->mPopulationCap = UMFloatToLong(this->GetPopLimitAdjustment() * this->mPopulationCap);
         } else
             this->mPopulationCap = theOwn;
+        // Age of AI: pop_follow_human=0 replaces the game's weighted cap with the player's own game limit
+        // (upstream hook_pop_cap). With classic pacing off the game already uses that limit and does not call here.
+        AgeOfAI::ApplyPopCap(this, theOwn);
     }
 }
 

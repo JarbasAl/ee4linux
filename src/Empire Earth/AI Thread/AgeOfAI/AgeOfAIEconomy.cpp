@@ -77,6 +77,7 @@
 #include "lle/FSRestorable.h"
 #include "ee/EmpireEarth.h"
 #include "AgeOfAI/AgeOfAI.h"
+#include "AgeOfAI/AgeOfAIPopulationRules.h"
 #include "ee/EEAction.h"
 #include "ee/EEARemovePlayer.h"
 #include "ee/EEMessage.h"
@@ -1160,6 +1161,34 @@ long MineCapWantedCitizens(EEComputerPlayer* inPlayer, long inCount)
 MineCapCounts MineCapCountsOf(unsigned long inPlayerID)
 {
     return sMineCap[inPlayerID & 15];
+}
+
+// POPULATION CAP (econ.c hook_pop_cap, [ai_base] pop_follow_human): after the game works out an AI's cap from the
+// human populations, an AI that does not follow the humans takes its own game limit instead. Called from
+// EEComputerPlayer::WorkOutPopulation only while the game is following the humans; the other case already uses the
+// limit. No cap is kept across games.
+PopCapCounts sPopCap[16];
+
+PopCapCounts PopCapCountsOf(unsigned long inPlayerID)
+{
+    return sPopCap[inPlayerID & 15];
+}
+
+void ApplyPopCap(EEComputerPlayer* inPlayer, long inGameLimit)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    PopCapCounts& theCounts = sPopCap[inPlayer->mPlayerID & 15];
+    theCounts.mChecks++;
+    const long theFollow = SettingsOf(inPlayer).pop_follow_human;
+    const long theWeighted = inPlayer->mPopulationCap;
+    const long theCap = PopulationRules::Cap(theWeighted, inGameLimit, theFollow);
+    if (theFollow == 0) {
+        inPlayer->mPopulationCap = theCap;
+        theCounts.mOverrides++;
+        theCounts.mWeighted = theWeighted;
+        theCounts.mCap = theCap;
+    }
 }
 
 }

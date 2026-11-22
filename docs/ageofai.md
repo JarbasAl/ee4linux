@@ -107,6 +107,26 @@ The game pulls an AI's next epoch attempt forward when a human reaches a new epo
 
 The 300-second benchmark has no epoch change, so its trace stays byte-identical at 4020 and the rule makes about 150 checks but no calls. In a 30-minute Tiny map game with three Age of AI players, gate on made one, two and no catch-up calls in the three players and scored 7319.3 against 7089.3 with the gate off; the traces differ. The paired inis differ only in `catch_up_ais`, and the gate-off trace is byte-identical to the earlier baseline. The sim report counts the checks and the calls in `intel.catch_checks` and `intel.catch_calls`.
 
+## Population limit
+
+`[ai_base] pop_follow_human` is 0 for the shipped medium and hard and 1 for easy, as upstream. The game gives an AI
+that does not ignore the other players a cap of 0.8 of the largest human population plus 0.2 of its own limit, times
+70, 90 or 140 percent by difficulty. When `pop_follow_human` is 0, an Age of AI player takes its own game limit
+instead, with no difficulty factor. The rule runs with the game's population update once a minute. With
+`epoch_pacing` other than `classic` the AI ignores the other players and the game already gives it that limit, so the
+setting does nothing; the shipped medium and hard take this path. Easy ships `epoch_pacing=classic` with
+`pop_follow_human=1` and keeps the game's cap.
+
+This is a reduced port of Grille's `econ.c` `hook_pop_cap`: the game's own cap computation stays in place and only
+the replacement of that cap is ported. The arithmetic is in `AgeOfAIPopulationRules.h` and is covered by
+`test_ageofai_population.cpp`. The sim report counts the minute ticks that reached the rule (`pop_checks`), the
+replacements (`pop_overrides`) and the last weighted and resulting caps (`pop_weighted`, `pop_cap`).
+
+At the shipped settings the 300-second benchmark stays at 4084.5 with a byte-identical trace and no pop counters. A
+30-minute, single-seed Medium Small Islands probe with `epoch_pacing=classic` in both games and only
+`pop_follow_human` changed scored 20836.0 with the rule on against 14130.0 with it off. On, 31 ticks per player
+replaced a weighted cap of 112 with the game limit of 400; off, the same 31 ticks made no replacement. One seed only.
+
 ## The economy before farms
 
 The game gives each resource gatherers by its demand, and its food demand is a phantom. An Age of AI player with
