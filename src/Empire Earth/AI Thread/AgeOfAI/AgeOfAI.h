@@ -227,6 +227,14 @@ struct AnswerFireCounts {
 };
 void AnswerFireTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 AnswerFireCounts AnswerFireCountsOf(unsigned long inPlayerID);
+// Stuck-transport watchdog (transports.c tw_dog, [ai_base] transport_watchdog, off in the shipped file): a transport
+// stalled with a goal or cargo lets not-coming passengers go after 30 s, or leaves Idle after 20 s with its unload
+// goal and cargo. The scan runs once a game second for the AI players' transports.
+struct TransportWatchdogCounts {
+    unsigned long mChecks, mDrops, mKicks;
+};
+void TransportWatchdogTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+TransportWatchdogCounts TransportWatchdogCountsOf(unsigned long inPlayerID);
 // Scouting unseen land (towns.c scout, [ai_base] towns=scout, off by default): the fastest idle soldier near the base
 // walks to the nearest cell it has never looked at on its land, behind the front its known enemy buildings hold. It
 // turns back when raiders come in sight or a known defence covers it. The town planner and its site search are absent.

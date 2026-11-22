@@ -880,6 +880,16 @@ The port runs the scan from the AI update once every 500 game milliseconds rathe
 a game needs an Age of AI computer player to drive it, and the value comes from that player's settings file. The sim
 report counts looks and goals sent in `answer_fire_checks` and `answer_fire_sent`.
 
+`[ai_base] transport_watchdog` (off in the shipped `ageofai.ini`) frees a transport that stands in one script state on
+one tile with a goal or cargo aboard. Upstream watches every transport on the map once a game second and leaves
+human transports alone. A load goal that waits for passengers for 30 seconds lets go of the ones that are not coming:
+a passenger that is dead, off the map, without a goal, on another order or idle with its board goal. A loaded
+transport that stands Idle with its unload goal for 20 seconds is set to PrepareToMove, and this may happen at most
+three times. Land transports, transport helicopters, naval transports and fortresses qualify; a transport that is
+idle and empty is left alone. This port scans the players' unit lists from the AI update every game second instead
+of the game's whole-unit grid, and watches only AI players' transports. The sim report counts transport looks,
+passengers let go and nudges in `watchdog_checks`, `watchdog_drops` and `watchdog_kicks`.
+
 ## The hook-site index
 
 ```
