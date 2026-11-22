@@ -47,6 +47,16 @@ The same focused set rates `aoai-trainqueue` over `standard`, `poor` and `raids`
 loss and 23 draws in 30 games; rating 1441 (1349 to 1556) against `aoai`'s 1393 (1317 to 1494). The AI wins fewer
 than half the games and its interval overlaps `aoai`'s, so `train_queue` stays off.
 
+The same focused set rates `aoai-repairsafe` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 5 wins,
+2 losses and 22 draws in 29 games; rating 1415 (1337 to 1545) against `aoai`'s 1389 (1315 to 1489). One game timed
+out and is not in the ledger. The AI wins fewer than half the games and its interval overlaps `aoai`'s, so
+`repair_safe_way` stays off.
+
+The same focused set rates `aoai-shipreach` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 5 wins,
+7 losses and 17 draws in 29 games; rating 1353 (1253 to 1471) against `aoai`'s 1386 (1313 to 1485). One game has no
+report and is not in the ledger. The AI wins fewer than half the games and stands below `aoai`, so `ship_reach_exact`
+stays off.
+
 ## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
