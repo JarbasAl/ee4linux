@@ -306,6 +306,8 @@ struct PlayerSample {
     long mCoastChecks = 0, mCoastSites = 0, mCoastCells = 0, mCoastSea = 0, mCoastPlaced = 0;
     long mScoutChecks = 0, mScoutTowns = 0, mScoutFoes = 0, mScoutCells = 0;
     long mScoutPicked = 0, mScoutSent = 0, mScoutBack = 0;
+    long mFortChecks = 0, mFortSites = 0, mFortPicked = 0, mFortTowers = 0;
+    long mFortBusy = 0, mFortWait = 0, mFortSkipped = 0, mFortExposed = 0;
     long mTightBuildCalls = 0, mTightBuildSites = 0;
     long mLostChecks = 0, mLostSkipped = 0, mLostInReach = 0;
     long mLostRefreshes = 0, mLostCells = 0, mLostZones = 0;
@@ -628,6 +630,15 @@ Sample TakeSample()
             p.mScoutPicked = (long)theScout.mPicked;
             p.mScoutSent = (long)theScout.mSent;
             p.mScoutBack = (long)theScout.mBack;
+            AgeOfAI::SiteFortCounts theForts = AgeOfAI::SiteFortCountsOf(i);
+            p.mFortChecks = (long)theForts.mChecks;
+            p.mFortSites = (long)theForts.mSites;
+            p.mFortPicked = (long)theForts.mPicked;
+            p.mFortTowers = (long)theForts.mTowers;
+            p.mFortBusy = (long)theForts.mBusy;
+            p.mFortWait = (long)theForts.mWait;
+            p.mFortSkipped = (long)theForts.mSkipped;
+            p.mFortExposed = (long)theForts.mExposed;
             AgeOfAI::TightBuildCounts theTightBuild = AgeOfAI::TightBuildCountsOf(i);
             p.mTightBuildCalls = (long)theTightBuild.mCalls;
             p.mTightBuildSites = (long)theTightBuild.mSites;
@@ -1302,6 +1313,8 @@ std::string PlayersJson(const Sample& inSample)
                      "\"coast_checks\": %ld, \"coast_sites\": %ld, \"coast_cells\": %ld, \"coast_sea\": %ld, \"coast_placed\": %ld, "
                      "\"scout_checks\": %ld, \"scout_towns\": %ld, \"scout_foes\": %ld, \"scout_cells\": %ld, "
                      "\"scout_picked\": %ld, \"scout_sent\": %ld, \"scout_back\": %ld, "
+                     "\"fort_checks\": %ld, \"fort_sites\": %ld, \"fort_picked\": %ld, \"fort_towers\": %ld, "
+                     "\"fort_busy\": %ld, \"fort_wait\": %ld, \"fort_skipped\": %ld, \"fort_exposed\": %ld, "
                      "\"tight_build_calls\": %ld, \"tight_build_sites\": %ld, "
                      "\"lost_checks\": %ld, \"lost_skipped\": %ld, \"lost_in_reach\": %ld, "
                      "\"lost_refreshes\": %ld, \"lost_cells\": %ld, \"lost_zones\": %ld, "
@@ -1343,6 +1356,8 @@ std::string PlayersJson(const Sample& inSample)
                      p.mCoastChecks, p.mCoastSites, p.mCoastCells, p.mCoastSea, p.mCoastPlaced,
                      p.mScoutChecks, p.mScoutTowns, p.mScoutFoes, p.mScoutCells,
                      p.mScoutPicked, p.mScoutSent, p.mScoutBack,
+                     p.mFortChecks, p.mFortSites, p.mFortPicked, p.mFortTowers,
+                     p.mFortBusy, p.mFortWait, p.mFortSkipped, p.mFortExposed,
                      p.mTightBuildCalls, p.mTightBuildSites,
                      p.mLostChecks, p.mLostSkipped, p.mLostInReach,
                      p.mLostRefreshes, p.mLostCells, p.mLostZones,

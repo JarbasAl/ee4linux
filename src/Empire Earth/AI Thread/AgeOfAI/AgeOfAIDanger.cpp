@@ -1002,6 +1002,12 @@ bool NearestDrop(EEPlayer* inPlayer, long inX, long inY, bool inFood, long& outX
 
 }
 
+// The hurt memory stays in this file; the site-fort choice only needs its near test.
+int HurtNearAt(unsigned inPlayerIndex, long inX, long inY)
+{
+    return HurtNear(inPlayerIndex, inX, inY);
+}
+
 namespace {
 
 struct RaidHeldCell {
@@ -2633,7 +2639,8 @@ void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     if (theCivilization == NULL || theCivilization->mBuildManager == NULL || inPlayer->mTechnologies == NULL)
         return;
     PlanRefresh(inPlayer, inNow);
-    if (!theBase.defence_towers || (sLastTower[idx] != 0 && inNow >= sLastTower[idx] && inNow - sLastTower[idx] < 60000))
+    if (!theBase.defence_towers || SiteFortsBusy(inPlayer, inNow)
+        || (sLastTower[idx] != 0 && inNow >= sLastTower[idx] && inNow - sLastTower[idx] < 60000))
         return;
     EECPBuildManager* theBuild = theCivilization->mBuildManager;
     long theType = NewestTowerOf(inPlayer);

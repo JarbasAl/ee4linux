@@ -193,6 +193,17 @@ struct CoastCounts {
     unsigned long mChecks, mSites, mCells, mSea, mPlaced;
 };
 CoastCounts CoastCountsOf(unsigned long inPlayerID);
+// Site forts (defence.c site_forts, [ai_base] site_forts, off by default): a fort round the most-worked mine, one
+// corner tower per twenty-second tick. Upstream's wall runs and the open side towards the base are not ported.
+struct SiteFortCounts {
+    unsigned long mChecks, mSites, mPicked, mTowers, mBusy, mWait, mSkipped, mExposed;
+};
+SiteFortCounts SiteFortCountsOf(unsigned long inPlayerID);
+void SiteFortsTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+// True while a fort of this player still has corner towers to order: fort towers come before the layout's own.
+bool SiteFortsBusy(EEComputerPlayer* inPlayer, unsigned long inNow);
+// The danger memory's near test, exposed for the site-fort exposure bonus.
+int HurtNearAt(unsigned inPlayerIndex, long inX, long inY);
 // Scouting unseen land (towns.c scout, [ai_base] towns=scout, off by default): the fastest idle soldier near the base
 // walks to the nearest cell it has never looked at on its land, behind the front its known enemy buildings hold. It
 // turns back when raiders come in sight or a known defence covers it. The town planner and its site search are absent.

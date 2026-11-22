@@ -515,8 +515,8 @@ given there in the last 90 seconds, and a tile near it is used when the route fr
 defence, no enemy raiders are in sight within 10 tiles, and the tower fits. `AgeOfAITowers.h` holds the slot order, and
 the sim report's `intel` object counts the towers queued (`towers_queued`) and the looks that queued none
 (`towers_skipped`). Upstream's default turns `defence_towers` on. The shipped `ageofai.ini` turns it off until the
-[benchmark](benchmark.md) rates it as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, and
-the slots that the game's own tower requests take.
+[benchmark](benchmark.md) rates it as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the enclosure, and
+the slots that the game's own tower requests take. Site forts have their own gate below.
 
 ## Coast towers
 
@@ -559,6 +559,33 @@ The cell, front, turn-back and pause arithmetic is in `AgeOfAIScoutRules.h` and 
 The sim report counts the checks (`scout_checks`), the towns and enemy buildings in the search (`scout_towns`,
 `scout_foes`), the unseen cells judged (`scout_cells`), the cells picked (`scout_picked`), the soldiers sent
 (`scout_sent`) and the turn-backs (`scout_back`). The setting stays off until a benchmark rates it.
+
+## Site forts
+
+`[ai_base] site_forts` is off in the shipped file, as upstream, and sets how many forts an Age of AI player builds,
+up to six. Every 20 game seconds, when no fort still has a tower to order, the player looks at its stone, gold and
+iron mines. A mine qualifies when at least two of its citizens gather there and no fort already stands within eight
+tiles on both axes. It scores the gatherers, plus four when a ship can reach the sea within nine tiles or one of the
+player's citizens was hurt near it in the last two minutes. The best mine wins a fort at its middle, and one corner
+tower goes into the build queue at a time: the four corners stand four tiles either side of the mine, and the port
+tries the corner itself and then its eight neighbours until the tower fits. Tower orders wait while a tower is
+already queued or the stone will not pay for it with 100 left. A fort's towers come before the defence layout's own
+towers; a fort is worked on for 30 minutes after its pick.
+
+This is a reduced port of Grille's `defence.c` `sf_pick` / `sf_build` / `site_forts_tick`. Upstream also builds wall
+runs on the three sides away from the base, leaving one side open for the citizens, and keeps a fort busy for its
+walls too. The port builds no walls, so it has no open side and a fort is done once its four towers are ordered.
+Upstream centres the fort on wide mines by half the sprite's size; the port does the same with the unit's tile size.
+The arithmetic is in `AgeOfAISiteFortsRules.h` and is covered by `test_ageofai_site_forts.cpp`. The sim report counts
+the checks (`fort_checks`), the qualifying mines (`fort_sites`), the forts picked (`fort_picked`), the towers queued
+(`fort_towers`), the ticks spent on a fort (`fort_busy`), the ticks waiting for a tower type, queue slot or stone
+(`fort_wait`), the corners with no room (`fort_skipped`) and the exposed picks (`fort_exposed`).
+
+A 30-minute, single-seed Medium Small Islands probe with `resource_towns` and `spread` on in both games made the rule
+fire. With `site_forts=2` the two computer players each picked two forts and queued seven and eight towers, with four
+and three qualifying mines, two and one exposed picks, 28 and 17 busy ticks and 20 and 9 waiting ticks; with
+`site_forts=0` every counter was zero. The traces first differ at game millisecond 640500. That run scored 23248.5
+with the rule on and 21140.5 with it off, one seed only; the setting stays off until a benchmark rates it.
 
 ## Anti-air buildings
 
