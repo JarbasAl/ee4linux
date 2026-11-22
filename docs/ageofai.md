@@ -890,6 +890,15 @@ idle and empty is left alone. This port scans the players' unit lists from the A
 of the game's whole-unit grid, and watches only AI players' transports. The sim report counts transport looks,
 passengers let go and nudges in `watchdog_checks`, `watchdog_drops` and `watchdog_kicks`.
 
+`[ai_base] raid_leash` (off in the shipped `ageofai.ini`) calls a soldier home when it chases too far from the spot its
+force attacks. Upstream uses the value only for a raid, and counts the leash from the eight-tile arrival radius: a
+member more than `8 + raid_leash` tiles from the raid's spot leaves the force, goes to the force's home by a plain
+move and waits there. This port reads the attack groups' location tasks once a game second. A task that attacks a
+location stands in for a raid; a group that follows one enemy unit or returns home is left alone. The task's tile stands
+in for the raid's spot and the subgroup's rally point stands in for the force's home. A member called home is marked
+out of the fight so the subgroup stops retasking it. The sim report counts location-task groups, members looked at and
+members called home in `raid_leash_groups`, `raid_leash_checks` and `raid_leash_called`.
+
 ## The hook-site index
 
 ```

@@ -235,6 +235,14 @@ struct TransportWatchdogCounts {
 };
 void TransportWatchdogTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 TransportWatchdogCounts TransportWatchdogCountsOf(unsigned long inPlayerID);
+// Raid leash (armies.c at a->out == 2, [ai_base] raid_leash, off in the shipped file): a member of a force attacking a
+// spot that chases more than AR_DONE + raid_leash tiles from that spot is marked out of the fight and moved to the
+// force's rally point. The attack groups' location tasks stand in for upstream's raid mission.
+struct RaidLeashCounts {
+    unsigned long mGroups, mChecks, mCalled;
+};
+void RaidLeashTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+RaidLeashCounts RaidLeashCountsOf(unsigned long inPlayerID);
 // Scouting unseen land (towns.c scout, [ai_base] towns=scout, off by default): the fastest idle soldier near the base
 // walks to the nearest cell it has never looked at on its land, behind the front its known enemy buildings hold. It
 // turns back when raiders come in sight or a known defence covers it. The town planner and its site search are absent.

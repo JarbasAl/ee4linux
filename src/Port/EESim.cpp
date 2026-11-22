@@ -312,6 +312,7 @@ struct PlayerSample {
     long mUnitsFirstChecks = 0, mUnitsFirstSwitched = 0;
     long mAnswerFireChecks = 0, mAnswerFireSent = 0;
     long mWatchdogChecks = 0, mWatchdogDrops = 0, mWatchdogKicks = 0;
+    long mRaidLeashGroups = 0, mRaidLeashChecks = 0, mRaidLeashCalled = 0;
     long mTightBuildCalls = 0, mTightBuildSites = 0;
     long mLostChecks = 0, mLostSkipped = 0, mLostInReach = 0;
     long mLostRefreshes = 0, mLostCells = 0, mLostZones = 0;
@@ -658,6 +659,10 @@ Sample TakeSample()
             p.mWatchdogChecks = (long)theWatchdog.mChecks;
             p.mWatchdogDrops = (long)theWatchdog.mDrops;
             p.mWatchdogKicks = (long)theWatchdog.mKicks;
+            AgeOfAI::RaidLeashCounts theRaidLeash = AgeOfAI::RaidLeashCountsOf(i);
+            p.mRaidLeashGroups = (long)theRaidLeash.mGroups;
+            p.mRaidLeashChecks = (long)theRaidLeash.mChecks;
+            p.mRaidLeashCalled = (long)theRaidLeash.mCalled;
             AgeOfAI::TightBuildCounts theTightBuild = AgeOfAI::TightBuildCountsOf(i);
             p.mTightBuildCalls = (long)theTightBuild.mCalls;
             p.mTightBuildSites = (long)theTightBuild.mSites;
@@ -1338,6 +1343,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"units_first_checks\": %ld, \"units_first_switched\": %ld, "
                      "\"answer_fire_checks\": %ld, \"answer_fire_sent\": %ld, "
                      "\"watchdog_checks\": %ld, \"watchdog_drops\": %ld, \"watchdog_kicks\": %ld, "
+                     "\"raid_leash_groups\": %ld, \"raid_leash_checks\": %ld, \"raid_leash_called\": %ld, "
                      "\"tight_build_calls\": %ld, \"tight_build_sites\": %ld, "
                      "\"lost_checks\": %ld, \"lost_skipped\": %ld, \"lost_in_reach\": %ld, "
                      "\"lost_refreshes\": %ld, \"lost_cells\": %ld, \"lost_zones\": %ld, "
@@ -1385,6 +1391,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mUnitsFirstChecks, p.mUnitsFirstSwitched,
                      p.mAnswerFireChecks, p.mAnswerFireSent,
                      p.mWatchdogChecks, p.mWatchdogDrops, p.mWatchdogKicks,
+                     p.mRaidLeashGroups, p.mRaidLeashChecks, p.mRaidLeashCalled,
                      p.mTightBuildCalls, p.mTightBuildSites,
                      p.mLostChecks, p.mLostSkipped, p.mLostInReach,
                      p.mLostRefreshes, p.mLostCells, p.mLostZones,
