@@ -193,6 +193,14 @@ struct CoastCounts {
     unsigned long mChecks, mSites, mCells, mSea, mPlaced;
 };
 CoastCounts CoastCountsOf(unsigned long inPlayerID);
+// Scouting unseen land (towns.c scout, [ai_base] towns=scout, off by default): the fastest idle soldier near the base
+// walks to the nearest cell it has never looked at on its land, behind the front its known enemy buildings hold. It
+// turns back when raiders come in sight or a known defence covers it. The town planner and its site search are absent.
+void ScoutTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct ScoutCounts {
+    unsigned long mChecks, mTowns, mFoes, mCells, mPicked, mSent, mBack;
+};
+ScoutCounts ScoutCountsOf(unsigned long inPlayerID);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
 bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);

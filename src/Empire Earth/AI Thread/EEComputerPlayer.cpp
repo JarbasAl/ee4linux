@@ -5599,6 +5599,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::CitizenAttackScan(this, inTime);
         AgeOfAI::RetargetTick(this, inTime);
         AgeOfAI::AvoidLostTick(this, inTime);
+        AgeOfAI::ScoutTick(this, inTime);
         AgeOfAI::MassWaitTick(this, inTime);
         AgeOfAI::CatchUpAIsTick(this, inTime);
     }

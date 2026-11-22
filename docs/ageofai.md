@@ -542,6 +542,24 @@ found sea near two and four cells and placed two and three towers; with `coast_t
 traces first differ at game millisecond 1080625. That run scored 19301.5 with the rule on and 16946.0 with it off, one
 seed only; the setting stays off until a benchmark rates it.
 
+## Scouting unseen land
+
+The `scout` field of `[ai_base] towns` is off in the shipped file, as upstream. With the field on, every two game
+seconds an Age of AI player checks its scout. The fastest idle land soldier within 40 tiles of the base walks to the
+never-looked cell nearest its base or standing town. The map is scanned in 8-tile cells at their middle. A cell is
+skipped when the player's intel memory has looked there, when it is off the base's land, when a known defence covers
+it, or when it lies nearer to a known enemy building than the nearest town does. When an enemy soldier comes within
+12 tiles of the scout or a known defence covers it, the scout walks back to the base. One soldier scouts at a time and
+the next can leave 90 game seconds later.
+
+This is a reduced port of Grille's `towns.c` `tn_scout` and `tn_scout_watch`. Upstream sends a scout only after its
+town planner has no site left, and checks the scout every tick. The port has no town planner, so the base and the
+standing towns stand in for the planned towns, and intel's 6-tile look memory stands in for the upstream look grid.
+The cell, front, turn-back and pause arithmetic is in `AgeOfAIScoutRules.h` and is covered by `test_ageofai_scout.cpp`.
+The sim report counts the checks (`scout_checks`), the towns and enemy buildings in the search (`scout_towns`,
+`scout_foes`), the unseen cells judged (`scout_cells`), the cells picked (`scout_picked`), the soldiers sent
+(`scout_sent`) and the turn-backs (`scout_back`). The setting stays off until a benchmark rates it.
+
 ## Anti-air buildings
 
 `[ai_base] anti_air` and `aa_ahead` are on in the shipped file, as upstream, and are now active. From the Atomic Age - WW1

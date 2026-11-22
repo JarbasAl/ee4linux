@@ -62,7 +62,8 @@ anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_ai
 `answer_war_scheduled`, `answer_war_answers`, `answer_war_cancelled`), of the hospital fall-back bit
 (`hospital_checks`, `hospitals`, `hospital_sent`, `hospital_holds`, `hospital_done`), of the tower-cover fall-back bit
 (`cover_checks`, `cover_near`, `cover_fights`, `cover_sent`, `cover_holds`, `cover_back`), of the coast towers
-(`coast_checks`, `coast_sites`, `coast_cells`, `coast_sea`, `coast_placed`), of the packed-building search
+(`coast_checks`, `coast_sites`, `coast_cells`, `coast_sea`, `coast_placed`), of the unseen-land scout (`scout_checks`,
+`scout_towns`, `scout_foes`, `scout_cells`, `scout_picked`, `scout_sent`, `scout_back`), of the packed-building search
 (`tight_build_calls`, `tight_build_sites`), of the surrender rule (`surrender_checks`, `surrender_citizens`,
 `surrender_no_citizen`, `surrender_can_train`, `surrender_at_war`, `surrender_resigned`), of the lost-fight rule
 (`lost_checks`, `lost_skipped`, `lost_in_reach`, `lost_refreshes`, `lost_cells`, `lost_zones`), of the remembered foes
