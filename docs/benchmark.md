@@ -43,6 +43,10 @@ losses and 23 draws in 29 games; rating 1410 (1322 to 1528) against `aoai`'s 139
 finish and is not in the ledger. The AI wins fewer than half the games and its interval overlaps `aoai`'s, so
 `early_requirements` stays off.
 
+The same focused set rates `aoai-trainqueue` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 6 wins, 1
+loss and 23 draws in 30 games; rating 1441 (1349 to 1556) against `aoai`'s 1393 (1317 to 1494). The AI wins fewer
+than half the games and its interval overlaps `aoai`'s, so `train_queue` stays off.
+
 ## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
