@@ -857,6 +857,17 @@ keeps the buildings' production queues but not that count, so an AI can count tr
 10 game seconds the port counts the units queued or in the making in the player's buildings and sets the count to that
 number when the two differ. The game subtracts this count from the population limit before it asks for more citizens.
 
+`[general] units_first` (off in the shipped `ageofai.ini`) changes the target of a unit that picked a building by
+itself. The game looks for a new target only while a unit is idle. Once the unit turns to a building or waits to
+reload, it keeps that building until the building dies or goes out of sight, even while enemy soldiers walk up and
+shoot it. With this setting on, a unit that is turning to a building takes another look between its shots. It turns
+on the nearest enemy unit within its weapon range plus four tiles, if its player can see that unit and its weapon can
+hurt it. Units that move on land, on water or in the air qualify; passing aircraft, shots, animals and resources do
+not. An ordered attack is never changed. Every unit of every player follows this rule, so all players need the same
+setting in a multiplayer game. The port checks from the attack goal's step while the unit turns, at most once every
+500 game milliseconds per unit. This engine has no reload-state hook, so a unit waiting to reload is checked when it
+turns again. The sim report counts looks and turns in `units_first_checks` and `units_first_switched`.
+
 ## The hook-site index
 
 ```

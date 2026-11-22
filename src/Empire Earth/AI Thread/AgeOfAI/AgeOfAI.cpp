@@ -65,6 +65,11 @@ const Settings& GeneralOf(unsigned long inPlayerID)
     return theProfile != NULL ? theProfile->mGeneral : gSettings;
 }
 
+bool UnitsFirstOn(unsigned long inPlayerID)
+{
+    return GeneralOf(inPlayerID).units_first != 0;
+}
+
 const SettingsAI& SettingsAIOf(unsigned long inPlayerID, unsigned long inDifficulty)
 {
     const Profile* theProfile = ProfileOf(inPlayerID);

@@ -3,8 +3,12 @@
 // also EEUGAttackGround's (ICF keeps this copy); its Virtual28/Virtual54 are folded into EEUGAttackGround.cpp's.
 
 #include "../AI Thread/AgeOfAI/AgeOfAI.h"
+#include "../AI Thread/AgeOfAI/AgeOfAIUnitsFirstRules.h"
 #include <windows.h>
 #include <stdio.h>
+#include <cstring>
+#include <unordered_map>
+#include <vector>
 
 #include "lle/LowLevelEngine.h"
 #include "lle/GE2DPoint.h"
@@ -28,6 +32,11 @@
 #include "ee/EEUCBuilding.h"
 #include "ee/EEUCGate.h"
 #include "ee/EEAreaUtilities.h"
+#include "ee/EEMap.h"
+#include "ee/EEPhysics.h"
+#include "ee/EEDatabaseTables.h"
+
+extern EEToHitTable gToHitTable;   // 0x5318e8
 
 const UString EEUGAttackUnit::sData("EEUGAttackUnit-Data");
 // SYNTHETIC: EXE 0x61d2f4   (wrapper)
@@ -274,11 +283,105 @@ long EEUGAttackUnit::GetMaxPathAttempts()
     return this->mPathAttempts + 1;
 }
 
+namespace {
+
+using namespace AgeOfAI::UnitsFirstRules;
+
+AgeOfAI::UnitsFirstCounts sUnitsFirstCounts[16];
+
+// Every unit gets one look per kEveryMs of game time. A new game resets the cadence and the counters.
+long sUnitsFirstTime = -1;
+std::unordered_map<unsigned long, long> sUnitsFirstLast;
+
+// The nearest enemy unit in range that this player sees and the attacker's weapon can hurt (uf_pick).
+EEUnit* UnitsFirstPick(EEComplexUnit* inUnit)
+{
+    if (inUnit == NULL || inUnit->mPlayer == NULL || inUnit->mUnitClass == NULL)
+        return NULL;
+    const float theRange = inUnit->mStats != NULL ? inUnit->mStats->mRange : inUnit->mUnitClass->mRange;
+    const float theReach = Reach(theRange);
+    const float theReachSq = theReach * theReach;
+    GE2DPoint theCenter((float)inUnit->mTileX, (float)inUnit->mTileY);
+    std::vector<EEUnit*> theNear;
+    EEGetUnitsInRadius(theCenter, theReach, theNear);
+    const unsigned long thePlayerID = inUnit->mPlayer->mPlayerID;
+    EEUnit* theBest = NULL;
+    long theBestD2 = -1;
+    for (size_t i = 0; i < theNear.size(); i++) {
+        EEUnit* theCandidate = theNear[i];
+        if (theCandidate == NULL || theCandidate == inUnit || theCandidate->mHitPoints <= 0
+            || theCandidate->mUnitClass == NULL || theCandidate->mPlayer == NULL)
+            continue;
+        if (!IsSwitchTarget(theCandidate->mUnitClass->mCategory))
+            continue;
+        if (!AgeOfAI::IsEnemyOf(inUnit->mPlayer, theCandidate->mPlayer))
+            continue;
+        const long theDX = theCandidate->mTileX - inUnit->mTileX;
+        const long theDY = theCandidate->mTileY - inUnit->mTileY;
+        const long theD2 = theDX * theDX + theDY * theDY;
+        if (theBestD2 >= 0 && theD2 >= theBestD2)
+            continue;                                   // a nearer candidate is already kept
+        if (theCandidate->mTile == NULL || theCandidate->mTile->GetSightCount(thePlayerID) == 0)
+            continue;                                   // the player cannot see it
+        if (!EEUUGetIsUnitClassTargetable(inUnit, theCandidate->mUnitClass))
+            continue;
+        if (gToHitTable.GetAttackFactor(inUnit->mUnitClass->mAmmoType, theCandidate->mUnitClass, thePlayerID,
+                                        theCandidate->mPlayer->mPlayerID) <= 0.0f)
+            continue;                                   // the weapon cannot hurt it
+        if (!Better(theD2, theBestD2, theReachSq, true, true))
+            continue;
+        theBest = theCandidate;
+        theBestD2 = theD2;
+    }
+    return theBest;
+}
+
+// A unit attacking a building it picked for itself takes a nearby enemy unit instead (units_first_tick). Called
+// from Step while the unit turns to its target, once for each turn; an ordered goal is never changed.
+void UnitsFirstMaybeRetarget(EEUGAttackUnit* inGoal, EEComplexUnit* inUnit)
+{
+    if (inGoal == NULL || inUnit == NULL || inUnit->mPlayer == NULL)
+        return;
+    const unsigned long thePlayerID = inUnit->mPlayer->mPlayerID;
+    if (!AgeOfAI::UnitsFirstOn(thePlayerID))
+        return;
+    const unsigned long theAction = inUnit->mCommand ? inUnit->mCommand->mType : 0;
+    EEUnit* theOld = inGoal->GetTarget();
+    if (!ShouldSwitch((long)theAction, inGoal->GetB1C(), inUnit->GetHitPoints(),
+                      theOld != NULL && theOld->mUnitClass != NULL ? theOld->mUnitClass->mCategory : 0))
+        return;
+    const long theTime = gPhysics != NULL ? (long)gPhysics->mGameTime : 0;
+    if (theTime < sUnitsFirstTime) {                    // a new game
+        sUnitsFirstLast.clear();
+        memset(sUnitsFirstCounts, 0, sizeof sUnitsFirstCounts);
+    }
+    sUnitsFirstTime = theTime;
+    long& theLast = sUnitsFirstLast[inUnit->GetUnitID()];
+    if (theLast != 0 && theTime - theLast < kEveryMs)
+        return;
+    theLast = theTime != 0 ? theTime : 1;
+    AgeOfAI::UnitsFirstCounts& theCounts = sUnitsFirstCounts[thePlayerID & 15];
+    theCounts.mChecks++;
+    EEUnit* theBest = UnitsFirstPick(inUnit);
+    if (theBest == NULL)
+        return;
+    inGoal->SetTarget(theBest);
+    theCounts.mSwitched++;
+}
+
+}  // namespace
+
+AgeOfAI::UnitsFirstCounts AgeOfAI::UnitsFirstCountsOf(unsigned long inPlayerID)
+{
+    return sUnitsFirstCounts[inPlayerID & 15];
+}
+
 // FUNCTION: EXE 0x61d8dc
 // Retargets gate parts, faces the target (turning animation 0xd), or fires: attack animation, a shot on its
 // frame else a randomised reload timer; drops the path and resets the path attempts
 void EEUGAttackUnit::Step(EEComplexUnit* inUnit)
 {
+    UnitsFirstMaybeRetarget(this, inUnit);
     unsigned long theCommand = inUnit->mCommand ? inUnit->mCommand->mType : 0;
     switch (theCommand) {
     case kActionChangeTargetForSpecialEnemy:
