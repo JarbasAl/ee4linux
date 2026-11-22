@@ -2,9 +2,9 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
-// Also dll/ai/sites.c (town_work's site swap) and dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's
-// tile flag test, town_work's training-time homes, overseas-mine preference in other searches, the wood and field
-// searches, and no_fields_wild (off by default). Ferry/no-citizen
+// Also dll/ai/sites.c (town_work's site swap) and dll/ai/food.c (food_bush, food_pull, the no_fields_wild bush and
+// animal branch). Not ported yet: the mine search's tile flag test, town_work's training-time homes, overseas-mine
+// preference in other searches, the wood search, and no_fields_wild's fish branch (off by default). Ferry/no-citizen
 // mine searches prefer an overseas mine when [patches] overseas_mines is on.
 #include <windows.h>
 #include <unistd.h>
@@ -137,6 +137,7 @@
 #include "AgeOfAI.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
+#include "AgeOfAINoFieldsWildRules.h"
 #include "AgeOfAITownWorkRules.h"
 #include "AgeOfAIWorkers.h"
 
@@ -863,8 +864,6 @@ EEUnit* FoodBush(EECPResourceManager* inResources, EEComplexUnit* inUnit, long i
 // Upstream's food_animal (food.c). A tiger or a wolf is left alone.
 EEUnit* FoodAnimal(EECPResourceManager* inResources, EEComplexUnit* inUnit)
 {
-    if (inUnit == NULL)
-        return NULL;
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
     EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
     if (theBuild == NULL)
@@ -875,7 +874,9 @@ EEUnit* FoodAnimal(EECPResourceManager* inResources, EEComplexUnit* inUnit)
     long theRange = gSettingsAI[thePlayer->GetDifficulty()].food_hunt_range;
     if (theRange <= 0)
         theRange = 15;
-    long theRegion = (long)gContinentManager.GetContinentID(inUnit);
+    // Upstream food_animal with u == NULL checks every land: the field pass has no citizen to compare with.
+    const bool theAnyLand = inUnit == NULL;
+    long theRegion = theAnyLand ? -1 : (long)gContinentManager.GetContinentID(inUnit);
     EEUnit* theBest = NULL;
     long theBestD = theRange * theRange + 1;
     std::vector<EEUnit*> theNear;
@@ -905,7 +906,7 @@ EEUnit* FoodAnimal(EECPResourceManager* inResources, EEComplexUnit* inUnit)
                 continue;
             if ((unsigned long)gWorld.GetResourceUsers(theAnimal) >= 3)
                 continue;
-            if ((long)gContinentManager.GetContinentID(theAnimal) != theRegion)
+            if (!theAnyLand && (long)gContinentManager.GetContinentID(theAnimal) != theRegion)
                 continue;
             if (theBuild->HasEnemyNear(theAX, theAY))
                 continue;
@@ -916,6 +917,49 @@ EEUnit* FoodAnimal(EECPResourceManager* inResources, EEComplexUnit* inUnit)
         }
     }
     return theBest;
+}
+
+// NO FIELDS WILD (food_plan no_fields_wild, off in the shipped file; before the assignment): from the Copper Age field
+// foundations keep their builders while a free bush or animal is in reach. Upstream's food_fields_wait (food.c) also
+// counts known fish when the player uses boats; that branch is not ported. The searches use no citizen, so an animal
+// may be on any land, as upstream's food_animal with u == NULL does.
+namespace {
+
+WildFieldCounts sWildFields[16];
+
+}
+
+bool WildBeforeFields(EECPResourceManager* inResources)
+{
+    if (inResources == NULL)
+        return false;
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (thePlayer == NULL || EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
+        return false;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    WildFieldCounts& theCounts = sWildFields[thePlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    if (!theSettings.food_plan.no_fields_wild)
+        return false;
+    long theEpoch = thePlayer->mTechnologies != NULL ? thePlayer->mTechnologies->mCurrentEpoch : -1;
+    if (theEpoch < NoFieldsWildRules::kFarmEpoch)
+        return false;
+    theCounts.mChecks++;
+    const bool theBush = FoodBush(inResources, NULL, NoFieldsWildRules::BushReach2(thePlayer->GetDropOffDistance())) != NULL;
+    const bool theAnimal = FoodAnimal(inResources, NULL) != NULL;
+    if (theBush)
+        theCounts.mBush++;
+    if (theAnimal)
+        theCounts.mAnimal++;
+    const bool theDefer = NoFieldsWildRules::DeferFields(theSettings.food_plan.no_fields_wild, theEpoch, theBush, theAnimal);
+    if (theDefer)
+        theCounts.mDeferred++;
+    return theDefer;
+}
+
+WildFieldCounts WildFieldCountsOf(unsigned long inPlayerID)
+{
+    return sWildFields[inPlayerID & 15];
 }
 
 // HUNT NEAR (food_plan hunt_near, off in the shipped file; before the assignment): idle citizens hunt animals near a

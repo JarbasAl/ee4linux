@@ -231,6 +231,21 @@ enemy near and not a dangerous site. As upstream, a tiger or a wolf is left alon
 With `food_plan` `back_to_food` also on, before farms, a gatherer pulled back to food goes to a free animal first and
 takes a forage bush only when none is in reach.
 
+With `food_plan` `no_fields_wild` (off in the shipped file), from the Copper Age a field foundation keeps no builder
+while a free bush or animal is in reach. Before the gather assignment `EECPResourceManager.cpp` asks
+`AgeOfAI::WildBeforeFields`: it finds the free forage bush within six times the drop-off distance of a drop site that
+takes food, or a free animal near a drop site that takes hunters, using the same searches as the food passes. An animal
+counts on any land, as upstream's search with no citizen does. Upstream also defers while known fish food is rich and
+the boats are under eight; that branch is not ported. The sim report counts hook calls, gated passes, free bushes,
+free animals and deferred field passes in `intel.wild_calls`, `intel.wild_checks`, `intel.wild_bush`,
+`intel.wild_animal` and `intel.wild_deferred`.
+`AgeOfAINoFieldsWildRules.h` holds the Copper Age and reach arithmetic.
+
+A 60-minute fights-preset probe with three Age of AI players and inis differing only in `no_fields_wild` deferred
+33, 1 and 11 field passes for the three players with the bit on; the bit-off run deferred none. The scorecard fell from
+11336.7 off to 10549.0 on, and the traces first differ at game millisecond 1935500 across 3808 diff lines. The
+300-second benchmark stays at 4084.5 with a byte-identical trace.
+
 With `food_plan` `wild_settlement` (off in the shipped file), before the Copper Age an Age of AI player may place a
 Settlement by rich wild food far from its drop sites, at most twice in a game and no more than once every two minutes.
 Bushes and animals within 30 tiles of the base count as wild food; a spot 10 or more tiles from every food drop site

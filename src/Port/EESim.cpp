@@ -291,6 +291,7 @@ struct PlayerSample {
     long mFishCalls = 0, mFishPicked = 0, mFishChanged = 0, mFishClass = 0;
     long mMineCalls = 0, mMineCapped = 0, mMineMines = 0, mMineCap = 0;
     long mFoodPulled = 0;
+    long mWildCalls = 0, mWildChecks = 0, mWildBush = 0, mWildAnimal = 0, mWildDeferred = 0;
     long mTownSwapped = 0, mTownAway = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
@@ -581,6 +582,12 @@ Sample TakeSample()
             p.mRecoverOn = (long)theRecover.mOn;
             p.mRecoverHadEconomy = (long)theRecover.mHadEconomy;
             p.mFoodPulled = (long)AgeOfAI::FoodCountsOf(i).mPulled;
+            AgeOfAI::WildFieldCounts theWild = AgeOfAI::WildFieldCountsOf(i);
+            p.mWildCalls = (long)theWild.mCalls;
+            p.mWildChecks = (long)theWild.mChecks;
+            p.mWildBush = (long)theWild.mBush;
+            p.mWildAnimal = (long)theWild.mAnimal;
+            p.mWildDeferred = (long)theWild.mDeferred;
             AgeOfAI::TownWorkCounts theTownWork = AgeOfAI::TownWorkCountsOf(i);
             p.mTownSwapped = (long)theTownWork.mSwapped;
             p.mTownAway = (long)theTownWork.mAway;
@@ -1335,6 +1342,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"recover_checks\": %ld, \"recover_starts\": %ld, \"recover_ends\": %ld, \"recover_moves\": %ld, "
                      "\"recover_on\": %ld, \"recover_had_economy\": %ld, "
                      "\"food_pulled\": %ld, "
+                     "\"wild_calls\": %ld, \"wild_checks\": %ld, \"wild_bush\": %ld, \"wild_animal\": %ld, \"wild_deferred\": %ld, "
                      "\"town_swapped\": %ld, \"town_away\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
@@ -1385,7 +1393,8 @@ std::string PlayersJson(const Sample& inSample)
                      p.mBuildAttempts, p.mBuildFails, p.mBuildDropped, p.mBuildTopType, p.mBuildTopFails,
                      p.mRecoverChecks, p.mRecoverStarts, p.mRecoverEnds, p.mRecoverMoves,
                      p.mRecoverOn, p.mRecoverHadEconomy,
-                     p.mFoodPulled, p.mTownSwapped, p.mTownAway,
+                     p.mFoodPulled, p.mWildCalls, p.mWildChecks, p.mWildBush, p.mWildAnimal, p.mWildDeferred,
+                     p.mTownSwapped, p.mTownAway,
                      p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
                      (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,

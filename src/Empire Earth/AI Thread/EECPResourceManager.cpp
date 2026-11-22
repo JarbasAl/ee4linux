@@ -458,7 +458,11 @@ void EECPResourceManager::AssignGatherers()
                                             }
                                         }
                                         if (theWanted > 0) {
-                                            if (!thePlayer->mUsesFishing && thePlayer->CanProduceUnitType(kUnitTypeFarm, 0x20, NULL)) {
+                                            // food_plan no_fields_wild (off in the shipped file): a free bush or animal takes
+                                            // the idle citizens before a field foundation gets a builder.
+                                            const bool theWild = AgeOfAI::EngineOf(thePlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI
+                                                                 && AgeOfAI::WildBeforeFields(this);
+                                            if (!theWild && !thePlayer->mUsesFishing && thePlayer->CanProduceUnitType(kUnitTypeFarm, 0x20, NULL)) {
                                                 this->GetUnfinishedFarms(theWanted < theIdle.size() ? theWanted : theIdle.size(), theFound);
                                                 for (k = 0; k < theFound.size(); k++) {
                                                     theUnit = theIdle.front();

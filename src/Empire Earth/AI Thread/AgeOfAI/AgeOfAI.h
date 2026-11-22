@@ -293,6 +293,14 @@ struct FoodCounts {
     unsigned long mPulled;   // gatherers moved to food
 };
 FoodCounts FoodCountsOf(unsigned long inPlayerID);
+// NO FIELDS WILD (food_plan no_fields_wild, off in the shipped file): field foundations keep their builders while a
+// free bush or animal is in reach, from the Copper Age. Called before the gather assignment; upstream's fish branch is
+// not ported.
+bool WildBeforeFields(EECPResourceManager* inResources);
+struct WildFieldCounts {
+    unsigned long mCalls, mChecks, mBush, mAnimal, mDeferred;   // hook calls, gated passes, free bushes, free animals, field passes deferred
+};
+WildFieldCounts WildFieldCountsOf(unsigned long inPlayerID);
 // Town work ([ai_base] town_work, off in the shipped file; after every gather assignment): a citizen sent to a site
 // whose nearest drop site is far from where it stands is moved to work its own town can reach. The training-time homes
 // of upstream are not ported, so the citizen's tile at assignment stands in for its home.
