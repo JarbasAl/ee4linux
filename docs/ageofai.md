@@ -438,6 +438,12 @@ Setting the flag on is an opt-in from the shipped off state; setting it off keep
 
 This is an opt-in from the shipped off state, so no default rating changes. The 300-second benchmark has no attack due in its window and its trace stays byte-identical at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on held the first attacks and scored 3210.7 against 7089.3 with the gate off; the traces differ. Gate on counted 1601, 1601 and 1600 due-time checks, three new waits and two or three releases per player. Gate off counted none. The sim report counts checks, new waits, releases and extensions in `intel.mass_checks`, `intel.mass_waits`, `intel.mass_goes` and `intel.mass_waited`.
 
+## Regroup stragglers
+
+`[ai_base] army_mass=walk_back` is upstream's mass rule 32 and is off in the shipped file where `army_mass=` is empty. Every two game seconds `AgeOfAIDanger.cpp` walks the game's land attack subgroups. A subgroup counts when it is past forming and fighting, with at least two members more than 25 tiles from the base whose middle lies more than 30 tiles from it. A land soldier in such a pack walks back to that middle when it is past the 25-tile base radius, at least `army_mass_tether` plus 4 tiles from the middle, and not already walking to within 4 tiles of it. A soldier with a live attack target stays. The order is a location goal. `EEComputerPlayer::Update` calls the rule once per tick, and `AgeOfAIWalkBackRules.h` holds the distances and state tests.
+
+This is a reduced port. Upstream's rally, `to_pack` and tether scoring are separate bits and are not ported. Setting the flag on is an opt-in from the shipped off state. The 300-second benchmark has no `army_mass` flag, so its trace stays byte-identical at 4084.5 and its score is unchanged. In a 60-minute Large-map game with three Age of AI players and inis differing only in `army_mass`, gate on gave 609, 172 and 14 walk-back orders in the three players; gate off gave none. The scorecard fell from 18793.0 off to 18029.3 on, and the traces first differ at game millisecond 1819125 across 4080 diff lines. The sim report counts ticks, land subgroups, out fighting packs and orders in `intel.walk_checks`, `intel.walk_subgroups`, `intel.walk_packs` and `intel.walk_regrouped`.
+
 ## Counter-siege and the citizen militia
 
 Upstream's default turns `[ai_base] citizen_militia` and `counter_siege` on. The shipped `ageofai.ini` turns both off

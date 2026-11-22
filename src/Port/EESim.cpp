@@ -285,6 +285,7 @@ struct PlayerSample {
     long mLeashCalls = 0, mLeashSkipped = 0;
     long mTetherCalls = 0, mTetherSkipped = 0;
     long mMassChecks = 0, mMassWaits = 0, mMassGoes = 0, mMassWaited = 0;
+    long mWalkChecks = 0, mWalkSubGroups = 0, mWalkPacks = 0, mWalkRegrouped = 0;
     long mCatchChecks = 0, mCatchCalls = 0;
     long mGranChecks = 0, mGranRequested = 0;
     long mFishCalls = 0, mFishPicked = 0, mFishChanged = 0, mFishClass = 0;
@@ -530,6 +531,11 @@ Sample TakeSample()
             p.mMassWaits = (long)theMass.mWaits;
             p.mMassGoes = (long)theMass.mGoes;
             p.mMassWaited = (long)theMass.mWaited;
+            AgeOfAI::WalkBackCounts theWalk = AgeOfAI::WalkBackCountsOf(i);
+            p.mWalkChecks = (long)theWalk.mChecks;
+            p.mWalkSubGroups = (long)theWalk.mSubGroups;
+            p.mWalkPacks = (long)theWalk.mPacks;
+            p.mWalkRegrouped = (long)theWalk.mRegrouped;
             AgeOfAI::CatchUpAIsCounts theCatch = AgeOfAI::CatchUpAIsCountsOf(i);
             p.mCatchChecks = (long)theCatch.mChecks;
             p.mCatchCalls = (long)theCatch.mCalls;
@@ -1317,6 +1323,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"leash_calls\": %ld, \"leash_skipped\": %ld, "
                      "\"tether_calls\": %ld, \"tether_skipped\": %ld, "
                      "\"mass_checks\": %ld, \"mass_waits\": %ld, \"mass_goes\": %ld, \"mass_waited\": %ld, "
+                     "\"walk_checks\": %ld, \"walk_subgroups\": %ld, \"walk_packs\": %ld, \"walk_regrouped\": %ld, "
                      "\"catch_checks\": %ld, \"catch_calls\": %ld, "
                      "\"granary_checks\": %ld, \"granary_requested\": %ld, "
                      "\"fish_calls\": %ld, \"fish_picked\": %ld, \"fish_changed\": %ld, \"fish_class\": %ld, "
@@ -1367,6 +1374,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mLeashCalls, p.mLeashSkipped,
                      p.mTetherCalls, p.mTetherSkipped,
                      p.mMassChecks, p.mMassWaits, p.mMassGoes, p.mMassWaited,
+                     p.mWalkChecks, p.mWalkSubGroups, p.mWalkPacks, p.mWalkRegrouped,
                      p.mCatchChecks, p.mCatchCalls,
                      p.mGranChecks, p.mGranRequested,
                      p.mFishCalls, p.mFishPicked, p.mFishChanged, p.mFishClass,

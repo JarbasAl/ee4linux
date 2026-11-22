@@ -5608,6 +5608,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::AvoidLostTick(this, inTime);
         AgeOfAI::ScoutTick(this, inTime);
         AgeOfAI::MassWaitTick(this, inTime);
+        AgeOfAI::WalkBackTick(this, inTime);
         AgeOfAI::CatchUpAIsTick(this, inTime);
     }
     UWideString theUnused1;

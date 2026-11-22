@@ -49,7 +49,8 @@ The report of an Age of AI player has an `intel` object, its memory of its enemi
 of the outdated units' attack (`outdated_*`), of the food pull (`food_pulled`), of counter-fire (`counter_fire_*`), of
 the mine cap (`mine_calls`, `mine_capped`, `mine_mines`, `mine_cap`), the army tether (`tether_calls`, `tether_skipped`),
 the army's wait for a stronger moment (`mass_checks`, `mass_waits`, `mass_goes`, `mass_waited`, with `mass_waited`
-adding five per 20-second extension as upstream counts it), the catch-up for other AIs' epochs (`catch_checks`,
+adding five per 20-second extension as upstream counts it), the army's walk-back regroup (`walk_checks`,
+`walk_subgroups`, `walk_packs`, `walk_regrouped`), the catch-up for other AIs' epochs (`catch_checks`,
 `catch_calls`), the wall breach (`breach_calls`, `breach_crossed`, `breach_picked`, `breach_walls`), the build queue fix
 (`build_attempts`, `build_fails`, `build_dropped`, `build_top_type`, `build_top_fails`), the economy recovery
 (`recover_checks`, `recover_starts`, `recover_ends`, `recover_moves`, `recover_on`, `recover_had_economy`), the citizen militia

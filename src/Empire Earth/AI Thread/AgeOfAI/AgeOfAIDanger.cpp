@@ -143,6 +143,9 @@
 #include "ee/EECPAttackCommander.h"
 #include "ee/EECPAttackGroup.h"
 #include "ee/EECPAttackSubGroup.h"
+#include "ee/EECPAttackSubGroupUnit.h"
+#include "ee/EEUnitGoal.h"
+#include "ee/EEUnitAction.h"
 #include "AgeOfAI/AgeOfAIStats.h"
 #include "AgeOfAI/AgeOfAIAvoidLostRules.h"
 #include "AgeOfAI/AgeOfAIFightMemoryRules.h"
@@ -153,6 +156,7 @@
 #include "AgeOfAITowers.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
+#include "AgeOfAIWalkBackRules.h"
 
 namespace AgeOfAI {
 
@@ -872,6 +876,115 @@ void MassWaitTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 MassWaitCounts MassWaitCountsOf(unsigned long inPlayerID)
 {
     return sMassWaitCounts[inPlayerID & 15];
+}
+
+// REGROUP (mass.c ms_tether, [ai_base] army_mass=walk_back; off in the shipped file). Every 2 game seconds a land
+// subgroup that is out past forming and fighting has each chasing soldier walk back to the centre of its away members:
+// the soldier must be past the base radius, tether + 4 tiles from that centre and not already walking to within 4 tiles
+// of it. The tether score, rally, to_pack and wait_stronger bits are separate and are not ported.
+static WalkBackCounts sWalkBack[16];
+static unsigned long sLastWalkBack[16];
+
+void WalkBackTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.army_mass.walk_back)
+        return;
+    const unsigned theIndex = inPlayer->mPlayerID & 15;
+    if (sLastWalkBack[theIndex] != 0 && inNow >= sLastWalkBack[theIndex] && inNow - sLastWalkBack[theIndex] < 2000)
+        return;
+    sLastWalkBack[theIndex] = inNow != 0 ? inNow : 1;
+    WalkBackCounts& theCounts = sWalkBack[theIndex];
+    theCounts.mChecks++;
+    EECPCivilizationManager* theCiv = inPlayer->mCivilizationManager;
+    EECPCombatManager* theCombat = inPlayer->mCombatManager;
+    if (theCiv == NULL || theCiv->mBuildManager == NULL || theCombat == NULL || theCombat->mAttackCommander == NULL)
+        return;
+    const long theBaseX = theCiv->mBuildManager->mTownCenterTile.mX;
+    const long theBaseY = theCiv->mBuildManager->mTownCenterTile.mY;
+    if (theBaseX < 0 || theBaseY < 0)
+        return;
+    EECPAttackCommander* theCommander = theCombat->mAttackCommander;
+    const long theTether = theSettings.army_mass_tether + 4;
+
+    for (size_t g = 0; g < theCommander->mGroups.size() && g < 64; g++) {
+        EECPAttackGroup* theGroup = theCommander->mGroups[g];
+        if (theGroup == NULL)
+            continue;
+        for (unsigned long s = 0; s < theGroup->GetNumSubGroups() && s < 64; s++) {
+            EECPAttackSubGroup* theSubGroup = theGroup->GetSubGroupAt((long)s);
+            if (theSubGroup == NULL || theSubGroup->mKind != kASGKindLand)
+                continue;
+            theCounts.mSubGroups++;
+            long theX = 0, theY = 0, theN = 0, theAX = 0, theAY = 0, theNA = 0;
+            for (unsigned long i = 0; i < theSubGroup->GetNumUnits() && i < 256; i++) {
+                EECPAttackSubGroupUnit* theRecord = theSubGroup->GetUnitsAt(i);
+                EEComplexUnit* theUnit = theRecord != NULL ? theRecord->GetUnit() : NULL;
+                if (theUnit == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0)
+                    continue;
+                theX += theUnit->mTileX;
+                theY += theUnit->mTileY;
+                theN++;
+                const long theDX = theUnit->mTileX - theBaseX, theDY = theUnit->mTileY - theBaseY;
+                if (theDX * theDX + theDY * theDY > WalkBackRules::kBaseSafe * WalkBackRules::kBaseSafe) {
+                    theAX += theUnit->mTileX;
+                    theAY += theUnit->mTileY;
+                    theNA++;
+                }
+            }
+            if (theN == 0)
+                continue;
+            const long thePackX = theNA > 0 ? theAX / theNA : theX / theN;
+            const long thePackY = theNA > 0 ? theAY / theNA : theY / theN;
+            const long theODX = thePackX - theBaseX, theODY = thePackY - theBaseY;
+            if (!WalkBackRules::OutPastForming(theSubGroup->mState, theODX * theODX + theODY * theODY)
+                || !WalkBackRules::HasPack((int)theNA))
+                continue;
+            theCounts.mPacks++;
+            if (!WalkBackRules::IsFightingState(theSubGroup->mState))
+                continue;
+            for (unsigned long i = 0; i < theSubGroup->GetNumUnits() && i < 256; i++) {
+                EECPAttackSubGroupUnit* theRecord = theSubGroup->GetUnitsAt(i);
+                EEComplexUnit* theUnit = theRecord != NULL ? theRecord->GetUnit() : NULL;
+                if (theUnit == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL)
+                    continue;
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                if (theClass->mCategory != kUnitCategoryLand
+                    || !Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+                    continue;
+                EEUnitGoal* theGoal = theUnit->mGoalState;
+                EEUGAttackUnit* theAttack = dynamic_cast<EEUGAttackUnit*>(theGoal);
+                if (theAttack != NULL && theAttack->mTarget != NULL && theAttack->mTarget->mHitPoints > 0
+                    && theAttack->mTarget->mTileX >= 0)
+                    continue;
+                const long theBDX = theUnit->mTileX - theBaseX, theBDY = theUnit->mTileY - theBaseY;
+                const long thePDX = theUnit->mTileX - thePackX, thePDY = theUnit->mTileY - thePackY;
+                const long theBaseD2 = theBDX * theBDX + theBDY * theBDY;
+                const long thePackD2 = thePDX * thePDX + thePDY * thePDY;
+                long theGoalDX = 100, theGoalDY = 100;
+                EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theGoal);
+                if (theLocation != NULL) {
+                    theGoalDX = (long)(theLocation->mLocation.GetX() - ((float)thePackX + 0.5f));
+                    theGoalDY = (long)(theLocation->mLocation.GetY() - ((float)thePackY + 0.5f));
+                }
+                if (!WalkBackRules::ShouldWalkBack(theBaseD2, thePackD2, theTether, theGoalDX, theGoalDY))
+                    continue;
+                const GE3DPoint thePoint((float)thePackX + 0.5f, (float)thePackY + 0.5f, 0.0f);
+                EEUGLocation* theMove = new EEUGLocation(&thePoint, true, false, false, 0.0f, false, false);
+                if (theSubGroup->GiveGoal(theUnit, theMove, false, kActionPrepareToMove))
+                    theCounts.mRegrouped++;
+                else if (theMove != NULL)
+                    delete theMove;
+            }
+        }
+    }
+}
+
+WalkBackCounts WalkBackCountsOf(unsigned long inPlayerID)
+{
+    return sWalkBack[inPlayerID & 15];
 }
 
 // Enemy soldiers that this player sees within reach of a tile: each by its own reach (its range + RAID_MARGIN, at least r0, at

@@ -491,6 +491,14 @@ struct MassWaitCounts {
 };
 MassWaitCounts MassWaitCountsOf(unsigned long inPlayerID);
 
+// REGROUP, the walk_back bit of army_mass (mass.c ms_tether; default off). Every 2 game seconds a chasing land soldier
+// in a fighting pack past the tether walks back to the pack. EEAIGPG calls this once per AI tick.
+void WalkBackTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct WalkBackCounts {
+    unsigned long mChecks, mSubGroups, mPacks, mRegrouped;   // ticks, land subgroups, out fighting packs, orders given
+};
+WalkBackCounts WalkBackCountsOf(unsigned long inPlayerID);
+
 // Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
 // (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
 void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow);
