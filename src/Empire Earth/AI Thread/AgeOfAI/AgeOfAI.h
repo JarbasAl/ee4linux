@@ -219,6 +219,14 @@ struct UnitsFirstCounts {
 };
 bool UnitsFirstOn(unsigned long inPlayerID);   // the unit's owner's [general] units_first
 UnitsFirstCounts UnitsFirstCountsOf(unsigned long inPlayerID);
+// Answering fire (engine/unitsfirst.c answer_fire, [general] answer_fire, off at the shipped game value): an idle
+// fighter shot from beyond its reply range goes for the nearby enemy whose attack goal aims at it. The scan runs
+// once every 500 game milliseconds for the players the setting names. Counts of looks and goals sent.
+struct AnswerFireCounts {
+    unsigned long mChecks, mSent;
+};
+void AnswerFireTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+AnswerFireCounts AnswerFireCountsOf(unsigned long inPlayerID);
 // Scouting unseen land (towns.c scout, [ai_base] towns=scout, off by default): the fastest idle soldier near the base
 // walks to the nearest cell it has never looked at on its land, behind the front its known enemy buildings hold. It
 // turns back when raiders come in sight or a known defence covers it. The town planner and its site search are absent.

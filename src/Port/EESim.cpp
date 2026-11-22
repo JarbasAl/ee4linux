@@ -310,6 +310,7 @@ struct PlayerSample {
     long mFortBusy = 0, mFortWait = 0, mFortSkipped = 0, mFortExposed = 0;
     long mPopChecks = 0, mPopOverrides = 0, mPopWeighted = 0, mPopCap = 0;
     long mUnitsFirstChecks = 0, mUnitsFirstSwitched = 0;
+    long mAnswerFireChecks = 0, mAnswerFireSent = 0;
     long mTightBuildCalls = 0, mTightBuildSites = 0;
     long mLostChecks = 0, mLostSkipped = 0, mLostInReach = 0;
     long mLostRefreshes = 0, mLostCells = 0, mLostZones = 0;
@@ -649,6 +650,9 @@ Sample TakeSample()
             AgeOfAI::UnitsFirstCounts theUnitsFirst = AgeOfAI::UnitsFirstCountsOf(i);
             p.mUnitsFirstChecks = (long)theUnitsFirst.mChecks;
             p.mUnitsFirstSwitched = (long)theUnitsFirst.mSwitched;
+            AgeOfAI::AnswerFireCounts theAnswerFire = AgeOfAI::AnswerFireCountsOf(i);
+            p.mAnswerFireChecks = (long)theAnswerFire.mChecks;
+            p.mAnswerFireSent = (long)theAnswerFire.mSent;
             AgeOfAI::TightBuildCounts theTightBuild = AgeOfAI::TightBuildCountsOf(i);
             p.mTightBuildCalls = (long)theTightBuild.mCalls;
             p.mTightBuildSites = (long)theTightBuild.mSites;
@@ -1327,6 +1331,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"fort_busy\": %ld, \"fort_wait\": %ld, \"fort_skipped\": %ld, \"fort_exposed\": %ld, "
                      "\"pop_checks\": %ld, \"pop_overrides\": %ld, \"pop_weighted\": %ld, \"pop_cap\": %ld, "
                      "\"units_first_checks\": %ld, \"units_first_switched\": %ld, "
+                     "\"answer_fire_checks\": %ld, \"answer_fire_sent\": %ld, "
                      "\"tight_build_calls\": %ld, \"tight_build_sites\": %ld, "
                      "\"lost_checks\": %ld, \"lost_skipped\": %ld, \"lost_in_reach\": %ld, "
                      "\"lost_refreshes\": %ld, \"lost_cells\": %ld, \"lost_zones\": %ld, "
@@ -1372,6 +1377,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mFortBusy, p.mFortWait, p.mFortSkipped, p.mFortExposed,
                      p.mPopChecks, p.mPopOverrides, p.mPopWeighted, p.mPopCap,
                      p.mUnitsFirstChecks, p.mUnitsFirstSwitched,
+                     p.mAnswerFireChecks, p.mAnswerFireSent,
                      p.mTightBuildCalls, p.mTightBuildSites,
                      p.mLostChecks, p.mLostSkipped, p.mLostInReach,
                      p.mLostRefreshes, p.mLostCells, p.mLostZones,

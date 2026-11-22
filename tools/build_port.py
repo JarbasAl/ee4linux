@@ -65,7 +65,9 @@ PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp", "Port/E
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAITightBuild.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAISurrender.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIScout.cpp",
-                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAISiteForts.cpp"],
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAISiteForts.cpp",
+
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIAnswerFire.cpp"],
               "lle": ["Port/EEPortSim.cpp"]}
 # Modules of the port build alone, each a folder of src: the native build's Win32 layer
 PORT_MODULES = {"win32": "Port/Linux"}

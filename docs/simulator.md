@@ -66,7 +66,8 @@ anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_ai
 `scout_towns`, `scout_foes`, `scout_cells`, `scout_picked`, `scout_sent`, `scout_back`), of the site forts
 (`fort_checks`, `fort_sites`, `fort_picked`, `fort_towers`, `fort_busy`, `fort_wait`, `fort_skipped`, `fort_exposed`),
 of the population cap (`pop_checks`, `pop_overrides`, `pop_weighted`, `pop_cap`), of the units-before-buildings rule
-(`units_first_checks`, `units_first_switched`), of the packed-building search
+(`units_first_checks`, `units_first_switched`), of the answering-fire rule
+(`answer_fire_checks`, `answer_fire_sent`), of the packed-building search
 (`tight_build_calls`, `tight_build_sites`), of the surrender rule (`surrender_checks`, `surrender_citizens`,
 `surrender_no_citizen`, `surrender_can_train`, `surrender_at_war`, `surrender_resigned`), of the lost-fight rule
 (`lost_checks`, `lost_skipped`, `lost_in_reach`, `lost_refreshes`, `lost_cells`, `lost_zones`), of the remembered foes

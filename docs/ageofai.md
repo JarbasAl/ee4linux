@@ -868,6 +868,18 @@ setting in a multiplayer game. The port checks from the attack goal's step while
 500 game milliseconds per unit. This engine has no reload-state hook, so a unit waiting to reload is checked when it
 turns again. The sim report counts looks and turns in `units_first_checks` and `units_first_switched`.
 
+`[general] answer_fire` (the shipped `ageofai.ini` uses `game`, which leaves the rule off) makes an idle fighter go for
+the enemy that shot it from beyond its reply range. The game's `UnderAttack` state only retaliates at an attacker
+inside the fighter's range, so a unit shot from further off stands and dies. With this setting on, a fighter with no
+goal takes an attack goal on a nearby enemy whose attack goal aims at it. The enemy must be alive on the map within
+24 tiles, seen by the fighter's player, hurt-able by its weapon and on the same land or water area; helicopters fly,
+so they need no shared area. Land units, land heroes, ships, submarines and helicopters with an attack qualify;
+citizens, priests and transports do not. The goal belongs to the unit, not to an order, so an order is never kept
+waiting behind it. The value `all` names every player's units and `computers` names the non-human players' units.
+The port runs the scan from the AI update once every 500 game milliseconds rather than at the game's safe point, so
+a game needs an Age of AI computer player to drive it, and the value comes from that player's settings file. The sim
+report counts looks and goals sent in `answer_fire_checks` and `answer_fire_sent`.
+
 ## The hook-site index
 
 ```
