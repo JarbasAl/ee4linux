@@ -293,6 +293,14 @@ struct FoodCounts {
     unsigned long mPulled;   // gatherers moved to food
 };
 FoodCounts FoodCountsOf(unsigned long inPlayerID);
+// Town work ([ai_base] town_work, off in the shipped file; after every gather assignment): a citizen sent to a site
+// whose nearest drop site is far from where it stands is moved to work its own town can reach. The training-time homes
+// of upstream are not ported, so the citizen's tile at assignment stands in for its home.
+struct TownWorkCounts {
+    unsigned long mSwapped, mAway;
+};
+void TownWork(EECPResourceManager* inResources);
+TownWorkCounts TownWorkCountsOf(unsigned long inPlayerID);
 
 // What is dangerous for the citizens (attack.c): SiteDanger is what the mine, food and wood searches refuse; RaidersKnown is raiders in
 // sight or remembered; SafetyTick (every 4 seconds, from the resource manager's update) refreshes the defences seen and the places of

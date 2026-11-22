@@ -2,8 +2,9 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
-// Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, town_work (off by default),
-// overseas-mine preference in other searches, the wood and field searches, and no_fields_wild (off by default). Ferry/no-citizen
+// Also dll/ai/sites.c (town_work's site swap) and dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's
+// tile flag test, town_work's training-time homes, overseas-mine preference in other searches, the wood and field
+// searches, and no_fields_wild (off by default). Ferry/no-citizen
 // mine searches prefer an overseas mine when [patches] overseas_mines is on.
 #include <windows.h>
 #include <unistd.h>
@@ -136,6 +137,7 @@
 #include "AgeOfAI.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
+#include "AgeOfAITownWorkRules.h"
 #include "AgeOfAIWorkers.h"
 
 namespace AgeOfAI {
@@ -294,7 +296,8 @@ bool ExploredBy(EEUnit* inSite, EEPlayer* inPlayer)
 // The free mine of a kind nearest to one of the player's drop sites (mine_choice): the original's checks (active zone,
 // explored, the gatherer cap, no enemy near, the unit's continent) and no known enemy on the way from that drop site.
 // inNotContinent: a continent whose mines do not count, 0xFFFF none. NULL when none: the original search then runs.
-EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, long inNotContinent)
+EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, long inNotContinent,
+                           long inHomeX = -10000, long inHomeY = -10000)
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
     EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
@@ -325,6 +328,9 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
         if (theIndex < 0)
             continue;
         const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
+        // town_work passes the citizen's home so the mine search only offers sites that town can reach.
+        if (inHomeX != -10000 && TownWorkRules::IsFar(theDrop.mX, theDrop.mY, inHomeX, inHomeY))
+            continue;
         int theIsLocal = 0;
         if (theLocal) {
             theIsLocal = SitesRules::MineLocal(theDrop.mX, theDrop.mY, inUnit->mTileX, inUnit->mTileY);
@@ -1163,6 +1169,122 @@ void FoodPull(EECPResourceManager* inResources)
 FoodCounts FoodCountsOf(unsigned long inPlayerID)
 {
     return sFood[inPlayerID & 15];
+}
+
+// TOWN WORK (sites.c town_work, off in the shipped file; after every gather assignment): upstream swaps a site whose
+// nearest drop site lies beyond TOWN_FAR of the citizen's home for work at home. It remembers each citizen's home when
+// it is trained, and gives idle citizens local work after the assignment. There is no training hook here, so this port
+// takes the citizen's tile at assignment as its home, upstream's own fallback for a citizen without one, and leaves the
+// idle pass and the homes table out. The game's assignment has already set the goal by this point, so the citizen still
+// stands at home and the swap keeps it from walking to the far town.
+namespace {
+
+TownWorkCounts sTownWork[16];
+
+bool LandCitizen(EEComplexUnit* inUnit)
+{
+    if (inUnit == NULL || inUnit->GetUnitClass() == NULL
+        || inUnit->GetUnitClass()->GetCategory() == kUnitCategoryNavalCitizen)
+        return false;
+    return IsCitizenUnit(inUnit);
+}
+
+// A site of resource inR whose nearest drop site is inside TOWN_FAR of (inHomeX, inHomeY), or NULL.
+EEUnit* TownSite(EECPResourceManager* inResources, int inR, EEComplexUnit* inUnit,
+                 long inHomeX, long inHomeY, unsigned inPI)
+{
+    EEUnit* theSite = NULL;
+    if (inR >= 4 && inR <= 6) {
+        theSite = SelectMineNearDrop(inResources, inR, inUnit, -1, inHomeX, inHomeY);
+    } else if (inR == 3) {
+        theSite = inResources->FindForestTarget(1, inUnit);
+    } else if (inR == 2) {
+        theSite = FoodBush(inResources, inUnit, 0x7FFFFFFF / 2);
+        if (theSite == NULL)
+            theSite = FoodAnimal(inResources, inUnit);
+    }
+    if (theSite == NULL)
+        return NULL;
+    int theIndex = -1;
+    long theD = DropNearest(inPI, theSite->mTileX, theSite->mTileY, inR == 2, &theIndex);
+    if (theIndex < 0)
+        return NULL;
+    const Drop& theDrop = sDrops[inPI].mDrops[theIndex];
+    return TownWorkRules::IsFar(theDrop.mX, theDrop.mY, inHomeX, inHomeY) ? NULL : theSite;
+}
+
+}  // namespace
+
+void TownWork(EECPResourceManager* inResources)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI || !SettingsOf(thePlayer).town_work)
+        return;
+    const unsigned thePI = thePlayer->mPlayerID & 15;
+    DropsCached(thePlayer);
+    TownWorkCounts& theCounts = sTownWork[thePI];
+
+    // Collect first: SendToGather moves the citizen between the resource queues while this runs.
+    std::vector<std::pair<EEComplexUnit*, int> > theFar;
+    for (int r = 2; r <= 6 && theFar.size() < 40; r++) {
+        for (EEComplexUnit* theUnit : inResources->mGatherers[r]) {
+            if (theFar.size() >= 40)
+                break;
+            if (!LandCitizen(theUnit))
+                continue;
+            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theUnit->GetLoadGoal());
+            if (theGather == NULL || theGather->mResource == NULL)
+                continue;
+            EEUnit* theSite = theGather->mResource;
+            int theIndex = -1;
+            long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, r == 2, &theIndex);
+            if (theIndex < 0)
+                continue;
+            const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
+            if (TownWorkRules::IsFar(theDrop.mX, theDrop.mY, theUnit->mTileX, theUnit->mTileY)) {
+                theFar.push_back(std::make_pair(theUnit, r));
+            }
+        }
+    }
+
+    for (size_t n = 0; n < theFar.size(); n++) {
+        EEComplexUnit* theUnit = theFar[n].first;
+        const int theResource = theFar[n].second;
+        const long theHomeX = theUnit->mTileX, theHomeY = theUnit->mTileY;
+        EEUnit* theSite = TownSite(inResources, theResource, theUnit, theHomeX, theHomeY, thePI);
+        if (theSite == NULL) {
+            long theShort[5];
+            for (int k = 0; k < 5; k++)
+                theShort[k] = (long)inResources->mWantedGatherers[k + 2]
+                              - (long)inResources->mGatherers[k + 2].size();
+            unsigned long theTried = (theResource >= 2 && theResource <= 6)
+                                     ? (1UL << (theResource - 2)) : 0;
+            for (int k = 0; k < 5 && theSite == NULL; k++) {
+                const int thePick = TownWorkRules::BestShortfall(theShort, theTried, 5);
+                if (thePick < 0)
+                    break;
+                theTried |= 1UL << thePick;
+                theSite = TownSite(inResources, thePick + 2, theUnit, theHomeX, theHomeY, thePI);
+            }
+        }
+        if (theSite == NULL)
+            theSite = TownSite(inResources, 3, theUnit, theHomeX, theHomeY, thePI);
+        if (theSite == NULL)
+            theSite = TownSite(inResources, 2, theUnit, theHomeX, theHomeY, thePI);
+        if (theSite == NULL) {
+            theCounts.mAway++;
+            continue;
+        }
+        const size_t theBefore = inResources->mGatherers[theSite->GetResourceType()].size();
+        inResources->SendToGather(theUnit, theSite, NULL);
+        if (inResources->mGatherers[theSite->GetResourceType()].size() != theBefore)
+            theCounts.mSwapped++;
+    }
+}
+
+TownWorkCounts TownWorkCountsOf(unsigned long inPlayerID)
+{
+    return sTownWork[inPlayerID & 15];
 }
 
 }

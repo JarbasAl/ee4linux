@@ -1530,6 +1530,7 @@ void EECPResourceManager::Update(unsigned long inTime)
                     AgeOfAI::SafetyTick(thePlayer, inTime);   // before the assignment
                 AgeOfAI::FoodHunt(this);
                 this->AssignGatherers();
+                AgeOfAI::TownWork(this);
                 AgeOfAI::Rebalance(this);
                 AgeOfAI::FoodPull(this);
                 AgeOfAI::FoodCamp(thePlayer, inTime);
