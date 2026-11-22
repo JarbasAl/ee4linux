@@ -679,14 +679,24 @@ defence covers, and stops two tiles from it on the base's side. It then tries a 
 fighter already within four tiles of the stop fights there. It rests for twenty seconds after arrival, then goes back
 to fighting, at the latest ninety seconds after it left. A unit that dies or changes owner also leaves the hold.
 
-This is a reduced port. Upstream also refuses the attack group's orders to a held unit, can end an attack when enough
-units give up (bit 8, off in the shipped file), and moves fleets under towers or into a dock. The attack-group and
-landing layers are missing here. The remembered enemies use the shorter form already in the lost-fight rule; upstream
-also searches for long-range remembered guns. The sim report's `intel` object counts the hospital checks
-(`hospital_checks`), the finished Hospitals seen (`hospitals`), the units sent (`hospital_sent`), the move orders held
-(`hospital_holds`) and the units released once healed (`hospital_done`). For tower cover it counts the checks
-(`cover_checks`), the fighters with enemies near (`cover_near`), the estimates made (`cover_fights`), the units sent
-(`cover_sent`), the orders held (`cover_holds`) and the units released (`cover_back`).
+The `give_up` bit of `fall_back` (off in the shipped file) stops a soldier that keeps breaking off from the same
+attack from going back into the lost fight. Upstream counts break-offs from one attack group in a ten-minute window:
+at `fall_back_breaks` (2) break-offs the soldier gives the attack up and stays at cover until that group is gone, at
+most five minutes. This port finds the group through the engine's attack commander in place of upstream's own hash
+table, then keeps the soldier on the same hold with the longer release. The call-off that ends an attack when enough
+soldiers give up is not ported: it needs the game's cancel-attack call and group-power tests, which this engine does
+not expose. Setting `fall_back=hospital, tower_cover, fleet_cover, give_up` turns the rule on; the tally and the longer
+hold do nothing without that bit.
+
+This is a reduced port. Upstream also refuses the attack group's orders to a held unit, calls an attack off when
+enough units give up, and moves fleets under towers or into a dock. The attack-group and landing layers are missing
+here. The remembered enemies use the shorter form already in the lost-fight rule; upstream also searches for
+long-range remembered guns. The sim report's `intel` object counts the hospital checks (`hospital_checks`), the
+finished Hospitals seen (`hospitals`), the units sent (`hospital_sent`), the move orders held (`hospital_holds`) and
+the units released once healed (`hospital_done`). For tower cover it counts the checks (`cover_checks`), the fighters
+with enemies near (`cover_near`), the estimates made (`cover_fights`), the units sent (`cover_sent`), the orders held
+(`cover_holds`), the units released (`cover_back`), the soldiers that gave an attack up (`cover_gaveup`) and those
+released from a give-up hold (`cover_gaveback`).
 
 An earlier one-hour `fights` probe of the hospital bit alone found one player that saw a Hospital on 174 checks, sent
 2 units and reissued 21 move orders; with that bit off every hospital counter was zero. That player's score rose from
@@ -698,6 +708,11 @@ units; with tower cover off every cover counter was zero. That player's mean sco
 traces first differ at game millisecond 174125. The off trace is byte-identical to the earlier fight-memory baseline,
 so the new gate leaves the old behavior alone. The 300-second benchmark stays at 4084.5, but one player sends one unit
 to cover and holds it once, so its trace differs in 116 lines. Set `fall_back=hospital` to turn tower cover off.
+
+A one-hour `fights` probe of the give-up bit on top of tower cover made 67, 66 and 49 soldiers give an attack up across
+three AI players and released 50, 37 and 28 of them from the longer hold. With the bit off those two counters were
+zero. The two inis differed only in `give_up`; their traces first differ at game millisecond 595000 across 6877 diff
+lines. The 300-second benchmark stays at 4084.5 with a byte-identical trace and both give-up counters zero.
 
 ## Build queue fix
 

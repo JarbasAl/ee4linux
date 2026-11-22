@@ -61,7 +61,8 @@ anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_ai
 `anti_air_skipped`), of the answer-war stance rule (`answer_war_checks`, `answer_war_transitions`,
 `answer_war_scheduled`, `answer_war_answers`, `answer_war_cancelled`), of the hospital fall-back bit
 (`hospital_checks`, `hospitals`, `hospital_sent`, `hospital_holds`, `hospital_done`), of the tower-cover fall-back bit
-(`cover_checks`, `cover_near`, `cover_fights`, `cover_sent`, `cover_holds`, `cover_back`), of the coast towers
+(`cover_checks`, `cover_near`, `cover_fights`, `cover_sent`, `cover_holds`, `cover_back`, `cover_gaveup`,
+`cover_gaveback`), of the coast towers
 (`coast_checks`, `coast_sites`, `coast_cells`, `coast_sea`, `coast_placed`), of the unseen-land scout (`scout_checks`,
 `scout_towns`, `scout_foes`, `scout_cells`, `scout_picked`, `scout_sent`, `scout_back`), of the site forts
 (`fort_checks`, `fort_sites`, `fort_picked`, `fort_towers`, `fort_busy`, `fort_wait`, `fort_skipped`, `fort_exposed`),

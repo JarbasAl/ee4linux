@@ -303,6 +303,7 @@ struct PlayerSample {
     long mSurrenderCanTrain = 0, mSurrenderAtWar = 0, mSurrenderResigned = 0;
     long mHospitalChecks = 0, mHospitals = 0, mHospitalSent = 0, mHospitalHolds = 0, mHospitalDone = 0;
     long mCoverChecks = 0, mCoverNear = 0, mCoverFights = 0, mCoverSent = 0, mCoverHolds = 0, mCoverBack = 0;
+    long mCoverGaveUp = 0, mCoverGaveBack = 0;
     long mCoastChecks = 0, mCoastSites = 0, mCoastCells = 0, mCoastSea = 0, mCoastPlaced = 0;
     long mScoutChecks = 0, mScoutTowns = 0, mScoutFoes = 0, mScoutCells = 0;
     long mScoutPicked = 0, mScoutSent = 0, mScoutBack = 0;
@@ -621,6 +622,8 @@ Sample TakeSample()
             p.mCoverSent = (long)theCover.mSent;
             p.mCoverHolds = (long)theCover.mHolds;
             p.mCoverBack = (long)theCover.mBack;
+            p.mCoverGaveUp = (long)theCover.mGaveUp;
+            p.mCoverGaveBack = (long)theCover.mGaveBack;
             AgeOfAI::CoastCounts theCoast = AgeOfAI::CoastCountsOf(i);
             p.mCoastChecks = (long)theCoast.mChecks;
             p.mCoastSites = (long)theCoast.mSites;
@@ -1334,6 +1337,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"surrender_can_train\": %ld, \"surrender_at_war\": %ld, \"surrender_resigned\": %ld, "
                      "\"hospital_checks\": %ld, \"hospitals\": %ld, \"hospital_sent\": %ld, \"hospital_holds\": %ld, \"hospital_done\": %ld, "
                      "\"cover_checks\": %ld, \"cover_near\": %ld, \"cover_fights\": %ld, \"cover_sent\": %ld, \"cover_holds\": %ld, \"cover_back\": %ld, "
+                     "\"cover_gaveup\": %ld, \"cover_gaveback\": %ld, "
                      "\"coast_checks\": %ld, \"coast_sites\": %ld, \"coast_cells\": %ld, \"coast_sea\": %ld, \"coast_placed\": %ld, "
                      "\"scout_checks\": %ld, \"scout_towns\": %ld, \"scout_foes\": %ld, \"scout_cells\": %ld, "
                      "\"scout_picked\": %ld, \"scout_sent\": %ld, \"scout_back\": %ld, "
@@ -1382,6 +1386,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mSurrenderCanTrain, p.mSurrenderAtWar, p.mSurrenderResigned,
                      p.mHospitalChecks, p.mHospitals, p.mHospitalSent, p.mHospitalHolds, p.mHospitalDone,
                      p.mCoverChecks, p.mCoverNear, p.mCoverFights, p.mCoverSent, p.mCoverHolds, p.mCoverBack,
+                     p.mCoverGaveUp, p.mCoverGaveBack,
                      p.mCoastChecks, p.mCoastSites, p.mCoastCells, p.mCoastSea, p.mCoastPlaced,
                      p.mScoutChecks, p.mScoutTowns, p.mScoutFoes, p.mScoutCells,
                      p.mScoutPicked, p.mScoutSent, p.mScoutBack,

@@ -183,7 +183,7 @@ bool HospitalHeld(EEUnit* inUnit);
 // (giving an attack up, fleets under cover) are not ported.
 void CoverTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 struct CoverCounts {
-    unsigned long mChecks, mNear, mFights, mSent, mHolds, mBack;
+    unsigned long mChecks, mNear, mFights, mSent, mHolds, mBack, mGaveUp, mGaveBack;
 };
 CoverCounts CoverCountsOf(unsigned long inPlayerID);
 bool CoverHeld(EEUnit* inUnit);

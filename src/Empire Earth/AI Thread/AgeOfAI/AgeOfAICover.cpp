@@ -139,6 +139,7 @@
 #include "AgeOfAI/AgeOfAISettings.h"
 #include "AgeOfAI/AgeOfAIFightMemoryRules.h"
 #include "AgeOfAI/AgeOfAICoverRules.h"
+#include "AgeOfAI/AgeOfAICoverGiveUpRules.h"
 
 namespace AgeOfAI {
 
@@ -152,6 +153,8 @@ struct CoverHold {
     unsigned long mUnitID;
     long mX, mY;
     unsigned long mSince, mAt;
+    bool mGaveUp;                 // cover.c kind 3: it broke off from one attack group too often
+    EECPAttackGroup* mGroup;      // the group it gave up on; NULL unless mGaveUp
 };
 struct CoverState {
     unsigned long mLast;
@@ -162,8 +165,18 @@ struct FightCache {
     long mCX, mCY;
     float mRatio;
 };
+// cover.c struct cv_brk: one record per unit, counting break-offs from the attack group it is in.
+const int kBreaksMost = 256;
+struct BreakRecord {
+    EEUnit* mUnit;
+    EECPAttackGroup* mGroup;
+    unsigned long mUnitID;
+    int mCount;
+    unsigned long mTime;
+};
 static CoverState sCover[16];
 static CoverCounts sCoverCounts[16];
+static BreakRecord sBreaks[16][kBreaksMost];
 
 bool Held(EEUnit* inUnit, const CoverState& inState)
 {
@@ -325,6 +338,49 @@ void MoveTo(EEUnit* inUnit, long inX, long inY)
     inUnit->mUnitClass->ActionChanged(theComplex);
 }
 
+// cover.c cv_group_of: the attack group a soldier is in, or NULL when it is in none. The engine's FindHolder searches
+// the commander's current subgroups, which is the same membership the upstream hash table is rebuilt from each tick.
+EECPAttackGroup* GroupOf(EEComputerPlayer* inPlayer, EEUnit* inUnit)
+{
+    EECPCombatManager* theCombat = inPlayer->mCombatManager;
+    if (theCombat == NULL || theCombat->mAttackCommander == NULL)
+        return NULL;
+    EECPAttackSubGroup* theHolder = theCombat->mAttackCommander->FindHolder(inUnit);
+    return theHolder != NULL ? theHolder->mGroup : NULL;
+}
+
+// cover.c cv_tally: count break-offs from one group. A different group or a record older than ten minutes starts
+// again; a dead unit's id stops its old record from being reused. The oldest record is replaced when all are taken.
+int TallyBreak(unsigned thePI, EEUnit* inUnit, EECPAttackGroup* inGroup, unsigned long inNow)
+{
+    BreakRecord* theRecords = sBreaks[thePI];
+    int theOldest = 0;
+    for (int k = 0; k < kBreaksMost; k++) {
+        BreakRecord& theRecord = theRecords[k];
+        if (theRecord.mUnit == inUnit && theRecord.mUnitID == inUnit->mUnitID) {
+            if (theRecord.mGroup != inGroup || CoverGiveUpRules::ResetTally(inNow, theRecord.mTime)) {
+                theRecord.mGroup = inGroup;
+                theRecord.mCount = 0;
+            }
+            theRecord.mTime = inNow != 0 ? inNow : 1;
+            return ++theRecord.mCount;
+        }
+        if (theRecord.mUnit == NULL) {
+            if (theRecords[theOldest].mUnit != NULL)
+                theOldest = k;
+        } else if (theRecords[theOldest].mUnit != NULL && theRecord.mTime < theRecords[theOldest].mTime) {
+            theOldest = k;
+        }
+    }
+    BreakRecord& theRecord = theRecords[theOldest];
+    theRecord.mUnit = inUnit;
+    theRecord.mGroup = inGroup;
+    theRecord.mUnitID = inUnit->mUnitID;
+    theRecord.mCount = 1;
+    theRecord.mTime = inNow != 0 ? inNow : 1;
+    return 1;
+}
+
 }
 
 void CoverTick(EEComputerPlayer* inPlayer, unsigned long inNow)
@@ -339,6 +395,7 @@ void CoverTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     if (inNow < theState.mLast) {
         std::memset(&theState, 0, sizeof(theState));
         std::memset(&sCoverCounts[thePI], 0, sizeof(sCoverCounts[thePI]));
+        std::memset(&sBreaks[thePI], 0, sizeof(sBreaks[thePI]));
     }
     if (theState.mLast != 0 && inNow >= theState.mLast && inNow - theState.mLast < kCoverEvery)
         return;
@@ -355,7 +412,14 @@ void CoverTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             long theDX = theUnit->mTileX - theHold.mX, theDY = theUnit->mTileY - theHold.mY;
             if (theDX * theDX + theDY * theDY <= 9 && theHold.mAt == 0)
                 theHold.mAt = inNow != 0 ? inNow : 1;
-            if (CoverRules::HoldDone(theHold.mAt != 0, inNow, theHold.mAt, theHold.mSince)) {
+            if (theHold.mGaveUp) {
+                if (CoverGiveUpRules::GiveUpDone(GroupOf(inPlayer, theUnit) == theHold.mGroup,
+                                                 inNow, theHold.mSince)) {
+                    theGo = true;
+                    theCounts.mBack++;
+                    theCounts.mGaveBack++;
+                }
+            } else if (CoverRules::HoldDone(theHold.mAt != 0, inNow, theHold.mAt, theHold.mSince)) {
                 theGo = true;
                 theCounts.mBack++;
             }
@@ -481,6 +545,18 @@ void CoverTick(EEComputerPlayer* inPlayer, unsigned long inNow)
         theHold.mY = theTY;
         theHold.mSince = inNow != 0 ? inNow : 1;
         theHold.mAt = 0;
+        theHold.mGaveUp = false;
+        theHold.mGroup = NULL;
+        if (theSettings.fall_back.give_up) {
+            EECPAttackGroup* theGroup = GroupOf(inPlayer, theUnit);
+            if (theGroup != NULL
+                && CoverGiveUpRules::GaveUp(TallyBreak(thePI, theUnit, theGroup, inNow),
+                                            theSettings.fall_back_breaks)) {
+                theHold.mGaveUp = true;
+                theCounts.mGaveUp++;
+            }
+            theHold.mGroup = theGroup;
+        }
         MoveTo(theUnit, theTX, theTY);
         theCounts.mSent++;
     }
