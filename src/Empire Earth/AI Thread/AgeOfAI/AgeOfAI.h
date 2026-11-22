@@ -7,6 +7,7 @@
 #define AGEOFAI_AGEOFAI_H
 
 #include "AgeOfAIIntel.h"
+#include "AgeOfAITrainQueueRules.h"
 
 template <class T> class U2DPoint;
 typedef U2DPoint<long> EETileCoordinate;
@@ -19,6 +20,7 @@ class EECPResourceManager;
 class EECPAttackSubGroup;
 class EEComplexUnit;
 class EEUnit;
+class EEUnitClass;
 class GE3DPoint;
 
 namespace AgeOfAI {
@@ -140,6 +142,17 @@ struct MineCapCounts {
 MineCapCounts MineCapCountsOf(unsigned long inPlayerID);
 // PRODUCTION SYNC (econ.c prod_sync, off in the shipped file): repair the in-production count after a game load
 void ProductionSync(EEComputerPlayer* inPlayer, unsigned long inNow);
+// TRAIN QUEUE (econ.c queue_room and train_call, [ai_base] train_queue, off in the shipped file): EECPUnitManager's
+// StartProduction cuts a request to what keeps each finished producer's one-in-the-making plus queue at this many.
+// Citizens keep the game's own limit. The producer list is already the built producers of the type in the request's
+// town, or on its continent; upstream uses every built producer the player owns.
+bool TrainQueueOn(unsigned long inPlayerID, EEUnitClass* inClass);
+TrainQueueRules::Decision TrainQueueCap(unsigned long inPlayerID, long inCount, long inRoom, bool inHaveProducers,
+                                         long& outCount);
+struct TrainQueueCounts {
+    unsigned long mCalls, mCuts, mCutUnits, mRefusals;   // gated requests, requests cut, units cut off, requests refused
+};
+TrainQueueCounts TrainQueueCountsOf(unsigned long inPlayerID);
 // The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's
 // towers within a square around a tile
 long NewestTowerOf(EEPlayer* inPlayer);

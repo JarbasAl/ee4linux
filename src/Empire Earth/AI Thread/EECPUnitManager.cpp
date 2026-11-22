@@ -58,6 +58,7 @@
 #include "ee/EECPUMGatherUnitsScreenBase.h"
 #include "ee/EECPUnitManager.h"
 #include "AgeOfAI/AgeOfAI.h"
+#include "AgeOfAI/AgeOfAISettings.h"
 #include "ee/EEAIFOUnitsToKillScoringBase.h"
 #include "ee/EEAIFOSubGroupFilter.h"
 #include <EEAIFunctionObjects.h>
@@ -894,6 +895,24 @@ bool EECPUnitManager::StartProduction(EECPUMRequest& inRequest, long& outMade)
             theCandidates.clear();
             for (p = theFree.begin(); p != theFree.end(); p++)
                 theCandidates.push_back(*p);
+        }
+        if (AgeOfAI::TrainQueueOn(this->mPlayer->mPlayerID, gUnitClassTable[theClass])) {
+            const long theDepth = AgeOfAI::SettingsAIOf(this->mPlayer->mPlayerID, AgeOfAI::kDifficultyMedium).train_queue;
+            long theRoom = 0;
+            for (i = 0; i < theCandidates.size(); i++) {
+                EEComplexUnit* theProducer = theCandidates[i];
+                const long theProducing = theProducer->mCurrentResearch;
+                const long theBusy = (theProducing > 13 && theProducing != 100000 ? 1 : 0)
+                                     + (long)theProducer->GetBuildQueueSize();
+                theRoom += AgeOfAI::TrainQueueRules::ProducerRoom(theDepth, theBusy);
+            }
+            long theCapped = (long)theCount;
+            if (AgeOfAI::TrainQueueCap(this->mPlayer->mPlayerID, (long)theCount, theRoom, !theCandidates.empty(),
+                                       theCapped) == AgeOfAI::TrainQueueRules::kRefuse) {
+                outMade = 0;
+                return false;
+            }
+            theCount = (unsigned long)theCapped;
         }
         std::sort(theCandidates.begin(), theCandidates.end(), EECPUMQueueLess());
         long j = 0;

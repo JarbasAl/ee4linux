@@ -918,6 +918,14 @@ keeps the buildings' production queues but not that count, so an AI can count tr
 10 game seconds the port counts the units queued or in the making in the player's buildings and sets the count to that
 number when the two differ. The game subtracts this count from the population limit before it asks for more citizens.
 
+`[ai_base] train_queue` (off in the shipped file) limits how deep a production building's queue may get. The game
+hands a training request round-robin to every finished producer of that unit and queues the whole request however deep
+the queues already are; 80 soldiers in one building are resources tied up for 40 minutes. With this setting on, a
+request is cut to what keeps each finished producer in the requested town, or on its continent, at that many units in
+the making and queued. A request that no producer has room for is refused and the game brings it back on a later tick.
+Citizens keep the game's own limit. Upstream uses every finished producer the player owns; this port only sees the
+producers the game already gathered for the request.
+
 `[general] units_first` (off in the shipped `ageofai.ini`) changes the target of a unit that picked a building by
 itself. The game looks for a new target only while a unit is idle. Once the unit turns to a building or waits to
 reload, it keeps that building until the building dies or goes out of sight, even while enemy soldiers walk up and

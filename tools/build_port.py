@@ -52,6 +52,7 @@ PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp", "Port/E
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIRoles.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIEarlyGeometry.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIEarly.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIWorkers.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIEconomy.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAITrainQueue.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAISites.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIDanger.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIStats.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIStatsUnits.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIArmy.cpp",

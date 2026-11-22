@@ -293,6 +293,7 @@ struct PlayerSample {
     long mFoodPulled = 0;
     long mWildCalls = 0, mWildChecks = 0, mWildBush = 0, mWildAnimal = 0, mWildDeferred = 0;
     long mEarlyReqChecks = 0, mEarlyReqAsks = 0, mEarlyReqProgress = 0, mEarlyReqRenews = 0, mEarlyReqDecoration = 0;
+    long mTrainQueueCalls = 0, mTrainQueueCuts = 0, mTrainQueueCutUnits = 0, mTrainQueueRefused = 0;
     long mTownSwapped = 0, mTownAway = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
@@ -595,6 +596,11 @@ Sample TakeSample()
             p.mEarlyReqProgress = (long)theEarlyReq.mProgress;
             p.mEarlyReqRenews = (long)theEarlyReq.mRenews;
             p.mEarlyReqDecoration = (long)theEarlyReq.mDecoration;
+            AgeOfAI::TrainQueueCounts theTrainQueue = AgeOfAI::TrainQueueCountsOf(i);
+            p.mTrainQueueCalls = (long)theTrainQueue.mCalls;
+            p.mTrainQueueCuts = (long)theTrainQueue.mCuts;
+            p.mTrainQueueCutUnits = (long)theTrainQueue.mCutUnits;
+            p.mTrainQueueRefused = (long)theTrainQueue.mRefusals;
             AgeOfAI::TownWorkCounts theTownWork = AgeOfAI::TownWorkCountsOf(i);
             p.mTownSwapped = (long)theTownWork.mSwapped;
             p.mTownAway = (long)theTownWork.mAway;
@@ -1351,6 +1357,7 @@ std::string PlayersJson(const Sample& inSample)
                      "\"food_pulled\": %ld, "
                      "\"wild_calls\": %ld, \"wild_checks\": %ld, \"wild_bush\": %ld, \"wild_animal\": %ld, \"wild_deferred\": %ld, "
                      "\"early_req_checks\": %ld, \"early_req_asks\": %ld, \"early_req_progress\": %ld, \"early_req_renews\": %ld, \"early_req_decoration\": %ld, "
+                     "\"train_queue_calls\": %ld, \"train_queue_cuts\": %ld, \"train_queue_cut_units\": %ld, \"train_queue_refused\": %ld, "
                      "\"town_swapped\": %ld, \"town_away\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
@@ -1403,6 +1410,7 @@ std::string PlayersJson(const Sample& inSample)
                      p.mRecoverOn, p.mRecoverHadEconomy,
                      p.mFoodPulled, p.mWildCalls, p.mWildChecks, p.mWildBush, p.mWildAnimal, p.mWildDeferred,
                      p.mEarlyReqChecks, p.mEarlyReqAsks, p.mEarlyReqProgress, p.mEarlyReqRenews, p.mEarlyReqDecoration,
+                     p.mTrainQueueCalls, p.mTrainQueueCuts, p.mTrainQueueCutUnits, p.mTrainQueueRefused,
                      p.mTownSwapped, p.mTownAway,
                      p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
