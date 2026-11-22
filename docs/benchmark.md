@@ -38,6 +38,11 @@ The focused set rates those five over `standard`, `poor` and `raids`, 5 seeds, b
 `aoai`): `aoai-foodpull` 15-12-3, `aoai-counterfire` 13-12-5, `aoai-militia` 14-15-1, `aoai-citizenshome` 12-17-1,
 `aoai-towers` 12-16-2. None wins more than half and none stands above `aoai`, so each stays off in `config/ageofai.ini`.
 
+The same focused set rates `aoai-earlyreq` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 4 wins, 2
+losses and 23 draws in 29 games; rating 1410 (1322 to 1528) against `aoai`'s 1396 (1319 to 1499). One game did not
+finish and is not in the ledger. The AI wins fewer than half the games and its interval overlaps `aoai`'s, so
+`early_requirements` stays off.
+
 ## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
