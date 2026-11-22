@@ -189,6 +189,27 @@ Age of AI player schedules again each available, unresearched line upgrade that 
 queue or production, when its stock pays the price. With `used_lines` a line still out of use stays back. The upgrade that
 the game marked as not queueable is not handled.
 
+## Epoch requirements
+
+An epoch also needs a number of new things of the current epoch - a unit type, a building or a tech. The game asks for
+them only at its advance timer, once it can pay, and its fallback picks decoration objects ("x ..." statues and flags
+from the editor) that the AI cannot place, so the attempt can wait 4-14 minutes. With `[ai_base] early_requirements`
+the AI asks the research manager for the missing things as soon as it enters the epoch when the copper plan is on, or
+within ten minutes of the advance timer otherwise. A request still pending after three minutes is renewed, and progress
+restarts that wait without a second ask. The game's own epoch-advance pass then sees its request-out byte set and leaves
+the ask to this rule. Each tech tree drops its decoration techs from the epoch count once, so statues no longer hold a
+request. The arithmetic is in `AgeOfAIEarlyRequirementsRules.h`, the hook in `AgeOfAIEconomy.cpp`, and the call in
+`EEComputerPlayer::Update`. EESim reports passes, first asks, progress restarts, renewals and decoration techs as
+`intel.early_req_checks`, `early_req_asks`, `early_req_progress`, `early_req_renews` and `early_req_decoration`.
+
+This is a reduced port. Upstream also pays requirement units from the stock above its reserve through the training
+budget; the port has no training budget, so that branch is absent. The shipped file keeps the setting off until the
+benchmark (docs/benchmark.md) rates it: the AI aoai-earlyreq turns it on. The gate-off 300-second benchmark stays at
+4084.5 with a byte-identical trace and all counters zero. In a paired seed-3 one-hour fights probe the gate made two
+asks for each of the three players and cleared seven decoration techs for one; the traces first differ at game
+millisecond 1442000. Two players gained and one lost, and that loss drives the gate-on mean down from 11336.7 to
+9233.3, so the setting stays off until a full rating.
+
 ## Mines and the worker rebalance
 
 The game's assignment hands out idle citizens only and never takes a gatherer back, and its mine search takes the first

@@ -64,7 +64,8 @@ anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_ai
 (`hospital_checks`, `hospitals`, `hospital_sent`, `hospital_holds`, `hospital_done`), of the tower-cover fall-back bit
 (`cover_checks`, `cover_near`, `cover_fights`, `cover_sent`, `cover_holds`, `cover_back`, `cover_gaveup`,
 `cover_gaveback`), of the wild-food field hold (`wild_calls`, `wild_checks`, `wild_bush`, `wild_animal`,
-`wild_deferred`), of the local-work swap (`town_swapped`, `town_away`), of the coast towers
+`wild_deferred`), of the early epoch-requirement asks (`early_req_checks`, `early_req_asks`, `early_req_progress`,
+`early_req_renews`, `early_req_decoration`), of the local-work swap (`town_swapped`, `town_away`), of the coast towers
 (`coast_checks`, `coast_sites`, `coast_cells`, `coast_sea`, `coast_placed`), of the unseen-land scout (`scout_checks`,
 `scout_towns`, `scout_foes`, `scout_cells`, `scout_picked`, `scout_sent`, `scout_back`), of the site forts
 (`fort_checks`, `fort_sites`, `fort_picked`, `fort_towers`, `fort_busy`, `fort_wait`, `fort_skipped`, `fort_exposed`),

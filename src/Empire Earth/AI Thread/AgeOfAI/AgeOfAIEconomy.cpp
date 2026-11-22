@@ -77,6 +77,7 @@
 #include "lle/FSRestorable.h"
 #include "ee/EmpireEarth.h"
 #include "AgeOfAI/AgeOfAI.h"
+#include "AgeOfAI/AgeOfAIEarlyRequirementsRules.h"
 #include "AgeOfAI/AgeOfAIPopulationRules.h"
 #include "ee/EEAction.h"
 #include "ee/EEARemovePlayer.h"
@@ -401,6 +402,86 @@ void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow)
             return;
     if (theCivilization->mNextEpochAdvanceTime > inNow + 5000)
         theCivilization->mNextEpochAdvanceTime = inNow;
+}
+
+// EARLY REQUIREMENTS (econ.c early_requirements, off in the shipped file): the game asks for the new things the next
+// epoch needs only at its advance timer, which can be ten minutes after the AI could pay. Ask as soon as the epoch is
+// reached with the Copper plan (prefarm), or within ten minutes of the timer otherwise, then renew after three minutes
+// without progress. The game's own AttemptEpochAdvance then sees its request-out byte set and leaves the ask to us.
+// The budget's requirement-unit branch is not ported (the port has no training budget). EEAIGPG calls this each tick.
+struct EarlyReqState {
+    EarlyReqCounts mCounts;
+    unsigned long mAskedAt = 0;
+    int mAskedMissing = 0;
+    EETechTree* mFixedTree = NULL;   // the decoration fix runs once per tech tree, as upstream's g_deco_done
+};
+EarlyReqState sEarlyReq[16];
+
+void EarlyRequirementsTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (inPlayer == NULL || inPlayer->mTechnologies == NULL)
+        return;
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (!theSettings.early_requirements)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    EETechTree* theTree = inPlayer->mTechnologies;
+    EarlyReqState& theState = sEarlyReq[idx];
+    theState.mCounts.mChecks++;
+
+    // Decoration objects ("x ..." statues and flags the editor places) count as epoch requirements upstream. The
+    // request then falls back to one the AI can never place, so drop their techs from the count once per tree.
+    if (theState.mFixedTree != theTree) {
+        theState.mFixedTree = theTree;
+        for (int t = 0; t < 768; t++) {   // upstream's 0x300 table bound
+            EEUnitClass* theClass = gUnitClassTable[t];
+            if (theClass == NULL || !EarlyRequirementsRules::IsDecorationName(theClass->GetName()))
+                continue;
+            long theTechID = theClass->mTechnology;
+            EETechTreeNode* theNode = theTechID > 0 ? theTree->Get(theTechID) : NULL;
+            if (theNode == NULL || theNode->mData == NULL || !theNode->mData->mCountsTowardEpoch)
+                continue;
+            theNode->mData->mCountsTowardEpoch = false;
+            theState.mCounts.mDecoration++;
+        }
+    }
+
+    long theEpoch = Epoch(inPlayer);
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    EECPResearchManager* theResearch = theCivilization != NULL ? theCivilization->mResearchManager : NULL;
+    if (theResearch == NULL || theCivilization == NULL || theEpoch < 0 || theEpoch >= 13)
+        return;
+    EETechTreeEpoch& theNext = theTree->mEpochs[theEpoch + 1];
+    int theMissing = (int)(theNext.GetRequiredSOL() - theNext.GetCurrentSOL());
+    if (theMissing < 1) {   // upstream clears its ask timestamp when the gap is filled
+        theState.mAskedAt = 0;
+        return;
+    }
+    bool thePrefarm = theSettings.copper_plan != 0 && theEpoch < kFarmEpoch;
+    int theDecision = EarlyRequirementsRules::AskDecision(inNow, theState.mAskedAt, theState.mAskedMissing, theMissing,
+                                                          theCivilization->mNextEpochAdvanceTime, thePrefarm,
+                                                          theCivilization->mEpochResearchRequested);
+    if (theDecision == EarlyRequirementsRules::kProgress) {
+        theState.mAskedAt = inNow != 0 ? inNow : 1;
+        theState.mAskedMissing = theMissing;
+        theState.mCounts.mProgress++;
+        return;
+    }
+    if (theDecision == 0)
+        return;
+    theResearch->ResearchCheapest(theMissing);
+    theCivilization->mEpochResearchRequested = true;
+    theState.mAskedAt = inNow != 0 ? inNow : 1;
+    theState.mAskedMissing = theMissing;
+    if (theDecision == EarlyRequirementsRules::kAsk)
+        theState.mCounts.mAsks++;
+    else
+        theState.mCounts.mRenews++;
+}
+
+EarlyReqCounts EarlyReqCountsOf(unsigned long inPlayerID)
+{
+    return sEarlyReq[inPlayerID & 15].mCounts;
 }
 
 // Upstream econ.c recovering and the worker split of econ_targets. The other two recovery effects - spending the

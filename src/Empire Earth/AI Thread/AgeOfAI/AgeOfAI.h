@@ -252,6 +252,15 @@ struct ScoutCounts {
 };
 ScoutCounts ScoutCountsOf(unsigned long inPlayerID);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
+// EARLY REQUIREMENTS (econ.c early_requirements, off in the shipped file): ask the research manager for the new things
+// the next epoch needs before the attempt, then renew the ask after three minutes or restart the wait on progress.
+// The port has no unit training budget, so the budget's requirement-unit branch is not ported. EEAIGPG calls this each
+// tick; the decoration fix drops "x ..." objects from the epoch's requirement candidates once per tech tree.
+void EarlyRequirementsTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct EarlyReqCounts {
+    unsigned long mChecks, mAsks, mProgress, mRenews, mDecoration;   // passes, first asks, progress, renewals, decoration
+};
+EarlyReqCounts EarlyReqCountsOf(unsigned long inPlayerID);
 // The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
 bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);
 // Another AI reaching a new epoch pulls this AI's attempt forward too (econ.c catch_up_ais, on in the shipped file).

@@ -56,6 +56,7 @@ result to its player in full (`ee-aoc --sim --player-ini`), so each AI keeps its
 | `aoai-militia` | Age of AI with the citizen militia and counter-siege of `defence.c`, as upstream's default has them |
 | `aoai-citizenshome` | Age of AI with the idle citizens' way home of `econ.c` (`citizens_home=1`), as upstream's default has it |
 | `aoai-towers` | Age of AI with the extra towers of the defence layout of `defence.c` (`defence_towers=1`), as upstream's default has it |
+| `aoai-earlyreq` | Age of AI with the early epoch-requirement asks of `econ.c` (`early_requirements=1`), as upstream's default has it |
 
 The game fixes of `[general]` act for the units of each player as that player's file sets them, so `classic` units
 also aim ahead, as they do in a normal game with `ageofai.ini`.

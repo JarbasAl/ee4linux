@@ -5580,6 +5580,7 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::TickEarly(this, inTime);
         AgeOfAI::RatesUpdate(this, inTime);
         AgeOfAI::TickPacing(this, inTime);
+        AgeOfAI::EarlyRequirementsTick(this, inTime);
         AgeOfAI::ProductionSync(this, inTime);
         AgeOfAI::GatherResearch(this, inTime);
         AgeOfAI::UpgradesRetry(this, inTime);
