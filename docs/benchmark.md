@@ -36,8 +36,8 @@ rates them, and each rated one has a named AI that turns only its bit on. The qu
 `aoai`, whose file is the shipped one plus `enabled=1`. The pair plays every scenario on every seed in both seat orders,
 and the head-to-head table gives its wins; a setting goes on when its AI wins more than half of them and its rating
 stands above `aoai`'s, and stays off when it loses them or the games only place it within its own interval. The comment
-of a switched-off setting in `config/ageofai.ini` names the AI that rates it. `citizen_plan` `food_pays` has no named
-AI yet: it is a target-only port and its paired probe is described in [Age of AI](ageofai.md).
+of a switched-off setting in `config/ageofai.ini` names the AI that rates it. `citizen_plan` `food_pays` is a
+target-only port, rated by `aoai-foodpays`; its paired probe is described in [Age of AI](ageofai.md).
 
 The focused set rates those five over `standard`, `poor` and `raids`, 5 seeds, both seat orders (30 games each against
 `aoai`): `aoai-foodpull` 15-12-3, `aoai-counterfire` 13-12-5, `aoai-militia` 14-15-1, `aoai-citizenshome` 12-17-1,
@@ -82,6 +82,7 @@ result to its player in full (`ee-aoc --sim --player-ini`), so each AI keeps its
 | `aoai-towers` | Age of AI with the extra towers of the defence layout of `defence.c` (`defence_towers=1`), as upstream's default has it |
 | `aoai-earlyreq` | Age of AI with the early epoch-requirement asks of `econ.c` (`early_requirements=1`), as upstream's default has it |
 | `aoai-trainqueue` | Age of AI with the training queue depth of `econ.c` (`train_queue=3`), as upstream's default has it |
+| `aoai-foodpays` | Age of AI with the food gatherer target of `citizens.c` (`citizen_plan=mine_slots, food_pays`), as upstream's default has it |
 
 The game fixes of `[general]` act for the units of each player as that player's file sets them, so `classic` units
 also aim ahead, as they do in a normal game with `ageofai.ini`.
