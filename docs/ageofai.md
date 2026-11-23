@@ -24,8 +24,8 @@ and the classic AI.
 | `[general] enabled` | `1`: every computer player plays Age of AI. `0` (the default): every computer player plays the classic AI. |
 | `[general] scenario_ai` | `1` (the default): an Age of AI player updates with the scenario flag clear. A scenario or campaign started from the menu sets that flag, and several classic AI routines then skip their planning. |
 
-The game reads and checks every other key of the file, and the other keys do nothing yet. The module PRs give them
-their effect. A key's text is a number, a name from the key's list, or a constant expression: numbers, `%` (`35%`
+The sections below describe the keys that drive behavior in the port; other keys are read and checked but have no
+effect yet. A key's text is a number, a name from the key's list, or a constant expression: numbers, `%` (`35%`
 is 0.35), `+ - * / ( )`, `min`, `max`, `abs`, `round` and `floor`. A value that cannot be used keeps the key's
 default. The game writes one line to the standard error for each such value, for each value outside the key's range,
 and for each key or section that is not a setting:
@@ -263,10 +263,10 @@ free animals and deferred field passes in `intel.wild_calls`, `intel.wild_checks
 `intel.wild_animal` and `intel.wild_deferred`.
 `AgeOfAINoFieldsWildRules.h` holds the Copper Age and reach arithmetic.
 
-A 60-minute fights-preset probe with three Age of AI players and inis differing only in `no_fields_wild` deferred
-33, 1 and 11 field passes for the three players with the bit on; the bit-off run deferred none. The scorecard fell from
-11336.7 off to 10549.0 on, and the traces first differ at game millisecond 1935500 across 3808 diff lines. The
-300-second benchmark stays at 4084.5 with a byte-identical trace.
+A paired 60-minute fights-preset probe on seed 3 with three Age of AI players and inis differing only in
+`no_fields_wild` deferred 0, 103 and 2 field passes for the three players with the bit on; the bit-off run deferred
+none. The scorecard read 10059.0 off and 10423.3 on, and the traces first differ at game millisecond 902125 across
+3085 diff lines. The 300-second benchmark stays at 4084.5 with a byte-identical trace.
 
 With `food_plan` `wild_settlement` (off in the shipped file), before the Copper Age an Age of AI player may place a
 Settlement by rich wild food far from its drop sites, at most twice in a game and no more than once every two minutes.
@@ -465,7 +465,7 @@ The shipped 1 is a deliberate behaviour change: the earlier port parsed the sett
 
 `[ai_base] attack_ignore_air` is on in the shipped file and is now active. When a land attack subgroup scores an enemy aircraft, a soldier whose range plus 3 tiles does not reach the aircraft gives it a score of zero. Soldiers then stay with the attack instead of chasing planes circling over their own town and holding the whole march. Aircraft in reach stay targets. The rule covers airplanes, helicopters and transport helicopters. `AgeOfAIDanger.cpp` owns the engine gate and the counters; `EECPAttackSubGroupUnit::ScoreTarget` calls it for every target a land subgroup scores, including targets with a zero score, as upstream does.
 
-The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it, so soldiers chased aircraft they could not hit. Setting 0 restores those attacks. The 300-second benchmark and ordinary games have no aircraft, so their traces stay byte-identical and the score stays at 4020. The sim's `--army-air` option spawns aircraft for a probe. In a 30-minute Tiny map game with three Age of AI players, repeated land raids and 12 aircraft per player every three minutes, gate on skipped 12040 of 12580 aircraft tests for one player and 6145 of 6379 for another; gate off scored 21291 and 5929 aircraft targets and skipped none. The gate-on score was 25857.3 against 25715.3 with the gate off, and the traces differ. The sim report counts the aircraft tests and the refusals in `intel.air_calls` and `intel.air_skipped`.
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it, so soldiers chased aircraft they could not hit. Setting 0 restores those attacks. The 300-second benchmark and ordinary games have no aircraft, so their traces stay byte-identical and the score stays at 4020. The sim's `--army-air` option spawns aircraft for a probe. In a 30-minute Tiny map game with three Age of AI players, repeated land raids and 12 aircraft per player every three minutes, gate on skipped 12040 of 12580 aircraft tests for one player and 6145 of 6379 for another; gate off made 21291 and 5929 aircraft target tests and skipped none. The gate-on score was 25857.3 against 25715.3 with the gate off, and the traces differ. The sim report counts the aircraft tests and the refusals in `intel.air_calls` and `intel.air_skipped`.
 
 `[ai_base] army_mass=tether` is upstream's mass rule 16 and is off in the shipped file (`army_mass=` is empty). A land soldier does not pick a target more than `army_mass_tether` tiles (12 by default) from its subgroup's pack unless the target lies within its own range plus 2 tiles. The pack is the middle of the subgroup's own members; upstream uses the members that are away from the base. `army_mass=only_buildings` limits the rule to enemy buildings and forts. `AgeOfAIDanger.cpp` owns the engine gate and the counters; `EECPAttackSubGroupUnit::ScoreTarget` calls it for land targets that already have a score.
 
