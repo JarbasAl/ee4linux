@@ -61,6 +61,7 @@ The same focused set rates `aoai-shipreach` over `standard`, `poor` and `raids`,
 report and is not in the ledger. The AI wins fewer than half the games and stands below `aoai`, so `ship_reach_exact`
 stays off.
 
+## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
 the same sections. The file name is the AI's name. The tool lays each file over `config/ageofai.ini` and gives the
