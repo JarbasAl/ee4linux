@@ -2,6 +2,9 @@
 
   python3 -I tests/tools/test_ai_bench.py
 """
+import argparse
+import contextlib
+import io
 import math
 import concurrent.futures
 import pathlib
@@ -176,6 +179,25 @@ class HeadToHead(unittest.TestCase):
     def test_a_draw_is_a_game_without_a_win(self):
         rows = [{"scenario": "s", "seats": {"2": "a", "3": "b"}, "winner": None}]
         self.assertEqual(ai_bench.head_to_head(rows), {("a", "b"): [1, 0, 1]})
+
+
+class Table(unittest.TestCase):
+    def test_the_head_to_head_cell_does_not_count_draws_as_wins(self):
+        ends = {n: {m: 1 for m in ai_bench.MEASURES} for n in ("a", "z")}
+        rows = [{"scenario": "s", "seed": seed, "seats": {"2": "a", "3": "z"}, "winner": winner,
+                 "game_s": 3600, "end": ends}
+                for seed, winner in enumerate(("a", "a", "z", None), 1)]
+        saved = ai_bench.read_games
+        ai_bench.read_games = lambda out: rows
+        output = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(output):
+                ai_bench.table(argparse.Namespace(out=pathlib.Path("."), anchor="classic"))
+        finally:
+            ai_bench.read_games = saved
+        z_row = next(line for line in output.getvalue().splitlines() if line.startswith("| z |") and "/" in line)
+        self.assertIn("1/4", z_row)
+        self.assertNotIn("2/4", z_row)
 
 
 class SeatShares(unittest.TestCase):

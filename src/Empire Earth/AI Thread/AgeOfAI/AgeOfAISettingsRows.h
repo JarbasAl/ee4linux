@@ -2,7 +2,8 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI),
 // dll/settings/rows.h at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. Upstream generates the file with
-// scripts/build/gen_settings.py from dll_cs/settings/*.cs. Eight rows differ. [general] enabled defaults to 0, so a game
+// scripts/build/gen_settings.py from dll_cs/settings/*.cs. Eleven rows differ: the eight benchmark-gated rules below,
+// cost_percent and raid_held (both 0, upstream 100 and 150), and [general] enabled. Enabled defaults to 0, so a game
 // folder without ageofai.ini plays the classic AI. Eight rules are off until the benchmark (docs/benchmark.md) rates
 // them: [ai_base] food_plan leaves out back_to_food (upstream: "count_trained, back_to_food"), and counter_fire,
 // citizen_militia, counter_siege, citizens_home, defence_towers and early_requirements are 0 (upstream: 1).

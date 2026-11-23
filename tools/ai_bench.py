@@ -407,11 +407,11 @@ def table(args):
             if a == b:
                 cells.append("")
                 continue
-            games, wins, _ = pairs.get(tuple(sorted((a, b))), [0, 0, 0])
+            games, wins, draws = pairs.get(tuple(sorted((a, b))), [0, 0, 0])
             if not games:
                 cells.append("")
                 continue
-            mine = wins if a < b else games - wins
+            mine = wins if a < b else games - wins - draws
             cells.append(f"{mine}/{games}")
         print(f"| {a} | " + " | ".join(cells) + " |")
     print("\nWins out of the games played, from the row AI's side (both seat orders).")
