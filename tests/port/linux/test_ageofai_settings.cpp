@@ -178,8 +178,8 @@ int main()
     Check(!memcmp(&theMedium.food_plan, theFood, sizeof theFood), "FLAGS by name and name=1, every other field 0");
     const int theMines[3] = { 1, 1, 1 };   // MINE_FILL_FIELDS: all on
     Check(!memcmp(&theMedium.mine_fill, theMines, sizeof theMines), "FLAGS all");
-    // CITIZEN_PLAN_FIELDS default "mine_slots, food_pays": mine_slots food_pays mine_settlement before_reserve
-    const int theCitizens[4] = { 1, 1, 0, 0 };
+    // CITIZEN_PLAN_FIELDS default "mine_slots": mine_slots food_pays mine_settlement before_reserve
+    const int theCitizens[4] = { 1, 0, 0, 0 };
     Check(!memcmp(&theMedium.citizen_plan, theCitizens, sizeof theCitizens)
               && Has(theLines, "citizen_plan=nothing: nothing: no field"),
           "a FLAGS word that is no field keeps the default");

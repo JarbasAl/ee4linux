@@ -8,6 +8,7 @@
 
 #include "AgeOfAIIntel.h"
 #include "AgeOfAITrainQueueRules.h"
+#include "AgeOfAIFeedTargetsRules.h"
 
 template <class T> class U2DPoint;
 typedef U2DPoint<long> EETileCoordinate;
@@ -153,6 +154,14 @@ struct TrainQueueCounts {
     unsigned long mCalls, mCuts, mCutUnits, mRefusals;   // gated requests, requests cut, units cut off, requests refused
 };
 TrainQueueCounts TrainQueueCountsOf(unsigned long inPlayerID);
+// FOOD TARGET (citizens.c cz_feed and the FEED half of cz_targets, [ai_base] citizen_plan food_pays, off in the
+// shipped file): from the Copper Age the food target gets the gatherers that pay the finished producers training the
+// citizens still missing. Only targets change; the workers, the mine-slot pass and the goal hook are not ported.
+void FeedTargets(EECPResourceManager* inResources, unsigned long inNow);
+struct FeedTargetsCounts {
+    unsigned long mChecks, mMissing, mProducers, mFeed, mMoved, mFromWood, mFromMetals;
+};
+FeedTargetsCounts FeedTargetsCountsOf(unsigned long inPlayerID);
 // The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's
 // towers within a square around a tile
 long NewestTowerOf(EEPlayer* inPlayer);

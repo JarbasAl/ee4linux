@@ -294,6 +294,8 @@ struct PlayerSample {
     long mWildCalls = 0, mWildChecks = 0, mWildBush = 0, mWildAnimal = 0, mWildDeferred = 0;
     long mEarlyReqChecks = 0, mEarlyReqAsks = 0, mEarlyReqProgress = 0, mEarlyReqRenews = 0, mEarlyReqDecoration = 0;
     long mTrainQueueCalls = 0, mTrainQueueCuts = 0, mTrainQueueCutUnits = 0, mTrainQueueRefused = 0;
+    long mFeedChecks = 0, mMissingCitizens = 0, mFeedProducers = 0, mFeedGatherers = 0;
+    long mFeedMoved = 0, mFeedFromWood = 0, mFeedFromMetals = 0;
     long mTownSwapped = 0, mTownAway = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
@@ -601,6 +603,14 @@ Sample TakeSample()
             p.mTrainQueueCuts = (long)theTrainQueue.mCuts;
             p.mTrainQueueCutUnits = (long)theTrainQueue.mCutUnits;
             p.mTrainQueueRefused = (long)theTrainQueue.mRefusals;
+            AgeOfAI::FeedTargetsCounts theFeedTargets = AgeOfAI::FeedTargetsCountsOf(i);
+            p.mFeedChecks = (long)theFeedTargets.mChecks;
+            p.mMissingCitizens = (long)theFeedTargets.mMissing;
+            p.mFeedProducers = (long)theFeedTargets.mProducers;
+            p.mFeedGatherers = (long)theFeedTargets.mFeed;
+            p.mFeedMoved = (long)theFeedTargets.mMoved;
+            p.mFeedFromWood = (long)theFeedTargets.mFromWood;
+            p.mFeedFromMetals = (long)theFeedTargets.mFromMetals;
             AgeOfAI::TownWorkCounts theTownWork = AgeOfAI::TownWorkCountsOf(i);
             p.mTownSwapped = (long)theTownWork.mSwapped;
             p.mTownAway = (long)theTownWork.mAway;
@@ -1358,6 +1368,8 @@ std::string PlayersJson(const Sample& inSample)
                      "\"wild_calls\": %ld, \"wild_checks\": %ld, \"wild_bush\": %ld, \"wild_animal\": %ld, \"wild_deferred\": %ld, "
                      "\"early_req_checks\": %ld, \"early_req_asks\": %ld, \"early_req_progress\": %ld, \"early_req_renews\": %ld, \"early_req_decoration\": %ld, "
                      "\"train_queue_calls\": %ld, \"train_queue_cuts\": %ld, \"train_queue_cut_units\": %ld, \"train_queue_refused\": %ld, "
+                     "\"feed_checks\": %ld, \"missing_citizens\": %ld, \"feed_producers\": %ld, \"feed_gatherers\": %ld, "
+                     "\"feed_moved\": %ld, \"feed_from_wood\": %ld, \"feed_from_metals\": %ld, "
                      "\"town_swapped\": %ld, \"town_away\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
@@ -1411,6 +1423,8 @@ std::string PlayersJson(const Sample& inSample)
                      p.mFoodPulled, p.mWildCalls, p.mWildChecks, p.mWildBush, p.mWildAnimal, p.mWildDeferred,
                      p.mEarlyReqChecks, p.mEarlyReqAsks, p.mEarlyReqProgress, p.mEarlyReqRenews, p.mEarlyReqDecoration,
                      p.mTrainQueueCalls, p.mTrainQueueCuts, p.mTrainQueueCutUnits, p.mTrainQueueRefused,
+                     p.mFeedChecks, p.mMissingCitizens, p.mFeedProducers, p.mFeedGatherers,
+                     p.mFeedMoved, p.mFeedFromWood, p.mFeedFromMetals,
                      p.mTownSwapped, p.mTownAway,
                      p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,

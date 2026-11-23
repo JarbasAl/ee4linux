@@ -210,6 +210,24 @@ asks for each of the three players and cleared seven decoration techs for one; t
 millisecond 1442000. Two players gained and one lost, and that loss drives the gate-on mean down from 11336.7 to
 9233.3, so the setting stays off until a full rating.
 
+## Citizen food targets
+
+With `[ai_base] citizen_plan` `food_pays` (off in the shipped file), an Age of AI player raises its food gatherer target
+from the Copper Age on. The target pays the finished Town Centers and Capitols that still train citizens: one producer
+serves ten citizens, a citizen costs 50 food and takes 28 seconds (the `[autotest] citizen_train_ms` row), and the
+measured food per worker-minute sets the gatherer count. The target takes gatherers from wood down to four and from the
+metals down to the miners already on them. Only the wanted-count targets change. The game then assigns workers as usual,
+so the rule never pulls a citizen off a mine. Upstream's citizen goal, mine-slot pass and worker pull are not ported. The
+arithmetic is in `AgeOfAIFeedTargetsRules.h`, the hook in `AgeOfAIEconomy.cpp`. EESim reports passes, missing citizens,
+finished producers, the food gatherers asked for, target moves and their sources as `intel.feed_checks`,
+`missing_citizens`, `feed_producers`, `feed_gatherers`, `feed_moved`, `feed_from_wood` and `feed_from_metals`.
+
+The benchmark has not rated this setting. A paired seed-2 probe with a Copper Age start and two Age of AI players,
+differing only in `food_pays`, scored 4084.5 with the bit off and 3685.5 with it on. The gate-off trace is byte-identical
+to the earlier baseline and every `feed_*` counter is zero there. With the bit on, 59 to 60 calls per player asked for
+22 food gatherers and moved 66 and 102 targets, 3 and 22 from wood and 63 and 80 from the metals; the traces first
+differ at game millisecond 111125. The setting stays off.
+
 ## Mines and the worker rebalance
 
 The game's assignment hands out idle citizens only and never takes a gatherer back, and its mine search takes the first

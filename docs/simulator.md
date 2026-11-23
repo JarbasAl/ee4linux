@@ -66,7 +66,9 @@ anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_ai
 `cover_gaveback`), of the wild-food field hold (`wild_calls`, `wild_checks`, `wild_bush`, `wild_animal`,
 `wild_deferred`), of the early epoch-requirement asks (`early_req_checks`, `early_req_asks`, `early_req_progress`,
 `early_req_renews`, `early_req_decoration`), of the queue-depth limit (`train_queue_calls`, `train_queue_cuts`,
-`train_queue_cut_units`, `train_queue_refused`), of the local-work swap (`town_swapped`, `town_away`), of the coast towers
+`train_queue_cut_units`, `train_queue_refused`), of the food gatherer target (`feed_checks`, `missing_citizens`,
+`feed_producers`, `feed_gatherers`, `feed_moved`, `feed_from_wood`, `feed_from_metals`), of the local-work swap
+(`town_swapped`, `town_away`), of the coast towers
 (`coast_checks`, `coast_sites`, `coast_cells`, `coast_sea`, `coast_placed`), of the unseen-land scout (`scout_checks`,
 `scout_towns`, `scout_foes`, `scout_cells`, `scout_picked`, `scout_sent`, `scout_back`), of the site forts
 (`fort_checks`, `fort_sites`, `fort_picked`, `fort_towers`, `fort_busy`, `fort_wait`, `fort_skipped`, `fort_exposed`),

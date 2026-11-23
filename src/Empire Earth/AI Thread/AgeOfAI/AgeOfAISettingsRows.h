@@ -290,7 +290,7 @@
     D(NUM,   food_hunt_range,               15, 0, 0) \
     D(FLAGS, mine_fill,                     "", MINE_FILL_FIELDS, 0) \
     D(FLAG,  wood_drop,                     1, 0, 0) \
-    D(FLAGS, citizen_plan,                  "mine_slots, food_pays", CITIZEN_PLAN_FIELDS, 0) \
+    D(FLAGS, citizen_plan,                  "mine_slots", CITIZEN_PLAN_FIELDS, 0) \
     D(SHARE, citizen_army_share,            40, 0, 90) \
     D(FLAG,  citizen_mine_cap,              1, 0, 0) \
     D(FLAGS, workforce_plan,                "", WORKFORCE_PLAN_FIELDS, 0) \

@@ -563,6 +563,7 @@ void EconTargets(EECPResourceManager* inResources, unsigned long inNow)
     if (Epoch(thePlayer) >= kFarmEpoch) {
         if (theSettings.recover_economy && theCopperPlan != 0 && theSettings.late_targets.wood_gap)
             RecoverTargets(inResources, theSettings, inNow, idx);
+        FeedTargets(inResources, inNow);
         return;
     }
     if (theCopperPlan == 0)
@@ -594,6 +595,74 @@ void EconTargets(EECPResourceManager* inResources, unsigned long inNow)
                        theCopperPlan, theSettings.food_floor, theTarget))
         for (int r = 2; r < 7; r++)
             inResources->mWantedGatherers[r] = theTarget[r];
+}
+
+// The FEED half of upstream's cz_targets: the gatherers food needs to pay the finished citizen producers. This is the
+// target change only. Upstream also pulls the workers, raises the citizen goal and fills the mine slots from the same
+// feed number; those halves need layers the port does not have. Wood keeps its floor of four and each metal the
+// gatherers already on it, so a target never takes a worker off a mine.
+namespace {
+struct FeedTargetsState {
+    FeedTargetsCounts mCounts;
+};
+FeedTargetsState sFeedTargets[16];
+
+long FinishedCitizenProducers(EEPlayer* inPlayer)
+{
+    if (inPlayer == NULL)
+        return 0;
+    long theCount = 0;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mUnitClass == NULL)
+            continue;
+        long theType = (long)theUnit->mUnitClass->mUnitType;
+        if (theType != kUnitTypeTownCenter && theType != kUnitTypeCapitol)
+            continue;
+        EEComplexUnit* theComplex = theUnit->mComplexUnit;
+        if (theComplex != NULL && theComplex->mIsBuilt && !theComplex->IsFoundation())
+            theCount++;
+    }
+    return theCount;
+}
+}  // namespace
+
+FeedTargetsCounts FeedTargetsCountsOf(unsigned long inPlayerID)
+{
+    return sFeedTargets[inPlayerID & 15].mCounts;
+}
+
+void FeedTargets(EECPResourceManager* inResources, unsigned long inNow)
+{
+    (void)inNow;
+    EEComputerPlayer* thePlayer = inResources->mManager != NULL ? inResources->mManager->mPlayer : NULL;
+    if (thePlayer == NULL || EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI
+        || Epoch(thePlayer) < kFarmEpoch || !SettingsOf(thePlayer).citizen_plan.food_pays)
+        return;
+    EECPUnitManager* theUnits = thePlayer->mCivilizationManager != NULL ? thePlayer->mCivilizationManager->mUnitManager : NULL;
+    if (theUnits == NULL)
+        return;
+    unsigned idx = thePlayer->mPlayerID & 15;
+    long theMissing = theUnits->GetWantedCitizens() - (long)theUnits->GetNumWorkers();
+    long theProducers = FinishedCitizenProducers(thePlayer);
+    float thePerWorker = sRates[idx].mTime != 0 ? sRates[idx].mPerWorker[2] : kDefaultPerWorker[2];
+    long theFeed = FeedTargetsRules::Feed(theMissing, theProducers, thePerWorker, Workers::kFoodPerCitizen,
+                                          gSettings.citizen_train_ms);
+    long theFloor[7] = {0, 0, 0, FeedTargetsRules::kWoodFloor, 0, 0, 0};
+    for (int r = 4; r < 7; r++) {
+        long theGatherers = (long)inResources->mGatherers[r].size();
+        theFloor[r] = theGatherers > 2 ? theGatherers : 2;
+    }
+    long theFromWood = 0, theFromMetals = 0;
+    long theMoved = FeedTargetsRules::RaiseFood(inResources->mWantedGatherers, theFloor, theFeed,
+                                                &theFromWood, &theFromMetals);
+    FeedTargetsCounts& theCounts = sFeedTargets[idx].mCounts;
+    theCounts.mChecks++;
+    theCounts.mMissing = (unsigned long)(theMissing > 0 ? theMissing : 0);
+    theCounts.mProducers = (unsigned long)theProducers;
+    theCounts.mFeed = (unsigned long)theFeed;
+    theCounts.mMoved += (unsigned long)theMoved;
+    theCounts.mFromWood += (unsigned long)theFromWood;
+    theCounts.mFromMetals += (unsigned long)theFromMetals;
 }
 
 // The next epoch's cost held back near its scheduled attempt (econ.c budget_reserve, the plain path). The port's

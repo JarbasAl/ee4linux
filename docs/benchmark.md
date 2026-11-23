@@ -32,11 +32,12 @@ ten seeds, in both seat orders, give 9000 games; with two opponents they give 34
 ## Deciding a setting
 
 `config/ageofai.ini` ships the settings of `defence.c`, `counterfire.c`, `econ.c` and `food.c` off until the benchmark
-rates them, and each one has a named AI that turns only its bit on. The question is one pair of games: that AI against
+rates them, and each rated one has a named AI that turns only its bit on. The question is one pair of games: that AI against
 `aoai`, whose file is the shipped one plus `enabled=1`. The pair plays every scenario on every seed in both seat orders,
 and the head-to-head table gives its wins; a setting goes on when its AI wins more than half of them and its rating
 stands above `aoai`'s, and stays off when it loses them or the games only place it within its own interval. The comment
-of a switched-off setting in `config/ageofai.ini` names the AI that rates it.
+of a switched-off setting in `config/ageofai.ini` names the AI that rates it. `citizen_plan` `food_pays` has no named
+AI yet: it is a target-only port and its paired probe is described in [Age of AI](ageofai.md).
 
 The focused set rates those five over `standard`, `poor` and `raids`, 5 seeds, both seat orders (30 games each against
 `aoai`): `aoai-foodpull` 15-12-3, `aoai-counterfire` 13-12-5, `aoai-militia` 14-15-1, `aoai-citizenshome` 12-17-1,
