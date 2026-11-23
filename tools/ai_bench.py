@@ -144,6 +144,7 @@ def pairs(ais, opponents):
         sys.exit(f"ai_bench: opponents {', '.join(unknown)} are not among the AIs")
     return [(a, b) for a, b in itertools.combinations(ais, 2) if not opponents or a in opponents or b in opponents]
 
+
 def engine_of(settings):
     """The engine a merged settings file selects: "ageofai" when its [general] enabled is on, else "classic"."""
     parser = configparser.ConfigParser(interpolation=None, strict=False)

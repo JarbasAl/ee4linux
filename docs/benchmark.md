@@ -120,3 +120,7 @@ The rating is a Bradley-Terry fit of all games at once, on the Elo scale. 400 po
 `classic`, so an AI that won or lost every game still has a finite rating. The interval is the 95 % range of 200 fits
 over seeds drawn with replacement. The table also gives a rating per scenario, and for each AI and scenario the win
 rate, the mean time to win and the mean epoch, army, population and value at the end.
+
+The point ratings and intervals in "Deciding a setting" were fitted when each rating was made. Later games change the
+global fit, so a fresh `table` run on a larger ledger prints different numbers for the same named AIs. The win counts
+in that section use only its stated scenarios and seeds.
