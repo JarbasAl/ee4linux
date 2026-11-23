@@ -563,7 +563,6 @@ void EconTargets(EECPResourceManager* inResources, unsigned long inNow)
     if (Epoch(thePlayer) >= kFarmEpoch) {
         if (theSettings.recover_economy && theCopperPlan != 0 && theSettings.late_targets.wood_gap)
             RecoverTargets(inResources, theSettings, inNow, idx);
-        FeedTargets(inResources, inNow);
         return;
     }
     if (theCopperPlan == 0)

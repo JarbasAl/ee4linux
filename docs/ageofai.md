@@ -217,17 +217,20 @@ from the Copper Age on. The target pays the finished Town Centers and Capitols t
 serves ten citizens, a citizen costs 50 food and takes 28 seconds (the `[autotest] citizen_train_ms` row), and the
 measured food per worker-minute sets the gatherer count. The target takes gatherers from wood down to four and from the
 metals down to the miners already on them or two, whichever is higher. Only the wanted-count targets change. The game
-then assigns workers as usual,
-so the rule never pulls a citizen off a mine. Upstream's citizen goal, mine-slot pass and worker pull are not ported. The
-arithmetic is in `AgeOfAIFeedTargetsRules.h`, the hook in `AgeOfAIEconomy.cpp`. EESim reports passes, missing citizens,
-finished producers, the food gatherers asked for, target moves and their sources as `intel.feed_checks`,
-`missing_citizens`, `feed_producers`, `feed_gatherers`, `feed_moved`, `feed_from_wood` and `feed_from_metals`.
+then assigns workers as usual, so the rule never pulls a citizen off a mine. Upstream's citizen goal, mine-slot pass and
+worker pull are not ported. The arithmetic is in `AgeOfAIFeedTargetsRules.h`, the runtime in `AgeOfAIEconomy.cpp`. The
+call runs after `MineFill` and `LateFoodTargets` in `EECPResourceManager.cpp`, as upstream runs `cz_targets` after
+`mine_fill`, so those passes cannot lower the target again. Without a donor above its floor the target stays where it
+was; upstream's unported mine-slot pass is the only other lift. EESim reports passes, missing citizens, finished
+producers, the food gatherers asked for, target moves and their sources as `intel.feed_checks`, `missing_citizens`,
+`feed_producers`, `feed_gatherers`, `feed_moved`, `feed_from_wood` and `feed_from_metals`.
 
 The benchmark has not rated this setting. A paired seed-2 probe with a Copper Age start and two Age of AI players,
 differing only in `food_pays`, scored 4084.5 with the bit off and 3685.5 with it on. The gate-off trace is byte-identical
 to the earlier baseline and every `feed_*` counter is zero there. With the bit on, 59 to 60 calls per player asked for
 22 food gatherers and moved 66 and 102 targets, 3 and 22 from wood and 63 and 80 from the metals; the traces first
-differ at game millisecond 111125. The setting stays off.
+differ at game millisecond 111125. A second probe with `mine_fill` `fill_slots` and `mines_first` also on reached a food
+target of 22 late in the game, so the feed target survives those passes. The setting stays off.
 
 ## Mines and the worker rebalance
 

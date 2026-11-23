@@ -1524,6 +1524,8 @@ void EECPResourceManager::Update(unsigned long inTime)
             AgeOfAI::MoreGranaries(this, inTime);
             AgeOfAI::MineFill(this, inTime);
             AgeOfAI::LateFoodTargets(this, inTime);
+            // Upstream runs cz_targets after mine_fill so the feed target survives the passes that cap food.
+            AgeOfAI::FeedTargets(this, inTime);
         }
         this->mNextWantedGatherersTime = inTime + 5000;
     }

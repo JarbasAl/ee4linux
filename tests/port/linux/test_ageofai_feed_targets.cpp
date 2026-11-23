@@ -22,6 +22,7 @@ static void TestFeed()
     // One producer pays 50 food every 28 seconds, 107 a minute; at ten food a worker-minute that is eleven gatherers.
     Check(Feed(10, 1, 10.0f, 50, 28000) == 11, "one producer needs eleven food gatherers");
     Check(Feed(9, 3, 10.0f, 50, 28000) == 11, "three producers still serve one batch of nine");
+    Check(Feed(19, 3, 10.0f, 50, 28000) == 22, "two batches need two producers");
     Check(Feed(21, 3, 10.0f, 50, 28000) == 33, "three batches need three producers");
     Check(Feed(21, 1, 10.0f, 50, 28000) == 11, "one producer does not pay three batches");
     Check(Feed(10, 1, 1.0f, 50, 28000) == 22, "the rate floor is five food a worker-minute");
