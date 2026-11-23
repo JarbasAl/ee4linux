@@ -246,9 +246,10 @@ citizen and six times for the far one, where the game takes the first bush in ce
 is the game's own; only the choice of bush changes. `AgeOfAISites.h` holds the two multiples.
 
 With `food_plan` `hunt_near` (off in the shipped file), before each assignment in the Stone Age idle citizens hunt
-animals within `[ai_base] food_hunt_range` tiles (15 by default) of a Town Center, Capitol or Settlement. The animal is
-the free one nearest to such a drop site: food, an animal, fewer than three gatherers, on the citizen's land, with no
-enemy near and not a dangerous site. As upstream, a tiger or a wolf is left alone; the port resolves it by its name string.
+animals within `[ai_base] food_hunt_range` tiles (15 by default, read from the player's own settings file) of a Town
+Center, Capitol or Settlement. The animal is the free one nearest to such a drop site: food, an animal, fewer than
+three gatherers, on the citizen's land, with no enemy near and not a dangerous site. As upstream, a tiger or a wolf
+is left alone; the port resolves it by its name string.
 With `food_plan` `back_to_food` also on, before farms, a gatherer pulled back to food goes to a free animal first and
 takes a forage bush only when none is in reach.
 

@@ -871,7 +871,7 @@ EEUnit* FoodAnimal(EECPResourceManager* inResources, EEComplexUnit* inUnit)
     unsigned thePI = thePlayer->mPlayerID & 15;
     DropsCached(thePlayer);
     const std::vector<Drop>& theDrops = sDrops[thePI].mDrops;
-    long theRange = gSettingsAI[thePlayer->GetDifficulty()].food_hunt_range;
+    long theRange = SettingsOf(thePlayer).food_hunt_range;
     if (theRange <= 0)
         theRange = 15;
     // Upstream food_animal with u == NULL checks every land: the field pass has no citizen to compare with.
