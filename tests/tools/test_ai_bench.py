@@ -74,6 +74,29 @@ class Fit(unittest.TestCase):
         self.assertAlmostEqual(1000 - ratings["c"], step, delta=12)
 
 
+class Pairs(unittest.TestCase):
+    AIS = ["aoai", "aoai-honest", "aoai-towers", "classic"]
+
+    def test_every_pair_without_opponents(self):
+        self.assertEqual(ai_bench.pairs(self.AIS, None),
+                         [("aoai", "aoai-honest"), ("aoai", "aoai-towers"), ("aoai", "classic"),
+                          ("aoai-honest", "aoai-towers"), ("aoai-honest", "classic"), ("aoai-towers", "classic")])
+
+    def test_opponents_play_everyone_and_the_rest_play_only_them(self):
+        # 4 AIs, opponents aoai and classic: aoai-classic, and each of the 2 others against both, 5 pairs of 6
+        self.assertEqual(ai_bench.pairs(self.AIS, ["aoai", "classic"]),
+                         [("aoai", "aoai-honest"), ("aoai", "aoai-towers"), ("aoai", "classic"),
+                          ("aoai-honest", "classic"), ("aoai-towers", "classic")])
+
+    def test_ten_ais_against_two_opponents(self):
+        ais = ["a%d" % i for i in range(8)] + ["aoai", "classic"]
+        self.assertEqual(len(ai_bench.pairs(ais, ["aoai", "classic"])), 8 * 2 + 1)
+
+    def test_an_opponent_that_is_not_an_ai_is_refused(self):
+        with self.assertRaises(SystemExit):
+            ai_bench.pairs(self.AIS, ["nobody"])
+
+
 class Ledger(unittest.TestCase):
     def test_a_game_row_names_the_winning_ai(self):
         report = {"winner": 3, "outcome": "last-computer-standing", "game_ms": 7200000,
