@@ -216,7 +216,8 @@ With `[ai_base] citizen_plan` `food_pays` (off in the shipped file), an Age of A
 from the Copper Age on. The target pays the finished Town Centers and Capitols that still train citizens: one producer
 serves ten citizens, a citizen costs 50 food and takes 28 seconds (the `[autotest] citizen_train_ms` row), and the
 measured food per worker-minute sets the gatherer count. The target takes gatherers from wood down to four and from the
-metals down to the miners already on them. Only the wanted-count targets change. The game then assigns workers as usual,
+metals down to the miners already on them or two, whichever is higher. Only the wanted-count targets change. The game
+then assigns workers as usual,
 so the rule never pulls a citizen off a mine. Upstream's citizen goal, mine-slot pass and worker pull are not ported. The
 arithmetic is in `AgeOfAIFeedTargetsRules.h`, the hook in `AgeOfAIEconomy.cpp`. EESim reports passes, missing citizens,
 finished producers, the food gatherers asked for, target moves and their sources as `intel.feed_checks`,
