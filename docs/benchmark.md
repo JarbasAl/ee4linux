@@ -27,12 +27,40 @@ A game against the classic AI takes 1 to 2 wall minutes on an 8-core box. A game
 longer, often 3 to 8 game hours, and takes 5 to 8 wall minutes. `--jobs` is the games played at once: a pair fills one
 slot per seed, and the pairs its seeds cannot fill play side by side, each in a stage folder of its own under
 `DIR/stages`. With ten seeds one pair fills the eight slots; with two seeds four pairs do. Ten AIs, ten scenarios and
-ten seeds, in both seat orders, give 9000 games; with two opponents they give 2720.
+ten seeds, in both seat orders, give 9000 games; with two opponents they give 3400.
 
 ## Deciding a setting
 
+`config/ageofai.ini` ships the settings of `defence.c`, `counterfire.c`, `econ.c` and `food.c` off until the benchmark
+rates them, and each one has a named AI that turns only its bit on. The question is one pair of games: that AI against
+`aoai`, whose file is the shipped one plus `enabled=1`. The pair plays every scenario on every seed in both seat orders,
+and the head-to-head table gives its wins; a setting goes on when its AI wins more than half of them and its rating
+stands above `aoai`'s, and stays off when it loses them or the games only place it within its own interval. The comment
+of a switched-off setting in `config/ageofai.ini` names the AI that rates it.
 
-## Named AIs
+The focused set rates those five over `standard`, `poor` and `raids`, 5 seeds, both seat orders (30 games each against
+`aoai`): `aoai-foodpull` 15-12-3, `aoai-counterfire` 13-12-5, `aoai-militia` 14-15-1, `aoai-citizenshome` 12-17-1,
+`aoai-towers` 12-16-2. None wins more than half and none stands above `aoai`, so each stays off in `config/ageofai.ini`.
+
+The same focused set rates `aoai-earlyreq` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 4 wins, 2
+losses and 23 draws in 29 games; rating 1410 (1322 to 1528) against `aoai`'s 1396 (1319 to 1499). One game did not
+finish and is not in the ledger. The AI wins fewer than half the games and its interval overlaps `aoai`'s, so
+`early_requirements` stays off.
+
+The same focused set rates `aoai-trainqueue` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 6 wins, 1
+loss and 23 draws in 30 games; rating 1441 (1349 to 1556) against `aoai`'s 1393 (1317 to 1494). The AI wins fewer
+than half the games and its interval overlaps `aoai`'s, so `train_queue` stays off.
+
+The same focused set rates `aoai-repairsafe` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 5 wins,
+2 losses and 22 draws in 29 games; rating 1415 (1337 to 1545) against `aoai`'s 1389 (1315 to 1489). One game timed
+out and is not in the ledger. The AI wins fewer than half the games and its interval overlaps `aoai`'s, so
+`repair_safe_way` stays off.
+
+The same focused set rates `aoai-shipreach` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 5 wins,
+7 losses and 17 draws in 29 games; rating 1353 (1253 to 1471) against `aoai`'s 1386 (1313 to 1485). One game has no
+report and is not in the ledger. The AI wins fewer than half the games and stands below `aoai`, so `ship_reach_exact`
+stays off.
+
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
 the same sections. The file name is the AI's name. The tool lays each file over `config/ageofai.ini` and gives the
