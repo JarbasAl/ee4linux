@@ -81,6 +81,8 @@ of the population cap (`pop_checks`, `pop_overrides`, `pop_weighted`, `pop_cap`)
 in that rule (`lost_mem_cells`, `lost_mem_foes`) and of the defence layout's towers (`towers_queued`,
 `towers_skipped`).
 
+The `hospitals` counter holds the number of finished Hospitals at the last check, not a sum over the game.
+
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.
 

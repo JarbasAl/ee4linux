@@ -166,7 +166,7 @@ EEUnit* PickAttacker(EEUnit* inDefender, unsigned long inPlayerID, unsigned long
         return NULL;
     const long theKind = AreaKind(inCategory);
     const unsigned short theArea = AreaOf(inDefender->mTileX, inDefender->mTileY, theKind);
-    GE2DPoint theCenter((float)inDefender->mTileX, (float)inDefender->mTileY);
+    GE2DPoint theCenter((float)inDefender->mTileX + 0.5f, (float)inDefender->mTileY + 0.5f);  // the tile's middle includes the far boundary
     std::vector<EEUnit*> theNear;
     EEGetUnitsInRadius(theCenter, (float)kReach, theNear);
     EEUnit* theBest = NULL;
@@ -206,9 +206,6 @@ void AnswerFireTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     if (inPlayer == NULL)
         return;
-    const long theMode = GeneralOf(inPlayer->mPlayerID).answer_fire;
-    if (theMode == kGame)
-        return;
     if (inNow < sLast) {                               // a new game
         memset(sCounts, 0, sizeof sCounts);
         sLast = 0;
@@ -219,7 +216,10 @@ void AnswerFireTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 
     for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
         EEPlayer* theOwner = gWorld.mPlayers[p];
-        if (theOwner == NULL || !AppliesTo(theMode, theOwner->IsHuman()))
+        if (theOwner == NULL)
+            continue;
+        const long theMode = GeneralOf(theOwner->mPlayerID).answer_fire;
+        if (!AppliesTo(theMode, theOwner->IsHuman()))
             continue;
         AnswerFireCounts& theCounts = sCounts[p & 15];
         for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL;

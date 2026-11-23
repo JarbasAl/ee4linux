@@ -212,7 +212,7 @@ void DropPending(EEComplexUnit* inTransport, TransportWatchdogCounts& ioCounts)
 
 void TransportWatchdogTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
-    if (inPlayer == NULL || !SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium).transport_watchdog)
+    if (inPlayer == NULL)
         return;
     if (inNow < sLast) {   // a new game
         memset(sCounts, 0, sizeof sCounts);
@@ -229,6 +229,8 @@ void TransportWatchdogTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
         EEPlayer* theOwner = gWorld.mPlayers[p];
         if (theOwner == NULL || theOwner->IsHuman())
+            continue;
+        if (!SettingsAIOf(theOwner->mPlayerID, kDifficultyMedium).transport_watchdog)
             continue;
         TransportWatchdogCounts& theCounts = sCounts[p & 15];
         for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL;

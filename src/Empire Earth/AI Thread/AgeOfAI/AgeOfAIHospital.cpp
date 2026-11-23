@@ -243,7 +243,7 @@ void HospitalTick(EEComputerPlayer* inPlayer, unsigned long inNow)
         theHY[theNH] = u->mTileY;
         theNH++;
     }
-    sHospitalCounts[idx].mHospitals += theNH;
+    sHospitalCounts[idx].mHospitals = theNH;
 
     for (int k = theState.mNHold - 1; k >= 0; k--) {
         HospitalHold& theHold = theState.mHold[k];

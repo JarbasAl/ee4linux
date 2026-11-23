@@ -738,11 +738,11 @@ This is a reduced port. Upstream also refuses the attack group's orders to a hel
 enough units give up, and moves fleets under towers or into a dock. The attack-group and landing layers are missing
 here. The remembered enemies use the shorter form already in the lost-fight rule; upstream also searches for
 long-range remembered guns. The sim report's `intel` object counts the hospital checks (`hospital_checks`), the
-finished Hospitals seen (`hospitals`), the units sent (`hospital_sent`), the move orders held (`hospital_holds`) and
-the units released once healed (`hospital_done`). For tower cover it counts the checks (`cover_checks`), the fighters
-with enemies near (`cover_near`), the estimates made (`cover_fights`), the units sent (`cover_sent`), the orders held
-(`cover_holds`), the units released (`cover_back`), the soldiers that gave an attack up (`cover_gaveup`) and those
-released from a give-up hold (`cover_gaveback`).
+finished Hospitals standing at the last check (`hospitals`), the units sent (`hospital_sent`), the move orders held
+(`hospital_holds`) and the units released once healed (`hospital_done`). For tower cover it counts the checks
+(`cover_checks`), the fighters with enemies near (`cover_near`), the estimates made (`cover_fights`), the units sent
+(`cover_sent`), the orders held (`cover_holds`), the units released (`cover_back`), the soldiers that gave an attack
+up (`cover_gaveup`) and those released from a give-up hold (`cover_gaveback`).
 
 An earlier one-hour `fights` probe of the hospital bit alone found one player that saw a Hospital on 174 checks, sent
 2 units and reissued 21 move orders; with that bit off every hospital counter was zero. That player's score rose from
@@ -817,7 +817,9 @@ instead of joining a side in a block split. This port has no diplomacy or army-p
 the game with `EEPlayer::SetGameResult(2)`, the same loss upstream's deferred resign produces. It also leaves out
 upstream's test for whether the stock can pay for a citizen: a finished town centre alone counts as able to train.
 Upstream skips the rule in scenarios and campaigns; this port reads the real `mIsScenarioGame` flag, which the AoA tick
-leaves set in a scenario with `scenario_ai` off.
+leaves set in a scenario with `scenario_ai` off. The shipped `[ai_base] resign_spoils` is parsed but not used:
+upstream's `spoils.c`, which hands a resigned player's buildings to the attackers and turns its soldiers into roaming
+bands, is not ported.
 
 The shipped 1 is a behaviour change: earlier ports parsed the setting but never used it. In the 300-second benchmark
 this rule never fires. Both Age of AI players keep their citizens, record
@@ -946,8 +948,10 @@ so they need no shared area. Land units, land heroes, ships, submarines and heli
 citizens, priests and transports do not. The goal belongs to the unit, not to an order, so an order is never kept
 waiting behind it. The value `all` names every player's units and `computers` names the non-human players' units.
 The port runs the scan from the AI update once every 500 game milliseconds rather than at the game's safe point, so
-a game needs an Age of AI computer player to drive it, and the value comes from that player's settings file. The sim
-report counts looks and goals sent in `answer_fire_checks` and `answer_fire_sent`.
+a game needs an Age of AI computer player to drive it. Each player's own settings file says whether the scan covers
+that player, so profiles in one game can use different values. The search starts at the middle of the fighter's tile,
+so an enemy exactly 24 tiles away is included. The sim report counts looks and goals sent in `answer_fire_checks` and
+`answer_fire_sent`.
 
 `[ai_base] transport_watchdog` (off in the shipped `ageofai.ini`) frees a transport that stands in one script state on
 one tile with a goal or cargo aboard. Upstream watches every transport on the map once a game second and leaves
@@ -956,8 +960,8 @@ a passenger that is dead, off the map, without a goal, on another order or idle 
 transport that stands Idle with its unload goal for 20 seconds is set to PrepareToMove, and this may happen at most
 three times. Land transports, transport helicopters, naval transports and fortresses qualify; a transport that is
 idle and empty is left alone. This port scans the players' unit lists from the AI update every game second instead
-of the game's whole-unit grid, and watches only AI players' transports. The sim report counts transport looks,
-passengers let go and nudges in `watchdog_checks`, `watchdog_drops` and `watchdog_kicks`.
+of the game's whole-unit grid, and watches only AI players whose own settings file has the setting on. The sim report
+counts transport looks, passengers let go and nudges in `watchdog_checks`, `watchdog_drops` and `watchdog_kicks`.
 
 `[ai_base] raid_leash` (off in the shipped `ageofai.ini`) calls a soldier home when it chases too far from the spot its
 force attacks. Upstream uses the value only for a raid, and counts the leash from the eight-tile arrival radius: a

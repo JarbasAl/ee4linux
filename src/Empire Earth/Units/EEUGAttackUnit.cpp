@@ -301,7 +301,7 @@ EEUnit* UnitsFirstPick(EEComplexUnit* inUnit)
     const float theRange = inUnit->mStats != NULL ? inUnit->mStats->mRange : inUnit->mUnitClass->mRange;
     const float theReach = Reach(theRange);
     const float theReachSq = theReach * theReach;
-    GE2DPoint theCenter((float)inUnit->mTileX, (float)inUnit->mTileY);
+    GE2DPoint theCenter((float)inUnit->mTileX + 0.5f, (float)inUnit->mTileY + 0.5f);  // the tile's middle includes the far boundary
     std::vector<EEUnit*> theNear;
     EEGetUnitsInRadius(theCenter, theReach, theNear);
     const unsigned long thePlayerID = inUnit->mPlayer->mPlayerID;
