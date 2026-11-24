@@ -93,6 +93,7 @@ result to its player in full (`ee-aoc --sim --player-ini`), so each AI keeps its
 | `aoai-trainqueue` | Age of AI with the training queue depth of `econ.c` (`train_queue=3`), as upstream's default has it |
 | `aoai-foodpays` | Age of AI with the food gatherer target of `citizens.c` (`citizen_plan=mine_slots, food_pays`), as upstream's default has it |
 | `aoai-siteforts` | Age of AI with the opt-in mine forts of `defence.c` (`site_forts=2`), shipped off |
+| `aoai-nofieldswild` | Age of AI with the opt-in no-fields-while-wild rule of `food.c` (`food_plan=count_trained, no_fields_wild`), shipped off |
 
 The game fixes of `[general]` act for the units of each player as that player's file sets them, so `classic` units
 also aim ahead, as they do in a normal game with `ageofai.ini`.

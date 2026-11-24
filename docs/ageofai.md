@@ -290,7 +290,8 @@ free animals and deferred field passes in `intel.wild_calls`, `intel.wild_checks
 A paired 60-minute fights-preset probe on seed 3 with three Age of AI players and inis differing only in
 `no_fields_wild` deferred 0, 103 and 2 field passes for the three players with the bit on; the bit-off run deferred
 none. The scorecard read 10059.0 off and 10423.3 on, and the traces first differ at game millisecond 902125 across
-3085 diff lines. The 300-second benchmark stays at 4084.5 with a byte-identical trace.
+3085 diff lines. The 300-second benchmark stays at 4084.5 with a byte-identical trace. The shipped `ageofai.ini` leaves
+it off until the [benchmark](benchmark.md) rates it as the AI `aoai-nofieldswild`.
 
 With `food_plan` `wild_settlement` (off in the shipped file), before the Copper Age an Age of AI player may place a
 Settlement by rich wild food far from its drop sites, at most twice in a game and no more than once every two minutes.
