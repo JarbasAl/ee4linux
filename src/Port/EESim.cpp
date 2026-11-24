@@ -303,6 +303,7 @@ void MeasureOverlap(Sample& ioSample)
 {
     struct Disc {
         float mX, mY, mSize;
+        EEPlayer* mPlayer;
     };
     std::vector<Disc> theDiscs;
     for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
@@ -323,14 +324,17 @@ void MeasureOverlap(Sample& ioSample)
             if (theComplex->mIsCitizen && (theKind == 6 || theKind == 4))
                 continue;
             Disc theDisc = {theComplex->mPhysicalModel.GetLocation().GetX(), theComplex->mPhysicalModel.GetLocation().GetY(),
-                            theComplex->mCollisionRadius};
+                            theComplex->mCollisionRadius, thePlayer};
             theDiscs.push_back(theDisc);
         }
     }
     for (size_t a = 0; a < theDiscs.size() && a < 2000; a++)
         for (size_t b = a + 1; b < theDiscs.size() && b < 2000; b++) {
             float theDX = theDiscs[a].mX - theDiscs[b].mX, theDY = theDiscs[a].mY - theDiscs[b].mY;
-            float theOverlap = (theDiscs[a].mSize + theDiscs[b].mSize) * 0.5f - sqrtf(theDX * theDX + theDY * theDY);
+            float theWidth = (theDiscs[a].mSize + theDiscs[b].mSize) * 0.5f;
+            if (theDiscs[a].mPlayer == theDiscs[b].mPlayer || (theDiscs[a].mPlayer->IsAlly(theDiscs[b].mPlayer) && theDiscs[b].mPlayer->IsAlly(theDiscs[a].mPlayer)))
+                theWidth *= 0.75f;   // friendly units may overlap down to this share of their sizes (friendly_collision)
+            float theOverlap = theWidth - sqrtf(theDX * theDX + theDY * theDY);
             if (theOverlap >= 0.1f)
                 ioSample.mOverlapPairs++;
             if ((long)(theOverlap * 100) > ioSample.mOverlapDeepest)

@@ -72,6 +72,11 @@ const SettingsAI& SettingsAIOf(unsigned long inPlayerID, unsigned long inDifficu
     return theProfile != NULL ? theProfile->mAI[theDifficulty] : gSettingsAI[theDifficulty];
 }
 
+const Settings& LoadedSettings()
+{
+    return Loaded();
+}
+
 void SetClassicPlayers(unsigned inMask)
 {
     sClassicPlayers = inMask;

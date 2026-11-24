@@ -153,5 +153,5 @@ the Town Center and Settlement take type 1, everything) and `drop_distance_x10` 
 nearest drop site that takes their resource, times 10; -1 for no gatherers or no site) and `techs` (the techs it has researched).
 
 The report's `overlap` counts the land units, soldiers and citizens not at work and not held, whose circles (as wide as the game's
-size for them) overlap: `pairs_mean` is the mean number of pairs overlapping by 0.1 tile or more over the samples, and
+size for them, 75% of it for two units of one player or of allies) overlap: `pairs_mean` is the mean number of pairs overlapping by 0.1 tile or more over the samples, and
 `deepest_x100` the deepest overlap in hundredths of a tile.

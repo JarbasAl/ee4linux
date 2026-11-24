@@ -42,6 +42,8 @@ struct SettingsAI {
 enum { kDifficultyEasy, kDifficultyMedium, kDifficultyHard };
 
 extern Settings gSettings;
+// The settings after ageofai.ini has been read (once, on the first call)
+const Settings& LoadedSettings();
 extern SettingsAI gSettingsAI[3];   // by difficulty; the medium AI plays [ai_base] itself
 
 // Reads inPath into gSettings and gSettingsAI: each row from its section (a row of [ai_base] for the easy and hard AI
