@@ -71,6 +71,11 @@ The same focused set rates `aoai-siteforts` over `standard`, `poor` and `raids`,
 4 losses and 23 draws in 30 games; rating 1360 (1279 to 1455) against `aoai`'s 1380 (1310 to 1476). The AI wins fewer
 than half the games and stands below `aoai`, so `site_forts` stays off.
 
+The same focused set rates `aoai-nofieldswild` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 3 wins,
+4 losses and 22 draws in 29 games; rating 1356 (1259 to 1461) against `aoai`'s 1378 (1308 to 1471). One `standard`
+seed-5 game faulted in the simulator on a repeat attempt and is not in the ledger; the same minimap fault appears in
+other long rating games. The AI wins fewer than half the games and stands below `aoai`, so `no_fields_wild` stays off.
+
 ## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
