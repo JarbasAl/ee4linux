@@ -49,6 +49,16 @@ Itanium cast returned `NULL` where MSVC's finds the head ([C++ runtime](cxx-runt
 A core dump shows this as `mov (%eax),%eax` with `eax = 0x3f800000` in `RTSUnit::Link`, called from
 `EEWorld::PlaceQueuedUnits`.
 
+## SIGSEGV late in a long game, in the mini map
+
+Seen in long simulated games at the same game millisecond: a fault in `EEMiniMap::RedrawCell`, called from
+`EEMiniMap::MoveUnit` when `EEUpdateUnitTile` moves a docked plane with its carrier. The map-to-cell transform rounds
+through the x87 unit, so a unit on the map edge gave the cell `(-1, 23)` instead of `(0, 23)`. The index `-41` then
+wrote before the fixed cell arrays and corrupted the mini map.
+
+Cell coordinates from the transform are clamped to the 64 by 64 grid before they index the cell arrays or the pixel
+buffer. The native test checks the reproduced index.
+
 ## The pointer has a coloured box round it
 
 The game's pointer is a 32x32 TGA whose background is the transparency colour (pure blue) in a format with no alpha
