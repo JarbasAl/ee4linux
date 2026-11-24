@@ -326,6 +326,8 @@ void CounterFire(EEComputerPlayer* inPlayer, unsigned long inNow)
             if (theTarget != NULL && labs(theTarget->mTileX - theOwn->mTileX) <= 4 && labs(theTarget->mTileY - theOwn->mTileY) <= 4)
                 continue;                                      // busy close by
             EEUnitClass* theClass = theOwn->mUnitClass;
+            if (theClass == NULL || theClass->FindAction(kActionInitialAttackState) == NULL)
+                continue;
             if (gToHitTable.GetAttackFactor(theClass->mAmmoType, theShooter->mUnitClass, inPlayer->mPlayerID, theShooterOwner) <= 0.0f)
                 continue;
             if (theClass->mCategory != kUnitCategoryHelicopter && (theLand == 0 || LandOf(theOwn->mTileX, theOwn->mTileY) != theLand))

@@ -62,6 +62,8 @@
 #include "ee/EECPAttackSubGroupUnit.h"
 #include "ee/EECPASTargetUnit.h"
 #include "ee/EEAIUnitTargetingTable.h"
+#include "AgeOfAI/AgeOfAI.h"
+#include "AgeOfAI/AgeOfAIRoles.h"
 
 // The flee screeners (EEFleeFromLocationScreenBase > ..CheckPathAreaID): ee/EEFleeFromLocationScreenBase.h.
 #include "ee/EEFleeFromLocationScreenBase.h"
@@ -416,6 +418,45 @@ float EECPAttackSubGroupUnit::ScoreTarget(EECPASTargetUnit* inTarget)
             if (theScore == 0.0f)
                 theScore = 1.0f;
         }
+    }
+    // A land ram waits while enemy soldiers guard its target (attack.c hook_asgu_score, [ai_base] attack_siege).
+    if (theScore != 0.0f && this->mSubGroup != NULL && this->mUnit != NULL && this->mUnit->mUnitClass != NULL
+        && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEUnitClass* theScorer = this->mUnit->mUnitClass;
+        if ((AgeOfAI::Roles::RolesOf(theScorer->mCategory, theScorer->mFamily, theScorer->mRange) & AgeOfAI::Roles::kRam) != 0) {
+            EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+            if (AgeOfAI::RamTargetGuarded(thePlayer, theUnit->mTileX, theUnit->mTileY))
+                return 0.0f;
+        }
+    }
+    // Aircraft out of a land soldier's reach are not targets (attack.c hook_asgu_score, attack_ignore_air).
+    if (this->mSubGroup != NULL && this->mUnit != NULL && theUnit != NULL
+        && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+        if (AgeOfAI::AirTargetOutOfReach(thePlayer, theUnit, this->mUnit))
+            return 0.0f;
+    }
+    // An enemy in known tower range is not a target while the attack's goal is outside that range
+    // (attack.c hook_asgu_score, [ai_base] attack_leash).
+    if (theScore != 0.0f && this->mSubGroup != NULL && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+        const EETileLocation& theGoal = this->mSubGroup->mTask.mLocation.mTile;
+        if (AgeOfAI::LeashSkipsTarget(thePlayer, theUnit->mTileX, theUnit->mTileY, theGoal.mX, theGoal.mY))
+            return 0.0f;
+    }
+    // A target in a lost fight is not chosen beyond the scorer's reach (attack.c hook_asgu_score, avoid_lost_fights).
+    if (theScore != 0.0f && this->mSubGroup != NULL && this->mUnit != NULL && theUnit != NULL
+        && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+        if (AgeOfAI::LostZoneSkipsTarget(thePlayer, this->mUnit, theUnit))
+            return 0.0f;
+    }
+    // A target far from the subgroup's pack is not chosen (mass.c mass_tether, army_mass=tether, default off).
+    if (theScore != 0.0f && this->mSubGroup != NULL && this->mUnit != NULL && theUnit != NULL
+        && dynamic_cast<EECPASGLand*>(this->mSubGroup) != NULL) {
+        EEPlayer* thePlayer = ::gWorld.mPlayers[this->mSubGroup->mTask.GetPlayerID()];
+        if (AgeOfAI::TetherSkipsTarget(thePlayer, this->mSubGroup, this->mUnit, theUnit))
+            return 0.0f;
     }
     float theDistance = this->mUnit->DistanceSquaredTo(theUnit);
     return theScore;

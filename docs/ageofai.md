@@ -24,8 +24,8 @@ and the classic AI.
 | `[general] enabled` | `1`: every computer player plays Age of AI. `0` (the default): every computer player plays the classic AI. |
 | `[general] scenario_ai` | `1` (the default): an Age of AI player updates with the scenario flag clear. A scenario or campaign started from the menu sets that flag, and several classic AI routines then skip their planning. |
 
-The game reads and checks every other key of the file, and the other keys do nothing yet. The module PRs give them
-their effect. A key's text is a number, a name from the key's list, or a constant expression: numbers, `%` (`35%`
+The sections below describe the keys that drive behavior in the port; other keys are read and checked but have no
+effect yet. A key's text is a number, a name from the key's list, or a constant expression: numbers, `%` (`35%`
 is 0.35), `+ - * / ( )`, `min`, `max`, `abs`, `round` and `floor`. A value that cannot be used keeps the key's
 default. The game writes one line to the standard error for each such value, for each value outside the key's range,
 and for each key or section that is not a setting:
@@ -40,12 +40,18 @@ ageofai: ageofai.ini [general] bogus: no such setting (a misspelt key?) - ignore
 A computer player can also have a settings file of its own: the simulator's `--player-ini P=FILE` gives player P that
 file in full, in place of `ageofai.ini`. The player's engine (`[general] enabled`), its `[ai_base]`, `[ai_easy]` and
 `[ai_hard]` rows, and the shot rules of its units (`lead_targets`, `lob_each_shot`) then come from that file. Every
-other player keeps `ageofai.ini`. The [AI benchmark](benchmark.md) uses this to make two named AIs play each other.
+other player keeps `ageofai.ini`. The [AI benchmark](benchmark.md) uses this to make two named AIs play each other. A
+profile that cannot be read is reported on the standard error, and the player is left on the defaults, whose
+`enabled` is 0: the classic AI. Unlike `ageofai.ini`, a profile is named, so a missing one is a mistake and not a
+setting.
 
 An Age of AI player takes these keys into its own fields on its first update: `cost_percent` (the price it pays; `0%`, the default, leaves the game's own setting, whose cheat flag gives computer players a reduced price; `100%` is the real price, which makes the player weaker than the classic AI until the defence, army and budget modules are ported), `epoch_pacing` (every value but `classic` makes it ignore the humans' epoch and population, so it never waits for
-them and its population limit is the game's), `epoch_min` and `epoch_max` (the epoch timer), `attack_interval_min` and
-`attack_interval_max`, `attack_group_percent`, `attack_on_contact`, `attack_for_resources`, `attack_revenge` and
-`last_stand_buildings`. `first_attack_min`, `citizen_share` and `attention_activities` are not applied yet.
+them and its population limit is the game's), `epoch_min` and `epoch_max` (the epoch timer), `first_attack_min` and
+`first_attack_max` (minutes until the first attack, a range the game draws from; a timer the game already drew is drawn
+again inside the new range while the player has not attacked yet), `attack_interval_min` and
+`attack_interval_max`, `attack_group_percent`, `attack_on_contact`, `attack_for_resources`, `attack_revenge`,
+`last_stand_buildings` and `citizen_share` (the citizens' share of the population cap; the game's own when it is 0 or
+1). `attention_activities` is not applied yet: its field is not mapped in this tree.
 
 ## What an Age of AI player knows
 
@@ -84,14 +90,42 @@ the hook changes here.
 ## The early game
 
 An Age of AI player (with `[ai_base] early_towers` and `tower_bait`, both on) plays the playtester's opening. In the
-first two epochs it queues two guard towers by the town centre, four tiles out: one towards the map's centre, one on
+first two epochs it queues two guard towers by the town centre, four tiles out: one towards the nearest seen enemy building (or the map's centre when none is seen), one on
 the side where its citizens work. It adds up to two builders to every unfinished tower within 20 tiles of the town
 centre, every 10 game seconds. Up to the Bronze Age, a citizen that has an enemy soldier within five tiles, or one
 attacking it, and stands outside its towers' reach, walks to the nearest finished tower within 25 tiles and stands 1.5
 tiles behind it from the enemy: the raiders that follow come under the tower. `AgeOfAIEarly.cpp` is the module and
 `AgeOfAIEarlyGeometry.cpp` holds the places. The report of a simulated game gives the player `early_towers_queued`,
-`early_builders` and `early_baits`. The first army (`early_army`), the militia (`early_militia`) and the stone of the
-core towers in the worker plan wait for the files that hold them.
+`early_builders` and `early_baits`. With `[ai_base] early_army` on (off in the shipped file), from the Stone Age to the
+Bronze Age the player asks for one Archery Range a minute when none stands or goes up and none is queued, so the
+food-free ranged soldiers have a place to train. The army's training budget, the militia (`early_militia`) and the
+stone of the core towers in the worker plan wait for the files that hold them.
+
+## Catching up with other AIs
+
+The game pulls an AI's next epoch attempt forward when a human reaches a new epoch. With `[ai_base] catch_up_ais` on (on in the shipped file), an Age of AI player also checks the other computer players every two game seconds. The first sighting of a player only records its epoch. When another AI has since reached a newer epoch, this player calls the game's own epoch catch-up and draws a new attempt time in the usual range. `epoch_pacing=timer` keeps the game's own skip, so the attempt stays on the timer. Humans keep the game's own call. `AgeOfAIEconomy.cpp` owns the rule and its counters; `EEComputerPlayer::Update` calls it once per tick.
+
+The 300-second benchmark has no epoch change, so its trace stays byte-identical at 4020 and the rule makes about 150 checks but no calls. In a 30-minute Tiny map game with three Age of AI players, gate on made one, two and no catch-up calls in the three players and scored 7319.3 against 7089.3 with the gate off; the traces differ. The paired inis differ only in `catch_up_ais`, and the gate-off trace is byte-identical to the earlier baseline. The sim report counts the checks and the calls in `intel.catch_checks` and `intel.catch_calls`.
+
+## Population limit
+
+`[ai_base] pop_follow_human` is 0 for the shipped medium and hard and 1 for easy, as upstream. The game gives an AI
+that does not ignore the other players a cap of 0.8 of the largest human population plus 0.2 of its own limit, times
+70, 90 or 140 percent by difficulty. When `pop_follow_human` is 0, an Age of AI player takes its own game limit
+instead, with no difficulty factor. The rule runs with the game's population update once a minute. With
+`epoch_pacing` other than `classic` the AI ignores the other players and the game already gives it that limit, so the
+setting does nothing; the shipped medium and hard take this path. Easy ships `epoch_pacing=classic` with
+`pop_follow_human=1` and keeps the game's cap.
+
+This is a reduced port of Grille's `econ.c` `hook_pop_cap`: the game's own cap computation stays in place and only
+the replacement of that cap is ported. The arithmetic is in `AgeOfAIPopulationRules.h` and is covered by
+`test_ageofai_population.cpp`. The sim report counts the minute ticks that reached the rule (`pop_checks`), the
+replacements (`pop_overrides`) and the last weighted and resulting caps (`pop_weighted`, `pop_cap`).
+
+At the shipped settings the 300-second benchmark stays at 4084.5 with a byte-identical trace and no pop counters. A
+30-minute, single-seed Medium Small Islands probe with `epoch_pacing=classic` in both games and only
+`pop_follow_human` changed scored 20836.0 with the rule on against 14130.0 with it off. On, 31 ticks per player
+replaced a weighted cap of 112 with the game limit of 400; off, the same 31 ticks made no replacement. One seed only.
 
 ## The economy before farms
 
@@ -106,12 +140,38 @@ gather: the need divided by the income per worker, measured every 30 game second
 `next_epoch` half the workers (up to `food_floor`) go to food. From the Copper Age on the game's targets stand. The
 military's reserves, the fields' wood and the late rules wait for their files.
 
+## Recovery after the Copper Age
+
+`[ai_base] recover_economy` is on in the shipped file, as upstream, and is now active. From the Copper Age on, while the
+player has fewer than `min_workforce` gatherers (40 in the shipped file), an Age of AI player puts two thirds of its
+wanted gatherers on food. It moves workers one at a time from the largest other wanted target, among wood, stone, gold
+and iron. The rule starts with five workers of slack once it has engaged, so it does not flicker at the threshold. A
+player that once reached `min_workforce + 5` stays eligible at any later size. A player that never did stays off until
+game minute 30, so a start in a late epoch is not read as a collapse.
+
+This ports upstream's worker split only. Upstream also lets citizens spend the whole stock and stops soldier training
+while the economy is low; those two effects wait for the port's budget and training layers. The split runs after the
+game's count of wanted gatherers, every five game seconds, in `AgeOfAIEconomy.cpp`. EESim reports gated passes, starts
+and ends, and workers moved to food as `intel.recover_checks`, `recover_starts`, `recover_ends` and `recover_moves`.
+`recover_on` and `recover_had_economy` show the two latches at the end of a sample.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it. It leaves the
+300-second benchmark unchanged: the two Age of AI players stay in the second epoch, the trace is byte-identical to the
+earlier 3705 baseline, and the score stays 3705. With the shipped settings a 30-minute Tiny map game also keeps the
+same trace with the setting on and off, although one player that never grew past six citizens turns the latch on in
+that time. To exercise the rule, a paired 35-minute probe set `min_workforce=200` in both inis so the guard let it
+start after minute 30. Recovery scored 7196.3 against 7424.0 with it off; the traces first differ at game millisecond
+1803375, the first target pass after the guard. The on run moved 1566 and 1513 workers to food for two players.
+
 The game plans its attempt at the next epoch by a timer, often long after the player could pay. With the copper plan,
 before the Copper Age, and in every epoch with `epoch_pacing` `rush`, an Age of AI player moves the attempt to now as
 soon as its stock pays the next epoch (the game then researches the requirements it asks for first). A request for them
-that is still pending after five minutes is asked again. The `follow` pacing (waiting for the humans) and the catch-up of
-the `timer` pacing are not ported.
-`AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the hooks.
+that is still pending after five minutes is asked again. With `epoch_pacing` `follow`, while no human is ahead the attempt is kept a
+minute off and no resources are held back for the next epoch, though its requirements are still asked for; once a
+human is ahead it moves up as soon as the epoch can be paid. With no human in the game the timer alone counts. With
+`epoch_pacing` `timer` an Age of AI player ignores the game's catch-up when a human reaches an epoch, so the timer alone
+counts; every other pacing keeps the catch-up. `AgeOfAIWorkers.cpp` holds the arithmetic and `AgeOfAIEconomy.cpp` the
+hooks.
 
 The game's research manager schedules gathering upgrades rarely. With `[ai_base] gather_research` on (the default) an Age of
 AI player with ten or more gatherers takes, every 15 game seconds, one available, unresearched tech from the manager's
@@ -120,12 +180,59 @@ own choice: it orders the building that researches it, if missing, and reserves 
 
 The game gives a computer player the line upgrades of an epoch (the techs of kind 7) the moment it enters the epoch, with no
 cost, building or time. With `[ai_base] paid_upgrades` on (the default) an Age of AI player schedules them with its
-research manager instead, so they are researched at their buildings and paid for, as a human player does. The army plan's
-`upgrade` bit, which holds back lines the player does not use, and the upgrade reserve are not ported.
+research manager instead, so they are researched at their buildings and paid for, as a human player does. With the army
+plan's `used_lines` bit a line the player neither has nor is asked for waits until it comes into use; the upgrade reserve
+is not ported.
 
 A building that leaves the map loses its research queue, and the research manager does not ask again. Every 30 game seconds an
 Age of AI player schedules again each available, unresearched line upgrade that is in no research list and no building's
-queue or production, when its stock pays the price. The upgrade that the game marked as not queueable is not handled.
+queue or production, when its stock pays the price. With `used_lines` a line still out of use stays back. The upgrade that
+the game marked as not queueable is not handled.
+
+## Epoch requirements
+
+An epoch also needs a number of new things of the current epoch - a unit type, a building or a tech. The game asks for
+them only at its advance timer, once it can pay, and its fallback picks decoration objects ("x ..." statues and flags
+from the editor) that the AI cannot place, so the attempt can wait 4-14 minutes. With `[ai_base] early_requirements`
+the AI asks the research manager for the missing things as soon as it enters the epoch when the copper plan is on, or
+within ten minutes of the advance timer otherwise. A request still pending after three minutes is renewed, and progress
+restarts that wait without a second ask. The game's own epoch-advance pass then sees its request-out byte set and leaves
+the ask to this rule. Each tech tree drops its decoration techs from the epoch count once, so statues no longer hold a
+request. The arithmetic is in `AgeOfAIEarlyRequirementsRules.h`, the hook in `AgeOfAIEconomy.cpp`, and the call in
+`EEComputerPlayer::Update`. EESim reports passes, first asks, progress restarts, renewals and decoration techs as
+`intel.early_req_checks`, `early_req_asks`, `early_req_progress`, `early_req_renews` and `early_req_decoration`.
+
+This is a reduced port. Upstream also pays requirement units from the stock above its reserve through the training
+budget; the port has no training budget, so that branch is absent. The shipped file keeps the setting off until the
+benchmark (docs/benchmark.md) rates it: the AI aoai-earlyreq turns it on. The gate-off 300-second benchmark stays at
+4084.5 with a byte-identical trace and all counters zero. In a paired seed-3 one-hour fights probe the gate made two
+asks for each of the three players and cleared seven decoration techs for one; the traces first differ at game
+millisecond 1442000. Two players gained and one lost, and that loss drives the gate-on mean down from 11336.7 to
+9233.3, so the setting stays off until a full rating.
+
+## Citizen food targets
+
+With `[ai_base] citizen_plan` `food_pays` (off in the shipped file), an Age of AI player raises its food gatherer target
+from the Copper Age on. The target pays the finished Town Centers and Capitols that still train citizens: one producer
+serves ten citizens, a citizen costs 50 food and takes 28 seconds (the `[autotest] citizen_train_ms` row), and the
+measured food per worker-minute sets the gatherer count. The target takes gatherers from wood down to four and from the
+metals down to the miners already on them or two, whichever is higher. Only the wanted-count targets change. The game
+then assigns workers as usual, so the rule never pulls a citizen off a mine. Upstream's citizen goal, mine-slot pass and
+worker pull are not ported. The arithmetic is in `AgeOfAIFeedTargetsRules.h`, the runtime in `AgeOfAIEconomy.cpp`. The
+call runs after `MineFill` and `LateFoodTargets` in `EECPResourceManager.cpp`, as upstream runs `cz_targets` after
+`mine_fill`, so those passes cannot lower the target again. Without a donor above its floor the target stays where it
+was; upstream's unported mine-slot pass is the only other lift. EESim reports passes, missing citizens, finished
+producers, the food gatherers asked for, target moves and their sources as `intel.feed_checks`, `missing_citizens`,
+`feed_producers`, `feed_gatherers`, `feed_moved`, `feed_from_wood` and `feed_from_metals`.
+
+The focused benchmark rates this setting at 1349 (1266 to 1472) against `aoai`'s 1383 (1312 to 1480), with 4 wins,
+6 losses and 18 draws in 28 games; two `standard` seed-5 games faulted in the simulator and are out of the ledger.
+The AI wins fewer than half the games and stands below `aoai`, so the setting stays off. A paired seed-2 probe with a Copper Age start and two Age of AI players,
+differing only in `food_pays`, scored 4084.5 with the bit off and 3685.5 with it on. The gate-off trace is byte-identical
+to the earlier baseline and every `feed_*` counter is zero there. With the bit on, 59 to 60 calls per player asked for
+22 food gatherers and moved 66 and 102 targets, 3 and 22 from wood and 63 and 80 from the metals; the traces first
+differ at game millisecond 111125. A second probe with `mine_fill` `fill_slots` and `mines_first` also on reached a food
+target of 22 late in the game, so the feed target survives those passes. The setting stays off.
 
 ## Mines and the worker rebalance
 
@@ -135,11 +242,19 @@ all on) searches differently for stone, gold and iron: the free mine nearest to 
 Capitol, Settlement), with the game's checks (an active resource center, explored, a free gatherer slot, no enemy near,
 the citizen's continent) and no known enemy on the straight way from that drop site; with nothing found, the game's own
 search. A mine counts as full when the working gatherers or the AI's own citizens aiming at it reach the cap, since the
-game counts only those that work. Every 10 seconds the citizens beyond the cap at a mine go to the nearest free mine of
-the kind, 20 at most. After each assignment pass the rebalance moves up to 2 gatherers (4 with `citizen_plan`
+game counts only those that work. The cap is the game table's gatherer limit, the same value upstream reads; it does not
+follow a civilization power or scenario effect that changes the player's own mining limit. Every 10 seconds the citizens
+beyond the cap at a mine go to the nearest free mine of the kind, 20 at most. After each assignment pass the rebalance
+moves up to 2 gatherers (4 with `citizen_plan`
 `mine_slots`) from the resource with the most gatherers above its wanted count to a stone, gold or iron mine that is
-short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. Not ported yet: the test of the
-mine's tile that upstream makes, `local_mines`/`town_work` (off by default) and the overseas mines.
+short by 2 or more (wood too from the Copper Age on). `AgeOfAISites.cpp` holds it. With `[ai_base] local_mines` (off in
+the shipped file) a mine whose drop site is more than 60 tiles from the citizen is another town's and is refused, and one
+within 40 tiles comes before the rest: the game's assignment otherwise sends citizens across the map and back.
+`AgeOfAISites.h` holds those two distances. For the ferry/island-expansion search with no citizen, `[patches] overseas_mines` (on by default) prefers a mine on another continent than the base so citizens are not ferried to a home-island mine. Not ported yet: the test of the mine's tile that upstream makes.
+
+With `[ai_base] town_work` (off in the shipped file), a citizen whose gather site's nearest drop site lies more than 60 tiles from where it stands is moved to work its own town can reach. After each assignment pass `AgeOfAISites.cpp` looks for a site of the same resource whose drop site lies inside that reach, then the resource with the largest shortfall, then wood, then food. When no such site exists the citizen keeps the game's assignment. Upstream remembers each citizen's home when it is trained and gives idle citizens local work after the assignment. This port does not record a citizen's home at training, so the citizen's tile at assignment stands in for its home, upstream's own fallback for a citizen without one, and the idle pass is left out. The sim report counts citizens moved to a local site (`town_swapped`) and those left at a far site (`town_away`).
+
+A 30-minute Large-map probe with three AI players and inis differing only in `town_work` moved 3 citizens to local work and left 21 far for one player with the bit on; the other players and the bit-off run counted zero. The scorecard rose from 13570.0 to 13933.3 and the traces first differ at game millisecond 629125 across 2686 diff lines. The 300-second benchmark stays at 4084.5 with a byte-identical trace and both counters zero.
 
 The game's assignment never moves a gatherer back to food either. With `food_plan` `back_to_food` (on in upstream's default, off in the shipped
 `ageofai.ini` until the [benchmark](benchmark.md) rates it as the AI `aoai-foodpull`), after
@@ -147,14 +262,123 @@ each assignment pass and the rebalance, while food is 2 or more gatherers short 
 move to food. Each comes from the resource of wood, stone, gold and iron with the most gatherers above its wanted count
 (2 or more), and goes to the free forage bush nearest to a drop site that takes food, within six times the player's
 drop-off distance of the base. The bush passes the game's own checks: explored, a free gatherer slot, the gatherer's
-land, no enemy near, no known danger. The sim report's `intel.food_pulled` counts the moves. Upstream's hunting
-(`hunt_near`) and the near-bush search (`forage_near`), both off by default, are not ported.
+land, no enemy near, no known danger. The sim report's `intel.food_pulled` counts the moves.
+
+With `food_plan` `forage_near` (off in the shipped file) the game's own bush search takes the free bush nearest a drop
+site that takes food, within two times the player's drop-off distance of the town centre for the pass that names a
+citizen and six times for the far one, where the game takes the first bush in centre order. The reach of the two passes
+is the game's own; only the choice of bush changes. `AgeOfAISites.h` holds the two multiples.
+
+With `food_plan` `hunt_near` (off in the shipped file), before each assignment in the Stone Age idle citizens hunt
+animals within `[ai_base] food_hunt_range` tiles (15 by default, read from the player's own settings file) of a Town
+Center, Capitol or Settlement. The animal is the free one nearest to such a drop site: food, an animal, fewer than
+three gatherers, on the citizen's land, with no enemy near and not a dangerous site. As upstream, a tiger or a wolf
+is left alone; the port resolves it by its name string.
+With `food_plan` `back_to_food` also on, before farms, a gatherer pulled back to food goes to a free animal first and
+takes a forage bush only when none is in reach.
+
+With `food_plan` `no_fields_wild` (off in the shipped file), from the Copper Age a field foundation keeps no builder
+while a free bush or animal is in reach. Before the gather assignment `EECPResourceManager.cpp` asks
+`AgeOfAI::WildBeforeFields`: it finds the free forage bush within six times the drop-off distance of a drop site that
+takes food, or a free animal near a drop site that takes hunters, using the same searches as the food passes. An animal
+counts on any land, as upstream's search with no citizen does. Upstream also defers while known fish food is rich and
+the boats are under eight; that branch is not ported. The sim report counts hook calls, gated passes, free bushes,
+free animals and deferred field passes in `intel.wild_calls`, `intel.wild_checks`, `intel.wild_bush`,
+`intel.wild_animal` and `intel.wild_deferred`.
+`AgeOfAINoFieldsWildRules.h` holds the Copper Age and reach arithmetic.
+
+A paired 60-minute fights-preset probe on seed 3 with three Age of AI players and inis differing only in
+`no_fields_wild` deferred 0, 103 and 2 field passes for the three players with the bit on; the bit-off run deferred
+none. The scorecard read 10059.0 off and 10423.3 on, and the traces first differ at game millisecond 902125 across
+3085 diff lines. The 300-second benchmark stays at 4084.5 with a byte-identical trace. The focused benchmark rates the
+setting at 1356 (1259 to 1461) against `aoai`'s 1378 (1308 to 1471), with 3 wins, 4 losses and 22 draws in 29 games;
+one `standard` seed-5 game faulted in the simulator and is out of the ledger. It wins fewer than half the games and
+stands below `aoai`, so it stays off.
+
+With `food_plan` `wild_settlement` (off in the shipped file), before the Copper Age an Age of AI player may place a
+Settlement by rich wild food far from its drop sites, at most twice in a game and no more than once every two minutes.
+Bushes and animals within 30 tiles of the base count as wild food; a spot 10 or more tiles from every food drop site
+with 1500 or more food within 6 tiles gets a Settlement placed 2 to 4 tiles from it, with no enemy near and no raiders
+near. As upstream, a tiger or a wolf is excluded; the port resolves it by its name string.
 
 The game puts no drop site by the forest its woodcutters work. With `[ai_base] wood_drop` on (the default), an Age of AI player
 looks every game minute for woodcutters whose tree is 15 or more tiles from a drop site. When 8 or more of them work within 8
 tiles of one tree, and no Settlement is going up and the player can build one, it lays a Settlement at the placeable spot
 nearest the middle of their trees (2 to 12 tiles away), with no enemy building or soldiers near. The cost reserve that holds
 the Settlement's price back from training waits for the training budget.
+
+With `[ai_base] mine_fill` `mine_settlement` or `citizen_plan` `mine_settlement` (both off in the shipped file), an Age of
+AI player may place a Settlement by a far mine. From the Copper Age on, with 30 or more gatherers, every two game minutes
+it queues a Settlement 3 to 6 tiles from the free far mine on the home continent: a stone, gold or iron mine more than 12
+tiles from every drop site, explored, active, with no enemy near and not a dangerous site. At most six are queued in a
+game, and none while another Settlement is queued or going up; the player must be able to build and pay for one. Only the
+far mine is read for this Settlement pass; the fill pass reads the mine-slot tally described below.
+
+With `[ai_base] mine_fill` `fill_slots` (off in the shipped file), an Age of AI player sends spare woodcutters and farmers to
+metal mines that have a free slot near a drop site. From the Copper Age on, after three game minutes and with 30 or more
+gatherers, it counts the stone, gold and iron mines within 12 tiles of a drop site. Each mine adds the game's mine-capacity
+value to the tally of its resource. While the population cap is under 120, only mines on the home continent count. A metal
+whose stock is more than 1500 above the cost held back for the next epoch gets no workers. The player takes workers first
+from wood above a floor of four plus a share held for the wood demand, then from food above three fifths of its target.
+`mine_fill` `mines_first` also takes from wood above a fifth and food above a third of all gatherers. The pass changes the
+wanted-gatherer targets, and the game's own assignment moves the citizens.
+
+With `[ai_base] late_targets` `food_to_metals` (off in the shipped file), from the Copper Age on an Age of AI player trims
+the farmers' wanted count while food piles up. Every 10 game seconds, with at least six gatherers wanted in all, the count
+falls by 2 when the food stock is more than 4000 above the cost held back for the next epoch, and rises by 6 when it is
+under 2000. Under 500 the count returns to the fields plus 2. No more than half the fields stand idle. The wanted workers
+taken from food go to stone, gold and iron by their demand beyond stock, with a small share for each metal, and the game's
+own assignment moves the citizens. The other bits of `late_targets` are not ported: the wood gap and the army's refusal
+pull need the unported training budget.
+
+## Granaries
+
+`[ai_base] more_granaries` is on in the shipped file and is now active. A granary feeds eight fields. Once a game minute,
+from the Copper Age on, an Age of AI player asks the build manager for a granary when no farm waits to be built or worked
+and no granary is going up. Without `farm_first` it asks when the food target exceeds the food workers by 2 with no
+granary, or by 6 with at least one. With `farm_first`, also on in the shipped file, it asks for the first two granaries
+whatever the food target. After that it asks for one per eight food workers wanted, plus one, up to eight granaries. The
+build manager's queued check stops repeated requests. Upstream also tries a granary spot of its own 50 seconds after a
+request that brought nothing; that fallback needs the port's missing placement and raider searches, so the ordinary
+request is repeated instead.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never asked for another granary.
+Setting 0 restores that. The 300-second benchmark runs one check and makes no request, so its trace stays the same and its
+score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on logged 33 checks and 10 requests
+and scored 6154.7; gate off logged none and scored 6779.3. The traces differ. The sim report counts the passes and the
+requests in `intel.granary_checks` and `intel.granary_requested`.
+
+## Fishing boats
+
+`[ai_base] fishing_boat` is on in the shipped file and is now active. The game picks a fishing boat from the epoch alone:
+the Stone boat before the Bronze Age, the Bronze boat until the World War I age and the Modern boat after that. From the
+World War I age the Modern boat cannot be trained yet, so the game asks for a boat it cannot build and fishing stops.
+For an Age of AI player the port walks the class table and returns the newest fishing boat class the player can build
+now. An upgraded line's old class has no available tech and drops out. When no boat is available, the game's pick
+stands. Setting 0 restores that pick; the setting was parsed but inert before this change.
+
+The shipped 1 changes behaviour on water maps from the World War I age on. The 300-second benchmark is a land game
+whose two fishing-boat calls both pick the Stone boat, so its trace stays byte-identical and its score stays at 4020.
+In a 30-minute Small Islands game with three Age of AI players, gate on picked the Imperial boat (class 365) on all
+104 calls, and every pick differed from the game's; it scored 15750.7 with a population of 111.0. Gate off kept the
+Modern boat (class 211) on all 127 calls and scored 15504.7 with a population of 100.3. The gate-off trace is
+byte-identical to the earlier baseline and the gate-on trace differs. The sim report counts calls, newest-boat picks,
+changed picks and the last class in `intel.fish_calls`, `intel.fish_picked`, `intel.fish_changed` and `intel.fish_class`.
+
+## Mine cap
+
+`[ai_base] citizen_mine_cap` is on in the shipped file and is now active. The game asks for the population cap times the
+citizen share. From the Copper Age on the port refreshes a cap every 30 game seconds: it counts the stone, gold and iron
+mines the player knows, allows the game's gatherers per mine (table value 0x16, six) times 1.5, and limits the result to
+half the population cap. A request above the cap is reduced to it. This is upstream's `cz_mine_cap`; the setting was
+parsed but inert before this change. Setting 0 restores the game's own count.
+
+The shipped 1 changes behaviour from the Copper Age on. The 300-second benchmark reaches the Copper Age but its cap
+stays at 200 and does not bind, so its trace stays byte-identical and its score stays at 4020. In a 30-minute Tiny map
+game with three Age of AI players the cap counted 11 mines and limited the count to 99: 49 of 53 requests, 3 of 7 and
+5 of 9 were reduced in the three players. Gate on scored 7089.3; gate off logged no reductions and scored 7000.3, with
+a trace byte-identical to the earlier baseline. The sim report counts queries, reductions, the last mine count and the
+last cap in `intel.mine_calls`, `intel.mine_capped`, `intel.mine_mines` and `intel.mine_cap`.
 
 ## What is dangerous for the citizens
 
@@ -169,10 +393,12 @@ defences it has seen, compares each citizen's hit points with the last look to m
 an attack (unassigned citizens marching to an enemy building), and sends gatherers and builders back to their drop site when their
 site has raiders near, citizens hurt near it, or lies behind a known enemy defence; builders only at fields, since the wall
 manager sends the builders of walls and towers again and again. The repair round's order for a building is refused while enemy soldiers it
-knows stand within 8 tiles, and (`repair_one_walker`) while another of its citizens already holds a build goal on the building. `AgeOfAIDanger.cpp`
-holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. Not ported yet:
-`raid_held` (a town that holds against the raiders), `behind_walls` and `ship_reach_exact` (off by default), the danger map
-the route searches read, and the flight of an overrun base and the shelter in a fortress (they need `defence.c` and `bunker.c`).
+knows stand within 8 tiles, and (`repair_one_walker`) while another of its citizens already holds a build goal on the building. With
+`repair_safe_way` (off by default), it is also refused when known enemy soldiers stand on the way or known enemy towers cover the route.
+`AgeOfAIDanger.cpp` holds it, and `SeenBy` (what the player knows of a unit, from the honest vision of the memory) is shared. With
+`ship_reach_exact` (off by default), a naval or submerged raider counts only within its own range plus one tile, in a
+round distance. With `raid_held` (ported, set to `0` in the shipped config to preserve default behaviour and benchmark-ledger comparability until re-rated), a raided or hurt site the town holds on the fight estimate is not treated as dangerous. Not ported yet: `behind_walls` (off by default),
+the danger map the route searches read, and the shelter in a fortress (`bunker.c`).
 
 An enemy army in the base is met as one force. Every game three seconds, with `[ai_base] muster` on (the default), an
 Age of AI player counts the enemy soldiers within 22 tiles of its base against its own soldiers within 35 tiles and its towers
@@ -180,7 +406,9 @@ within 22. With 8 or more enemies and the home side under half of their strength
 point 18 tiles beyond the base, away from the enemy, and new soldiers join it. Once the soldiers at the rally point are 1.3
 times the enemy in the base, each attacks the nearest enemy soldier. The muster ends when fewer than 3 enemies are left,
 when soldiers and towers can hold the base again, or when the enemy follows to the rally point a third time; a new muster
-waits 30 or 60 seconds. The citizens' flight to the rally point is not ported.
+waits 30 or 60 seconds. While the base is mustering, citizens in danger flee to the rally point instead of working through the overrun. The shelter in a fortress is not ported.
+
+With `[ai_base] hold_town` on (off by default), home soldiers within 35 tiles of the base hold the town against seen enemies (soldiers and siege) instead of trickling out. When no enemy is near they are freed; when strong enough they sortie together; when weak they retreat to a guard point and hold. Soldiers in attack groups beyond 35 tiles are freed as in upstream. While mustering, hold-the-town does not interfere. Landing and garrison exceptions are not ported.
 
 ## Outdated units attack
 
@@ -198,6 +426,88 @@ The classic combat manager takes free soldiers into its own attack groups within
 finds no free outdated units and the game does not change. It acts for a player whose army is larger than its groups
 take, as on the late-game save the rule was written for.
 
+## Citizen attacks
+
+`[ai_base] citizen_attacks` follows upstream's meaning: 1 allows the original citizen attack, 0 calls it off. The shipped
+file sets 0, so every five game seconds the AI looks at its attack groups and sends any group made at least half of
+citizens home. The game hands those units back and disbands the group. This gate is inverted: the shipped 0 enables the
+scan, while 1 leaves citizen groups alone. Upstream also calls citizen attacks off at 0, and the port had no such
+call-off before, so this change brings the port in line with upstream at the shipped setting. Normal sim games form no
+citizen attack groups, so the scan has no effect on play there. The sim report counts the scans and the groups sent home
+in `intel.citizen_calls` and `intel.citizen_called`.
+
+## The game's walls
+
+`[ai_base] game_walls` has the same inverted meaning as upstream: 1 leaves the game's automatic wall manager running for
+the AI, 0 turns it off. The shipped file sets 0, so an Age of AI player does not build the game's ring of wall segments;
+the mod's own defences come from `defence_layout` instead, which builds through the wall builder directly. Classic AI
+players keep the game's walls either way. This is another parsed row whose shipped value turns a rule on here: upstream
+also turns the game's walls off at 0, and the port had no such switch before, so this change brings the port in line with
+upstream at the shipped setting. In the default benchmark game the change is visible: citizens that the game's wall
+manager would have sent to wall segments stay on other work, so population and army rise a little and the score moves
+from 3920 to 4020 value. Setting 1 restores the old trace exactly. The sim report counts the wall updates skipped and
+run in `intel.wall_skipped` and `intel.wall_ran`.
+
+## Retargeting an attack group
+
+With `[ai_base] attack_retarget` on (off in the shipped file), every ten game seconds the AI checks its attack groups.
+A group whose target player has left the game or is no longer an enemy takes the enemy building nearest to the group's
+middle as its new target, provided it has seen that building. The group and each subgroup still pointed at the old
+player take the new one, so their next march and aim use it. Groups that still fight an active enemy are left alone.
+This is upstream's `wave_retarget`; the sim report counts the scans, the groups retargeted and the subgroups re-pointed
+in `intel.retarget_scans`, `intel.retarget_picked` and `intel.retarget_groups`. Normal games form no group with a dead
+target, so the scan runs but does not change play there; the counter proves it is active when the gate is on.
+
+## A wave's goal
+
+With `[ai_base] wave_focus` on (off in the shipped file), the land routes of an attack group use one goal. When a subgroup asks for a route, the first route request sends it to an enemy building of the target player that the AI has seen. The building is the nearest one on the land mass of the route: nearest to the route's start at first, then nearest to the last goal after a building falls. A return mission keeps its own goal. The group holds the building until it dies, the route moves to another land mass, or three minutes pass with no route for the group. The AI then picks a new building, or leaves the game's own goal when it knows no enemy building. The sim report counts the routes seen, the goals chosen, the goals changed, the routes already at the goal and the routes with no goal found (`intel.wave_*`).
+
+The rest of `stage.c` is not ported. There is no staging point, no falling back and no rally.
+
+## Weak spots
+
+`[ai_base] attack_weak_spots` is on in the shipped file, as upstream, and is now active. When a land route's goal is an enemy building under known defences, the AI looks for a weaker enemy building within `attack_weak_spot_radius` tiles (60 by default). The building must be one the AI has seen, on the same land mass as the route, and outside every known defence's range. Walls do not count. The AI picks the building nearest the route's start and goal, sends the route there and records it as the subgroup's goal. A weak spot also becomes the wave's goal when `wave_focus` is on. Upstream searches a grid box around the goal and compares the map areas of the start and the candidate; the port scans the enemy players' buildings and compares their land mass. The score and the goal write are the same.
+
+The shipped 1 is a deliberate behaviour change: the earlier port read the setting but never used it, so an attack kept its goal behind the defences. Setting 0 restores those routes. The 300-second benchmark makes six route checks and finds no threatened goal, so its trace stays byte-identical and its score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on changed two goals for one player and six for another and scored 7000.3; gate off changed none and scored 6154.7, with a different trace that is byte-identical to the earlier baseline. The sim report counts the routes seen, the threatened goals and the goals changed in `intel.weak_calls`, `intel.weak_threatened` and `intel.weak_picked`.
+
+## Breaching walls
+
+`[ai_base] attack_breach` is on in the shipped file, as upstream, and is now active. When the straight line from an attack subgroup to its goal crosses a known enemy wall, the route follows that wall up to 60 tiles. It picks the wall segment outside known tower range with the shortest start to wall to goal detour and makes that segment the subgroup's goal. Without this rule an army marches straight into a wall and piles up beside the towers guarding the gap. Upstream looks walls up in the unit grid and floods the wall with a bounded eight-connected queue. The port has no such grid, so it collects the player's seen enemy wall buildings once per route and looks tiles up in that list; the queue limit, the 60-tile reach and the detour score are the same. `AgeOfAIArmy.cpp` owns the rule and its counters; `EECPASGLand::RequestPath` calls it after the weak spot rule, in the same order as upstream's route hook.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it. The 300-second benchmark sees no enemy wall and keeps a byte-identical trace at 3705. The simulator's `--wall` option now exercises the rule: it puts a line of defender-owned wall segments beside each attacker's base, so the attacker sees them and its attack routes cross them. In a 20-minute Tiny map game with three Age of AI players and `--wall 60`, gate on saw 36, 84 and 30 wall segments, crossed a wall six times and once for two of the players, and picked a breach segment on every crossing; gate off made no route checks and saw no walls. The on run scored 5844.7 and the off run 6972.7, and the traces first differ at game millisecond 99750. The sim report counts the route checks, the crossings, the walls chosen and the wall sightings in `intel.breach_calls`, `intel.breach_crossed`, `intel.breach_picked` and `intel.breach_walls`.
+
+## Attack routing
+
+`[ai_base] avoid_towers` is on in the shipped file, as upstream. A land attack route pays a cost for each known enemy defence that covers the subsector the route enters. The cost is the defence's attack divided by 50, times `avoid_towers_weight` (2000); `avoid_towers_margin` adds 6 tiles to the defence's reach. Only defences the player has seen count, as in the citizen danger test. Upstream charges this for every tile of its route planner. The game's planner works on subsectors, so the port charges one step at the subsector's centre. `AgeOfAIDanger.cpp` computes the cost and the land attack route planner adds it for Age of AI players only.
+
+The shipped 1 is a deliberate behaviour change: the earlier port read the setting but never used it, so an attack marched through known tower range. Setting 0 restores those original routes. The 300-second benchmark game has no covered subsector on its routes, so its trace and score stay as before. In a 30-minute Tiny map game with three Age of AI players, the gate-on run paid the extra cost on 408 route steps and finished at 7273 value; the gate-off run paid none and finished at 7701. The two traces differ. The sim report counts the route steps seen, the steps in range and the cost added in `intel.avoid_calls`, `intel.avoid_penalised` and `intel.avoid_cost`.
+
+`[ai_base] attack_siege` is on in the shipped file. Its ram rule is now active. A land ram that would score a guarded target gives the target a score of zero and waits with the army. An enemy land soldier within 5 tiles of the target counts as a guard. Citizens, rams and siege weapons do not count. The test reads all enemy land soldiers, seen or not, as upstream does. `AgeOfAIDanger.cpp` owns the engine gate and the counters; `EECPAttackSubGroupUnit::ScoreTarget` calls it for land rams only.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it, so rams attacked guarded targets. Setting 0 restores those attacks. The 300-second benchmark game has no ram, so its trace stays the same and its score stays at 4020. In a 300-second Tiny map probe with six rams per Age of AI player at 120 s, gate on refused 18 of 407 ram target tests and scored 3197.5; gate off refused none and scored 3006.0. The traces differ. The sim report counts the guarded tests and the refusals in `intel.ram_calls` and `intel.ram_waits`.
+
+`[ai_base] attack_leash` is on in the shipped file and is now active. A land attack skips an enemy standing in known enemy defence range when the attack's own goal tile lies outside that range. The range is a defence's range plus `avoid_towers_margin`; the leash reads the same known defences as the route cost, even when `avoid_towers` is off. The staging rules upstream checks first are not ported, so they do not hold the leash back. `AgeOfAIDanger.cpp` owns the engine gate and the counters; `EECPAttackSubGroupUnit::ScoreTarget` passes the target and the subgroup goal tiles.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it, so soldiers chased defenders into known tower range. Setting 0 restores those attacks. The 300-second benchmark game runs 21 leash tests but skips no target, so its trace stays the same and its score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on skipped 724 of 18597 tests and scored 6779.3; gate off skipped none and scored 7272.7. The traces differ. The sim report counts the tests and the refusals in `intel.leash_calls` and `intel.leash_skipped`.
+
+`[ai_base] attack_ignore_air` is on in the shipped file and is now active. When a land attack subgroup scores an enemy aircraft, a soldier whose range plus 3 tiles does not reach the aircraft gives it a score of zero. Soldiers then stay with the attack instead of chasing planes circling over their own town and holding the whole march. Aircraft in reach stay targets. The rule covers airplanes, helicopters and transport helicopters. `AgeOfAIDanger.cpp` owns the engine gate and the counters; `EECPAttackSubGroupUnit::ScoreTarget` calls it for every target a land subgroup scores, including targets with a zero score, as upstream does.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it, so soldiers chased aircraft they could not hit. Setting 0 restores those attacks. The 300-second benchmark and ordinary games have no aircraft, so their traces stay byte-identical and the score stays at 4020. The sim's `--army-air` option spawns aircraft for a probe. In a 30-minute Tiny map game with three Age of AI players, repeated land raids and 12 aircraft per player every three minutes, gate on skipped 12040 of 12580 aircraft tests for one player and 6145 of 6379 for another; gate off made 21291 and 5929 aircraft target tests and skipped none. The gate-on score was 25857.3 against 25715.3 with the gate off, and the traces differ. The sim report counts the aircraft tests and the refusals in `intel.air_calls` and `intel.air_skipped`.
+
+`[ai_base] army_mass=tether` is upstream's mass rule 16 and is off in the shipped file (`army_mass=` is empty). A land soldier does not pick a target more than `army_mass_tether` tiles (12 by default) from its subgroup's pack unless the target lies within its own range plus 2 tiles. The pack is the middle of the subgroup's own members; upstream uses the members that are away from the base. `army_mass=only_buildings` limits the rule to enemy buildings and forts. `AgeOfAIDanger.cpp` owns the engine gate and the counters; `EECPAttackSubGroupUnit::ScoreTarget` calls it for land targets that already have a score.
+
+Setting the flag on is an opt-in from the shipped off state; setting it off keeps the game's own target choice. The 300-second benchmark has no `army_mass` flag, so its trace stays byte-identical and its score stays at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on skipped 220 of 543, 1480 of 4529 and 7595 of 12413 target tests in the three players and scored 6795.3; gate off skipped none and scored 7089.3, with a trace byte-identical to the earlier baseline. The traces differ. The sim report counts the tests and the refusals in `intel.tether_calls` and `intel.tether_skipped`.
+
+`[ai_base] army_mass=wait_stronger` is upstream's mass rule 2 and is off in the shipped file. When an attack is due within 15 seconds, the AI compares the hit points times attack of its own land soldiers with the strongest enemy army it has seen in the last 10 minutes. If that enemy army is stronger than `army_mass_ratio` percent (130 by default), the AI pushes the next attack time out 20 seconds. It checks again every five seconds and holds the attack for at most `army_mass_wait` minutes (10 by default). A game-launched or rescheduled attack ends an active wait. `AgeOfAIDanger.cpp` owns the rule and its counters; `EEComputerPlayer::Update` calls it once per tick.
+
+This is an opt-in from the shipped off state, so no default rating changes. The 300-second benchmark has no attack due in its window and its trace stays byte-identical at 4020. In a 30-minute Tiny map game with three Age of AI players, gate on held the first attacks and scored 3210.7 against 7089.3 with the gate off; the traces differ. Gate on counted 1601, 1601 and 1600 due-time checks, three new waits and two or three releases per player. Gate off counted none. The sim report counts checks, new waits, releases and extensions in `intel.mass_checks`, `intel.mass_waits`, `intel.mass_goes` and `intel.mass_waited`.
+
+## Regroup stragglers
+
+`[ai_base] army_mass=walk_back` is upstream's mass rule 32 and is off in the shipped file where `army_mass=` is empty. Every two game seconds `AgeOfAIDanger.cpp` walks the game's land attack subgroups. A subgroup counts when it is past forming and fighting, with at least two members more than 25 tiles from the base whose middle lies more than 30 tiles from it. A land soldier in such a pack walks back to that middle when it is past the 25-tile base radius, at least `army_mass_tether` plus 4 tiles from the middle, and not already walking to within 4 tiles of it. A soldier with a live attack target stays. The order is a location goal. `EEComputerPlayer::Update` calls the rule once per tick, and `AgeOfAIWalkBackRules.h` holds the distances and state tests.
+
+This is a reduced port. Upstream's rally, `to_pack` and tether scoring are separate bits and are not ported. Setting the flag on is an opt-in from the shipped off state. The 300-second benchmark has no `army_mass` flag, so its trace stays byte-identical at 4084.5 and its score is unchanged. In a 60-minute Large-map game with three Age of AI players and inis differing only in `army_mass`, gate on gave 609, 172 and 14 walk-back orders in the three players; gate off gave none. The scorecard fell from 18793.0 off to 18029.3 on, and the traces first differ at game millisecond 1819125 across 4080 diff lines. The sim report counts ticks, land subgroups, out fighting packs and orders in `intel.walk_checks`, `intel.walk_subgroups`, `intel.walk_packs` and `intel.walk_regrouped`.
+
 ## Counter-siege and the citizen militia
 
 Upstream's default turns `[ai_base] citizen_militia` and `counter_siege` on. The shipped `ageofai.ini` turns both off
@@ -205,8 +515,8 @@ until the [benchmark](benchmark.md) rates them as the AI `aoai-militia`.
 
 Every two game seconds an Age of AI player looks for two kinds of threat. With `citizen_militia` on, its citizens attack enemy citizens who build a defence within 12 tiles of its buildings or citizens, and, up
 to the Bronze Age, enemy units that attack one of its units near its citizens. Only gathering or idle citizens within
-10 tiles go, at most 3 per enemy and against at most 6 enemies, and only when their hit points times attack are 3 times
-those of the enemies within 6 tiles. With `early_militia` (the default) they fight soldiers only next to their own
+10 tiles go, at most 3 per enemy and against at most 6 enemies, and only when the hit points times attack of every
+citizen within 10 tiles (idle, gathering or busy) are 3 times those of the enemies within 6 tiles. With `early_militia` (the default) they fight soldiers only next to their own
 soldiers or under their own towers, and only where the fight estimate has them win without the loss of a citizen.
 
 With `counter_siege` on, up to 5 soldiers within 20 tiles attack an enemy siege weapon or ram in reach of
@@ -224,7 +534,7 @@ A unit that cannot move never hits one that outranges it, and an outranged unit 
 Artillery cannot hit a unit that has closed inside its minimum range, and area damage counts up to 2 neighbours of the
 target. The ratio of two sides is the square root of the time the enemy needs over the time the own side needs, so twice
 the units of one type give 2. The citizen militia uses it (`early_militia`, `militia_estimate`, and `fight_estimate=1`),
-and so does counter-fire. Muster and hold-the-town do not use it yet.
+and so do counter-fire, muster, and hold-the-town when `fight_estimate` is on.
 
 ## Counter-fire
 
@@ -233,11 +543,14 @@ turns it off until the [benchmark](benchmark.md) rates it as the AI `aoai-counte
 seconds an Age of AI player looks for enemy shooters: enemies it sees that attack one of its units or buildings from beyond
 that victim's reach (further off than its range plus 1 tile), with a range of 5 tiles at least. Shooters within 6 tiles
 of each other are one target. Its soldiers within 24 tiles join, nearest first: those on the shooter's land (helicopters
-anywhere), able to hurt it, not inside a building or transport, and not fighting an enemy within 4 tiles. They join four
-at a time until the fight estimate against the enemy fighters within 10 tiles of the target gives 1.5, with at most 60
-on the target. If they cannot reach 1.5, nobody goes. Each soldier sent attacks one of the shooters and is committed to
-it for 45 seconds. The sim report's `intel` object counts the targets attacked (`counter_fire_sorties`), the soldiers
-sent (`counter_fire_sent`) and the targets left because the soldiers were too weak (`counter_fire_short`).
+anywhere), able to hurt it, not inside a building or transport, and not fighting an enemy within 4 tiles. A unit whose
+class's AI script has no attack action of its own is left out even when its damage says it can hurt the target, as a
+Prophet's is: the goal's start would leave the unit without a command, and the game's own step reads that command. They
+join four at a time until the fight estimate against the enemy fighters within 10 tiles of the target gives 1.5, with
+at most 60 on the target. If they cannot reach 1.5, nobody goes. Each soldier sent attacks one of the shooters and is
+committed to it for 45 seconds. The sim report's `intel` object counts the targets attacked
+(`counter_fire_sorties`), the soldiers sent (`counter_fire_sent`) and the targets left because the soldiers were too
+weak (`counter_fire_short`).
 
 Upstream calls counter-fire at the start of `counter_siege` (`defence.c`), and the port calls it just before counter-siege. The
 skirmish spotter that upstream holds back (`skirmish.c`) and the staging rules that read the commitment (`stage.c`) are
@@ -252,10 +565,36 @@ moves to the town with the most finished buildings within 20 tiles. A citizen id
 15 tiles from its nearest finished town goes home. So does a citizen whose walk ends within 3 tiles of the base point
 while a town is 10 or more tiles nearer. It goes to the nearest finished Town Center, Capitol or Settlement on its land
 with no enemy soldiers in sight within 12 tiles, and stops 4 tiles from the town on its own side. With no such town, it
-stays. `AgeOfAIHome.h` holds the rules. Upstream's default turns `citizens_home` on. The shipped `ageofai.ini` turns it
-off until the [benchmark](benchmark.md) rates it as the AI `aoai-citizenshome`. Not ported: the citizens that a landing,
-an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`), and the removal of unfinished buildings stacked on
-one tile.
+stays. `AgeOfAIHome.h` holds the rules, and the sim report's `intel` object counts the citizens sent home
+(`home_sent`) and the base points that moved to a town (`home_base_moved`). Upstream's default turns `citizens_home` on.
+The shipped `ageofai.ini` turns it off until the [benchmark](benchmark.md) rates it as the AI `aoai-citizenshome`. Not
+ported: the citizens that a landing, an outpost or a new town holds (`landing.c`, `expand.c`, `towns.c`). It also removes
+duplicate unfinished buildings stacked on one tile, keeping the first of each type and tile and destroying the rest.
+
+## Settlement upgrades
+
+`[ai_base] garrison_upgrades` is on in the shipped file, as upstream, and is now active. Every 20 game seconds an Age of
+AI player looks at its finished Settlements, Town Centers and Capitols. A town qualifies when it has garrison room, no
+garrison walk already in progress, stone, gold or iron mines within 4.5 tiles, and no enemy soldier the player sees
+within 12 tiles. A Settlement wins over the other kinds. Among the rest, the town with the most metal mines and miners
+in reach wins. The town takes at most ten citizens from its own land, nearest first. Idle citizens go first when the AI
+has reached its citizen target; woodcutters go next while the wood stock is over 5000. Each citizen walks into the town
+and is used up. Five in a Settlement make a Town Center, and ten more in a Town Center make a Capitol. Metal gathered
+near a fuller town gives the player more stone, gold and iron.
+
+While the AI still wants citizens, the rule holds the game's own Settlement and Capitol upgrade timers 40 game seconds
+ahead, so the game does not use a citizen the AI needs elsewhere. The port uses idle citizens and the wood-surplus rule.
+Upstream also lets a high food income make idle citizens spare; that branch waits for the port's food-rate layer. The
+citizen checks for frozen, held and busy units, and the exclusions for landings, outposts and new towns, are not ported.
+The sim report's `intel` object counts the 20-second checks (`garrison_checks`), the walks ordered (`garrison_orders`),
+the citizens sent (`garrison_citizens`), how many of them were idle or woodcutters (`garrison_idle`, `garrison_wood`),
+and the timer holds (`garrison_holds`).
+
+In the 300-second benchmark the rule makes no order and keeps the trace byte-identical at 3705. In a paired one-hour
+Tiny-map probe with three AI players, the setting on scored 7458.7 against 9299.3 with it off. Each player made 178
+checks and 167 timer holds; two made 5 and 3 orders and sent 18 and 8 woodcutters, with no idle citizens. The traces
+first differ at game millisecond 284375. The lower score shows that this reduced rule trades wood workers for the
+settlement bonus in that probe. Set `garrison_upgrades=0` in `[ai_base]` to turn it off.
 
 ## Extra towers
 
@@ -267,10 +606,313 @@ tiles to each side. A spot 3 tiles out from each town 12 or more tiles from the 
 no tower in its build queue, the player queues the best tower of the line it can build at the first free slot, at most
 once a minute, when its stone pays the tower with 100 left. A slot is free with no tower within 2 tiles and no tower
 given there in the last 90 seconds, and a tile near it is used when the route from the base passes no known enemy
-defence, no enemy raiders are in sight within 10 tiles, and the tower fits. `AgeOfAITowers.h` holds the slot order. Upstream's
-default turns `defence_towers` on. The shipped `ageofai.ini` turns it off until the [benchmark](benchmark.md) rates it
-as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the site forts, the enclosure, the coast towers, and
-the slots that the game's own tower requests take.
+defence, no enemy raiders are in sight within 10 tiles, and the tower fits. `AgeOfAITowers.h` holds the slot order, and
+the sim report's `intel` object counts the towers queued (`towers_queued`) and the looks that queued none
+(`towers_skipped`). Upstream's default turns `defence_towers` on. The shipped `ageofai.ini` turns it off until the
+[benchmark](benchmark.md) rates it as the AI `aoai-towers`. Not ported: the fronts' walls and gates, the enclosure, and
+the slots that the game's own tower requests take. Site forts have their own gate below.
+
+## Coast towers
+
+`[ai_base] coast_towers` is off in the shipped file, as upstream, and is now active when set to 1 or more. On a coast,
+the defence layout puts towers first where citizens work within a ship's reach of the sea. The port reads the resource
+sites that land gatherers work, from food through iron, and skips fishing boats. It groups the sites into 6-tile cells
+and picks the cell with the most workers that no own tower covers. A tower ordered in the last 90 seconds also counts
+as cover, and the setting's value sets how many towers a cell may have before the port skips it. The cell's first work
+site is its representative. The tower stands 2 tiles in from the nearest ocean on the way from that site, at that point
+or on the first ring of tiles out to radius 2 where no enemy raiders are within 10 tiles and the tower fits. A cell with
+no ocean within 9 tiles is skipped.
+
+This is a reduced port of Grille's `defence.c` `coast_spot`. Upstream fires only on an islands map, when `navy_islands`
+says every enemy is across the water. The port has no navy map layer, so it uses the coastal-work and sea test alone;
+on a land map the sea test can still hold near a coast, so the rule may fire there. The arithmetic is in
+`AgeOfAICoastRules.h` and is covered by `test_ageofai_coast.cpp`. The sim report counts the checks (`coast_checks`), the
+work sites seen (`coast_sites`), the cells judged (`coast_cells`), the cells with sea in reach (`coast_sea`) and the
+towers placed (`coast_placed`).
+
+A 30-minute, single-seed Medium Small Islands probe with `defence_towers` on in both games made the rule fire. With
+`coast_towers=1` the two computer players made 49 and 31 checks, saw 920 and 371 work sites, judged 184 and 91 cells,
+found sea near two and four cells and placed two and three towers; with `coast_towers=0` every counter was zero. The
+traces first differ at game millisecond 1080625. That run scored 19301.5 with the rule on and 16946.0 with it off, one
+seed only; the setting stays off until a benchmark rates it.
+
+## Scouting unseen land
+
+The `scout` field of `[ai_base] towns` is off in the shipped file, as upstream. With the field on, every two game
+seconds an Age of AI player checks its scout. The fastest idle land soldier within 40 tiles of the base walks to the
+never-looked cell nearest its base or standing town. The map is scanned in 8-tile cells at their middle. A cell is
+skipped when the player's intel memory has looked there, when it is off the base's land, when a known defence covers
+it, or when it lies nearer to a known enemy building than the nearest town does. When an enemy soldier comes within
+12 tiles of the scout or a known defence covers it, the scout walks back to the base. One soldier scouts at a time and
+the next can leave 90 game seconds later.
+
+This is a reduced port of Grille's `towns.c` `tn_scout` and `tn_scout_watch`. Upstream sends a scout only after its
+town planner has no site left, and checks the scout every tick. The port has no town planner, so the base and the
+standing towns stand in for the planned towns, and intel's 6-tile look memory stands in for the upstream look grid.
+The cell, front, turn-back and pause arithmetic is in `AgeOfAIScoutRules.h` and is covered by `test_ageofai_scout.cpp`.
+The sim report counts the checks (`scout_checks`), the towns and enemy buildings in the search (`scout_towns`,
+`scout_foes`), the unseen cells judged (`scout_cells`), the cells picked (`scout_picked`), the soldiers sent
+(`scout_sent`) and the turn-backs (`scout_back`). The setting stays off until a benchmark rates it.
+
+## Site forts
+
+`[ai_base] site_forts` is off in the shipped file, as upstream, and sets how many forts an Age of AI player builds,
+up to six. Every 20 game seconds, when no fort still has a tower to order, the player looks at its stone, gold and
+iron mines. A mine qualifies when at least two of its citizens gather there and no fort already stands within eight
+tiles on both axes. It scores the gatherers, plus four when a ship can reach the sea within nine tiles or one of the
+player's citizens was hurt near it in the last two minutes. The best mine wins a fort at its middle, and one corner
+tower goes into the build queue at a time: the four corners stand four tiles either side of the mine, and the port
+tries the corner itself and then its eight neighbours until the tower fits. Tower orders wait while a tower is
+already queued or the stone will not pay for it with 100 left. A fort's towers come before the defence layout's own
+towers; a fort is worked on for 30 minutes after its pick.
+
+This is a reduced port of Grille's `defence.c` `sf_pick` / `sf_build` / `site_forts_tick`. Upstream also builds wall
+runs on the three sides away from the base, leaving one side open for the citizens, and keeps a fort busy for its
+walls too. The port builds no walls, so it has no open side and a fort is done once its four towers are ordered.
+Upstream centres the fort on wide mines by half the sprite's size; the port does the same with the unit's tile size.
+The arithmetic is in `AgeOfAISiteFortsRules.h` and is covered by `test_ageofai_site_forts.cpp`. The sim report counts
+the checks (`fort_checks`), the qualifying mines (`fort_sites`), the forts picked (`fort_picked`), the towers queued
+(`fort_towers`), the ticks spent on a fort (`fort_busy`), the ticks waiting for a tower type, queue slot or stone
+(`fort_wait`), the corners with no room (`fort_skipped`) and the exposed picks (`fort_exposed`).
+
+A 30-minute, single-seed Medium Small Islands probe with `resource_towns` and `spread` on in both games made the rule
+fire. With `site_forts=2` the two computer players each picked two forts and queued seven and eight towers, with four
+and three qualifying mines, two and one exposed picks, 28 and 17 busy ticks and 20 and 9 waiting ticks; with
+`site_forts=0` every counter was zero. The traces first differ at game millisecond 640500. That run scored 23248.5
+with the rule on and 21140.5 with it off, one seed only. The focused benchmark rates the setting at 1360 (1279 to 1455) against `aoai`'s
+1380 (1310 to 1476), with 3 wins, 4 losses and 23 draws in 30 games, so it stays off.
+
+## Anti-air buildings
+
+`[ai_base] anti_air` and `aa_ahead` are on in the shipped file, as upstream, and are now active. From the Atomic Age - WW1
+on, every 5 game seconds an Age of AI player counts the enemy aircraft it sees within 25 tiles of a town and anywhere on
+the map. It keeps the largest near count for 5 minutes and the largest overall count for 10 minutes. With `aa_ahead`
+on, an enemy that has reached the same age prepares the defence before any aircraft arrive: the first
+`aa_ahead_buildings` (3) drop sites nearest the base that have no AA building within 7 tiles each want one. When
+aircraft are near, the player uses the drop site nearest the last seen aircraft instead. With no AA building already
+queued, the player queues the newest AA building it can build in the ring 3 to 7 tiles around that site, at most once a
+minute, away from enemy raiders. It checks both the 88 mm gun and the missile tower so one type does not duplicate the
+other.
+
+This is a reduced port. Upstream also trains AA units from a special reserve; that needs the budget and training layer
+that this port does not have. The sim report's `intel` object counts the 5-second checks (`anti_air_checks`), the checks
+that saw aircraft near a town or anywhere (`anti_air_near`, `anti_air_any`), the ahead-mode checks (`anti_air_ahead`),
+the buildings queued and the looks that queued none (`anti_air_queued`, `anti_air_skipped`). In the 300-second benchmark
+the rule makes no order and keeps the trace byte-identical at 3705. In a paired 30-minute Tiny-map probe with seed 2,
+three AI players and 12 aircraft from minute 2 repeated every 3 minutes, the setting on scored 21075.7 against 21525.0
+with it off. Each player made 320 or 321 checks, saw aircraft near a town 269 to 281 times and anywhere 272 to 286
+times, stayed in ahead mode on every check, and queued one AA building. The gate-off report has zero for every counter,
+and the traces first differ at game millisecond 84875. Set `anti_air=0` to turn the rule off. Set `aa_ahead=0` to keep
+the reaction to aircraft but drop the advance build.
+
+## Answering a declaration of war
+
+`[ai_base] answer_war` is on in the shipped file, as upstream, and is now active. On every tick the player notes the
+stance of each other player towards it. The first look only records a baseline: a war already under way when the player
+starts is not answered. Later, when a player that was an ally turns enemy while the player still sees it as an ally, the
+player schedules its own enemy stance 3 to 6 game seconds later, a delay fixed by the two player numbers. When the timer
+ends, the player answers only if that player is still an enemy, it has not answered already, and neither player has been
+defeated. It then sets its own enemy stance with the game's diplomacy call.
+
+This is a reduced port. Upstream's diplomacy also tracks opinion, persona and history, prints a stance line, sends a
+revenge attack and a taunt, and handles tribute, peace and surrender. Those need a diplomacy state engine this port does
+not have, so only the stance answer is ported. The sim report's `intel` object counts the per-player stance checks
+(`answer_war_checks`), the new enemy stances seen (`answer_war_transitions`), the answers scheduled and given
+(`answer_war_scheduled`, `answer_war_answers`) and the timers cancelled because peace returned or an answer was already
+given (`answer_war_cancelled`). The delay and both stance decisions are covered by `test_ageofai_diplomacy.cpp`.
+Set `answer_war=0` to turn the rule off.
+
+The simulator's `--stance` option forces a stance change at a game second, so the rule can be exercised end to end.
+A 600-second probe makes players 2 and 3 allies at second 1, then has player 2 declare war at second 60. With the gate
+on, player 3 sees one transition, schedules one answer and sets its own enemy stance; with it off the same player
+records no transition or answer. The on run scores 4218.3 and the off run 4806.7, and the traces first differ at game
+millisecond 153125. Ordinary games without `--stance` still record checks but no transition, so the 300-second
+benchmark stays at 3705 with a byte-identical trace.
+
+## Falling back to cover
+
+`[ai_base] fall_back` keeps its shipped value, `hospital, tower_cover, fleet_cover`. The hospital and tower-cover bits
+are active. The fleet-cover bit stays parsed but inert. Both active bits run every two game seconds over the player's
+own land fighters. A unit held by one bit is not sent again by the other.
+
+### Hospital bit
+
+A fighter worth at least `fall_back_value` (100 resources, food through iron at their base cost) and below
+`fall_back_hp` (40%) of its maximum hit points walks to the nearest finished Hospital on the same land within
+`fall_back_dist` (60) tiles, provided no enemy soldier the player sees is near that Hospital. It stops two tiles from
+the Hospital on the side it came from and waits for the game to heal it. It goes back to fighting at 90% hit points,
+when no Hospital stands near the stop, or after four minutes. A unit that dies or changes owner also leaves the hold.
+This uses the game's own hospital regeneration; the port adds no healing of its own.
+
+### Tower-cover bit
+
+A fighter with an enemy it sees in its own eight-tile cell or one around it gets a fight estimate at its tile. The
+estimate counts its own and allied fighters within ten tiles, the defences whose guns reach the tile, and the enemies
+it sees or remembers with `fight_memory`. An estimate below `fall_back_ratio` (50%) sends the fighter to cover. It
+picks the nearest finished own tower or fortress on its land within `fall_back_dist` (60) tiles that no known enemy
+defence covers, and stops two tiles from it on the base's side. It then tries a finished Hospital, then the base. A
+fighter already within four tiles of the stop fights there. It rests for twenty seconds after arrival, then goes back
+to fighting, at the latest ninety seconds after it left. A unit that dies or changes owner also leaves the hold.
+
+The `give_up` bit of `fall_back` (off in the shipped file) stops a soldier that keeps breaking off from the same
+attack from going back into the lost fight. Upstream counts break-offs from one attack group in a ten-minute window:
+at `fall_back_breaks` (2) break-offs the soldier gives the attack up and stays at cover until that group is gone, at
+most five minutes. This port finds the group through the engine's attack commander in place of upstream's own hash
+table, then keeps the soldier on the same hold with the longer release. The call-off that ends an attack when enough
+soldiers give up is not ported: it needs the game's cancel-attack call and group-power tests, which this engine does
+not expose. Setting `fall_back=hospital, tower_cover, fleet_cover, give_up` turns the rule on; the tally and the longer
+hold do nothing without that bit.
+
+This is a reduced port. Upstream also refuses the attack group's orders to a held unit, calls an attack off when
+enough units give up, and moves fleets under towers or into a dock. The attack-group and landing layers are missing
+here. The remembered enemies use the shorter form already in the lost-fight rule; upstream also searches for
+long-range remembered guns. The sim report's `intel` object counts the hospital checks (`hospital_checks`), the
+finished Hospitals standing at the last check (`hospitals`), the units sent (`hospital_sent`), the move orders held
+(`hospital_holds`) and the units released once healed (`hospital_done`). For tower cover it counts the checks
+(`cover_checks`), the fighters with enemies near (`cover_near`), the estimates made (`cover_fights`), the units sent
+(`cover_sent`), the orders held (`cover_holds`), the units released (`cover_back`), the soldiers that gave an attack
+up (`cover_gaveup`) and those released from a give-up hold (`cover_gaveback`).
+
+An earlier one-hour `fights` probe of the hospital bit alone found one player that saw a Hospital on 174 checks, sent
+2 units and reissued 21 move orders; with that bit off every hospital counter was zero. That player's score rose from
+8323.7 off to 9158.3 on, and the traces first differ at game millisecond 53732. Set `fall_back=tower_cover,
+fleet_cover` to turn the hospital bit off.
+
+A one-hour `fights` probe with tower cover on made 49 cover trips for one player, held 664 orders and released 38
+units; with tower cover off every cover counter was zero. That player's mean score rose from 6655.7 to 6673.7, and the
+traces first differ at game millisecond 174125. The off trace is byte-identical to the earlier fight-memory baseline,
+so the new gate leaves the old behavior alone. The 300-second benchmark stays at 4084.5, but one player sends one unit
+to cover and holds it once, so its trace differs in 116 lines. Set `fall_back=hospital` to turn tower cover off.
+
+A one-hour `fights` probe of the give-up bit on top of tower cover made 67, 66 and 49 soldiers give an attack up across
+three AI players and released 50, 37 and 28 of them from the longer hold. With the bit off those two counters were
+zero. The two inis differed only in `give_up`; their traces first differ at game millisecond 595000 across 6877 diff
+lines. The 300-second benchmark stays at 4084.5 with a byte-identical trace and both give-up counters zero.
+
+## Build queue fix
+
+`[ai_base] build_fix` is on in the shipped file, as upstream, and is now active. Every three seconds the game's build
+manager takes the first request of the first epoch it can afford, tries to place it and stops for that round. A request
+it cannot place goes back into its queue, so one stuck on a blocked spot can stay there a long time. With the fix, three
+failed placements in a row drop the request: the build manager consumes its reserved cost and moves on, and the building
+planner queues the request again within 30 seconds, often on a new site. This is upstream's `econ.c build_fix`
+three-strike rule. Upstream also remaps its type 395 single player settlement to a normal settlement (type 43). The
+port's build lists never contain type 395, so that part has nothing to change here.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it. It shortens the
+300-second benchmark: the two Age of AI players finish with 18 buildings and score 3705, against 25 buildings and 4020
+with the setting off. The paired benchmark inis differ only in `build_fix`, and the off trace is byte-identical to the
+earlier baseline. In a 30-minute Tiny map game with three Age of AI players the fix helps: on scores 7359.0, off scores
+7319.3. Guard towers and a temple were the requests that failed most. `EECPBuildManager::Update` owns the hook;
+`AgeOfAI::BuildFixResult` keeps the per-player, per-type strike count and reads the setting. EESim reports attempts,
+failures, drops and the type that failed most in `intel.build_attempts`, `build_fails`, `build_dropped`,
+`build_top_type` and `build_top_fails`.
+
+## Packed buildings
+
+`[ai_base] tight_build` is on in the shipped file, as upstream, and is now active. When the build manager places a
+production building (barracks, archery range, stable, siege factory, tank factory or cyber factory), it first looks for a
+free spot near the town centre that touches the most of the player's own production buildings. It scores each spot by
+touching tiles times eight, minus the ring distance from the base, and keeps the best spot up to eight rings further
+out. A house, an airport and every other building keep the game's own search, which gives them their own spacing.
+
+This is a reduced port of upstream's `packing.c`. The game's `CanBuildAt` in strict mode validates every spot: the
+footprint is free, the tiles round it leave one unbroken walkable arc at least a citizen wide, and the spot is not on a
+choke point, a hill, a town centre or a gate. Upstream also clears drop sites, mines, trees, gates and raiders and caps
+the row length and the continent; those checks are left to `CanBuildAt` or omitted here. The chosen spot is still a
+real free build tile that the game's builder can reach.
+
+The shipped 1 is a deliberate behaviour change: the earlier port parsed the setting but never used it. In the 300-second
+benchmark the two Age of AI players now place 16 and 17 buildings and score 3517.5, against 17 and 19 buildings and 3705
+with the setting off. The paired inis differ only in `tight_build`, and the off trace is byte-identical to the earlier
+baseline; the traces first differ at game millisecond 875. On records four placement searches and four chosen spots for
+each player, off records none. In a 15-minute game the gap narrows: on scores 6275.0, off 6472.5, with 39.5 and 38.0
+population and 28.0 and 27.5 buildings. `EECPBuildManager::StartBuilding` calls `AgeOfAI::TightBuildSite` before
+`FindSite`. EESim reports the searches and the chosen spots in `intel.tight_build_calls` and `intel.tight_build_sites`.
+
+## Surrender
+
+`[ai_base] surrender` is on in the shipped file, as upstream, and is now active. An AI that loses all its citizens
+cannot rebuild. Every tick the player counts its land and naval citizens. When the count is zero it starts a timer.
+If it has no finished Town Center, Capitol or Settlement that could train a citizen, it gives up after 60 game
+seconds. If it still has such a building, it gives up after three minutes, but only while it is at war with someone.
+An AI at peace with everyone is left alone while it can still train its own people. A citizen appearing at any time
+resets the timer. The decision arithmetic is in `AgeOfAISurrenderRules.h` and is covered by
+`test_ageofai_surrender.cpp`.
+
+This is a reduced port of Grille's `diplo.c`. Upstream also picks the player that destroyed the most of the AI in the
+last twenty minutes, avoids surrender while its army is still half as strong as its strongest enemy, and resigns
+instead of joining a side in a block split. This port has no diplomacy or army-power state for those checks. It ends
+the game with `EEPlayer::SetGameResult(2)`, the same loss upstream's deferred resign produces. It also leaves out
+upstream's test for whether the stock can pay for a citizen: a finished town centre alone counts as able to train.
+Upstream skips the rule in scenarios and campaigns; this port reads the real `mIsScenarioGame` flag, which the AoA tick
+leaves set in a scenario with `scenario_ai` off. The shipped `[ai_base] resign_spoils` is parsed but not used:
+upstream's `spoils.c`, which hands a resigned player's buildings to the attackers and turns its soldiers into roaming
+bands, is not ported.
+
+The shipped 1 is a behaviour change: earlier ports parsed the setting but never used it. In the 300-second benchmark
+this rule never fires. Both Age of AI players keep their citizens, record
+`intel.surrender_no_citizen=0` and `surrender_resigned=0`, and score 4084.5; the trace is byte-identical to a run with
+`surrender=0`. To see the rule fire, use the simulator's forced loss of citizens and town centres
+([Simulator](simulator.md)): with `--raze 2,30 --keep-alive 2`, player 2 loses its last town centre at game second 30
+but stays in the game, and resigns 60 seconds later at game millisecond 91875. The on run records
+`surrender_no_citizen=61`, `surrender_at_war=61` and `surrender_resigned=1`; the off run records zero for every
+`surrender_*` counter and never ends the game. The two traces match line for line until the resign.
+
+EESim reports the checks, the ticks with citizens, the ticks without, the ticks that could still train, the ticks at
+war and the resignations in `intel.surrender_checks`, `surrender_citizens`, `surrender_no_citizen`,
+`surrender_can_train`, `surrender_at_war` and `surrender_resigned`. `EEComputerPlayer::Update` calls
+`AgeOfAI::SurrenderTick`.
+
+## Lost fights
+
+`[ai_base] avoid_lost_fights` is on in the shipped file, as upstream, and works together with `danger_routes` and
+`honest_vision`, both on by default. It is now active. Every four game seconds the player judges each eight-tile cell
+that holds an enemy soldier it can see. The enemy fighters within ten tiles of the cell's middle are measured against
+the player's and its allies' fighters out to the edge of the cell's zone: the enemy's longest weapon reach, capped at
+fifteen tiles, is added to the ten tiles, and four more tiles of own fighters count outside that edge. A cell the
+player is not winning, at a ratio below one, becomes a lost-fight zone. A land soldier then refuses a target inside
+such a zone when the target lies beyond the soldier's own weapon range plus two tiles. A target the soldier can reach
+stays a target, so a group that gathers at the edge still closes in once it would win the fight.
+
+This is a reduced port of Grille's `cover.c` and `attack.c`. Upstream holds the lost cells in a danger-map bitmap and
+holds the rule back while an attack is staged or landing. This port keeps the cells as a short list that is rebuilt on
+each refresh. The staging and landing checks are not ported, so they do not hold the rule back. The decision arithmetic
+is in `AgeOfAIAvoidLostRules.h` and is covered by `test_ageofai_avoid_lost.cpp`.
+
+## Remembered enemies in lost fights
+
+`[ai_base] fight_memory` is on in the shipped file, as upstream. It now joins the lost-fight judgement when
+`avoid_lost_fights` is on, and needs `honest_vision` as upstream does. A soldier the player saw in the last three game
+minutes stays in its memory at the tile where it was seen. On each four-second refresh such a soldier marks its
+eight-tile cell even when no eye sees it now, and counts in the foe side when it lies within ten tiles of a cell's
+middle. Its weapon range adds to the zone unless the range is 30 tiles or more. A record from the last scan is left
+out: that unit is counted from the live sighting instead. The memory rules are in `AgeOfAIFightMemoryRules.h` and are
+covered by `test_ageofai_fight_memory.cpp`. This is a reduced `cv_mark_mem` / `cv_foe_mem`: upstream also searches up to
+20 tiles for a remembered long-range gun, which this port leaves out.
+
+The shipped 1 is a behaviour change: earlier ports parsed `fight_memory` but never used it. The 300-second benchmark
+still scores 4084.5, but the trace differs from the earlier baseline in 44 lines and one player marks 33 cells and adds
+97 remembered foes. In the paired 30-minute `fights` probe, the gate on marked 548 to 662 cells and added 1591 to 2509
+remembered foes per player, and scored 6655.7; with `fight_memory=0` every memory counter was zero, the trace was
+byte-identical to the earlier `avoid_lost_fights`-on baseline, and the score was 7165.0. The two probe inis differ only
+in `fight_memory`.
+
+The shipped 1 is a behaviour change: earlier ports parsed the setting but never used it. The 300-second benchmark now
+fires the rule: one player runs 26 target checks with one refusal and the other 30 checks with eleven refusals, while
+the score stays at 4084.5. The trace differs from a run with `avoid_lost_fights=0` in 22 lines; with the gate off every
+`lost_*` counter is zero and the trace is byte-identical to the earlier baseline. In a paired 30-minute `fights` probe
+on a Tiny map with three Age of AI players, the gate on refused 3415 of 9434 target checks for one player and scored
+7165.0, while the gate off recorded no `lost_*` counter and scored 6996.0 with a different trace. The two probe inis
+differ only in `avoid_lost_fights`.
+
+EESim reports the target tests, the refused targets and the targets inside a zone but within range in
+`intel.lost_checks`, `intel.lost_skipped` and `intel.lost_in_reach`, and the zone refreshes, the cells with a fight
+seen and the cells marked lost in `intel.lost_refreshes`, `intel.lost_cells` and `intel.lost_zones`. The cells marked
+from memory and the remembered foes added to a cell's foe side are in `intel.lost_mem_cells` and
+`intel.lost_mem_foes`.
+`EEComputerPlayer::Update` calls `AgeOfAI::AvoidLostTick`, and `EECPAttackSubGroupUnit::ScoreTarget` calls
+`AgeOfAI::LostZoneSkipsTarget`.
 
 ## Game fixes
 
@@ -280,11 +922,84 @@ down. Before, the aim was the place the target stood when the shot was fired, an
 everything that walked across its line of fire. The flight time comes from the game's own arc solver. Missiles steer
 by themselves and are left alone. In a multiplayer game every player needs the same setting.
 
+`[general] lead_missiles` (off in the shipped `ageofai.ini`) makes a homing missile steer to where its moving target will
+be when the missile gets there, instead of trailing the target in a curve. The missile measures the target's speed from
+its position changes between steps and aims at the point where it can arrive at the same time as the target, up to ten
+seconds away. A target that stands still or moves faster than twenty tiles a second is left to the game's own pursuit.
+The sim report counts the steps that led a missile in `projectiles.missiles_led`. As with `lead_targets`, the setting
+reads each player's own rows, so every player needs the same setting in a multiplayer game.
+
+`[general] spread_missiles` (on in the shipped `ageofai.ini`) stops several missile launchers from wasting their shots on
+one target. Each launcher picks its own target, so a group of anti-air towers can all fire at the same aircraft and most
+of the missiles hit a wreck. Every launched missile is counted with the damage its launcher will do to its target. Before
+a launcher fires, if the missiles already on the way cover the target's hit points, the shot is held or sent at the
+nearest other enemy of the same family in range that the launcher's owner can see and that is not covered yet. A missile
+that misses frees its share again when it stops steering. Like `lead_missiles`, this setting reads each player's own
+rows, so every player needs the same value in a multiplayer game. The sim report counts launches, held shots and
+switched shots in `projectiles.spread_launched`, `spread_held` and `spread_switched`.
+
 `[general] lob_each_shot` (on) changes how archers, slingers, the pilum and the trebuchet fire over walls. The game lets
 them shoot flat until one shot hits a wall, then lobs every later shot until they get a new order, wall gone or not. Now
 a unit looks along the line to its target before each shot: a wall in the way gets the high arc, else the shot is flat.
 After the game's own flat shot hit a wall, the unit lobs four more shots before it looks again. In a multiplayer game
 every player needs the same setting.
+
+`[ai_base] production_sync` (off in the shipped file) repairs the AI's in-production count after a game load. A save
+keeps the buildings' production queues but not that count, so an AI can count training room it does not have. Every
+10 game seconds the port counts the units queued or in the making in the player's buildings and sets the count to that
+number when the two differ. The game subtracts this count from the population limit before it asks for more citizens.
+
+`[ai_base] train_queue` (off in the shipped file) limits how deep a production building's queue may get. The game
+hands a training request round-robin to every finished producer of that unit and queues the whole request however deep
+the queues already are; 80 soldiers in one building are resources tied up for 40 minutes. With this setting on, a
+request is cut to what keeps each finished producer in the requested town, or on its continent, at that many units in
+the making and queued. A request that no producer has room for is refused and the game brings it back on a later tick.
+Citizens keep the game's own limit. Upstream uses every finished producer the player owns; this port only sees the
+producers the game already gathered for the request.
+
+`[general] units_first` (off in the shipped `ageofai.ini`) changes the target of a unit that picked a building by
+itself. The game looks for a new target only while a unit is idle. Once the unit turns to a building or waits to
+reload, it keeps that building until the building dies or goes out of sight, even while enemy soldiers walk up and
+shoot it. With this setting on, a unit that is turning to a building takes another look between its shots. It turns
+on the nearest enemy unit within its weapon range plus four tiles, if its player can see that unit and its weapon can
+hurt it. Units that move on land, on water or in the air qualify; passing aircraft, shots, animals and resources do
+not. An ordered attack is never changed. Every unit of every player follows this rule, so all players need the same
+setting in a multiplayer game. The port checks from the attack goal's step while the unit turns, at most once every
+500 game milliseconds per unit. This engine has no reload-state hook, so a unit waiting to reload is checked when it
+turns again. The sim report counts looks and turns in `units_first_checks` and `units_first_switched`.
+
+`[general] answer_fire` (the shipped `ageofai.ini` uses `game`, which leaves the rule off) makes an idle fighter go for
+the enemy that shot it from beyond its reply range. The game's `UnderAttack` state only retaliates at an attacker
+inside the fighter's range, so a unit shot from further off stands and dies. With this setting on, a fighter with no
+goal takes an attack goal on a nearby enemy whose attack goal aims at it. The enemy must be alive on the map within
+24 tiles, seen by the fighter's player, hurt-able by its weapon and on the same land or water area; helicopters fly,
+so they need no shared area. Land units, land heroes, ships, submarines and helicopters with an attack qualify;
+citizens, priests and transports do not. The goal belongs to the unit, not to an order, so an order is never kept
+waiting behind it. The value `all` names every player's units and `computers` names the non-human players' units.
+The port runs the scan from the AI update once every 500 game milliseconds rather than at the game's safe point, so
+a game needs an Age of AI computer player to drive it. Each player's own settings file says whether the scan covers
+that player, so profiles in one game can use different values. The search starts at the middle of the fighter's tile,
+so an enemy exactly 24 tiles away is included. The sim report counts looks and goals sent in `answer_fire_checks` and
+`answer_fire_sent`.
+
+`[ai_base] transport_watchdog` (off in the shipped `ageofai.ini`) frees a transport that stands in one script state on
+one tile with a goal or cargo aboard. Upstream watches every transport on the map once a game second and leaves
+human transports alone. A load goal that waits for passengers for 30 seconds lets go of the ones that are not coming:
+a passenger that is dead, off the map, without a goal, on another order or idle with its board goal. A loaded
+transport that stands Idle with its unload goal for 20 seconds is set to PrepareToMove, and this may happen at most
+three times. Land transports, transport helicopters, naval transports and fortresses qualify; a transport that is
+idle and empty is left alone. This port scans the players' unit lists from the AI update every game second instead
+of the game's whole-unit grid, and watches only AI players whose own settings file has the setting on. The sim report
+counts transport looks, passengers let go and nudges in `watchdog_checks`, `watchdog_drops` and `watchdog_kicks`.
+
+`[ai_base] raid_leash` (off in the shipped `ageofai.ini`) calls a soldier home when it chases too far from the spot its
+force attacks. Upstream uses the value only for a raid, and counts the leash from the eight-tile arrival radius: a
+member more than `8 + raid_leash` tiles from the raid's spot leaves the force, goes to the force's home by a plain
+move and waits there. This port reads the attack groups' location tasks once a game second. A task that attacks a
+location stands in for a raid; a group that follows one enemy unit or returns home is left alone. The task's tile stands
+in for the raid's spot and the subgroup's rally point stands in for the force's home. A member called home is marked
+out of the fight so the subgroup stops retasking it. The sim report counts location-task groups, members looked at and
+members called home in `raid_leash_groups`, `raid_leash_checks` and `raid_leash_called`.
 
 ## The hook-site index
 

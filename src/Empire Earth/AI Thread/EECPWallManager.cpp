@@ -70,6 +70,7 @@
 #include "ee/EECPUnitManager.h"
 #include "ee/EECPResourceCenter.h"
 #include "ee/EECPWallManager.h"
+#include "AgeOfAI/AgeOfAI.h"
 
 // The area utilities this unit calls (cdecl; outside its range; argument meanings inferred) (provisional names)
 // 0x24b794: the tiles on the line inFrom..inTo
@@ -1065,6 +1066,16 @@ void EECPWallManager::UnitLost(EEComplexUnit* inUnit, bool inSwapped)
 // size on failure), or every 30 s starts the next planned wall once the last gate stands
 void EECPWallManager::Update(unsigned long inTime)
 {
+    // Upstream's game_walls (defence.c): the shipped 0 skips the game's automatic wall ring for Age of AI players;
+    // their own walls come from defence_layout's build_wall, which calls BuildWall directly, not this update. A 1
+    // leaves the game's wall manager running. Classic AI players are untouched by this port.
+    if (this->mPlayer != NULL && AgeOfAI::EngineOf(this->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI &&
+        !AgeOfAI::GameWallsOn(this->mPlayer->mPlayerID)) {
+        AgeOfAI::NoteWallUpdate(this->mPlayer->mPlayerID, true);
+        return;
+    }
+    if (this->mPlayer != NULL && AgeOfAI::EngineOf(this->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
+        AgeOfAI::NoteWallUpdate(this->mPlayer->mPlayerID, false);
     std::vector<EEUnit*> theUnits;
     U2DPoint<long> theTile;
     EEMap* theMap = gWorld.mMap;

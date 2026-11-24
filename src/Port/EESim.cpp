@@ -145,6 +145,26 @@ namespace {
 
 // ------------------------------------------------------------------------------------------------ options
 
+// --stance SECOND,FROM,TO,VALUE: at a game second, one player's diplomatic stance toward another becomes 0 (ally)
+// or 1 (enemy). Repeatable. It drives the diplomacy rule the way a player's declaration drives it in a real game.
+struct StanceChange {
+    double mAt;
+    long mFrom;
+    long mTo;
+    long mValue;
+    bool mDone = false;
+};
+
+// --starve PLAYER,SECOND: at a game second, every citizen of that player is killed. It forces the no-citizen state the
+// surrender rule needs, the way a lost town forces it in a real game. --raze also kills the player's town centres, so
+// it cannot train another citizen and the rule's shorter no-centre timer applies. Both are repeatable.
+struct Starve {
+    double mAt;
+    int mPlayer;
+    bool mRaze = false;
+    bool mDone = false;
+};
+
 struct Options {
     unsigned long mSeed = 2;
     long mComputers = 2;
@@ -157,6 +177,7 @@ struct Options {
     double mWallTimeout = 3600;
     long mPTRate = 40;
     bool mNoHumanDefeat = true;
+    unsigned mKeepAliveMask = 0;                         // --keep-alive P: P stays in after losing its last town centre
     std::string mReport;                                 // the JSON report ("" or "-": stdout)
     std::string mSyncTrace;                              // one line per communications tick ("": none)
     long mPortOffset = -1;                               // -1: from the process id
@@ -164,11 +185,16 @@ struct Options {
     bool mQuiet = false;
     unsigned mClassicPlayers = 0;                        // --classic-players: bit n is player n
     std::vector<std::pair<std::string, long>> mArmies;   // --army NAME:COUNT: units of every computer player, sent at an enemy
+    std::vector<std::pair<std::string, long>> mAirArmies; // --army-air NAME:COUNT: the same with aircraft
     double mArmyEvery = 0;                               // --army-every S: the armies appear again every S game seconds
     double mArmyAt = 120;                                // --army-at S: the game second they appear
     bool mArmyRaid = false;                              // --army-raid: the armies appear beside the enemy's base
     bool mArmySpot = false;                              // --army-spot X,Y: the armies appear at this tile, whatever the map
     long mArmySpotX = 0, mArmySpotY = 0;
+    std::vector<StanceChange> mStances;                  // --stance SECOND,FROM,TO,VALUE: timed diplomatic stance changes
+    std::vector<Starve> mStarves;                        // --starve/--raze PLAYER,SECOND: forced loss of that player's citizens
+    double mWallAt = -1;                                 // --wall SECOND[,COUNT]: defender-owned wall line near each attacker
+    long mWallCount = 9;                                 // the number of wall segments in each line
 };
 
 Options sOptions;
@@ -244,9 +270,62 @@ struct PlayerSample {
     long mIntelRecords = 0, mIntelBuildings = 0, mIntelSoldiers = 0, mIntelSeenNow = 0, mIntelCells = 0, mIntelArmy = 0;
     long mEarlyQueued = 0, mEarlyBuilders = 0, mEarlyBaits = 0;
     long mOutdatedSorties = 0, mOutdatedSent = 0, mOutdatedRefused = 0, mOutdatedNoGroup = 0;
+    long mCitizenCalls = 0, mCitizenCalled = 0;
+    long mWallSkipped = 0, mWallRan = 0;
+    long mRetargetScans = 0, mRetargetPicked = 0, mRetargetGroups = 0;
+    long mWaveCalls = 0, mWaveSet = 0, mWaveMoved = 0, mWaveKept = 0, mWaveNone = 0;
+    long mWeakCalls = 0, mWeakThreatened = 0, mWeakPicked = 0;
+    long mBreachCalls = 0, mBreachCrossed = 0, mBreachPicked = 0, mBreachWalls = 0;
+    long mBuildAttempts = 0, mBuildFails = 0, mBuildDropped = 0, mBuildTopType = 0, mBuildTopFails = 0;
+    long mRecoverChecks = 0, mRecoverStarts = 0, mRecoverEnds = 0, mRecoverMoves = 0;
+    long mRecoverOn = 0, mRecoverHadEconomy = 0;
+    long mAvoidCalls = 0, mAvoidPenalised = 0, mAvoidCost = 0;
+    long mRamCalls = 0, mRamWaits = 0;
+    long mAirCalls = 0, mAirSkipped = 0;
+    long mLeashCalls = 0, mLeashSkipped = 0;
+    long mTetherCalls = 0, mTetherSkipped = 0;
+    long mMassChecks = 0, mMassWaits = 0, mMassGoes = 0, mMassWaited = 0;
+    long mWalkChecks = 0, mWalkSubGroups = 0, mWalkPacks = 0, mWalkRegrouped = 0;
+    long mCatchChecks = 0, mCatchCalls = 0;
+    long mGranChecks = 0, mGranRequested = 0;
+    long mFishCalls = 0, mFishPicked = 0, mFishChanged = 0, mFishClass = 0;
+    long mMineCalls = 0, mMineCapped = 0, mMineMines = 0, mMineCap = 0;
     long mFoodPulled = 0;
+    long mWildCalls = 0, mWildChecks = 0, mWildBush = 0, mWildAnimal = 0, mWildDeferred = 0;
+    long mEarlyReqChecks = 0, mEarlyReqAsks = 0, mEarlyReqProgress = 0, mEarlyReqRenews = 0, mEarlyReqDecoration = 0;
+    long mTrainQueueCalls = 0, mTrainQueueCuts = 0, mTrainQueueCutUnits = 0, mTrainQueueRefused = 0;
+    long mFeedChecks = 0, mMissingCitizens = 0, mFeedProducers = 0, mFeedGatherers = 0;
+    long mFeedMoved = 0, mFeedFromWood = 0, mFeedFromMetals = 0;
+    long mTownSwapped = 0, mTownAway = 0;
     long mCounterFireSorties = 0, mCounterFireSent = 0, mCounterFireShort = 0;
     AgeOfAI::DefenceCounts mDefence = {};
+    long mHomeSent = 0, mHomeBaseMoved = 0;
+    long mGarrisonChecks = 0, mGarrisonOrders = 0, mGarrisonCitizens = 0;
+    long mGarrisonIdle = 0, mGarrisonWood = 0, mGarrisonHolds = 0;
+    long mAntiAirChecks = 0, mAntiAirNear = 0, mAntiAirAny = 0;
+    long mAntiAirAhead = 0, mAntiAirQueued = 0, mAntiAirSkipped = 0;
+    long mAnswerWarChecks = 0, mAnswerWarTransitions = 0, mAnswerWarScheduled = 0;
+    long mAnswerWarAnswers = 0, mAnswerWarCancelled = 0;
+    long mSurrenderChecks = 0, mSurrenderCitizens = 0, mSurrenderNoCitizen = 0;
+    long mSurrenderCanTrain = 0, mSurrenderAtWar = 0, mSurrenderResigned = 0;
+    long mHospitalChecks = 0, mHospitals = 0, mHospitalSent = 0, mHospitalHolds = 0, mHospitalDone = 0;
+    long mCoverChecks = 0, mCoverNear = 0, mCoverFights = 0, mCoverSent = 0, mCoverHolds = 0, mCoverBack = 0;
+    long mCoverGaveUp = 0, mCoverGaveBack = 0;
+    long mCoastChecks = 0, mCoastSites = 0, mCoastCells = 0, mCoastSea = 0, mCoastPlaced = 0;
+    long mScoutChecks = 0, mScoutTowns = 0, mScoutFoes = 0, mScoutCells = 0;
+    long mScoutPicked = 0, mScoutSent = 0, mScoutBack = 0;
+    long mFortChecks = 0, mFortSites = 0, mFortPicked = 0, mFortTowers = 0;
+    long mFortBusy = 0, mFortWait = 0, mFortSkipped = 0, mFortExposed = 0;
+    long mPopChecks = 0, mPopOverrides = 0, mPopWeighted = 0, mPopCap = 0;
+    long mUnitsFirstChecks = 0, mUnitsFirstSwitched = 0;
+    long mAnswerFireChecks = 0, mAnswerFireSent = 0;
+    long mWatchdogChecks = 0, mWatchdogDrops = 0, mWatchdogKicks = 0;
+    long mRaidLeashGroups = 0, mRaidLeashChecks = 0, mRaidLeashCalled = 0;
+    long mTightBuildCalls = 0, mTightBuildSites = 0;
+    long mLostChecks = 0, mLostSkipped = 0, mLostInReach = 0;
+    long mLostRefreshes = 0, mLostCells = 0, mLostZones = 0;
+    long mLostMemCells = 0, mLostMemFoes = 0;
+    long mTowersQueued = 0, mTowersSkipped = 0;
     bool mHasGatherers = false;                          // a computer player: its gatherers and the gatherers it wants, food..iron
     long mGatherers[5] = {0, 0, 0, 0, 0}, mWanted[5] = {0, 0, 0, 0, 0};
     long mDropSites[7] = {0, 0, 0, 0, 0, 0, 0};          // the player's drop-site buildings by the resource they take (0 and 1: all)
@@ -426,12 +505,223 @@ Sample TakeSample()
             p.mOutdatedSent = (long)theOutdated.mSent;
             p.mOutdatedRefused = (long)theOutdated.mRefused;
             p.mOutdatedNoGroup = (long)theOutdated.mNoGroup;
+            AgeOfAI::CitizenAttackCounts theCitizen = AgeOfAI::CitizenAttackCountsOf(i);
+            p.mCitizenCalls = (long)theCitizen.mCalls;
+            p.mCitizenCalled = (long)theCitizen.mCalled;
+            AgeOfAI::WallCounts theWall = AgeOfAI::WallCountsOf(i);
+            p.mWallSkipped = (long)theWall.mSkipped;
+            p.mWallRan = (long)theWall.mRan;
+            AgeOfAI::RetargetCounts theRetarget = AgeOfAI::RetargetCountsOf(i);
+            p.mRetargetScans = (long)theRetarget.mScans;
+            p.mRetargetPicked = (long)theRetarget.mPicked;
+            p.mRetargetGroups = (long)theRetarget.mSubGroups;
+            AgeOfAI::AvoidTowerCounts theAvoid = AgeOfAI::AvoidTowerCountsOf(i);
+            p.mAvoidCalls = (long)theAvoid.mCalls;
+            p.mAvoidPenalised = (long)theAvoid.mPenalised;
+            p.mAvoidCost = (long)theAvoid.mCost;
+            AgeOfAI::RamWaitCounts theRam = AgeOfAI::RamWaitCountsOf(i);
+            p.mRamCalls = (long)theRam.mCalls;
+            p.mRamWaits = (long)theRam.mWaits;
+            AgeOfAI::AirSkipCounts theAir = AgeOfAI::AirSkipCountsOf(i);
+            p.mAirCalls = (long)theAir.mCalls;
+            p.mAirSkipped = (long)theAir.mSkipped;
+            AgeOfAI::LeashCounts theLeash = AgeOfAI::LeashCountsOf(i);
+            p.mLeashCalls = (long)theLeash.mCalls;
+            p.mLeashSkipped = (long)theLeash.mSkipped;
+            AgeOfAI::TetherCounts theTether = AgeOfAI::TetherCountsOf(i);
+            p.mTetherCalls = (long)theTether.mCalls;
+            p.mTetherSkipped = (long)theTether.mSkipped;
+            AgeOfAI::MassWaitCounts theMass = AgeOfAI::MassWaitCountsOf(i);
+            p.mMassChecks = (long)theMass.mChecks;
+            p.mMassWaits = (long)theMass.mWaits;
+            p.mMassGoes = (long)theMass.mGoes;
+            p.mMassWaited = (long)theMass.mWaited;
+            AgeOfAI::WalkBackCounts theWalk = AgeOfAI::WalkBackCountsOf(i);
+            p.mWalkChecks = (long)theWalk.mChecks;
+            p.mWalkSubGroups = (long)theWalk.mSubGroups;
+            p.mWalkPacks = (long)theWalk.mPacks;
+            p.mWalkRegrouped = (long)theWalk.mRegrouped;
+            AgeOfAI::CatchUpAIsCounts theCatch = AgeOfAI::CatchUpAIsCountsOf(i);
+            p.mCatchChecks = (long)theCatch.mChecks;
+            p.mCatchCalls = (long)theCatch.mCalls;
+            AgeOfAI::GranaryCounts theGran = AgeOfAI::GranaryCountsOf(i);
+            p.mGranChecks = (long)theGran.mChecks;
+            p.mGranRequested = (long)theGran.mRequested;
+            AgeOfAI::FishingCounts theFishing = AgeOfAI::FishingCountsOf(i);
+            p.mFishCalls = (long)theFishing.mCalls;
+            p.mFishPicked = (long)theFishing.mPicked;
+            p.mFishChanged = (long)theFishing.mChanged;
+            p.mFishClass = theFishing.mLastClass;
+            AgeOfAI::MineCapCounts theMine = AgeOfAI::MineCapCountsOf(i);
+            p.mMineCalls = (long)theMine.mCalls;
+            p.mMineCapped = (long)theMine.mCapped;
+            p.mMineMines = theMine.mMines;
+            p.mMineCap = theMine.mCap;
+            AgeOfAI::WaveFocusCounts theWave = AgeOfAI::WaveFocusCountsOf(i);
+            p.mWaveCalls = (long)theWave.mCalls;
+            p.mWaveSet = (long)theWave.mSet;
+            p.mWaveMoved = (long)theWave.mMoved;
+            p.mWaveKept = (long)theWave.mKept;
+            p.mWaveNone = (long)theWave.mNone;
+            AgeOfAI::WeakSpotCounts theWeak = AgeOfAI::WeakSpotCountsOf(i);
+            p.mWeakCalls = (long)theWeak.mCalls;
+            p.mWeakThreatened = (long)theWeak.mThreatened;
+            p.mWeakPicked = (long)theWeak.mPicked;
+            AgeOfAI::BreachCounts theBreach = AgeOfAI::BreachCountsOf(i);
+            p.mBreachCalls = (long)theBreach.mCalls;
+            p.mBreachCrossed = (long)theBreach.mCrossed;
+            p.mBreachPicked = (long)theBreach.mPicked;
+            p.mBreachWalls = (long)theBreach.mWalls;
+            AgeOfAI::BuildFixCounts theBuildFix = AgeOfAI::BuildFixCountsOf(i);
+            p.mBuildAttempts = (long)theBuildFix.mAttempts;
+            p.mBuildFails = (long)theBuildFix.mFails;
+            p.mBuildDropped = (long)theBuildFix.mDropped;
+            p.mBuildTopType = (long)theBuildFix.mTopType;
+            p.mBuildTopFails = (long)theBuildFix.mTopFails;
+            AgeOfAI::RecoverCounts theRecover = AgeOfAI::RecoverCountsOf(i);
+            p.mRecoverChecks = (long)theRecover.mChecks;
+            p.mRecoverStarts = (long)theRecover.mStarts;
+            p.mRecoverEnds = (long)theRecover.mEnds;
+            p.mRecoverMoves = (long)theRecover.mMoves;
+            p.mRecoverOn = (long)theRecover.mOn;
+            p.mRecoverHadEconomy = (long)theRecover.mHadEconomy;
             p.mFoodPulled = (long)AgeOfAI::FoodCountsOf(i).mPulled;
+            AgeOfAI::WildFieldCounts theWild = AgeOfAI::WildFieldCountsOf(i);
+            p.mWildCalls = (long)theWild.mCalls;
+            p.mWildChecks = (long)theWild.mChecks;
+            p.mWildBush = (long)theWild.mBush;
+            p.mWildAnimal = (long)theWild.mAnimal;
+            p.mWildDeferred = (long)theWild.mDeferred;
+            AgeOfAI::EarlyReqCounts theEarlyReq = AgeOfAI::EarlyReqCountsOf(i);
+            p.mEarlyReqChecks = (long)theEarlyReq.mChecks;
+            p.mEarlyReqAsks = (long)theEarlyReq.mAsks;
+            p.mEarlyReqProgress = (long)theEarlyReq.mProgress;
+            p.mEarlyReqRenews = (long)theEarlyReq.mRenews;
+            p.mEarlyReqDecoration = (long)theEarlyReq.mDecoration;
+            AgeOfAI::TrainQueueCounts theTrainQueue = AgeOfAI::TrainQueueCountsOf(i);
+            p.mTrainQueueCalls = (long)theTrainQueue.mCalls;
+            p.mTrainQueueCuts = (long)theTrainQueue.mCuts;
+            p.mTrainQueueCutUnits = (long)theTrainQueue.mCutUnits;
+            p.mTrainQueueRefused = (long)theTrainQueue.mRefusals;
+            AgeOfAI::FeedTargetsCounts theFeedTargets = AgeOfAI::FeedTargetsCountsOf(i);
+            p.mFeedChecks = (long)theFeedTargets.mChecks;
+            p.mMissingCitizens = (long)theFeedTargets.mMissing;
+            p.mFeedProducers = (long)theFeedTargets.mProducers;
+            p.mFeedGatherers = (long)theFeedTargets.mFeed;
+            p.mFeedMoved = (long)theFeedTargets.mMoved;
+            p.mFeedFromWood = (long)theFeedTargets.mFromWood;
+            p.mFeedFromMetals = (long)theFeedTargets.mFromMetals;
+            AgeOfAI::TownWorkCounts theTownWork = AgeOfAI::TownWorkCountsOf(i);
+            p.mTownSwapped = (long)theTownWork.mSwapped;
+            p.mTownAway = (long)theTownWork.mAway;
             AgeOfAI::CounterFireCounts theCounterFire = AgeOfAI::CounterFireCountsOf(i);
             p.mCounterFireSorties = (long)theCounterFire.mSorties;
             p.mCounterFireSent = (long)theCounterFire.mSent;
             p.mCounterFireShort = (long)theCounterFire.mShort;
             p.mDefence = AgeOfAI::DefenceCountsOf(i);
+            AgeOfAI::HomeCounts theHome = AgeOfAI::HomeCountsOf(i);
+            p.mHomeSent = (long)theHome.mSent;
+            p.mHomeBaseMoved = (long)theHome.mBaseMoved;
+            AgeOfAI::GarrisonCounts theGarrison = AgeOfAI::GarrisonCountsOf(i);
+            p.mGarrisonChecks = (long)theGarrison.mChecks;
+            p.mGarrisonOrders = (long)theGarrison.mOrders;
+            p.mGarrisonCitizens = (long)theGarrison.mCitizens;
+            p.mGarrisonIdle = (long)theGarrison.mIdle;
+            p.mGarrisonWood = (long)theGarrison.mWood;
+            p.mGarrisonHolds = (long)theGarrison.mHolds;
+            AgeOfAI::AntiAirCounts theAntiAir = AgeOfAI::AntiAirCountsOf(i);
+            p.mAntiAirChecks = (long)theAntiAir.mChecks;
+            p.mAntiAirNear = (long)theAntiAir.mNear;
+            p.mAntiAirAny = (long)theAntiAir.mAny;
+            p.mAntiAirAhead = (long)theAntiAir.mAhead;
+            p.mAntiAirQueued = (long)theAntiAir.mQueued;
+            p.mAntiAirSkipped = (long)theAntiAir.mSkipped;
+            AgeOfAI::AnswerWarCounts theAnswerWar = AgeOfAI::AnswerWarCountsOf(i);
+            p.mAnswerWarChecks = (long)theAnswerWar.mChecks;
+            p.mAnswerWarTransitions = (long)theAnswerWar.mTransitions;
+            p.mAnswerWarScheduled = (long)theAnswerWar.mScheduled;
+            p.mAnswerWarAnswers = (long)theAnswerWar.mAnswers;
+            p.mAnswerWarCancelled = (long)theAnswerWar.mCancelled;
+            AgeOfAI::SurrenderCounts theSurrender = AgeOfAI::SurrenderCountsOf(i);
+            p.mSurrenderChecks = (long)theSurrender.mChecks;
+            p.mSurrenderCitizens = (long)theSurrender.mCitizens;
+            p.mSurrenderNoCitizen = (long)theSurrender.mNoCitizen;
+            p.mSurrenderCanTrain = (long)theSurrender.mCanTrain;
+            p.mSurrenderAtWar = (long)theSurrender.mAtWar;
+            p.mSurrenderResigned = (long)theSurrender.mResigned;
+            AgeOfAI::HospitalCounts theHospital = AgeOfAI::HospitalCountsOf(i);
+            p.mHospitalChecks = (long)theHospital.mChecks;
+            p.mHospitals = (long)theHospital.mHospitals;
+            p.mHospitalSent = (long)theHospital.mSent;
+            p.mHospitalHolds = (long)theHospital.mHolds;
+            p.mHospitalDone = (long)theHospital.mDone;
+            AgeOfAI::CoverCounts theCover = AgeOfAI::CoverCountsOf(i);
+            p.mCoverChecks = (long)theCover.mChecks;
+            p.mCoverNear = (long)theCover.mNear;
+            p.mCoverFights = (long)theCover.mFights;
+            p.mCoverSent = (long)theCover.mSent;
+            p.mCoverHolds = (long)theCover.mHolds;
+            p.mCoverBack = (long)theCover.mBack;
+            p.mCoverGaveUp = (long)theCover.mGaveUp;
+            p.mCoverGaveBack = (long)theCover.mGaveBack;
+            AgeOfAI::CoastCounts theCoast = AgeOfAI::CoastCountsOf(i);
+            p.mCoastChecks = (long)theCoast.mChecks;
+            p.mCoastSites = (long)theCoast.mSites;
+            p.mCoastCells = (long)theCoast.mCells;
+            p.mCoastSea = (long)theCoast.mSea;
+            p.mCoastPlaced = (long)theCoast.mPlaced;
+            AgeOfAI::ScoutCounts theScout = AgeOfAI::ScoutCountsOf(i);
+            p.mScoutChecks = (long)theScout.mChecks;
+            p.mScoutTowns = (long)theScout.mTowns;
+            p.mScoutFoes = (long)theScout.mFoes;
+            p.mScoutCells = (long)theScout.mCells;
+            p.mScoutPicked = (long)theScout.mPicked;
+            p.mScoutSent = (long)theScout.mSent;
+            p.mScoutBack = (long)theScout.mBack;
+            AgeOfAI::SiteFortCounts theForts = AgeOfAI::SiteFortCountsOf(i);
+            p.mFortChecks = (long)theForts.mChecks;
+            p.mFortSites = (long)theForts.mSites;
+            p.mFortPicked = (long)theForts.mPicked;
+            p.mFortTowers = (long)theForts.mTowers;
+            p.mFortBusy = (long)theForts.mBusy;
+            p.mFortWait = (long)theForts.mWait;
+            p.mFortSkipped = (long)theForts.mSkipped;
+            p.mFortExposed = (long)theForts.mExposed;
+            AgeOfAI::PopCapCounts thePopCap = AgeOfAI::PopCapCountsOf(i);
+            p.mPopChecks = (long)thePopCap.mChecks;
+            p.mPopOverrides = (long)thePopCap.mOverrides;
+            p.mPopWeighted = (long)thePopCap.mWeighted;
+            p.mPopCap = (long)thePopCap.mCap;
+            AgeOfAI::UnitsFirstCounts theUnitsFirst = AgeOfAI::UnitsFirstCountsOf(i);
+            p.mUnitsFirstChecks = (long)theUnitsFirst.mChecks;
+            p.mUnitsFirstSwitched = (long)theUnitsFirst.mSwitched;
+            AgeOfAI::AnswerFireCounts theAnswerFire = AgeOfAI::AnswerFireCountsOf(i);
+            p.mAnswerFireChecks = (long)theAnswerFire.mChecks;
+            p.mAnswerFireSent = (long)theAnswerFire.mSent;
+            AgeOfAI::TransportWatchdogCounts theWatchdog = AgeOfAI::TransportWatchdogCountsOf(i);
+            p.mWatchdogChecks = (long)theWatchdog.mChecks;
+            p.mWatchdogDrops = (long)theWatchdog.mDrops;
+            p.mWatchdogKicks = (long)theWatchdog.mKicks;
+            AgeOfAI::RaidLeashCounts theRaidLeash = AgeOfAI::RaidLeashCountsOf(i);
+            p.mRaidLeashGroups = (long)theRaidLeash.mGroups;
+            p.mRaidLeashChecks = (long)theRaidLeash.mChecks;
+            p.mRaidLeashCalled = (long)theRaidLeash.mCalled;
+            AgeOfAI::TightBuildCounts theTightBuild = AgeOfAI::TightBuildCountsOf(i);
+            p.mTightBuildCalls = (long)theTightBuild.mCalls;
+            p.mTightBuildSites = (long)theTightBuild.mSites;
+            AgeOfAI::AvoidLostCounts theLost = AgeOfAI::AvoidLostCountsOf(i);
+            p.mLostChecks = (long)theLost.mChecks;
+            p.mLostSkipped = (long)theLost.mSkipped;
+            p.mLostInReach = (long)theLost.mInReach;
+            AgeOfAI::AvoidLostZoneCounts theLostZones = AgeOfAI::AvoidLostZoneCountsOf(i);
+            p.mLostRefreshes = (long)theLostZones.mRefreshes;
+            p.mLostCells = (long)theLostZones.mCells;
+            p.mLostZones = (long)theLostZones.mZones;
+            p.mLostMemCells = (long)theLostZones.mMemCells;
+            p.mLostMemFoes = (long)theLostZones.mMemFoes;
+            AgeOfAI::TowerLayoutCounts theTowers = AgeOfAI::TowerLayoutCountsOf(i);
+            p.mTowersQueued = (long)theTowers.mQueued;
+            p.mTowersSkipped = (long)theTowers.mSkipped;
         }
         for (long r = 0; r < 5; r++)
             p.mResources[r] = thePlayer->mResourceCaps[kResourceFood + r];
@@ -509,6 +799,7 @@ void Finish(const char* inOutcome)
 
 bool sArmiesSpawned = false;
 long sNextArmies = -1;   // the game millisecond of the next armies
+bool sWallsSpawned = false;
 
 
 std::string LowerCase(std::string inText)
@@ -518,12 +809,18 @@ std::string LowerCase(std::string inText)
     return inText;
 }
 
-// The first land unit class whose name has inName in it (without case), or NULL
-EEUnitClass* FindUnitClass(const std::string& inName)
+// The first unit class whose name has inName in it (without case), land or flying as asked, or NULL
+EEUnitClass* FindUnitClass(const std::string& inName, bool inAir)
 {
     for (unsigned long i = 0; i < 871; i++) {
         EEUnitClass* theClass = gUnitClassTable[i];
-        if (theClass == NULL || theClass->mCategory != kUnitCategoryLand)
+        if (theClass == NULL)
+            continue;
+        if (inAir) {
+            if (theClass->mCategory != kUnitCategoryAirplane && theClass->mCategory != kUnitCategoryHelicopter
+                && theClass->mCategory != kUnitCategoryHelicopterTransport)
+                continue;
+        } else if (theClass->mCategory != kUnitCategoryLand)
             continue;
         if (LowerCase((const char*)theClass->GetName()).find(LowerCase(inName)) != std::string::npos)
             return theClass;
@@ -549,9 +846,31 @@ bool BaseOf(EEPlayer* inPlayer, long& outX, long& outY)
     return true;
 }
 
-// --army: at the given game second, each computer player gets the armies of the options, a block of units six tiles from
-// its buildings towards the next computer player, each sent to attack that player's nearest building. The units come
-// from the first land class of that name, the same for every player: a fair fight on any map.
+// Spawn one block of units of a class, in rows of 12 tiles from the given tile, and send them at the target.
+long SpawnUnits(EEUnitClass* inClass, long inCount, unsigned long inOwner, EEUnit* inTarget,
+                long inFromX, long inFromY, long& ioSlot)
+{
+    if (inClass == NULL)
+        return 0;
+    long theMade = 0;
+    for (long n = 0; n < inCount; ioSlot++) {
+        if (ioSlot > 4000)
+            break;
+        long theX = inFromX + (ioSlot % 12) - 6, theY = inFromY + (ioSlot / 12);
+        EEUnit* theUnit = inClass->CreateUnit(theX, theY, (long)inOwner, false, NULL);
+        if (theUnit == NULL || theUnit->mComplexUnit == NULL)
+            continue;
+        theUnit->mComplexUnit->SetGoal(new EEUGAttackUnit(theUnit->mComplexUnit, inTarget, false, false), false, 0);
+        n++;
+        theMade++;
+    }
+    return theMade;
+}
+
+// --army and --army-air: at the given game second, each computer player gets the armies of the options, a block of
+// units six tiles from its buildings towards the next computer player, each sent to attack that player's nearest
+// building. The units come from the first class of that name, land or flying as asked, the same for every player: a
+// fair fight on any map.
 void SpawnArmies()
 {
     sArmiesSpawned = true;
@@ -582,34 +901,108 @@ void SpawnArmies()
             continue;
         long theFromX = theBaseX + (long)lround(theDX / theLength * 6), theFromY = theBaseY + (long)lround(theDY / theLength * 6);
         if (sOptions.mArmyRaid) {
-            theFromX = theEnemyX - (long)lround(theDX / theLength * 8);
-            theFromY = theEnemyY - (long)lround(theDY / theLength * 8);
+            // Eight tiles from the building the army attacks, on the side of its own base: the distance to the target
+            // is the same for both sides, so neither raid lands closer to what it came for.
+            double theHomeX = theBaseX - theTarget->mTileX, theHomeY = theBaseY - theTarget->mTileY;
+            double theHomeLength = sqrt(theHomeX * theHomeX + theHomeY * theHomeY);
+            if (theHomeLength < 1)
+                continue;
+            theFromX = theTarget->mTileX + (long)lround(theHomeX / theHomeLength * 8);
+            theFromY = theTarget->mTileY + (long)lround(theHomeY / theHomeLength * 8);
         }
         if (sOptions.mArmySpot) {
             theFromX = sOptions.mArmySpotX;
             theFromY = sOptions.mArmySpotY;
         }
         long theMade = 0, theSlot = 0;
-        for (const std::pair<std::string, long>& theArmy : sOptions.mArmies) {
-            EEUnitClass* theClass = FindUnitClass(theArmy.first);
-            if (theClass == NULL)
-                continue;
-            for (long n = 0; n < theArmy.second; theSlot++) {
-                if (theSlot > 4000)
-                    break;
-                long theX = theFromX + (theSlot % 12) - 6, theY = theFromY + (theSlot / 12);   // rows of 12 tiles
-                EEUnit* theUnit = theClass->CreateUnit(theX, theY, (long)thePlayers[k], false, NULL);
-                if (theUnit == NULL || theUnit->mComplexUnit == NULL)
-                    continue;
-                theUnit->mComplexUnit->SetGoal(new EEUGAttackUnit(theUnit->mComplexUnit, theTarget, false, false), false, 0);
-                n++;
-                theMade++;
-            }
-        }
+        for (const std::pair<std::string, long>& theArmy : sOptions.mArmies)
+            theMade += SpawnUnits(FindUnitClass(theArmy.first, false), theArmy.second, thePlayers[k], theTarget,
+                                  theFromX, theFromY, theSlot);
+        for (const std::pair<std::string, long>& theArmy : sOptions.mAirArmies)
+            theMade += SpawnUnits(FindUnitClass(theArmy.first, true), theArmy.second, thePlayers[k], theTarget,
+                                  theFromX, theFromY, theSlot);
         Note("ARMY player %u: %d units at %d,%d, to attack player %u's building at %d,%d", (unsigned)thePlayers[k], (int)theMade,
              (int)theFromX, (int)theFromY, (unsigned)thePlayers[(k + 1) % thePlayers.size()], (int)theTarget->mTileX,
              (int)theTarget->mTileY);
     }
+}
+
+// The first wall class of the game's data (the family of walls, not the AI's own notion of a fortification)
+EEUnitClass* FindWallClass()
+{
+    for (unsigned long i = 0; i < 871; i++) {
+        EEUnitClass* theClass = gUnitClassTable[i];
+        if (theClass != NULL && theClass->mFamily == kUnitFamilyWalls)
+            return theClass;
+    }
+    return NULL;
+}
+
+// --wall: at the given second each defender gets a line of wall segments three tiles from the next attacker's base,
+// laid across the direction to that attacker's enemy. The attacker sees them beside its own base and its land attack
+// routes cross them, so Age of AI's attack_breach rule can be exercised in a real game.
+void SpawnWalls()
+{
+    sWallsSpawned = true;
+    EEUnitClass* theWall = FindWallClass();
+    if (theWall == NULL)
+        return;
+    std::vector<unsigned long> thePlayers;
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++)
+        if ((long)i != gWorld.mCurrentPlayer && gWorld.GetPlayer(i) != NULL && gWorld.GetPlayer(i)->mFirstUnit != NULL)
+            thePlayers.push_back(i);
+    for (size_t k = 0; k < thePlayers.size() && thePlayers.size() > 1; k++) {
+        EEPlayer* theAttacker = gWorld.GetPlayer(thePlayers[k]);
+        EEPlayer* theDefender = gWorld.GetPlayer(thePlayers[(k + 1) % thePlayers.size()]);
+        long theAX, theAY, theEX, theEY;
+        if (!BaseOf(theAttacker, theAX, theAY) || !BaseOf(theDefender, theEX, theEY))
+            continue;
+        double theDirX = theEX - theAX, theDirY = theEY - theAY;
+        double theLength = sqrt(theDirX * theDirX + theDirY * theDirY);
+        if (theLength < 1)
+            continue;
+        double theUX = theDirX / theLength, theUY = theDirY / theLength;
+        long theMade = 0;
+        for (long n = 0; n < sOptions.mWallCount; n++) {
+            long theOffset = n - (sOptions.mWallCount - 1) / 2;
+            long theX = theAX + (long)lround(theUX * 3.0 - theUY * theOffset);
+            long theY = theAY + (long)lround(theUY * 3.0 + theUX * theOffset);
+            if (theWall->CreateUnit(theX, theY, (long)theDefender->mPlayerID, false, NULL) != NULL)
+                theMade++;
+        }
+        Note("WALL player %u: %d segments owned by player %u near %d,%d", (unsigned)theAttacker->mPlayerID, (int)theMade,
+             (unsigned)theDefender->mPlayerID, (int)theAX, (int)theAY);
+    }
+}
+
+// Kill a player's citizens, the way an overrun town loses its workers. Collect them first: Kill unlinks a unit from
+// its owner's list, so killing while walking that list would skip the next one.
+void StarvePlayer(Starve& inStarve)
+{
+    inStarve.mDone = true;
+    EEPlayer* thePlayer = inStarve.mPlayer >= 0 && inStarve.mPlayer < (long)gWorld.GetNumPlayers()
+        ? gWorld.GetPlayer((unsigned long)inStarve.mPlayer) : NULL;
+    if (thePlayer == NULL)
+        return;
+    std::vector<EEUnit*> theCitizens, theCentres;
+    for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mUnitClass == NULL)
+            continue;
+        unsigned long theCategory = theUnit->mUnitClass->mCategory;
+        if (theCategory == kUnitCategoryLandCitizen || theCategory == kUnitCategoryNavalCitizen)
+            theCitizens.push_back(theUnit);
+        else if (inStarve.mRaze && (theUnit->mUnitClass->mUnitType == kUnitTypeTownCenter
+                 || theUnit->mUnitClass->mUnitType == kUnitTypeCapitol
+                 || theUnit->mUnitClass->mUnitType == kUnitTypeSettlement))
+            theCentres.push_back(theUnit);
+    }
+    for (EEUnit* theUnit : theCitizens)
+        theUnit->Kill(0, 0, 0);
+    for (EEUnit* theUnit : theCentres)
+        theUnit->Kill(0, 0, 0);
+    Note("%s player %ld at game ms %ld: %zu citizens, %zu town centres killed",
+         inStarve.mRaze ? "RAZE" : "STARVE", inStarve.mPlayer, gPhysics->mGameTime,
+         theCitizens.size(), theCentres.size());
 }
 
 // the physics thread, after each communications tick, under the physics lock
@@ -619,9 +1012,24 @@ void AfterTick()
     unsigned long theCount = gWorld.GetNumPlayers();
     if (sNextArmies < 0)
         sNextArmies = (long)(sOptions.mArmyAt * 1000);
-    if (!sOptions.mArmies.empty() && theTime >= sNextArmies && (!sArmiesSpawned || sOptions.mArmyEvery > 0)) {
+    if ((!sOptions.mArmies.empty() || !sOptions.mAirArmies.empty()) && theTime >= sNextArmies
+        && (!sArmiesSpawned || sOptions.mArmyEvery > 0)) {
         SpawnArmies();
         sNextArmies = theTime + (long)(sOptions.mArmyEvery * 1000);
+    }
+    if (sOptions.mWallAt >= 0 && !sWallsSpawned && theTime >= (long)(sOptions.mWallAt * 1000))
+        SpawnWalls();
+    for (Starve& theStarve : sOptions.mStarves) {
+        if (!theStarve.mDone && theTime >= (long)(theStarve.mAt * 1000))
+            StarvePlayer(theStarve);
+    }
+    for (StanceChange& theChange : sOptions.mStances) {
+        if (theChange.mDone || theTime < (long)(theChange.mAt * 1000))
+            continue;
+        theChange.mDone = true;
+        gWorld.SetDiplomaticStance((unsigned long)theChange.mFrom, theChange.mTo, theChange.mValue);
+        Note("STANCE at game ms %ld: player %ld toward player %ld = %ld", theTime, theChange.mFrom, theChange.mTo,
+             theChange.mValue);
     }
     if (sSyncFile)
         WriteSyncLine();
@@ -930,20 +1338,124 @@ std::string PlayersJson(const Sample& inSample)
     std::string theOut = "[";
     for (size_t k = 0; k < inSample.mPlayers.size(); k++) {
         const PlayerSample& p = inSample.mPlayers[k];
-        char theIntel[1024] = "";
+        char theIntel[16384] = "";
         if (p.mHasIntel)
             snprintf(theIntel, sizeof(theIntel),
                      ", \"intel\": {\"records\": %ld, \"buildings\": %ld, \"soldiers\": %ld, \"seen_now\": %ld, "
                      "\"cells_looked\": %ld, \"army\": %ld, \"early_towers_queued\": %ld, \"early_builders\": %ld, \"early_baits\": %ld, "
-                     "\"outdated_sorties\": %ld, \"outdated_sent\": %ld, \"outdated_refused\": %ld, \"outdated_no_group\": %ld, \"food_pulled\": %ld, "
+                     "\"outdated_sorties\": %ld, \"outdated_sent\": %ld, \"outdated_refused\": %ld, \"outdated_no_group\": %ld, "
+                     "\"citizen_calls\": %ld, \"citizen_called\": %ld, "
+                     "\"wall_skipped\": %ld, \"wall_ran\": %ld, "
+                     "\"retarget_scans\": %ld, \"retarget_picked\": %ld, \"retarget_groups\": %ld, "
+                     "\"avoid_calls\": %ld, \"avoid_penalised\": %ld, \"avoid_cost\": %ld, "
+                     "\"ram_calls\": %ld, \"ram_waits\": %ld, "
+                     "\"air_calls\": %ld, \"air_skipped\": %ld, "
+                     "\"leash_calls\": %ld, \"leash_skipped\": %ld, "
+                     "\"tether_calls\": %ld, \"tether_skipped\": %ld, "
+                     "\"mass_checks\": %ld, \"mass_waits\": %ld, \"mass_goes\": %ld, \"mass_waited\": %ld, "
+                     "\"walk_checks\": %ld, \"walk_subgroups\": %ld, \"walk_packs\": %ld, \"walk_regrouped\": %ld, "
+                     "\"catch_checks\": %ld, \"catch_calls\": %ld, "
+                     "\"granary_checks\": %ld, \"granary_requested\": %ld, "
+                     "\"fish_calls\": %ld, \"fish_picked\": %ld, \"fish_changed\": %ld, \"fish_class\": %ld, "
+                     "\"mine_calls\": %ld, \"mine_capped\": %ld, \"mine_mines\": %ld, \"mine_cap\": %ld, "
+                     "\"wave_calls\": %ld, \"wave_set\": %ld, \"wave_moved\": %ld, \"wave_kept\": %ld, \"wave_none\": %ld, "
+                     "\"weak_calls\": %ld, \"weak_threatened\": %ld, \"weak_picked\": %ld, "
+                     "\"breach_calls\": %ld, \"breach_crossed\": %ld, \"breach_picked\": %ld, \"breach_walls\": %ld, "
+                     "\"build_attempts\": %ld, \"build_fails\": %ld, \"build_dropped\": %ld, \"build_top_type\": %ld, \"build_top_fails\": %ld, "
+                     "\"recover_checks\": %ld, \"recover_starts\": %ld, \"recover_ends\": %ld, \"recover_moves\": %ld, "
+                     "\"recover_on\": %ld, \"recover_had_economy\": %ld, "
+                     "\"food_pulled\": %ld, "
+                     "\"wild_calls\": %ld, \"wild_checks\": %ld, \"wild_bush\": %ld, \"wild_animal\": %ld, \"wild_deferred\": %ld, "
+                     "\"early_req_checks\": %ld, \"early_req_asks\": %ld, \"early_req_progress\": %ld, \"early_req_renews\": %ld, \"early_req_decoration\": %ld, "
+                     "\"train_queue_calls\": %ld, \"train_queue_cuts\": %ld, \"train_queue_cut_units\": %ld, \"train_queue_refused\": %ld, "
+                     "\"feed_checks\": %ld, \"missing_citizens\": %ld, \"feed_producers\": %ld, \"feed_gatherers\": %ld, "
+                     "\"feed_moved\": %ld, \"feed_from_wood\": %ld, \"feed_from_metals\": %ld, "
+                     "\"town_swapped\": %ld, \"town_away\": %ld, "
                      "\"counter_fire_sorties\": %ld, \"counter_fire_sent\": %ld, \"counter_fire_short\": %ld, "
                      "\"militia_orders\": %u, \"militia_refused\": %u, \"militia_caught\": %u, \"counter_siege_orders\": %u, "
-                     "\"counter_siege_skipped\": %u}",
+                     "\"counter_siege_skipped\": %u, \"home_sent\": %ld, \"home_base_moved\": %ld, "
+                     "\"garrison_checks\": %ld, \"garrison_orders\": %ld, \"garrison_citizens\": %ld, "
+                     "\"garrison_idle\": %ld, \"garrison_wood\": %ld, \"garrison_holds\": %ld, "
+                     "\"anti_air_checks\": %ld, \"anti_air_near\": %ld, \"anti_air_any\": %ld, "
+                     "\"anti_air_ahead\": %ld, \"anti_air_queued\": %ld, \"anti_air_skipped\": %ld, "
+                     "\"answer_war_checks\": %ld, \"answer_war_transitions\": %ld, \"answer_war_scheduled\": %ld, "
+                     "\"answer_war_answers\": %ld, \"answer_war_cancelled\": %ld, "
+                     "\"surrender_checks\": %ld, \"surrender_citizens\": %ld, \"surrender_no_citizen\": %ld, "
+                     "\"surrender_can_train\": %ld, \"surrender_at_war\": %ld, \"surrender_resigned\": %ld, "
+                     "\"hospital_checks\": %ld, \"hospitals\": %ld, \"hospital_sent\": %ld, \"hospital_holds\": %ld, \"hospital_done\": %ld, "
+                     "\"cover_checks\": %ld, \"cover_near\": %ld, \"cover_fights\": %ld, \"cover_sent\": %ld, \"cover_holds\": %ld, \"cover_back\": %ld, "
+                     "\"cover_gaveup\": %ld, \"cover_gaveback\": %ld, "
+                     "\"coast_checks\": %ld, \"coast_sites\": %ld, \"coast_cells\": %ld, \"coast_sea\": %ld, \"coast_placed\": %ld, "
+                     "\"scout_checks\": %ld, \"scout_towns\": %ld, \"scout_foes\": %ld, \"scout_cells\": %ld, "
+                     "\"scout_picked\": %ld, \"scout_sent\": %ld, \"scout_back\": %ld, "
+                     "\"fort_checks\": %ld, \"fort_sites\": %ld, \"fort_picked\": %ld, \"fort_towers\": %ld, "
+                     "\"fort_busy\": %ld, \"fort_wait\": %ld, \"fort_skipped\": %ld, \"fort_exposed\": %ld, "
+                     "\"pop_checks\": %ld, \"pop_overrides\": %ld, \"pop_weighted\": %ld, \"pop_cap\": %ld, "
+                     "\"units_first_checks\": %ld, \"units_first_switched\": %ld, "
+                     "\"answer_fire_checks\": %ld, \"answer_fire_sent\": %ld, "
+                     "\"watchdog_checks\": %ld, \"watchdog_drops\": %ld, \"watchdog_kicks\": %ld, "
+                     "\"raid_leash_groups\": %ld, \"raid_leash_checks\": %ld, \"raid_leash_called\": %ld, "
+                     "\"tight_build_calls\": %ld, \"tight_build_sites\": %ld, "
+                     "\"lost_checks\": %ld, \"lost_skipped\": %ld, \"lost_in_reach\": %ld, "
+                     "\"lost_refreshes\": %ld, \"lost_cells\": %ld, \"lost_zones\": %ld, "
+                     "\"lost_mem_cells\": %ld, \"lost_mem_foes\": %ld, "
+                     "\"towers_queued\": %ld, \"towers_skipped\": %ld}",
                      p.mIntelRecords, p.mIntelBuildings, p.mIntelSoldiers, p.mIntelSeenNow, p.mIntelCells, p.mIntelArmy,
                      p.mEarlyQueued, p.mEarlyBuilders, p.mEarlyBaits, p.mOutdatedSorties, p.mOutdatedSent, p.mOutdatedRefused,
-                     p.mOutdatedNoGroup, p.mFoodPulled, p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
+                     p.mOutdatedNoGroup, p.mCitizenCalls, p.mCitizenCalled, p.mWallSkipped, p.mWallRan, p.mRetargetScans, p.mRetargetPicked, p.mRetargetGroups,
+                     p.mAvoidCalls, p.mAvoidPenalised, p.mAvoidCost,
+                     p.mRamCalls, p.mRamWaits,
+                     p.mAirCalls, p.mAirSkipped,
+                     p.mLeashCalls, p.mLeashSkipped,
+                     p.mTetherCalls, p.mTetherSkipped,
+                     p.mMassChecks, p.mMassWaits, p.mMassGoes, p.mMassWaited,
+                     p.mWalkChecks, p.mWalkSubGroups, p.mWalkPacks, p.mWalkRegrouped,
+                     p.mCatchChecks, p.mCatchCalls,
+                     p.mGranChecks, p.mGranRequested,
+                     p.mFishCalls, p.mFishPicked, p.mFishChanged, p.mFishClass,
+                     p.mMineCalls, p.mMineCapped, p.mMineMines, p.mMineCap,
+                     p.mWaveCalls, p.mWaveSet, p.mWaveMoved, p.mWaveKept, p.mWaveNone,
+                     p.mWeakCalls, p.mWeakThreatened, p.mWeakPicked,
+                     p.mBreachCalls, p.mBreachCrossed, p.mBreachPicked, p.mBreachWalls,
+                     p.mBuildAttempts, p.mBuildFails, p.mBuildDropped, p.mBuildTopType, p.mBuildTopFails,
+                     p.mRecoverChecks, p.mRecoverStarts, p.mRecoverEnds, p.mRecoverMoves,
+                     p.mRecoverOn, p.mRecoverHadEconomy,
+                     p.mFoodPulled, p.mWildCalls, p.mWildChecks, p.mWildBush, p.mWildAnimal, p.mWildDeferred,
+                     p.mEarlyReqChecks, p.mEarlyReqAsks, p.mEarlyReqProgress, p.mEarlyReqRenews, p.mEarlyReqDecoration,
+                     p.mTrainQueueCalls, p.mTrainQueueCuts, p.mTrainQueueCutUnits, p.mTrainQueueRefused,
+                     p.mFeedChecks, p.mMissingCitizens, p.mFeedProducers, p.mFeedGatherers,
+                     p.mFeedMoved, p.mFeedFromWood, p.mFeedFromMetals,
+                     p.mTownSwapped, p.mTownAway,
+                     p.mCounterFireSorties, p.mCounterFireSent, p.mCounterFireShort,
                      (unsigned)p.mDefence.mMilitiaOrders, (unsigned)p.mDefence.mMilitiaRefused, (unsigned)p.mDefence.mMilitiaCaught,
-                     (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped);
+                     (unsigned)p.mDefence.mCounterSiegeOrders, (unsigned)p.mDefence.mCounterSiegeSkipped,
+                     p.mHomeSent, p.mHomeBaseMoved,
+                     p.mGarrisonChecks, p.mGarrisonOrders, p.mGarrisonCitizens,
+                     p.mGarrisonIdle, p.mGarrisonWood, p.mGarrisonHolds,
+                     p.mAntiAirChecks, p.mAntiAirNear, p.mAntiAirAny,
+                     p.mAntiAirAhead, p.mAntiAirQueued, p.mAntiAirSkipped,
+                     p.mAnswerWarChecks, p.mAnswerWarTransitions, p.mAnswerWarScheduled,
+                     p.mAnswerWarAnswers, p.mAnswerWarCancelled,
+                     p.mSurrenderChecks, p.mSurrenderCitizens, p.mSurrenderNoCitizen,
+                     p.mSurrenderCanTrain, p.mSurrenderAtWar, p.mSurrenderResigned,
+                     p.mHospitalChecks, p.mHospitals, p.mHospitalSent, p.mHospitalHolds, p.mHospitalDone,
+                     p.mCoverChecks, p.mCoverNear, p.mCoverFights, p.mCoverSent, p.mCoverHolds, p.mCoverBack,
+                     p.mCoverGaveUp, p.mCoverGaveBack,
+                     p.mCoastChecks, p.mCoastSites, p.mCoastCells, p.mCoastSea, p.mCoastPlaced,
+                     p.mScoutChecks, p.mScoutTowns, p.mScoutFoes, p.mScoutCells,
+                     p.mScoutPicked, p.mScoutSent, p.mScoutBack,
+                     p.mFortChecks, p.mFortSites, p.mFortPicked, p.mFortTowers,
+                     p.mFortBusy, p.mFortWait, p.mFortSkipped, p.mFortExposed,
+                     p.mPopChecks, p.mPopOverrides, p.mPopWeighted, p.mPopCap,
+                     p.mUnitsFirstChecks, p.mUnitsFirstSwitched,
+                     p.mAnswerFireChecks, p.mAnswerFireSent,
+                     p.mWatchdogChecks, p.mWatchdogDrops, p.mWatchdogKicks,
+                     p.mRaidLeashGroups, p.mRaidLeashChecks, p.mRaidLeashCalled,
+                     p.mTightBuildCalls, p.mTightBuildSites,
+                     p.mLostChecks, p.mLostSkipped, p.mLostInReach,
+                     p.mLostRefreshes, p.mLostCells, p.mLostZones,
+                     p.mLostMemCells, p.mLostMemFoes,
+                     p.mTowersQueued, p.mTowersSkipped);
         char theGatherers[480] = "";
         if (p.mHasGatherers)
             snprintf(theGatherers, sizeof(theGatherers),
@@ -952,8 +1464,10 @@ std::string PlayersJson(const Sample& inSample)
                      (int)p.mWanted[1], (int)p.mWanted[2], (int)p.mWanted[3], (int)p.mWanted[4], (int)p.mDropSites[0], (int)p.mDropSites[1],
                      (int)p.mDropSites[2], (int)p.mDropSites[3], (int)p.mDropSites[4], (int)p.mDropSites[5], (int)p.mDropSites[6],
                      (int)p.mDropDistance[0], (int)p.mDropDistance[1], (int)p.mDropDistance[2], (int)p.mDropDistance[3], (int)p.mDropDistance[4], (int)p.mTechs);
-        char theText[1024];
-        snprintf(theText, sizeof(theText),
+        // The record grows with the empire (a long game's intel and gatherer lines are long), so the room it gets is
+        // the room its parts took, not a fixed one a large sample would be cut in the middle of.
+        std::string theText(sizeof theIntel + sizeof theGatherers + 512, '\0');
+        int theLength = snprintf(&theText[0], theText.size(),
                  "%s{\"index\": %lu, \"engine\": \"%s\", \"human\": %s, \"result\": %lu, \"epoch\": %ld, \"population\": %ld, "
                  "\"victory_units\": %ld, \"citizens\": %ld, \"army\": %ld, \"buildings\": %ld, \"strength\": %ld, "
                  "\"value\": %ld, \"resources\": {\"food\": %ld, \"wood\": %ld, \"stone\": %ld, \"gold\": %ld, "
@@ -965,6 +1479,7 @@ std::string PlayersJson(const Sample& inSample)
                  p.mHuman ? "true" : "false", p.mResult, p.mEpoch, p.mPopulation,
                  p.mVictoryUnits, p.mCitizens, p.mArmy, p.mBuildings, p.mStrength, p.mValue, p.mResources[0],
                  p.mResources[1], p.mResources[2], p.mResources[3], p.mResources[4], theIntel, theGatherers);
+        theText.resize(theLength > 0 ? (size_t)theLength : 0);
         theOut += theText;
     }
     return theOut + "]";
@@ -1022,10 +1537,13 @@ void WriteReport(int inCode, const std::string& inError)
     j += "],\n";
     {
         const AgeOfAI::ProjectileCounts& theCounts = AgeOfAI::Projectiles();
-        char theProjectiles[200];
+        const AgeOfAI::SpreadCounts& theSpread = AgeOfAI::MissileSpreadCounts();
+        char theProjectiles[256];
         snprintf(theProjectiles, sizeof(theProjectiles),
-                 "  \"projectiles\": {\"fired\": %u, \"led\": %u, \"hit_unit\": %u, \"hit_ground\": %u},\n", (unsigned)theCounts.mFired,
-                 (unsigned)theCounts.mLed, (unsigned)theCounts.mHitUnit, (unsigned)theCounts.mHitGround);
+                 "  \"projectiles\": {\"fired\": %u, \"led\": %u, \"hit_unit\": %u, \"hit_ground\": %u, \"missiles_led\": %u, "
+                 "\"spread_launched\": %u, \"spread_held\": %u, \"spread_switched\": %u},\n", (unsigned)theCounts.mFired,
+                 (unsigned)theCounts.mLed, (unsigned)theCounts.mHitUnit, (unsigned)theCounts.mHitGround, (unsigned)theCounts.mMissilesLed,
+                 (unsigned)theSpread.mLaunched, (unsigned)theSpread.mHeld, (unsigned)theSpread.mSwitched);
         j += theProjectiles;
     }
     {
@@ -1068,7 +1586,10 @@ void WriteReport(int inCode, const std::string& inError)
         fflush(stdout);
         return;
     }
-    std::string theTemporary = sOptions.mReport + ".tmp";
+    // The report goes beside its name and is renamed into place, so a reader never sees half of one. The temporary
+    // name carries this process: two sims told to write one report each write their own, and the last rename wins with
+    // a whole file, where a shared temporary left the two halves of a report mixed together.
+    std::string theTemporary = sOptions.mReport + ".tmp." + std::to_string((long)getpid());
     if (FILE* theFile = fopen(theTemporary.c_str(), "wb")) {
         fwrite(j.data(), 1, j.size(), theFile);
         fclose(theFile);
@@ -1166,6 +1687,7 @@ const char* kUsage =
     "  --army NAME:COUNT      at --army-at, each computer player gets COUNT units of the first land class with NAME\n"
     "                         in its name, six tiles from its buildings towards the next player, sent to attack\n"
     "                         that player's nearest building (repeat for more kinds)\n"
+    "  --army-air NAME:COUNT  the same with the first flying class with NAME in its name (a test of air targets)\n"
     "  --army-every S         the armies appear again every S game seconds (a raid after raid)\n"
     "  --army-at S            the game second the armies appear (default 120)\n"
     "  --army-raid            the armies appear eight tiles from the enemy's base, on the side of their own\n"
@@ -1173,6 +1695,12 @@ const char* kUsage =
     "  --classic-players L    player numbers, comma apart, that play the classic AI whatever ageofai.ini says\n"
     "  --player-ini P=FILE    player P reads its Age of AI settings from FILE in full, not from ageofai.ini\n"
     "  --lobby CONTROL=VALUE  any lobby combo of form 26 by line name or #index (e.g. 209=#2)\n"
+    "  --stance S,F,T,V        at game second S set player F's stance toward T: V 0 ally, 1 enemy (repeatable)\n"
+    "  --wall S[,N]           at game second S each defender gets N wall segments near the next attacker's base\n"
+    "                         (default 9), so its land attack routes cross a wall it can see; exercises attack_breach\n"
+    "  --starve P,S           at game second S kill every citizen of player P; exercises the surrender rule\n"
+    "  --raze P,S             the same, and also kill P's Town Centres/Capitols/Settlements so it cannot retrain\n"
+    "  --keep-alive P         keep P in the game after losing its last town centre, so its 60 s surrender timer can run\n"
     "  --game-seconds S       stop at this game time (default 2700)\n"
     "  --sample-seconds S     report sample interval in game seconds (default 30)\n"
     "  --wall-timeout S       give up after this wall time (default 3600)\n"
@@ -1272,15 +1800,18 @@ int EESimMain(int argc, char** argv)
             sOptions.mMapType = value();
         else if (theOption == "--difficulty")
             sOptions.mDifficulty = value();
-        else if (theOption == "--army") {
+        else if (theOption == "--army" || theOption == "--army-air") {
+            bool theAir = theOption == "--army-air";
             std::string theText = value();
             size_t theColon = theText.rfind(':');
             long theCount = theColon == std::string::npos ? 0 : atol(theText.c_str() + theColon + 1);
-            if (theCount < 1) {
-                fprintf(stderr, "ee-aoc --sim: --army takes NAME:COUNT, a part of a land unit's name and how many\n");
+            if (theCount < 1 || theColon == 0) {
+                fprintf(stderr, "ee-aoc --sim: %s takes NAME:COUNT, a part of a %s unit's name and how many\n",
+                        theOption.c_str(), theAir ? "flying" : "land");
                 return 64;
             }
-            sOptions.mArmies.push_back(std::make_pair(theText.substr(0, theColon), theCount));
+            (theAir ? sOptions.mAirArmies : sOptions.mArmies).push_back(
+                std::make_pair(theText.substr(0, theColon), theCount));
         } else if (theOption == "--army-every")
             sOptions.mArmyEvery = atof(value().c_str());
         else if (theOption == "--army-raid")
@@ -1325,6 +1856,37 @@ int EESimMain(int argc, char** argv)
                 return 64;
             }
             sOptions.mLobby.push_back({atol(theValue.substr(0, theEqual).c_str()), theValue.substr(theEqual + 1)});
+        } else if (theOption == "--stance") {
+            std::string theValue = value();
+            StanceChange theChange;
+            if (sscanf(theValue.c_str(), "%lf,%ld,%ld,%ld", &theChange.mAt, &theChange.mFrom, &theChange.mTo,
+                       &theChange.mValue) != 4
+                || theChange.mAt < 0 || theChange.mFrom < 1 || theChange.mFrom > 15 || theChange.mTo < 1
+                || theChange.mTo > 15 || theChange.mFrom == theChange.mTo
+                || (theChange.mValue != 0 && theChange.mValue != 1)) {
+                fprintf(stderr, "ee-aoc --sim: --stance takes SECOND,FROM,TO,VALUE; VALUE 0 ally, 1 enemy\n");
+                return 64;
+            }
+            sOptions.mStances.push_back(theChange);
+        } else if (theOption == "--starve" || theOption == "--raze") {
+            Starve theStarve;
+            theStarve.mRaze = theOption == "--raze";
+            if (sscanf(value().c_str(), "%d,%lf", &theStarve.mPlayer, &theStarve.mAt) != 2
+                || theStarve.mPlayer < 1 || theStarve.mPlayer > 15 || theStarve.mAt < 0) {
+                fprintf(stderr, "ee-aoc --sim: %s takes PLAYER,SECOND; PLAYER 1..15\n", theOption.c_str());
+                return 64;
+            }
+            sOptions.mStarves.push_back(theStarve);
+        } else if (theOption == "--wall") {
+            std::string theValue = value();
+            long theCount = 9;
+            double theAt = -1;
+            if (sscanf(theValue.c_str(), "%lf,%ld", &theAt, &theCount) < 1 || theAt < 0 || theCount < 1 || theCount > 40) {
+                fprintf(stderr, "ee-aoc --sim: --wall takes SECOND[,COUNT] with COUNT 1 to 40\n");
+                return 64;
+            }
+            sOptions.mWallAt = theAt;
+            sOptions.mWallCount = theCount;
         } else if (theOption == "--game-seconds")
             sOptions.mGameSeconds = atof(value().c_str());
         else if (theOption == "--sample-seconds")
@@ -1337,6 +1899,14 @@ int EESimMain(int argc, char** argv)
             sOptions.mNoHumanDefeat = false;
         else if (theOption == "--no-human-defeat")
             sOptions.mNoHumanDefeat = true;
+        else if (theOption == "--keep-alive") {
+            long thePlayer = atol(value().c_str());
+            if (thePlayer < 1 || thePlayer > 31) {
+                fprintf(stderr, "ee-aoc --sim: --keep-alive takes a player 1..31\n");
+                return 64;
+            }
+            sOptions.mKeepAliveMask |= 1u << thePlayer;
+        }
         else if (theOption == "--report")
             sOptions.mReport = Absolute(value());
         else if (theOption == "--sync-trace")
@@ -1368,6 +1938,7 @@ int EESimMain(int argc, char** argv)
     gPlatSimSeedSet = 1;
     gPlatSimSeed = (uint32_t)sOptions.mSeed;
     gPlatSimNoHumanDefeat = sOptions.mNoHumanDefeat ? 1 : 0;
+    gPlatSimKeepAliveMask = sOptions.mKeepAliveMask;
     gPlatSimPortOffset = sOptions.mPortOffset >= 0 ? (int)sOptions.mPortOffset : 2000 + 2 * (int)(getpid() % 8000);
     InstallFaultHandler();
     Note("EE-SIM seed %lu, %ld computers, cap %.0f game s, ports %d/%d", sOptions.mSeed, sOptions.mComputers,

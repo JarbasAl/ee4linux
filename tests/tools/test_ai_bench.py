@@ -2,9 +2,14 @@
 
   python3 -I tests/tools/test_ai_bench.py
 """
+import argparse
+import contextlib
+import io
 import math
+import concurrent.futures
 import pathlib
 import sys
+import threading
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "tools"))
@@ -113,6 +118,150 @@ class Ledger(unittest.TestCase):
         report = {"winner": None, "outcome": "error", "error": "timed out waiting for the game (top form 26)",
                   "game_ms": 0, "samples": []}
         self.assertIsNone(ai_bench.game_row(report, "standard", 6, {2: "aoai", 3: "classic"}))
+
+
+class Engines(unittest.TestCase):
+    def test_the_shipped_profile_selects_the_classic_ai(self):
+        self.assertEqual(ai_bench.engine_of(ai_bench.merged_ini(ai_bench.BASE_INI.read_text(), "[ai_base]\nmuster=1\n")),
+                         "classic")
+
+    def test_an_ai_profile_selects_age_of_ai(self):
+        self.assertEqual(ai_bench.engine_of(ai_bench.merged_ini(ai_bench.BASE_INI.read_text(),
+                                                                "[general]\nenabled=1\n")), "ageofai")
+
+    def test_a_name_for_a_flag_reads_like_the_number(self):
+        self.assertEqual(ai_bench.engine_of("[general]\nenabled=true\n"), "ageofai")
+        self.assertEqual(ai_bench.engine_of("[general]\nenabled=off\n"), "classic")
+
+    def test_enabled_in_another_section_selects_nothing(self):
+        # [ai_base] has a member row named like the general flag: only [general] says which engine a player runs
+        self.assertEqual(ai_bench.engine_of("[ai_base]\nenabled=1\n"), "classic")
+
+    def test_a_value_it_cannot_read_is_an_error_not_a_guess(self):
+        with self.assertRaises(SystemExit):
+            ai_bench.engine_of("[general]\nenabled=maybe\n")
+
+
+class Budget(unittest.TestCase):
+    def test_slots_go_back_when_a_call_ends(self):
+        budget = ai_bench.Budget(8)
+        budget.take(2)
+        budget.take(2)
+        budget.give(2)
+        budget.take(2)
+        self.assertEqual(budget.mUsed, 4)
+
+    def test_a_stopped_run_fails_the_calls_that_wait(self):
+        # a run that ends must not leave a worker waiting for slots for ever: the pool would never close
+        budget = ai_bench.Budget(2)
+        budget.take(2)
+        budget.stop()
+        with self.assertRaises(concurrent.futures.CancelledError):
+            budget.take(1)
+
+    def test_stop_wakes_a_call_that_already_waits(self):
+        budget = ai_bench.Budget(1)
+        budget.take(1)
+        waited = []
+        def waiting():
+            try:
+                budget.take(1)
+            except concurrent.futures.CancelledError:
+                waited.append(True)
+        thread = threading.Thread(target=waiting)
+        thread.start()
+        thread.join(0.2)
+        budget.stop()
+        thread.join(2)
+        self.assertEqual(waited, [True])
+
+    def test_a_call_waits_while_the_slots_are_taken(self):
+        # two seeds with eight slots: the fifth call has to wait for one to end
+        budget = ai_bench.Budget(8)
+        for _ in range(4):
+            budget.take(2)
+        waited = threading.Thread(target=budget.take, args=(2,))
+        waited.start()
+        waited.join(0.2)
+        self.assertTrue(waited.is_alive(), "a fifth call must wait")
+        budget.give(2)
+        waited.join(2)
+        self.assertFalse(waited.is_alive(), "and go when a call ends")
+
+
+class HeadToHead(unittest.TestCase):
+    def test_a_pair_counts_both_seat_orders(self):
+        rows = [{"scenario": "s", "seats": {"2": "a", "3": "b"}, "winner": "a"},
+                {"scenario": "s", "seats": {"2": "b", "3": "a"}, "winner": "a"}]
+        self.assertEqual(ai_bench.head_to_head(rows), {("a", "b"): [2, 2, 0]})
+
+    def test_the_pair_is_named_with_the_lower_name_first(self):
+        rows = [{"scenario": "s", "seats": {"2": "b", "3": "a"}, "winner": "b"}]
+        self.assertEqual(ai_bench.head_to_head(rows), {("a", "b"): [1, 0, 0]})
+
+    def test_a_draw_is_a_game_without_a_win(self):
+        rows = [{"scenario": "s", "seats": {"2": "a", "3": "b"}, "winner": None}]
+        self.assertEqual(ai_bench.head_to_head(rows), {("a", "b"): [1, 0, 1]})
+
+
+class Table(unittest.TestCase):
+    def test_the_head_to_head_cell_does_not_count_draws_as_wins(self):
+        ends = {n: {m: 1 for m in ai_bench.MEASURES} for n in ("a", "z")}
+        rows = [{"scenario": "s", "seed": seed, "seats": {"2": "a", "3": "z"}, "winner": winner,
+                 "game_s": 3600, "end": ends}
+                for seed, winner in enumerate(("a", "a", "z", None), 1)]
+        saved = ai_bench.read_games
+        ai_bench.read_games = lambda out: rows
+        output = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(output):
+                ai_bench.table(argparse.Namespace(out=pathlib.Path("."), anchor="classic"))
+        finally:
+            ai_bench.read_games = saved
+        z_row = next(line for line in output.getvalue().splitlines() if line.startswith("| z |") and "/" in line)
+        self.assertIn("1/4", z_row)
+        self.assertNotIn("2/4", z_row)
+
+
+class SeatShares(unittest.TestCase):
+    def test_a_scenario_whose_games_go_to_one_seat_says_so(self):
+        # the same map and AI order, twice: the first seat wins both, so the seat decided them
+        rows = [{"scenario": "raids", "seats": {"2": "a", "3": "b"}, "winner": "a"},
+                {"scenario": "raids", "seats": {"2": "b", "3": "a"}, "winner": "b"}]
+        self.assertEqual(ai_bench.seat_shares(rows), {"raids": [2, 2]})
+
+    def test_it_counts_the_first_seat_by_its_number(self):
+        rows = [{"scenario": "tiny", "seats": {"2": "a", "3": "b"}, "winner": "b"},
+                {"scenario": "tiny", "seats": {"2": "a", "3": "b"}, "winner": "a"}]
+        self.assertEqual(ai_bench.seat_shares(rows), {"tiny": [2, 1]})
+
+    def test_a_draw_is_not_a_decided_game(self):
+        rows = [{"scenario": "poor", "seats": {"2": "a", "3": "b"}, "winner": None}]
+        self.assertEqual(ai_bench.seat_shares(rows), {"poor": [0, 0]})
+
+    def test_every_scenario_has_a_row(self):
+        rows = [{"scenario": s, "seats": {"2": "a", "3": "b"}, "winner": "a"} for s in ("tiny", "raids")]
+        self.assertEqual(sorted(ai_bench.seat_shares(rows)), ["raids", "tiny"])
+
+
+class SeatEngines(unittest.TestCase):
+    def row(self, first_engine, second_engine):
+        report = {"winner": 2, "outcome": "last-computer-standing", "game_ms": 60000,
+                  "samples": [{"players": [{"index": 2, "engine": first_engine},
+                                           {"index": 3, "engine": second_engine}]}]}
+        return ai_bench.game_row(report, "standard", 1, {2: "aoai", 3: "classic"})
+
+    def test_a_game_of_the_profiles_it_claims_is_kept(self):
+        self.assertEqual(ai_bench.wrong_engines(self.row("ageofai", "classic"), {"aoai": "ageofai", "classic": "classic"}), {})
+
+    def test_an_ai_that_ran_the_classic_one_names_itself(self):
+        # the profile path did not resolve: the player read no file and took the classic engine
+        self.assertEqual(ai_bench.wrong_engines(self.row("classic", "classic"), {"aoai": "ageofai", "classic": "classic"}),
+                         {"aoai": "classic"})
+
+    def test_a_player_with_no_engine_names_itself(self):
+        self.assertEqual(ai_bench.wrong_engines(self.row(None, "classic"), {"aoai": "ageofai", "classic": "classic"}),
+                         {"aoai": None})
 
 
 if __name__ == "__main__":

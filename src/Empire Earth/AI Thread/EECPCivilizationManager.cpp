@@ -574,6 +574,9 @@ long EECPCivilizationManager::GetFishingBoatClass()
         } else
             theResult = 0x6c;
     }
+    // Age of AI picks the newest fishing boat it can train; the game's epoch-only pick can name one it cannot.
+    if (this->mPlayer != NULL && AgeOfAI::EngineOf(this->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
+        return AgeOfAI::PickFishingBoat(this->mPlayer, theResult);
     return theResult;
 }
 

@@ -458,7 +458,11 @@ void EECPResourceManager::AssignGatherers()
                                             }
                                         }
                                         if (theWanted > 0) {
-                                            if (!thePlayer->mUsesFishing && thePlayer->CanProduceUnitType(kUnitTypeFarm, 0x20, NULL)) {
+                                            // food_plan no_fields_wild (off in the shipped file): a free bush or animal takes
+                                            // the idle citizens before a field foundation gets a builder.
+                                            const bool theWild = AgeOfAI::EngineOf(thePlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI
+                                                                 && AgeOfAI::WildBeforeFields(this);
+                                            if (!theWild && !thePlayer->mUsesFishing && thePlayer->CanProduceUnitType(kUnitTypeFarm, 0x20, NULL)) {
                                                 this->GetUnfinishedFarms(theWanted < theIdle.size() ? theWanted : theIdle.size(), theFound);
                                                 for (k = 0; k < theFound.size(); k++) {
                                                     theUnit = theIdle.front();
@@ -803,6 +807,12 @@ void EECPResourceManager::FindMines(unsigned long inCount, bool inNear, std::vec
 // of the town center; bushes not visible are skipped
 EEUnit* EECPResourceManager::FindFarm(bool inNeedsDropSite, bool inNear, EEComplexUnit* inUnit)
 {
+    // an Age of AI player with food_plan forage_near takes the bush nearest a food drop site (AgeOfAI::FindForage)
+    if (AgeOfAI::EngineOf(this->mManager->mPlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI) {
+        EEUnit* theNear = AgeOfAI::FindForage(this, inNear, inUnit);
+        if (theNear != NULL)
+            return theNear;
+    }
     EETileDistanceLess theTile(0, 0);
     EEComputerPlayer* thePlayer = this->mManager->mPlayer;
     long theRadius = thePlayer->mDropOffDistance;
@@ -933,6 +943,8 @@ EEUnit* EECPResourceManager::FindForestTarget(long inCount, EEComplexUnit* inUni
     theTile.mY = 0;
     U2DPoint<long> theCenter;
     theCenter = U2DPoint<long>(this->mManager->mBuildManager->mTownCenterTile.mX, this->mManager->mBuildManager->mTownCenterTile.mY);
+    EEComputerPlayer* thePlayer = this->mManager->mPlayer;
+    const bool theAgeOfAI = thePlayer != NULL && AgeOfAI::EngineOf(thePlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI;
     EEUnit* theResult = NULL;
     if (theCenter.mX == -10000 || theCenter.mY == -10000)
         return theResult;
@@ -955,7 +967,8 @@ EEUnit* EECPResourceManager::FindForestTarget(long inCount, EEComplexUnit* inUni
                 if (theMapTile != NULL) {
                     for (RTSTileUnitNode* theNode = theMapTile->mUnits; theNode != NULL && theResult == NULL; theNode = theNode->mNext) {
                         EEUnit* theUnit = theNode->mUnit;
-                        if (theUnit != NULL && theUnit->GetUnitClass()->mResourceType == kResourceWood)
+                        if (theUnit != NULL && theUnit->GetUnitClass()->mResourceType == kResourceWood
+                            && !(theAgeOfAI && AgeOfAI::SiteDanger(thePlayer, theUnit, false, 3)))
                             theResult = theUnit;
                     }
                     if (theResult != NULL)
@@ -973,7 +986,8 @@ EEUnit* EECPResourceManager::FindForestTarget(long inCount, EEComplexUnit* inUni
             continue;
         for (RTSTileUnitNode* theNode = theMapTile->mUnits; theNode != NULL && theResult == NULL; theNode = theNode->mNext) {
             EEUnit* theUnit = theNode->mUnit;
-            if (theUnit != NULL && theUnit->GetUnitClass()->mResourceType == kResourceWood)
+            if (theUnit != NULL && theUnit->GetUnitClass()->mResourceType == kResourceWood
+                && !(theAgeOfAI && AgeOfAI::SiteDanger(thePlayer, theUnit, false, 3)))
                 theResult = theUnit;
         }
     }
@@ -1506,7 +1520,12 @@ void EECPResourceManager::Update(unsigned long inTime)
     if (inTime >= this->mNextWantedGatherersTime) {
         if (this->mNextWantedGatherersTime > 0) {
             this->UpdateWantedGatherers();
-            AgeOfAI::EconTargets(this);
+            AgeOfAI::EconTargets(this, inTime);
+            AgeOfAI::MoreGranaries(this, inTime);
+            AgeOfAI::MineFill(this, inTime);
+            AgeOfAI::LateFoodTargets(this, inTime);
+            // Upstream runs cz_targets after mine_fill so the feed target survives the passes that cap food.
+            AgeOfAI::FeedTargets(this, inTime);
         }
         this->mNextWantedGatherersTime = inTime + 5000;
     }
@@ -1515,9 +1534,12 @@ void EECPResourceManager::Update(unsigned long inTime)
             {
                 if (AgeOfAI::EngineOf(thePlayer->mPlayerID) == AgeOfAI::kEngineAgeOfAI)
                     AgeOfAI::SafetyTick(thePlayer, inTime);   // before the assignment
+                AgeOfAI::FoodHunt(this);
                 this->AssignGatherers();
+                AgeOfAI::TownWork(this);
                 AgeOfAI::Rebalance(this);
                 AgeOfAI::FoodPull(this);
+                AgeOfAI::FoodCamp(thePlayer, inTime);
             }
         this->mNextAssignGatherersTime = inTime + 10000;
     }

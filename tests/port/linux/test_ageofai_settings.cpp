@@ -178,8 +178,8 @@ int main()
     Check(!memcmp(&theMedium.food_plan, theFood, sizeof theFood), "FLAGS by name and name=1, every other field 0");
     const int theMines[3] = { 1, 1, 1 };   // MINE_FILL_FIELDS: all on
     Check(!memcmp(&theMedium.mine_fill, theMines, sizeof theMines), "FLAGS all");
-    // CITIZEN_PLAN_FIELDS default "mine_slots, food_pays": mine_slots food_pays mine_settlement before_reserve
-    const int theCitizens[4] = { 1, 1, 0, 0 };
+    // CITIZEN_PLAN_FIELDS default "mine_slots": mine_slots food_pays mine_settlement before_reserve
+    const int theCitizens[4] = { 1, 0, 0, 0 };
     Check(!memcmp(&theMedium.citizen_plan, theCitizens, sizeof theCitizens)
               && Has(theLines, "citizen_plan=nothing: nothing: no field"),
           "a FLAGS word that is no field keeps the default");
@@ -222,6 +222,14 @@ int main()
     Check(sProfileAI[AgeOfAI::kDifficultyHard].muster == 1 && sProfileAI[AgeOfAI::kDifficultyHard].outdated_attack == 0,
           "[ai_hard] overrides the hard table, the rest of it follows [ai_base]");
     Check(sProfileAI[AgeOfAI::kDifficultyMedium].wood_drop == sDefaultsAI.wood_drop, "a row the profile leaves out takes its default");
+    // a profile is named, not optional: one that cannot be read is a mistake, so the player is never left on the
+    // classic AI without a line that says why
+    AgeOfAI::Settings sMissing;
+    AgeOfAI::SettingsAI sMissingAI[3];
+    theLines = AgeOfAI::ReadSettings("/nonexistent/profile.ini", sMissing, sMissingAI, true);
+    Check(theLines.size() == 1 && theLines[0].find("cannot be read") != std::string::npos,
+          "a profile that cannot be read tells it, unlike a missing ageofai.ini");
+    Check(sMissing.enabled == 0, "an unread profile leaves the player on the defaults, the classic AI");
     Check(FirstDifference((const unsigned char*)&gSettings, (const unsigned char*)&sShared, false).empty(),
           "reading a profile leaves the shared [general] table as it was");
     for (int d = 0; d < 3; d++)

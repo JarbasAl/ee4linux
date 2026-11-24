@@ -158,6 +158,22 @@ def summary(result):
 PRESETS = {"fights": ["--ai", "3", "--map-size", "Tiny", "--lobby", "183=#8", "--lobby", "181=#4", "--game-seconds", "3600"]}
 
 
+def absolute_profiles(options):
+    """Sim options with each --player-ini file named in full.
+
+    A run plays in a stage folder of its own, so a settings file the caller named relative to their own folder would
+    name nothing there: the game reads an empty file and the player quietly runs the classic AI.
+    """
+    out = list(options)
+    for i in range(len(out) - 1):
+        if out[i] != "--player-ini":
+            continue
+        player, _, path = out[i + 1].partition("=")
+        if path:
+            out[i + 1] = f"{player}={pathlib.Path(path).resolve()}"
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--target", default="linux64", choices=["linux", "linux64"])
@@ -168,18 +184,21 @@ def main():
     ap.add_argument("--jobs", type=int, default=1, help="runs at once (default 1)")
     ap.add_argument("--wall-timeout", type=int, default=3600, help="wall seconds per run (default 3600)")
     ap.add_argument("--out", type=pathlib.Path, help="the output folder (default build/sim/<time>)")
+    ap.add_argument("--stage", type=pathlib.Path,
+                    help="the folder of a run's linked copy (default build/sim/stage); a stage of its own lets two "
+                         "sims of one tree run side by side")
     ap.add_argument("--ageofai", type=pathlib.Path, help="the ageofai.ini of every run (default the run folder's)")
     ap.add_argument("--preset", choices=sorted(PRESETS), help="options of a kind of game, before the options after -- "
                     "(fights: three computer players on a Tiny map, started in a later age with many resources)")
     ap.add_argument("sim_options", nargs="*", help="after --: options of ee-aoc --sim (--ai, --game-seconds, ...)")
     args = ap.parse_args()
-    args.sim_options = PRESETS.get(args.preset, []) + args.sim_options
+    args.sim_options = absolute_profiles(PRESETS.get(args.preset, []) + args.sim_options)
 
     build = ROOT / "build" / f"port-{args.target}"
     args.run = (args.run or build / "run").resolve()
     args.bin = (args.bin or build / "bin").resolve()
     args.out = (args.out or ROOT / "build" / "sim" / time.strftime("%Y%m%d-%H%M%S")).resolve()
-    args.stage = ROOT / "build" / "sim" / "stage"
+    args.stage = (args.stage or ROOT / "build" / "sim" / "stage").resolve()
     if not (args.bin / "ee-aoc").exists():
         sys.exit(f"sim: no {args.bin / 'ee-aoc'}; run tools/build_port.py --target {args.target} --link first")
     if not args.run.is_dir():
@@ -187,9 +206,9 @@ def main():
     if args.ageofai and not args.ageofai.is_file():
         sys.exit(f"sim: no {args.ageofai}")
     args.out.mkdir(parents=True, exist_ok=True)
-    # one sim at a time per tree: a second one would empty the stages of the first while its games run
+    # one sim at a time per stage folder: a second one would empty the slots of the first while its games run
     args.stage.mkdir(parents=True, exist_ok=True)
-    lock = open(args.stage.parent / "stage.lock", "w")
+    lock = open(f"{args.stage}.lock", "w")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:

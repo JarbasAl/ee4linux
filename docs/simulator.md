@@ -29,6 +29,7 @@ The options before `--` belong to the tool, and the options after it go to `ee-a
 | `--jobs N` | runs at once (default 1) |
 | `--wall-timeout S` | wall seconds per run (default 3600). The tool kills a run 60 seconds after that. |
 | `--out DIR` | the output folder (default `build/sim/<time>`) |
+| `--stage DIR` | the folder of a run's linked copy (default `build/sim/stage`). A stage of its own lets two sims of one tree run side by side; `<stage>.lock` keeps two off the same one. |
 | `--ageofai FILE` | the `ageofai.ini` of every run, which selects the AI engine ([Age of AI](ageofai.md)). Without it, a run uses the run folder's file. |
 | `--preset fights` | three computer players on a Tiny map, started in a later age (lobby control 183 at line 8) with many resources (control 181 at line 4), for 3600 game seconds. The options after `--` come last and win. |
 
@@ -46,8 +47,43 @@ players' starting positions.
 The report of an Age of AI player has an `intel` object, its memory of its enemies ([Age of AI](ageofai.md)): `records`,
 `buildings`, `soldiers`, `seen_now`, `cells_looked` and `army`. It also holds the counters of the early game (`early_*`),
 of the outdated units' attack (`outdated_*`), of the food pull (`food_pulled`), of counter-fire (`counter_fire_*`), of
-the citizen militia (`militia_orders`, `militia_refused`, `militia_caught`) and of counter-siege (`counter_siege_orders`,
-`counter_siege_skipped`).
+the mine cap (`mine_calls`, `mine_capped`, `mine_mines`, `mine_cap`), the army tether (`tether_calls`, `tether_skipped`),
+the army's wait for a stronger moment (`mass_checks`, `mass_waits`, `mass_goes`, `mass_waited`, with `mass_waited`
+adding five per 20-second extension as upstream counts it), the army's walk-back regroup (`walk_checks`,
+`walk_subgroups`, `walk_packs`, `walk_regrouped`), the catch-up for other AIs' epochs (`catch_checks`,
+`catch_calls`), the wall breach (`breach_calls`, `breach_crossed`, `breach_picked`, `breach_walls`), the build queue fix
+(`build_attempts`, `build_fails`, `build_dropped`, `build_top_type`, `build_top_fails`), the economy recovery
+(`recover_checks`, `recover_starts`, `recover_ends`, `recover_moves`, `recover_on`, `recover_had_economy`), the citizen militia
+(`militia_orders`,
+`militia_refused`, `militia_caught`), of counter-siege (`counter_siege_orders`,
+`counter_siege_skipped`), of the idle citizens home (`home_sent`, `home_base_moved`), of the settlement upgrades
+(`garrison_checks`, `garrison_orders`, `garrison_citizens`, `garrison_idle`, `garrison_wood`, `garrison_holds`), of
+anti-air buildings (`anti_air_checks`, `anti_air_near`, `anti_air_any`, `anti_air_ahead`, `anti_air_queued`,
+`anti_air_skipped`), of the answer-war stance rule (`answer_war_checks`, `answer_war_transitions`,
+`answer_war_scheduled`, `answer_war_answers`, `answer_war_cancelled`), of the hospital fall-back bit
+(`hospital_checks`, `hospitals`, `hospital_sent`, `hospital_holds`, `hospital_done`), of the tower-cover fall-back bit
+(`cover_checks`, `cover_near`, `cover_fights`, `cover_sent`, `cover_holds`, `cover_back`, `cover_gaveup`,
+`cover_gaveback`), of the wild-food field hold (`wild_calls`, `wild_checks`, `wild_bush`, `wild_animal`,
+`wild_deferred`), of the early epoch-requirement asks (`early_req_checks`, `early_req_asks`, `early_req_progress`,
+`early_req_renews`, `early_req_decoration`), of the queue-depth limit (`train_queue_calls`, `train_queue_cuts`,
+`train_queue_cut_units`, `train_queue_refused`), of the food gatherer target (`feed_checks`, `missing_citizens`,
+`feed_producers`, `feed_gatherers`, `feed_moved`, `feed_from_wood`, `feed_from_metals`), of the local-work swap
+(`town_swapped`, `town_away`), of the coast towers
+(`coast_checks`, `coast_sites`, `coast_cells`, `coast_sea`, `coast_placed`), of the unseen-land scout (`scout_checks`,
+`scout_towns`, `scout_foes`, `scout_cells`, `scout_picked`, `scout_sent`, `scout_back`), of the site forts
+(`fort_checks`, `fort_sites`, `fort_picked`, `fort_towers`, `fort_busy`, `fort_wait`, `fort_skipped`, `fort_exposed`),
+of the population cap (`pop_checks`, `pop_overrides`, `pop_weighted`, `pop_cap`), of the units-before-buildings rule
+(`units_first_checks`, `units_first_switched`), of the answering-fire rule
+(`answer_fire_checks`, `answer_fire_sent`), of the stuck-transport watchdog
+(`watchdog_checks`, `watchdog_drops`, `watchdog_kicks`), of the raid leash
+(`raid_leash_groups`, `raid_leash_checks`, `raid_leash_called`), of the packed-building search
+(`tight_build_calls`, `tight_build_sites`), of the surrender rule (`surrender_checks`, `surrender_citizens`,
+`surrender_no_citizen`, `surrender_can_train`, `surrender_at_war`, `surrender_resigned`), of the lost-fight rule
+(`lost_checks`, `lost_skipped`, `lost_in_reach`, `lost_refreshes`, `lost_cells`, `lost_zones`), of the remembered foes
+in that rule (`lost_mem_cells`, `lost_mem_foes`) and of the defence layout's towers (`towers_queued`,
+`towers_skipped`).
+
+The `hospitals` counter holds the number of finished Hospitals at the last check, not a sum over the game.
 
 A stage is the run folder linked file by file. The tool copies the files the game writes (settings, logs, saves)
 and the build's images into it. The run folder therefore stays unchanged, and runs do not share files.
@@ -77,12 +113,18 @@ second one refuses to start while the first holds them.
 | `--difficulty NAME` | the lobby's difficulty line (default `Hard`) |
 | `--classic-players LIST` | player numbers, comma apart, that play the classic AI whatever `ageofai.ini` says |
 | `--army NAME:COUNT` | at `--army-at`, each computer player gets COUNT units of the first land class whose name has NAME in it (without case), six tiles from its buildings towards the next computer player, each sent to attack that player's nearest building. Repeat it for more kinds. Every player gets the same units, so any map gives a fair fight. |
+| `--army-air NAME:COUNT` | the same with the first flying class whose name has NAME in it. Use it with `--army` to put aircraft among land soldiers in a probe. |
 | `--army-at S` | the game second the armies appear (default 120) |
 | `--army-every S` | the armies appear again every S game seconds, a raid after raid, so an AI's spending on defence is tested against pressure that lasts |
-| `--army-raid` | the armies appear eight tiles from the enemy's base, on the side of their own, instead of beside their own: a raid on every base |
+| `--army-raid` | the armies appear eight tiles from the building each one attacks, on the side of its own base, instead of beside their own: a raid on every base, at the same distance from what it came for |
 | `--army-spot X,Y` | the armies appear at this tile, even off the map: a test of units put off it |
 | `--player-ini P=FILE` | player P reads its Age of AI settings from FILE in full, not from `ageofai.ini`: its engine, its AI rows and its units' shot rules ([Age of AI](ageofai.md)). Repeat it for more players. |
 | `--lobby CONTROL=VALUE` | any lobby list, by line name or `#index`, for example `209=#2` |
+| `--stance S,F,T,V` | at game second S, player F's stance toward player T becomes V: 0 ally, 1 enemy. Repeat it for more changes. This drives the diplomacy rule the way a player's declaration does ([Age of AI](ageofai.md)). |
+| `--wall S[,N]` | at game second S each defender gets N wall segments (default 9) three tiles from the next attacker's base, laid across the direction to that attacker's enemy. The attacker sees them and its land routes cross them, which exercises the breach rule ([Age of AI](ageofai.md)). |
+| `--starve P,S` | at game second S kill every citizen of player P, the way a lost town does. Repeat it for more times. This drives the surrender rule ([Age of AI](ageofai.md)). |
+| `--raze P,S` | as `--starve`, and also kill P's Town Centers, Capitols and Settlements so it cannot train a citizen. Use `--keep-alive` with it so the game does not end when the last centre falls. |
+| `--keep-alive P` | keep P in the game when its last Town Center falls, so the surrender rule's own timer can run. Repeat it for more players. |
 | `--game-seconds S` | the game time at which the run stops (default 2700) |
 | `--sample-seconds S` | the game time between report samples (default 30) |
 | `--wall-timeout S` | the wall time after which the run gives up (default 3600) |
@@ -143,6 +185,35 @@ units of each kind on every computer player at game second 60, and they fight at
 to 7 within ten game minutes. The report has a `projectiles` object: the shots of plain projectiles (`fired`), how many
 the aim-ahead fix led (`led`), and the projectiles that came down on a unit (`hit_unit`) and on the ground (`hit_ground`).
 A change to aiming or combat shows as a change of the share `hit_unit / (hit_unit + hit_ground)`.
+
+## Diplomacy
+
+Ordinary games set no stance change, so `answer_war` records checks but never a transition. To exercise it, make two
+computer players allies and then declare war for one of them with
+`--stance 1,2,3,0 --stance 1,3,2,0 --stance 60,2,3,1`. Player 3 then answers player 2's declaration, and its
+`intel.answer_war_transitions` and `intel.answer_war_answers` become 1 where a run with `answer_war=0` stays at 0.
+Use a 600-second game: the two scores and traces separate after the answer, not at the declaration.
+
+## Walls
+
+`--wall 60` gives each defender a line of nine wall segments three tiles from the next attacker's base, laid across the
+direction to that attacker's enemy. The attacker sees the walls beside its own base, and its land attack routes cross
+them. With `--preset fights --wall 60 --game-seconds 1200`, a run with `attack_breach=1` records crossings and chosen
+segments in `intel.breach_crossed` and `intel.breach_picked`; the same run with `attack_breach=0` records none. The
+segments and sightings are in `intel.breach_walls` and the route checks in `intel.breach_calls`.
+
+## Surrender
+
+`--starve P,S` kills player P's citizens at a game second, and `--raze P,S` also kills its Town Centers, Capitols and
+Settlements so it cannot train more. An AI that retrains between strikes resets the surrender timer, so `--raze` is the
+way to reach the 60-second no-centre rule. The game ends as soon as a player loses its last Town Center, so add
+`--keep-alive P` to hold that player in until the surrender rule's own result ends it.
+
+With `--lobby 183=#2 --map-size Tiny --game-seconds 300 --raze 2,30 --keep-alive 2`, a run whose `ageofai.ini` has
+`surrender=1` records `intel.surrender_no_citizen=61`, `surrender_at_war=61` and `surrender_resigned=1` for player 2,
+and the game ends at millisecond 91875. The same run with `surrender=0` records zero for every `surrender_*` counter
+and plays to the time cap. The traces match until the resign. In an ordinary game the rule never fires, so the setting
+changes nothing in the default benchmark.
 
 The report of every computer player has `gatherers` and `wanted`: the citizens on food, wood, stone, gold and iron, and
 the number the player's worker plan wants on each. A large gap, as with iron at 33 wanted and 11 working, means the

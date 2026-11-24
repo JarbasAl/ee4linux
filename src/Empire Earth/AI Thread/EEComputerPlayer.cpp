@@ -244,6 +244,9 @@ void EEComputerPlayer::WorkOutPopulation()
             this->mPopulationCap = UMFloatToLong(this->GetPopLimitAdjustment() * this->mPopulationCap);
         } else
             this->mPopulationCap = theOwn;
+        // Age of AI: pop_follow_human=0 replaces the game's weighted cap with the player's own game limit
+        // (upstream hook_pop_cap). With classic pacing off the game already uses that limit and does not call here.
+        AgeOfAI::ApplyPopCap(this, theOwn);
     }
 }
 
@@ -1051,6 +1054,8 @@ bool EEComputerPlayer::CanAfford(EETechnology* inTechnology, long inUnitType, lo
 // When another player is in a later epoch, pulls the AI's next epoch advance forward to a random catch-up time
 void EEComputerPlayer::CatchUpEpoch(EEPlayer* inPlayer)
 {
+    if (AgeOfAI::EpochCatchUpSkipped(this))
+        return;
     unsigned long theNext = this->mCivilizationManager->mNextEpochAdvanceTime;
     unsigned long theNow = gPhysics->mGameTime;
     long theMinimum;
@@ -5575,15 +5580,37 @@ void EEComputerPlayer::Update(unsigned long inTime)
         AgeOfAI::TickEarly(this, inTime);
         AgeOfAI::RatesUpdate(this, inTime);
         AgeOfAI::TickPacing(this, inTime);
+        AgeOfAI::EarlyRequirementsTick(this, inTime);
+        AgeOfAI::ProductionSync(this, inTime);
         AgeOfAI::GatherResearch(this, inTime);
         AgeOfAI::UpgradesRetry(this, inTime);
         AgeOfAI::WoodDrops(this, inTime);
+        AgeOfAI::MineDrops(this, inTime);
         AgeOfAI::CitizensHome(this, inTime);
+        AgeOfAI::GarrisonTick(this, inTime);
         AgeOfAI::DefenceTick(this, inTime);
+        AgeOfAI::SiteFortsTick(this, inTime);
         AgeOfAI::CounterFire(this, inTime);
         AgeOfAI::CounterSiege(this, inTime);
+        AgeOfAI::AntiAirTick(this, inTime);
+        AgeOfAI::AnswerWarTick(this, inTime);
+        AgeOfAI::AnswerFireTick(this, inTime);
+        AgeOfAI::TransportWatchdogTick(this, inTime);
+        AgeOfAI::RaidLeashTick(this, inTime);
+        AgeOfAI::SurrenderTick(this, inTime);
+        AgeOfAI::HospitalTick(this, inTime);
+        AgeOfAI::CoverTick(this, inTime);
+        AgeOfAI::TightBuildTick(this, inTime);
         AgeOfAI::MusterTick(this, inTime);
+        AgeOfAI::HoldTownTick(this, inTime);
         AgeOfAI::OutdatedAttack(this, inTime);
+        AgeOfAI::CitizenAttackScan(this, inTime);
+        AgeOfAI::RetargetTick(this, inTime);
+        AgeOfAI::AvoidLostTick(this, inTime);
+        AgeOfAI::ScoutTick(this, inTime);
+        AgeOfAI::MassWaitTick(this, inTime);
+        AgeOfAI::WalkBackTick(this, inTime);
+        AgeOfAI::CatchUpAIsTick(this, inTime);
     }
     UWideString theUnused1;
     UWideString theUnused2;

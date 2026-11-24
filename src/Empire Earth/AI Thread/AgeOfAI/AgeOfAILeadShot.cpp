@@ -133,6 +133,18 @@ namespace {
 ProjectileCounts sCounts;
 std::map<unsigned long, Lob::State> sLob;   // by unit id; not saved: a loaded game's unit looks again
 
+// A missile's aim, tracked by its unit id (stage.c aim.c g_msl). The target's position between the missile's steps gives
+// its velocity; a target change or a gap (the missile's climb) starts the measurement over. Not saved: a loaded missile
+// measures again.
+struct MissileTrack {
+    EEUnit* mTarget = NULL;
+    unsigned long mFirst = 0, mLast = 0;
+    float mX = 0.0f, mY = 0.0f, mZ = 0.0f;   // the target's position at the last step
+    float mVX = 0.0f, mVY = 0.0f, mVZ = 0.0f;
+    int mNV = 0;                              // velocity samples; aiming waits for the first
+};
+std::map<unsigned long, MissileTrack> sMissile;
+
 float TileHeight(float inX, float inY)
 {
     EEMapTile* theTile = gWorld.mMap->GetTile((long)floorf(inX), (long)floorf(inY));
@@ -226,6 +238,89 @@ void LeadShot(EEComplexUnit* inShooter, EEUnit* inTarget, GE3DPoint& ioAim)
     ioAim.SetX(theX);
     ioAim.SetY(theY);
     sCounts.mLed++;
+}
+
+bool LeadMissilesOn(unsigned long inPlayerID)
+{
+    return GeneralOf(inPlayerID).lead_missiles != 0;
+}
+
+// A homing missile (EEPMMissile::Home) steers to where its moving target will be when it gets there, as upstream's
+// hook_missile_aim. The target's velocity comes from its position changes between steps, averaged over the last two; a
+// target faster than 20 tiles a second looks like a jump (teleport, new unit) and starts the measurement over. The
+// intercept time solves |r + v T| = s T for the missile's top speed s, clamped to 10 s; with no solution the game's own
+// pursuit stays. A target that stands still is left alone. is_vanilla is not ported: as with LeadShot the setting reads
+// the missile owner's [general] rows, so every player needs the same setting in a multiplayer game.
+void LeadMissile(EEComplexUnit* inMissile, EEUnit* inTarget, GE3DPoint& ioAim)
+{
+    if (!LeadMissilesOn(inMissile->mPlayer->mPlayerID) || inTarget == NULL || inTarget == inMissile)
+        return;
+    unsigned long theNow = gPhysics->mGameTime;
+    float theSpeed = inMissile->mStats->GetMaxVelocity();
+    GE3DPoint thePos;
+    inTarget->GetPosition(thePos);
+    GE3DPoint theMissile;
+    inMissile->GetPosition(theMissile);
+    float theRX = ioAim.GetX() - theMissile.GetX(), theRY = ioAim.GetY() - theMissile.GetY(), theRZ = ioAim.GetZ() - theMissile.GetZ();
+    float theDist2 = theRX * theRX + theRY * theRY + theRZ * theRZ;
+    float theDist = sqrtf(theDist2);
+
+    if (sMissile.size() > 8192)
+        sMissile.clear();
+    MissileTrack& theTrack = sMissile[inMissile->mUnitID];
+    if (theTrack.mTarget != inTarget) {
+        theTrack.mTarget = inTarget;
+        theTrack.mNV = 0;
+        theTrack.mFirst = theNow;
+    } else if ((long)(theNow - theTrack.mLast) > 200) {
+        theTrack.mNV = 0;   // the climb, or any gap, starts over
+    } else if (theNow > theTrack.mLast) {
+        float theDT = (float)(theNow - theTrack.mLast) * 0.001f;
+        float theVX = (thePos.GetX() - theTrack.mX) / theDT;
+        float theVY = (thePos.GetY() - theTrack.mY) / theDT;
+        float theVZ = (thePos.GetZ() - theTrack.mZ) / theDT;
+        if (theVX * theVX + theVY * theVY + theVZ * theVZ < 400.0f) {   // under 20 tiles a second
+            if (theTrack.mNV)
+                theTrack.mVX = (theTrack.mVX + theVX) * 0.5f, theTrack.mVY = (theTrack.mVY + theVY) * 0.5f,
+                theTrack.mVZ = (theTrack.mVZ + theVZ) * 0.5f;
+            else
+                theTrack.mVX = theVX, theTrack.mVY = theVY, theTrack.mVZ = theVZ;
+            theTrack.mNV++;
+        } else
+            theTrack.mNV = 0;
+    }
+    theTrack.mTarget = inTarget;
+    theTrack.mLast = theNow;
+    theTrack.mX = thePos.GetX(), theTrack.mY = thePos.GetY(), theTrack.mZ = thePos.GetZ();
+    if (!theTrack.mNV || !(theSpeed > 0.01f))
+        return;
+
+    float theVX = theTrack.mVX, theVY = theTrack.mVY, theVZ = theTrack.mVZ;
+    float theV2 = theVX * theVX + theVY * theVY + theVZ * theVZ;
+    if (theV2 < 0.0025f)   // standing: under 0.05 tiles a second
+        return;
+    float theA = theV2 - theSpeed * theSpeed;
+    float theB = 2.0f * (theRX * theVX + theRY * theVY + theRZ * theVZ);
+    float theT = -1.0f;
+    if (fabsf(theA) < 1e-4f) {
+        if (theB < 0.0f)
+            theT = -theDist2 / theB;
+    } else {
+        float theDisc = theB * theB - 4.0f * theA * theDist2;
+        if (theDisc < 0.0f)
+            return;
+        float theQ = sqrtf(theDisc);
+        float theT1 = (-theB - theQ) / (2.0f * theA), theT2 = (-theB + theQ) / (2.0f * theA);
+        theT = theT1 > 0.0f && (theT1 < theT2 || theT2 <= 0.0f) ? theT1 : theT2;
+    }
+    if (!(theT > 0.0f))
+        return;
+    if (theT > 10.0f)
+        theT = 10.0f;
+    ioAim.SetX(ioAim.GetX() + theVX * theT);
+    ioAim.SetY(ioAim.GetY() + theVY * theT);
+    ioAim.SetZ(ioAim.GetZ() + theVZ * theT);
+    sCounts.mMissilesLed++;
 }
 
 bool LobEachShotOn(unsigned long inPlayerID)

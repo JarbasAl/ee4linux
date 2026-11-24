@@ -7,14 +7,21 @@
 #define AGEOFAI_AGEOFAI_H
 
 #include "AgeOfAIIntel.h"
+#include "AgeOfAITrainQueueRules.h"
+#include "AgeOfAIFeedTargetsRules.h"
+
+template <class T> class U2DPoint;
+typedef U2DPoint<long> EETileCoordinate;
 
 class EECPBuildManager;
 class EEComputerPlayer;
 class EETechTreeEpoch;
 class EEPlayer;
 class EECPResourceManager;
+class EECPAttackSubGroup;
 class EEComplexUnit;
 class EEUnit;
+class EEUnitClass;
 class GE3DPoint;
 
 namespace AgeOfAI {
@@ -56,10 +63,26 @@ bool SeenBy(EEUnit* inUnit, EEPlayer* inViewer);   // attack.c seen_by: what the
 // many were led, and the projectiles that came down on a unit and on the ground (the simulator's report).
 bool LeadTargetsOn(unsigned long inPlayerID);   // the shooter's owner's [general] lead_targets
 void LeadShot(EEComplexUnit* inShooter, EEUnit* inTarget, GE3DPoint& ioAim);
+// Homing missiles ([general] lead_missiles, off in the shipped file). LeadMissile moves a missile's steering point to
+// where its moving target will be when the missile gets there. EEPMMissile::Home calls it after it finds the drop target.
+bool LeadMissilesOn(unsigned long inPlayerID);
+void LeadMissile(EEComplexUnit* inMissile, EEUnit* inTarget, GE3DPoint& ioAim);
 struct ProjectileCounts {
-    unsigned long mFired, mLed, mHitUnit, mHitGround;
+    unsigned long mFired, mLed, mHitUnit, mHitGround, mMissilesLed;
 };
 ProjectileCounts& Projectiles();
+
+// Spreading missiles ([general] spread_missiles, on in the shipped file). A launcher whose target is already covered by
+// missiles in flight holds its shot or sends it at another enemy of the same family. EEUCMissile::LaunchProjectile and
+// EEPMMissile::Home keep the in-flight shares, EEUnitClass::FireShot asks before it finds the drop location.
+bool SpreadMissilesOn(unsigned long inPlayerID);
+void NoteMissileLaunch(EEComplexUnit* inMissile);
+void NoteMissileStep(EEComplexUnit* inMissile, EEUnit* inTarget);
+EEUnit* SpreadBeforeFire(EEComplexUnit* inShooter, bool& outHold);   // alternate target, or outHold: keep the shot
+struct SpreadCounts {
+    unsigned long mLaunched, mHeld, mSwitched;
+};
+SpreadCounts MissileSpreadCounts();   // the simulator's report
 
 // Lobbing shot by shot ([general] lob_each_shot; AgeOfAILob.h). EEUGAttackUnit calls LobBeforeShot at the start of each
 // attack of a unit that may fire over walls.
@@ -77,7 +100,68 @@ EarlyCounts EarlyCountsOf(unsigned long inPlayerID);
 // from its update, EconTargets from EECPResourceManager::Update after the game's count of wanted gatherers.
 void OnIncome(EEComputerPlayer* inPlayer, long inResource, long inAmount);
 void RatesUpdate(EEComputerPlayer* inPlayer, unsigned long inNow);
-void EconTargets(EECPResourceManager* inResources);
+void EconTargets(EECPResourceManager* inResources, unsigned long inNow);
+// RECOVERY (econ.c recovering, [ai_base] recover_economy, on in the shipped file): after the Copper Age, while the
+// workforce is under min_workforce, put two thirds of the wanted gatherers on food by draining the largest non-food
+// targets. This is the worker split only; the stock and soldier-training parts of upstream's recovery wait for the
+// budget and training layers. EECPResourceManager::Update calls it with the other target passes, every 5 game seconds.
+struct RecoverCounts {
+    unsigned long mChecks, mStarts, mEnds, mMoves;   // gated passes, recovery starts and ends, workers moved to food
+    unsigned long mOn, mHadEconomy;                  // latest state of the two latches, for the report
+};
+RecoverCounts RecoverCountsOf(unsigned long inPlayerID);
+// The slot tallies of the mines near a drop site (all, and the home continent's), for the fill pass
+void MineSlots(EEComputerPlayer* inPlayer, unsigned long inNow, long outSlots[7], long outHomeSlots[7]);
+// FILL THE MINES (mines.c mine_fill, off in the shipped file): turn spare wood- and food-gatherers toward metal mines
+void MineFill(EECPResourceManager* inResources, unsigned long inNow);
+// LATE FOOD TARGET (econ.c late_targets food_to_metals, off in the shipped file): cap the farmers' target while food piles up
+void LateFoodTargets(EECPResourceManager* inResources, unsigned long inNow);
+// MORE GRANARIES (econ.c more_granaries, [ai_base] more_granaries): ask the build manager for a granary when the food
+// target and the finished farms call for one. Called from EECPResourceManager::Update.
+void MoreGranaries(EECPResourceManager* inResources, unsigned long inNow);
+struct GranaryCounts {
+    unsigned long mChecks, mRequested;   // passes run, granary requests made
+};
+GranaryCounts GranaryCountsOf(unsigned long inPlayerID);
+// FISHING BOAT (navy.c hook_fish_type, [ai_base] fishing_boat): the game picks a boat by epoch alone and from the World
+// War I age on asks for one it cannot train. PickFishingBoat returns the newest available fishing boat class instead.
+// EECPCivilizationManager::GetFishingBoatClass calls it for Age of AI players only.
+long PickFishingBoat(EEPlayer* inPlayer, long inGameClass);
+struct FishingCounts {
+    unsigned long mCalls, mPicked, mChanged;   // gate calls, newest-boat picks, picks that differ from the game's
+    long mLastClass;                           // the class last returned
+};
+FishingCounts FishingCountsOf(unsigned long inPlayerID);
+// MINE CAP (citizens.c cz_mine_cap, [ai_base] citizen_mine_cap on by default): the citizens wanted cannot exceed the
+// seen mines times the gatherer slots per mine (table 0x16) and a half, nor half the population cap. From the Copper
+// Age on, the count is refreshed every 30 game seconds. EECPUnitManager::GetWantedCitizens calls it for Age of AI players.
+long MineCapWantedCitizens(EEComputerPlayer* inPlayer, long inCount);
+struct MineCapCounts {
+    unsigned long mCalls, mCapped, mTime;   // queries seen, queries the cap reduced, last refresh
+    long mMines, mCap;                      // last count of seen mines, last cap
+};
+MineCapCounts MineCapCountsOf(unsigned long inPlayerID);
+// PRODUCTION SYNC (econ.c prod_sync, off in the shipped file): repair the in-production count after a game load
+void ProductionSync(EEComputerPlayer* inPlayer, unsigned long inNow);
+// TRAIN QUEUE (econ.c queue_room and train_call, [ai_base] train_queue, off in the shipped file): EECPUnitManager's
+// StartProduction cuts a request to what keeps each finished producer's one-in-the-making plus queue at this many.
+// Citizens keep the game's own limit. The producer list is already the built producers of the type in the request's
+// town, or on its continent; upstream uses every built producer the player owns.
+bool TrainQueueOn(unsigned long inPlayerID, EEUnitClass* inClass);
+TrainQueueRules::Decision TrainQueueCap(unsigned long inPlayerID, long inCount, long inRoom, bool inHaveProducers,
+                                         long& outCount);
+struct TrainQueueCounts {
+    unsigned long mCalls, mCuts, mCutUnits, mRefusals;   // gated requests, requests cut, units cut off, requests refused
+};
+TrainQueueCounts TrainQueueCountsOf(unsigned long inPlayerID);
+// FOOD TARGET (citizens.c cz_feed and the FEED half of cz_targets, [ai_base] citizen_plan food_pays, off in the
+// shipped file): from the Copper Age the food target gets the gatherers that pay the finished producers training the
+// citizens still missing. Only targets change; the workers, the mine-slot pass and the goal hook are not ported.
+void FeedTargets(EECPResourceManager* inResources, unsigned long inNow);
+struct FeedTargetsCounts {
+    unsigned long mChecks, mMissing, mProducers, mFeed, mMoved, mFromWood, mFromMetals;
+};
+FeedTargetsCounts FeedTargetsCountsOf(unsigned long inPlayerID);
 // The best tower of the line the player can build now (0: none), whether the build manager has one queued, and the player's
 // towers within a square around a tile
 long NewestTowerOf(EEPlayer* inPlayer);
@@ -85,13 +169,138 @@ bool TowerIsQueued(EECPBuildManager* inBuild);
 void TowerCounts(EEPlayer* inPlayer, long inX, long inY, long inRadius, int& outFinished, int& outAll);
 // The defence layout's extra towers (DefenceTick, every 20 game seconds)
 void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+// Anti-air buildings (defence.c anti_air with aa_ahead, shipped on in [ai_base]): every 5 game seconds an Age of AI
+// player counts the enemy aircraft it sees by its drop sites. From World War I it also prepares ahead when an enemy
+// reaches that age. The port queues the newest AA building it can build; AA unit training needs the missing budget layer.
+void AntiAirTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct AntiAirCounts {
+    unsigned long mChecks, mNear, mAny, mAhead, mQueued, mSkipped;
+};
+AntiAirCounts AntiAirCountsOf(unsigned long inPlayerID);
+// Answer war (diplo.c, shipped on in [ai_base]): when a player that was at peace declares war on an Age of AI player,
+// the player answers with its own enemy stance a few seconds later. Opinion, history, chat lines and revenge are not ported.
+void AnswerWarTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct AnswerWarCounts {
+    unsigned long mChecks, mTransitions, mScheduled, mAnswers, mCancelled;
+};
+AnswerWarCounts AnswerWarCountsOf(unsigned long inPlayerID);
+// Surrender (diplo.c, shipped on in [ai_base]): an AI with no citizens left gives up after a minute when it cannot
+// train another one, or after three minutes in any case while at war. Whom it resigns to, its army's power, tribute and
+// blocks are not ported. The game's own defeat result ends the AI.
+void SurrenderTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct SurrenderCounts {
+    unsigned long mChecks, mCitizens, mNoCitizen, mCanTrain, mAtWar, mResigned;
+};
+SurrenderCounts SurrenderCountsOf(unsigned long inPlayerID);
+// Fall back's hospital bit (cover.c, shipped on): a damaged, expensive land unit walks to its nearest own Hospital and
+// stays until it heals. Fleet cover and giving an attack up need the landing and attack-group layers.
+void HospitalTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct HospitalCounts {
+    unsigned long mChecks, mHospitals, mSent, mHolds, mDone;
+};
+HospitalCounts HospitalCountsOf(unsigned long inPlayerID);
+bool HospitalHeld(EEUnit* inUnit);
+// Fall back's tower-cover bit (cover.c, shipped on): a land unit losing a fight with enemies near walks to the nearest
+// own defence under no known enemy gun, then a Hospital, then the base, and rests there. Upstream's END and SEA bits
+// (giving an attack up, fleets under cover) are not ported.
+void CoverTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct CoverCounts {
+    unsigned long mChecks, mNear, mFights, mSent, mHolds, mBack, mGaveUp, mGaveBack;
+};
+CoverCounts CoverCountsOf(unsigned long inPlayerID);
+bool CoverHeld(EEUnit* inUnit);
+// Coast towers (defence.c coast_spot, [ai_base] coast_towers, off by default): where citizens work near the sea, the
+// defence layout puts its towers first. Upstream also requires navy_islands; the port uses the coastal-work test alone.
+struct CoastCounts {
+    unsigned long mChecks, mSites, mCells, mSea, mPlaced;
+};
+CoastCounts CoastCountsOf(unsigned long inPlayerID);
+// Site forts (defence.c site_forts, [ai_base] site_forts, off by default): a fort round the most-worked mine, one
+// corner tower per twenty-second tick. Upstream's wall runs and the open side towards the base are not ported.
+struct SiteFortCounts {
+    unsigned long mChecks, mSites, mPicked, mTowers, mBusy, mWait, mSkipped, mExposed;
+};
+SiteFortCounts SiteFortCountsOf(unsigned long inPlayerID);
+void SiteFortsTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+// True while a fort of this player still has corner towers to order: fort towers come before the layout's own.
+bool SiteFortsBusy(EEComputerPlayer* inPlayer, unsigned long inNow);
+// The danger memory's near test, exposed for the site-fort exposure bonus.
+int HurtNearAt(unsigned inPlayerIndex, long inX, long inY);
+// Population cap (econ.c hook_pop_cap, [ai_base] pop_follow_human, off for the shipped medium and hard): with the game
+// following the humans, 0 gives the AI its own game limit. Inert while the AI ignores the other players. The last
+// weighted cap and the last resulting cap are those of the most recent override.
+struct PopCapCounts {
+    unsigned long mChecks, mOverrides, mWeighted, mCap;
+};
+PopCapCounts PopCapCountsOf(unsigned long inPlayerID);
+void ApplyPopCap(EEComputerPlayer* inPlayer, long inGameLimit);
+// Units before buildings (engine/unitsfirst.c units_first, [general] units_first, off in the shipped file): a unit
+// that picked a building for itself turns on a nearby enemy unit between its shots. Counts of looks and turns.
+struct UnitsFirstCounts {
+    unsigned long mChecks, mSwitched;
+};
+bool UnitsFirstOn(unsigned long inPlayerID);   // the unit's owner's [general] units_first
+UnitsFirstCounts UnitsFirstCountsOf(unsigned long inPlayerID);
+// Answering fire (engine/unitsfirst.c answer_fire, [general] answer_fire, off at the shipped game value): an idle
+// fighter shot from beyond its reply range goes for the nearby enemy whose attack goal aims at it. The scan runs
+// once every 500 game milliseconds for the players the setting names. Counts of looks and goals sent.
+struct AnswerFireCounts {
+    unsigned long mChecks, mSent;
+};
+void AnswerFireTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+AnswerFireCounts AnswerFireCountsOf(unsigned long inPlayerID);
+// Stuck-transport watchdog (transports.c tw_dog, [ai_base] transport_watchdog, off in the shipped file): a transport
+// stalled with a goal or cargo lets not-coming passengers go after 30 s, or leaves Idle after 20 s with its unload
+// goal and cargo. The scan runs once a game second for the AI players' transports.
+struct TransportWatchdogCounts {
+    unsigned long mChecks, mDrops, mKicks;
+};
+void TransportWatchdogTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+TransportWatchdogCounts TransportWatchdogCountsOf(unsigned long inPlayerID);
+// Raid leash (armies.c at a->out == 2, [ai_base] raid_leash, off in the shipped file): a member of a force attacking a
+// spot that chases more than AR_DONE + raid_leash tiles from that spot is marked out of the fight and moved to the
+// force's rally point. The attack groups' location tasks stand in for upstream's raid mission.
+struct RaidLeashCounts {
+    unsigned long mGroups, mChecks, mCalled;
+};
+void RaidLeashTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+RaidLeashCounts RaidLeashCountsOf(unsigned long inPlayerID);
+// Scouting unseen land (towns.c scout, [ai_base] towns=scout, off by default): the fastest idle soldier near the base
+// walks to the nearest cell it has never looked at on its land, behind the front its known enemy buildings hold. It
+// turns back when raiders come in sight or a known defence covers it. The town planner and its site search are absent.
+void ScoutTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct ScoutCounts {
+    unsigned long mChecks, mTowns, mFoes, mCells, mPicked, mSent, mBack;
+};
+ScoutCounts ScoutCountsOf(unsigned long inPlayerID);
 void TickPacing(EEComputerPlayer* inPlayer, unsigned long inNow);
+// EARLY REQUIREMENTS (econ.c early_requirements, off in the shipped file): ask the research manager for the new things
+// the next epoch needs before the attempt, then renew the ask after three minutes or restart the wait on progress.
+// The port has no unit training budget, so the budget's requirement-unit branch is not ported. EEAIGPG calls this each
+// tick; the decoration fix drops "x ..." objects from the epoch's requirement candidates once per tech tree.
+void EarlyRequirementsTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct EarlyReqCounts {
+    unsigned long mChecks, mAsks, mProgress, mRenews, mDecoration;   // passes, first asks, progress, renewals, decoration
+};
+EarlyReqCounts EarlyReqCountsOf(unsigned long inPlayerID);
+// The game pulls an AI's next-epoch attempt forward when a human reaches an epoch. epoch_pacing=timer goes without it.
+bool EpochCatchUpSkipped(EEComputerPlayer* inPlayer);
+// Another AI reaching a new epoch pulls this AI's attempt forward too (econ.c catch_up_ais, on in the shipped file).
+// Checked every two game seconds; the first sighting of a player records its epoch without a catch-up call.
+void CatchUpAIsTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct CatchUpAIsCounts {
+    unsigned long mChecks, mCalls;   // two-second checks, catch-up calls made for a newer AI
+};
+CatchUpAIsCounts CatchUpAIsCountsOf(unsigned long inPlayerID);
 void GatherResearch(EEComputerPlayer* inPlayer, unsigned long inNow);
 // An epoch's line upgrades (kind 7): false when the game researches them itself, true when they are scheduled for research
 // The game's placement test of a building type on every tile of its footprint, inside the map's border
 bool CanPlace(EEPlayer* inPlayer, long inType, long inX, long inY);
 // The drop sites by the forests (WoodDrops, called once a game second)
 void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow);
+// The drop site by the home continent's far mine (mines.c mine_drops, mine_fill mine_settlement or citizen_plan
+// mine_settlement, both off in the shipped file), called once a game second
+void MineDrops(EEComputerPlayer* inPlayer, unsigned long inNow);
 // The settings the player's own fields take, once per player on its first update
 void ApplySettings(EEComputerPlayer* inPlayer);
 void UpgradesRetry(EEComputerPlayer* inPlayer, unsigned long inNow);
@@ -104,12 +313,33 @@ long EarlyTowerStone(EEComputerPlayer* inPlayer);
 EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, bool inBackwards);
 void MineCrowds(EECPResourceManager* inResources);
 void Rebalance(EECPResourceManager* inResources);
+// Before the assignment (food.c food_hunt, food_plan hunt_near): idle citizens hunt animals near a drop site while the
+// player is in the Stone Age. Off by default.
+void FoodHunt(EECPResourceManager* inResources);
 // After the rebalance (food.c food_pull): gatherers move to forage bushes while food is 2 or more short of its target
 void FoodPull(EECPResourceManager* inResources);
+// WILD SETTLEMENT (food_plan wild_settlement, off in the shipped file): a Settlement by rich wild food far from the town
+void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow);
 struct FoodCounts {
     unsigned long mPulled;   // gatherers moved to food
 };
 FoodCounts FoodCountsOf(unsigned long inPlayerID);
+// NO FIELDS WILD (food_plan no_fields_wild, off in the shipped file): field foundations keep their builders while a
+// free bush or animal is in reach, from the Copper Age. Called before the gather assignment; upstream's fish branch is
+// not ported.
+bool WildBeforeFields(EECPResourceManager* inResources);
+struct WildFieldCounts {
+    unsigned long mCalls, mChecks, mBush, mAnimal, mDeferred;   // hook calls, gated passes, free bushes, free animals, field passes deferred
+};
+WildFieldCounts WildFieldCountsOf(unsigned long inPlayerID);
+// Town work ([ai_base] town_work, off in the shipped file; after every gather assignment): a citizen sent to a site
+// whose nearest drop site is far from where it stands is moved to work its own town can reach. The training-time homes
+// of upstream are not ported, so the citizen's tile at assignment stands in for its home.
+struct TownWorkCounts {
+    unsigned long mSwapped, mAway;
+};
+void TownWork(EECPResourceManager* inResources);
+TownWorkCounts TownWorkCountsOf(unsigned long inPlayerID);
 
 // What is dangerous for the citizens (attack.c): SiteDanger is what the mine, food and wood searches refuse; RaidersKnown is raiders in
 // sight or remembered; SafetyTick (every 4 seconds, from the resource manager's update) refreshes the defences seen and the places of
@@ -119,8 +349,19 @@ bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0);
 bool RaidersKnown(EEPlayer* inPlayer, long inX, long inY, int inR0);
 // Idle citizens far from the towns walk to the nearest safe one; the base follows the towns (CitizensHome, every 3 game seconds)
 void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow);
+// Settlement upgrades (garrison.c garrison_tick, [ai_base] garrison_upgrades on in the shipped file): every 20 game seconds a
+// built town with garrison room, metal mines in reach and no raiders nearby takes spare citizens on its land. The port uses
+// idle citizens once the AI trains no more, and woodcutters while the wood stock is over 5000; upstream's food-income
+// branch waits for the food-rate layer. The game's own town and capitol upgrade timers are held while no citizen is spare.
+void GarrisonTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct GarrisonCounts {
+    unsigned long mChecks, mOrders, mCitizens, mIdle, mWood, mHolds;
+};
+GarrisonCounts GarrisonCountsOf(unsigned long inPlayerID);
 // An enemy army in the base: the defenders gather beyond it, then strike (MusterTick, every 3 game seconds)
 void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+// Hold the town ([ai_base] hold_town, off by default): keep home soldiers from trickling out, sortie when strong, hold/retreat when weak
+void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 // A building with a ground attack, and its range and attack (attack.c defence_stats); a player the stances make an enemy (is_enemy)
 bool DefenceStats(EEUnit* inUnit, float& outRange, float& outAttack);
 bool IsEnemyOf(EEPlayer* inPlayer, EEPlayer* inOther);
@@ -133,6 +374,170 @@ struct OutdatedCounts {
 };
 OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID);
 
+// Citizen attacks ([ai_base] citizen_attacks): at the shipped 0 the mod calls off an attack group made at least half of
+// citizens, as upstream's citizen_attack_scan; the setting's 1 allows the original citizen attack. EEComputerPlayer::Update
+// calls the scan every 5 game seconds. Unlike the other parsed-but-inert rows, this one is ACTIVE at the shipped 0: porting
+// it is a deliberate re-rating, since the port had no call-off at all and upstream's shipped setting calls one off.
+void CitizenAttackScan(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct CitizenAttackCounts {
+    unsigned long mCalls, mCalled;   // scans made, citizen groups sent home and disbanded
+};
+CitizenAttackCounts CitizenAttackCountsOf(unsigned long inPlayerID);
+
+// The game's walls ([ai_base] game_walls): the shipped 0 skips the game's automatic wall ring for an Age of AI player;
+// the mod's own walls come through defence_layout's build_wall, not that update. A 1 leaves the game's update running.
+// EECPWallManager::Update reads the gate on every call and counts the calls it skips and the calls it runs.
+struct WallCounts {
+    unsigned long mSkipped, mRan;
+};
+bool GameWallsOn(unsigned long inPlayerID);   // [ai_base] game_walls for this player's settings
+void NoteWallUpdate(unsigned long inPlayerID, bool inSkipped);
+WallCounts WallCountsOf(unsigned long inPlayerID);
+
+// Retargeting ([ai_base] attack_retarget, off in the shipped file): an attack group whose target has left the game or
+// stopped being an enemy picks the enemy building nearest the group, and the group and its subgroups take that player
+// as their new target. EEComputerPlayer::Update calls the scan every game tick; it acts every 10 seconds.
+void RetargetTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct RetargetCounts {
+    unsigned long mScans, mPicked, mSubGroups;   // scans made, groups retargeted, subgroups re-pointed
+};
+RetargetCounts RetargetCountsOf(unsigned long inPlayerID);
+
+// A wave's goal (stage.c wave_focus, [ai_base] wave_focus off in the shipped file): every land route of an attack group
+// goes to one enemy building at a time, on the same land as the route, until that building dies or the land changes.
+// EECPASGLand::RequestPath calls it before the game costs the route. ioTo carries the goal tile back to the caller.
+void WaveFocusRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY);
+struct WaveFocusCounts {
+    unsigned long mCalls, mSet, mMoved, mKept, mNone;   // routes seen, goals chosen, goals changed, goals already reached, no goal found
+};
+WaveFocusCounts WaveFocusCountsOf(unsigned long inPlayerID);
+
+// A weak building near a threatened goal (attack.c find_weak_spot, [ai_base] attack_weak_spots on by default): when a
+// land route's goal is an enemy building under known defences, the route goes to a seen enemy building of the same land
+// mass within attack_weak_spot_radius that no known defence covers. EECPILocation::SetUnit records the new goal.
+void WeakSpotRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY);
+struct WeakSpotCounts {
+    unsigned long mCalls, mThreatened, mPicked;   // routes seen, goals under known defences, goals changed
+};
+WeakSpotCounts WeakSpotCountsOf(unsigned long inPlayerID);
+
+// When a land route crosses a known enemy wall, break through it away from known tower range instead of piling up in
+// front of it (attack.c find_breach, [ai_base] attack_breach on by default). The route follows the wall up to 60 tiles
+// and targets the segment with the shortest start -> wall -> goal detour that no known defence covers. EECPASGLand::
+// RequestPath calls it after the weak spot rule. ioTo carries the wall tile back to the caller.
+void BreachRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY);
+struct BreachCounts {
+    unsigned long mCalls, mCrossed, mPicked, mWalls;   // routes seen, routes crossing a known wall, walls chosen, walls seen
+};
+BreachCounts BreachCountsOf(unsigned long inPlayerID);
+
+// A build request the build manager cannot place three rounds running leaves the queue, so a request stuck on a
+// blocked spot cannot hold up the later epoch queues (econ.c build_fix, [ai_base], on by default). The build manager
+// calls BuildFixResult after each placement attempt; the return says this failure used up its three strikes. The
+// upstream 395 -> 43 settlement remap is not needed here: the port's build lists never contain type 395.
+bool BuildFixResult(unsigned long inPlayerID, unsigned long inType, bool inPlaced);
+struct BuildFixCounts {
+    unsigned long mAttempts, mFails, mDropped;   // placement rounds, rounds with no placement, requests dropped
+    unsigned long mTopType, mTopFails;           // unit class that failed most, and its failure count
+};
+BuildFixCounts BuildFixCountsOf(unsigned long inPlayerID);
+
+// Packed buildings (packing.c, [ai_base] tight_build on by default): a production building goes to a free spot near
+// the base that touches the most of the player's own production buildings, instead of the game's spread-out search.
+// EECPBuildManager::StartBuilding calls TightBuildSite before FindSite; the game's CanBuildAt validates each spot, so
+// the reduced port leaves upstream's drop-site, mine, tree, gate and raider clearance to that check. TightBuildTick
+// resets the counters when a game restarts in the same process.
+bool TightBuildSite(EECPBuildManager* inManager, long inUnitClass, EETileCoordinate& outTile);
+void TightBuildTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct TightBuildCounts {
+    unsigned long mCalls, mSites;   // packed placement attempts, attempts that found a spot
+};
+TightBuildCounts TightBuildCountsOf(unsigned long inPlayerID);
+
+// The route cost of known enemy defences (attack.c avoid_towers, [ai_base] avoid_towers on by default): a land
+// attack route pays extra for each subsector inside their reach. The port costs a subsector where upstream costs a
+// tile; the margin and the weight come from the settings. EEAIGPGModifierLandAttackSubGroupRoutePlanner::GetCost
+// calls this for an Age of AI player only.
+long AvoidTowerRouteCost(unsigned long inPlayerID, long inX, long inY);
+struct AvoidTowerCounts {
+    unsigned long mCalls, mPenalised, mCost;   // route steps seen, steps in range, cost added
+};
+AvoidTowerCounts AvoidTowerCountsOf(unsigned long inPlayerID);
+
+// A ram's target is guarded (attack.c guarded and hook_asgu_score, [ai_base] attack_siege): enemy land soldiers within
+// 5 tiles of it make the ram wait instead of scoring the target. EECPAttackSubGroupUnit::ScoreTarget calls this for a
+// land ram only; AgeOfAIDanger.cpp owns the setting, the engine gate and the counters.
+bool RamTargetGuarded(EEPlayer* inPlayer, long inX, long inY);
+struct RamWaitCounts {
+    unsigned long mCalls, mWaits;   // guarded tests, targets refused
+};
+RamWaitCounts RamWaitCountsOf(unsigned long inPlayerID);
+
+// Enemy aircraft beyond a land soldier's reach (attack.c hook_asgu_score, [ai_base] attack_ignore_air): the scorer
+// refuses them so an attack does not chase planes circling over their own town. In reach they stay targets.
+bool AirTargetOutOfReach(EEPlayer* inPlayer, EEComplexUnit* inTarget, EEComplexUnit* inScorer);
+struct AirSkipCounts {
+    unsigned long mCalls, mSkipped;   // aircraft targets scored, targets refused as out of reach
+};
+AirSkipCounts AirSkipCountsOf(unsigned long inPlayerID);
+
+// The sum of known defences covering a tile (attack.c threat_at, [ai_base] avoid_towers_margin): the number the
+// route cost and the attack leash use. Unlike AvoidTowerRouteCost this is not gated by avoid_towers.
+float ThreatAt(unsigned long inPlayerID, long inX, long inY);
+
+// A land attack does not chase an enemy standing in known tower range unless its own goal is there (attack.c
+// hook_asgu_score, [ai_base] attack_leash). EEAIGPG calls this with the target and the subgroup goal tiles.
+bool LeashSkipsTarget(EEPlayer* inPlayer, long inX, long inY, long inGoalX, long inGoalY);
+struct LeashCounts {
+    unsigned long mCalls, mSkipped;   // leash tests, enemies left alone
+};
+LeashCounts LeashCountsOf(unsigned long inPlayerID);
+
+// Lost fights (cover.c cv_zones and attack.c hook_asgu_score, [ai_base] avoid_lost_fights with danger_routes): a cell
+// where the player's side loses the fight is a zone, and a land soldier does not pick a target inside it beyond its own
+// range + 2. AvoidLostTick refreshes the zones every four game seconds; EEAIGPG calls LostZoneSkipsTarget for a target.
+// Upstream's danger map is held here as a small list of cells. The staging and landing checks are not ported. With
+// [ai_base] fight_memory on, fresh remembered enemy soldiers mark cells and join the foe side (cover.c cv_mark_mem,
+// cv_foe_mem); the extended search for long-range remembered guns is not ported.
+void AvoidLostTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+bool LostZoneSkipsTarget(EEPlayer* inPlayer, EEComplexUnit* inScorer, EEComplexUnit* inTarget);
+struct AvoidLostCounts {
+    unsigned long mChecks, mSkipped, mInReach;   // target tests, targets refused, targets inside a zone but in reach
+};
+AvoidLostCounts AvoidLostCountsOf(unsigned long inPlayerID);
+struct AvoidLostZoneCounts {
+    unsigned long mRefreshes, mCells, mZones;    // refreshes, cells with a fight seen, cells marked lost (capped)
+    unsigned long mMemCells, mMemFoes;          // cells marked from memory, remembered foes added to a cell's foe side
+};
+AvoidLostZoneCounts AvoidLostZoneCountsOf(unsigned long inPlayerID);
+
+// A land soldier does not pick a target more than army_mass_tether tiles from its subgroup's pack unless the target is
+// within its own range + 2 tiles (mass.c mass_tether, [ai_base] army_mass=tether; default off). The pack is the middle
+// of the subgroup's own members; upstream uses the members away from base. only_buildings limits the rule to enemy
+// buildings and forts. EEAIGPG calls this with the subgroup, the scorer and the target.
+bool TetherSkipsTarget(EEPlayer* inPlayer, EECPAttackSubGroup* inGroup, EEComplexUnit* inScorer, EEComplexUnit* inTarget);
+struct TetherCounts {
+    unsigned long mCalls, mSkipped;   // tether tests, targets refused as too far from the pack
+};
+TetherCounts TetherCountsOf(unsigned long inPlayerID);
+
+// While the known enemy armies are stronger than army_mass_ratio percent of the player's land army, an attack due soon
+// waits, up to army_mass_wait minutes (mass.c ms_wait, [ai_base] army_mass=wait_stronger; default off). The game's next
+// attack time is pushed out 20 seconds at a time. EEAIGPG calls this once per AI tick.
+void MassWaitTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct MassWaitCounts {
+    unsigned long mChecks, mWaits, mGoes, mWaited;   // due-time checks, new waits, releases, extensions (5 per push, as upstream)
+};
+MassWaitCounts MassWaitCountsOf(unsigned long inPlayerID);
+
+// REGROUP, the walk_back bit of army_mass (mass.c ms_tether; default off). Every 2 game seconds a chasing land soldier
+// in a fighting pack past the tether walks back to the pack. EEAIGPG calls this once per AI tick.
+void WalkBackTick(EEComputerPlayer* inPlayer, unsigned long inNow);
+struct WalkBackCounts {
+    unsigned long mChecks, mSubGroups, mPacks, mRegrouped;   // ticks, land subgroups, out fighting packs, orders given
+};
+WalkBackCounts WalkBackCountsOf(unsigned long inPlayerID);
+
 // Enemy siege weapons and defences going up near the base: soldiers sally, and citizens fight builders and small rushes
 // (CounterSiege, every 2 game seconds; docs/ageofai.md "Counter-siege and the citizen militia")
 void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow);
@@ -144,6 +549,21 @@ struct DefenceCounts {
     unsigned long mCounterSiegeSkipped; // threats left: too few soldiers and no citizens' answer
 };
 DefenceCounts DefenceCountsOf(unsigned long inPlayerID);
+// Idle citizens home (econ.c citizens_home, AgeOfAIHome.h; CitizensHome above)
+// Forage near (food_plan forage_near, food.c): the free bush nearest a drop site that takes food, within the reach of
+// the pass, or NULL (EECPResourceManager::FindFarm takes it before the game's first bush in centre order)
+EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit* inUnit);
+struct HomeCounts {
+    unsigned long mSent;        // idle citizens sent to a town
+    unsigned long mBaseMoved;   // base points moved to a town
+};
+HomeCounts HomeCountsOf(unsigned long inPlayerID);
+// The extra towers of the defence layout (defence.c, AgeOfAITowers.h; DefenceTick above)
+struct TowerLayoutCounts {
+    unsigned long mQueued;      // towers queued
+    unsigned long mSkipped;     // looks that queued none: nothing to build, one already queued, or no spot the player can pay for
+};
+TowerLayoutCounts TowerLayoutCountsOf(unsigned long inPlayerID);
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow);
 bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding);
 // An attack goal for inUnit, as unit_goal with goal_attack (attack.c) gives it; false: refused (dead, off the map, a

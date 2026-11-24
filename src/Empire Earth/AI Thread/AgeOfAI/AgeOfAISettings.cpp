@@ -678,10 +678,12 @@ std::vector<std::string> ReadSettings(const char* inPath)
     return ReadSettings(inPath, gSettings, gSettingsAI);
 }
 
-std::vector<std::string> ReadSettings(const char* inPath, Settings& outGeneral, SettingsAI (&outAI)[3])
+std::vector<std::string> ReadSettings(const char* inPath, Settings& outGeneral, SettingsAI (&outAI)[3], bool inRequired)
 {
     Reader theReader;
-    theReader.mFile.Read(inPath);
+    if (!theReader.mFile.Read(inPath) && inRequired)
+        theReader.mMessages.push_back("the file cannot be read (a missing one?) - the player's settings are the "
+                                      "defaults, the classic AI");
     bool theRead[kRowEnd][3] = {};   // a row was in the file, per difficulty
     for (int i = 0; i < kRowEnd; i++) {
         const Row& theRow = kRows[i];

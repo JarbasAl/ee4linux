@@ -2157,7 +2157,8 @@ long EEWorld::CheckGameOver()
         EEPlayer* thePlayer = this->mPlayers[i];
         if (thePlayer != NULL) {
             if (!thePlayer->mObserverMode) {
-                if (this->mVictoryEnabled && thePlayer->mEndOfGameCount <= 0) {
+                if (this->mVictoryEnabled && thePlayer->mEndOfGameCount <= 0
+                    && !(gPlatSimKeepAliveMask & (1u << i))) {
                     this->RemovePlayerFromGame(false, i);
                     thePlayer->SetGameResult(2);
                 }

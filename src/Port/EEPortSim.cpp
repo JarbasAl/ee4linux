@@ -13,6 +13,7 @@ int gPlatSimSeedSet;
 uint32_t gPlatSimSeed;
 int gPlatSimNoHumanDefeat;
 volatile long gPlatSimNoHumanDefeatHits;
+uint32_t gPlatSimKeepAliveMask;
 int gPlatSimPortOffset;
 
 }

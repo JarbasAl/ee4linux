@@ -55,7 +55,7 @@ void SetPlayerSettings(unsigned long inPlayerID, const char* inPath)
         return;
     Profile& theProfile = sProfiles[inPlayerID];
     theProfile.mSet = true;
-    for (const std::string& theLine : ReadSettings(inPath, theProfile.mGeneral, theProfile.mAI))
+    for (const std::string& theLine : ReadSettings(inPath, theProfile.mGeneral, theProfile.mAI, true))
         fprintf(stderr, "ageofai: player %lu (%s): %s\n", inPlayerID, inPath, theLine.c_str());
 }
 
@@ -63,6 +63,11 @@ const Settings& GeneralOf(unsigned long inPlayerID)
 {
     const Profile* theProfile = ProfileOf(inPlayerID);
     return theProfile != NULL ? theProfile->mGeneral : gSettings;
+}
+
+bool UnitsFirstOn(unsigned long inPlayerID)
+{
+    return GeneralOf(inPlayerID).units_first != 0;
 }
 
 const SettingsAI& SettingsAIOf(unsigned long inPlayerID, unsigned long inDifficulty)
@@ -75,6 +80,74 @@ const SettingsAI& SettingsAIOf(unsigned long inPlayerID, unsigned long inDifficu
 void SetClassicPlayers(unsigned inMask)
 {
     sClassicPlayers = inMask;
+}
+
+namespace {
+WallCounts sWalls[16];
+}
+
+bool GameWallsOn(unsigned long inPlayerID)
+{
+    return SettingsAIOf(inPlayerID, kDifficultyMedium).game_walls != 0;
+}
+
+void NoteWallUpdate(unsigned long inPlayerID, bool inSkipped)
+{
+    if (inPlayerID >= 16)
+        return;
+    WallCounts& theCounts = sWalls[inPlayerID];
+    if (inSkipped)
+        theCounts.mSkipped++;
+    else
+        theCounts.mRan++;
+}
+
+WallCounts WallCountsOf(unsigned long inPlayerID)
+{
+    return inPlayerID < 16 ? sWalls[inPlayerID] : WallCounts();
+}
+
+namespace {
+struct BuildFixState {
+    BuildFixCounts mCounts;
+    unsigned short mStreak[871];
+    unsigned long mFailsByType[871];
+};
+BuildFixState sBuildFix[16];
+}
+
+bool BuildFixResult(unsigned long inPlayerID, unsigned long inType, bool inPlaced)
+{
+    if (inPlayerID >= 16)
+        return false;
+    BuildFixState& theState = sBuildFix[inPlayerID];
+    theState.mCounts.mAttempts++;
+    if (inPlaced) {
+        if (inType < 871)
+            theState.mStreak[inType] = 0;
+        return false;
+    }
+    theState.mCounts.mFails++;
+    if (inType >= 871)
+        return false;
+    unsigned short& theStreak = theState.mStreak[inType];
+    if (theStreak < 3)
+        theStreak++;
+    theState.mFailsByType[inType]++;
+    if (theState.mFailsByType[inType] > theState.mCounts.mTopFails) {
+        theState.mCounts.mTopFails = theState.mFailsByType[inType];
+        theState.mCounts.mTopType = inType;
+    }
+    if (theStreak < 3 || !SettingsAIOf(inPlayerID, kDifficultyMedium).build_fix)
+        return false;
+    theStreak = 0;
+    theState.mCounts.mDropped++;
+    return true;
+}
+
+BuildFixCounts BuildFixCountsOf(unsigned long inPlayerID)
+{
+    return inPlayerID < 16 ? sBuildFix[inPlayerID].mCounts : BuildFixCounts();
 }
 
 Engine EngineOf(unsigned long inPlayerID)

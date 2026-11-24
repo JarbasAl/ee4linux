@@ -2,8 +2,10 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/sites.c (select_mine_near_drop,
 // mine_crowds, find_mine_pick) and dll/ai/econ.c (econ_rebalance, movable_gatherer) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0.
-// Also dll/ai/food.c (food_bush, food_pull). Not ported yet: the mine search's tile flag test, local_mines and town_work (off by
-// default), the overseas mines, the wood and field searches, and food.c's animal search and its HUNT and NEAR rules (off by default).
+// Also dll/ai/sites.c (town_work's site swap) and dll/ai/food.c (food_bush, food_pull, the no_fields_wild bush and
+// animal branch). Not ported yet: the mine search's tile flag test, town_work's training-time homes, overseas-mine
+// preference in other searches, the wood search, and no_fields_wild's fish branch (off by default). Ferry/no-citizen
+// mine searches prefer an overseas mine when [patches] overseas_mines is on.
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
@@ -101,6 +103,7 @@
 #include "ee/EETechTreeTechID.h"
 #include "ee/EEPlayer.h"
 #include "ee/EEPhysics.h"
+#include "AgeOfAISites.h"
 #include "lle/GE2DPoint.h"
 #include "lle/GE3DPoint.h"
 #include "lle/GEVector.h"
@@ -130,9 +133,12 @@
 #include "ee/EECPCivilizationManager.h"
 #include "ee/EEUGGather.h"
 #include "ee/EEAIContinentManager.h"
+#include "ee/EEAreaUtilities.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
+#include "AgeOfAINoFieldsWildRules.h"
+#include "AgeOfAITownWorkRules.h"
 #include "AgeOfAIWorkers.h"
 
 namespace AgeOfAI {
@@ -161,6 +167,13 @@ struct Aim {
 const SettingsAI& SettingsOf(EEComputerPlayer* inPlayer)
 {
     return SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
+}
+
+// A tiger or a wolf is food but fights back; upstream leaves it alone (food.c food_fierce). The class's name string
+// identifies it: dbobjects' tiger and wolf carry these names.
+bool IsFierceAnimal(EEUnitClass* inClass)
+{
+    return inClass != NULL && (inClass->mNameStringID == IDS_UNIT_TIGER || inClass->mNameStringID == IDS_UNIT_WOLF);
 }
 
 bool IsCitizenUnit(EEUnit* inUnit)
@@ -284,7 +297,8 @@ bool ExploredBy(EEUnit* inSite, EEPlayer* inPlayer)
 // The free mine of a kind nearest to one of the player's drop sites (mine_choice): the original's checks (active zone,
 // explored, the gatherer cap, no enemy near, the unit's continent) and no known enemy on the way from that drop site.
 // inNotContinent: a continent whose mines do not count, 0xFFFF none. NULL when none: the original search then runs.
-EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, long inNotContinent)
+EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, long inNotContinent,
+                           long inHomeX = -10000, long inHomeY = -10000)
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
     EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
@@ -295,10 +309,14 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
     DropsCached(thePlayer);
     if (theSettings.mine_crowds)
         AimCount(thePlayer);
-    unsigned long theCap = thePlayer->mMiningLimit;
+    unsigned long theCap = (unsigned long)gWorldTable.GetLongValue(0x16);   // upstream's table_value(0x16), not the civ-power cap
     long theRegion = inUnit != NULL ? (long)gContinentManager.GetContinentID(inUnit) : 0;
+    // LOCAL MINES ([ai_base] local_mines): a mine whose drop site is far from the citizen is another town's, and the
+    // game's own assignment sent citizens a long way for it; one its own town can reach comes first
+    const bool theLocal = theSettings.local_mines && inUnit != NULL;
     EEUnit* theBest = NULL;
     long theBestD = 0x7FFFFFFF;
+    int theBestLocal = 0;
     for (unsigned long k = 0; k < thePlayer->GetNumResourceCenters(); k++) {
         EECPResourceCenter* theZone = thePlayer->GetResourceCenter(k);
         if (theZone == NULL || !theZone->mIsActive)
@@ -308,7 +326,19 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
             continue;
         int theIndex = -1;
         long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, false, &theIndex);   // nearest drop site for all resources
-        if (theIndex < 0 || theD >= theBestD)
+        if (theIndex < 0)
+            continue;
+        const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
+        // town_work passes the citizen's home so the mine search only offers sites that town can reach.
+        if (inHomeX != -10000 && TownWorkRules::IsFar(theDrop.mX, theDrop.mY, inHomeX, inHomeY))
+            continue;
+        int theIsLocal = 0;
+        if (theLocal) {
+            theIsLocal = SitesRules::MineLocal(theDrop.mX, theDrop.mY, inUnit->mTileX, inUnit->mTileY);
+            if (theIsLocal < 0)
+                continue;
+        }
+        if (theIsLocal < theBestLocal || (theIsLocal == theBestLocal && theD >= theBestD))
             continue;
         if (!ExploredBy(theSite, thePlayer))
             continue;
@@ -323,11 +353,11 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
             continue;
         if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY))
             continue;
-        const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
         if (!RouteSafe(theBuild, theDrop.mX, theDrop.mY, theSite->mTileX, theSite->mTileY) || SiteDanger(thePlayer, theSite, false, (int)inType))
             continue;
         theBest = theSite;
         theBestD = theD;
+        theBestLocal = theIsLocal;
     }
     if (theBest != NULL && theSettings.mine_crowds)
         AimAdd(thePI, theBest);
@@ -336,22 +366,102 @@ EEUnit* SelectMineNearDrop(EECPResourceManager* inResources, long inType, EEComp
 
 }
 
+// FORAGE NEAR ([ai_base] food_plan forage_near, off in the shipped file): the food search takes the free bush nearest to a
+// drop site that takes food, within the reach of the pass - two times the player's drop-off distance for the pass that
+// names a citizen, six for the one that does not - with the game's own checks. Upstream's food_bush and food_near_pick.
+// Called from EECPResourceManager::FindFarm, the game's own first-bush-in-centre-order search.
+EEUnit* FindForage(EECPResourceManager* inResources, bool inNear, EEComplexUnit* inUnit)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
+    if (theBuild == NULL || !SettingsOf(thePlayer).food_plan.forage_near)
+        return NULL;
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theBaseX == -10000 || theBaseY == -10000)
+        return NULL;
+    unsigned thePI = thePlayer->mPlayerID & 15;
+    DropsCached(thePlayer);
+    unsigned long theCap = (unsigned long)gWorldTable.GetLongValue(0x16);   // upstream's table_value(0x16)
+    long theReach2 = SitesRules::ForageReach2(thePlayer->GetDropOffDistance(), inNear);
+    long theRegion = inUnit != NULL ? (long)gContinentManager.GetContinentID(inUnit) : 0;
+    EEUnit* theBest = NULL;
+    long theBestD = 0x7FFFFFFF;
+    for (unsigned long k = 0; k < thePlayer->GetNumResourceCenters(); k++) {
+        EECPResourceCenter* theZone = thePlayer->GetResourceCenter(k);
+        if (theZone == NULL || !theZone->mIsActive)
+            continue;
+        for (size_t z = 0; z < theZone->mUnits.size() && z < 4096; z++) {
+            EEUnit* theSite = theZone->mUnits[z];
+            if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mResourceAmount <= 0 || theSite->mUnitClass == NULL)
+                continue;
+            if ((long)theSite->mResourceType != kResourceFood || (long)theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
+                continue;
+            long theDX = theSite->mTileX - theBaseX, theDY = theSite->mTileY - theBaseY;
+            if (theDX * theDX + theDY * theDY >= theReach2)
+                continue;
+            int theIndex = -1;
+            long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, true, &theIndex);   // a drop site that takes food
+            if (theIndex < 0 || theD >= theBestD)
+                continue;
+            if (!ExploredBy(theSite, thePlayer))
+                continue;
+            if ((unsigned long)gWorld.GetResourceUsers(theSite) >= theCap)
+                continue;
+            if (inUnit != NULL && (long)gContinentManager.GetContinentID(theSite) != theRegion)
+                continue;
+            if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY))
+                continue;
+            if (SiteDanger(thePlayer, theSite, true, 2))
+                continue;
+            theBest = theSite;
+            theBestD = theD;
+        }
+    }
+    return theBest;
+}
+
 // The mine search of an Age of AI player (EECPResourceManager::FindResourceTarget): with mine_choice the free mine nearest to a
 // drop site, else the game's own search; a mine the AI's citizens already fill (the game counts only those working) is refused
 EEUnit* FindMine(EECPResourceManager* inResources, long inType, EEComplexUnit* inUnit, bool inBackwards)
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
     const SettingsAI& theSettings = SettingsOf(thePlayer);
-    EEUnit* theResult = theSettings.mine_choice && inType >= 4 && inType < 7 ? SelectMineNearDrop(inResources, inType, inUnit, -1) : NULL;
-    if (theResult != NULL)
-        return theResult;
-    theResult = inResources->FindResourceTargetGame(inType, inUnit, inBackwards);
+    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
+    const bool theMineResource = inType >= 4 && inType < 7;
+    // OVERSEAS MINES: a search with no citizen (the ferry/island-expansion pass) wants a mine on another continent than the
+    // base, not a home-island mine that would strand citizens on a useless crossing (upstream hook_find_mine, mine_site 5)
+    long theOverseasHome = -1;
+    if (gSettings.overseas_mines && theMineResource && inUnit == NULL && theBuild != NULL) {
+        long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+        if (theBaseX != -10000 && theBaseY != -10000)
+            theOverseasHome = (long)gContinentManager.GetContinentID(theBaseX, theBaseY);
+    }
+    EEUnit* theResult = NULL;
+    if (theSettings.mine_choice && theMineResource)
+        theResult = SelectMineNearDrop(inResources, inType, inUnit, theOverseasHome >= 0 ? theOverseasHome : -1);
+    if (theResult == NULL)
+        theResult = inResources->FindResourceTargetGame(inType, inUnit, inBackwards);
     if (theResult != NULL && SiteDanger(thePlayer, theResult, inType == 2, (int)inType))   // the searches refuse a dangerous site
         theResult = NULL;
-    if (theResult != NULL && theSettings.mine_crowds && inType >= 4 && inType < 7) {
+    if (theOverseasHome >= 0 && theResult != NULL && (long)gContinentManager.GetContinentID(theResult) == theOverseasHome)
+        theResult = NULL;   // overseas_mines: no home-island mine for a crossing
+    if (theResult != NULL && inUnit != NULL && theMineResource && theSettings.local_mines) {
+        unsigned thePI = thePlayer->mPlayerID & 15;
+        DropsCached(thePlayer);
+        int theIndex = -1;
+        if (DropNearest(thePI, theResult->mTileX, theResult->mTileY, false, &theIndex) == 0x7FFFFFFF)
+            theResult = NULL;
+        else {
+            const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
+            long theDX = theDrop.mX - inUnit->mTileX, theDY = theDrop.mY - inUnit->mTileY;
+            if (theDX * theDX + theDY * theDY > SitesRules::kLocalMineFar * SitesRules::kLocalMineFar)   // the game's pick is another town's mine: refused
+                theResult = NULL;
+        }
+    }
+    if (theResult != NULL && theSettings.mine_crowds && theMineResource) {
         unsigned thePI = thePlayer->mPlayerID & 15;
         AimCount(thePlayer);
-        if (AimOf(thePI, theResult) >= thePlayer->mMiningLimit)
+        if (AimOf(thePI, theResult) >= (unsigned long)gWorldTable.GetLongValue(0x16))
             return NULL;
         AimAdd(thePI, theResult);
     }
@@ -374,7 +484,7 @@ void MineCrowds(EECPResourceManager* inResources)
     sLast[thePI] = theNow ? theNow : 1;
     sAim[thePI].mTime = 0;
     AimCount(thePlayer);
-    unsigned long theCap = thePlayer->mMiningLimit;
+    unsigned long theCap = (unsigned long)gWorldTable.GetLongValue(0x16);   // upstream's table_value(0x16)
     int theMoved = 0;
     Aim& theAim = sAim[thePI];
     for (size_t k = 0; k < theAim.mSites.size() && theMoved < 20; k++) {
@@ -552,6 +662,146 @@ void WoodDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
             }
 }
 
+namespace {
+
+// MINE SCAN (mines.c mf_scan), cached 10 seconds and shared by the fill pass and the DROP. It tallies the slots of the
+// stone, gold and iron mines near a drop site (all, and the home continent's), and finds the far mine of the home
+// continent nearest a drop site: a mine more than 12 tiles from every drop site, explored, active, with no enemy near
+// and not dangerous. Both passes are off in the shipped file.
+struct MineState {
+    unsigned long mTime;          // the last scan, cached for 10 seconds
+    unsigned long mDropTime;      // the last DROP decision, at most one every two minutes
+    int mDropsQueued;
+    long mFarX, mFarY, mFarResource;
+    long mSlots[7], mHomeSlots[7];
+};
+MineState sMine[16];
+
+void MineScan(EEComputerPlayer* inPlayer, unsigned inPI, unsigned long inNow)
+{
+    MineState& theState = sMine[inPI];
+    if (theState.mTime != 0 && inNow >= theState.mTime && inNow - theState.mTime < 10000)
+        return;
+    theState.mTime = inNow ? inNow : 1;
+    theState.mFarResource = 0;
+    memset(theState.mSlots, 0, sizeof theState.mSlots);
+    memset(theState.mHomeSlots, 0, sizeof theState.mHomeSlots);
+    EECPCivilizationManager* theCiv = inPlayer->mCivilizationManager;
+    EECPBuildManager* theBuild = theCiv != NULL ? theCiv->mBuildManager : NULL;
+    if (theBuild == NULL)
+        return;
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theBaseX == -10000 || theBaseY == -10000)
+        return;
+    unsigned short theHome = gContinentManager.GetContinent(EETileCoordinate(theBaseX, theBaseY), 2);
+    long theCap = (long)gWorldTable.GetLongValue(0x16);
+    DropsCached(inPlayer);
+    long theBest = 0x7FFFFFFF;
+    std::vector<EEUnit*> theSeen;
+    for (unsigned long z = 0; z < inPlayer->GetNumResourceCenters() && z < 256; z++) {
+        EECPResourceCenter* theZone = inPlayer->GetResourceCenter(z);
+        if (theZone == NULL)
+            continue;
+        for (size_t k = 0; k < theZone->mUnits.size() && k < 4096 && theSeen.size() < 1024; k++) {
+            EEUnit* theSite = theZone->mUnits[k];
+            if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mUnitClass == NULL || theSite->mResourceAmount <= 0)
+                continue;
+            long theResource = (long)theSite->mResourceType;
+            if (theResource < 4 || theResource > 6)
+                continue;
+            bool theSeenAlready = false;
+            for (size_t s = 0; s < theSeen.size(); s++)
+                if (theSeen[s] == theSite) { theSeenAlready = true; break; }
+            if (theSeenAlready)
+                continue;
+            theSeen.push_back(theSite);
+            long theD = DropNearest(inPI, theSite->mTileX, theSite->mTileY, false, NULL);
+            bool theHomeMine = gContinentManager.GetContinent(EETileCoordinate(theSite->mTileX, theSite->mTileY), 2) == theHome;
+            if (theD <= 12 * 12) {   // near a drop site: it counts as a slot, not as a far mine
+                theState.mSlots[theResource] += theCap;
+                if (theHomeMine)
+                    theState.mHomeSlots[theResource] += theCap;
+                continue;
+            }
+            if (!theHomeMine || theD >= theBest || !theZone->mIsActive)
+                continue;
+            if (!ExploredBy(theSite, inPlayer))
+                continue;
+            if (theBuild->HasEnemyNear(theSite->mTileX, theSite->mTileY) || SiteDanger(inPlayer, theSite, false, (int)theResource))
+                continue;
+            theBest = theD;
+            theState.mFarX = theSite->mTileX;
+            theState.mFarY = theSite->mTileY;
+            theState.mFarResource = theResource;
+        }
+    }
+}
+
+}
+
+void MineSlots(EEComputerPlayer* inPlayer, unsigned long inNow, long outSlots[7], long outHomeSlots[7])
+{
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    if (inNow < sMine[thePI].mTime)   // a new game
+        sMine[thePI] = MineState();
+    MineScan(inPlayer, thePI, inNow);
+    for (int r = 0; r < 7; r++) {
+        outSlots[r] = sMine[thePI].mSlots[r];
+        outHomeSlots[r] = sMine[thePI].mHomeSlots[r];
+    }
+}
+
+void MineDrops(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    MineState& theState = sMine[thePI];
+    if (inNow < theState.mTime)   // a new game
+        theState = MineState();
+    const SettingsAI& theSettings = SettingsOf(inPlayer);
+    if (!theSettings.mine_fill.mine_settlement && !theSettings.citizen_plan.mine_settlement)
+        return;
+    long theEpoch = inPlayer->mTechnologies != NULL ? inPlayer->mTechnologies->mCurrentEpoch : -1;
+    EECPCivilizationManager* theCiv = inPlayer->mCivilizationManager;
+    EECPResourceManager* theResources = theCiv != NULL ? theCiv->mResourceManager : NULL;
+    long theWorkers = 0;
+    if (theResources != NULL)
+        for (int t = 0; t < 7; t++)
+            theWorkers += (long)theResources->mGatherers[t].size();
+    if (theEpoch < kFarmEpoch || inNow < 180000 || theWorkers < 30)
+        return;
+    if (theState.mDropsQueued >= 6)
+        return;
+    if (theState.mDropTime != 0 && inNow >= theState.mDropTime && inNow - theState.mDropTime < 120000)
+        return;
+    theState.mDropTime = inNow ? inNow : 1;
+    MineScan(inPlayer, thePI, inNow);
+    if (theState.mFarResource == 0)
+        return;
+    EECPBuildManager* theBuild = theCiv->mBuildManager;
+    if (theBuild == NULL || gUnitClassTable[kUnitTypeSettlement] == NULL || theEpoch >= 14)
+        return;
+    if (theBuild->IsQueued(kUnitTypeSettlement))   // the queue's own Settlements count too
+        return;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext))
+        if (theUnit->mHitPoints > 0 && theUnit->mUnitClass != NULL && (long)theUnit->mUnitClass->mUnitType == kUnitTypeSettlement
+            && (theUnit->mComplexUnit == NULL || theUnit->mComplexUnit->IsFoundation() || !theUnit->mComplexUnit->mIsBuilt))
+            return;   // one going up: wait for it
+    if (!inPlayer->CanProduceUnitType(kUnitTypeSettlement, 0x20, NULL))
+        return;
+    for (int r = 3; r <= 6; r++)
+        for (int ax = -r; ax <= r; ax++)
+            for (int ay = -r; ay <= r; ay++) {
+                if (abs(ax) != r && abs(ay) != r)
+                    continue;
+                long theX = theState.mFarX + ax, theY = theState.mFarY + ay;
+                if (!CanPlace(inPlayer, kUnitTypeSettlement, theX, theY) || RaidersNear(inPlayer, theX, theY, 12))
+                    continue;
+                theBuild->QueueBuildingAt(kUnitTypeSettlement, theX, theY);
+                theState.mDropsQueued++;
+                return;
+            }
+}
+
 
 namespace {
 
@@ -580,7 +830,7 @@ EEUnit* FoodBush(EECPResourceManager* inResources, EEComplexUnit* inUnit, long i
             continue;
         for (size_t k = 0; k < theZone->mUnits.size() && k < 4096; k++) {
             EEUnit* theSite = theZone->mUnits[k];
-            if (theSite == NULL || theSite->mUnitClass == NULL || theSite->mResourceType != 2
+            if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mUnitClass == NULL || theSite->mResourceType != 2
                 || theSite->mUnitClass->mUnitType != kUnitTypeResForageBush || theSite->mResourceAmount <= 0)
                 continue;
             if (theSite->mTile != NULL && theSite->mTile->mTerrainType == 1)
@@ -608,14 +858,323 @@ EEUnit* FoodBush(EECPResourceManager* inResources, EEComplexUnit* inUnit, long i
 
 }
 
+
+// A free animal to hunt for a citizen, nearest to a drop site that takes hunters: food, an animal, fewer than three
+// gatherers, explored, the citizen's land, no enemy near, not a dangerous site, within [ai_base] food_hunt_range tiles.
+// Upstream's food_animal (food.c). A tiger or a wolf is left alone.
+EEUnit* FoodAnimal(EECPResourceManager* inResources, EEComplexUnit* inUnit)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    EECPBuildManager* theBuild = inResources->mManager->mBuildManager;
+    if (theBuild == NULL)
+        return NULL;
+    unsigned thePI = thePlayer->mPlayerID & 15;
+    DropsCached(thePlayer);
+    const std::vector<Drop>& theDrops = sDrops[thePI].mDrops;
+    long theRange = SettingsOf(thePlayer).food_hunt_range;
+    if (theRange <= 0)
+        theRange = 15;
+    // Upstream food_animal with u == NULL checks every land: the field pass has no citizen to compare with.
+    const bool theAnyLand = inUnit == NULL;
+    long theRegion = theAnyLand ? -1 : (long)gContinentManager.GetContinentID(inUnit);
+    EEUnit* theBest = NULL;
+    long theBestD = theRange * theRange + 1;
+    std::vector<EEUnit*> theNear;
+    for (size_t i = 0; i < theDrops.size(); i++) {
+        const Drop& theDrop = theDrops[i];
+        if (theDrop.mFood)   // granaries do not take hunters
+            continue;
+        theNear.clear();
+        GE2DPoint theCenter((float)theDrop.mX, (float)theDrop.mY);
+        EEGetUnitsInRadius(theCenter, (float)theRange, theNear);
+        for (size_t u = 0; u < theNear.size(); u++) {
+            EEUnit* theAnimal = theNear[u];
+            if (theAnimal == NULL || theAnimal->mHitPoints <= 0 || theAnimal->mUnitClass == NULL)
+                continue;
+            if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
+                continue;
+            if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal)
+                continue;
+            if (!ExploredBy(theAnimal, thePlayer))
+                continue;
+            if (IsFierceAnimal(theAnimal->mUnitClass))
+                continue;
+            long theAX = theAnimal->mTileX, theAY = theAnimal->mTileY;
+            long theDX = theAX - theDrop.mX, theDY = theAY - theDrop.mY;
+            long theD2 = theDX * theDX + theDY * theDY;
+            if (theD2 >= theBestD)
+                continue;
+            if ((unsigned long)gWorld.GetResourceUsers(theAnimal) >= 3)
+                continue;
+            if (!theAnyLand && (long)gContinentManager.GetContinentID(theAnimal) != theRegion)
+                continue;
+            if (theBuild->HasEnemyNear(theAX, theAY))
+                continue;
+            if (SiteDanger(thePlayer, theAnimal, true, 2))
+                continue;
+            theBest = theAnimal;
+            theBestD = theD2;
+        }
+    }
+    return theBest;
+}
+
+// NO FIELDS WILD (food_plan no_fields_wild, off in the shipped file; before the assignment): from the Copper Age field
+// foundations keep their builders while a free bush or animal is in reach. Upstream's food_fields_wait (food.c) also
+// counts known fish when the player uses boats; that branch is not ported. The searches use no citizen, so an animal
+// may be on any land, as upstream's food_animal with u == NULL does.
+namespace {
+
+WildFieldCounts sWildFields[16];
+
+}
+
+bool WildBeforeFields(EECPResourceManager* inResources)
+{
+    if (inResources == NULL)
+        return false;
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (thePlayer == NULL || EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
+        return false;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    WildFieldCounts& theCounts = sWildFields[thePlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    if (!theSettings.food_plan.no_fields_wild)
+        return false;
+    long theEpoch = thePlayer->mTechnologies != NULL ? thePlayer->mTechnologies->mCurrentEpoch : -1;
+    if (theEpoch < NoFieldsWildRules::kFarmEpoch)
+        return false;
+    theCounts.mChecks++;
+    const bool theBush = FoodBush(inResources, NULL, NoFieldsWildRules::BushReach2(thePlayer->GetDropOffDistance())) != NULL;
+    const bool theAnimal = FoodAnimal(inResources, NULL) != NULL;
+    if (theBush)
+        theCounts.mBush++;
+    if (theAnimal)
+        theCounts.mAnimal++;
+    const bool theDefer = NoFieldsWildRules::DeferFields(theSettings.food_plan.no_fields_wild, theEpoch, theBush, theAnimal);
+    if (theDefer)
+        theCounts.mDeferred++;
+    return theDefer;
+}
+
+WildFieldCounts WildFieldCountsOf(unsigned long inPlayerID)
+{
+    return sWildFields[inPlayerID & 15];
+}
+
+// HUNT NEAR (food_plan hunt_near, off in the shipped file; before the assignment): idle citizens hunt animals near a
+// drop site that takes hunters (Town Center, Capitol, Settlement), within [ai_base] food_hunt_range tiles, before farms.
+// The animal is the free one nearest to a drop site. Upstream's food_hunt (food.c).
+void FoodHunt(EECPResourceManager* inResources)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    if (!theSettings.food_plan.hunt_near)
+        return;
+    long theEpoch = thePlayer->mTechnologies != NULL ? thePlayer->mTechnologies->mCurrentEpoch : -1;
+    if (theEpoch >= kFarmEpoch)
+        return;
+    if (inResources->mWantedGatherers[kResourceFood] <= inResources->mGatherers[kResourceFood].size())
+        return;
+
+    if (inResources->mManager->mBuildManager == NULL)
+        return;
+
+    // the idle citizens, as AssignGatherers collects them: no build queue, on the map, with no goal or a waiting gather
+    std::vector<EEComplexUnit*> theIdle;
+    for (int j = 0; j < 7; j++) {
+        std::deque<EEComplexUnit*>& theList = inResources->mGatherers[j];
+        for (std::deque<EEComplexUnit*>::iterator it = theList.begin(); it != theList.end(); ++it) {
+            EEComplexUnit* theUnit = *it;
+            if (theUnit == NULL || theUnit->GetIsDisabled() || theUnit->mIsDetachedFromAI)
+                continue;
+            if (theUnit->GetUnitClass() == NULL || theUnit->GetUnitClass()->GetCategory() == kUnitCategoryNavalCitizen)
+                continue;
+            EEUnitGoal* theGoal = theUnit->GetLoadGoal();
+            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theGoal);
+            if (theUnit->mCitizenBuildQueue.size() == 0 && theUnit->GetHitPoints() > 0 && theUnit->GetTileX() != -10000
+                && theUnit->GetTileY() != -10000
+                && (theGoal == NULL || (theGather != NULL && theGather->mWaiting && theUnit->mCurrentPhysicsAction != 0))) {
+                // a citizen (not every complex unit that can gather)
+                EEUnitClass* theClass = theUnit->GetUnitClass();
+                if (theClass != NULL && IsCitizenUnit(theUnit))
+                    theIdle.push_back(theUnit);
+            }
+        }
+    }
+    if (theIdle.empty())
+        return;
+
+    for (size_t n = 0; n < theIdle.size(); n++) {
+        unsigned long theWanted = inResources->mWantedGatherers[kResourceFood];
+        unsigned long theHave = inResources->mGatherers[kResourceFood].size();
+        if (theWanted <= theHave)
+            break;
+        EEComplexUnit* theUnit = theIdle[n];
+        if (theUnit == NULL)
+            continue;
+        // the unit may already have been moved by an earlier iteration (defensive)
+        EEUGGather* theGoal = dynamic_cast<EEUGGather*>(theUnit->GetLoadGoal());
+        if (!(theUnit->GetLoadGoal() == NULL || (theGoal != NULL && theGoal->mWaiting)))
+            continue;
+
+        EEUnit* theBest = FoodAnimal(inResources, theUnit);
+        if (theBest == NULL)
+            continue;
+        unsigned long theBefore = inResources->mGatherers[kResourceFood].size();
+        inResources->SendToGather(theUnit, theBest, NULL);
+        if (inResources->mGatherers[kResourceFood].size() == theBefore)
+            continue;
+    }
+}
+
+// WILD SETTLEMENT (food_plan wild_settlement, off in the shipped file; before farms): a Settlement by the richest wild
+// food the town's drop sites are far from - every 2 minutes while none is queued or going up and the player can build
+// one, at most 2 a game. Bushes and animals within 30 tiles of the base count as wild food; a spot 10 or more tiles
+// from every food drop site with 1500 or more food within 6 tiles gets a Settlement placed 2-4 tiles from it. Upstream's
+// food_camp (food.c). A tiger or a wolf is excluded.
+void FoodCamp(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    static int sCount[16];
+    unsigned theIdx = inPlayer->mPlayerID & 15;
+    if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
+    if (!theSettings.food_plan.wild_settlement)
+        return;
+    long theEpoch = inPlayer->mTechnologies != NULL ? inPlayer->mTechnologies->mCurrentEpoch : -1;
+    if (theEpoch >= kFarmEpoch)
+        return;
+    // a new game resets the per-player state (time goes backwards)
+    if (inNow < sLast[theIdx])
+        sLast[theIdx] = 0, sCount[theIdx] = 0;
+    if (sCount[theIdx] >= 2 || (sLast[theIdx] != 0 && inNow - sLast[theIdx] < 120000))
+        return;
+    sLast[theIdx] = inNow != 0 ? inNow : 1;
+
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL || theCivilization->mResourceManager == NULL)
+        return;
+    EECPBuildManager* theBuild = theCivilization->mBuildManager;
+    long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+    if (theBaseX == -10000)
+        return;
+    if (gUnitClassTable[kUnitTypeSettlement] == NULL)
+        return;
+    if (theBuild->IsQueued(kUnitTypeSettlement))
+        return;
+    // any Settlement going up: wait for it
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+            continue;
+        if ((long)theUnit->mUnitClass->mUnitType != kUnitTypeSettlement)
+            continue;
+        if (theUnit->mComplexUnit == NULL || theUnit->mComplexUnit->IsFoundation() || !theUnit->mComplexUnit->mIsBuilt)
+            return;
+    }
+    if (!inPlayer->CanProduceUnitType(kUnitTypeSettlement, 0x20, NULL))
+        return;
+
+    DropsCached(inPlayer);
+
+    struct Food { long mX, mY, mAmount; };
+    std::vector<Food> theFood;
+
+    // animals within 30 tiles of the base
+    {
+        std::vector<EEUnit*> theNear;
+        GE2DPoint theCenter((float)theBaseX, (float)theBaseY);
+        EEGetUnitsInRadius(theCenter, 30.0f, theNear);
+        for (size_t i = 0; i < theNear.size() && theFood.size() < 512; i++) {
+            EEUnit* theAnimal = theNear[i];
+            if (theAnimal == NULL || theAnimal->mHitPoints <= 0 || theAnimal->mUnitClass == NULL)
+                continue;
+            if ((long)theAnimal->mResourceType != kResourceFood || theAnimal->mResourceAmount <= 0)
+                continue;
+            if (theAnimal->mUnitClass->mFamily != kUnitFamilyAnimal || IsFierceAnimal(theAnimal->mUnitClass))
+                continue;
+            if (!ExploredBy(theAnimal, inPlayer))
+                continue;
+            Food theItem = {theAnimal->mTileX, theAnimal->mTileY, theAnimal->mResourceAmount};
+            theFood.push_back(theItem);
+        }
+    }
+    // forage bushes within 30 tiles of the base
+    for (unsigned long z = 0; z < inPlayer->GetNumResourceCenters() && theFood.size() < 512; z++) {
+        EECPResourceCenter* theZone = inPlayer->GetResourceCenter(z);
+        if (theZone == NULL)
+            continue;
+        for (size_t k = 0; k < theZone->mUnits.size() && theFood.size() < 512; k++) {
+            EEUnit* theSite = theZone->mUnits[k];
+            if (theSite == NULL || theSite->mHitPoints <= 0 || theSite->mUnitClass == NULL || theSite->mResourceAmount <= 0)
+                continue;
+            if ((long)theSite->mResourceType != kResourceFood || theSite->mUnitClass->mUnitType != kUnitTypeResForageBush)
+                continue;
+            long theDX = theSite->mTileX - theBaseX, theDY = theSite->mTileY - theBaseY;
+            if (theDX * theDX + theDY * theDY > 900)
+                continue;
+            if (!ExploredBy(theSite, inPlayer))
+                continue;
+            Food theItem = {theSite->mTileX, theSite->mTileY, theSite->mResourceAmount};
+            theFood.push_back(theItem);
+        }
+    }
+
+    // the richest wild food 10 or more tiles from every food drop site, with no enemy near
+    int theBest = -1;
+    long theBestFood = 1499;
+    for (size_t i = 0; i < theFood.size(); i++) {
+        if (DropNearest(theIdx, theFood[i].mX, theFood[i].mY, true, NULL) < 100)
+            continue;
+        if (theBuild->HasEnemyNear(theFood[i].mX, theFood[i].mY))
+            continue;
+        long theSum = 0;
+        for (size_t j = 0; j < theFood.size(); j++) {
+            long theDX = theFood[j].mX - theFood[i].mX, theDY = theFood[j].mY - theFood[i].mY;
+            if (theDX * theDX + theDY * theDY <= 36)
+                theSum += theFood[j].mAmount;
+        }
+        if (theSum > theBestFood) {
+            theBestFood = theSum;
+            theBest = (int)i;
+        }
+    }
+    if (theBest < 0)
+        return;
+
+    // a placeable spot 2-4 tiles from it, without raiders near
+    for (int r = 2; r <= 4; r++) {
+        for (int ax = -r; ax <= r; ax++) {
+            for (int ay = -r; ay <= r; ay++) {
+                if (ax != -r && ax != r && ay != -r && ay != r)
+                    continue;
+                long theX = theFood[theBest].mX + ax, theY = theFood[theBest].mY + ay;
+                if (!CanPlace(inPlayer, kUnitTypeSettlement, theX, theY) || RaidersNear(inPlayer, theX, theY, 12))
+                    continue;
+                theCivilization->mBuildManager->StartBuilding(EECPBuildRequest(kUnitTypeSettlement, U2DPoint<long>(theX, theY)));
+                sCount[theIdx]++;
+                return;
+            }
+        }
+    }
+}
+
 // FOOD PULL (food_plan back_to_food, on by default; after every assignment pass and the rebalance): while food is 2 or
 // more gatherers short of its target, up to 4 gatherers move to the nearest free forage bush, each from the resource
-// farthest above its target
+// farthest above its target. With food_plan hunt_near, before farms, a free animal comes first.
 void FoodPull(EECPResourceManager* inResources)
 {
     EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
-    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI || !SettingsOf(thePlayer).food_plan.back_to_food)
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI)
         return;
+    const SettingsAI& theSettings = SettingsOf(thePlayer);
+    if (!theSettings.food_plan.back_to_food)
+        return;
+    long theEpoch = thePlayer->mTechnologies != NULL ? thePlayer->mTechnologies->mCurrentEpoch : -1;
+    bool theHunt = theSettings.food_plan.hunt_near && theEpoch < kFarmEpoch;
     long theReach = thePlayer->GetDropOffDistance();
     int theMoves = 0, theDry = 0;
     while (theMoves < 4 && (long)inResources->mWantedGatherers[2] - (long)inResources->mGatherers[2].size() >= 2) {
@@ -633,9 +1192,13 @@ void FoodPull(EECPResourceManager* inResources)
             theDry |= 1 << theDonor;
             continue;
         }
-        EEUnit* theSite = FoodBush(inResources, theUnit, theReach * theReach * 36);
+        EEUnit* theSite = theHunt ? FoodAnimal(inResources, theUnit) : NULL;
         if (theSite == NULL)
-            break;   // no free, safe food site in reach (fields: the fields pass)
+            theSite = FoodBush(inResources, theUnit, theReach * theReach * 36);
+        if (theSite == NULL) {   // no free, safe animal or bush for this donor: try another
+            theDry |= 1 << theDonor;
+            continue;
+        }
         size_t theBefore = inResources->mGatherers[2].size();
         inResources->SendToGather(theUnit, theSite, NULL);
         if (inResources->mGatherers[2].size() == theBefore) {
@@ -650,6 +1213,122 @@ void FoodPull(EECPResourceManager* inResources)
 FoodCounts FoodCountsOf(unsigned long inPlayerID)
 {
     return sFood[inPlayerID & 15];
+}
+
+// TOWN WORK (sites.c town_work, off in the shipped file; after every gather assignment): upstream swaps a site whose
+// nearest drop site lies beyond TOWN_FAR of the citizen's home for work at home. It remembers each citizen's home when
+// it is trained, and gives idle citizens local work after the assignment. There is no training hook here, so this port
+// takes the citizen's tile at assignment as its home, upstream's own fallback for a citizen without one, and leaves the
+// idle pass and the homes table out. The game's assignment has already set the goal by this point, so the citizen still
+// stands at home and the swap keeps it from walking to the far town.
+namespace {
+
+TownWorkCounts sTownWork[16];
+
+bool LandCitizen(EEComplexUnit* inUnit)
+{
+    if (inUnit == NULL || inUnit->GetUnitClass() == NULL
+        || inUnit->GetUnitClass()->GetCategory() == kUnitCategoryNavalCitizen)
+        return false;
+    return IsCitizenUnit(inUnit);
+}
+
+// A site of resource inR whose nearest drop site is inside TOWN_FAR of (inHomeX, inHomeY), or NULL.
+EEUnit* TownSite(EECPResourceManager* inResources, int inR, EEComplexUnit* inUnit,
+                 long inHomeX, long inHomeY, unsigned inPI)
+{
+    EEUnit* theSite = NULL;
+    if (inR >= 4 && inR <= 6) {
+        theSite = SelectMineNearDrop(inResources, inR, inUnit, -1, inHomeX, inHomeY);
+    } else if (inR == 3) {
+        theSite = inResources->FindForestTarget(1, inUnit);
+    } else if (inR == 2) {
+        theSite = FoodBush(inResources, inUnit, 0x7FFFFFFF / 2);
+        if (theSite == NULL)
+            theSite = FoodAnimal(inResources, inUnit);
+    }
+    if (theSite == NULL)
+        return NULL;
+    int theIndex = -1;
+    long theD = DropNearest(inPI, theSite->mTileX, theSite->mTileY, inR == 2, &theIndex);
+    if (theIndex < 0)
+        return NULL;
+    const Drop& theDrop = sDrops[inPI].mDrops[theIndex];
+    return TownWorkRules::IsFar(theDrop.mX, theDrop.mY, inHomeX, inHomeY) ? NULL : theSite;
+}
+
+}  // namespace
+
+void TownWork(EECPResourceManager* inResources)
+{
+    EEComputerPlayer* thePlayer = inResources->mManager->mPlayer;
+    if (EngineOf(thePlayer->mPlayerID) != kEngineAgeOfAI || !SettingsOf(thePlayer).town_work)
+        return;
+    const unsigned thePI = thePlayer->mPlayerID & 15;
+    DropsCached(thePlayer);
+    TownWorkCounts& theCounts = sTownWork[thePI];
+
+    // Collect first: SendToGather moves the citizen between the resource queues while this runs.
+    std::vector<std::pair<EEComplexUnit*, int> > theFar;
+    for (int r = 2; r <= 6 && theFar.size() < 40; r++) {
+        for (EEComplexUnit* theUnit : inResources->mGatherers[r]) {
+            if (theFar.size() >= 40)
+                break;
+            if (!LandCitizen(theUnit))
+                continue;
+            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theUnit->GetLoadGoal());
+            if (theGather == NULL || theGather->mResource == NULL)
+                continue;
+            EEUnit* theSite = theGather->mResource;
+            int theIndex = -1;
+            long theD = DropNearest(thePI, theSite->mTileX, theSite->mTileY, r == 2, &theIndex);
+            if (theIndex < 0)
+                continue;
+            const Drop& theDrop = sDrops[thePI].mDrops[theIndex];
+            if (TownWorkRules::IsFar(theDrop.mX, theDrop.mY, theUnit->mTileX, theUnit->mTileY)) {
+                theFar.push_back(std::make_pair(theUnit, r));
+            }
+        }
+    }
+
+    for (size_t n = 0; n < theFar.size(); n++) {
+        EEComplexUnit* theUnit = theFar[n].first;
+        const int theResource = theFar[n].second;
+        const long theHomeX = theUnit->mTileX, theHomeY = theUnit->mTileY;
+        EEUnit* theSite = TownSite(inResources, theResource, theUnit, theHomeX, theHomeY, thePI);
+        if (theSite == NULL) {
+            long theShort[5];
+            for (int k = 0; k < 5; k++)
+                theShort[k] = (long)inResources->mWantedGatherers[k + 2]
+                              - (long)inResources->mGatherers[k + 2].size();
+            unsigned long theTried = (theResource >= 2 && theResource <= 6)
+                                     ? (1UL << (theResource - 2)) : 0;
+            for (int k = 0; k < 5 && theSite == NULL; k++) {
+                const int thePick = TownWorkRules::BestShortfall(theShort, theTried, 5);
+                if (thePick < 0)
+                    break;
+                theTried |= 1UL << thePick;
+                theSite = TownSite(inResources, thePick + 2, theUnit, theHomeX, theHomeY, thePI);
+            }
+        }
+        if (theSite == NULL)
+            theSite = TownSite(inResources, 3, theUnit, theHomeX, theHomeY, thePI);
+        if (theSite == NULL)
+            theSite = TownSite(inResources, 2, theUnit, theHomeX, theHomeY, thePI);
+        if (theSite == NULL) {
+            theCounts.mAway++;
+            continue;
+        }
+        const size_t theBefore = inResources->mGatherers[theSite->GetResourceType()].size();
+        inResources->SendToGather(theUnit, theSite, NULL);
+        if (inResources->mGatherers[theSite->GetResourceType()].size() != theBefore)
+            theCounts.mSwapped++;
+    }
+}
+
+TownWorkCounts TownWorkCountsOf(unsigned long inPlayerID)
+{
+    return sTownWork[inPlayerID & 15];
 }
 
 }

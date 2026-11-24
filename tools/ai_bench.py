@@ -13,7 +13,8 @@ ee-aoc --sim options of its games.
 once with each AI in slot 2, through tools/sim.py. Each game goes as one line into DIR/games.jsonl. A game already in
 that file is not played again, so a run can stop and continue, and a new AI plays only its own games. A game that reaches its scenario's game time without a winner is a
 draw. A run the sim did not finish (a lobby that did not start, a crash) does not go into the file, and the next "run"
-plays it again.
+plays it again. `--jobs` is the games played at once: a pair fills one slot per seed, and the pairs that the seeds of
+one call cannot fill play side by side, each in a stage folder of its own under DIR/stages.
 
 "table" fits the ratings and prints them as markdown: one rating per AI over all games, one per scenario, and the
 measures of each AI's games (wins, time to win, epoch, army, population, value at the end). The rating is a
@@ -24,7 +25,9 @@ replacement.
 """
 import argparse
 import collections
+import concurrent.futures
 import configparser
+import fcntl
 import itertools
 import json
 import math
@@ -32,8 +35,10 @@ import pathlib
 import random
 import re
 import shlex
+import shutil
 import subprocess
 import sys
+import threading
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BASE_INI = ROOT / "config" / "ageofai.ini"
@@ -140,46 +145,161 @@ def pairs(ais, opponents):
     return [(a, b) for a, b in itertools.combinations(ais, 2) if not opponents or a in opponents or b in opponents]
 
 
+def engine_of(settings):
+    """The engine a merged settings file selects: "ageofai" when its [general] enabled is on, else "classic"."""
+    parser = configparser.ConfigParser(interpolation=None, strict=False)
+    parser.optionxform = str
+    parser.read_string(settings)
+    value = parser.get("general", "enabled", fallback="").strip().lower()
+    if value in ("1", "true", "yes", "on"):
+        return "ageofai"
+    if value in ("", "0", "false", "no", "off"):
+        return "classic"
+    sys.exit(f"ai_bench: [general] enabled={value} is not a setting: the engine of an AI cannot be told")
+
+
+def wrong_engines(row, engines):
+    """The seats of a finished game that ran an engine their own settings file does not select, by AI name.
+
+    A game runs in a stage folder of the sim's own, so a player's settings file is named in full, and the report says
+    which engine each player ran. A seat that ran another engine read no file, and a game of two AIs that were not
+    those AIs must not reach the ledger.
+    """
+    return {ai: end.get("engine") for ai, end in row["end"].items() if end.get("engine") != engines[ai]}
+
+
+class Budget:
+    """The games in flight: a pair-call takes the slots of its games before it plays and gives them back at the end."""
+
+    def __init__(self, games):
+        self.mGames = games
+        self.mUsed = 0
+        self.mStopped = False
+        self.mCondition = threading.Condition()
+
+    def stop(self):
+        """Wake every call that waits for slots, and fail it: the run is ending."""
+        with self.mCondition:
+            self.mStopped = True
+            self.mCondition.notify_all()
+
+    def take(self, games):
+        with self.mCondition:
+            while self.mUsed + games > self.mGames:
+                if self.mStopped:
+                    raise concurrent.futures.CancelledError("the run is ending")
+                self.mCondition.wait()
+            if self.mStopped:
+                raise concurrent.futures.CancelledError("the run is ending")
+            self.mUsed += games
+
+    def give(self, games):
+        with self.mCondition:
+            self.mUsed -= games
+            self.mCondition.notify_all()
+
+
+def play_task(args, budget, options, profiles, engines, scenario, first, second, todo, node):
+    """One pair of AIs in one scenario: its sim, then the ledger rows of the games it played and those it could not.
+
+    Each call gets a stage folder of its own, so two pairs play side by side, and it holds its game slots until it
+    has read its reports.
+    """
+    seats = {SLOTS[0]: first, SLOTS[1]: second}
+    games = args.out / "runs" / f"{scenario}-{first}-{second}"
+    stage = args.out / "stages" / str(node)
+    at_once = min(len(todo), max(1, args.jobs))
+    budget.take(at_once)
+    try:
+        cmd = [sys.executable, "-I", str(ROOT / "tools" / "sim.py"), "--target", args.target, "--run", str(args.run),
+               "--seeds", ",".join(map(str, todo)), "--repeat", "1", "--jobs", str(at_once),
+               "--wall-timeout", str(args.wall_timeout), "--ageofai", str(BASE_INI), "--out", str(games),
+               "--stage", str(stage), "--",
+               # the rating reads each game's last sample, and a report is two megabytes at the sim's 30-second samples:
+               # two minutes is a quarter of that, and nine thousand games stay well under 5 GB
+               "--game-seconds", str(GAME_SECONDS), "--sample-seconds", "120", *options,
+               *[x for s, ai in seats.items() for x in ("--player-ini", f"{s}={profiles / (ai + '.ini')}")]]
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        rows, problems = [], []
+        for seed in todo:
+            report = games / f"report-{seed}-1.json"
+            if not report.exists():
+                problems.append(f"{scenario} seed {seed} {first} against {second}: no report")
+                continue
+            try:
+                result = json.loads(report.read_text())
+            except ValueError:
+                problems.append(f"{scenario} seed {seed} {first} against {second}: the report cannot be read")
+                continue
+            row = game_row(result, scenario, seed, seats)
+            if row is None:
+                problems.append(f"{scenario} seed {seed} {first} against {second}: not finished: {result.get('error')}")
+                continue
+            wrong = wrong_engines(row, engines)
+            if wrong:
+                ran = "; ".join(f"{ai} ran {engine}, its settings file selects {engines[ai]}"
+                                for ai, engine in sorted(wrong.items()))
+                problems.append(f"{scenario} seed {seed} {first} against {second}: {ran}: the file was not read")
+                continue
+            rows.append(row)
+    finally:
+        budget.give(at_once)
+    shutil.rmtree(stage, ignore_errors=True)
+    return rows, problems
+
+
 def play(args):
     ais, scenarios, seeds = load_ais(args.ais), load_scenarios(args.scenarios), parse_seeds(args.seeds)
+    args.out = args.out.resolve()
+    args.run = args.run.resolve()
     args.out.mkdir(parents=True, exist_ok=True)
     profiles = args.out / "ais"
     profiles.mkdir(exist_ok=True)
     base = BASE_INI.read_text()
+    engines = {}
     for name, overlay in ais.items():
-        (profiles / f"{name}.ini").write_text(merged_ini(base, overlay))
+        settings = merged_ini(base, overlay)
+        (profiles / f"{name}.ini").write_text(settings)
+        engines[name] = engine_of(settings)
+    # one run at a time per ledger: two would play the same games and write the same line twice. The lock names the
+    # folder, and lives as long as the run.
+    lock = open(args.out / "games.lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.exit(f"ai_bench: another run uses {args.out}; wait for it to end")
+    # the stage folders of a run that was killed are ours and dead: this run takes them back
+    shutil.rmtree(args.out / "stages", ignore_errors=True)
     done = {(g["scenario"], g["seed"], g["seats"]["2"], g["seats"]["3"]) for g in read_games(args.out)}
-    planned = played = 0
-    with (args.out / "games.jsonl").open("a") as ledger:
-        for scenario, options in scenarios.items():
-            for a, b in pairs(list(ais), args.opponents):
-                for first, second in ((a, b), (b, a)):
-                    todo = [s for s in seeds if (scenario, s, first, second) not in done]
-                    planned += len(todo)
-                    if not todo:
-                        continue
-                    seats = {SLOTS[0]: first, SLOTS[1]: second}
-                    games = args.out / "runs" / f"{scenario}-{first}-{second}"
-                    cmd = [sys.executable, "-I", str(ROOT / "tools" / "sim.py"), "--target", args.target, "--run", str(args.run),
-                           "--seeds", ",".join(map(str, todo)), "--repeat", "1", "--jobs", str(args.jobs),
-                           "--wall-timeout", str(args.wall_timeout), "--ageofai", str(BASE_INI), "--out", str(games), "--",
-                           "--game-seconds", str(GAME_SECONDS), *options,
-                           *[x for s, ai in seats.items() for x in ("--player-ini", f"{s}={profiles / (ai + '.ini')}")]]
-                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    for seed in todo:
-                        report = games / f"report-{seed}-1.json"
-                        if not report.exists():
-                            print(f"ai_bench: {scenario} seed {seed} {first} against {second}: no report", file=sys.stderr)
-                            continue
-                        result = json.loads(report.read_text())
-                        row = game_row(result, scenario, seed, seats)
-                        if row is None:
-                            print(f"ai_bench: {scenario} seed {seed} {first} against {second}: not finished: "
-                                  f"{result.get('error')}", file=sys.stderr)
-                            continue
+    tasks = []
+    for scenario, options in scenarios.items():
+        for a, b in pairs(list(ais), args.opponents):
+            for first, second in ((a, b), (b, a)):
+                todo = [s for s in seeds if (scenario, s, first, second) not in done]
+                if todo:
+                    tasks.append((scenario, options, first, second, todo))
+    planned = sum(len(task[4]) for task in tasks)
+    played = 0
+    if tasks:
+        budget = Budget(max(1, args.jobs))
+        with (args.out / "games.jsonl").open("a") as ledger, \
+                concurrent.futures.ThreadPoolExecutor(max_workers=min(len(tasks), max(1, args.jobs))) as pool:
+            futures = [pool.submit(play_task, args, budget, options, profiles, engines, scenario, first, second,
+                                   todo, node)
+                       for node, (scenario, options, first, second, todo) in enumerate(tasks)]
+            try:
+                for future in concurrent.futures.as_completed(futures):
+                    rows, problems = future.result()
+                    for problem in problems:
+                        print(f"ai_bench: {problem}", file=sys.stderr)
+                    for row in rows:
                         ledger.write(json.dumps(row) + "\n")
-                        ledger.flush()
-                        played += 1
+                    ledger.flush()
+                    played += len(rows)
+            except BaseException:
+                # the calls still waiting for slots would wait for ever, and the pool would never close
+                budget.stop()
+                raise
     print(f"games: {planned} in, {played} out; ledger {args.out / 'games.jsonl'}")
     return 0 if played == planned else 1
 
@@ -234,6 +354,39 @@ def interval(rows, anchor, fits=BOOTSTRAP_FITS):
     return {n: (sorted(v)[int(0.025 * len(v))], sorted(v)[int(0.975 * len(v)) - 1]) for n, v in samples.items()}
 
 
+def seat_shares(rows):
+    """Per scenario, the decided games and the ones the first seat (player 2) won.
+
+    Both seat orders are played, so a scenario whose games go to the first seat whatever AI plays it is decided by the
+    starting position: its games carry no information about the AIs.
+    """
+    shares = {}
+    for r in rows:
+        counts = shares.setdefault(r["scenario"], [0, 0])
+        if r["winner"] is None:
+            continue
+        counts[0] += 1
+        counts[1] += r["winner"] == r["seats"]["2"]
+    return shares
+
+
+def head_to_head(rows):
+    """The games each pair of AIs played against each other, and the wins of the first of the two.
+
+    Keyed by (a, b) with a < b: [games, wins of a, draws]. A pair never plays itself.
+    """
+    pairs = {}
+    for r in rows:
+        a, b = sorted(r["seats"].values())
+        counts = pairs.setdefault((a, b), [0, 0, 0])
+        counts[0] += 1
+        if r["winner"] is None:
+            counts[2] += 1
+        elif r["winner"] == a:
+            counts[1] += 1
+    return pairs
+
+
 def table(args):
     rows = read_games(args.out)
     if not rows:
@@ -254,6 +407,32 @@ def table(args):
     per = {s: fit(scored([r for r in rows if r["scenario"] == s]), args.anchor) for s in scenarios}
     for n in order:
         print(f"| {n} | " + " | ".join(f"{per[s][n]:.0f}" if n in per[s] else "" for s in scenarios) + " |")
+    pairs = head_to_head(rows)
+    print("\n| AI | " + " | ".join(order) + " |")
+    print("| --- |" + " --- |" * len(order))
+    for a in order:
+        cells = []
+        for b in order:
+            if a == b:
+                cells.append("")
+                continue
+            games, wins, draws = pairs.get(tuple(sorted((a, b))), [0, 0, 0])
+            if not games:
+                cells.append("")
+                continue
+            mine = wins if a < b else games - wins - draws
+            cells.append(f"{mine}/{games}")
+        print(f"| {a} | " + " | ".join(cells) + " |")
+    print("\nWins out of the games played, from the row AI's side (both seat orders).")
+
+    shares = seat_shares(rows)
+    print("\n| Scenario | Decided | First seat won | Share | |")
+    print("| --- | ---: | ---: | ---: | --- |")
+    for s in scenarios:
+        decided, first = shares[s]
+        share = first / decided if decided else 0.0
+        seat = "the seat decides" if decided >= 10 and abs(share - 0.5) > 0.15 else ""
+        print(f"| {s} | {decided} | {first} | {share:.0%} | {seat} |")
     print("\n| Scenario | AI | Games | Win rate | Time to win (h) | " + " | ".join(MEASURES) + " |")
     print("| --- | --- | ---: | ---: | ---: |" + " ---: |" * len(MEASURES))
     for s in scenarios:
@@ -280,7 +459,7 @@ def main():
                      help="AIs, comma apart, that play every other AI; the others play only them (default: every pair)")
     run.add_argument("--scenarios", type=lambda t: t.split(","), help="the scenarios, comma apart (default all)")
     run.add_argument("--seeds", default="1-10")
-    run.add_argument("--jobs", type=int, default=8)
+    run.add_argument("--jobs", type=int, default=8, help="the games played at once (default 8)")
     run.add_argument("--wall-timeout", type=int, default=1800)
     tab = sub.add_parser("table", help="the ratings and measures of the games in the ledger")
     tab.add_argument("--out", type=pathlib.Path, required=True)

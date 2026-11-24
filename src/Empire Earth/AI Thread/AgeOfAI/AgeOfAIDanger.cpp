@@ -3,8 +3,8 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/attack.c (threat_refresh,
 // route_covered, raiders_scan, hurt_note, site_danger_res, the damage memory of citizens_safety) and dll/ai/cover.c (cv_mem_raider)
-// at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. Not ported yet: raid_held (defence.c), walled_out and ship_reach_exact (off by default),
-// the danger map for routes, and the rest of citizens_safety (the citizens sent back, the strays, the flight, the shelter).
+// at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07, GPL-3.0. Not ported yet: walled_out/behind_walls (off by default),
+// the danger map for routes, and the shelter in a fortress (bunker.c).
 #include <windows.h>
 #include <unistd.h>
 #include <algorithm>
@@ -128,20 +128,35 @@
 #include "ee/EEUnit.h"
 #include "ee/EEUnitClassIDs.h"
 #include "ee/EECPBuildManager.h"
+#include "ee/EECPUnitManager.h"
 #include "ee/EECPResourceManager.h"
 #include "ee/EECPCivilizationManager.h"
 #include "ee/EEUGGather.h"
+#include "ee/EEUGLoadGarrison.h"
+#include "ee/EEResourceType.h"
 #include "ee/EEUGBuildRepair.h"
 #include "ee/EEUGLocation.h"
 #include "ee/EEUGAttackUnit.h"
 #include "ee/EEAIContinentManager.h"
+#include "ee/EEUnitBehavior.h"
+#include "ee/EECPCombatManager.h"
+#include "ee/EECPAttackCommander.h"
+#include "ee/EECPAttackGroup.h"
+#include "ee/EECPAttackSubGroup.h"
+#include "ee/EECPAttackSubGroupUnit.h"
+#include "ee/EEUnitGoal.h"
+#include "ee/EEUnitAction.h"
 #include "AgeOfAI/AgeOfAIStats.h"
+#include "AgeOfAI/AgeOfAIAvoidLostRules.h"
+#include "AgeOfAI/AgeOfAIFightMemoryRules.h"
+#include "AgeOfAI/AgeOfAICoastRules.h"
 #include "AgeOfAI.h"
 #include "AgeOfAIDefence.h"
 #include "AgeOfAIHome.h"
 #include "AgeOfAITowers.h"
 #include "AgeOfAIRoles.h"
 #include "AgeOfAISettings.h"
+#include "AgeOfAIWalkBackRules.h"
 
 namespace AgeOfAI {
 
@@ -165,6 +180,26 @@ struct Threats {
     int mCount;
     unsigned long mRefreshed;
 } sThreat[16];
+
+AvoidTowerCounts sAvoid[16];
+RamWaitCounts sRamWait[16];
+LeashCounts sLeash[16];
+AvoidLostCounts sAvoidLost[16];
+AvoidLostZoneCounts sAvoidLostZones[16];
+
+// A lost fight is a cell the player's side is not winning (cover.c cv_zones). The port keeps the cells as a list
+// instead of a danger-map bitmap: each refresh starts again, so a cell an eye no longer sees drops out on its own.
+const int kMaxLostZones = 64;
+struct LostZone {
+    long mX, mY;                 // the cell's middle
+    float mR2;                   // the zone's radius squared
+};
+struct LostZoneSet {
+    LostZone mZones[kMaxLostZones];
+    int mCount;
+    unsigned long mRefreshed;
+};
+LostZoneSet sLostZones[16];
 
 struct Hurt {
     unsigned mAt;
@@ -303,16 +338,657 @@ bool MemoryRaider(EEPlayer* inPlayer, long inX, long inY, int inR0, int inRMax)
             theReach = inRMax;
         if (theReach < inR0)
             theReach = inR0;
-        if (labs(theRecord.mX - inX) <= theReach && labs(theRecord.mY - inY) <= theReach)
-            return true;
+        if (labs(theRecord.mX - inX) > theReach || labs(theRecord.mY - inY) > theReach)
+            continue;
+        if (Cfg(inPlayer->mPlayerID).ship_reach_exact && (theClass->mCategory == kUnitCategoryNaval || theClass->mCategory == kUnitCategorySubmergedNaval)) {
+            float theShip = theRange + 1.0f;   // SHIP_SLACK: a ship counts within its own reach, round
+            long theDX = theRecord.mX - inX, theDY = theRecord.mY - inY;
+            if ((float)(theDX * theDX + theDY * theDY) > theShip * theShip)
+                continue;
+        }
+        return true;
     }
     return false;
 }
 
 }
 
+// Sum of the known defences covering tile (x, y), each weighted by its attack (a guard tower is 1)
+// (attack.c threat_at). The margin setting adds tiles to each defence's reach.
+float ThreatAt(unsigned long inPlayerID, long inX, long inY)
+{
+    EEPlayer* thePlayer = gWorld.GetPlayer(inPlayerID);
+    if (thePlayer == NULL)
+        return 0.0f;
+    ThreatRefresh(thePlayer, gPhysics->mGameTime);
+    const Threats& theThreats = sThreat[inPlayerID & 15];
+    float theMargin = (float)Cfg(inPlayerID).avoid_towers_margin;
+    float theThreat = 0.0f;
+    for (int k = 0; k < theThreats.mCount; k++) {
+        float theRange = theThreats.mDefences[k].mRange + theMargin;
+        float theDX = (float)inX - (float)theThreats.mDefences[k].mX, theDY = (float)inY - (float)theThreats.mDefences[k].mY;
+        if (theDX * theDX + theDY * theDY <= theRange * theRange)
+            theThreat += theThreats.mDefences[k].mAttack / 50.0f;
+    }
+    return theThreat;
+}
+
+// The threat sum times the route weight (attack.c hook_route_cost). The game's route planner works on subsectors, so
+// the port charges one step at the subsector's centre instead of one per tile.
+long AvoidTowerRouteCost(unsigned long inPlayerID, long inX, long inY)
+{
+    if (EngineOf(inPlayerID) != kEngineAgeOfAI)
+        return 0;
+    const SettingsAI& theSettings = Cfg(inPlayerID);
+    if (!theSettings.avoid_towers)
+        return 0;
+    unsigned thePI = inPlayerID & 15;
+    AvoidTowerCounts& theCounts = sAvoid[thePI];
+    theCounts.mCalls++;
+    float theThreat = ThreatAt(inPlayerID, inX, inY);
+    if (theThreat <= 0.0f)
+        return 0;
+    theCounts.mPenalised++;
+    long theCost = (long)(theThreat * (float)theSettings.avoid_towers_weight);
+    theCounts.mCost += (unsigned long)theCost;
+    return theCost;
+}
+
+AvoidTowerCounts AvoidTowerCountsOf(unsigned long inPlayerID)
+{
+    return sAvoid[inPlayerID & 15];
+}
+
+// Enemy land soldiers (not citizens, rams or siege weapons) within 5 tiles of a target (attack.c guarded). Upstream
+// reads all units on the map; it does not ask whether the player sees them, so this reads their unit records too.
+bool RamTargetGuarded(EEPlayer* inPlayer, long inX, long inY)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || !Cfg(inPlayer->mPlayerID).attack_siege)
+        return false;
+    RamWaitCounts& theCounts = sRamWait[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    for (unsigned long p = 1; p < gWorld.GetNumPlayers() && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(p);
+        if (theOwner == NULL || theOwner == inPlayer || inPlayer->mEnemies[p] == 0)
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theUnit->mHitPoints <= 0 || theClass == NULL || theClass->mCategory != kUnitCategoryLand
+                || !Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+                continue;
+            long theDX = theUnit->mTileX - inX, theDY = theUnit->mTileY - inY;
+            if (theDX * theDX + theDY * theDY <= 25) {
+                theCounts.mWaits++;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+RamWaitCounts RamWaitCountsOf(unsigned long inPlayerID)
+{
+    return sRamWait[inPlayerID & 15];
+}
+
+// Enemy aircraft out of reach are not targets for a land attack (attack.c hook_asgu_score, attack_ignore_air). Upstream
+// gives them a free shot only while the scorer is farther than its range + 3 tiles, so aircraft that can be shot at
+// still draw the soldiers. The player's own goal and the staging rules are upstream's, not this rule's business.
+static AirSkipCounts sAirSkip[16];
+
+bool AirTargetOutOfReach(EEPlayer* inPlayer, EEComplexUnit* inTarget, EEComplexUnit* inScorer)
+{
+    if (inPlayer == NULL || inTarget == NULL || inScorer == NULL || inTarget->mUnitClass == NULL
+        || inScorer->mUnitClass == NULL)
+        return false;
+    unsigned long theCategory = inTarget->mUnitClass->mCategory;
+    if (theCategory != kUnitCategoryAirplane && theCategory != kUnitCategoryHelicopter
+        && theCategory != kUnitCategoryHelicopterTransport)
+        return false;
+    AirSkipCounts& theCounts = sAirSkip[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || !Cfg(inPlayer->mPlayerID).attack_ignore_air)
+        return false;
+    float theRange = inScorer->mUnitClass->mRange + 3.0f;
+    long theDX = inTarget->mTileX - inScorer->mTileX, theDY = inTarget->mTileY - inScorer->mTileY;
+    if ((float)(theDX * theDX + theDY * theDY) <= theRange * theRange)
+        return false;
+    theCounts.mSkipped++;
+    return true;
+}
+
+AirSkipCounts AirSkipCountsOf(unsigned long inPlayerID)
+{
+    return sAirSkip[inPlayerID & 15];
+}
+
+// Soldiers on a land attack do not take on an enemy inside known tower range unless the attack's goal lies there too
+// (attack.c hook_asgu_score). The staging rules upstream checks before this are not ported, so they do not hold it back.
+bool LeashSkipsTarget(EEPlayer* inPlayer, long inX, long inY, long inGoalX, long inGoalY)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || !Cfg(inPlayer->mPlayerID).attack_leash)
+        return false;
+    LeashCounts& theCounts = sLeash[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    if (!(ThreatAt(inPlayer->mPlayerID, inX, inY) > 0.0f)
+        || ThreatAt(inPlayer->mPlayerID, inGoalX, inGoalY) > 0.0f)
+        return false;
+    theCounts.mSkipped++;
+    return true;
+}
+
+LeashCounts LeashCountsOf(unsigned long inPlayerID)
+{
+    return sLeash[inPlayerID & 15];
+}
+
+// LOST FIGHTS ([ai_base] avoid_lost_fights with danger_routes, both shipped on). cover.c judges each 8-tile cell with
+// an enemy fighter in sight: the enemy it sees there against its own and allied fighters out to the zone's edge, and a
+// cell it is not winning becomes a lost fight. attack.c then refuses a target inside such a cell beyond the scorer's
+// range + 2, so soldiers stop running one by one into a standing army. The port keeps the cells as a list instead of a
+// bitmap; the refresh and the target test are the same. Upstream's staging and landing checks stay unported. With
+// [ai_base] fight_memory on, remembered enemies mark cells and join a cell's foe side too; at the shipped settings the
+// effect is a reduced cv_mark_mem / cv_foe_mem, without upstream's extended search for long-range remembered guns.
+namespace {
+
+bool AvoidLostOn(EEPlayer* inPlayer)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return false;
+    const SettingsAI& theCfg = Cfg(inPlayer->mPlayerID);
+    return theCfg.avoid_lost_fights && theCfg.danger_routes && theCfg.honest_vision;
+}
+
+// The remembered foes of fight_memory join only the lost-fight judgement, so this gate is read inside AvoidLostTick.
+bool FightMemoryOn(EEPlayer* inPlayer)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return false;
+    const SettingsAI& theCfg = Cfg(inPlayer->mPlayerID);
+    return theCfg.fight_memory && theCfg.honest_vision;
+}
+
+// A remembered unit's class counts as a fighter (cover.c cv_mil): a land unit or a warship with a gun. Upstream counts
+// siege and rams here, so Roles::IsSoldier, which leaves both out, is not the right test. Citizens, aircraft, transports
+// and buildings do not count; the intel scan keeps some of them as kSoldier records.
+bool FightMemoryFighter(EEUnitClass* inClass)
+{
+    if (inClass == NULL || !(inClass->mAttack > 0.0f) || inClass->mFamily == kUnitFamilyCitizen)
+        return false;
+    unsigned long theCategory = inClass->mCategory;
+    return theCategory == kUnitCategoryLand || theCategory == kUnitCategoryLand8
+           || theCategory == kUnitCategoryLand15 || theCategory == kUnitCategoryLandMilitaryHero
+           || theCategory == kUnitCategoryNaval || theCategory == kUnitCategorySubmergedNaval;
+}
+
+// Whether a unit is the kind that can be judged: a soldier, or a building with a ground attack. The cell walk asks this
+// before it picks a cell, so it must not depend on where the unit stands.
+bool AvoidLostFighterType(EEUnit* inUnit)
+{
+    if (inUnit == NULL || inUnit->mHitPoints <= 0 || inUnit->mUnitClass == NULL)
+        return false;
+    EEUnitClass* theClass = inUnit->mUnitClass;
+    if (Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+        return true;
+    float theRange = 0.0f, theAttack = 0.0f;
+    return (theClass->mCategory == kUnitCategoryBuilding || theClass->mCategory == kUnitCategoryFortress)
+           && DefenceStats(inUnit, theRange, theAttack) && theAttack > 0.0f;
+}
+
+// A fighter that can be judged in a cell: a soldier, or a finished building with a ground attack. The building counts
+// where its range reaches the cell's middle; the soldier by the tile it stands on.
+bool AvoidLostFighter(EEUnit* inUnit, long inX, long inY, float& outRange)
+{
+    if (inUnit == NULL || inUnit->mHitPoints <= 0 || inUnit->mUnitClass == NULL)
+        return false;
+    EEUnitClass* theClass = inUnit->mUnitClass;
+    float theAttack = 0.0f;
+    outRange = 0.0f;
+    if ((theClass->mCategory == kUnitCategoryBuilding || theClass->mCategory == kUnitCategoryFortress)
+        && DefenceStats(inUnit, outRange, theAttack) && theAttack > 0.0f) {
+        long theDX = inUnit->mTileX - inX, theDY = inUnit->mTileY - inY;
+        return (float)(theDX * theDX + theDY * theDY) <= (outRange + 1.0f) * (outRange + 1.0f);
+    }
+    if (!Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+        return false;
+    outRange = theClass->mRange;
+    return true;
+}
+
+}
+
+void AvoidLostTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (!AvoidLostOn(inPlayer))
+        return;
+    unsigned long thePI = inPlayer->mPlayerID & 15;
+    LostZoneSet& theSet = sLostZones[thePI];
+    if (theSet.mRefreshed != 0 && (inNow < theSet.mRefreshed
+                                   || inNow - theSet.mRefreshed < AvoidLostRules::kRefreshMs))
+        return;
+    theSet.mRefreshed = inNow != 0 ? inNow : 1;
+    theSet.mCount = 0;
+    AvoidLostZoneCounts& theCounts = sAvoidLostZones[thePI];
+    theCounts.mRefreshes++;
+
+    const int kCell = AvoidLostRules::kCell;
+    const int kFoe = AvoidLostRules::kFoe;
+    long theCentres[128];
+    int theNum = 0;
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(i);
+        if (theOwner == NULL || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (!SeenBy(theUnit, inPlayer) || !AvoidLostFighterType(theUnit))
+                continue;
+            long theCX = (theUnit->mTileX / kCell) * kCell + kCell / 2;
+            long theCY = (theUnit->mTileY / kCell) * kCell + kCell / 2;
+            bool theNew = true;
+            for (int c = 0; c < theNum && theNew; c++)
+                theNew = theCentres[c * 2] != theCX || theCentres[c * 2 + 1] != theCY;
+            if (theNew && theNum < (int)(sizeof(theCentres) / (2 * sizeof(long)))) {
+                theCentres[theNum * 2] = theCX;
+                theCentres[theNum * 2 + 1] = theCY;
+                theNum++;
+            }
+        }
+    }
+
+    // cover.c cv_mark_mem: a fresh remembered enemy soldier marks its cell even when no eye sees it now.
+    const Intel::Memory* theMemory = NULL;
+    unsigned long theMemNow = 0, theMemLast = 0;
+    if (FightMemoryOn(inPlayer)) {
+        theMemory = &MemoryOf(thePI);
+        theMemNow = theMemory->Now();
+        theMemLast = theMemory->Last();
+        for (size_t k = 0; k < theMemory->Records().size(); k++) {
+            const Intel::Record& theRecord = theMemory->Records()[k];
+            if (theRecord.mKind != Intel::kSoldier || theRecord.mX < 0 || theRecord.mOwner <= 0
+                || !FightMemoryRules::Fresh(theMemNow, theRecord.mTime, theMemLast))
+                continue;
+            EEPlayer* theOwner = gWorld.GetPlayer((unsigned long)theRecord.mOwner);
+            if (theOwner == NULL || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner))
+                continue;
+            long theCX = (theRecord.mX / kCell) * kCell + kCell / 2;
+            long theCY = (theRecord.mY / kCell) * kCell + kCell / 2;
+            bool theNew = true;
+            for (int c = 0; c < theNum && theNew; c++)
+                theNew = theCentres[c * 2] != theCX || theCentres[c * 2 + 1] != theCY;
+            if (!theNew || theNum >= (int)(sizeof(theCentres) / (2 * sizeof(long))))
+                continue;
+            theCentres[theNum * 2] = theCX;
+            theCentres[theNum * 2 + 1] = theCY;
+            theNum++;
+            theCounts.mMemCells++;
+        }
+    }
+
+    for (int c = 0; c < theNum; c++) {
+        long theCX = theCentres[c * 2], theCY = theCentres[c * 2 + 1];
+        Stats::Side theOwn, theFoe;
+        Stats::Clear(theOwn);
+        Stats::Clear(theFoe);
+        float theReach = 0.0f;
+        for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+            EEPlayer* theOwner = gWorld.GetPlayer(i);
+            if (theOwner == NULL || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner))
+                continue;
+            for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+                if (!SeenBy(theUnit, inPlayer))
+                    continue;
+                float theRange = 0.0f;
+                long theDX = theUnit->mTileX - theCX, theDY = theUnit->mTileY - theCY;
+                if (!AvoidLostFighter(theUnit, theCX, theCY, theRange))
+                    continue;
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                bool theBuilding = theClass->mCategory == kUnitCategoryBuilding
+                                   || theClass->mCategory == kUnitCategoryFortress;
+                if (!theBuilding && (float)(theDX * theDX + theDY * theDY) > (float)(kFoe * kFoe))
+                    continue;
+                if (theRange > theReach && theRange < 30.0f)
+                    theReach = theRange;
+                Stats::Add(theFoe, theUnit);
+            }
+        }
+        // cover.c cv_foe_mem with the lost-fight caller's r = CV_ZONE_FOE and reach = 0: a remembered enemy within
+        // ten tiles of the cell's middle joins the foe side, and its range widens the zone unless it is 30 tiles or more.
+        if (theMemory != NULL) {
+            for (size_t k = 0; k < theMemory->Records().size(); k++) {
+                const Intel::Record& theRecord = theMemory->Records()[k];
+                if (theRecord.mKind != Intel::kSoldier || theRecord.mX < 0 || theRecord.mOwner <= 0
+                    || !FightMemoryRules::Fresh(theMemNow, theRecord.mTime, theMemLast))
+                    continue;
+                long theDX = theRecord.mX - theCX, theDY = theRecord.mY - theCY;
+                if ((float)(theDX * theDX + theDY * theDY) > (float)(kFoe * kFoe))
+                    continue;
+                EEPlayer* theOwner = gWorld.GetPlayer((unsigned long)theRecord.mOwner);
+                if (theOwner == NULL || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner)
+                    || theRecord.mType < 0 || theRecord.mType >= 871)
+                    continue;
+                EEUnitClass* theClass = gUnitClassTable[theRecord.mType];
+                if (!FightMemoryFighter(theClass))
+                    continue;
+                EEUnitClassUpgrade* theStats = theOwner->mUnitClassUpgrades[theRecord.mType];
+                float theRange = theStats != NULL ? theStats->mRange : theClass->mRange;
+                float theMemReach = FightMemoryRules::Reach(theRange);
+                if (Stats::AddRecord(theFoe, theRecord.mType, theRecord.mOwner, theRecord.mHitPoints,
+                                     theRecord.mX, theRecord.mY)) {
+                    theCounts.mMemFoes++;
+                    if (theMemReach > theReach)
+                        theReach = theMemReach;
+                }
+            }
+        }
+        if (theFoe.mCount == 0)
+            continue;
+        theCounts.mCells++;
+        const float theRadius = AvoidLostRules::ZoneRadius(theReach);
+        const float theOwnR = AvoidLostRules::OwnRadius(theRadius);
+        for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+            EEPlayer* theOwner = gWorld.GetPlayer(i);
+            if (theOwner == NULL || theOwner->mObserverMode || IsEnemyOf(inPlayer, theOwner))
+                continue;
+            for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+                float theRange = 0.0f;
+                if (!AvoidLostFighter(theUnit, theCX, theCY, theRange))
+                    continue;
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                bool theBuilding = theClass->mCategory == kUnitCategoryBuilding
+                                   || theClass->mCategory == kUnitCategoryFortress;
+                if (!theBuilding) {
+                    long theDX = theUnit->mTileX - theCX, theDY = theUnit->mTileY - theCY;
+                    if ((float)(theDX * theDX + theDY * theDY) > theOwnR * theOwnR)
+                        continue;
+                }
+                Stats::Add(theOwn, theUnit);
+            }
+        }
+        if (!AvoidLostRules::IsLost(Stats::Ratio(theOwn, theFoe)))
+            continue;
+        if (theSet.mCount >= kMaxLostZones)
+            continue;
+        LostZone& theZone = theSet.mZones[theSet.mCount++];
+        theZone.mX = theCX;
+        theZone.mY = theCY;
+        theZone.mR2 = theRadius * theRadius;
+        theCounts.mZones++;
+    }
+}
+
+AvoidLostCounts AvoidLostCountsOf(unsigned long inPlayerID)
+{
+    return sAvoidLost[inPlayerID & 15];
+}
+
+AvoidLostZoneCounts AvoidLostZoneCountsOf(unsigned long inPlayerID)
+{
+    return sAvoidLostZones[inPlayerID & 15];
+}
+
+bool LostZoneSkipsTarget(EEPlayer* inPlayer, EEComplexUnit* inScorer, EEComplexUnit* inTarget)
+{
+    if (!AvoidLostOn(inPlayer) || inScorer == NULL || inTarget == NULL || inTarget->mUnitClass == NULL)
+        return false;
+    AvoidLostCounts& theCounts = sAvoidLost[inPlayer->mPlayerID & 15];
+    theCounts.mChecks++;
+    const LostZoneSet& theSet = sLostZones[inPlayer->mPlayerID & 15];
+    const float theRange = Stats::Range(inScorer) + AvoidLostRules::kReachSlack;
+    const float theReach2 = theRange * theRange;
+    bool theInside = false;
+    for (int z = 0; z < theSet.mCount; z++) {
+        const LostZone& theZone = theSet.mZones[z];
+        long theDX = inTarget->mTileX - theZone.mX, theDY = inTarget->mTileY - theZone.mY;
+        if ((float)(theDX * theDX + theDY * theDY) > theZone.mR2)
+            continue;
+        theInside = true;
+        long theSX = inScorer->mTileX - inTarget->mTileX, theSY = inScorer->mTileY - inTarget->mTileY;
+        if ((float)(theSX * theSX + theSY * theSY) > theReach2) {
+            theCounts.mSkipped++;
+            return true;
+        }
+    }
+    if (theInside)
+        theCounts.mInReach++;
+    return false;
+}
+
+// Upstream mass.c mass_tether, [ai_base] army_mass=tether (bit 16, default off). A member of an out land subgroup picks
+// no target more than army_mass_tether tiles from the pack unless it is within its own range + 2 tiles of it. Upstream
+// builds the pack from the subgroup's members away from base; here it is the middle of the subgroup's own members.
+// only_buildings (bit 128) limits the rule to enemy buildings and forts.
+static TetherCounts sTether[16];
+
+bool TetherSkipsTarget(EEPlayer* inPlayer, EECPAttackSubGroup* inGroup, EEComplexUnit* inScorer, EEComplexUnit* inTarget)
+{
+    if (inPlayer == NULL || inGroup == NULL || inScorer == NULL || inTarget == NULL || inTarget->mUnitClass == NULL
+        || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return false;
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.army_mass.tether)
+        return false;
+    TetherCounts& theCounts = sTether[inPlayer->mPlayerID & 15];
+    theCounts.mCalls++;
+    if (theSettings.army_mass.only_buildings
+        && !Roles::IsBuildingCategory(inTarget->mUnitClass->mCategory))
+        return false;
+    long theX = 0, theY = 0, theN = 0;
+    for (unsigned long i = 0; i < inGroup->GetNumUnits() && i < 256; i++) {
+        EEComplexUnit* theMember = inGroup->GetUnitUnit(i);
+        if (theMember == NULL || theMember->mHitPoints <= 0)
+            continue;
+        theX += theMember->mTileX;
+        theY += theMember->mTileY;
+        theN++;
+    }
+    if (theN < 2)
+        return false;
+    long theDX = inTarget->mTileX - theX / theN, theDY = inTarget->mTileY - theY / theN;
+    long theTether = theSettings.army_mass_tether;
+    if (theDX * theDX + theDY * theDY <= theTether * theTether)
+        return false;
+    float theRange = (inScorer->mStats != NULL ? inScorer->mStats->GetRange() : inScorer->mUnitClass->mRange) + 2.0f;
+    theDX = inTarget->mTileX - inScorer->mTileX;
+    theDY = inTarget->mTileY - inScorer->mTileY;
+    if ((float)(theDX * theDX + theDY * theDY) <= theRange * theRange)
+        return false;
+    theCounts.mSkipped++;
+    return true;
+}
+
+TetherCounts TetherCountsOf(unsigned long inPlayerID)
+{
+    return sTether[inPlayerID & 15];
+}
+
+float UnitPower(EEUnit* inUnit);
+
+// Upstream mass.c ms_wait, [ai_base] army_mass=wait_stronger (default off). When an attack is due within 15 seconds,
+// compare the player's known land army against the strongest known enemy army. While that enemy is stronger than
+// army_mass_ratio percent, push the game's next attack time out 20 seconds at a time, for at most army_mass_wait minutes.
+// Upstream reads its own army from the unit grid and enemy armies from intel records; here the own army comes from the
+// player's unit list and intel from MemoryOf. A game reschedule or launch of the attack ends an active wait.
+struct MassWait {
+    unsigned long mSince, mUntil;   // wait start, last next-attack time written by this rule
+};
+static MassWait sMassWait[16];
+static MassWaitCounts sMassWaitCounts[16];
+
+void MassWaitTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.army_mass.wait_stronger)
+        return;
+    MassWaitCounts& theCounts = sMassWaitCounts[inPlayer->mPlayerID & 15];
+    MassWait& theWait = sMassWait[inPlayer->mPlayerID & 15];
+    theCounts.mChecks++;
+    unsigned long theDue = inPlayer->mNextAttackTime;
+    if (theWait.mSince != 0 && theDue != theWait.mUntil)
+        theWait.mSince = 0;
+    if (theDue > inNow + 15000 && theWait.mSince == 0)
+        return;
+    if (theWait.mSince != 0 && theDue > inNow + 15000)
+        return;
+    float theOwn = 0.0f;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        EEUnitClass* theClass = theUnit->mUnitClass;
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theClass == NULL || theClass->mCategory != kUnitCategoryLand
+            || !Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+            continue;
+        theOwn += UnitPower(theUnit);
+    }
+    float theFoe[16] = {};
+    const Intel::Memory& theMemory = MemoryOf(inPlayer->mPlayerID);
+    for (const Intel::Record& theRecord : theMemory.Records()) {
+        if (theRecord.mKind != Intel::kSoldier || theMemory.Now() - theRecord.mTime > Intel::kSoldierForgottenAfter
+            || theRecord.mOwner <= 0 || theRecord.mOwner >= 16)
+            continue;
+        theFoe[theRecord.mOwner] += (float)theRecord.mHitPoints * theRecord.mAttack;
+    }
+    float theTop = 0.0f;
+    for (unsigned long p = 1; p < gWorld.GetNumPlayers() && p < 16; p++) {
+        EEPlayer* theOther = gWorld.GetPlayer(p);
+        if (theOther == NULL || theOther == inPlayer || !IsEnemyOf(inPlayer, theOther))
+            continue;
+        if (theFoe[p] > theTop)
+            theTop = theFoe[p];
+    }
+    if (theWait.mSince == 0)
+        theWait.mSince = inNow != 0 ? inNow : 1;
+    unsigned long theElapsed = inNow >= theWait.mSince ? inNow - theWait.mSince : 0;
+    long theRatio = (long)(theSettings.army_mass_ratio * 100.0f + 0.5f);
+    unsigned long theLimit = (unsigned long)theSettings.army_mass_wait * 60000ul;
+    if (theTop <= 0.0f || theOwn * 100.0f >= theTop * (float)theRatio || theElapsed >= theLimit) {
+        if (theElapsed >= 20000)
+            theCounts.mGoes++;
+        theWait.mSince = 0;
+        return;
+    }
+    if (theElapsed < 1000)
+        theCounts.mWaits++;
+    theCounts.mWaited += 5;
+    theWait.mUntil = inNow + 20000;
+    inPlayer->mNextAttackTime = theWait.mUntil;
+}
+
+MassWaitCounts MassWaitCountsOf(unsigned long inPlayerID)
+{
+    return sMassWaitCounts[inPlayerID & 15];
+}
+
+// REGROUP (mass.c ms_tether, [ai_base] army_mass=walk_back; off in the shipped file). Every 2 game seconds a land
+// subgroup that is out past forming and fighting has each chasing soldier walk back to the centre of its away members:
+// the soldier must be past the base radius, tether + 4 tiles from that centre and not already walking to within 4 tiles
+// of it. The tether score, rally, to_pack and wait_stronger bits are separate and are not ported.
+static WalkBackCounts sWalkBack[16];
+static unsigned long sLastWalkBack[16];
+
+void WalkBackTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (inPlayer == NULL || EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI)
+        return;
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.army_mass.walk_back)
+        return;
+    const unsigned theIndex = inPlayer->mPlayerID & 15;
+    if (sLastWalkBack[theIndex] != 0 && inNow >= sLastWalkBack[theIndex] && inNow - sLastWalkBack[theIndex] < 2000)
+        return;
+    sLastWalkBack[theIndex] = inNow != 0 ? inNow : 1;
+    WalkBackCounts& theCounts = sWalkBack[theIndex];
+    theCounts.mChecks++;
+    EECPCivilizationManager* theCiv = inPlayer->mCivilizationManager;
+    EECPCombatManager* theCombat = inPlayer->mCombatManager;
+    if (theCiv == NULL || theCiv->mBuildManager == NULL || theCombat == NULL || theCombat->mAttackCommander == NULL)
+        return;
+    const long theBaseX = theCiv->mBuildManager->mTownCenterTile.mX;
+    const long theBaseY = theCiv->mBuildManager->mTownCenterTile.mY;
+    if (theBaseX < 0 || theBaseY < 0)
+        return;
+    EECPAttackCommander* theCommander = theCombat->mAttackCommander;
+    const long theTether = theSettings.army_mass_tether + 4;
+
+    for (size_t g = 0; g < theCommander->mGroups.size() && g < 64; g++) {
+        EECPAttackGroup* theGroup = theCommander->mGroups[g];
+        if (theGroup == NULL)
+            continue;
+        for (unsigned long s = 0; s < theGroup->GetNumSubGroups() && s < 64; s++) {
+            EECPAttackSubGroup* theSubGroup = theGroup->GetSubGroupAt((long)s);
+            if (theSubGroup == NULL || theSubGroup->mKind != kASGKindLand)
+                continue;
+            theCounts.mSubGroups++;
+            long theX = 0, theY = 0, theN = 0, theAX = 0, theAY = 0, theNA = 0;
+            for (unsigned long i = 0; i < theSubGroup->GetNumUnits() && i < 256; i++) {
+                EECPAttackSubGroupUnit* theRecord = theSubGroup->GetUnitsAt(i);
+                EEComplexUnit* theUnit = theRecord != NULL ? theRecord->GetUnit() : NULL;
+                if (theUnit == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0)
+                    continue;
+                theX += theUnit->mTileX;
+                theY += theUnit->mTileY;
+                theN++;
+                const long theDX = theUnit->mTileX - theBaseX, theDY = theUnit->mTileY - theBaseY;
+                if (theDX * theDX + theDY * theDY > WalkBackRules::kBaseSafe * WalkBackRules::kBaseSafe) {
+                    theAX += theUnit->mTileX;
+                    theAY += theUnit->mTileY;
+                    theNA++;
+                }
+            }
+            if (theN == 0)
+                continue;
+            const long thePackX = theNA > 0 ? theAX / theNA : theX / theN;
+            const long thePackY = theNA > 0 ? theAY / theNA : theY / theN;
+            const long theODX = thePackX - theBaseX, theODY = thePackY - theBaseY;
+            if (!WalkBackRules::OutPastForming(theSubGroup->mState, theODX * theODX + theODY * theODY)
+                || !WalkBackRules::HasPack((int)theNA))
+                continue;
+            theCounts.mPacks++;
+            if (!WalkBackRules::IsFightingState(theSubGroup->mState))
+                continue;
+            for (unsigned long i = 0; i < theSubGroup->GetNumUnits() && i < 256; i++) {
+                EECPAttackSubGroupUnit* theRecord = theSubGroup->GetUnitsAt(i);
+                EEComplexUnit* theUnit = theRecord != NULL ? theRecord->GetUnit() : NULL;
+                if (theUnit == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL)
+                    continue;
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                if (theClass->mCategory != kUnitCategoryLand
+                    || !Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange))
+                    continue;
+                EEUnitGoal* theGoal = theUnit->mGoalState;
+                EEUGAttackUnit* theAttack = dynamic_cast<EEUGAttackUnit*>(theGoal);
+                if (theAttack != NULL && theAttack->mTarget != NULL && theAttack->mTarget->mHitPoints > 0
+                    && theAttack->mTarget->mTileX >= 0)
+                    continue;
+                const long theBDX = theUnit->mTileX - theBaseX, theBDY = theUnit->mTileY - theBaseY;
+                const long thePDX = theUnit->mTileX - thePackX, thePDY = theUnit->mTileY - thePackY;
+                const long theBaseD2 = theBDX * theBDX + theBDY * theBDY;
+                const long thePackD2 = thePDX * thePDX + thePDY * thePDY;
+                long theGoalDX = 100, theGoalDY = 100;
+                EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theGoal);
+                if (theLocation != NULL) {
+                    theGoalDX = (long)(theLocation->mLocation.GetX() - ((float)thePackX + 0.5f));
+                    theGoalDY = (long)(theLocation->mLocation.GetY() - ((float)thePackY + 0.5f));
+                }
+                if (!WalkBackRules::ShouldWalkBack(theBaseD2, thePackD2, theTether, theGoalDX, theGoalDY))
+                    continue;
+                const GE3DPoint thePoint((float)thePackX + 0.5f, (float)thePackY + 0.5f, 0.0f);
+                EEUGLocation* theMove = new EEUGLocation(&thePoint, true, false, false, 0.0f, false, false);
+                if (theSubGroup->GiveGoal(theUnit, theMove, false, kActionPrepareToMove))
+                    theCounts.mRegrouped++;
+                else if (theMove != NULL)
+                    delete theMove;
+            }
+        }
+    }
+}
+
+WalkBackCounts WalkBackCountsOf(unsigned long inPlayerID)
+{
+    return sWalkBack[inPlayerID & 15];
+}
+
 // Enemy soldiers that this player sees within reach of a tile: each by its own reach (its range + RAID_MARGIN, at least r0, at
-// most the box). The first raider found answers (attack.c raiders_scan without the kinds; walled_out and ship_reach_exact are off by default)
+// most the box). The first raider found answers (attack.c raiders_scan without the kinds; walled_out/behind_walls is off by default)
 bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)
 {
     int theMax = Cfg(inPlayer->mPlayerID).citizen_threats ? kRaidFar : kRaidMax;
@@ -337,6 +1013,12 @@ bool RaidersNear(EEPlayer* inPlayer, long inX, long inY, int inR0)
                 theReach = inR0;
             if (labs(theUnit->mTileX - inX) > theReach || labs(theUnit->mTileY - inY) > theReach)
                 continue;
+            if (Cfg(inPlayer->mPlayerID).ship_reach_exact && (theCategory == kUnitCategoryNaval || theCategory == kUnitCategorySubmergedNaval)) {
+                float theShip = theRange + 1.0f;   // SHIP_SLACK: a ship counts within its own reach, round
+                long theDX = theUnit->mTileX - inX, theDY = theUnit->mTileY - inY;
+                if ((float)(theDX * theDX + theDY * theDY) > theShip * theShip)
+                    continue;
+            }
             if (SeenBy(theUnit, inPlayer))
                 return true;
         }
@@ -433,15 +1115,81 @@ bool NearestDrop(EEPlayer* inPlayer, long inX, long inY, bool inFood, long& outX
 
 }
 
+// The hurt memory stays in this file; the site-fort choice only needs its near test.
+int HurtNearAt(unsigned inPlayerIndex, long inX, long inY)
+{
+    return HurtNear(inPlayerIndex, inX, inY);
+}
+
+namespace {
+
+struct RaidHeldCell {
+    int mCX, mCY;
+    unsigned long mTime;
+    bool mHeld;
+} sRaidHeld[16][32];
+Stats::Side sRaidOwn, sRaidFoe;
+
+}
+
+// A town holds a raid there: its soldiers within 10 tiles and its towers covering it beat the raiders it sees within 12 tiles
+// on the fight estimate (raid_held, 0 = off). Cached per 4 x 4 tile cell for 4 seconds.
+bool RaidHeld(EEPlayer* inPlayer, long inX, long inY)
+{
+    const SettingsAI& theCfg = SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium);
+    if (theCfg.raid_held <= 0 || inPlayer == NULL)
+        return false;
+    unsigned thePI = inPlayer->mPlayerID & 15;
+    unsigned long theNow = gPhysics->mGameTime;
+    int theCX = (int)(inX >> 2), theCY = (int)(inY >> 2);
+    RaidHeldCell& theCell = sRaidHeld[thePI][(unsigned)(theCX * 31 + theCY) & 31];
+    if (theCell.mTime != 0 && theCell.mCX == theCX && theCell.mCY == theCY && theNow >= theCell.mTime && theNow - theCell.mTime < 4000)
+        return theCell.mHeld;
+    long thePX = theCX * 4 + 2, thePY = theCY * 4 + 2;
+    Stats::Clear(sRaidOwn);
+    Stats::Clear(sRaidFoe);
+    for (unsigned long i = 1; i < gWorld.GetNumPlayers(); i++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(i);
+        if (theOwner == NULL)
+            continue;
+        bool theOwn = theOwner == inPlayer, theEnemy = IsEnemyOf(inPlayer, theOwner);
+        if (!theOwn && !theEnemy)
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+                continue;
+            long theDX = theUnit->mTileX - thePX, theDY = theUnit->mTileY - thePY;
+            long theD = labs(theDX) > labs(theDY) ? labs(theDX) : labs(theDY);
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theOwn) {
+                float theRange, theAttack;
+                if ((theClass->mCategory == kUnitCategoryBuilding || theClass->mCategory == kUnitCategoryFortress)
+                    && DefenceStats(theUnit, theRange, theAttack) && (float)theD <= theRange + 1.0f)
+                    Stats::Add(sRaidOwn, theUnit);
+                else if (Roles::IsSoldier(theClass->mCategory, theClass->mFamily, theClass->mRange) && theD <= 10)
+                    Stats::Add(sRaidOwn, theUnit);
+            } else if (theD <= 12 && (theClass->mCategory == kUnitCategoryLand || theClass->mCategory == kUnitCategoryNaval)
+                       && theClass->mAttack > 0 && (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kCitizen) == 0
+                       && SeenBy(theUnit, inPlayer))
+                Stats::Add(sRaidFoe, theUnit);
+        }
+    }
+    theCell.mCX = theCX;
+    theCell.mCY = theCY;
+    theCell.mTime = theNow ? theNow : 1;
+    theCell.mHeld = sRaidFoe.mCount > 0 && Stats::Ratio(sRaidOwn, sRaidFoe) >= theCfg.raid_held / 100.0f;
+    return theCell.mHeld;
+}
+
 // A site is dangerous when raiders or hurt citizens are near it, or the straight way from the nearest drop site to it crosses a known
-// enemy defence's reach (the searches refuse such a site). raid_held (a town that holds against the raiders) is not ported yet.
+// enemy defence's reach (the searches refuse such a site). With raid_held, a raided or hurt site the town holds is not dangerous.
 bool SiteDanger(EEPlayer* inPlayer, EEUnit* inSite, bool inFood, int inResource)
 {
     if (inPlayer == NULL || inSite == NULL || !Cfg(inPlayer->mPlayerID).avoid_towers_citizens)
         return false;
     long theX = inSite->mTileX, theY = inSite->mTileY;
     bool theRaided = RaidersNear(inPlayer, theX, theY, 6), theHurt = !theRaided && HurtDanger(inPlayer, theX, theY, inResource);
-    if (theRaided || theHurt)
+    if ((theRaided || theHurt) && !RaidHeld(inPlayer, theX, theY))
         return true;
     long theDX = -10000, theDY = 0;
     NearestDrop(inPlayer, theX, theY, inFood, theDX, theDY);
@@ -478,15 +1226,55 @@ void MoveTo(EEComplexUnit* inUnit, float inX, float inY)
 }
 
 struct SafetyCounts {
-    unsigned mSent, mHeld, mRefusedRepairs, mRefusedSites, mStrays;
+    unsigned mSent, mHeld, mRefusedRepairs, mRefusedSites, mStrays, mFled, mFledAside;
 } sSafety[16];
 
+struct Muster {
+    bool mOn;
+    int mMoves;
+    float mRX, mRY;
+    unsigned long mSince, mCool, mCoolLength;
+} sMuster[16];
+
+struct HoldTown {
+    bool mHolding;
+    unsigned long mSortieTime;
+} sHoldTown[16];
+
+}
+
+float UnitPower(EEUnit* inUnit)
+{
+    float theAttack = inUnit->mStats != NULL ? inUnit->mStats->mAttack : (float)inUnit->mUnitClass->mAttack;
+    return (float)inUnit->mHitPoints * (theAttack > 0 ? theAttack : 0);
 }
 
 // every 4 seconds, before the citizen assignment (attack.c citizens_safety): the enemy defences seen; each citizen's hit points
 // against the last look (the places where citizens were hurt); the strays of an attack sent home; and the gatherers and builders
 // at a site near raiders or enemy towers, or where citizens were hurt, sent back to their drop site. Not hunters: the animals hurt
-// them. Not ported yet: the flight of an overrun base (muster_rally of defence.c), the shelter in a fortress (bunker.c), raid_held.
+// them. With muster on, citizens in danger at an overrun base flee to the muster rally point. Not ported yet: the shelter in a
+// fortress (bunker.c).
+static bool PathRaided(EEPlayer* inPlayer, long inX0, long inY0, long inX1, long inY1);
+
+static void FleePoint(EEPlayer* inPlayer, long inX, long inY, float inRX, float inRY, float& outX, float& outY)
+{
+    outX = inRX;
+    outY = inRY;
+    if (!PathRaided(inPlayer, inX, inY, (long)inRX, (long)inRY))
+        return;
+    float theBest = 1e9f;
+    static const float sDir[8][2] = {{1, 0}, {0.7071f, 0.7071f}, {0, 1}, {-0.7071f, 0.7071f}, {-1, 0}, {-0.7071f, -0.7071f}, {0, -1}, {0.7071f, -0.7071f}};
+    for (int k = 0; k < 8; k++) {
+        float thePX = (float)inX + sDir[k][0] * 12.0f, thePY = (float)inY + sDir[k][1] * 12.0f;
+        float theDX = thePX - inRX, theDY = thePY - inRY, theD = theDX * theDX + theDY * theDY;
+        if (theD >= theBest || PathRaided(inPlayer, inX, inY, (long)thePX, (long)thePY))
+            continue;
+        theBest = theD;
+        outX = thePX;
+        outY = thePY;
+    }
+}
+
 void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sNext[16];
@@ -500,7 +1288,9 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
     if (theCivilization == NULL || theCivilization->mResourceManager == NULL)
         return;
-    int theSent = 0, theStray = 0;
+    int theSent = 0, theStray = 0, theFled = 0, theAside = 0;
+    bool theMuster = sMuster[thePI].mOn;
+    float theRX = sMuster[thePI].mRX, theRY = sMuster[thePI].mRY;
     for (int r = 0; r < 7; r++) {
         const std::deque<EEComplexUnit*> theList = theCivilization->mResourceManager->mGatherers[r];   // a copy: the orders below change the lists
         for (size_t k = 0; k < theList.size(); k++) {
@@ -518,13 +1308,36 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theGoal);
             if (r == 0 && theLocation != NULL) {   // a stray: an attack's leftover order, march to the target's Town Center
                 long theDX = (long)theLocation->mLocation.GetX(), theDY = (long)theLocation->mLocation.GetY(), theNX, theNY;
-                if (BuildingAt(inPlayer, theDX, theDY, 6)
+                bool theToRally = theMuster && fabsf(theLocation->mLocation.GetX() - theRX) < 2.0f && fabsf(theLocation->mLocation.GetY() - theRY) < 2.0f;
+                if (!theToRally && BuildingAt(inPlayer, theDX, theDY, 6)
                     && (!NearestDrop(inPlayer, theDX, theDY, false, theNX, theNY) || (theNX - theDX) * (theNX - theDX) + (theNY - theDY) * (theNY - theDY) > 225)
                     && NearestDrop(inPlayer, theUnit->mTileX, theUnit->mTileY, false, theNX, theNY)) {
                     MoveTo(theUnit, (float)theNX + 0.5f, (float)theNY + 0.5f);
                     theStray++;
                     continue;
                 }
+            }
+            if (theMuster) {   // the base is overrun: citizens in danger flee to the rally point
+                float theDistRX = (float)theUnit->mTileX - theRX, theDistRY = (float)theUnit->mTileY - theRY;
+                if (theDistRX * theDistRX + theDistRY * theDistRY > 36.0f) {
+                    EEUnit* theWork = theBuild != NULL ? theBuild->mTarget : (theGather != NULL ? theGather->mResource : NULL);
+                    bool theWalk = theLocation != NULL;
+                    bool theDanger = theWalk
+                        ? PathRaided(inPlayer, theUnit->mTileX, theUnit->mTileY, (long)theLocation->mLocation.GetX(), (long)theLocation->mLocation.GetY())
+                        : (RaidersNear(inPlayer, theUnit->mTileX, theUnit->mTileY, 8)
+                           || (theWork != NULL && RaidersNear(inPlayer, theWork->mTileX, theWork->mTileY, 8)));
+                    if (theDanger) {
+                        float theFX, theFY;
+                        FleePoint(inPlayer, theUnit->mTileX, theUnit->mTileY, theRX, theRY, theFX, theFY);
+                        if (!(theWalk && fabsf(theLocation->mLocation.GetX() - theFX) < 2.0f && fabsf(theLocation->mLocation.GetY() - theFY) < 2.0f)) {
+                            MoveTo(theUnit, theFX, theFY);
+                            theFled++;
+                            if (theFX != theRX || theFY != theRY)
+                                theAside++;
+                        }
+                    }
+                }
+                continue;
             }
             if (theGoal == NULL || (theBuild == NULL && theGather == NULL))
                 continue;
@@ -540,6 +1353,10 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                 theRaided = true;
             if (!theRaided && (theBuild != NULL || !SiteDanger(inPlayer, theSite, r == 2, r)))
                 continue;
+            if (theRaided && RaidHeld(inPlayer, theSite->mTileX, theSite->mTileY)) {   // the town holds: kept at work
+                sSafety[thePI].mHeld++;
+                continue;
+            }
             if (theRaided && labs(theDropX - theSite->mTileX) <= 3 && labs(theDropY - theSite->mTileY) <= 3)   // at home already
                 continue;
             MoveTo(theUnit, (float)theDropX + 0.5f, (float)theDropY + 0.5f);
@@ -548,12 +1365,27 @@ void SafetyTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     }
     sSafety[thePI].mSent += (unsigned)theSent;
     sSafety[thePI].mStrays += (unsigned)theStray;
+    sSafety[thePI].mFled += (unsigned)theFled;
+    sSafety[thePI].mFledAside += (unsigned)theAside;
+}
+
+// enemy soldiers on the way from (inX0,inY0) to (inX1,inY1): every 4 tiles from the 5th, within 4, and within 6 of the end
+static bool PathRaided(EEPlayer* inPlayer, long inX0, long inY0, long inX1, long inY1)
+{
+    float theDX = (float)(inX1 - inX0), theDY = (float)(inY1 - inY0), theLength = sqrtf(theDX * theDX + theDY * theDY);
+    if (theLength <= 0.0f)
+        return RaidersKnown(inPlayer, inX1, inY1, 6);
+    for (float t = 5.0f; t < theLength; t += 4.0f)
+        if (RaidersKnown(inPlayer, inX0 + (long)(theDX / theLength * t), inY0 + (long)(theDY / theLength * t), 4))
+            return true;
+    return RaidersKnown(inPlayer, inX1, inY1, 6);
 }
 
 // REPAIRS UNDER ATTACK: the repair round sends a citizen to each damaged building, also to the wall or dock an army is hitting that
 // moment. Its order is refused while enemy soldiers it knows stand within 8 tiles of the building (or their range + 3), and
 // with repair_one_walker when another of its citizens already holds a build goal on the building (one at a time: a foundation
-// far out drew a citizen every 31 s until one arrived). repair_safe_way (off by default) is not ported.
+// far out drew a citizen every 31 s until one arrived). With repair_safe_way (off by default), it is refused when known enemy
+// soldiers stand on the way or known enemy towers cover the route.
 bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* inBuilding)
 {
     if (EngineOf(inPlayer->mPlayerID) != kEngineAgeOfAI || inBuilding == NULL)
@@ -568,9 +1400,17 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
             if (theUnit == inCitizen || theUnit->mHitPoints <= 0 || theUnit->mComplexUnit == NULL)
                 continue;
             EEUGBuildRepair* theGoal = dynamic_cast<EEUGBuildRepair*>(theUnit->mComplexUnit->mGoalState);
-            if (theGoal != NULL && theGoal->mTarget == inBuilding)
+            if (theGoal != NULL && theGoal->mTarget == inBuilding) {
+                sSafety[thePI].mRefusedRepairs++;
                 return true;
+            }
         }
+    if (Cfg(inPlayer->mPlayerID).repair_safe_way && inCitizen != NULL
+        && (PathRaided(inPlayer, inCitizen->mTileX, inCitizen->mTileY, inBuilding->mTileX, inBuilding->mTileY)
+            || RouteCovered(inPlayer, inCitizen->mTileX, inCitizen->mTileY, inBuilding->mTileX, inBuilding->mTileY))) {
+        sSafety[thePI].mRefusedRepairs++;
+        return true;
+    }
     return false;
 }
 
@@ -580,7 +1420,18 @@ bool RefuseRepair(EEComputerPlayer* inPlayer, EEComplexUnit* inCitizen, EEUnit* 
 // goal 15 or more tiles from its nearest finished town (idle on two passes in a row, between two jobs is not), or walking to
 // within 3 tiles of the base while a town is 10 tiles nearer, is sent to the nearest finished town on its land with no enemy
 // soldiers it sees within 12 tiles, none safe: it stays. Not ported: the exclusion of the citizens a landing, an outpost or a new
-// town holds (landing.c, expand.c, towns.c), and (3) the removal of unfinished buildings stacked on one tile.
+// town holds (landing.c, expand.c, towns.c).
+namespace {
+
+// what the module does, for the sim report (docs/simulator.md): citizens sent to a town, base points that moved there,
+// towers the layout queued, and its looks that queued none
+unsigned long sHomeSent[16];
+unsigned long sHomeBaseMoved[16];
+unsigned long sTowersQueued[16];
+unsigned long sTowersSkipped[16];
+
+}
+
 void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16];
@@ -641,6 +1492,7 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
         theBuild->mTownCenterTile.mY = theTowns[theBest].mY;
         theBaseX = theTowns[theBest].mX;
         theBaseY = theTowns[theBest].mY;
+        sHomeBaseMoved[idx]++;
     }
     std::vector<unsigned> theLand(theTowns.size());
     std::vector<int> theSafe(theTowns.size(), -1);
@@ -702,8 +1554,294 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
         float theX, theY;
         HomeRules::Spot(theTowns[theTown].mX, theTowns[theTown].mY, theUnit->mTileX, theUnit->mTileY, theX, theY);
         MoveTo(theUnit->mComplexUnit, theX, theY);
+        sHomeSent[idx]++;
     }
     sWasIdle[idx] = theNowIdle;
+    // (3) destroy duplicate unfinished buildings stacked on one tile. Collect first: destroying one changes the unit list
+    // we walk. Keep walls and finished buildings. Upstream dedupes by (tile, unit type) with a 256/512 cap and logs the
+    // count; the port keeps the cap and skips the log line.
+    {
+        struct Seen {
+            long mX, mY, mType;
+        };
+        std::vector<Seen> theSeen;
+        theSeen.reserve(256);
+        std::vector<EEUnit*> theExtra;
+        theExtra.reserve(512);
+        for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL
+                || theUnit->mUnitClass->mCategory != kUnitCategoryBuilding
+                || (Roles::RolesOf(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily, theUnit->mUnitClass->mRange) & Roles::kWall)
+                || theUnit->mComplexUnit->mIsBuilt)
+                continue;
+            long theType = (long)theUnit->mUnitClass->mUnitType;
+            bool theDuplicate = false;
+            for (size_t i = 0; i < theSeen.size(); i++) {
+                if (theSeen[i].mX == theUnit->mTileX && theSeen[i].mY == theUnit->mTileY && theSeen[i].mType == theType) {
+                    theDuplicate = true;
+                    break;
+                }
+            }
+            if (theDuplicate) {
+                if (theExtra.size() < 512)
+                    theExtra.push_back(theUnit);
+                continue;
+            }
+            if (theSeen.size() < 256) {
+                Seen theEntry = {theUnit->mTileX, theUnit->mTileY, theType};
+                theSeen.push_back(theEntry);
+            }
+        }
+        for (size_t i = 0; i < theExtra.size(); i++)
+            theExtra[i]->Kill(0, 0, 0);
+    }
+}
+
+// SETTLEMENT UPGRADES (garrison.c garrison_tick, [ai_base] garrison_upgrades on in the shipped file). Every 20 game seconds
+// a finished town with free garrison space, metal mines in reach and no enemy soldiers it sees nearby takes spare citizens
+// from its land: idle ones once the AI trains no more, then woodcutters while the wood stock is over 5000. The citizens
+// walk into the town and are used up; five in a Settlement make a Town Center, ten more in a Town Center make a Capitol,
+// and each one raises the metal gathered near that town. Upstream also lets a high food income make idle citizens spare;
+// that half waits for the port's food-rate layer. The game's own town and capitol timers are held back while no citizen
+// is spare, as upstream does, so the game does not fill a town first with a citizen the AI still needs elsewhere.
+namespace {
+
+const unsigned long kGarrisonEvery = 20000;
+const unsigned long kGarrisonHold = 40000;
+const int kGarrisonWood = 5000;
+const int kGarrisonBatch = 10;
+const int kGarrisonSafe = 12;
+const long kGarrisonReach2 = 20;
+
+struct GarrisonState {
+    unsigned long mLast;
+    GarrisonCounts mCounts;
+    long mSentKey[32];
+    unsigned long mSentTime[32];
+    int mSentCount;
+};
+static GarrisonState sGarrison[16];
+
+struct GarrisonMine {
+    long mX, mY, mScore;   // the tile, and one plus the gatherers on the mine
+};
+
+bool GarrisonTown(EEUnitClass* inClass, int& outKind)
+{
+    if (inClass == NULL)
+        return false;
+    long theType = (long)inClass->mUnitType;
+    if (theType == kUnitTypeSettlement)
+        outKind = 1;
+    else if (theType == kUnitTypeTownCenter)
+        outKind = 2;
+    else if (theType == kUnitTypeCapitol)
+        outKind = 3;
+    else
+        return false;
+    return true;
+}
+
+bool GarrisonRecent(const GarrisonState& inState, long inKey, unsigned long inNow)
+{
+    for (int i = 0; i < inState.mSentCount; i++)
+        if (inState.mSentKey[i] == inKey && inNow - inState.mSentTime[i] < 60000)
+            return true;
+    return false;
+}
+
+void GarrisonNote(GarrisonState& ioState, long inKey, unsigned long inNow)
+{
+    int theSlot = ioState.mSentCount;
+    if (theSlot < 32)
+        ioState.mSentCount++;
+    else {
+        theSlot = 0;
+        for (int i = 1; i < 32; i++)
+            if (ioState.mSentTime[i] < ioState.mSentTime[theSlot])
+                theSlot = i;
+    }
+    ioState.mSentKey[theSlot] = inKey;
+    ioState.mSentTime[theSlot] = inNow;
+}
+
+struct GarrisonCandidate {
+    EEUnit* mUnit;
+    long mDist;
+    bool mIdle;
+};
+
+}
+
+void GarrisonTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (!Cfg(inPlayer->mPlayerID).garrison_upgrades)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    GarrisonState& theState = sGarrison[idx];
+    if (inNow < theState.mLast) {
+        theState.mLast = 0;
+        theState.mCounts = GarrisonCounts();
+        std::memset(theState.mSentKey, 0, sizeof(theState.mSentKey));
+        std::memset(theState.mSentTime, 0, sizeof(theState.mSentTime));
+        theState.mSentCount = 0;
+    }
+    if (theState.mLast != 0 && inNow >= theState.mLast && inNow - theState.mLast < kGarrisonEvery)
+        return;
+    theState.mLast = inNow != 0 ? inNow : 1;
+    theState.mCounts.mChecks++;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    if (theCivilization == NULL)
+        return;
+    EECPUnitManager* theUnits = theCivilization->mUnitManager;
+    long theCitizens = 0;
+    std::vector<GarrisonMine> theMines;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL)
+            continue;
+        if (IsCitizen(theUnit))
+            theCitizens++;
+        unsigned long theResource = theUnit->GetResourceType();
+        if (theResource >= kResourceStone && theResource <= kResourceIron && theUnit->GetResourceAmount() > 0) {
+            GarrisonMine theMine = {theUnit->mTileX, theUnit->mTileY, 1 + (long)gWorld.GetResourceUsers(theUnit)};
+            theMines.push_back(theMine);
+        }
+    }
+    bool theIdleSpare = theUnits != NULL && theCitizens >= theUnits->GetWantedCitizens();
+    bool theWoodSpare = inPlayer->GetResource(kResourceWood) > kGarrisonWood;
+    if (!theIdleSpare) {
+        if (theCivilization->mNextGarrisonTime != 0
+            && (long)(theCivilization->mNextGarrisonTime - inNow) < (long)kGarrisonHold) {
+            theCivilization->mNextGarrisonTime = inNow + kGarrisonHold;
+            theState.mCounts.mHolds++;
+        }
+        if (theCivilization->mNextFortressTime != 0
+            && (long)(theCivilization->mNextFortressTime - inNow) < (long)kGarrisonHold) {
+            theCivilization->mNextFortressTime = inNow + kGarrisonHold;
+            theState.mCounts.mHolds++;
+        }
+    }
+    if (!theIdleSpare && !theWoodSpare)
+        return;
+    EEUnit* theBest = NULL;
+    int theBestKind = 0, theBestKey = 0;
+    long theBestScore = 0;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL)
+            continue;
+        int theKind = 0;
+        if (!GarrisonTown(theUnit->mUnitClass, theKind) || theUnit->mComplexUnit->IsFoundation()
+            || !theUnit->mComplexUnit->mIsBuilt)
+            continue;
+        if (theUnit->mUnitClass->mGarrisonCapacity <= theUnit->mComplexUnit->mGarrisonCount)
+            continue;
+        if (theUnit->mComplexUnit->GetLoadGoal() != NULL)
+            continue;
+        long theKey = theUnit->mTileX * 4096 + theUnit->mTileY;
+        if (GarrisonRecent(theState, theKey, inNow))
+            continue;
+        if (RaidersNear(inPlayer, theUnit->mTileX, theUnit->mTileY, kGarrisonSafe))
+            continue;
+        long theScore = 0;
+        for (size_t m = 0; m < theMines.size(); m++) {
+            long theDX = theMines[m].mX - theUnit->mTileX, theDY = theMines[m].mY - theUnit->mTileY;
+            if (theDX * theDX + theDY * theDY <= kGarrisonReach2)
+                theScore += theMines[m].mScore;
+        }
+        if (theScore <= 0)
+            continue;
+        bool theBetter = theBest == NULL || (theKind == 1 && theBestKind != 1)
+            || ((theKind == 1) == (theBestKind == 1) && theScore > theBestScore);
+        if (theBetter) {
+            theBest = theUnit;
+            theBestKind = theKind;
+            theBestScore = theScore;
+            theBestKey = theKey;
+        }
+    }
+    if (theBest == NULL)
+        return;
+    int theRoom = (int)(theBest->mUnitClass->mGarrisonCapacity - theBest->mComplexUnit->mGarrisonCount);
+    int theWant = theRoom < kGarrisonBatch ? theRoom : kGarrisonBatch;
+    unsigned long theLand = gContinentManager.GetContinent(EETileCoordinate(theBest->mTileX, theBest->mTileY), 2);
+    std::vector<GarrisonCandidate> theCandidates;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL && theCandidates.size() < 4096;
+         theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL
+            || !IsCitizen(theUnit) || theUnit->mComplexUnit->mContainer != NULL)
+            continue;
+        bool theIdle = false;
+        if (theUnit->mComplexUnit->mGoalState == NULL) {
+            if (!theIdleSpare)
+                continue;
+            theIdle = true;
+        } else {
+            if (!theWoodSpare)
+                continue;
+            EEUGGather* theGather = dynamic_cast<EEUGGather*>(theUnit->mComplexUnit->mGoalState);
+            if (theGather == NULL || theGather->mResource == NULL
+                || theGather->mResource->GetResourceType() != kResourceWood)
+                continue;
+        }
+        if (gContinentManager.GetContinent(EETileCoordinate(theUnit->mTileX, theUnit->mTileY), 2) != theLand)
+            continue;
+        long theDX = theUnit->mTileX - theBest->mTileX, theDY = theUnit->mTileY - theBest->mTileY;
+        GarrisonCandidate theCandidate = {theUnit, theDX * theDX + theDY * theDY, theIdle};
+        theCandidates.push_back(theCandidate);
+    }
+    if (theCandidates.empty())
+        return;
+    int theCount = theWant < (int)theCandidates.size() ? theWant : (int)theCandidates.size();
+    for (int i = 0; i < theCount; i++) {
+        int thePick = i;
+        long thePickDist = theCandidates[thePick].mIdle ? theCandidates[thePick].mDist - 1000000 : theCandidates[thePick].mDist;
+        for (int k = i + 1; k < (int)theCandidates.size(); k++) {
+            long theDist = theCandidates[k].mIdle ? theCandidates[k].mDist - 1000000 : theCandidates[k].mDist;
+            if (theDist < thePickDist) {
+                thePick = k;
+                thePickDist = theDist;
+            }
+        }
+        std::swap(theCandidates[i], theCandidates[thePick]);
+    }
+    EEComplexUnit* theHolder = theBest->mComplexUnit;
+    EEUGLoadGarrison* theGoal = dynamic_cast<EEUGLoadGarrison*>(theHolder->GetLoadGoal());
+    bool theNew = theGoal == NULL;
+    if (theNew) {
+        std::vector<EEComplexUnit*> theFirst;
+        theFirst.push_back(theCandidates[0].mUnit->mComplexUnit);
+        theGoal = new EEUGLoadGarrison(theHolder, theFirst, true);
+        if (!theGoal->mIsValid) {
+            delete theGoal;
+            return;
+        }
+        theHolder->SetGoal(theGoal, 0, 0);
+        theHolder->StartAction(kActionWaitForGarrisonCost);
+        theBest->mUnitClass->ActionChanged(theHolder);
+    } else if (!theGoal->mIsValid)
+        return;
+    long theIdleCount = 0;
+    for (int i = 0; i < theCount; i++) {
+        if (i > 0 || !theNew)
+            theGoal->AddUnit(theCandidates[i].mUnit->mComplexUnit);
+        EEComplexUnit* theCitizen = theCandidates[i].mUnit->mComplexUnit;
+        theCitizen->ClearGoalQueue(0);
+        theCitizen->SetGoal(theGoal->Clone(), 0, 0);
+        theCitizen->StartAction(kActionPrepareToMove);
+        theCandidates[i].mUnit->mUnitClass->ActionChanged(theCitizen);
+        if (theCandidates[i].mIdle)
+            theIdleCount++;
+    }
+    GarrisonNote(theState, theBestKey, inNow);
+    theState.mCounts.mOrders++;
+    theState.mCounts.mCitizens += (unsigned long)theCount;
+    theState.mCounts.mIdle += (unsigned long)theIdleCount;
+    theState.mCounts.mWood += (unsigned long)(theCount - theIdleCount);
+}
+
+GarrisonCounts GarrisonCountsOf(unsigned long inPlayerID)
+{
+    return inPlayerID < 16 ? sGarrison[inPlayerID].mCounts : GarrisonCounts();
 }
 
 // MUSTER (muster in defence.c, [ai_base] muster): an enemy army in the base got the defenders one by one. Every 3 s: enemy
@@ -713,28 +1851,17 @@ void CitizensHome(EEComputerPlayer* inPlayer, unsigned long inNow)
 // ones join as they are trained. Once the soldiers at the rally point are 1.3 times the enemy in the base, each attacks the
 // nearest enemy soldier. The muster ends when the enemy is gone (fewer than 3), when soldiers and towers can stand up to
 // it again, or when the enemy follows to the rally point a third time (then it fights where it is); a new muster waits
-// 30 s or 60 s. Not ported: the fight estimate (stats.c, off by default), the chat line, the exceptions of unit_goal for
-// shore guns and garrisons (bunker.c, towns.c), and the citizens' flight to the rally point (SafetyTick).
-namespace {
-
-struct Muster {
-    bool mOn;
-    int mMoves;
-    float mRX, mRY;
-    unsigned long mSince, mCool, mCoolLength;
-} sMuster[16];
-
-float UnitPower(EEUnit* inUnit)
-{
-    float theAttack = inUnit->mStats != NULL ? inUnit->mStats->mAttack : (float)inUnit->mUnitClass->mAttack;
-    return (float)inUnit->mHitPoints * (theAttack > 0 ? theAttack : 0);
-}
-
-}
+// 30 s or 60 s. With fight_estimate, the sides are compared with the fight estimate instead of raw hit points x attack.
+// Not ported: the chat line, and the exceptions of unit_goal for shore guns and garrisons (bunker.c, towns.c).
 
 bool AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
 {
     if (inUnit->mHitPoints <= 0 || inUnit->mTileX == -10000 || inUnit->mComplexUnit == NULL || inUnit->mComplexUnit->mIsDisabled)
+        return false;
+    // A class whose AI script has no InitialAttackState cannot take an attack goal: EEUGAttackUnit::Start would leave
+    // the unit with no command, and EEComplexUnit::AIStep then evaluates that command. A Prophet passes a "can hurt"
+    // test on its damage number but has no attack of its own to start.
+    if (inUnit->mUnitClass == NULL || inUnit->mUnitClass->FindAction(kActionInitialAttackState) == NULL)
         return false;
     EEUGAttackUnit* theGoal = new EEUGAttackUnit(inUnit->mComplexUnit, inTarget, true, false);
     inUnit->mComplexUnit->SetGoal(theGoal, false, 0);
@@ -746,6 +1873,7 @@ bool AttackUnit(EEUnit* inUnit, EEUnit* inTarget)
 void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16];
+    static Stats::Side sMusterOwn, sMusterFoe, sMusterRally;
     unsigned idx = inPlayer->mPlayerID & 15;
     if (!Cfg(inPlayer->mPlayerID).muster || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
         return;
@@ -760,6 +1888,11 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     std::vector<EEUnit*> theOwn, theEnemy;
     float theEnemyPower = 0, theOwnPower = 0, theTowerPower = 0, theEX = 0, theEY = 0;
     int theEnemies = 0;
+    bool theFightEstimate = Cfg(inPlayer->mPlayerID).fight_estimate;
+    if (theFightEstimate) {
+        Stats::Clear(sMusterOwn);
+        Stats::Clear(sMusterFoe);
+    }
     for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
         EEPlayer* thePlayer = gWorld.mPlayers[p];
         if (thePlayer == NULL)
@@ -771,6 +1904,8 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             float theRange, theAttack;
             if (thePlayer == inPlayer && theD2 <= 22 * 22 && DefenceStats(theUnit, theRange, theAttack)) {
                 theTowerPower += (float)theUnit->mHitPoints * theAttack;
+                if (theFightEstimate)
+                    Stats::Add(sMusterOwn, theUnit);
                 continue;
             }
             if (!Roles::IsSoldier(theUnit->mUnitClass->mCategory, theUnit->mUnitClass->mFamily, theUnit->mUnitClass->mRange))
@@ -781,6 +1916,8 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                 if (theOwn.size() < 256)
                     theOwn.push_back(theUnit);
                 theOwnPower += UnitPower(theUnit);
+                if (theFightEstimate)
+                    Stats::Add(sMusterOwn, theUnit);
             } else if (thePlayer->mPlayerID > 0 && IsEnemyOf(inPlayer, thePlayer) && theD2 <= 22 * 22) {
                 float thePower = UnitPower(theUnit);
                 theEnemyPower += thePower;
@@ -789,10 +1926,13 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
                 theEnemies++;
                 if (theEnemy.size() < 128)
                     theEnemy.push_back(theUnit);
+                if (theFightEstimate)
+                    Stats::Add(sMusterFoe, theUnit);
             }
         }
     }
-    float theStand = theEnemyPower > 0 ? (theOwnPower + theTowerPower) / theEnemyPower : 1e6f;
+    float theStand = theFightEstimate ? Stats::Ratio(sMusterOwn, sMusterFoe)
+        : (theEnemyPower > 0 ? (theOwnPower + theTowerPower) / theEnemyPower : 1e6f);
     struct Local {
         static void Rally(Muster& ioMuster, long inBX, long inBY, float inEnemyPower, float inEX, float inEY)
         {
@@ -843,12 +1983,18 @@ void MusterTick(EEComputerPlayer* inPlayer, unsigned long inNow)
             return;
         }
         float theRallyPower = 0;
+        if (theFightEstimate)
+            Stats::Clear(sMusterRally);
         for (size_t k = 0; k < theOwn.size(); k++) {
             float theDX = (float)theOwn[k]->mTileX - theMuster.mRX, theDY = (float)theOwn[k]->mTileY - theMuster.mRY;
-            if (theDX * theDX + theDY * theDY <= 100)
+            if (theDX * theDX + theDY * theDY <= 100) {
                 theRallyPower += UnitPower(theOwn[k]);
+                if (theFightEstimate)
+                    Stats::Add(sMusterRally, theOwn[k]);
+            }
         }
-        float theGathered = theEnemyPower > 0 ? theRallyPower / theEnemyPower : 1e6f;
+        float theGathered = theFightEstimate ? Stats::Ratio(sMusterRally, sMusterFoe)
+            : (theEnemyPower > 0 ? theRallyPower / theEnemyPower : 1e6f);
         if (theGathered >= 1.3f) {   // strike
             for (size_t k = 0; k < theOwn.size(); k++) {
                 EEUnit* theTarget = Local::Nearest(theEnemy, theOwn[k]);
@@ -1078,15 +2224,17 @@ int MilitiaAnswer(EEPlayer* inPlayer, const SettingsAI& inSettings, SiegeScan& i
     }
     if (theEnemies > DefenceRules::kMilitiaMostEnemies)
         return 0;
-    for (int c = 0, n = 0; c < ioScan.mCitizens && n < DefenceRules::kMilitiaPerEnemy * theEnemies; c++)
-        if (ioScan.mCitizen[c] != NULL && Box(ioScan.mCX[c], theX) <= 10 && Box(ioScan.mCY[c], theY) <= 10) {
-            theCitizenPower += UnitPower(ioScan.mCitizen[c]);
-            n++;
-            if (theEstimate)
-                Stats::Add(sMilitiaOwn, ioScan.mCitizen[c]);
-            if (Stats::Speed(ioScan.mCitizen[c]) > theCitizenSpeed)
-                theCitizenSpeed = Stats::Speed(ioScan.mCitizen[c]);
-        }
+    for (int c = 0, n = 0; c < ioScan.mCitizens && n < DefenceRules::kMilitiaPerEnemy * theEnemies; c++) {
+        EEUnit* theCitizen = ioScan.mCitizen[c];
+        if (theCitizen == NULL || Box(ioScan.mCX[c], theX) > 10 || Box(ioScan.mCY[c], theY) > 10)
+            continue;
+        theCitizenPower += UnitPower(theCitizen);   // every citizen near counts, as upstream; only gathering or idle ones are ordered below
+        n++;
+        if (theEstimate)
+            Stats::Add(sMilitiaOwn, theCitizen);
+        if (Stats::Speed(theCitizen) > theCitizenSpeed)
+            theCitizenSpeed = Stats::Speed(theCitizen);
+    }
     // early militia: against soldiers, only next to own soldiers or under own towers, and only without a citizen lost
     if (inSettings.early_militia && theSoldiers) {
         bool theCover = EarlyCover(inPlayer, theX, theY);
@@ -1204,13 +2352,16 @@ void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow)
     static SiegeScan sScan;
     unsigned thePI = inPlayer->mPlayerID & 15;
     const SettingsAI& theBase = Cfg(inPlayer->mPlayerID);
-    if (!theBase.counter_siege || (inNow >= sLast[thePI] && inNow - sLast[thePI] < 2000))
+    if ((!theBase.counter_siege && !theBase.citizen_militia) || (inNow >= sLast[thePI] && inNow - sLast[thePI] < 2000))
         return;
     sLast[thePI] = inNow;
     const SettingsAI& theSettings = SettingsAIOf(inPlayer->mPlayerID, inPlayer->GetDifficulty());
     SiegeScan& s = sScan;
     ScanSiege(inPlayer, s);
-    Militia(inPlayer, theSettings, s);
+    if (theBase.citizen_militia)
+        Militia(inPlayer, theSettings, s);
+    if (!theBase.counter_siege)
+        return;
     for (int i = 0; i < s.mSiege + s.mTowers; i++) {
         bool theTower = i >= s.mSiege;   // an enemy defence going up near our buildings or citizens (counter-tower)
         EEUnit* theEnemy = theTower ? s.mEnemyTower[i - s.mSiege] : s.mEnemySiege[i];
@@ -1294,6 +2445,18 @@ void CounterSiege(EEComputerPlayer* inPlayer, unsigned long inNow)
                 sDefence[thePI].mCounterSiegeSkipped++;
             continue;
         }
+        for (int a = 1; a < thePicked; a++)   // nearest responders first
+            for (int b = a; b > 0; b--) {
+                EEUnit* theA = s.mSoldier[thePick[b]];
+                EEUnit* theB = s.mSoldier[thePick[b - 1]];
+                long theAX = theA->mTileX - theX, theAY = theA->mTileY - theY;
+                long theBX = theB->mTileX - theX, theBY = theB->mTileY - theY;
+                if (theAX * theAX + theAY * theAY >= theBX * theBX + theBY * theBY)
+                    break;
+                int theSwap = thePick[b];
+                thePick[b] = thePick[b - 1];
+                thePick[b - 1] = theSwap;
+            }
         int theOrdered = 0;
         for (int j = 0; j < thePicked && theAlready + theOrdered < DefenceRules::kCounterSiegeMost; j++) {
             EEUnit* theUnit = s.mSoldier[thePick[j]];
@@ -1414,12 +2577,130 @@ void PlanRefresh(EEComputerPlayer* inPlayer, unsigned long inNow)
     }
 }
 
+// COAST TOWERS (defence.c coast_spot, [ai_base] coast_towers, off by default): on a coast, the towers go first where
+// citizens work within a ship's reach of the sea. Work sites group into CT_CELL cells; the cell with the most workers
+// that no tower covers gets one, CT_IN tiles in from the nearest sea. Upstream also needs navy_islands (every enemy
+// across water); here the coastal-work test stands in for it. A cell the sea cannot reach is skipped, as upstream.
+long sCoastAt[16][8][2];
+unsigned long sCoastTime[16][8], sCoastLast[16];
+CoastCounts sCoastCounts[16];
+
+bool CoastSpot(EEComputerPlayer* inPlayer, long inType, unsigned long inNow, long& outX, long& outY)
+{
+    using namespace CoastRules;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (inNow < sCoastLast[idx]) {
+        memset(sCoastAt[idx], 0, sizeof(sCoastAt[idx]));
+        memset(sCoastTime[idx], 0, sizeof(sCoastTime[idx]));
+        memset(&sCoastCounts[idx], 0, sizeof(sCoastCounts[idx]));
+    }
+    sCoastLast[idx] = inNow;
+    long theWanted = SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium).coast_towers;
+    if (theWanted <= 0)
+        return false;
+    struct Work { long mCX, mCY, mX, mY; unsigned long mCount; };
+    Work theWork[64];
+    int theSites = 0;
+    // The sites land gatherers work, not fishing boats (defence.c skips CLS_NAVAL_CITIZEN). A cell's first site is
+    // its representative, as upstream: the sea search and the inset start from that exact tile, not the cell centre.
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || theUnit->mComplexUnit == NULL
+            || theUnit->mUnitClass->mCategory == kUnitCategoryNavalCitizen)
+            continue;
+        EEUGGather* theGoal = dynamic_cast<EEUGGather*>(theUnit->mComplexUnit->mGoalState);
+        if (theGoal == NULL || theGoal->mResource == NULL)
+            continue;
+        EEUnit* theSite = theGoal->mResource;
+        long theResource = (long)theSite->mResourceType;
+        if (theResource < kResourceFood || theResource > kResourceIron)
+            continue;
+        long theCX = CellKey(theSite->mTileX), theCY = CellKey(theSite->mTileY);
+        int theSlot = -1;
+        for (int k = 0; k < theSites; k++)
+            if (theWork[k].mCX == theCX && theWork[k].mCY == theCY) { theSlot = k; break; }
+        if (theSlot < 0) {
+            if (theSites >= (int)(sizeof(theWork) / sizeof(theWork[0])))
+                continue;
+            theSlot = theSites++;
+            theWork[theSlot].mCX = theCX;
+            theWork[theSlot].mCY = theCY;
+            theWork[theSlot].mX = theSite->mTileX;
+            theWork[theSlot].mY = theSite->mTileY;
+            theWork[theSlot].mCount = 0;
+        }
+        theWork[theSlot].mCount++;
+        sCoastCounts[idx].mSites++;
+    }
+    sCoastCounts[idx].mChecks++;
+
+    for (;;) {
+        int theBest = -1;
+        for (int k = 0; k < theSites; k++)
+            if (theWork[k].mCount > 0 && (theBest < 0 || theWork[k].mCount > theWork[theBest].mCount))
+                theBest = k;
+        if (theBest < 0)
+            return false;
+        long theWX = theWork[theBest].mX, theWY = theWork[theBest].mY;
+        theWork[theBest].mCount = 0;
+        sCoastCounts[idx].mCells++;
+
+        int theCovered = 0, theFinished = 0, theAll = 0;
+        TowerCounts(inPlayer, theWX, theWY, kCover, theFinished, theAll);
+        theCovered += theAll;
+        for (int k = 0; k < 8; k++)
+            if (sCoastTime[idx][k] != 0 && inNow >= sCoastTime[idx][k] && inNow - sCoastTime[idx][k] < 90000
+                && CoastRules::TowerCovers(sCoastAt[idx][k][0], sCoastAt[idx][k][1], theWX, theWY))
+                theCovered++;
+        if (theCovered >= theWanted)
+            continue;
+
+        long theSX = 0, theSY = 0, theBestD = 0x7FFFFFFF;
+        for (long dx = -kSea; dx <= kSea; dx++)
+            for (long dy = -kSea; dy <= kSea; dy++) {
+                long theD = dx * dx + dy * dy;
+                if (!WithinSea(dx, dy) || theD >= theBestD
+                    || gContinentManager.GetContinent(EETileCoordinate(theWX + dx, theWY + dy), 1) == 0)
+                    continue;
+                theBestD = theD;
+                theSX = theWX + dx;
+                theSY = theWY + dy;
+            }
+        if (theBestD == 0x7FFFFFFF)
+            continue;
+        sCoastCounts[idx].mSea++;
+
+        long theTX = 0, theTY = 0;
+        Inset(theWX, theWY, theSX, theSY, theTX, theTY);
+        for (long r = 0; r <= 2; r++)
+            for (long ax = -r; ax <= r; ax++)
+                for (long ay = -r; ay <= r; ay++) {
+                    if (!OnRing(ax, ay, r)
+                        || RaidersNear(inPlayer, theTX + ax, theTY + ay, 10)
+                        || !CanPlace(inPlayer, inType, theTX + ax, theTY + ay))
+                        continue;
+                    outX = theTX + ax;
+                    outY = theTY + ay;
+                    int theOldest = 0;
+                    for (int k = 1; k < 8; k++)
+                        if (sCoastTime[idx][k] < sCoastTime[idx][theOldest])
+                            theOldest = k;
+                    sCoastAt[idx][theOldest][0] = outX;
+                    sCoastAt[idx][theOldest][1] = outY;
+                    sCoastTime[idx][theOldest] = inNow != 0 ? inNow : 1;
+                    sCoastCounts[idx].mPlaced++;
+                    return true;
+                }
+    }
+}
+
 bool DefenceSpot(EEComputerPlayer* inPlayer, long inType, unsigned long inNow, long& outX, long& outY)
 {
     unsigned idx = inPlayer->mPlayerID & 15;
     PlanRefresh(inPlayer, inNow);
     Plan& thePlan = sPlan[idx];
     ThreatRefresh(inPlayer, inNow);   // slots inside known enemy defences would cost the builders
+    if (CoastSpot(inPlayer, inType, inNow, outX, outY))
+        return true;
     long theX, theY;
     for (int i = 0; TowerRules::Slot(thePlan.mFront, thePlan.mFronts, thePlan.mOut, thePlan.mOuts, i, theX, theY); i++) {
         int theFinished, theAll;
@@ -1453,6 +2734,11 @@ bool DefenceSpot(EEComputerPlayer* inPlayer, long inType, unsigned long inNow, l
 
 }
 
+CoastCounts CoastCountsOf(unsigned long inPlayerID)
+{
+    return sCoastCounts[inPlayerID & 15];
+}
+
 void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow)
 {
     static unsigned long sLast[16], sLastTower[16];
@@ -1466,19 +2752,433 @@ void DefenceTick(EEComputerPlayer* inPlayer, unsigned long inNow)
     if (theCivilization == NULL || theCivilization->mBuildManager == NULL || inPlayer->mTechnologies == NULL)
         return;
     PlanRefresh(inPlayer, inNow);
-    if (!theBase.defence_towers || (sLastTower[idx] != 0 && inNow >= sLastTower[idx] && inNow - sLastTower[idx] < 60000))
+    if (!theBase.defence_towers || SiteFortsBusy(inPlayer, inNow)
+        || (sLastTower[idx] != 0 && inNow >= sLastTower[idx] && inNow - sLastTower[idx] < 60000))
         return;
     EECPBuildManager* theBuild = theCivilization->mBuildManager;
     long theType = NewestTowerOf(inPlayer);
     long theEpoch = inPlayer->mTechnologies->mCurrentEpoch;
-    if (theType == 0 || TowerIsQueued(theBuild) || theEpoch < 0 || theEpoch >= 14)
+    if (theType == 0 || TowerIsQueued(theBuild) || theEpoch < 0 || theEpoch >= 14) {
+        sTowersSkipped[idx]++;
         return;
+    }
     EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[theType]->mTechnology);
     long theCost = theNode != NULL ? theNode->GetCost(kResourceStone, theType, 1.0f) : 0;
     long theX, theY;
     if (inPlayer->mResourceCaps[kResourceStone] >= theCost + 100 && DefenceSpot(inPlayer, theType, inNow, theX, theY)) {
         theBuild->QueueBuildingAt(theType, theX, theY);
         sLastTower[idx] = inNow != 0 ? inNow : 1;
+        sTowersQueued[idx]++;
+    } else {
+        sTowersSkipped[idx]++;
+    }
+}
+
+// ANTI-AIR (defence.c anti_air with aa_ahead, [ai_base] anti_air and aa_ahead on in the shipped file). Every 5 game
+// seconds an Age of AI player counts the enemy aircraft it sees within 25 tiles of a drop site and anywhere on the map,
+// and remembers the largest count for 5 and 10 minutes. From World War I it also prepares ahead when an enemy reaches
+// that age: the first drop sites nearest the base without an AA building within 7 tiles each want one before aircraft
+// come. The port queues the newest AA building the player can build, at most one at a time a minute, in the ring 3 to 7
+// tiles around the drop site and away from raiders. Upstream also trains AA units from a special reserve; that needs the
+// missing budget layer and is not ported.
+namespace {
+
+const unsigned long kAntiAirEvery = 5000;
+const unsigned long kAntiAirBuildEvery = 60000;
+const unsigned long kAntiAirNearKeep = 300000;
+const unsigned long kAntiAirAheadKeep = 600000;
+const long kAntiAirNear2 = 625;
+
+struct AntiAirState {
+    unsigned long mLast, mSeen, mBuild, mAllSeen;
+    long mAir, mAX, mAY, mAll;
+    long mBX[16], mBY[16];
+    int mNB;
+};
+static AntiAirState sAntiAir[16];
+static AntiAirCounts sAntiAirCounts[16];
+
+bool AntiAirBuildable(EEPlayer* inPlayer, long inType)
+{
+    if (inType < 0 || inType >= 871 || gUnitClassTable[inType] == NULL || inPlayer->mTechnologies == NULL)
+        return false;
+    EETechTreeNode* theNode = inPlayer->mTechnologies->Get(gUnitClassTable[inType]->mTechnology);
+    return theNode != NULL && theNode->GetIsAvailable();
+}
+
+}
+
+void AntiAirTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.anti_air || inPlayer->mTechnologies == NULL)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    AntiAirState& theState = sAntiAir[idx];
+    if (inNow < theState.mLast) {
+        std::memset(&theState, 0, sizeof(theState));
+        sAntiAirCounts[idx] = AntiAirCounts();
+    }
+    if (theState.mLast != 0 && inNow >= theState.mLast && inNow - theState.mLast < kAntiAirEvery)
+        return;
+    theState.mLast = inNow != 0 ? inNow : 1;
+    long theEpoch = inPlayer->mTechnologies->mCurrentEpoch;
+    if (theEpoch < kTechEpochAtomicWW1)
+        return;
+    sAntiAirCounts[idx].mChecks++;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    EECPBuildManager* theBuild = theCivilization != NULL ? theCivilization->mBuildManager : NULL;
+    if (theBuild == NULL)
+        return;
+
+    long theDrops[64][2];
+    int theDropCount = 0;
+    int theHaveB = 0;
+    for (EEUnit* theUnit = inPlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL)
+            continue;
+        long theType = (long)theUnit->mUnitClass->mUnitType;
+        if (theType == kUnitTypeAA10Gun88mm || theType == kUnitTypeAA13MissileTower) {
+            if (theHaveB < 16) {
+                theState.mBX[theHaveB] = theUnit->mTileX;
+                theState.mBY[theHaveB] = theUnit->mTileY;
+            }
+            theHaveB++;
+            continue;
+        }
+        if ((theType == kUnitTypeTownCenter || theType == kUnitTypeCapitol || theType == kUnitTypeSettlement)
+            && theDropCount < 64) {
+            theDrops[theDropCount][0] = theUnit->mTileX;
+            theDrops[theDropCount][1] = theUnit->mTileY;
+            theDropCount++;
+        }
+    }
+    theState.mNB = theHaveB < 16 ? theHaveB : 16;
+
+    long theNear = 0, theAXS = 0, theAYS = 0, theAny = 0;
+    for (unsigned long p = 1; p < gWorld.GetNumPlayers(); p++) {
+        EEPlayer* theOwner = gWorld.GetPlayer(p);
+        if (theOwner == NULL || theOwner->mPlayerID <= 0 || !IsEnemy(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || !SeenBy(theUnit, inPlayer))
+                continue;
+            unsigned long theCategory = theUnit->mUnitClass->mCategory;
+            if (theCategory != kUnitCategoryAirplane && theCategory != kUnitCategoryHelicopter
+                && theCategory != kUnitCategoryHelicopterTransport)
+                continue;
+            theAny++;
+            long theDropX = 0, theDropY = 0;
+            long theDX = theUnit->mTileX, theDY = theUnit->mTileY;
+            if (!NearestDrop(inPlayer, theUnit->mTileX, theUnit->mTileY, false, theDropX, theDropY))
+                continue;
+            theDX -= theDropX;
+            theDY -= theDropY;
+            if (theDX * theDX + theDY * theDY > kAntiAirNear2)
+                continue;
+            theNear++;
+            theAXS += theUnit->mTileX;
+            theAYS += theUnit->mTileY;
+        }
+    }
+    if (theNear > 0) {
+        sAntiAirCounts[idx].mNear++;
+        if (theNear >= theState.mAir || theState.mSeen == 0 || inNow - theState.mSeen > kAntiAirNearKeep)
+            theState.mAir = theNear;
+        theState.mSeen = inNow != 0 ? inNow : 1;
+        theState.mAX = theAXS / theNear;
+        theState.mAY = theAYS / theNear;
+    } else if (theState.mSeen != 0 && inNow >= theState.mSeen
+               && inNow - theState.mSeen > (theSettings.aa_ahead ? kAntiAirAheadKeep : kAntiAirNearKeep))
+        theState.mAir = 0;
+    if (theAny > 0) {
+        sAntiAirCounts[idx].mAny++;
+        if (theAny >= theState.mAll || theState.mAllSeen == 0 || inNow - theState.mAllSeen > kAntiAirAheadKeep) {
+            theState.mAll = theAny;
+            theState.mAllSeen = inNow != 0 ? inNow : 1;
+        }
+    } else if (theState.mAllSeen != 0 && inNow >= theState.mAllSeen
+               && inNow - theState.mAllSeen > kAntiAirAheadKeep)
+        theState.mAll = 0;
+
+    bool theAhead = false;
+    long theAir = theState.mAir;
+    if (theSettings.aa_ahead) {
+        if (theState.mAll / 2 > theAir)
+            theAir = theState.mAll / 2;
+        for (unsigned long p = 1; p < gWorld.GetNumPlayers(); p++) {
+            EEPlayer* theOwner = gWorld.GetPlayer(p);
+            if (theOwner == NULL || theOwner == inPlayer || !IsEnemy(inPlayer, theOwner)
+                || theOwner->mTechnologies == NULL || theOwner->mTechnologies->mCurrentEpoch < kTechEpochAtomicWW1)
+                continue;
+            theAhead = true;
+            break;
+        }
+        if (!theAhead && theAir == 0)
+            return;
+    } else if (theAir == 0)
+        return;
+    if (theAhead)
+        sAntiAirCounts[idx].mAhead++;
+
+    long theWant = 2 + (theAir + 1) / 2;
+    if (theWant > 16)
+        theWant = 16;
+    long theWantB = theAir != 0 ? 1 + theWant / 4 : 0;
+    if (theWantB > 4)
+        theWantB = 4;
+    long theCoverX = 0, theCoverY = 0;
+    long theUncovered = 0;
+    if (theAhead) {
+        int theUsed[64] = {0};
+        long theBaseX = theBuild->mTownCenterTile.mX, theBaseY = theBuild->mTownCenterTile.mY;
+        int theSites = theSettings.aa_ahead_buildings;
+        if (theSites < 0)
+            theSites = 0;
+        if (theSites > 64)
+            theSites = 64;
+        for (int pick = 0; pick < theSites; pick++) {
+            int thePick = -1;
+            long thePickD = 0x7FFFFFFF;
+            for (int i = 0; i < theDropCount; i++) {
+                long theDX = theDrops[i][0] - theBaseX, theDY = theDrops[i][1] - theBaseY;
+                long theD = theDX * theDX + theDY * theDY;
+                if (!theUsed[i] && theD < thePickD) {
+                    thePickD = theD;
+                    thePick = i;
+                }
+            }
+            if (thePick < 0)
+                break;
+            theUsed[thePick] = 1;
+            bool theCovered = false;
+            for (int k = 0; k < theState.mNB && !theCovered; k++)
+                theCovered = labs(theState.mBX[k] - theDrops[thePick][0]) <= 7
+                    && labs(theState.mBY[k] - theDrops[thePick][1]) <= 7;
+            if (!theCovered) {
+                if (theUncovered == 0) {
+                    theCoverX = theDrops[thePick][0];
+                    theCoverY = theDrops[thePick][1];
+                }
+                theUncovered++;
+            }
+        }
+        theWantB = theHaveB + theUncovered;
+        long theCap = 4 + theSites;
+        if (theWantB > theCap)
+            theWantB = theCap;
+        if (theWant < 2 + theWantB)
+            theWant = 2 + theWantB;
+    }
+    if (theHaveB >= theWantB || theBuild->IsQueued(kUnitTypeAA10Gun88mm)
+        || theBuild->IsQueued(kUnitTypeAA13MissileTower))
+        return;
+    if (theState.mBuild != 0 && inNow >= theState.mBuild && inNow - theState.mBuild < kAntiAirBuildEvery)
+        return;
+
+    bool theUseCover = theUncovered > 0 && theState.mAir == 0;
+    long theTargetX = theUseCover ? theCoverX : 0;
+    long theTargetY = theUseCover ? theCoverY : 0;
+    if (!theUseCover && !NearestDrop(inPlayer, theState.mAX, theState.mAY, false, theTargetX, theTargetY)) {
+        sAntiAirCounts[idx].mSkipped++;
+        return;
+    }
+    long theType = 0;
+    if (AntiAirBuildable(inPlayer, kUnitTypeAA13MissileTower))
+        theType = kUnitTypeAA13MissileTower;
+    else if (AntiAirBuildable(inPlayer, kUnitTypeAA10Gun88mm))
+        theType = kUnitTypeAA10Gun88mm;
+    if (theType == 0) {
+        sAntiAirCounts[idx].mSkipped++;
+        return;
+    }
+    for (long r = 3; r <= 7; r++) {
+        for (long ax = -r; ax <= r; ax++) {
+            for (long ay = -r; ay <= r; ay++) {
+                if ((labs(ax) != r && labs(ay) != r) || !CanPlace(inPlayer, theType, theTargetX + ax, theTargetY + ay)
+                    || RaidersNear(inPlayer, theTargetX + ax, theTargetY + ay, 8))
+                    continue;
+                theBuild->QueueBuildingAt(theType, theTargetX + ax, theTargetY + ay);
+                theState.mBuild = inNow != 0 ? inNow : 1;
+                sAntiAirCounts[idx].mQueued++;
+                return;
+            }
+        }
+    }
+    theState.mBuild = inNow != 0 ? inNow : 1;   // no room: try again in a minute
+    sAntiAirCounts[idx].mSkipped++;
+}
+
+AntiAirCounts AntiAirCountsOf(unsigned long inPlayerID)
+{
+    return inPlayerID < 16 ? sAntiAirCounts[inPlayerID] : AntiAirCounts();
+}
+
+HomeCounts HomeCountsOf(unsigned long inPlayerID)
+{
+    unsigned idx = inPlayerID & 15;
+    return HomeCounts{sHomeSent[idx], sHomeBaseMoved[idx]};
+}
+
+TowerLayoutCounts TowerLayoutCountsOf(unsigned long inPlayerID)
+{
+    unsigned idx = inPlayerID & 15;
+    return TowerLayoutCounts{sTowersQueued[idx], sTowersSkipped[idx]};
+}
+
+void HoldTownTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    static Stats::Side sHoldOwn, sHoldFoe;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    const SettingsAI& theSettings = Cfg(inPlayer->mPlayerID);
+    if (!theSettings.hold_town || (sLast[idx] != 0 && inNow >= sLast[idx] && inNow - sLast[idx] < 3000))
+        return;
+    if (inNow < sLast[idx])   // a new game
+        sHoldTown[idx] = HoldTown();
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    if (sMuster[idx].mOn)   // the muster has them; upstream checks this after the new-game reset
+        return;
+    EECPCivilizationManager* theCivilization = inPlayer->mCivilizationManager;
+    HoldTown& theHold = sHoldTown[idx];
+    if (theCivilization == NULL || theCivilization->mBuildManager == NULL || theCivilization->mBuildManager->mTownCenterTile.mX == -10000) {
+        theHold.mHolding = false;
+        return;
+    }
+    long theBaseX = theCivilization->mBuildManager->mTownCenterTile.mX, theBaseY = theCivilization->mBuildManager->mTownCenterTile.mY;
+    EEUnitBehavior* theAggressive = EEUnitBehavior::sTable.size() > 5 ? EEUnitBehavior::sTable[5] : NULL;
+    if (theAggressive != NULL && inPlayer->GetCombatManager() != NULL && inPlayer->GetCombatManager()->GetAttackCommander() != NULL) {
+        EECPAttackCommander* theAttackCommander = inPlayer->GetCombatManager()->GetAttackCommander();
+        std::vector<EEComplexUnit*> theGrouped;
+        for (size_t g = 0; g < theAttackCommander->mGroups.size(); g++) {
+            EECPAttackGroup* theGroup = theAttackCommander->mGroups[g];
+            if (theGroup != NULL)
+                theGroup->CollectUnits(theGrouped);
+        }
+        for (size_t g = 0; g < theGrouped.size(); g++) {
+            EEComplexUnit* theGroupedUnit = theGrouped[g];
+            if (theGroupedUnit == NULL || theGroupedUnit->mHitPoints <= 0 || theGroupedUnit->mTileX == -10000 || theGroupedUnit->mContainer != NULL)
+                continue;
+            long theDX = theGroupedUnit->mTileX - theBaseX, theDY = theGroupedUnit->mTileY - theBaseY;
+            if (theDX * theDX + theDY * theDY > 35 * 35)
+                theGroupedUnit->mBehavior = theAggressive;
+        }
+    }
+    std::vector<EEUnit*> theOwn, theEnemy;
+    float theEnemyPower = 0, theOwnPower = 0, theEX = 0, theEY = 0;
+    bool theFightEstimate = theSettings.fight_estimate;
+    if (theFightEstimate) {
+        Stats::Clear(sHoldOwn);
+        Stats::Clear(sHoldFoe);
+    }
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* thePlayer = gWorld.mPlayers[p];
+        if (thePlayer == NULL)
+            continue;
+        for (EEUnit* theUnit = thePlayer->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            if (theUnit->mHitPoints <= 0 || theUnit->mUnitClass == NULL || theUnit->mTileX == -10000)
+                continue;
+            long theDX = theUnit->mTileX - theBaseX, theDY = theUnit->mTileY - theBaseY, theD2 = theDX * theDX + theDY * theDY;
+            unsigned long theCategory = theUnit->mUnitClass->mCategory;
+            unsigned long theFamily = theUnit->mUnitClass->mFamily;
+            float theRange = theUnit->mUnitClass->mRange;
+            if (thePlayer == inPlayer) {
+                if (theD2 > 35 * 35 || !Roles::IsSoldier(theCategory, theFamily, theRange) || theUnit->mComplexUnit == NULL
+                    || theUnit->mComplexUnit->mContainer != NULL)
+                    continue;
+                EEUGLocation* theLocation = dynamic_cast<EEUGLocation*>(theUnit->mComplexUnit->mGoalState);
+                if (theLocation != NULL) {
+                    float theGX = theLocation->mLocation.GetX() - (float)theBaseX, theGY = theLocation->mLocation.GetY() - (float)theBaseY;
+                    if (theGX * theGX + theGY * theGY > 35.0f * 35.0f) {
+                        EEUnitBehavior* theAggressiveMarch = EEUnitBehavior::sTable.size() > 5 ? EEUnitBehavior::sTable[5] : NULL;
+                        if (theAggressiveMarch != NULL)
+                            theUnit->mComplexUnit->mBehavior = theAggressiveMarch;
+                        continue;   // marching out
+                    }
+                }
+                if (theOwn.size() < 256)
+                    theOwn.push_back(theUnit);
+                theOwnPower += UnitPower(theUnit);
+                if (theFightEstimate)
+                    Stats::Add(sHoldOwn, theUnit);
+            } else if (thePlayer->mPlayerID > 0 && IsEnemyOf(inPlayer, thePlayer) && theD2 <= 35 * 35) {
+                unsigned theRoles = Roles::RolesOf(theCategory, theFamily, theRange);
+                bool theThreat = Roles::IsSoldier(theCategory, theFamily, theRange) || (theRoles & Roles::kSiege);
+                if (!theThreat || !SeenBy(theUnit, inPlayer))
+                    continue;
+                float thePower = UnitPower(theUnit);
+                theEnemyPower += thePower;
+                theEX += (float)theUnit->mTileX * thePower;
+                theEY += (float)theUnit->mTileY * thePower;
+                if (theEnemy.size() < 128)
+                    theEnemy.push_back(theUnit);
+                if (theFightEstimate)
+                    Stats::Add(sHoldFoe, theUnit);
+            }
+        }
+    }
+    EEUnitBehavior* theGuard = EEUnitBehavior::sTable.size() > 2 ? EEUnitBehavior::sTable[2] : NULL;
+    if (theEnemy.empty()) {
+        for (size_t k = 0; k < theOwn.size(); k++) {
+            EEComplexUnit* theComplex = theOwn[k]->mComplexUnit;
+            if (theAggressive != NULL && theComplex != NULL)
+                theComplex->mBehavior = theAggressive;
+        }
+        theHold.mHolding = false;
+        return;
+    }
+    float theStand = theFightEstimate ? Stats::Ratio(sHoldOwn, sHoldFoe)
+        : (theEnemyPower > 0 ? theOwnPower / theEnemyPower : 1e6f);
+    if (theStand >= 1.3f && (theHold.mSortieTime == 0 || inNow < theHold.mSortieTime || inNow - theHold.mSortieTime >= 60000)) {
+        for (size_t k = 0; k < theOwn.size(); k++) {
+            EEUnit* theUnit = theOwn[k];
+            EEComplexUnit* theComplex = theUnit->mComplexUnit;
+            if (theAggressive != NULL && theComplex != NULL)
+                theComplex->mBehavior = theAggressive;
+            EEUnit* theBest = NULL;
+            long theBestD = 0x7FFFFFFF;
+            for (size_t j = 0; j < theEnemy.size(); j++) {
+                EEUnit* theTarget = theEnemy[j];
+                if (theTarget->mHitPoints <= 0)
+                    continue;
+                long theTX = theTarget->mTileX - theUnit->mTileX, theTY = theTarget->mTileY - theUnit->mTileY, theD = theTX * theTX + theTY * theTY;
+                if (theD < theBestD) {
+                    theBestD = theD;
+                    theBest = theTarget;
+                }
+            }
+            if (theBest != NULL)
+                AttackUnit(theUnit, theBest);
+        }
+        theHold.mSortieTime = inNow != 0 ? inNow : 1;
+        theHold.mHolding = false;
+        return;
+    }
+    if (theStand < 1.2f) {
+        float theCX = theEnemyPower > 0 ? theEX / theEnemyPower : (float)theBaseX + 1.0f;
+        float theCY = theEnemyPower > 0 ? theEY / theEnemyPower : (float)theBaseY;
+        float theDX = (float)theBaseX - theCX, theDY = (float)theBaseY - theCY, theLength = sqrtf(theDX * theDX + theDY * theDY);
+        if (theLength < 1.0f) {
+            theDX = 1.0f;
+            theDY = 0.0f;
+            theLength = 1.0f;
+        }
+        float theHX = (float)theBaseX + 0.5f + theDX / theLength * 6.0f, theHY = (float)theBaseY + 0.5f + theDY / theLength * 6.0f;
+        for (size_t k = 0; k < theOwn.size(); k++) {
+            EEUnit* theUnit = theOwn[k];
+            EEComplexUnit* theComplex = theUnit->mComplexUnit;
+            if (theGuard != NULL && theComplex != NULL)
+                theComplex->mBehavior = theGuard;
+            float theUX = (float)theUnit->mTileX - theHX, theUY = (float)theUnit->mTileY - theHY;
+            if (theUX * theUX + theUY * theUY <= 16.0f)
+                continue;
+            EEUGLocation* theLocation = theUnit->mComplexUnit != NULL ? dynamic_cast<EEUGLocation*>(theUnit->mComplexUnit->mGoalState) : NULL;
+            if (theLocation != NULL && fabsf(theLocation->mLocation.GetX() - theHX) < 2.0f && fabsf(theLocation->mLocation.GetY() - theHY) < 2.0f)
+                continue;
+            if (theUnit->mComplexUnit != NULL)
+                MoveTo(theUnit->mComplexUnit, theHX + (float)(k % 5) - 2.0f, theHY + (float)(k / 5 % 5) - 2.0f);
+        }
+        theHold.mHolding = true;
     }
 }
 

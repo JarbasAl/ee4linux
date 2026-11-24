@@ -17,6 +17,11 @@ const int kOutdatedMost = 256;                  // units in one attack at most
 const int kGroupsMost = 64;                     // attack groups walked for their members
 const int kMembersMost = 4096;                  // members of attack subgroups noted at most
 
+const unsigned long kCitizenEvery = 5000;       // game milliseconds between two citizen-attack scans
+const int kCitizenMembersMost = 1000;           // members counted in one subgroup, as upstream's n < 1000
+
+const unsigned long kRetargetEvery = 10000;     // game milliseconds between two attack-group retarget scans
+
 // A land unit (class 5, not a citizen) whose type's tech has its last epoch behind the player's: no line upgrade reaches it
 // again
 inline bool IsOutdated(unsigned long inCategory, bool inCitizen, long inLastEpoch, long inEpoch)

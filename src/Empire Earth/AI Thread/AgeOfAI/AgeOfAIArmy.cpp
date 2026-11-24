@@ -7,12 +7,13 @@
 //
 // Ported from Grille's Empire Earth Age of AI (https://github.com/Grille/Empire-Earth-Age-of-AI), dll/ai/army.c
 // (outdated_attack, ou_members, ou_outdated) and dll/ai/attack.c (ag_launch) at 39d8ee4256a4e6b50c1b4d8e3af0c3f00b30fc07,
-// GPL-3.0. Not ported: the list of the units sent and ou_sortie, which only stage.c, cover.c and mass.c read (they keep a
-// sortie's units from their staging, falling back and rallying); those files are not ported, so the units fight to the end
-// as upstream intends. The log lines are not ported.
+// GPL-3.0. The wave goal of stage.c is ported below; the rest of stage.c (staging, falling back and rallying), cover.c and
+// mass.c are not, so a sortie's units are not held back and the units fight to the end as upstream intends. The list of the
+// units sent and ou_sortie are not ported either. The log lines are not ported.
 #include <windows.h>
 #include <unistd.h>
 #include <chrono>
+#include <cmath>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -129,6 +130,8 @@
 #include "ee/EEUnitClassIDs.h"
 #include "ee/EECPILocation.h"
 #include "ee/EECPAGTask.h"
+#include "ee/EEAIContinentManager.h"
+#include "ee/EEAIKindIDs.h"
 #include "ee/EECPUnitRequirement.h"
 #include "ee/EECPCombatStrategy.h"
 #include "ee/EECPCombatManager.h"
@@ -146,6 +149,59 @@ namespace AgeOfAI {
 namespace {
 
 OutdatedCounts sCounts[16];
+
+CitizenAttackCounts sCitizen[16];
+
+RetargetCounts sRetarget[16];
+unsigned long sRetargetLast[16];
+
+WaveFocusCounts sWaveCounts[16];
+unsigned long sWaveLast[16];
+
+// One goal per attack group: the group, the tile, the unit id and the time of the last route that used it. A group pointer
+// may be reused, so a record lapses three minutes after its last route.
+struct WaveRecord {
+    EECPAttackGroup* mGroup;
+    long mX, mY;
+    unsigned long mID, mTime;
+};
+const unsigned long kWaveLapse = 180000;
+const int kWavesMost = 24;
+WaveRecord sWaves[16][kWavesMost];
+
+bool WaveGoalStanding(EEPlayer* inTarget, long inX, long inY, unsigned long inID)
+{
+    for (EEUnit* theUnit = inTarget->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext))
+        if (theUnit->mUnitID == inID && theUnit->mHitPoints > 0 && theUnit->mTileX == inX && theUnit->mTileY == inY)
+            return true;
+    return false;
+}
+
+// The enemy building on the route's land mass nearest the last goal (or the route's start), as upstream's wv_pick_unit.
+EEUnit* WaveGoalPick(EEPlayer* inPlayer, EEPlayer* inTarget, long inFromX, long inFromY, unsigned short inArea)
+{
+    EEUnit* theBest = NULL;
+    long theBestD2 = 0;
+    for (EEUnit* theUnit = inTarget->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+        EEUnitClass* theClass = theUnit->mUnitClass;
+        if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mPlayer != inTarget)
+            continue;
+        if ((theClass->mCategory != kUnitCategoryBuilding && theClass->mCategory != kUnitCategoryFortress)
+            || (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kWall))
+            continue;
+        if (theUnit->mTile == NULL || theUnit->mTile->GetVisibility(inPlayer->mPlayerID) == 0)
+            continue;
+        if (gContinentManager.GetContinent(theUnit, kAIPathLandMass) != inArea)
+            continue;
+        long theDX = theUnit->mTileX - inFromX, theDY = theUnit->mTileY - inFromY;
+        long theD2 = theDX * theDX + theDY * theDY;
+        if (theBest == NULL || theD2 < theBestD2) {
+            theBest = theUnit;
+            theBestD2 = theD2;
+        }
+    }
+    return theBest;
+}
 
 bool IsCitizenClass(EEUnitClass* inClass)
 {
@@ -277,6 +333,449 @@ void OutdatedAttack(EEComputerPlayer* inPlayer, unsigned long inNow)
 OutdatedCounts OutdatedCountsOf(unsigned long inPlayerID)
 {
     return sCounts[inPlayerID & 15];
+}
+
+// Upstream's citizen_attack_scan (attack.c). The shipped setting 0 calls off any attack group made at least half of
+// citizens: the game sends its subgroups home and disbands the group. Setting 1 allows the original citizen attack.
+// Snapshot the groups first: the call-off clears their subgroups while we walk them. Not saved: a loaded game scans again.
+void CitizenAttackScan(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    static unsigned long sLast[16];
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium).citizen_attacks)   // upstream reads it once, from [ai_base]
+        return;
+    if (inNow < sLast[idx]) {   // a new game
+        sLast[idx] = 0;
+        sCitizen[idx] = CitizenAttackCounts();
+    }
+    if (sLast[idx] != 0 && inNow - sLast[idx] < ArmyRules::kCitizenEvery)
+        return;
+    EECPCombatManager* theCombat = inPlayer->mCombatManager;
+    if (theCombat == NULL || theCombat->mAttackCommander == NULL)
+        return;
+    sLast[idx] = inNow != 0 ? inNow : 1;
+    CitizenAttackCounts& theCounts = sCitizen[idx];
+    theCounts.mCalls++;
+    std::vector<std::pair<EECPAttackGroup*, EEPlayer*> > theGroups;
+    for (EECPAttackGroup* theGroup : theCombat->mAttackCommander->mGroups)
+        if (theGroup != NULL && theGroup->mTask.mPlayer != NULL)
+            theGroups.push_back(std::make_pair(theGroup, theGroup->mTask.mPlayer));
+    for (size_t g = 0; g < theGroups.size() && g < (size_t)ArmyRules::kGroupsMost; g++) {
+        EECPAttackGroup* theGroup = theGroups[g].first;
+        long theN = 0, theCit = 0;
+        for (EECPAttackSubGroup* theSubGroup : theGroup->mSubGroups) {
+            if (theSubGroup == NULL)
+                continue;
+            for (EECPAttackSubGroupUnit* theRecord : theSubGroup->mUnits) {
+                if (theN >= ArmyRules::kCitizenMembersMost || theRecord == NULL || theRecord->mUnit == NULL)
+                    continue;
+                EEUnit* theUnit = theRecord->mUnit;
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                if (theClass == NULL || theUnit->mHitPoints <= 0)
+                    continue;
+                theN++;
+                if (IsCitizenClass(theClass))
+                    theCit++;
+            }
+        }
+        if (theN != 0 && theCit * 2 >= theN) {
+            theCombat->TargetPlayerNotice(theGroups[g].second, true);
+            theCounts.mCalled++;
+        }
+    }
+}
+
+CitizenAttackCounts CitizenAttackCountsOf(unsigned long inPlayerID)
+{
+    return sCitizen[inPlayerID & 15];
+}
+
+// Upstream's wave_retarget (attack.c). Every 10 game seconds a group whose target left the game or stopped being an
+// enemy takes the enemy building nearest the group's middle as its new target. Upstream writes the target player of
+// the group and of each subgroup still naming the old one; the subgroups plan their next move from the new player.
+// Not saved: a loaded game scans again on its first tick.
+void RetargetTick(EEComputerPlayer* inPlayer, unsigned long inNow)
+{
+    if (!SettingsAIOf(inPlayer->mPlayerID, kDifficultyMedium).attack_retarget)
+        return;
+    unsigned idx = inPlayer->mPlayerID & 15;
+    if (inNow < sRetargetLast[idx]) {
+        sRetargetLast[idx] = 0;
+        sRetarget[idx] = RetargetCounts();
+    }
+    if (sRetargetLast[idx] != 0 && inNow - sRetargetLast[idx] < ArmyRules::kRetargetEvery)
+        return;
+    sRetargetLast[idx] = inNow != 0 ? inNow : 1;
+    EECPCombatManager* theCombat = inPlayer->mCombatManager;
+    if (theCombat == NULL || theCombat->mAttackCommander == NULL)
+        return;
+    RetargetCounts& theCounts = sRetarget[idx];
+    theCounts.mScans++;
+    for (size_t g = 0; g < theCombat->mAttackCommander->mGroups.size() && g < (size_t)ArmyRules::kGroupsMost; g++) {
+        EECPAttackGroup* theGroup = theCombat->mAttackCommander->mGroups[g];
+        if (theGroup == NULL)
+            continue;
+        EEPlayer* theOld = theGroup->mTask.mPlayer;
+        if (theOld == NULL || (!theOld->mObserverMode && IsEnemyOf(inPlayer, theOld)))
+            continue;   // still fighting a player who is in the game
+        long theSumX = 0, theSumY = 0, theN = 0;
+        for (EECPAttackSubGroup* theSubGroup : theGroup->mSubGroups) {
+            if (theSubGroup == NULL)
+                continue;
+            for (EECPAttackSubGroupUnit* theRecord : theSubGroup->mUnits) {
+                EEUnit* theUnit = theRecord != NULL ? theRecord->mUnit : NULL;
+                if (theUnit == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0)
+                    continue;
+                theSumX += theUnit->mTileX;
+                theSumY += theUnit->mTileY;
+                theN++;
+            }
+        }
+        if (theN == 0)
+            continue;
+        long theMidX = theSumX / theN, theMidY = theSumY / theN;
+        EEUnit* theBest = NULL;
+        long theBestD2 = 0;
+        for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+            EEPlayer* theOwner = gWorld.mPlayers[p];
+            if (theOwner == NULL || theOwner == inPlayer || theOwner->mObserverMode || !IsEnemyOf(inPlayer, theOwner))
+                continue;
+            for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+                EEUnitClass* theClass = theUnit->mUnitClass;
+                if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mTile == NULL
+                    || (theClass->mCategory != kUnitCategoryBuilding && theClass->mCategory != kUnitCategoryFortress)
+                    || theUnit->mTile->GetVisibility(inPlayer->mPlayerID) == 0)
+                    continue;
+                long theDX = theUnit->mTileX - theMidX, theDY = theUnit->mTileY - theMidY;
+                long theD2 = theDX * theDX + theDY * theDY;
+                if (theBest == NULL || theD2 < theBestD2) {
+                    theBest = theUnit;
+                    theBestD2 = theD2;
+                }
+            }
+        }
+        if (theBest == NULL || theBest->mPlayer == NULL)
+            continue;
+        EEPlayer* theNew = theBest->mPlayer;
+        theGroup->mTask.mPlayer = theNew;
+        long theChanged = 0;
+        for (EECPAttackSubGroup* theSubGroup : theGroup->mSubGroups) {
+            if (theSubGroup != NULL && theSubGroup->mTask.mPlayer == theOld) {
+                theSubGroup->mTask.mPlayer = theNew;
+                theChanged++;
+            }
+        }
+        theCounts.mPicked++;
+        theCounts.mSubGroups += theChanged;
+    }
+}
+
+RetargetCounts RetargetCountsOf(unsigned long inPlayerID)
+{
+    return sRetarget[inPlayerID & 15];
+}
+
+void WaveFocusRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY)
+{
+    if (inSubGroup == NULL || inSubGroup->mPlayer == NULL)
+        return;
+    EEComputerPlayer* thePlayer = inSubGroup->mPlayer;
+    unsigned long thePID = thePlayer->mPlayerID;
+    if (!SettingsAIOf(thePID, kDifficultyMedium).wave_focus)
+        return;
+    EEPlayer* theTarget = inSubGroup->mTask.mPlayer;
+    if (inSubGroup->mTask.mType == kAGTaskReturn || theTarget == NULL || inSubGroup->mGroup == NULL
+        || !IsEnemyOf(thePlayer, theTarget))
+        return;
+    unsigned thePI = thePID & 15;
+    unsigned long theNow = gPhysics->mGameTime;
+    if (theNow < sWaveLast[thePI]) {
+        memset(sWaves, 0, sizeof(sWaves));
+        memset(sWaveCounts, 0, sizeof(sWaveCounts));
+    }
+    sWaveLast[thePI] = theNow;
+    WaveFocusCounts& theCounts = sWaveCounts[thePI];
+    theCounts.mCalls++;
+
+    WaveRecord* theWave = NULL;
+    WaveRecord* theOldest = &sWaves[thePI][0];
+    for (int k = 0; k < kWavesMost && theWave == NULL; k++) {
+        WaveRecord* theEntry = &sWaves[thePI][k];
+        if (theEntry->mGroup != NULL && theNow - theEntry->mTime > kWaveLapse)
+            theEntry->mGroup = NULL;
+        if (theEntry->mGroup == inSubGroup->mGroup)
+            theWave = theEntry;
+        else if (!theEntry->mGroup && theOldest->mGroup)
+            theOldest = theEntry;
+        else if (theEntry->mGroup && theOldest->mGroup && theEntry->mTime < theOldest->mTime)
+            theOldest = theEntry;
+    }
+
+    unsigned short theArea = gContinentManager.GetContinent(EETileLocation(ioToX, ioToY), kAIPathLandMass);
+    bool theSameArea = theWave != NULL
+        && gContinentManager.GetContinent(EETileLocation(theWave->mX, theWave->mY), kAIPathLandMass) == theArea;
+    if (theWave == NULL || !WaveGoalStanding(theTarget, theWave->mX, theWave->mY, theWave->mID) || !theSameArea) {
+        long theFromX = theWave != NULL ? theWave->mX : inFromX;
+        long theFromY = theWave != NULL ? theWave->mY : inFromY;
+        EEUnit* theBest = WaveGoalPick(thePlayer, theTarget, theFromX, theFromY, theArea);
+        if (theBest == NULL) {
+            theCounts.mNone++;
+            return;
+        }
+        if (theWave == NULL)
+            theWave = theOldest;
+        theWave->mGroup = inSubGroup->mGroup;
+        theWave->mX = theBest->mTileX;
+        theWave->mY = theBest->mTileY;
+        theWave->mID = theBest->mUnitID;
+        theCounts.mSet++;
+    }
+
+    theWave->mTime = theNow;
+    if (theWave->mX == ioToX && theWave->mY == ioToY) {
+        theCounts.mKept++;
+        return;
+    }
+    ioToX = theWave->mX;
+    ioToY = theWave->mY;
+    inSubGroup->mTask.mLocation.mTile.SetXY(ioToX, ioToY);
+    theCounts.mMoved++;
+}
+
+WaveFocusCounts WaveFocusCountsOf(unsigned long inPlayerID)
+{
+    return sWaveCounts[inPlayerID & 15];
+}
+
+// Upstream's wave_focus_weak (stage.c): a weak spot becomes this group's goal too, so the next route keeps it.
+static void WaveFocusWeak(EECPAttackSubGroup* inSubGroup, long inX, long inY, unsigned long inID)
+{
+    if (inSubGroup == NULL || inSubGroup->mGroup == NULL || inSubGroup->mPlayer == NULL)
+        return;
+    unsigned thePI = inSubGroup->mPlayer->mPlayerID & 15;
+    for (int k = 0; k < kWavesMost; k++) {
+        WaveRecord* theEntry = &sWaves[thePI][k];
+        if (theEntry->mGroup == inSubGroup->mGroup) {
+            theEntry->mX = inX;
+            theEntry->mY = inY;
+            theEntry->mID = inID;
+            return;
+        }
+    }
+}
+
+WeakSpotCounts sWeak[16];
+
+// An enemy building that is not a wall within inR tiles of a tile (attack.c building_at).
+static bool GoalBuildingAt(EEComputerPlayer* inPlayer, long inX, long inY, long inR)
+{
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.mPlayers[p];
+        if (theOwner == NULL || !IsEnemyOf(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0
+                || theClass->mCategory != kUnitCategoryBuilding
+                || (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kWall))
+                continue;
+            long theDX = theUnit->mTileX - inX, theDY = theUnit->mTileY - inY;
+            if (theDX * theDX + theDY * theDY <= inR * inR)
+                return true;
+        }
+    }
+    return false;
+}
+
+// The port of attack.c's find_weak_spot, called from EECPASGLand::RequestPath after the wave goal. Upstream searches
+// the goal's neighbourhood with a grid iterator and keeps the buildings in the same map area as the route's start.
+// The game has no such iterator here, so the port scans the enemy players' units and compares their land mass. The
+// score and the goal write are the same.
+void WeakSpotRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY)
+{
+    if (inSubGroup == NULL || inSubGroup->mPlayer == NULL)
+        return;
+    EEComputerPlayer* thePlayer = inSubGroup->mPlayer;
+    unsigned long thePID = thePlayer->mPlayerID;
+    if (!SettingsAIOf(thePID, kDifficultyMedium).attack_weak_spots)
+        return;
+    unsigned thePI = thePID & 15;
+    WeakSpotCounts& theCounts = sWeak[thePI];
+    theCounts.mCalls++;
+    if (!(ThreatAt(thePI, ioToX, ioToY) > 0.0f) || !GoalBuildingAt(thePlayer, ioToX, ioToY, 4))
+        return;
+    theCounts.mThreatened++;
+    long theRadius = SettingsAIOf(thePID, kDifficultyMedium).attack_weak_spot_radius;
+    if (theRadius <= 0)
+        return;
+    long theR2 = theRadius * theRadius;
+    unsigned short theArea = gContinentManager.GetContinent(EETileLocation(inFromX, inFromY), kAIPathLandMass);
+    EEUnit* theBest = NULL;
+    float theBestScore = 0.0f;
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.mPlayers[p];
+        if (theOwner == NULL || !IsEnemyOf(thePlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mTile == NULL
+                || theClass->mCategory != kUnitCategoryBuilding
+                || (Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kWall)
+                || !SeenBy(theUnit, thePlayer))
+                continue;
+            long theDX = theUnit->mTileX - ioToX, theDY = theUnit->mTileY - ioToY;
+            long theD2 = theDX * theDX + theDY * theDY;
+            if (theD2 > theR2 || ThreatAt(thePI, theUnit->mTileX, theUnit->mTileY) > 0.0f)
+                continue;
+            if (gContinentManager.GetContinent(theUnit, kAIPathLandMass) != theArea)
+                continue;
+            long theFX = theUnit->mTileX - inFromX, theFY = theUnit->mTileY - inFromY;
+            float theScore = sqrtf((float)(theFX * theFX + theFY * theFY)) + 0.5f * sqrtf((float)theD2);
+            if (theBest == NULL || theScore < theBestScore) {
+                theBest = theUnit;
+                theBestScore = theScore;
+            }
+        }
+    }
+    if (theBest == NULL)
+        return;
+    theCounts.mPicked++;
+    ioToX = theBest->mTileX;
+    ioToY = theBest->mTileY;
+    inSubGroup->mTask.mLocation.SetUnit(theBest);
+    WaveFocusWeak(inSubGroup, ioToX, ioToY, theBest->mUnitID);
+}
+
+WeakSpotCounts WeakSpotCountsOf(unsigned long inPlayerID)
+{
+    return sWeak[inPlayerID & 15];
+}
+
+// Upstream attack.c find_breach, [ai_base] attack_breach (on in the shipped file). The port has no unit grid, so it
+// collects the player's known enemy wall buildings once per route and looks tiles up in that list.
+static BreachCounts sBreach[16];
+
+static void CollectEnemyWalls(EEComputerPlayer* inPlayer, std::vector<EEUnit*>& outWalls)
+{
+    for (unsigned long p = 0; p < gWorld.mNumPlayers && p < 16; p++) {
+        EEPlayer* theOwner = gWorld.mPlayers[p];
+        if (theOwner == NULL || !IsEnemyOf(inPlayer, theOwner))
+            continue;
+        for (EEUnit* theUnit = theOwner->mFirstUnit; theUnit != NULL; theUnit = static_cast<EEUnit*>(theUnit->mNext)) {
+            EEUnitClass* theClass = theUnit->mUnitClass;
+            if (theClass == NULL || theUnit->mHitPoints <= 0 || theUnit->mTileX < 0 || theUnit->mTile == NULL
+                || theClass->mCategory != kUnitCategoryBuilding
+                || !(Roles::RolesOf(theClass->mCategory, theClass->mFamily, theClass->mRange) & Roles::kWall)
+                || !SeenBy(theUnit, inPlayer))
+                continue;
+            outWalls.push_back(theUnit);
+        }
+    }
+}
+
+static EEUnit* WallAt(const std::vector<EEUnit*>& inWalls, long inX, long inY)
+{
+    for (std::vector<EEUnit*>::const_iterator it = inWalls.begin(); it != inWalls.end(); ++it) {
+        EEUnit* theWall = *it;
+        if (theWall->mTileX == inX && theWall->mTileY == inY)
+            return theWall;
+    }
+    return NULL;
+}
+
+// First known enemy wall on the half-tile line from the route's start to its goal.
+static EEUnit* WallCrossing(const std::vector<EEUnit*>& inWalls, long inFromX, long inFromY, long inToX, long inToY)
+{
+    long theDX = inToX - inFromX, theDY = inToY - inFromY;
+    long theAbsX = theDX >= 0 ? theDX : -theDX, theAbsY = theDY >= 0 ? theDY : -theDY;
+    long theN = 2 * (theAbsX > theAbsY ? theAbsX : theAbsY);
+    if (theN <= 0)
+        return NULL;
+    long theHalf = theN / 2;
+    for (long i = 1; i < theN; i++) {
+        long theX = inFromX + (theDX * i + (theDX >= 0 ? theHalf : -theHalf)) / theN;
+        long theY = inFromY + (theDY * i + (theDY >= 0 ? theHalf : -theHalf)) / theN;
+        EEUnit* theWall = WallAt(inWalls, theX, theY);
+        if (theWall != NULL)
+            return theWall;
+    }
+    return NULL;
+}
+
+// Follows the crossed wall (8-connected tiles up to 60 tiles away) and returns the segment outside known tower range
+// with the shortest start -> wall -> goal detour. The queue and dedup mirror upstream's bounded 8-connected flood.
+static EEUnit* FindBreach(unsigned long inPID, const std::vector<EEUnit*>& inWalls,
+                          long inFromX, long inFromY, long inToX, long inToY, EEUnit* inCross)
+{
+    enum { kMaxQ = 512 };
+    long theQX[kMaxQ], theQY[kMaxQ];
+    long theHead = 0, theTail = 0;
+    long theCX = inCross->mTileX, theCY = inCross->mTileY;
+    theQX[theTail] = theCX; theQY[theTail++] = theCY;
+    EEUnit* theBest = NULL;
+    float theBestScore = 1e30f;
+    while (theHead < theTail) {
+        long theX = theQX[theHead], theY = theQY[theHead++];
+        EEUnit* theWall = WallAt(inWalls, theX, theY);
+        if (theWall == NULL)
+            continue;
+        if (!(ThreatAt(inPID, theX, theY) > 0.0f)) {
+            float theAX = (float)(theX - inFromX), theAY = (float)(theY - inFromY);
+            float theBX = (float)(inToX - theX), theBY = (float)(inToY - theY);
+            float theScore = sqrtf(theAX * theAX + theAY * theAY) + sqrtf(theBX * theBX + theBY * theBY);
+            if (theScore < theBestScore) {
+                theBestScore = theScore;
+                theBest = theWall;
+            }
+        }
+        for (long theDX = -1; theDX <= 1; theDX++)
+            for (long theDY = -1; theDY <= 1; theDY++) {
+                long theNX = theX + theDX, theNY = theY + theDY;
+                long theWX = theNX - theCX, theWY = theNY - theCY;
+                if (theWX * theWX + theWY * theWY > 60 * 60 || theTail >= kMaxQ)
+                    continue;
+                bool theSeen = false;
+                for (long k = 0; k < theTail && !theSeen; k++)
+                    theSeen = theQX[k] == theNX && theQY[k] == theNY;
+                if (!theSeen && WallAt(inWalls, theNX, theNY) != NULL) {
+                    theQX[theTail] = theNX; theQY[theTail++] = theNY;
+                }
+            }
+    }
+    return theBest;
+}
+
+void BreachRoute(EECPAttackSubGroup* inSubGroup, long inFromX, long inFromY, long& ioToX, long& ioToY)
+{
+    if (inSubGroup == NULL || inSubGroup->mPlayer == NULL)
+        return;
+    EEComputerPlayer* thePlayer = inSubGroup->mPlayer;
+    unsigned long thePID = thePlayer->mPlayerID;
+    if (!SettingsAIOf(thePID, kDifficultyMedium).attack_breach)
+        return;
+    BreachCounts& theCounts = sBreach[thePID & 15];
+    theCounts.mCalls++;
+    std::vector<EEUnit*> theWalls;
+    CollectEnemyWalls(thePlayer, theWalls);
+    theCounts.mWalls += theWalls.size();
+    if (theWalls.empty())
+        return;
+    EEUnit* theCross = WallCrossing(theWalls, inFromX, inFromY, ioToX, ioToY);
+    if (theCross == NULL)
+        return;
+    theCounts.mCrossed++;
+    EEUnit* theWall = FindBreach(thePID, theWalls, inFromX, inFromY, ioToX, ioToY, theCross);
+    if (theWall == NULL)
+        return;
+    theCounts.mPicked++;
+    ioToX = theWall->mTileX;
+    ioToY = theWall->mTileY;
+    inSubGroup->mTask.mLocation.SetUnit(theWall);
+}
+
+BreachCounts BreachCountsOf(unsigned long inPlayerID)
+{
+    return sBreach[inPlayerID & 15];
 }
 
 }

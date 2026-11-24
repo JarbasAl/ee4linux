@@ -52,12 +52,25 @@ PORT_UNITS = {"exe": ["Port/EEPortLinks.cpp", "Port/EEPortWonLinks.cpp", "Port/E
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIRoles.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIEarlyGeometry.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIEarly.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIWorkers.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIEconomy.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAITrainQueue.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAISites.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIDanger.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAIStats.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIStatsUnits.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAIArmy.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAICounterFire.cpp",
                       "Empire Earth/AI Thread/AgeOfAI/AgeOfAILead.cpp", "Empire Earth/AI Thread/AgeOfAI/AgeOfAILeadShot.cpp",
-                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAILob.cpp"],
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAISpreadMissiles.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAILob.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIDiplomacy.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIHospital.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAICover.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAITightBuild.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAISurrender.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIScout.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAISiteForts.cpp",
+
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIAnswerFire.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAITransportWatchdog.cpp",
+                      "Empire Earth/AI Thread/AgeOfAI/AgeOfAIRaidLeash.cpp"],
               "lle": ["Port/EEPortSim.cpp"]}
 # Modules of the port build alone, each a folder of src: the native build's Win32 layer
 PORT_MODULES = {"win32": "Port/Linux"}
