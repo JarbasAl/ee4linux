@@ -67,6 +67,10 @@ The same focused set rates `aoai-foodpays` over `standard`, `poor` and `raids`, 
 seed-5 games faulted in the simulator on repeat attempts and are not in the ledger; the same minimap fault appears in
 other long rating games. The AI wins fewer than half the games and stands below `aoai`, so `food_pays` stays off.
 
+The same focused set rates `aoai-siteforts` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 3 wins,
+4 losses and 23 draws in 30 games; rating 1360 (1279 to 1455) against `aoai`'s 1380 (1310 to 1476). The AI wins fewer
+than half the games and stands below `aoai`, so `site_forts` stays off.
+
 ## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in

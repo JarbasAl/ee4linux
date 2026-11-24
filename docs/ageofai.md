@@ -676,7 +676,8 @@ A 30-minute, single-seed Medium Small Islands probe with `resource_towns` and `s
 fire. With `site_forts=2` the two computer players each picked two forts and queued seven and eight towers, with four
 and three qualifying mines, two and one exposed picks, 28 and 17 busy ticks and 20 and 9 waiting ticks; with
 `site_forts=0` every counter was zero. The traces first differ at game millisecond 640500. That run scored 23248.5
-with the rule on and 21140.5 with it off, one seed only; the setting stays off until the benchmark rates `aoai-siteforts`.
+with the rule on and 21140.5 with it off, one seed only. The focused benchmark rates the setting at 1360 (1279 to 1455) against `aoai`'s
+1380 (1310 to 1476), with 3 wins, 4 losses and 23 draws in 30 games, so it stays off.
 
 ## Anti-air buildings
 
