@@ -44,6 +44,7 @@
 #include "ee/EEAreaUtilities.h"
 #include "ee/EmpireEarth.h"
 #include "ee/EEMiniMap.h"
+#include "ee/EEMiniMapCells.h"
 #include "ee/EEUIMiniMap.h"
 #include "lle/GERenderState.h"
 
@@ -135,8 +136,8 @@ void EEMiniMap::AddDoppelganger(EEDoppelganger* inDoppelganger, long inX, long i
         thePoint.SetX(theClass->mTileSize * 0.5f + inX);
         thePoint.SetY(theClass->mTileSize * 0.5f + inY);
         this->mMapToCell.Apply(thePoint, theMapPoint);
-        long theCellX = UMFloatToLong(theMapPoint.GetX());
-        long theCellY = UMFloatToLong(theMapPoint.GetY());
+        long theCellX = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetX()));
+        long theCellY = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetY()));
         unsigned long theColor = inDoppelganger->GetPlayer()->mPlayerID == 0
                                      ? GEPackColor(kPixelFormatA4R4G4B4, EEColorTable::GetDarkColor(theClass->GetMiniMapColor()), 1.0f)
                                      : GEPackColor(kPixelFormatA4R4G4B4, inDoppelganger->GetPlayer()->mShadeColor, 1.0f);
@@ -147,7 +148,7 @@ void EEMiniMap::AddDoppelganger(EEDoppelganger* inDoppelganger, long inX, long i
             theDot.mFlag = 1;
         else
             theDot.mFlag = 0;
-        UList<EEMiniMapDot>& theList = this->mPlayerUnits[theCellX * 0x40 + theCellY];
+        UList<EEMiniMapDot>& theList = this->mPlayerUnits[EEMiniMapCells::Flatten(theCellX, theCellY)];
         if (theList.mHead && theList.mHead->mData.mFlag)
             theList.InsertAfter(theList.mHead, theDot);
         else
@@ -208,9 +209,9 @@ void EEMiniMap::CountCellOff(long inX, long inY)
     GE3DPoint thePoint(inX + 0.5f, inY + 0.5f, 0.0f);
     GE3DPoint theMapPoint;
     this->mMapToCell.Apply(thePoint, theMapPoint);
-    inY = UMFloatToLong(theMapPoint.GetX());
-    inX = UMFloatToLong(theMapPoint.GetY());
-    this->mU1015C[inY * 0x40 + inX]--;
+    inY = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetX()));
+    inX = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetY()));
+    this->mU1015C[EEMiniMapCells::Flatten(inY, inX)]--;
     this->RedrawCell(inY, inX);
 }
 
@@ -221,9 +222,9 @@ void EEMiniMap::CountCellOn(long inX, long inY)
     GE3DPoint thePoint(inX + 0.5f, inY + 0.5f, 0.0f);
     GE3DPoint theMapPoint;
     this->mMapToCell.Apply(thePoint, theMapPoint);
-    inY = UMFloatToLong(theMapPoint.GetX());
-    inX = UMFloatToLong(theMapPoint.GetY());
-    unsigned short& theCount = this->mU1015C[inY * 0x40 + inX];
+    inY = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetX()));
+    inX = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetY()));
+    unsigned short& theCount = this->mU1015C[EEMiniMapCells::Flatten(inY, inX)];
     if (theCount != 0)
         theCount++;
     else
@@ -242,15 +243,15 @@ void EEMiniMap::RemoveDoppelganger(EEDoppelganger* inDoppelganger, long inX, lon
         thePoint.SetX(theClass->mTileSize * 0.5f + inX);
         thePoint.SetY(theClass->mTileSize * 0.5f + inY);
         this->mMapToCell.Apply(thePoint, theMapPoint);
-        long theCellX = UMFloatToLong(theMapPoint.GetX());
-        long theCellY = UMFloatToLong(theMapPoint.GetY());
+        long theCellX = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetX()));
+        long theCellY = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetY()));
         unsigned long theColor = inDoppelganger->GetPlayer()->mPlayerID == 0
                                      ? GEPackColor(kPixelFormatA4R4G4B4, EEColorTable::GetDarkColor(theClass->GetMiniMapColor()), 1.0f)
                                      : GEPackColor(kPixelFormatA4R4G4B4, inDoppelganger->GetPlayer()->mShadeColor, 1.0f);
         EEMiniMapDot theDot;
         theDot.mPlayer = (unsigned short)inDoppelganger->GetPlayer()->mPlayerID;
         theDot.mColor = (unsigned short)theColor;
-        UList<EEMiniMapDot>& theList = this->mPlayerUnits[theCellX * 0x40 + theCellY];
+        UList<EEMiniMapDot>& theList = this->mPlayerUnits[EEMiniMapCells::Flatten(theCellX, theCellY)];
         UListNode<EEMiniMapDot>* theNode = theList.Find(theDot);
         if (theNode)
             theList.Remove(theNode);
@@ -596,20 +597,22 @@ void EEMiniMap::Recolor()
 // dark or grey by its sight count
 void EEMiniMap::RedrawCell(long inX, long inY)
 {
+    inX = EEMiniMapCells::Clamp(inX);
+    inY = EEMiniMapCells::Clamp(inY);
     EEMap* theMap = gWorld.mMap;
     EEPlayer* thePlayer = gWorld.GetCurrentPlayer();
     UListNode<EEMiniMapUnitDot>* theNode;
-    for (theNode = this->mMapUnits[inX * 0x40 + inY].mHead; theNode; theNode = theNode->mNext) {
+    for (theNode = this->mMapUnits[EEMiniMapCells::Flatten(inX, inY)].mHead; theNode; theNode = theNode->mNext) {
         EETile* theTile = theMap->GetTile(theNode->mData.mX, theNode->mData.mY);
         if (!theTile || theTile->IsSeenBy(thePlayer) || gFreeCamera)
             break;
     }
     if (theNode == NULL) {
-        UListNode<EEMiniMapDot>* theDot = this->mPlayerUnits[inX * 0x40 + inY].mHead;
+        UListNode<EEMiniMapDot>* theDot = this->mPlayerUnits[EEMiniMapCells::Flatten(inX, inY)].mHead;
         if (theDot == NULL) {
-            if (this->mU1015C[inX * 0x40 + inY] == 0)
+            if (this->mU1015C[EEMiniMapCells::Flatten(inX, inY)] == 0)
                 this->mPixels[this->mPixelsPerRow * inY + inX] = 0xf000;
-            else if (this->mU1015C[inX * 0x40 + inY] == 1)
+            else if (this->mU1015C[EEMiniMapCells::Flatten(inX, inY)] == 1)
                 this->mPixels[this->mPixelsPerRow * inY + inX] = 0x7000;
             else
                 this->mPixels[this->mPixelsPerRow * inY + inX] = 0x777;
@@ -826,20 +829,20 @@ void EEMiniMap::MoveUnit(EEUnit* inUnit, long inOldX, long inOldY, long inX, lon
         thePoint.SetX(theClass->mTileSize * 0.5f + inOldX);
         thePoint.SetY(theClass->mTileSize * 0.5f + inOldY);
         this->mMapToCell.Apply(thePoint, theMapPoint);
-        theOldCellX = UMFloatToLong(theMapPoint.GetX());
-        theOldCellY = UMFloatToLong(theMapPoint.GetY());
+        theOldCellX = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetX()));
+        theOldCellY = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetY()));
     }
     if (inX != -10000) {
         theNewPoint.SetX(theClass->mTileSize * 0.5f + inX);
         theNewPoint.SetY(theClass->mTileSize * 0.5f + inY);
         this->mMapToCell.Apply(theNewPoint, theMapPoint);
-        theCellX = UMFloatToLong(theMapPoint.GetX());
-        theCellY = UMFloatToLong(theMapPoint.GetY());
+        theCellX = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetX()));
+        theCellY = EEMiniMapCells::Clamp(UMFloatToLong(theMapPoint.GetY()));
     }
     if (theCellX == theOldCellX && theCellY == theOldCellY) {
         theDot.mX = inOldX;
         theDot.mY = inOldY;
-        UListNode<EEMiniMapUnitDot>* theNode = this->mMapUnits[theOldCellX * 0x40 + theOldCellY].Find(theDot);
+        UListNode<EEMiniMapUnitDot>* theNode = this->mMapUnits[EEMiniMapCells::Flatten(theOldCellX, theOldCellY)].Find(theDot);
         if (theNode) {
             theNode->mData.mX = inX;
             theNode->mData.mY = inY;
@@ -848,7 +851,7 @@ void EEMiniMap::MoveUnit(EEUnit* inUnit, long inOldX, long inOldY, long inX, lon
         if (inOldX != -10000) {
             theDot.mX = inOldX;
             theDot.mY = inOldY;
-            UList<EEMiniMapUnitDot>& theList = this->mMapUnits[theOldCellX * 0x40 + theOldCellY];
+            UList<EEMiniMapUnitDot>& theList = this->mMapUnits[EEMiniMapCells::Flatten(theOldCellX, theOldCellY)];
             UListNode<EEMiniMapUnitDot>* theNode = theList.Find(theDot);
             if (theNode)
                 theList.Remove(theNode);
@@ -857,7 +860,7 @@ void EEMiniMap::MoveUnit(EEUnit* inUnit, long inOldX, long inOldY, long inX, lon
         if (inX != -10000) {
             theDot.mX = inX;
             theDot.mY = inY;
-            UList<EEMiniMapUnitDot>& theList = this->mMapUnits[theCellX * 0x40 + theCellY];
+            UList<EEMiniMapUnitDot>& theList = this->mMapUnits[EEMiniMapCells::Flatten(theCellX, theCellY)];
             if (theList.mHead && theList.mHead->mData.mFlag)
                 theList.InsertAfter(theList.mHead, theDot);
             else
