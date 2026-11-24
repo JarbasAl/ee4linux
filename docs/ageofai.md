@@ -225,7 +225,9 @@ was; upstream's unported mine-slot pass is the only other lift. EESim reports pa
 producers, the food gatherers asked for, target moves and their sources as `intel.feed_checks`, `missing_citizens`,
 `feed_producers`, `feed_gatherers`, `feed_moved`, `feed_from_wood` and `feed_from_metals`.
 
-The benchmark has not rated this setting. A paired seed-2 probe with a Copper Age start and two Age of AI players,
+The focused benchmark rates this setting at 1349 (1266 to 1472) against `aoai`'s 1383 (1312 to 1480), with 4 wins,
+6 losses and 18 draws in 28 games; two `standard` seed-5 games faulted in the simulator and are out of the ledger.
+The AI wins fewer than half the games and stands below `aoai`, so the setting stays off. A paired seed-2 probe with a Copper Age start and two Age of AI players,
 differing only in `food_pays`, scored 4084.5 with the bit off and 3685.5 with it on. The gate-off trace is byte-identical
 to the earlier baseline and every `feed_*` counter is zero there. With the bit on, 59 to 60 calls per player asked for
 22 food gatherers and moved 66 and 102 targets, 3 and 22 from wood and 63 and 80 from the metals; the traces first

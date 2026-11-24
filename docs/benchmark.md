@@ -62,6 +62,11 @@ The same focused set rates `aoai-shipreach` over `standard`, `poor` and `raids`,
 report and is not in the ledger. The AI wins fewer than half the games and stands below `aoai`, so `ship_reach_exact`
 stays off.
 
+The same focused set rates `aoai-foodpays` over `standard`, `poor` and `raids`, 5 seeds, both seat orders: 4 wins,
+6 losses and 18 draws in 28 games; rating 1349 (1266 to 1472) against `aoai`'s 1383 (1312 to 1480). Two `standard`
+seed-5 games faulted in the simulator on repeat attempts and are not in the ledger; the same minimap fault appears in
+other long rating games. The AI wins fewer than half the games and stands below `aoai`, so `food_pays` stays off.
+
 ## Named AIs
 
 An AI is a file in `config/bench/ais/`. It holds only the settings in which it differs from `config/ageofai.ini`, in
